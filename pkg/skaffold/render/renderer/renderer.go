@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
@@ -34,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 const (
@@ -71,6 +73,7 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Rend
 	} else {
 		validator, _ = validate.NewValidator([]latestV2.Validator{})
 	}
+
 	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, workingDir: workingDir, hydrationDir: hydrationDir}, nil
 }
 
@@ -97,9 +100,17 @@ func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 	if _, err := os.Stat(kptFilePath); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
 		if _, err := util.RunCmdOut(cmd); err != nil {
-			// TODO: user error. need manual init
-			return fmt.Errorf("unable to initialize kpt directory in %v, please manually run `kpt pkg init %v`",
-				kptFilePath, kptFilePath)
+			return sErrors.NewError(err,
+				proto.ActionableErr{
+					Message: fmt.Sprintf("unable to initialize Kptfile in %v", r.hydrationDir),
+					ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_KPTFILE_MANUAL_INIT,
+							Action:         fmt.Sprintf("please manually run `kpt pkg init %v`", r.hydrationDir),
+						},
+					},
+				})
 		}
 	}
 	return nil
@@ -135,9 +146,18 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	defer file.Close()
 	kfConfig := &kptfile.KptFile{}
 	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
-		// TODO: user error.
-		return fmt.Errorf("unable to parse %v: %w, please check if the kptfile is updated to new apiVersion > v1alpha2",
-			kptFilePath, err)
+		return sErrors.NewError(err,
+			proto.ActionableErr{
+				Message: fmt.Sprintf("unable to parse Kptfile in %v", r.hydrationDir),
+				ErrCode: proto.StatusCode_RENDER_KPTFILE_INVALID_YAML_ERR,
+				Suggestions: []*proto.Suggestion{
+					{
+						SuggestionCode: proto.SuggestionCode_KPTFILE_CHECK_YAML,
+						Action: fmt.Sprintf("please check if the Kptfile is correct and " +
+							"the `apiVersion` is greater than `v1alpha2`"),
+					},
+				},
+			})
 	}
 	if kfConfig.Pipeline == nil {
 		kfConfig.Pipeline = &kptfile.Pipeline{}
