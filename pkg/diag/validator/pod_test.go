@@ -356,17 +356,26 @@ func TestRun(t *testing.T) {
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
-						Type:    v1.PodScheduled,
-						Status:  v1.ConditionFalse,
-						Reason:  v1.PodReasonUnschedulable,
-						Message: "0/2 nodes are available: 1 node(s) had taint {node.kubernetes.io/disk-pressure: }, that the pod didn't tolerate, 1 node(s) had taint {node.kubernetes.io/unreachable: }, that the pod didn't tolerate",
+						Type:   v1.PodScheduled,
+						Status: v1.ConditionFalse,
+						Reason: v1.PodReasonUnschedulable,
+						Message: "0/7 nodes are available: " +
+							"1 node(s) had taint {node.kubernetes.io/memory-pressure: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/disk-pressure: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/pid-pressure: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/not-ready: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/unreachable: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/unschedulable: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/network-unavailable: }, that the pod didn't tolerate, ",
 					}},
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				proto.ActionableErr{
-					Message: "Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable",
-					ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+					Message: "Unschedulable: 0/7 nodes available: 1 node has memory pressure, " +
+						"1 node has disk pressure, 1 node has PID pressure, 1 node is not ready, " +
+						"1 node is unreachable, 1 node is unschedulable, 1 node's network not available",
+					ErrCode: proto.StatusCode_STATUSCHECK_NODE_PID_PRESSURE,
 				}, nil)},
 		},
 		{
