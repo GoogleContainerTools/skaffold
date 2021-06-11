@@ -3,7 +3,7 @@ name: create draft release
 on:
   push:
     branches:
-    - master
+    - release/v1.26.1
 jobs:
   check:
     name: Check if release commit
