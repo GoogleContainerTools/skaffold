@@ -28,17 +28,33 @@ while getopts "p:" opt; do
 esac
 done
 
+function download_existing_key() {
+  # Download a valid key created within the past two weeks.
+  KEY_IDS=$(gcloud iam service-accounts keys list --iam-account=metrics-writer@k8s-skaffold.iam.gserviceaccount.com --project=k8s-skaffold --managed-by=user --filter="validAfterTime>-P2W" --format="value(name)")
+  while read -r KEY_ID
+  do
+    if gsutil cp gs://${BUCKET_ID}/${KEY_ID}.json ${KEY_FILE}; then
+      echo "Downloaded existing key to ${KEY_FILE}"
+      return 0
+    fi
+  done <<< "$KEY_IDS"
+  return 1
+}
 
-# create a new valid key
-KEY_ID=$(gcloud iam service-accounts keys list --iam-account=metrics-writer@k8s-skaffold.iam.gserviceaccount.com --project=k8s-skaffold --managed-by=user --filter="validAfterTime.date('%Y-%m-%d', Z) = `date +%F`" --format="value(name)" --limit=1)
-if [ -z "$KEY_ID" ]; then
+function upload_new_key() {
+  echo "Creating new service account key..."
   gcloud iam service-accounts keys create ${KEY_FILE} --iam-account=metrics-writer@${PROJECT_ID}.iam.gserviceaccount.com --project=${PROJECT_ID}
   retVal=$?
   if [ $retVal -ne 0 ]; then
     echo "No key created."
-    exit 1
+    return 1
   fi
+  echo "New service account key created."
   KEY_ID=$(gcloud iam service-accounts keys list --iam-account=metrics-writer@k8s-skaffold.iam.gserviceaccount.com --project=k8s-skaffold --managed-by=user --filter="validAfterTime.date('%Y-%m-%d', Z) = `date +%F`" --format="value(name)" --limit=1)
-fi
-gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${KEY_ID}.json
-gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${LATEST_GCS_PATH}
+  gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${KEY_ID}.json
+  gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${LATEST_GCS_PATH}
+  echo "New service account key uploaded to GCS."
+  return 0
+}
+
+download_existing_key || upload_new_key
