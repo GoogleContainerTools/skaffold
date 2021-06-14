@@ -120,15 +120,19 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 
 func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
+
+	// If the event type PodReady with status True is found then we return success immediately
 	if isPodReady(pod) {
 		return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
 	}
+	// If the event type PodScheduled with status False is found then we check if it is due to taints and tolerations.
 	if c, ok := isPodNotScheduled(pod); ok {
 		logrus.Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
 		sc, err := getUntoleratedTaints(c.Reason, c.Message)
 		return sc, nil, err
 	}
-
+	// we can check the container status if the pod has been scheduled successfully. This can be determined by having the event
+	// PodScheduled with status True, or a ContainerReady or PodReady event with status False.
 	if isPodScheduledButNotReady(pod) {
 		logrus.Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
 		// TODO(dgageot): Add EphemeralContainerStatuses
@@ -159,7 +163,7 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 
 func isPodReady(pod *v1.Pod) bool {
 	for _, c := range pod.Status.Conditions {
-		if c.Type == v1.ContainersReady && c.Status == v1.ConditionTrue {
+		if c.Type == v1.PodReady && c.Status == v1.ConditionTrue {
 			return true
 		}
 	}
@@ -178,6 +182,9 @@ func isPodNotScheduled(pod *v1.Pod) (v1.PodCondition, bool) {
 func isPodScheduledButNotReady(pod *v1.Pod) bool {
 	for _, c := range pod.Status.Conditions {
 		if c.Type == v1.PodScheduled && c.Status == v1.ConditionTrue {
+			return true
+		}
+		if c.Type == v1.ContainersReady && c.Status == v1.ConditionFalse {
 			return true
 		}
 		if c.Type == v1.PodReady && c.Status == v1.ConditionFalse {
