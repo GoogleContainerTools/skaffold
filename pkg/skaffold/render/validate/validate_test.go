@@ -22,36 +22,35 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestValidatorInit(t *testing.T) {
+func TestNewValidator(t *testing.T) {
 	tests := []struct {
 		description string
 		config      []latestV2.Validator
-		shouldErr   bool
 	}{
 		{
 			description: "no validation",
 			config:      []latestV2.Validator{},
-			shouldErr:   false,
 		},
 		{
 			description: "kubeval validator",
 			config: []latestV2.Validator{
 				{Name: "kubeval"},
 			},
-			shouldErr: false,
-		},
-		{
-			description: "invalid validator",
-			config: []latestV2.Validator{
-				{Name: "bad-validator"},
-			},
-			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			_, err := NewValidator(test.config)
-			t.CheckError(test.shouldErr, err)
+			t.CheckNoError(err)
 		})
 	}
+}
+
+func TestNewValidator_Error(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		_, err := NewValidator([]latestV2.Validator{
+			{Name: "bad-validator"},
+		})
+		t.CheckContains(`unsupported validator "bad-validator". please only use the`, err.Error())
+	})
 }

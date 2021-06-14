@@ -30,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -342,6 +343,31 @@ func TaskSucceeded(task constants.Phase) {
 	})
 }
 
+// PortForwarded notifies that a remote port has been forwarded locally.
+func PortForwarded(localPort int32, remotePort util.IntOrString, podName, containerName, namespace string, portName string, resourceType, resourceName, address string) {
+	event := proto.PortForwardEvent{
+		TaskId:        fmt.Sprintf("%s-%d", constants.PortForward, handler.iteration),
+		LocalPort:     localPort,
+		PodName:       podName,
+		ContainerName: containerName,
+		Namespace:     namespace,
+		PortName:      portName,
+		ResourceType:  resourceType,
+		ResourceName:  resourceName,
+		Address:       address,
+		TargetPort: &proto.IntOrString{
+			Type:   int32(remotePort.Type),
+			IntVal: int32(remotePort.IntVal),
+			StrVal: remotePort.StrVal,
+		},
+	}
+	handler.handle(&proto.Event{
+		EventType: &proto.Event_PortEvent{
+			PortEvent: &event,
+		},
+	})
+}
+
 func (ev *eventHandler) setState(state proto.State) {
 	ev.stateLock.Lock()
 	ev.state = state
@@ -396,6 +422,9 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
+		if ev.state.ForwardedPorts == nil {
+			ev.state.ForwardedPorts = map[int32]*proto.PortForwardEvent{}
+		}
 		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 	case *proto.Event_StatusCheckSubtaskEvent:

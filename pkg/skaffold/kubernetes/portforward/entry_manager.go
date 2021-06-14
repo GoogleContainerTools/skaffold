@@ -23,14 +23,26 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var (
 	portForwardEvent = func(entry *portForwardEntry) {
-		// TODO priyawadhwa@, change event API to accept ports of type int
 		event.PortForwarded(
+			int32(entry.localPort),
+			entry.resource.Port,
+			entry.podName,
+			entry.containerName,
+			entry.resource.Namespace,
+			entry.portName,
+			string(entry.resource.Type),
+			entry.resource.Name,
+			entry.resource.Address)
+	}
+	portForwardEventV2 = func(entry *portForwardEntry) {
+		eventV2.PortForwarded(
 			int32(entry.localPort),
 			entry.resource.Port,
 			entry.podName,
@@ -124,6 +136,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 		output.Red.Fprintln(b.output, err)
 	}
 	portForwardEvent(entry)
+	portForwardEventV2(entry)
 }
 
 // Stop terminates all kubectl port-forward commands.
