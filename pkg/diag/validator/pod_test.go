@@ -733,3 +733,73 @@ func testPodValidator(k kubernetes.Interface, _ map[string]string) *PodValidator
 	rs := []Recommender{recommender.ContainerError{}}
 	return &PodValidator{k: k, recos: rs}
 }
+
+func TestPodConditionChecks(t *testing.T) {
+	tests := []struct {
+		description string
+		conditions  []v1.PodCondition
+		expected    result
+	}{
+		{
+			description: "pod is ready",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.ContainersReady, Status: v1.ConditionTrue},
+			},
+			expected: result{isReady: true},
+		},
+		{
+			description: "pod scheduling failed",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodScheduled, Status: v1.ConditionFalse},
+			},
+			expected: result{isNotScheduled: true},
+		},
+		{
+			description: "pod scheduled with no ready event",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+			},
+			expected: result{iScheduledNotReady: true},
+		},
+		{
+			description: "pod is scheduled, with failed containers ready event",
+			conditions: []v1.PodCondition{
+				{Type: v1.ContainersReady, Status: v1.ConditionFalse},
+			},
+			expected: result{iScheduledNotReady: true},
+		},
+		{
+			description: "pod is scheduled, with failed pod ready event",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+			},
+			expected: result{iScheduledNotReady: true},
+		},
+		{
+			description: "pod status is unknown",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodScheduled, Status: v1.ConditionUnknown},
+			},
+			expected: result{isUnknown: true},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			pod := v1.Pod{Status: v1.PodStatus{Conditions: test.conditions}}
+			r := result{}
+			r.isReady = isPodReady(&pod)
+			_, r.isNotScheduled = isPodNotScheduled(&pod)
+			r.iScheduledNotReady = isPodScheduledButNotReady(&pod)
+			_, r.isUnknown = isPodStatusUnknown(&pod)
+			t.CheckDeepEqual(test.expected, r, cmp.AllowUnexported(result{}))
+		})
+	}
+}
+
+type result struct {
+	isReady            bool
+	isNotScheduled     bool
+	iScheduledNotReady bool
+	isUnknown          bool
+}
