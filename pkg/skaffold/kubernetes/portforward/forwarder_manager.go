@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"reflect"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -106,7 +107,7 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 // Start begins all forwarders managed by the ForwarderManager
 func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error {
 	// Port forwarding is not enabled.
-	if p == nil {
+	if p.isNil() {
 		return nil
 	}
 
@@ -129,13 +130,18 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 // Stop cleans up and terminates all forwarders managed by the ForwarderManager
 func (p *ForwarderManager) Stop() {
 	// Port forwarding is not enabled.
-	if p == nil {
+	if p.isNil() {
 		return
 	}
 
 	for _, f := range p.forwarders {
 		f.Stop()
 	}
+}
+
+func (p *ForwarderManager) isNil() bool {
+       // This instance may be from an interface
+       return p == nil || (reflect.ValueOf(p).Kind() == reflect.Ptr && reflect.ValueOf(p).IsNil())
 }
 
 func (p *ForwarderManager) Name() string {

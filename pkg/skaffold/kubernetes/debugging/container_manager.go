@@ -19,6 +19,7 @@ package debugging
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -52,7 +53,7 @@ func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
 }
 
 func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error {
-	if d == nil {
+	if d.isNil() {
 		// debug mode probably not enabled
 		return nil
 	}
@@ -84,9 +85,14 @@ func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error
 
 func (d *ContainerManager) Stop() {
 	// if nil then debug mode probably not enabled
-	if d != nil {
+	if !d.isNil() {
 		d.stopWatcher()
 	}
+}
+
+func (d *ContainerManager) isNil() bool {
+	// This instance may be from an interface
+	return d == nil || (reflect.ValueOf(d).Kind() == reflect.Ptr && reflect.ValueOf(d).IsNil())
 }
 
 func (d *ContainerManager) Name() string {

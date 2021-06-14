@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -83,7 +84,7 @@ func (a *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
 }
 
 func (a *LogAggregator) SetSince(t time.Time) {
-	if a == nil {
+	if a.isNil() {
 		// Logs are not activated.
 		return
 	}
@@ -94,7 +95,7 @@ func (a *LogAggregator) SetSince(t time.Time) {
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) Start(ctx context.Context, out io.Writer, namespaces []string) error {
-	if a == nil {
+	if a.isNil() {
 		// Logs are not activated.
 		return nil
 	}
@@ -143,13 +144,18 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer, namespaces []s
 
 // Stop stops the logger.
 func (a *LogAggregator) Stop() {
-	if a == nil {
+	if a.isNil() {
 		// Logs are not activated.
 		return
 	}
 	a.stopWatcher()
 	a.podWatcher.Deregister(a.events)
 	close(a.events)
+}
+
+func (a *LogAggregator) isNil() bool {
+       // This instance may be from an interface
+       return a == nil || (reflect.ValueOf(a).Kind() == reflect.Ptr && reflect.ValueOf(a).IsNil())
 }
 
 func sinceSeconds(d time.Duration) int64 {
@@ -268,7 +274,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor output.Co
 
 // Mute mutes the logs.
 func (a *LogAggregator) Mute() {
-	if a == nil {
+	if a.isNil() {
 		// Logs are not activated.
 		return
 	}
@@ -278,7 +284,7 @@ func (a *LogAggregator) Mute() {
 
 // Unmute unmutes the logs.
 func (a *LogAggregator) Unmute() {
-	if a == nil {
+	if a.isNil() {
 		// Logs are not activated.
 		return
 	}
