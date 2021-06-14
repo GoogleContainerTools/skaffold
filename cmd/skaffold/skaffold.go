@@ -19,13 +19,16 @@ package main
 import (
 	"context"
 	"errors"
+	"log"
 	"os"
 
+	"cloud.google.com/go/profiler"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 type ExitCoder interface {
@@ -33,6 +36,21 @@ type ExitCoder interface {
 }
 
 func main() {
+	if _, ok := os.LookupEnv("SKAFFOLD_PROFILER"); ok {
+		err := profiler.Start(profiler.Config{
+			Service:              os.Getenv("SKAFFOLD_PROFILER_SERVICE"),
+			NoHeapProfiling:      true,
+			NoAllocProfiling:     true,
+			NoGoroutineProfiling: true,
+			DebugLogging:         true,
+			// ProjectID must be set if not running on GCP.
+			ProjectID:      os.Getenv("SKAFFOLD_PROFILER_PROJECT"),
+			ServiceVersion: version.Get().Version,
+		})
+		if err != nil {
+			log.Fatalf("failed to start the profiler: %v", err)
+		}
+	}
 	var code int
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {
