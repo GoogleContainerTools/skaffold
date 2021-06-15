@@ -13,6 +13,7 @@ for projects configured to use helm.
 To use `helm` with Skaffold, the `helm` binary must be installed on your machine. Skaffold will not install it for you.
 {{< /alert >}}
 
+
 # Configuring your Helm Project with Skaffold
 
 Skaffold supports projects set up to deploy with Helm, but certain aspects of the project need to be configured correctly in order for Skaffold to work properly. This guide should demystify some of the nuance around using Skaffold with Helm to help you get started quickly.
@@ -23,8 +24,7 @@ The normal Helm convention for defining image references is through the `values.
 ```project_root/values.yaml```
 ```yaml
 image:
-  repository: gcr.io/my-project/
-  name: my-image
+  repository: gcr.io/my-project/my-image
   tag: v1.2.0
   pullPolicy: IfNotPresent
 ```
@@ -38,50 +38,160 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ .Values.image.repository }}{{ .Values.image.name }}:{{ .Values.image.tag}}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag}}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
 ```
 
+**IMPORTANT: To get Skaffold to work with Helm, the `image` key must be configured in the skaffold.yaml.**
 
-Unfortunately, because of the way Skaffold continuously tags rebuilt images and hydrates Kubernetes resources before sending them to the cluster, it doesn't know how to handle images defined in this way.
-
-**IMPORTANT: To get Skaffold to work with Helm, your image needs to be defined directly as a Helm value in the skaffold.yaml.**
-
-This allows Skaffold to track the image being built, and correctly substitute it in the proper resource definition before sending it to Helm to be deployed to your cluster. In practice, this looks something like this:
+Associating the Helm image key allows Skaffold to track the image being built, and then configure Helm to substitute it in the proper resource definitions to be deployed to your cluster. In practice, this looks something like this:
 
 ```yaml
+build:
+  artifact:
+    - name: gcr.io/my-project/my-image # must match in artifactOverrides
 deploy:
   helm:
     releases:
     - name: my-release
       artifactOverrides:
         image: gcr.io/my-project/my-image # no tag present!
-        # Skaffold continuously tags your image, so no need to put one here.
+      imageStrategy:
+        helm: {}
 ```
 
-By configuring your project this way, note that **you may need to rewrite any templates referencing your image to reflect this new value!** Using the above templated `deployment.yaml` as an example, we would need to rewrite the template like so:
+The `artifactOverrides` binds a Helm value key to a build artifact.  The `imageStrategy` configures the image reference strategy for informing Helm of the image reference to a newly built artifact.
 
-```project_root/templates/deployment.yaml:```
+### Image reference strategies
+
+Skaffold supports three _image reference strategies_ for Helm:
+
+1. `fqn`: provides a fully-qualified image reference (default);
+2. `helm`: provides separate repository and tag portions (shown above);
+3. `helm+explicitRegistry`: provides separate registry, repository, and tag portions.
+
+#### `fqn` strategy: single fully-qualified name (default)
+
+With the fully-qualified name strategy, Skaffold configures Helm by setting a key to the fully-tagged image reference.
+
+The `skaffold.yaml` setup:
+```yaml
+build:
+  artifacts:
+    - image: gcr.io/my-project/my-image
+deploy:
+  helm:
+    releases:
+      - name: my-chart
+        chartPath: helm
+        artifactOverrides:
+          imageKey: gcr.io/my-project/my-image
+        imageStrategy:
+          fqn: {}
+```
+
+Note that the `fqn` strategy is the default and the `imageStrategy` can be omitted.
+
+The `values.yaml` (note that Skaffold overrides this value):
+```
+imageKey: gcr.io/other-project/other-image:latest
+```
+
+The chart template:
 ```yaml
 spec:
-  template:
-    spec:
-      containers:
-        - name: {{ .Chart.Name }}
-          image: {{ .Values.image }} # this value comes from the skaffold.yaml
-
-          # this imagePullPolicy value is now invalid,
-          # because it was overwritten through the `image` value from the skaffold.yaml!
-
-          # let's redefine it in the `values.yaml` so we can keep it here.
-          imagePullPolicy: {{ .Values.imageConfig.pullPolicy }}
+  containers:
+    - name: {{ .Chart.Name }}
+      image: "{{.Values.imageKey}}"
 ```
 
-and quickly redefining the `imagePullPolicy` in the ```project_root/values.yaml:```
+Skaffold will invoke
+```
+helm install <chart> <chart-path> --set-string imageKey=gcr.io/my-project/my-image:generatedTag@sha256:digest
+```
+
+#### `helm` strategy: split repository and tag
+
+Skaffold can be configured to provide Helm with a separate repository and tag.  The key used in the `artifactOverrides` is used as base portion producing two keys `{key}.repository` and `{key}.tag`.
+
+The `skaffold.yaml` setup:
 ```yaml
-imageConfig:
-  pullPolicy: IfNotPresent
+build:
+  artifacts:
+    - image: gcr.io/my-project/my-image
+deploy:
+  helm:
+    releases:
+      - name: my-chart
+        chartPath: helm
+        artifactOverrides:
+          imageKey: gcr.io/my-project/my-image
+        imageStrategy:
+          helm: {}
 ```
+
+The `values.yaml` (note that Skaffold overrides these values):
+```
+imageKey:
+  repository: gcr.io/other-project/other-image
+  tag: latest
+```
+
+The chart template:
+```yaml
+spec:
+  containers:
+    - name: {{ .Chart.Name }}
+      image: "{{.Values.imageKey.repository}}:{{.Values.imageKey.tag}}"
+```
+
+Skaffold will invoke
+```
+helm install <chart> <chart-path> --set-string imageKey.repository=gcr.io/my-project/my-image,imageKey.tag=generatedTag@sha256:digest
+```
+
+#### `helm`+`explicitRegistry` strategy: split registry, repository, and tag
+
+Skaffold can also be configured to provide Helm with a separate repository and tag.  The key used in the `artifactOverrides` is used as base portion producing three keys: `{key}.registry`, `{key}.repository`, and `{key}.tag`.
+
+The `skaffold.yaml` setup:
+```yaml
+build:
+  artifacts:
+    - image: gcr.io/my-project/my-image
+deploy:
+  helm:
+    releases:
+      - name: my-chart
+        chartPath: helm
+        artifactOverrides:
+          imageKey: gcr.io/my-project/my-image
+        imageStrategy:
+          helm:
+            explicitRegistry: true
+```
+
+The `values.yaml` (note that Skaffold overrides these values):
+```
+imageKey:
+  registry: gcr.io
+  repository: other-project/other-image
+  tag: latest
+```
+
+The chart template:
+```yaml
+spec:
+  containers:
+    - name: {{ .Chart.Name }}
+      image: "{{.Values.imageKey.registry}}/{{.Values.imageKey.repository}}:{{.Values.imageKey.tag}}"
+```
+
+Skaffold will invoke
+```
+helm install <chart> <chart-path> --set-string imageKey.registry=gcr.io,imageKey.repository=my-project/my-image,imageKey.tag=generatedTag@sha256:digest
+```
+
 
 ### Helm Build Dependencies
 
