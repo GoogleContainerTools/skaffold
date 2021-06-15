@@ -1019,6 +1019,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | CONFIG_UNKNOWN_API_VERSION_ERR | 1213 | Config API version not found |
 | CONFIG_UNKNOWN_VALIDATOR | 1214 | The validator is not allowed in skaffold-managed mode. |
 | CONFIG_UNKNOWN_TRANSFORMER | 1215 | The transformer is not allowed in skaffold-managed mode. |
+| CONFIG_MISSING_MANIFEST_FILE_ERR | 1216 | Manifest file not found |
 | INSPECT_UNKNOWN_ERR | 1301 | Catch-all `skaffold inspect` command error |
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
 | INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR | 1303 | Trying to modify build environment that doesn't exist |
@@ -1087,6 +1088,7 @@ Enum for Suggestion codes
 | CONFIG_FIX_API_VERSION | 707 | Fix config API version or upgrade the skaffold binary |
 | CONFIG_ALLOWLIST_VALIDATORS | 708 | Only the allow listed validators are acceptable in skaffold-managed mode. |
 | CONFIG_ALLOWLIST_transformers | 709 | Only the allow listed transformers are acceptable in skaffold-managed mode. |
+| CONFIG_FIX_MISSING_MANIFEST_FILE | 710 | Check mising manifest file section of config and fix as needed. |
 | INSPECT_USE_MODIFY_OR_NEW_PROFILE | 800 | Create new build env in a profile instead, or use the 'modify' command |
 | INSPECT_USE_ADD_BUILD_ENV | 801 | Check profile selection, or use the 'add' command instead |
 | INSPECT_CHECK_INPUT_PROFILE | 802 | Check profile flag value |

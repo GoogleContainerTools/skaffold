@@ -89,7 +89,7 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 				SourceFile:     configFile,
 				IsRootConfig:   true})
 		}
-		if err := validation.Process(cfgs); err != nil {
+		if err := validation.Process(cfgs, validation.GetValidationOpts(opts)); err != nil {
 			return fmt.Errorf("validating upgraded config: %w", err)
 		}
 	}

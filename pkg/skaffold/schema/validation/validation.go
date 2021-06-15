@@ -19,6 +19,7 @@ package validation
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -28,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
@@ -41,11 +43,25 @@ import (
 var (
 	// for testing
 	validateYamltags       = yamltags.ValidateStruct
+	DefaultConfig          = Options{CheckDeploySource: true}
 	dependencyAliasPattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 )
 
+type Options struct {
+	CheckDeploySource bool
+}
+
+func GetValidationOpts(opts config.SkaffoldOptions) Options {
+	switch opts.Mode() {
+	case config.RunModes.Dev, config.RunModes.Deploy, config.RunModes.Run, config.RunModes.Debug, config.RunModes.Render:
+		return Options{CheckDeploySource: true}
+	default:
+		return Options{}
+	}
+}
+
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
-func Process(configs parser.SkaffoldConfigSet) error {
+func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 	var errs = validateImageNames(configs)
 	for _, config := range configs {
 		var cfgErrs []error
@@ -63,6 +79,10 @@ func Process(configs parser.SkaffoldConfigSet) error {
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
 	errs = append(errs, validateSingleKubeContext(configs)...)
+	if validateConfig.CheckDeploySource {
+		// TODO(6050) validate for other deploy types - helm, kpt, etc.
+		errs = append(errs, validateKubectlManifests(configs)...)
+	}
 	if len(errs) == 0 {
 		return nil
 	}
@@ -578,6 +598,45 @@ func wrapWithContext(config *parser.SkaffoldConfigEntry, errs ...error) []error 
 	}
 	for i := range errs {
 		errs[i] = errors.Wrapf(errs[i], "source: %s, %s", config.SourceFile, id)
+	}
+	return errs
+}
+
+// validateKubectlManifests
+// - validates that kubectl manifest files specified in the skaffold config exist
+func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
+	for _, c := range configs {
+		if c.IsRemote {
+			continue
+		}
+		if c.Deploy.KubectlDeploy == nil {
+			continue
+		}
+		// validate that manifest files referenced in config exist
+		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
+			if util.IsURL(pattern) {
+				continue
+			}
+			// filepaths are all absolute from config parsing step via tags.MakeFilePathsAbsolute
+			expanded, err := filepath.Glob(pattern)
+			if err != nil {
+				errs = append(errs, err)
+			}
+			if len(expanded) == 0 {
+				msg := fmt.Sprintf("skaffold config named %q referenced file %q that could not be found", c.SourceFile, pattern)
+				errs = append(errs, sErrors.NewError(fmt.Errorf(msg),
+					proto.ActionableErr{
+						Message: msg,
+						ErrCode: proto.StatusCode_CONFIG_MISSING_MANIFEST_FILE_ERR,
+						Suggestions: []*proto.Suggestion{
+							{
+								SuggestionCode: proto.SuggestionCode_CONFIG_FIX_MISSING_MANIFEST_FILE,
+								Action:         fmt.Sprintf("Verify that file %q referenced in config %q exists and the path and naming are correct", pattern, c.SourceFile),
+							},
+						},
+					}))
+			}
+		}
 	}
 	return errs
 }

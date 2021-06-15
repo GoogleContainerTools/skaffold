@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -86,6 +87,7 @@ func TestCreateNewRunner(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&validation.DefaultConfig, validation.Options{CheckDeploySource: false})
 			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(&testutil.FakeAPIClient{
 					ErrVersion: true,

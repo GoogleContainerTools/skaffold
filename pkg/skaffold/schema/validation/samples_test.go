@@ -88,7 +88,7 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 		t.CheckNoError(err)
 		cfgs = append(cfgs, cfg)
 	}
-	err = Process(cfgs)
+	err = Process(cfgs, Options{CheckDeploySource: false})
 	t.CheckNoError(err)
 }
 
