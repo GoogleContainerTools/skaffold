@@ -120,37 +120,87 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 
 func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
-	for _, c := range pod.Status.Conditions {
-		if c.Type == v1.PodScheduled {
-			switch c.Status {
-			case v1.ConditionFalse:
-				logrus.Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
-				sc, err := getUntoleratedTaints(c.Reason, c.Message)
-				return sc, nil, err
-			case v1.ConditionTrue:
-				logrus.Debugf("Pod %q scheduled: checking container statuses", pod.Name)
-				// TODO(dgageot): Add EphemeralContainerStatuses
-				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
-				// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
-				statusCode, logs, err := getContainerStatus(pod, cs)
-				if statusCode == proto.StatusCode_STATUSCHECK_POD_INITIALIZING {
-					// Determine if an init container is still running and fetch the init logs.
-					for _, c := range pod.Status.InitContainerStatuses {
-						if c.State.Waiting != nil {
-							return statusCode, []string{}, fmt.Errorf("waiting for init container %s to start", c.Name)
-						} else if c.State.Running != nil {
-							return statusCode, getPodLogs(pod, c.Name), fmt.Errorf("waiting for init container %s to complete", c.Name)
-						}
-					}
+
+	// If the event type PodReady with status True is found then we return success immediately
+	if isPodReady(pod) {
+		return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
+	}
+	// If the event type PodScheduled with status False is found then we check if it is due to taints and tolerations.
+	if c, ok := isPodNotScheduled(pod); ok {
+		logrus.Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
+		sc, err := getUntoleratedTaints(c.Reason, c.Message)
+		return sc, nil, err
+	}
+	// we can check the container status if the pod has been scheduled successfully. This can be determined by having the event
+	// PodScheduled with status True, or a ContainerReady or PodReady event with status False.
+	if isPodScheduledButNotReady(pod) {
+		logrus.Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
+		// TODO(dgageot): Add EphemeralContainerStatuses
+		cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
+		// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
+		statusCode, logs, err := getContainerStatus(pod, cs)
+		if statusCode == proto.StatusCode_STATUSCHECK_POD_INITIALIZING {
+			// Determine if an init container is still running and fetch the init logs.
+			for _, c := range pod.Status.InitContainerStatuses {
+				if c.State.Waiting != nil {
+					return statusCode, []string{}, fmt.Errorf("waiting for init container %s to start", c.Name)
+				} else if c.State.Running != nil {
+					return statusCode, getPodLogs(pod, c.Name), fmt.Errorf("waiting for init container %s to complete", c.Name)
 				}
-				return statusCode, logs, err
-			case v1.ConditionUnknown:
-				logrus.Debugf("Pod %q scheduling condition is unknown", pod.Name)
-				return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 			}
 		}
+		return statusCode, logs, err
 	}
-	return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
+
+	if c, ok := isPodStatusUnknown(pod); ok {
+		logrus.Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
+		return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
+	}
+
+	logrus.Debugf("Unable to determine current service state of pod %q", pod.Name)
+	return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf("unable to determine current service state of pod %q", pod.Name)
+}
+
+func isPodReady(pod *v1.Pod) bool {
+	for _, c := range pod.Status.Conditions {
+		if c.Type == v1.PodReady && c.Status == v1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func isPodNotScheduled(pod *v1.Pod) (v1.PodCondition, bool) {
+	for _, c := range pod.Status.Conditions {
+		if c.Type == v1.PodScheduled && c.Status == v1.ConditionFalse {
+			return c, true
+		}
+	}
+	return v1.PodCondition{}, false
+}
+
+func isPodScheduledButNotReady(pod *v1.Pod) bool {
+	for _, c := range pod.Status.Conditions {
+		if c.Type == v1.PodScheduled && c.Status == v1.ConditionTrue {
+			return true
+		}
+		if c.Type == v1.ContainersReady && c.Status == v1.ConditionFalse {
+			return true
+		}
+		if c.Type == v1.PodReady && c.Status == v1.ConditionFalse {
+			return true
+		}
+	}
+	return false
+}
+
+func isPodStatusUnknown(pod *v1.Pod) (v1.PodCondition, bool) {
+	for _, c := range pod.Status.Conditions {
+		if c.Status == v1.ConditionUnknown {
+			return c, true
+		}
+	}
+	return v1.PodCondition{}, false
 }
 
 func getContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, []string, error) {

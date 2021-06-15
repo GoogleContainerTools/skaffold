@@ -184,6 +184,8 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 
 func pollDeploymentStatus(ctx context.Context, cfg pkgkubectl.Config, r *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
+	ticker := time.NewTicker(pollDuration)
+	defer ticker.Stop()
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
 	logrus.Debugf("checking status %s", r)
@@ -204,7 +206,7 @@ func pollDeploymentStatus(ctx context.Context, cfg pkgkubectl.Config, r *resourc
 				})
 			}
 			return
-		case <-time.After(pollDuration):
+		case <-ticker.C:
 			r.CheckStatus(timeoutContext, cfg)
 			if r.IsStatusCheckCompleteOrCancelled() {
 				return
@@ -270,12 +272,14 @@ func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deploy
 
 // printDeploymentStatus prints resource statuses until all status check are completed or context is cancelled.
 func (s statusChecker) printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
+	ticker := time.NewTicker(reportStatusTime)
+	defer ticker.Stop()
 	for {
 		var allDone bool
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(reportStatusTime):
+		case <-ticker.C:
 			allDone = s.printStatus(deployments, out)
 		}
 		if allDone {

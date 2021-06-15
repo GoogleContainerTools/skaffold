@@ -191,6 +191,25 @@ func TestRun(t *testing.T) {
 				}, nil)},
 		},
 		{
+			description: "all pod containers are ready",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodSucceeded,
+					Conditions: []v1.PodCondition{{Type: v1.ContainersReady, Status: v1.ConditionTrue}},
+				},
+			}},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Succeeded",
+				proto.ActionableErr{
+					Message: "",
+					ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+				}, nil)},
+		},
+		{
 			description: "One of the pod containers is in Terminated State",
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -217,6 +236,36 @@ func TestRun(t *testing.T) {
 					Message: "",
 					ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 				}, nil)},
+		},
+		{
+			description: "one of the pod containers is in Terminated State with non zero exit code but pod condition is Ready",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
+							},
+						},
+					}},
+			}},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "container foo-container terminated with exit code 1",
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
+					Suggestions: []*proto.Suggestion{
+						{SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
+							Action: "Try checking container logs"},
+					}}, []string{})},
 		},
 		{
 			description: "one of the pod containers is in Terminated State with non zero exit code",
@@ -307,17 +356,26 @@ func TestRun(t *testing.T) {
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
-						Type:    v1.PodScheduled,
-						Status:  v1.ConditionFalse,
-						Reason:  v1.PodReasonUnschedulable,
-						Message: "0/2 nodes are available: 1 node(s) had taint {node.kubernetes.io/disk-pressure: }, that the pod didn't tolerate, 1 node(s) had taint {node.kubernetes.io/unreachable: }, that the pod didn't tolerate",
+						Type:   v1.PodScheduled,
+						Status: v1.ConditionFalse,
+						Reason: v1.PodReasonUnschedulable,
+						Message: "0/7 nodes are available: " +
+							"1 node(s) had taint {node.kubernetes.io/memory-pressure: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/disk-pressure: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/pid-pressure: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/not-ready: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/unreachable: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/unschedulable: }, that the pod didn't tolerate, " +
+							"1 node(s) had taint {node.kubernetes.io/network-unavailable: }, that the pod didn't tolerate, ",
 					}},
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				proto.ActionableErr{
-					Message: "Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable",
-					ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+					Message: "Unschedulable: 0/7 nodes available: 1 node has memory pressure, " +
+						"1 node has disk pressure, 1 node has PID pressure, 1 node is not ready, " +
+						"1 node is unreachable, 1 node is unschedulable, 1 node's network not available",
+					ErrCode: proto.StatusCode_STATUSCHECK_NODE_PID_PRESSURE,
 				}, nil)},
 		},
 		{
@@ -674,4 +732,74 @@ func TestRun(t *testing.T) {
 func testPodValidator(k kubernetes.Interface, _ map[string]string) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
 	return &PodValidator{k: k, recos: rs}
+}
+
+func TestPodConditionChecks(t *testing.T) {
+	tests := []struct {
+		description string
+		conditions  []v1.PodCondition
+		expected    result
+	}{
+		{
+			description: "pod is ready",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.ContainersReady, Status: v1.ConditionTrue},
+			},
+			expected: result{isReady: true},
+		},
+		{
+			description: "pod scheduling failed",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodScheduled, Status: v1.ConditionFalse},
+			},
+			expected: result{isNotScheduled: true},
+		},
+		{
+			description: "pod scheduled with no ready event",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+			},
+			expected: result{iScheduledNotReady: true},
+		},
+		{
+			description: "pod is scheduled, with failed containers ready event",
+			conditions: []v1.PodCondition{
+				{Type: v1.ContainersReady, Status: v1.ConditionFalse},
+			},
+			expected: result{iScheduledNotReady: true},
+		},
+		{
+			description: "pod is scheduled, with failed pod ready event",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+			},
+			expected: result{iScheduledNotReady: true},
+		},
+		{
+			description: "pod status is unknown",
+			conditions: []v1.PodCondition{
+				{Type: v1.PodScheduled, Status: v1.ConditionUnknown},
+			},
+			expected: result{isUnknown: true},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			pod := v1.Pod{Status: v1.PodStatus{Conditions: test.conditions}}
+			r := result{}
+			r.isReady = isPodReady(&pod)
+			_, r.isNotScheduled = isPodNotScheduled(&pod)
+			r.iScheduledNotReady = isPodScheduledButNotReady(&pod)
+			_, r.isUnknown = isPodStatusUnknown(&pod)
+			t.CheckDeepEqual(test.expected, r, cmp.AllowUnexported(result{}))
+		})
+	}
+}
+
+type result struct {
+	isReady            bool
+	isNotScheduled     bool
+	iScheduledNotReady bool
+	isUnknown          bool
 }
