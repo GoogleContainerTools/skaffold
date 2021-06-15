@@ -45,9 +45,10 @@ func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
 	return &ContainerManager{
-		podWatcher: kubernetes.NewPodWatcher(podSelector),
-		active:     map[string]string{},
-		events:     make(chan kubernetes.PodEvent),
+		podWatcher:  kubernetes.NewPodWatcher(podSelector),
+		active:      map[string]string{},
+		events:      make(chan kubernetes.PodEvent),
+		stopWatcher: func() {},
 	}
 }
 
@@ -65,6 +66,8 @@ func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error
 	d.stopWatcher = stopWatcher
 
 	go func() {
+		defer stopWatcher()
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -84,9 +87,10 @@ func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error
 
 func (d *ContainerManager) Stop() {
 	// if nil then debug mode probably not enabled
-	if d != nil {
-		d.stopWatcher()
+	if d == nil {
+		return
 	}
+	d.stopWatcher()
 }
 
 func (d *ContainerManager) Name() string {
