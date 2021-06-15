@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -112,14 +113,14 @@ func (t testTransformer) IsApplicable(config imageConfiguration) bool {
 	return true
 }
 
-func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
+func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	port := portAlloc(9999)
 	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})
 
 	testEnv := v1.EnvVar{Name: "KEY", Value: "value"}
 	container.Env = append(container.Env, testEnv)
 
-	return ContainerDebugConfiguration{Runtime: "test"}, "", nil
+	return annotations.ContainerDebugConfiguration{Runtime: "test"}, "", nil
 }
 
 func TestApplyDebuggingTransforms(t *testing.T) {

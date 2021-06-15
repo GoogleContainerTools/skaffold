@@ -44,7 +44,7 @@ For example, a pod with two containers named `microservice` and `adapter` may be
     "adapter":{"artifact":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
   }'
 
-Each configuration is itself a JSON object of type `ContainerDebugConfiguration`, with an
+Each configuration is itself a JSON object of type `annotations.ContainerDebugConfiguration`, with an
 `artifact` recording the corresponding artifact's `image` in the skaffold.yaml,
 a `runtime` field identifying the language runtime, the working directory of the remote image (if known),
 and a set of debugging ports.
@@ -57,6 +57,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -66,19 +67,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
-
-// ContainerDebugConfiguration captures debugging information for a specific container.
-// This structure is serialized out and included in the pod metadata.
-type ContainerDebugConfiguration struct {
-	// Artifact is the corresponding artifact's image name used in the skaffold.yaml
-	Artifact string `json:"artifact,omitempty"`
-	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`, `netcore`)
-	Runtime string `json:"runtime,omitempty"`
-	// WorkingDir is the working directory in the image configuration; may be empty
-	WorkingDir string `json:"workingDir,omitempty"`
-	// Ports is the list of debugging ports, keyed by protocol type
-	Ports map[string]uint32 `json:"ports,omitempty"`
-}
 
 // portAllocator is a function that takes a desired port and returns an available port
 // Ports are normally uint16 but Kubernetes ContainerPort.containerPort is an integer
@@ -109,20 +97,12 @@ type containerTransformer interface {
 	// and required initContainer (an empty string if not required), or return a non-nil error if
 	// the container could not be transformed.  The initContainer image is intended to install any
 	// required debug support tools.
-	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error)
+	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error)
 }
 
 const (
 	// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files.
 	debuggingSupportFilesVolume = "debugging-support-files"
-
-	// DebugConfigAnnotation is the name of the podspec annotation that records debugging configuration information.
-	// The annotation should be a JSON-encoded map of container-name to a `ContainerDebugConfiguration` object.
-	DebugConfigAnnotation = "debug.cloud.google.com/config"
-
-	// DebugProbesAnnotation is the name of the podspec annotation that disables rewriting of probe timeouts.
-	// The annotation value should be `skip`.
-	DebugProbeTimeoutsAnnotation = "debug.cloud.google.com/probe/timeouts"
 )
 
 // containerTransforms are the set of configured transformers
@@ -216,7 +196,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 // rewriteProbes rewrites k8s probes to expand timeouts to 10 minutes to allow debugging local probes.
 func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 	var minTimeout time.Duration = 10 * time.Minute // make it configurable?
-	if annotation, found := metadata.Annotations[DebugProbeTimeoutsAnnotation]; found {
+	if annotation, found := metadata.Annotations[annotations.DebugProbeTimeouts]; found {
 		if annotation == "skip" {
 			logrus.Debugf("skipping probe rewrite on %q by request", metadata.Name)
 			return false
@@ -227,12 +207,12 @@ func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 			minTimeout = d
 		}
 	}
-	annotation, found := metadata.Annotations[DebugConfigAnnotation]
+	annotation, found := metadata.Annotations[annotations.DebugConfig]
 	if !found {
 		logrus.Debugf("skipping probe rewrite on %q: not configured for debugging", metadata.Name)
 		return false
 	}
-	var config map[string]ContainerDebugConfiguration
+	var config map[string]annotations.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annotation), &config); err != nil {
 		logrus.Warnf("error unmarshalling debugging configuration for %q: %v", metadata.Name, err)
 		return false
@@ -265,7 +245,7 @@ func rewriteHTTPGetProbe(probe *v1.Probe, minTimeout time.Duration) bool {
 
 func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
 	// skip annotated podspecs — allows users to customize their own image
-	if _, found := metadata.Annotations[DebugConfigAnnotation]; found {
+	if _, found := metadata.Annotations[annotations.DebugConfig]; found {
 		return false
 	}
 
@@ -273,7 +253,7 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		return allocatePort(podSpec, desiredPort)
 	}
 	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
-	configurations := make(map[string]ContainerDebugConfiguration)
+	configurations := make(map[string]annotations.ContainerDebugConfiguration)
 	// the container images that require debugging support files
 	var containersRequiringSupport []*v1.Container
 	// the set of image IDs required to provide debugging support files
@@ -333,7 +313,7 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		if metadata.Annotations == nil {
 			metadata.Annotations = make(map[string]string)
 		}
-		metadata.Annotations[DebugConfigAnnotation] = encodeConfigurations(configurations)
+		metadata.Annotations[annotations.DebugConfig] = encodeConfigurations(configurations)
 		return true
 	}
 	return false
@@ -376,7 +356,7 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 // transformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
 	// Update the image configuration's environment with those set in the k8s manifest.
 	// (Environment variables in the k8s container's `env` add to the image configuration's `env` settings rather than replace.)
 	for _, envVar := range container.Env {
@@ -395,7 +375,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 	}
 
 	// Apply command-line unwrapping for buildpack images and images using `sh -c`-style command-lines
-	next := func(container *v1.Container, config imageConfiguration) (ContainerDebugConfiguration, string, error) {
+	next := func(container *v1.Container, config imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
 		return performContainerTransform(container, config, portAlloc)
 	}
 	if isCNBImage(config) {
@@ -404,7 +384,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 	return updateForShDashC(container, config, next)
 }
 
-func updateForShDashC(container *v1.Container, ic imageConfiguration, transformer func(*v1.Container, imageConfiguration) (ContainerDebugConfiguration, string, error)) (ContainerDebugConfiguration, string, error) {
+func updateForShDashC(container *v1.Container, ic imageConfiguration, transformer func(*v1.Container, imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
 	var rewriter func([]string)
 	copy := ic
 	switch {
@@ -452,17 +432,17 @@ func isShDashC(cmd, arg string) bool {
 	return (cmd == "/bin/sh" || cmd == "/bin/bash") && arg == "-c"
 }
 
-func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
 	logrus.Tracef("Examining container %q with config %v", container.Name, config)
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(container, config, portAlloc, Protocols)
 		}
 	}
-	return ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
+	return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
 }
 
-func encodeConfigurations(configurations map[string]ContainerDebugConfiguration) string {
+func encodeConfigurations(configurations map[string]annotations.ContainerDebugConfiguration) string {
 	bytes, err := json.Marshal(configurations)
 	if err != nil {
 		return ""

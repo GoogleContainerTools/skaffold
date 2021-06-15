@@ -33,6 +33,7 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
@@ -69,6 +70,7 @@ type Deployer struct {
 	*latestV1.KptDeploy
 
 	logger         log.Logger
+	debugger       debug.Debugger
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -92,6 +94,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		KptDeploy:          d,
 		podSelector:        podSelector,
 		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -104,6 +107,10 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 
 func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
+}
+
+func (k *Deployer) GetDebugger() debug.Debugger {
+	return k.debugger
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

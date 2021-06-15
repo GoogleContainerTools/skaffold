@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -47,6 +48,10 @@ type MockDeployer struct {
 
 func (m *MockDeployer) GetLogger() log.Logger {
 	return &log.NoopLogger{}
+}
+
+func (m *MockDeployer) GetDebugger() debug.Debugger {
+	return &debug.NoopDebugger{}
 }
 
 func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}

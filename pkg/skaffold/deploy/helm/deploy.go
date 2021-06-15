@@ -37,6 +37,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -79,6 +80,7 @@ type Deployer struct {
 	*latestV1.HelmDeploy
 
 	logger         log.Logger
+	debugger       debug.Debugger
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -105,7 +107,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, p deploy.ComponentProvider, h *latestV1.HelmDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, h *latestV1.HelmDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, nil, versionGetErr(err)
@@ -129,7 +131,8 @@ func NewDeployer(cfg Config, labels map[string]string, p deploy.ComponentProvide
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
-		logger:         p.Logger.GetKubernetesLogger(podSelector),
+		logger:         provider.Logger.GetKubernetesLogger(podSelector),
+		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -145,6 +148,10 @@ func NewDeployer(cfg Config, labels map[string]string, p deploy.ComponentProvide
 
 func (h *Deployer) GetLogger() log.Logger {
 	return h.logger
+}
+
+func (h *Deployer) GetDebugger() debug.Debugger {
+	return h.debugger
 }
 
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

@@ -19,6 +19,7 @@ package debug
 import (
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 )
@@ -67,10 +68,10 @@ func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
 
 // Apply configures a container definition for vsdbg.
 // Returns a simple map describing the debug configuration details.
-func (t netcoreTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
+func (t netcoreTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for netcore debugging", container.Name)
 
-	return ContainerDebugConfiguration{
+	return annotations.ContainerDebugConfiguration{
 		Runtime: "netcore",
 	}, "netcore", nil
 }

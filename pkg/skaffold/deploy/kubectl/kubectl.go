@@ -29,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -47,7 +48,8 @@ import (
 type Deployer struct {
 	*latestV1.KubectlDeploy
 
-	logger log.Logger
+	logger   log.Logger
+	debugger debug.Debugger
 
 	originalImages     []graph.Artifact
 	podSelector        *kubernetes.ImageList
@@ -80,6 +82,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
 		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
@@ -93,6 +96,10 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 
 func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
+}
+
+func (k *Deployer) GetDebugger() debug.Debugger {
+	return k.debugger
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

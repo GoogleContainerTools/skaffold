@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,17 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package debug
 
-import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
-)
+import "context"
 
-func (r *SkaffoldRunner) createContainerManager() *debugging.ContainerManager {
-	if r.runCtx.Mode() != config.RunModes.Debug {
-		return nil
+type DebuggerMux []Debugger
+
+func (d DebuggerMux) Start(ctx context.Context, namespaces []string) error {
+	for _, debugger := range d {
+		if err := debugger.Start(ctx, namespaces); err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
-	return debugging.NewContainerManager(r.podSelector)
+func (d DebuggerMux) Stop() {
+	for _, debugger := range d {
+		debugger.Stop()
+	}
+}
+
+func (d DebuggerMux) Name() string {
+	var name string
+	for _, debugger := range d {
+		name += debugger.Name()
+	}
+	return name
 }

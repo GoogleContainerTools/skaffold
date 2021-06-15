@@ -28,6 +28,7 @@ import (
 	yamlv3 "gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -99,6 +100,7 @@ type Deployer struct {
 	*latestV1.KustomizeDeploy
 
 	logger         log.Logger
+	debugger       debug.Debugger
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -128,6 +130,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
 		logger:              provider.Logger.GetKubernetesLogger(podSelector),
+		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
@@ -138,6 +141,10 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 
 func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
+}
+
+func (k *Deployer) GetDebugger() debug.Debugger {
+	return k.debugger
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

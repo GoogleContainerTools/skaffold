@@ -316,9 +316,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	defer r.deployer.GetLogger().Stop()
-
-	debugContainerManager := r.createContainerManager()
-	defer debugContainerManager.Stop()
+	defer r.deployer.GetDebugger().Stop()
 
 	// Logs should be retrieved up to just before the deploy
 	r.deployer.GetLogger().SetSince(time.Now())
@@ -337,7 +335,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
-	if err := debugContainerManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetDebugger().Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
 	// Start printing the logs after deploy is finished
@@ -352,7 +350,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	endTrace()
 	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, forwarderManager, debugContainerManager)
+		return r.doDev(ctx, out, forwarderManager, r.deployer.GetDebugger())
 	})
 }
 
