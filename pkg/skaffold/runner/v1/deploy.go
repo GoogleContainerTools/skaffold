@@ -50,10 +50,9 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return err
 	}
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
+	defer r.deployer.GetAccessor().Stop()
 
-	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetAccessor().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
 

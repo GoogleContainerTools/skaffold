@@ -14,15 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package access
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
-type Watcher interface {
-	// Name returns the watcher name
-	Name() string
-	// Start starts the watcher
-	Start(ctx context.Context, namespaces []string) error
-	// Stop stops the watcher
+// Accessor defines the behavior for any implementation of a component
+// that accesses and exposes deployed resources from Skaffold.
+type Accessor interface {
+	// Start starts the resource accessor.
+	Start(context.Context, io.Writer, []string) error
+
+	// Stop stops the resource accessor.
 	Stop()
 }
+
+type NoopAccessor struct{}
+
+func (n *NoopAccessor) Start(context.Context, io.Writer, []string) error { return nil }
+
+func (n *NoopAccessor) Stop() {}

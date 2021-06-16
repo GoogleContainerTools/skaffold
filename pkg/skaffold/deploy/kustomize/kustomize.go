@@ -27,6 +27,7 @@ import (
 	"github.com/segmentio/textio"
 	yamlv3 "gopkg.in/yaml.v3"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -99,8 +100,10 @@ type secretGenerator struct {
 type Deployer struct {
 	*latestV1.KustomizeDeploy
 
-	logger         log.Logger
-	debugger       debug.Debugger
+	accessor access.Accessor
+	debugger debug.Debugger
+	logger   log.Logger
+
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -129,8 +132,9 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
-		logger:              provider.Logger.GetKubernetesLogger(podSelector),
+		accessor:            provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
+		logger:              provider.Logger.GetKubernetesLogger(podSelector),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
@@ -139,12 +143,16 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 	}, podSelector, nil
 }
 
-func (k *Deployer) GetLogger() log.Logger {
-	return k.logger
+func (k *Deployer) GetAccessor() access.Accessor {
+	return k.accessor
 }
 
 func (k *Deployer) GetDebugger() debug.Debugger {
 	return k.debugger
+}
+
+func (k *Deployer) GetLogger() log.Logger {
+	return k.logger
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

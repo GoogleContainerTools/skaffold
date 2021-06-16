@@ -34,9 +34,15 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
+type Config interface {
+	Mode() config.RunMode
+	PortForwardResources() []*latestV1.PortForwardResource
+	PortForwardOptions() config.PortForwardOptions
+}
+
 // Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
-	Start(ctx context.Context, namespaces []string) error
+	Start(ctx context.Context, out io.Writer, namespaces []string) error
 	Stop()
 }
 
@@ -46,12 +52,12 @@ type ForwarderManager struct {
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latestV1.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latestV1.PortForwardResource) *ForwarderManager {
 	if !options.Enabled() {
 		return nil
 	}
 
-	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
+	entryManager := NewEntryManager(NewKubectlForwarder(cli))
 
 	var forwarders []Forwarder
 	if options.ForwardUser(runMode) {
@@ -104,7 +110,7 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 }
 
 // Start begins all forwarders managed by the ForwarderManager
-func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error {
+func (p *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	// Port forwarding is not enabled.
 	if p == nil {
 		return nil
@@ -115,7 +121,7 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 	defer endTrace()
 
 	for _, f := range p.forwarders {
-		if err := f.Start(ctx, namespaces); err != nil {
+		if err := f.Start(ctx, out, namespaces); err != nil {
 			eventV2.TaskFailed(constants.PortForward, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return err

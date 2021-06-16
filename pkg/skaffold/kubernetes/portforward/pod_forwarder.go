@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -41,6 +42,7 @@ var (
 // WatchingPodForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
 // container ports within those pods. It also tracks and manages the port-forward connections.
 type WatchingPodForwarder struct {
+	output       io.Writer
 	entryManager *EntryManager
 	podWatcher   kubernetes.PodWatcher
 	events       chan kubernetes.PodEvent
@@ -62,8 +64,9 @@ func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.
 	}
 }
 
-func (p *WatchingPodForwarder) Start(ctx context.Context, namespaces []string) error {
+func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	p.podWatcher.Register(p.events)
+	p.output = out
 	stopWatcher, err := p.podWatcher.Start(namespaces)
 	if err != nil {
 		return err
@@ -118,7 +121,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				return fmt.Errorf("getting pod forwarding entry: %w", err)
 			}
 			if entry.resource.Port.IntVal != entry.localPort {
-				output.Yellow.Fprintf(p.entryManager.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
+				output.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
 			if prevEntry, ok := p.entryManager.forwardedResources.Load(entry.key()); ok {
 				// Check if this is a new generation of pod
@@ -126,7 +129,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 					p.entryManager.Terminate(prevEntry)
 				}
 			}
-			p.entryManager.forwardPortForwardEntry(ctx, entry)
+			p.entryManager.forwardPortForwardEntry(ctx, p.output, entry)
 		}
 	}
 	return nil
