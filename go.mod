@@ -33,6 +33,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.3
@@ -66,14 +67,13 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	github.com/xeipuuv/gojsonschema v1.2.0
-	go.opencensus.io v0.22.5
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/stdout v0.20.0
-	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0 // indirect
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
 	go.opentelemetry.io/otel/metric v0.20.0
-	go.opentelemetry.io/otel/sdk v0.20.0 // indirect
+	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
-	go.opentelemetry.io/otel/trace v0.20.0 // indirect
+	go.opentelemetry.io/otel/trace v0.20.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/mod v0.4.2
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
