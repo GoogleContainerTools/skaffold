@@ -66,7 +66,7 @@ func (r *Builder) GetBuilds() []graph.Artifact {
 func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build, "Build Containers")
 	eventV2.AssignArtifactIDs(artifacts)
-	out = output.WithEventContext(out, constants.Build, "-1", "skaffold")
+	out = output.WithEventContext(out, constants.Build, eventV2.SubtaskIDNone, "skaffold")
 
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == NoneDigestSource {
