@@ -36,9 +36,5 @@ func (d DebuggerMux) Stop() {
 }
 
 func (d DebuggerMux) Name() string {
-	var name string
-	for _, debugger := range d {
-		name += debugger.Name()
-	}
-	return name
+	return "Debugger Mux"
 }
