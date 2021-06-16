@@ -136,6 +136,14 @@ func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) {
 	fmt.Fprint(out, c.color.Sprintf(format, a...))
 }
 
+func (c Color) Sprintf(format string, a ...interface{}) string {
+	if c.color == nil {
+		return fmt.Sprintf(format, a...)
+	}
+
+	return c.color.Sprintf(format, a...)
+}
+
 func NewColorWriter(out io.Writer) io.Writer {
 	return colorableWriter{out}
 }

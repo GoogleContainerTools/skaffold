@@ -18,11 +18,12 @@ package v2
 
 import proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 
-func ApplicationLog(podName, containerName, message string) {
+func ApplicationLog(podName, containerName, message, combinedMessage string) {
 	handler.handleApplicationLogEvent(&proto.ApplicationLogEvent{
-		ContainerName: podName,
-		PodName:       containerName,
-		Message:       message,
+		ContainerName:   podName,
+		PodName:         containerName,
+		Message:         message,
+		CombinedMessage: combinedMessage,
 	})
 }
 
