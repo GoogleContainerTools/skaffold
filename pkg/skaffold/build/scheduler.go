@@ -24,6 +24,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -107,6 +108,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	}
 	defer closeFn()
 
+	w = output.WithEventContext(w, constants.Build, strconv.Itoa(eventV2.GetArtifactID(a)), "skaffold")
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)

@@ -63,7 +63,7 @@ func (l *logAggregatorImpl) GetWriter() (io.Writer, func(), error) {
 
 	writer := io.Writer(w)
 	if output.IsColorable(l.out) {
-		writer = output.NewColorWriter(writer)
+		writer = output.GetWriter(writer, output.DefaultColorCode, false)
 	}
 	ch := make(chan string, buffSize)
 	l.messages <- ch

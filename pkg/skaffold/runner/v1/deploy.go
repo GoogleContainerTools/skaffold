@@ -75,6 +75,8 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
 
+	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone, "skaffold")
+
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
 	for _, artifact := range artifacts {
