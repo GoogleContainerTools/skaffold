@@ -151,7 +151,7 @@ watch:
 		logrus.Debugf("current offset %d", offset)
 		backoff := NewStatusBackoff()
 		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
-			backoff.Step()
+			time.Sleep(backoff.Step())
 			cb, err = cbclient.Projects.Builds.Get(projectID, remoteID).Do()
 			if err == nil {
 				return true, nil
