@@ -21,9 +21,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 )
 
 type jdwpTransformer struct{}

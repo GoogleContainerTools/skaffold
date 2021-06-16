@@ -57,7 +57,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -66,6 +65,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 )
 
 // portAllocator is a function that takes a desired port and returns an available port

@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	cnb "github.com/buildpacks/lifecycle"
 	cnbl "github.com/buildpacks/lifecycle/launch"
 	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 )
 
 const (
