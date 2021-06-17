@@ -23,7 +23,7 @@ export PROJECT=k8s-skaffold
 IMAGE="gcr.io/k8s-skaffold/teaparty:$(date +%F-%s)"
 export
 export SERVICE_NAME=skaffold-triage-party
-export CONFIG_FILE=config/examples/skaffold.yaml
+export CONFIG_FILE=deploy/triage-party/skaffold.yaml
 
 docker build -t "${IMAGE}" --build-arg "CFG=${CONFIG_FILE}" .
 
