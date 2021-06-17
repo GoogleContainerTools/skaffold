@@ -20,6 +20,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -57,7 +58,9 @@ func TestEmptyState(t *testing.T) {
 					Deployers: []*proto.DeployMetadata_Deployer{
 						{Type: proto.DeployerType_HELM, Count: 2},
 						{Type: proto.DeployerType_KUBECTL, Count: 1},
-					}},
+					},
+				},
+				RunID: label.RunID,
 			},
 		},
 		{
@@ -89,7 +92,9 @@ func TestEmptyState(t *testing.T) {
 				},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_GKE,
-					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}}},
+					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
+				},
+				RunID: label.RunID,
 			},
 		},
 		{
@@ -109,6 +114,7 @@ func TestEmptyState(t *testing.T) {
 					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_KANIKO, Name: "artifact-1"}},
 				},
 				Deploy: &proto.DeployMetadata{},
+				RunID:  label.RunID,
 			},
 		},
 		{
@@ -127,6 +133,7 @@ func TestEmptyState(t *testing.T) {
 					Cluster:   proto.ClusterType_OTHER,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
 				},
+				RunID: label.RunID,
 			},
 		},
 	}
