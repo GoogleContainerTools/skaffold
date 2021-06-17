@@ -18,12 +18,25 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
+    # NOTE: grep output is stored in env var with `|| true` as the run command cannot fail or action will fail
+    - name: Check if only docs changes were made in this PR
+      run: |
+        echo ${{ github.event.before }}
+        echo ${{ github.event.after }}
+        NON_DOCS_FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.sha }}| grep -v '^docs/' || true) 
+        echo "NON_DOCS_FILES_CHANGED=${#NON_DOCS_FILES_CHANGED}" >> $GITHUB_ENV  # get the char len of diff output (used later)
 
     - name: Make and install Skaffold binary from current PR
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         make
         sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
 
     - name: Run integration tests
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
          make quicktest

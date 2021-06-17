@@ -17,7 +17,6 @@ jobs:
         container_structure_tests_version: [1.8.0]
         integration_test_partitions: [0, 1, 2, 3]
     steps:
-
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -26,23 +25,38 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
+    # NOTE: grep output is stored in env var with `|| true` as the run command cannot fail or action will fail
+    - name: Check if only docs changes were made in this PR
+      run: |
+        echo ${{ github.event.before }}
+        echo ${{ github.event.after }}
+        NON_DOCS_FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.sha }}| grep -v '^docs/' || true) 
+        echo "NON_DOCS_FILES_CHANGED=${#NON_DOCS_FILES_CHANGED}" >> $GITHUB_ENV  # get the char len of diff output (used later)
 
     - name: Install Kustomize
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${{ matrix.kustomize_version }}/kustomize_v${{ matrix.kustomize_version }}_linux_amd64.tar.gz
         sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
 
     - name: Install Ko
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         wget -O ko.tar.gz https://github.com/google/ko/releases/download/v${{ matrix.ko_version }}/ko_${{ matrix.ko_version }}_Linux_x86_64.tar.gz
         sudo tar -xvf ko.tar.gz -C /usr/local/bin/
 
     - name: Install Kompose
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         wget -O kompose https://github.com/kubernetes/kompose/releases/download/v${{ matrix.kompose_version }}/kompose-linux-amd64 && chmod +x kompose
         sudo mv kompose /usr/local/bin/
 
     - name: Install GCloud
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-linux-x86_64.tar.gz
         tar -xvf gcloud.tar.gz -C ${HOME}/
@@ -50,14 +64,17 @@ jobs:
         echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
 
     - name: Configure GCloud with Docker
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run:  gcloud auth configure-docker
 
     - name: Install Container Structure Test
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         wget -O container-structure-test https://storage.googleapis.com/container-structure-test/v${{ matrix.container_structure_tests_version }}/container-structure-test-linux-amd64 && chmod +x container-structure-test
         sudo mv container-structure-test /usr/local/bin/
 
     - name: Setup other files and permissions
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         sudo chown $(whoami):docker ${HOME}/.docker -R
         sudo chmod g+rw ${HOME}/.docker -R
@@ -65,17 +82,20 @@ jobs:
         mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
         
     - name: Install Minikube from minikube master branch @HEAD and start cluster
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         curl -Lo minikube https://storage.googleapis.com/minikube-builds/master/minikube-linux-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 
     - name: Make and install Skaffold binary from current PR
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
       run: |
         make
         sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
 
     - name: Run integration tests
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         skaffold config set --global collect-metrics false
         IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
