@@ -64,6 +64,8 @@ func activeUserCredentials() (*google.Credentials, error) {
 		cmd := exec.Command("gcloud", "auth", "print-access-token", "--format=json")
 		body, err := util.RunCmdOut(cmd)
 		if err != nil {
+			logrus.Infof("unable to retrieve gcloud access token: %v", err)
+			logrus.Infof("falling back to application default credentials")
 			credsErr = fmt.Errorf("retrieving gcloud access token: %w", err)
 			return
 		}
