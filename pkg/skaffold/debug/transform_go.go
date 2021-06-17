@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -92,7 +93,7 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 
 // Apply configures a container definition for Go with Delve.
 // Returns the debug configuration details, with the "go" support image
-func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
+func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for Go/Delve debugging", container.Name)
 
 	// try to find existing `dlv` command
@@ -109,13 +110,13 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 			container.Args = rewriteDlvCommandLine(config.arguments, *spec, container.Args)
 
 		default:
-			return ContainerDebugConfiguration{}, "", fmt.Errorf("container %q has no command-line", container.Name)
+			return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("container %q has no command-line", container.Name)
 		}
 	}
 
 	container.Ports = exposePort(container.Ports, "dlv", int32(spec.port))
 
-	return ContainerDebugConfiguration{
+	return annotations.ContainerDebugConfiguration{
 		Runtime: "go",
 		Ports:   map[string]uint32{"dlv": uint32(spec.port)},
 	}, "go", nil

@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -104,6 +105,10 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 
 func (t *TestBench) GetLogger() log.Logger {
 	return &log.NoopLogger{}
+}
+
+func (t *TestBench) GetDebugger() debug.Debugger {
+	return &debug.NoopDebugger{}
 }
 
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}

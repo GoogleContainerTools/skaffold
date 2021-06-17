@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -44,6 +45,14 @@ func (m DeployerMux) GetLogger() log.Logger {
 		loggers = append(loggers, deployer.GetLogger())
 	}
 	return loggers
+}
+
+func (m DeployerMux) GetDebugger() debug.Debugger {
+	var debuggers debug.DebuggerMux
+	for _, deployer := range m {
+		debuggers = append(debuggers, deployer.GetDebugger())
+	}
+	return debuggers
 }
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {

@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
@@ -94,7 +95,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	var podSelectors kubernetes.ImageListMux
 	var deployer deploy.Deployer
 	provider := deploy.ComponentProvider{
-		Logger: log.NewLogProvider(runCtx, kubectlCLI),
+		Logger:   log.NewLogProvider(runCtx, kubectlCLI),
+		Debugger: debug.NewDebugProvider(runCtx),
 	}
 
 	deployer, podSelectors, err = getDeployer(runCtx, provider, labeller.Labels())
