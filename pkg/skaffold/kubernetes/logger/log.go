@@ -259,9 +259,9 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor output.Co
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
 
-			combinedLine := headerColor.Sprintf("%s ", prefix) + line
-			a.printLogLine(combinedLine)
-			eventV2.ApplicationLog(podName, containerName, line, combinedLine)
+			formattedLine := headerColor.Sprintf("%s ", prefix) + line
+			a.printLogLine(formattedLine)
+			eventV2.ApplicationLog(podName, containerName, line, formattedLine)
 		}
 	}
 }
