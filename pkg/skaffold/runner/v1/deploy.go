@@ -210,7 +210,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.StatusCheck, "")
+	eventV2.TaskInProgress(constants.StatusCheck, "Verifying service availability")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
 

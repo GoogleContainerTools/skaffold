@@ -64,7 +64,7 @@ func (r *Builder) GetBuilds() []graph.Artifact {
 
 // Build builds a list of artifacts.
 func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
-	eventV2.TaskInProgress(constants.Build, "Build Containers")
+	eventV2.TaskInProgress(constants.Build, "Build containers")
 	eventV2.AssignArtifactIDs(artifacts)
 	out = output.WithEventContext(out, constants.Build, eventV2.SubtaskIDNone, "skaffold")
 
