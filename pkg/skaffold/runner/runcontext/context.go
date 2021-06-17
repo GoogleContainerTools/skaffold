@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -41,6 +42,7 @@ type RunContext struct {
 	WorkingDir         string
 	InsecureRegistries map[string]bool
 	Cluster            config.Cluster
+	RunID              string
 }
 
 // Pipelines encapsulates multiple config pipelines
@@ -229,6 +231,7 @@ func (rc *RunContext) WaitForDeletions() config.WaitForDeletions { return rc.Opt
 func (rc *RunContext) WatchPollInterval() int                    { return rc.Opts.WatchPollInterval }
 func (rc *RunContext) BuildConcurrency() int                     { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                       { return rc.Pipelines.IsMultiPipeline() }
+func (rc *RunContext) GetRunID() string                          { return rc.RunID }
 
 func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline
@@ -280,6 +283,8 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConf
 		return nil, fmt.Errorf("getting cluster: %w", err)
 	}
 
+	runID := uuid.New().String()
+
 	return &RunContext{
 		Opts:               opts,
 		Pipelines:          ps,
@@ -288,6 +293,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConf
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 		Cluster:            cluster,
+		RunID:              runID,
 	}, nil
 }
 

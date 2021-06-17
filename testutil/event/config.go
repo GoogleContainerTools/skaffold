@@ -39,3 +39,4 @@ func (c config) AutoDeploy() bool                  { return true }
 func (c config) AutoSync() bool                    { return true }
 func (c config) GetPipelines() []latestV1.Pipeline { return c.pipes }
 func (c config) GetKubeContext() string            { return "temp" }
+func (c config) GetRunID() string                  { return "run-id" }

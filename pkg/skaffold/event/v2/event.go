@@ -203,7 +203,7 @@ func emptyState(cfg Config) proto.State {
 			builds[a.ImageName] = NotStarted
 		}
 	}
-	metadata := initializeMetadata(cfg.GetPipelines(), cfg.GetKubeContext())
+	metadata := initializeMetadata(cfg.GetPipelines(), cfg.GetKubeContext(), cfg.GetRunID())
 	return emptyStateWithArtifacts(builds, metadata, cfg.AutoBuild(), cfg.AutoDeploy(), cfg.AutoSync())
 }
 
