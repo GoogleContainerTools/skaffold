@@ -28,7 +28,7 @@ const (
 	RunIDLabel           = "skaffold.dev/run-id"
 )
 
-var runID = uuid.New().String()
+var RunID = uuid.New().String()
 
 // DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
 type DefaultLabeller struct {
@@ -41,7 +41,7 @@ func NewLabeller(addSkaffoldLabels bool, customLabels []string) *DefaultLabeller
 	return &DefaultLabeller{
 		addSkaffoldLabels: addSkaffoldLabels,
 		customLabels:      customLabels,
-		runID:             runID,
+		runID:             RunID,
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
@@ -43,6 +44,7 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string) *prot
 	m := &proto.Metadata{
 		Build:  &proto.BuildMetadata{},
 		Deploy: &proto.DeployMetadata{},
+		RunID: label.RunID,
 	}
 
 	// TODO: Event metadata should support multiple build types.
