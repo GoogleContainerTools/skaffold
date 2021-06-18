@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syaml "sigs.k8s.io/yaml"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -69,8 +70,10 @@ const (
 type Deployer struct {
 	*latestV1.KptDeploy
 
-	logger         log.Logger
-	debugger       debug.Debugger
+	accessor access.Accessor
+	debugger debug.Debugger
+	logger   log.Logger
+
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -93,8 +96,9 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	return &Deployer{
 		KptDeploy:          d,
 		podSelector:        podSelector,
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		accessor:           provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
+		logger:             provider.Logger.GetKubernetesLogger(podSelector),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -105,12 +109,16 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}, podSelector
 }
 
-func (k *Deployer) GetLogger() log.Logger {
-	return k.logger
+func (k *Deployer) GetAccessor() access.Accessor {
+	return k.accessor
 }
 
 func (k *Deployer) GetDebugger() debug.Debugger {
 	return k.debugger
+}
+
+func (k *Deployer) GetLogger() log.Logger {
+	return k.logger
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

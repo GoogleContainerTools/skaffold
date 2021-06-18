@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
@@ -95,8 +96,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	var podSelectors kubernetes.ImageListMux
 	var deployer deploy.Deployer
 	provider := deploy.ComponentProvider{
-		Logger:   log.NewLogProvider(runCtx, kubectlCLI),
+		Accessor: access.NewAccessorProvider(runCtx, labeller, kubectlCLI),
 		Debugger: debug.NewDebugProvider(runCtx),
+		Logger:   log.NewLogProvider(runCtx, kubectlCLI),
 	}
 
 	deployer, podSelectors, err = getDeployer(runCtx, provider, labeller.Labels())

@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
@@ -39,12 +40,12 @@ import (
 // it collects the results and returns it in bulk.
 type DeployerMux []Deployer
 
-func (m DeployerMux) GetLogger() log.Logger {
-	var loggers log.LoggerMux
+func (m DeployerMux) GetAccessor() access.Accessor {
+	var accessors access.AccessorMux
 	for _, deployer := range m {
-		loggers = append(loggers, deployer.GetLogger())
+		accessors = append(accessors, deployer.GetAccessor())
 	}
-	return loggers
+	return accessors
 }
 
 func (m DeployerMux) GetDebugger() debug.Debugger {
@@ -53,6 +54,14 @@ func (m DeployerMux) GetDebugger() debug.Debugger {
 		debuggers = append(debuggers, deployer.GetDebugger())
 	}
 	return debuggers
+}
+
+func (m DeployerMux) GetLogger() log.Logger {
+	var loggers log.LoggerMux
+	for _, deployer := range m {
+		loggers = append(loggers, deployer.GetLogger())
+	}
+	return loggers
 }
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {

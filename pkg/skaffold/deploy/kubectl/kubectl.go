@@ -28,6 +28,7 @@ import (
 	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -48,8 +49,9 @@ import (
 type Deployer struct {
 	*latestV1.KubectlDeploy
 
-	logger   log.Logger
+	accessor access.Accessor
 	debugger debug.Debugger
+	logger   log.Logger
 
 	originalImages     []graph.Artifact
 	podSelector        *kubernetes.ImageList
@@ -81,8 +83,9 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	return &Deployer{
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		accessor:           provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
+		logger:             provider.Logger.GetKubernetesLogger(podSelector),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
@@ -94,12 +97,16 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}, podSelector, nil
 }
 
-func (k *Deployer) GetLogger() log.Logger {
-	return k.logger
+func (k *Deployer) GetAccessor() access.Accessor {
+	return k.accessor
 }
 
 func (k *Deployer) GetDebugger() debug.Debugger {
 	return k.debugger
+}
+
+func (k *Deployer) GetLogger() log.Logger {
+	return k.logger
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

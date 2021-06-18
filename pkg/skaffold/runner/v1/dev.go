@@ -46,7 +46,7 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, watchers ...Watcher) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	// never queue intents from user, even if they're not used
 	defer r.intents.Reset()
 
@@ -169,10 +169,12 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, watchers ...W
 			r.intents.ResetDeploy()
 		}()
 
-		for _, w := range watchers {
-			logrus.Debugf("stopping watcher %s", w.Name())
-			w.Stop()
-		}
+		logrus.Debugln("stopping accessor")
+		r.deployer.GetAccessor().Stop()
+
+		logrus.Debugln("stopping debugger")
+		r.deployer.GetDebugger().Stop()
+
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
@@ -183,10 +185,13 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, watchers ...W
 			endTrace(instrumentation.TraceEndError(err))
 			return nil
 		}
-		for _, w := range watchers {
-			if err := w.Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
-				logrus.Warnf("\n%s failed: %s", w.Name(), err)
-			}
+
+		if err := r.deployer.GetAccessor().Start(childCtx, out, r.runCtx.GetNamespaces()); err != nil {
+			logrus.Warnf("failed to start accessor: %v", err)
+		}
+
+		if err := r.deployer.GetDebugger().Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
+			logrus.Warnf("failed to start debugger: %v", err)
 		}
 
 		endTrace()
@@ -329,10 +334,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
+	defer r.deployer.GetAccessor().Stop()
 
-	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	// forwarderManager := r.createForwarder(out)
+	// defer forwarderManager.Stop()
+
+	if err := r.deployer.GetAccessor().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
 	if err := r.deployer.GetDebugger().Start(ctx, r.runCtx.GetNamespaces()); err != nil {
@@ -350,7 +357,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	endTrace()
 	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, forwarderManager, r.deployer.GetDebugger())
+		return r.doDev(ctx, out)
 	})
 }
 

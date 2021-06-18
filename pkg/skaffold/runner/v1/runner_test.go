@@ -26,6 +26,7 @@ import (
 	"github.com/blang/semver"
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -103,12 +104,16 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	return t
 }
 
-func (t *TestBench) GetLogger() log.Logger {
-	return &log.NoopLogger{}
+func (t *TestBench) GetAccessor() access.Accessor {
+	return &access.NoopAccessor{}
 }
 
 func (t *TestBench) GetDebugger() debug.Debugger {
 	return &debug.NoopDebugger{}
+}
+
+func (t *TestBench) GetLogger() log.Logger {
+	return &log.NoopLogger{}
 }
 
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}

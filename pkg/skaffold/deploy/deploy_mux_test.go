@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
@@ -46,12 +47,16 @@ type MockDeployer struct {
 	renderErr        error
 }
 
-func (m *MockDeployer) GetLogger() log.Logger {
-	return &log.NoopLogger{}
+func (m *MockDeployer) GetAccessor() access.Accessor {
+	return &access.NoopAccessor{}
 }
 
 func (m *MockDeployer) GetDebugger() debug.Debugger {
 	return &debug.NoopDebugger{}
+}
+
+func (m *MockDeployer) GetLogger() log.Logger {
+	return &log.NoopLogger{}
 }
 
 func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}

@@ -57,8 +57,7 @@ func TestNewForwarderManager(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			options := config.PortForwardOptions{}
 			options.Set(test.fmOptions)
-			fm := NewForwarderManager(ioutil.Discard,
-				&kubectl.CLI{},
+			fm := NewForwarderManager(&kubectl.CLI{},
 				&kubernetes.ImageList{},
 				"",
 				"",
@@ -76,7 +75,7 @@ func TestForwarderManagerZeroValue(t *testing.T) {
 	var m *ForwarderManager
 
 	// Should not raise a nil dereference
-	m.Start(context.Background(), nil)
+	m.Start(context.Background(), ioutil.Discard, nil)
 	m.Stop()
 }
 

@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +34,7 @@ import (
 // ResourceForwarder is responsible for forwarding user defined port forwarding resources and automatically forwarding
 // services deployed by skaffold.
 type ResourceForwarder struct {
+	output               io.Writer
 	entryManager         *EntryManager
 	label                string
 	userDefinedResources []*latestV1.PortForwardResource
@@ -64,7 +66,8 @@ func NewUserDefinedForwarder(entryManager *EntryManager, userDefinedResources []
 
 // Start gets a list of services deployed by skaffold as []latestV1.PortForwardResource and
 // forwards them.
-func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) error {
+func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces []string) error {
+	p.output = out
 	if len(namespaces) == 1 {
 		for _, pf := range p.userDefinedResources {
 			if err := applyWithTemplate(pf); err != nil {
@@ -134,7 +137,7 @@ func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource la
 	// Get port forward entry for this resource
 	entry := p.getCurrentEntry(resource)
 	// Forward the entry
-	p.entryManager.forwardPortForwardEntry(ctx, entry)
+	p.entryManager.forwardPortForwardEntry(ctx, p.output, entry)
 }
 
 func (p *ResourceForwarder) getCurrentEntry(resource latestV1.PortForwardResource) *portForwardEntry {

@@ -35,6 +35,7 @@ import (
 	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
@@ -79,8 +80,10 @@ var (
 type Deployer struct {
 	*latestV1.HelmDeploy
 
-	logger         log.Logger
-	debugger       debug.Debugger
+	accessor access.Accessor
+	debugger debug.Debugger
+	logger   log.Logger
+
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -131,8 +134,9 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
-		logger:         provider.Logger.GetKubernetesLogger(podSelector),
+		accessor:       provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
+		logger:         provider.Logger.GetKubernetesLogger(podSelector),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -146,12 +150,16 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}, podSelector, nil
 }
 
-func (h *Deployer) GetLogger() log.Logger {
-	return h.logger
+func (h *Deployer) GetAccessor() access.Accessor {
+	return h.accessor
 }
 
 func (h *Deployer) GetDebugger() debug.Debugger {
 	return h.debugger
+}
+
+func (h *Deployer) GetLogger() log.Logger {
+	return h.logger
 }
 
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
