@@ -168,6 +168,7 @@ func (h *Deployer) GetLogger() log.Logger {
 func (h *Deployer) GetStatusChecker() status.Checker {
 	return h.statusChecker
 }
+
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
