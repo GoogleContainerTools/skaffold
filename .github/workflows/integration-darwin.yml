@@ -25,7 +25,7 @@ jobs:
     # NOTE: grep output is stored in env var with `|| true` as the run command cannot fail or action will fail
     - name: Check if only docs changes were made in this PR
       run: |
-        NON_DOCS_FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.sha }}| grep -v '^docs/' || true) 
+        NON_DOCS_FILES_CHANGED="" 
         echo "NON_DOCS_FILES_CHANGED=${#NON_DOCS_FILES_CHANGED}" >> $GITHUB_ENV  # get the char len of diff output (used later)
 
     - name: Make and install Skaffold binary from current PR
