@@ -39,7 +39,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	sErr := r.performStatusCheck(ctx, statusCheckOut)
+	sErr := r.deployer.GetStatusChecker().Check(ctx, statusCheckOut)
 	return sErr
 }
 

@@ -33,7 +33,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -43,6 +42,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
+
+var TestKubeContext = "kubecontext"
 
 func TestGetDeployments(t *testing.T) {
 	labeller := label.NewLabeller(true, nil, "run-id")
@@ -386,7 +387,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			checker := statusChecker{labeller: labeller}
+			checker := Checker{labeller: labeller}
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
@@ -481,7 +482,7 @@ func TestPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
-			checker := statusChecker{labeller: labeller}
+			checker := Checker{labeller: labeller}
 			actual := checker.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
@@ -647,4 +648,4 @@ type statusConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 }
 
-func (c *statusConfig) GetKubeContext() string { return kubectl.TestKubeContext }
+func (c *statusConfig) GetKubeContext() string { return TestKubeContext }

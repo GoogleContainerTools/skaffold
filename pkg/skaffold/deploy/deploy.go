@@ -24,10 +24,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 )
 
 // NoopComponentProvider is for tests
-var NoopComponentProvider = ComponentProvider{Accessor: &access.NoopProvider{}, Debugger: &debug.NoopProvider{}, Logger: &log.NoopProvider{}}
+var NoopComponentProvider = ComponentProvider{Accessor: &access.NoopProvider{}, Logger: &log.NoopProvider{}, Debugger: &debug.NoopProvider{}, Checker: &status.NoopProvider{}}
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
@@ -58,6 +59,9 @@ type Deployer interface {
 
 	// TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
 	TrackBuildArtifacts([]graph.Artifact)
+
+	// GetStatusChecker returns a Deployer's implementation of a StatusChecker
+	GetStatusChecker() status.Checker
 }
 
 // ComponentProvider serves as a clean way to send three providers
@@ -66,4 +70,5 @@ type ComponentProvider struct {
 	Accessor access.Provider
 	Debugger debug.Provider
 	Logger   log.Provider
+	Checker  status.Provider
 }

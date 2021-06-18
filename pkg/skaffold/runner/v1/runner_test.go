@@ -42,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -116,6 +117,9 @@ func (t *TestBench) GetLogger() log.Logger {
 	return &log.NoopLogger{}
 }
 
+func (t *TestBench) GetStatusChecker() status.Checker {
+	return &status.NoopChecker{}
+}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
 func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }

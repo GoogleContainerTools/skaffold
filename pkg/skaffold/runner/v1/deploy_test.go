@@ -20,95 +20,35 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
 	"io/ioutil"
-	"strings"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDeploy(t *testing.T) {
-	expectedOutput := "Waiting for deployments to stabilize..."
 	tests := []struct {
-		description       string
-		testBench         *TestBench
-		statusCheckFlag   *bool // --status-check CLI flag
-		statusCheckConfig *bool // skaffold.yaml Deploy.StatusCheck field
-		shouldErr         bool
-		shouldWait        bool
+		description string
+		testBench   *TestBench
+		shouldErr   bool
 	}{
 		{
-			description: "deploy shd perform status check when statusCheck flag is unspecified, in-config value is unspecified",
+			description: "deploy succeeds",
 			testBench:   &TestBench{},
-			shouldWait:  true,
 		},
 		{
-			description:       "deploy shd not perform status check when statusCheck flag is unspecified, in-config value is false",
-			testBench:         &TestBench{},
-			statusCheckConfig: util.BoolPtr(false),
-		},
-		{
-			description:       "deploy shd perform status check when statusCheck flag is unspecified, in-config value is true",
-			testBench:         &TestBench{},
-			statusCheckConfig: util.BoolPtr(true),
-			shouldWait:        true,
-		},
-		{
-			description:     "deploy shd not perform status check when statusCheck flag is false, in-config value is unspecified",
-			testBench:       &TestBench{},
-			statusCheckFlag: util.BoolPtr(false),
-		},
-		{
-			description:       "deploy shd not perform status check when statusCheck flag is false, in-config value is false",
-			testBench:         &TestBench{},
-			statusCheckFlag:   util.BoolPtr(false),
-			statusCheckConfig: util.BoolPtr(false),
-		},
-		{
-			description:       "deploy shd not perform status check when statusCheck flag is false, in-config value is true",
-			testBench:         &TestBench{},
-			statusCheckFlag:   util.BoolPtr(false),
-			statusCheckConfig: util.BoolPtr(true),
-		},
-		{
-			description:     "deploy shd perform status check when statusCheck flag is true, in-config value is unspecified",
-			testBench:       &TestBench{},
-			statusCheckFlag: util.BoolPtr(true),
-			shouldWait:      true,
-		},
-		{
-			description:       "deploy shd perform status check when statusCheck flag is true, in-config value is false",
-			testBench:         &TestBench{},
-			statusCheckFlag:   util.BoolPtr(true),
-			statusCheckConfig: util.BoolPtr(false),
-			shouldWait:        true,
-		},
-		{
-			description:       "deploy shd perform status check when statusCheck flag is true, in-config value is true",
-			testBench:         &TestBench{},
-			statusCheckFlag:   util.BoolPtr(true),
-			statusCheckConfig: util.BoolPtr(true),
-			shouldWait:        true,
-		},
-		{
-			description:     "deploy shd not perform status check when deployer is in error",
-			testBench:       &TestBench{deployErrors: []error{errors.New("deploy error")}},
-			shouldErr:       true,
-			statusCheckFlag: util.BoolPtr(true),
+			description: "deploy fails",
+			testBench:   &TestBench{deployErrors: []error{errors.New("deploy error")}},
+			shouldErr:   true,
 		},
 	}
 
@@ -116,13 +56,8 @@ func TestDeploy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&runner.NewStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
-				return dummyStatusChecker{}
-			})
 
 			r := createRunner(t, test.testBench, nil, []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
-			r.runCtx.Opts.StatusCheck = config.NewBoolOrUndefined(test.statusCheckFlag)
-			r.runCtx.Pipelines.All()[0].Deploy.StatusCheck = test.statusCheckConfig
 			out := new(bytes.Buffer)
 
 			err := r.Deploy(context.Background(), out, []graph.Artifact{
@@ -130,9 +65,6 @@ func TestDeploy(t *testing.T) {
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
 			t.CheckError(test.shouldErr, err)
-			if strings.Contains(out.String(), expectedOutput) != test.shouldWait {
-				t.Errorf("expected %s to contain %s %t. But found %t", out.String(), expectedOutput, test.shouldWait, !test.shouldWait)
-			}
 		})
 	}
 }
@@ -167,9 +99,6 @@ func TestDeployNamespace(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&runner.NewStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
-				return dummyStatusChecker{}
-			})
 
 			r := createRunner(t, test.testBench, nil, []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
 			r.runCtx.Namespaces = test.Namespaces
@@ -207,10 +136,4 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 
 		t.CheckNoError(err)
 	})
-}
-
-type dummyStatusChecker struct{}
-
-func (d dummyStatusChecker) Check(_ context.Context, _ io.Writer) error {
-	return nil
 }
