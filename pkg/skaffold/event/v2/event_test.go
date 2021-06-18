@@ -422,6 +422,7 @@ func (c config) AutoBuild() bool                   { return true }
 func (c config) AutoDeploy() bool                  { return true }
 func (c config) AutoSync() bool                    { return true }
 func (c config) GetPipelines() []latestV1.Pipeline { return c.pipes }
+func (c config) GetRunID() string                  { return "run-id" }
 
 func mockCfg(pipes []latestV1.Pipeline, kubectx string) config {
 	return config{

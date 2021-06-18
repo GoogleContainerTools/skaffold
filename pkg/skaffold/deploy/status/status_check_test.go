@@ -45,7 +45,7 @@ import (
 )
 
 func TestGetDeployments(t *testing.T) {
-	labeller := label.NewLabeller(true, nil)
+	labeller := label.NewLabeller(true, nil, "run-id")
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
@@ -325,7 +325,7 @@ func TestGetDeployStatus(t *testing.T) {
 }
 
 func TestPrintSummaryStatus(t *testing.T) {
-	labeller := label.NewLabeller(true, nil)
+	labeller := label.NewLabeller(true, nil, "run-id")
 	tests := []struct {
 		description string
 		namespace   string
@@ -402,7 +402,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 }
 
 func TestPrintStatus(t *testing.T) {
-	labeller := label.NewLabeller(true, nil)
+	labeller := label.NewLabeller(true, nil, "run-id")
 	tests := []struct {
 		description string
 		rs          []*resource.Deployment

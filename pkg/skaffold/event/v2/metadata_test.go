@@ -57,7 +57,9 @@ func TestEmptyState(t *testing.T) {
 					Deployers: []*proto.DeployMetadata_Deployer{
 						{Type: proto.DeployerType_HELM, Count: 2},
 						{Type: proto.DeployerType_KUBECTL, Count: 1},
-					}},
+					},
+				},
+				RunID: "run-id",
 			},
 		},
 		{
@@ -89,7 +91,9 @@ func TestEmptyState(t *testing.T) {
 				},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_GKE,
-					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}}},
+					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
+				},
+				RunID: "run-id",
 			},
 		},
 		{
@@ -109,6 +113,7 @@ func TestEmptyState(t *testing.T) {
 					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_KANIKO, Name: "artifact-1"}},
 				},
 				Deploy: &proto.DeployMetadata{},
+				RunID:  "run-id",
 			},
 		},
 		{
@@ -127,6 +132,7 @@ func TestEmptyState(t *testing.T) {
 					Cluster:   proto.ClusterType_OTHER,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
 				},
+				RunID: "run-id",
 			},
 		},
 	}

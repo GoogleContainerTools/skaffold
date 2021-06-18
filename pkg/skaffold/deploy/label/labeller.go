@@ -19,16 +19,12 @@ package label
 import (
 	"fmt"
 	"strings"
-
-	"github.com/google/uuid"
 )
 
 const (
 	K8sManagedByLabelKey = "app.kubernetes.io/managed-by"
 	RunIDLabel           = "skaffold.dev/run-id"
 )
-
-var runID = uuid.New().String()
 
 // DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
 type DefaultLabeller struct {
@@ -37,7 +33,7 @@ type DefaultLabeller struct {
 	runID             string
 }
 
-func NewLabeller(addSkaffoldLabels bool, customLabels []string) *DefaultLabeller {
+func NewLabeller(addSkaffoldLabels bool, customLabels []string, runID string) *DefaultLabeller {
 	return &DefaultLabeller{
 		addSkaffoldLabels: addSkaffoldLabels,
 		customLabels:      customLabels,

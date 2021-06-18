@@ -84,7 +84,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	isLocalImage := func(imageName string) (bool, error) {
 		return isImageLocal(runCtx, imageName)
 	}
-	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
+	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels(), runCtx.GetRunID())
 	tester, err := getTester(runCtx, isLocalImage)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))

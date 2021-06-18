@@ -39,10 +39,11 @@ func LogMetaEvent() {
 	)
 }
 
-func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string) *proto.Metadata {
+func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID string) *proto.Metadata {
 	m := &proto.Metadata{
 		Build:  &proto.BuildMetadata{},
 		Deploy: &proto.DeployMetadata{},
+		RunID:  runID,
 	}
 
 	// TODO: Event metadata should support multiple build types.

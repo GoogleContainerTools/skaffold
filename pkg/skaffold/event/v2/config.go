@@ -26,4 +26,5 @@ type Config interface {
 	AutoDeploy() bool
 	AutoSync() bool
 	GetPipelines() []latestV1.Pipeline
+	GetRunID() string
 }
