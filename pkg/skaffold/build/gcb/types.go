@@ -58,17 +58,14 @@ const (
 	// RetryDelay is the time to wait in between writing logs of the cloud build
 	RetryDelay = 1 * time.Second
 
-	// PollingInterval is the time to wait in between fetching grouped cloud build statuses
-	PollingInterval = 10 * time.Second
-
 	// BackoffFactor is the exponent for exponential backoff during build status polling
 	BackoffFactor = 1.5
 
 	// BackoffSteps is the number of times we increase the backoff time during exponential backoff
 	BackoffSteps = 10
 
-	// RetryTimeout is the max amount of time to retry getting the status of the build before erroring
-	RetryTimeout = 3 * time.Minute
+	// MaxRetryCount is the max number of times we retry a throttled GCB API request
+	MaxRetryCount = 20
 )
 
 func NewStatusBackoff() *wait.Backoff {

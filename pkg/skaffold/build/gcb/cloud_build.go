@@ -142,6 +142,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 
 	var digest string
 	offset := int64(0)
+	var buildComplete bool
 	delay := time.NewTicker(RetryDelay)
 	defer delay.Stop()
 	buildResult := b.reporter.getStatus(ctx, projectID, remoteID)
@@ -149,6 +150,7 @@ watch:
 	for {
 		select {
 		case r := <-buildResult:
+			buildComplete = true
 			if r.err != nil {
 				return "", err
 			}
@@ -156,7 +158,6 @@ watch:
 			if err != nil {
 				return "", fmt.Errorf("getting image id from finished build: %w", err)
 			}
-			break watch
 		case <-delay.C:
 			r, err := b.getLogs(ctx, c, offset, cbBucket, logsObject)
 			if err != nil {
@@ -167,8 +168,15 @@ watch:
 				if err != nil {
 					return "", fmt.Errorf("copying logs to stdout: %w", err)
 				}
-				offset += written
 				r.Close()
+
+				offset += written
+				if written != 0 {
+					continue watch
+				}
+			}
+			if buildComplete {
+				break watch
 			}
 		}
 	}
