@@ -143,12 +143,14 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	var digest string
 	offset := int64(0)
 	var buildComplete bool
-	delay := time.NewTicker(RetryDelay)
+	delay := time.NewTicker(PollDelay)
 	defer delay.Stop()
 	buildResult := b.reporter.getStatus(ctx, projectID, remoteID)
 watch:
 	for {
 		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
 		case r := <-buildResult:
 			buildComplete = true
 			if r.err != nil {

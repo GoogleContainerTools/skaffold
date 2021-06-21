@@ -31,86 +31,99 @@ import (
 )
 
 var (
-	reporter     *statusReporterImpl
+	// maintain single instance of `statusReporter` per skaffold process
+	reporter     *statusManagerImpl
 	reporterOnce sync.Once
-	client       *cloudbuild.Service
-	clientOnce   sync.Once
+	// maintain single instance of the GCB client per skaffold process
+	client     *cloudbuild.Service
+	clientOnce sync.Once
 )
 
-type statusReporter interface {
+// statusManager provides an interface for getting the status of GCB jobs.
+// It reduces the number of requests made to the GCB API by using a single `List` call for
+// all concurrently running builds for a project instead of multiple per-job `Get` calls.
+// The statuses are polled with an independent exponential backoff strategy per project until success, cancellation or failure.
+// The backoff duration for each `projectID` status query is reset with every new build request.
+type statusManager interface {
 	getStatus(ctx context.Context, projectID string, buildID string) <-chan result
 }
 
-type statusReporterImpl struct {
+// statusManagerImpl implements the `statusManager` interface
+type statusManagerImpl struct {
 	results     map[jobID]chan result
 	resultMutex sync.RWMutex
 	requests    chan jobRequest
 }
 
+// jobID represents a single build job
 type jobID struct {
 	projectID string
 	buildID   string
 }
 
+// jobRequest encapsulates a single build job and it's context.
 type jobRequest struct {
 	jobID
 	ctx context.Context
 }
 
+// result represents a single build job status
 type result struct {
 	jobID
 	status *cloudbuild.Build
 	err    error
 }
 
-func getStatusReporter() statusReporter {
+func getStatusManager() statusManager {
 	reporterOnce.Do(func() {
-		reporter = &statusReporterImpl{
+		reporter = &statusManagerImpl{
 			results:  make(map[jobID]chan result),
 			requests: make(chan jobRequest, 1),
 		}
-
-		go reporter.start()
+		// start processing all job requests in new goroutine.
+		go reporter.run()
 	})
 	return reporter
 }
 
+// poller sends the `projectID` on channel `C` with an exponentially increasing period for each project.
 type poller struct {
-	timers   map[string]*time.Timer
-	backoffs map[string]*wait.Backoff
-	add      chan string
-	rm       chan string
-	response chan string
-	C        chan string
+	timers   map[string]*time.Timer   // timers keep the next `Timer` keyed on the projectID
+	backoffs map[string]*wait.Backoff // backoffs keeps the current `Backoff` keyed on the projectID
+	reset    chan string              // reset channel receives any new `projectID` and resets the timer and backoff for that projectID
+	remove   chan string              // remove channel receives a `projectID` that has no more running jobs and deletes its timer and backoff
+	trans    chan string              // trans channel pushes to channel `C` and sets up the next trigger
+	C        chan string              // C channel triggers with the `projectID`
 }
 
 func newPoller() *poller {
 	p := &poller{
 		timers:   make(map[string]*time.Timer),
 		backoffs: make(map[string]*wait.Backoff),
-		add:      make(chan string, 1),
-		response: make(chan string),
+		reset:    make(chan string),
+		remove:   make(chan string),
+		trans:    make(chan string),
 		C:        make(chan string),
 	}
 
 	go func() {
 		for {
 			select {
-			case projectID := <-p.rm:
+			case projectID := <-p.remove:
 				if b, found := p.timers[projectID]; found {
 					b.Stop()
 				}
 				delete(p.timers, projectID)
 				delete(p.backoffs, projectID)
-			case projectID := <-p.add:
+			case projectID := <-p.reset:
 				if b, found := p.timers[projectID]; found {
 					b.Stop()
 				}
 				p.backoffs[projectID] = NewStatusBackoff()
 				p.timers[projectID] = time.AfterFunc(p.backoffs[projectID].Step(), func() {
-					p.response <- projectID
+					p.trans <- projectID
 				})
-			case projectID := <-p.response:
+			case projectID := <-p.trans:
 				go func() {
 					p.C <- projectID
 				}()
@@ -119,7 +132,7 @@ func newPoller() *poller {
 					continue
 				}
 				p.timers[projectID] = time.AfterFunc(b.Step(), func() {
-					p.response <- projectID
+					p.trans <- projectID
 				})
 			}
 		}
@@ -127,43 +140,45 @@ func newPoller() *poller {
 	return p
 }
 
-func (p *poller) addOrReset(projectID string) {
-	p.add <- projectID
+func (p *poller) resetTimer(projectID string) {
+	p.reset <- projectID
 }
 
-func (p *poller) remove(projectID string) {
-	p.rm <- projectID
+func (p *poller) removeTimer(projectID string) {
+	p.remove <- projectID
 }
 
-func (r *statusReporterImpl) start() {
+func (r *statusManagerImpl) run() {
 	poll := newPoller()
 	jobsByProjectID := make(map[string]map[jobID]jobRequest)
 	jobCancelled := make(chan jobRequest)
 	retryCount := make(map[jobID]int)
 	for {
 		select {
-		case job := <-jobCancelled:
-			r.setResult(result{jobID: job.jobID, err: job.ctx.Err()})
-			delete(jobsByProjectID[job.projectID], job.jobID)
 		case req := <-r.requests:
+			// setup for each new build status request
 			if _, found := jobsByProjectID[req.projectID]; !found {
 				jobsByProjectID[req.projectID] = make(map[jobID]jobRequest)
 			}
 			jobsByProjectID[req.projectID][req.jobID] = req
-			poll.addOrReset(req.projectID)
+			go poll.resetTimer(req.projectID)
 			go func() {
-				<-req.ctx.Done()
-				jobCancelled <- req
+				// setup cancellation for each job
+				r := req
+				<-r.ctx.Done()
+				jobCancelled <- r
 			}()
 		case projectID := <-poll.C:
+			// get status of all active jobs for `projectID`
 			jobs := jobsByProjectID[projectID]
 			if len(jobs) == 0 {
-				poll.remove(projectID)
+				poll.removeTimer(projectID)
 				continue
 			}
 			statuses, err := getStatuses(projectID, jobs)
 			if err != nil {
 				for id := range jobs {
+					// if the GCB API is throttling, ignore error and retry `MaxRetryCount` number of times.
 					if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
 						retryCount[id]++
 						if retryCount[id] < MaxRetryCount {
@@ -186,10 +201,13 @@ func (r *statusReporterImpl) start() {
 					r.setResult(result{jobID: id, err: fmt.Errorf("cloud build failed: %s", cb.Status)})
 					delete(jobs, id)
 				default:
-					r.setResult(result{jobID: id, err: fmt.Errorf("unknown status: %s", cb.Status)})
+					r.setResult(result{jobID: id, err: fmt.Errorf("unhandled status: %s", cb.Status)})
 					delete(jobs, id)
 				}
 			}
+		case job := <-jobCancelled:
+			r.setResult(result{jobID: job.jobID, err: job.ctx.Err()})
+			delete(jobsByProjectID[job.projectID], job.jobID)
 		}
 	}
 }
@@ -237,13 +255,13 @@ func getFilterQuery(jobs map[jobID]jobRequest) string {
 	return strings.Join(sl, " OR ")
 }
 
-func (r *statusReporterImpl) setResult(result result) {
+func (r *statusManagerImpl) setResult(result result) {
 	r.resultMutex.RLock()
 	r.results[result.jobID] <- result
 	r.resultMutex.RUnlock()
 }
 
-func (r *statusReporterImpl) getStatus(ctx context.Context, projectID string, buildID string) <-chan result {
+func (r *statusManagerImpl) getStatus(ctx context.Context, projectID string, buildID string) <-chan result {
 	id := jobID{projectID, buildID}
 	res := make(chan result, 1)
 	r.resultMutex.Lock()
