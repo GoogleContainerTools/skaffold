@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -32,11 +33,12 @@ import (
 )
 
 type Runner struct {
-	structureTests []string
-	imageName      string
-	imageIsLocal   bool
-	workspace      string
-	localDaemon    docker.LocalDaemon
+	structureTests    []string
+	imageName         string
+	imageIsLocal      bool
+	workspace         string
+	localDaemon       docker.LocalDaemon
+	structureTestArgs []string
 }
 
 // New creates a new structure.Runner.
@@ -46,11 +48,12 @@ func New(cfg docker.Config, tc *latestV1.TestCase, imageIsLocal bool) (*Runner, 
 		return nil, err
 	}
 	return &Runner{
-		structureTests: tc.StructureTests,
-		imageName:      tc.ImageName,
-		workspace:      tc.Workspace,
-		localDaemon:    localDaemon,
-		imageIsLocal:   imageIsLocal,
+		structureTests:    tc.StructureTests,
+		imageName:         tc.ImageName,
+		workspace:         tc.Workspace,
+		localDaemon:       localDaemon,
+		imageIsLocal:      imageIsLocal,
+		structureTestArgs: tc.StructureTestArgs,
 	}, nil
 }
 
@@ -86,7 +89,10 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 	for _, f := range files {
 		args = append(args, "--config", f)
 	}
-
+	for _, customArg := range cst.structureTestArgs {
+		splittedCustomArg := strings.Fields(customArg)
+		args = append(args, splittedCustomArg...)
+	}
 	cmd := exec.CommandContext(ctx, "container-structure-test", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
