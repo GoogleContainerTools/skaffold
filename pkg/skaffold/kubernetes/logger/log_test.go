@@ -112,7 +112,7 @@ func TestPrintLogLine(t *testing.T) {
 
 			go func() {
 				for i := 0; i < 100; i++ {
-					logger.printLogLine(output.Default.Sprintf("%s ", "PREFIX") + "TEXT\n")
+					logger.printLogLine(output.Default, "pod-name", "container-name", "PREFIX", "TEXT\n")
 				}
 				wg.Done()
 			}()
