@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta16
+package v2beta17
 
 import (
-	"github.com/sirupsen/logrus"
-
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta17"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v2beta16 to v2beta17
+// Config changes from v2beta17 to v2beta18
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -36,10 +34,5 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	for _, a := range oldPipeline.(*Pipeline).Build.Artifacts {
-		if a.DockerArtifact != nil && a.DockerArtifact.Secret != nil && a.DockerArtifact.Secret.Destination != "" {
-			logrus.Warnf("Artifact %q: Docker secret destination is no longer supported: %q", a.ImageName, a.DockerArtifact.Secret.Destination)
-		}
-	}
 	return nil
 }
