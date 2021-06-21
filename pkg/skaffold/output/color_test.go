@@ -89,3 +89,43 @@ func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
 	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
 }
+
+func TestSprintf(t *testing.T) {
+	// Set Default to original blue as it gets modified by other tests
+	Default = Blue
+
+	tests := []struct {
+		name     string
+		color    Color
+		params   []interface{}
+		expected string
+	}{
+		{
+			name:     "default color",
+			color:    Default,
+			params:   []interface{}{"a", "few", "words"},
+			expected: "\u001B[34ma few words\u001B[0m",
+		},
+		{
+			name:     "red color",
+			color:    Red,
+			params:   []interface{}{"a", "few", "words"},
+			expected: "\u001B[31ma few words\u001B[0m",
+		},
+		{
+			name: "nil color",
+			color: Color{
+				color: nil,
+			},
+			params:   []interface{}{"a", "few", "words"},
+			expected: "a few words",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.color.Sprintf("%s %s %s", test.params...)
+			compareText(t, test.expected, got)
+		})
+	}
+}

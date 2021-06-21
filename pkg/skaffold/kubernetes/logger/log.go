@@ -189,11 +189,10 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	}
 }
 
-func (a *LogAggregator) printLogLine(headerColor output.Color, prefix, text string) {
+func (a *LogAggregator) printLogLine(text string) {
 	if !a.IsMuted() {
 		a.outputLock.Lock()
 
-		headerColor.Fprintf(a.output, "%s ", prefix)
 		fmt.Fprint(a.output, text)
 
 		a.outputLock.Unlock()
@@ -260,8 +259,9 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor output.Co
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
 
-			a.printLogLine(headerColor, prefix, line)
-			eventV2.ApplicationLog(podName, containerName, line)
+			formattedLine := headerColor.Sprintf("%s ", prefix) + line
+			a.printLogLine(formattedLine)
+			eventV2.ApplicationLog(podName, containerName, line, formattedLine)
 		}
 	}
 }
