@@ -120,6 +120,11 @@ func (t *TestBench) GetLogger() log.Logger {
 func (t *TestBench) GetStatusMonitor() status.Monitor {
 	return &status.NoopMonitor{}
 }
+
+func (t *TestBench) GetSyncer() sync.Syncer {
+	return t
+}
+
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
 func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }
@@ -281,7 +286,6 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
 	runner.Builder.Builder = testBench
-	runner.syncer = testBench
 	runner.Tester = testBench
 	runner.deployer = testBench
 	runner.listener = testBench

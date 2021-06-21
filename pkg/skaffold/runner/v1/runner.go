@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
@@ -37,7 +36,6 @@ type SkaffoldRunner struct {
 	test.Tester
 
 	deployer deploy.Deployer
-	syncer   sync.Syncer
 	monitor  filemon.Monitor
 	listener runner.Listener
 

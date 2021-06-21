@@ -25,10 +25,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 // NoopComponentProvider is for tests
-var NoopComponentProvider = ComponentProvider{Accessor: &access.NoopProvider{}, Logger: &log.NoopProvider{}, Debugger: &debug.NoopProvider{}, Monitor: &status.NoopProvider{}}
+var NoopComponentProvider = ComponentProvider{
+	Accessor: &access.NoopProvider{},
+	Debugger: &debug.NoopProvider{},
+	Logger:   &log.NoopProvider{},
+	Monitor:  &status.NoopProvider{},
+	Syncer:   &sync.NoopProvider{},
+}
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
@@ -48,7 +55,7 @@ type Deployer interface {
 	// writes them to the given file path
 	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
 
-	// GetDebugger returns a Deployer's implementation of a Logger
+	// GetDebugger returns a Deployer's implementation of a Debugger
 	GetDebugger() debug.Debugger
 
 	// GetLogger returns a Deployer's implementation of a Logger
@@ -56,6 +63,9 @@ type Deployer interface {
 
 	// GetAccessor returns a Deployer's implementation of an Accessor
 	GetAccessor() access.Accessor
+
+	// GetSyncer returns a Deployer's implementation of a Syncer
+	GetSyncer() sync.Syncer
 
 	// TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
 	TrackBuildArtifacts([]graph.Artifact)
@@ -71,4 +81,5 @@ type ComponentProvider struct {
 	Debugger debug.Provider
 	Logger   log.Provider
 	Monitor  status.Provider
+	Syncer   sync.Provider
 }
