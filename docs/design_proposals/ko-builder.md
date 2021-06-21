@@ -358,6 +358,46 @@ ready.
 This approach has a lower risk than implementing the entire feature on a
 separate branch before merging all at once.
 
+The steps roughly outlined:
+
+1.  Add dependency on the `github.com/google/ko` module.
+
+2.  Implement the core ko build and publish logic, including unit tests in the
+    package `github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko`.
+
+    Support this implementation with "dummy" schema definitions for types such
+    as `KoArtifact` in a separate "temporary" package. This package only exists
+    until the definitions are merged into the latest `v1` schema, and it allows
+    for evolution of the types until they are committed to the schema.
+
+3.  Add integration test for the ko builder to the `integration` package, and
+    an example app + config to a new `integration/examples/ko` directory.
+
+    To avoid failures in schema unit tests from the new example in the
+    integration directory, add an `if` statement to `TestParseExamples` in the
+    package `github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema` that
+    skips directories called `ko`.
+
+4.  Add the ko builder schema types (`KoArtifact` and `KoDependency`) to the
+    latest unreleased schema (`v2beta18`?).
+
+    For the `ArtifactType` struct, add a `KoArtifact` field, but set its
+    YAML flag key to `"-"`
+    (full syntax `` `yaml:"-,omitempty" yamltags:"oneOf=artifact"` ``).
+
+    Do _not_ yet add the `KO = 7;` entry to the `BuilderType` enum in
+    `proto/enums/enums.proto`.
+
+5.  Plumb the code in the package `pkg/skaffold/build/ko` into the other parts
+    of the Skaffold codebase that interacts with the config schema.
+
+    E.g., a `case` statement for `a.KoArtifact` in the `newPerArtifactBuilder`
+    function in `pkg/skaffold/build/local` (file `types.go`).
+
+6.  When we are ready to add the ko builder as an alpha feature to an upcoming
+    Skaffold release, set the `KoArtifact` YAML flag key to `ko` and add `KO`
+    to the `BuilderType` enum.
+
 ## Implementation plan
 
 1.  [Done] Define integration points in the ko codebase that allows ko to be
