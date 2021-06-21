@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	AllowlistedValidators = []string{"kubeval"}
+	allowListedValidators = []string{"kubeval"}
 	validatorAllowlist    = map[string]kptfile.Function{
 		"kubeval": {Image: "gcr.io/kpt-fn/kubeval:v0.1"},
 		// TODO: Add conftest validator in kpt catalog.
@@ -48,7 +48,7 @@ func NewValidator(config []latestV2.Validator) (*Validator, error) {
 							SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS,
 							Action: fmt.Sprintf(
 								"please only use the following validators in skaffold-managed mode: %v. "+
-									"to use custom validators, please use kpt-managed mode.", AllowlistedValidators),
+									"to use custom validators, please use kpt-managed mode.", allowListedValidators),
 						},
 					},
 				})
