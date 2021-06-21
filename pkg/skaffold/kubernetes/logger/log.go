@@ -25,10 +25,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -189,11 +189,13 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	}
 }
 
-func (a *LogAggregator) printLogLine(text string) {
+func (a *LogAggregator) printLogLine(headerColor output.Color, podName, containerName, prefix, line string) {
 	if !a.IsMuted() {
 		a.outputLock.Lock()
 
-		fmt.Fprint(a.output, text)
+		formattedLine := headerColor.Sprintf("%s ", prefix) + line
+		fmt.Fprint(a.output, formattedLine)
+		eventV2.ApplicationLog(podName, containerName, line, formattedLine)
 
 		a.outputLock.Unlock()
 	}
@@ -259,9 +261,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor output.Co
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
 
-			formattedLine := headerColor.Sprintf("%s ", prefix) + line
-			a.printLogLine(formattedLine)
-			eventV2.ApplicationLog(podName, containerName, line, formattedLine)
+			a.printLogLine(headerColor, podName, containerName, prefix, line)
 		}
 	}
 }
