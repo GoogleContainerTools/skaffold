@@ -336,11 +336,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	defer r.deployer.GetAccessor().Stop()
 
-	// forwarderManager := r.createForwarder(out)
-	// defer forwarderManager.Stop()
-
 	if err := r.deployer.GetAccessor().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
-		logrus.Warnln("Error starting port forwarding:", err)
+		logrus.Warnln("Error starting resource accessor:", err)
 	}
 	if err := r.deployer.GetDebugger().Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)

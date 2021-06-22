@@ -306,7 +306,7 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 		case e := <-entries:
 			switch e.Event.GetEventType().(type) {
 			case *proto.Event_PortEvent:
-				t.Logf("event received %v", e)
+				t.Logf("port event received: %v", e)
 				if e.Event.GetPortEvent().ResourceName == resourceName &&
 					e.Event.GetPortEvent().ResourceType == resourceType &&
 					e.Event.GetPortEvent().Namespace == namespace {
@@ -316,7 +316,7 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 					return address, int(port)
 				}
 			default:
-				t.Logf("event received %v", e)
+				t.Logf("event received: %v", e)
 			}
 		}
 	}

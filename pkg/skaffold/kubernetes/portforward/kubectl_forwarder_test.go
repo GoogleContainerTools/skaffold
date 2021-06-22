@@ -70,6 +70,7 @@ func TestUnavailablePort(t *testing.T) {
 		}
 		pfe := newPortForwardEntry(0, latestV1.PortForwardResource{}, "", "", "", "", 8080, false)
 
+		k.Start(&buf)
 		go k.Forward(context.Background(), pfe)
 
 		// wait for isPortFree to be called

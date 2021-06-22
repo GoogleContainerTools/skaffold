@@ -70,8 +70,8 @@ var (
 )
 
 func (k *KubectlForwarder) Start(out io.Writer) {
-	k.out = out
 	atomic.StoreInt32(&k.started, 1)
+	k.out = out
 }
 
 // Forward port-forwards a pod using kubectl port-forward in the background
@@ -79,15 +79,16 @@ func (k *KubectlForwarder) Start(out io.Writer) {
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
-	if atomic.LoadInt32(&k.started) == 0 {
-		return fmt.Errorf("Forward() called before kubectl fowarder was started")
-	}
 	errChan := make(chan error, 1)
 	go k.forward(parentCtx, pfe, errChan)
 	return <-errChan
 }
 
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry, errChan chan error) {
+	if atomic.LoadInt32(&k.started) == 0 {
+		errChan <- fmt.Errorf("Forward() called before kubectl forwarder was started")
+		return
+	}
 	var notifiedUser bool
 	defer deferFunc()
 
