@@ -39,15 +39,13 @@ var (
 
 func NewMonitorProvider(config status.Config, l *label.DefaultLabeller) Provider {
 	once.Do(func() {
-		var c Monitor
+		var m Monitor = &NoopMonitor{}
 		enabled, _ := config.StatusCheck()
-		if enabled != nil && !*enabled { // assume enabled if value unspecified
-			c = &NoopMonitor{}
-		} else {
-			c = status.NewStatusMonitor(config, l)
+		if enabled == nil || *enabled { // assume enabled if value is nil
+			m = status.NewStatusMonitor(config, l)
 		}
 		provider = &fullProvider{
-			kubernetesMonitor: c,
+			kubernetesMonitor: m,
 		}
 	})
 	return provider
