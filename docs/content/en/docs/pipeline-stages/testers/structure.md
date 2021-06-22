@@ -34,4 +34,8 @@ In order to restrict the executed structure tests, a `profile` section can overr
 
 {{% readfile file="samples/testers/structure/testProfile.yaml" %}}
 
+User can customize `container-structure-test` behavior by passing a list of configuration flags as a value of `structureTestsArgs` yaml property in `skaffold.yaml`, e.g.:
+
+{{% readfile file="samples/testers/structure/structureTestArgs.yaml" %}}
+
 To execute the tests once, run `skaffold test --profile quickcheck`.
