@@ -19,7 +19,9 @@ package v1
 import (
 	"context"
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -226,6 +228,20 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			continue
 		}
 
+		var absMatches []string
+		// Add absolute typed rules
+		for _, pt := range artifact.Sync.Manual {
+			if pt.Type == "absolute" {
+				// list files and add to dependencies list
+				matches, err := doublestar.Glob(pt.Src)
+				if err != nil {
+					return  fmt.Errorf("pattern error for %q: %w", filepath.Dir(pt.Src), err)
+				}
+
+				absMatches = append(absMatches, matches...)
+			}
+		}
+
 		output.Default.Fprintf(out, " - %s\n", artifact.ImageName)
 
 		select {
@@ -234,7 +250,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return r.sourceDependencies.TransitiveArtifactDependencies(ctx, artifact)
+					artifactDep, err := r.sourceDependencies.TransitiveArtifactDependencies(ctx, artifact)
+					if err != nil {
+						return nil, err
+					}
+
+					return append(absMatches, artifactDep...), nil
 				},
 				func(e filemon.Events) {
 					s, err := sync.NewItem(ctx, artifact, e, r.Builds, r.runCtx, len(g[artifact.ImageName]))
