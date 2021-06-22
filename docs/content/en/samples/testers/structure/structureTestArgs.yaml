@@ -3,7 +3,7 @@ test:
     structureTests:
       - './structure-test/*'
     structureTestsArgs:
-      - --driver tar
+      - --driver=tar
       - -q
       - --no-color
-      -  --test-report TEST_REPORT_NAME
+      -  --test-report=TEST_REPORT_NAME

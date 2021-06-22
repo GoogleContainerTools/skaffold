@@ -493,7 +493,7 @@ type TestCase struct {
 	StructureTests []string `yaml:"structureTests,omitempty" skaffold:"filepath"`
 
 	// StructureTestArgs lists additional configuration arguments passed to `container-structure-test` binary.
-	// For example: `["--driver tar", "--no-color", "-q"]`.
+	// For example: `["--driver=tar", "--no-color", "-q"]`.
 	StructureTestArgs []string `yaml:"structureTestsArgs,omitempty"`
 }
 

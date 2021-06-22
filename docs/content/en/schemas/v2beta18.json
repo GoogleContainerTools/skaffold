@@ -3156,7 +3156,7 @@
           "x-intellij-html-description": "additional configuration arguments passed to <code>container-structure-test</code> binary.",
           "default": "[]",
           "examples": [
-            "[\"--driver tar\", \"--no-color\", \"-q\"]"
+            "[\"--driver=tar\", \"--no-color\", \"-q\"]"
           ]
         }
       },
