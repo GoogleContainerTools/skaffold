@@ -207,18 +207,13 @@ func latestTag(image string, builds []graph.Artifact) string {
 func intersect(contextWd, containerWd string, syncRules []*latestV1.SyncRule, files []string) (syncMap, error) {
 	ret := make(syncMap)
 	for _, f := range files {
-		relPath, err := filepath.Rel(contextWd, f)
-		if err != nil {
-			return nil, fmt.Errorf("changed file %s can't be found relative to context %q: %w", f, contextWd, err)
-		}
-
-		dsts, err := matchSyncRules(syncRules, relPath, containerWd)
+		dsts, err := matchSyncRules(syncRules, contextWd, f, containerWd)
 		if err != nil {
 			return nil, err
 		}
 
 		if len(dsts) == 0 {
-			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", f)
 			return nil, nil
 		}
 
@@ -227,9 +222,20 @@ func intersect(contextWd, containerWd string, syncRules []*latestV1.SyncRule, fi
 	return ret, nil
 }
 
-func matchSyncRules(syncRules []*latestV1.SyncRule, relPath, containerWd string) ([]string, error) {
+func matchSyncRules(syncRules []*latestV1.SyncRule, contextWd, f, containerWd string) ([]string, error) {
 	dsts := make([]string, 0, 1)
 	for _, r := range syncRules {
+		// Add directly file to destination
+		if r.Type == "absolute" {
+			dsts = append(dsts, path.Join(r.Dest, filepath.Base(f)))
+			continue
+		}
+
+		relPath, err := filepath.Rel(contextWd, f)
+		if err != nil {
+			return nil, fmt.Errorf("changed file %s can't be found relative to context %q: %w", f, contextWd, err)
+		}
+
 		matches, err := doublestar.PathMatch(filepath.FromSlash(r.Src), relPath)
 		if err != nil {
 			return nil, fmt.Errorf("pattern error for %q: %w", relPath, err)
