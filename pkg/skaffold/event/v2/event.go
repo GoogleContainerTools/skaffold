@@ -26,7 +26,6 @@ import (
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -377,15 +376,13 @@ func (ev *eventHandler) setState(state proto.State) {
 }
 
 func (ev *eventHandler) handle(event *proto.Event) {
-	go func(t *timestamp.Timestamp) {
-		event.Timestamp = t
-		ev.eventChan <- event
-		if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
-			// close the event channel indicating there are no more events to all the
-			// receivers
-			close(ev.eventChan)
-		}
-	}(ptypes.TimestampNow())
+	event.Timestamp = ptypes.TimestampNow()
+	ev.eventChan <- event
+	if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
+		// close the event channel indicating there are no more events to all the
+		// receivers
+		close(ev.eventChan)
+	}
 }
 
 func (ev *eventHandler) handleTaskEvent(e *proto.TaskEvent) {

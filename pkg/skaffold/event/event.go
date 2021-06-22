@@ -567,17 +567,15 @@ func LogMetaEvent() {
 }
 
 func (ev *eventHandler) handle(event *proto.Event) {
-	go func(t *timestamp.Timestamp) {
-		ev.eventChan <- firedEvent{
-			event: event,
-			ts:    t,
-		}
-		if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
-			// close the event channel indicating there are no more events to all the
-			// receivers
-			close(ev.eventChan)
-		}
-	}(ptypes.TimestampNow())
+	ev.eventChan <- firedEvent{
+		event: event,
+		ts:    ptypes.TimestampNow(),
+	}
+	if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
+		// close the event channel indicating there are no more events to all the
+		// receivers
+		close(ev.eventChan)
+	}
 }
 
 func (ev *eventHandler) handleExec(f firedEvent) {
