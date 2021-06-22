@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -71,6 +72,14 @@ func (m DeployerMux) GetStatusMonitor() status.Monitor {
 		monitors = append(monitors, deployer.GetStatusMonitor())
 	}
 	return monitors
+}
+
+func (m DeployerMux) GetSyncer() sync.Syncer {
+	var syncers sync.SyncerMux
+	for _, deployer := range m {
+		syncers = append(syncers, deployer.GetSyncer())
+	}
+	return syncers
 }
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {

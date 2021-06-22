@@ -92,7 +92,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
-	syncer := getSyncer(runCtx)
 
 	var podSelectors kubernetes.ImageListMux
 	var deployer deploy.Deployer
@@ -101,6 +100,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Debugger: debug.NewDebugProvider(runCtx),
 		Logger:   log.NewLogProvider(runCtx, kubectlCLI),
 		Monitor:  status.NewMonitorProvider(runCtx, labeller),
+		Syncer:   sync.NewSyncProvider(runCtx, kubectlCLI),
 	}
 
 	deployer, podSelectors, err = getDeployer(runCtx, provider, labeller.Labels())
@@ -152,7 +152,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Pruner:             runner.Pruner{Builder: builder},
 		Tester:             tester,
 		deployer:           deployer,
-		syncer:             syncer,
 		monitor:            monitor,
 		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
 		artifactStore:      store,
@@ -233,10 +232,6 @@ func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error
 	}
 
 	return tester, nil
-}
-
-func getSyncer(cfg sync.Config) sync.Syncer {
-	return sync.NewSyncer(cfg)
 }
 
 /*

@@ -48,6 +48,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -75,6 +76,7 @@ type Deployer struct {
 	logger        log.Logger
 	debugger      debug.Debugger
 	statusMonitor status.Monitor
+	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
@@ -102,6 +104,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
 		logger:             provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:      provider.Monitor.GetKubernetesMonitor(),
+		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -126,6 +129,10 @@ func (k *Deployer) GetLogger() log.Logger {
 
 func (k *Deployer) GetStatusMonitor() status.Monitor {
 	return k.statusMonitor
+}
+
+func (k *Deployer) GetSyncer() sync.Syncer {
+	return k.syncer
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

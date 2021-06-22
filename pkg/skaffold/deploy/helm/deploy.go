@@ -53,6 +53,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -85,6 +86,7 @@ type Deployer struct {
 	debugger      debug.Debugger
 	logger        log.Logger
 	statusMonitor status.Monitor
+	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
@@ -140,6 +142,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
 		logger:         provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:  provider.Monitor.GetKubernetesMonitor(),
+		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -167,6 +170,10 @@ func (h *Deployer) GetLogger() log.Logger {
 
 func (h *Deployer) GetStatusMonitor() status.Monitor {
 	return h.statusMonitor
+}
+
+func (h *Deployer) GetSyncer() sync.Syncer {
+	return h.syncer
 }
 
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
