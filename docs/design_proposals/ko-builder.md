@@ -423,7 +423,7 @@ The steps roughly outlined:
     func PublishImages(ctx context.Context, importpaths []string, pub publish.Interface, b build.Interface) (map[string]name.Reference, error)
     ```
 
-    Add build and publish options to support Skaffold config propagaring to
+    Add build and publish options to support Skaffold config propagating to
     ko. In the package `github.com/google/ko/pkg/commands/options`:
 
     [`build.go`](https://github.com/google/ko/blob/ee23538378722e060a2f7c7800f226e0b82e09e7/pkg/commands/options/build.go#L25)
