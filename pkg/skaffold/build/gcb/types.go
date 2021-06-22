@@ -65,7 +65,7 @@ const (
 	BackoffSteps = 10
 
 	// MaxRetryCount is the max number of times we retry a throttled GCB API request
-	MaxRetryCount = 20
+	MaxRetryCount = 10
 )
 
 func NewStatusBackoff() *wait.Backoff {

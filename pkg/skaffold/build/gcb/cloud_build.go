@@ -154,7 +154,7 @@ watch:
 		case r := <-buildResult:
 			buildComplete = true
 			if r.err != nil {
-				return "", err
+				return "", r.err
 			}
 			digest, err = b.getDigest(r.status, tag)
 			if err != nil {

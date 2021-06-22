@@ -37,6 +37,15 @@ var (
 	// maintain single instance of the GCB client per skaffold process
 	client     *cloudbuild.Service
 	clientOnce sync.Once
+
+	// for testing
+	newClientFunc = func() (*cloudbuild.Service, error) {
+		return cloudbuild.NewService(context.Background(), gcp.ClientOptions()...)
+	}
+
+	statusFunc = func(projectID string, filter string) (*cloudbuild.ListBuildsResponse, error) {
+		return client.Projects.Builds.List(projectID).Filter(filter).Do()
+	}
 )
 
 // statusManager provides an interface for getting the status of GCB jobs.
@@ -148,6 +157,9 @@ func (p *poller) removeTimer(projectID string) {
 	p.remove <- projectID
 }
 
+// run manages populating the `results` channels for each GCB build job status.
+// A `poller` is set up to do independent exponential backoff per project until success, cancellation or failure.
+// The backoff duration for each `projectID` status query is reset with every new build request.
 func (r *statusManagerImpl) run() {
 	poll := newPoller()
 	jobsByProjectID := make(map[string]map[jobID]jobRequest)
@@ -215,13 +227,13 @@ func (r *statusManagerImpl) run() {
 func getStatuses(projectID string, jobs map[jobID]jobRequest) (map[jobID]*cloudbuild.Build, error) {
 	var err error
 	clientOnce.Do(func() {
-		client, err = cloudbuild.NewService(context.Background(), gcp.ClientOptions()...)
+		client, err = newClientFunc()
 	})
 	if err != nil {
 		clientOnce = sync.Once{} // reset on failure
 		return nil, fmt.Errorf("getting cloudbuild client: %w", err)
 	}
-	cb, err := client.Projects.Builds.List(projectID).Filter(getFilterQuery(jobs)).Do()
+	cb, err := statusFunc(projectID, getFilterQuery(jobs))
 	if err != nil {
 		return nil, fmt.Errorf("getting build status: %w", err)
 	}
