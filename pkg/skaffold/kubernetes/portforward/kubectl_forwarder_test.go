@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io/ioutil"
 	"runtime"
 	"sort"
 	"strings"
@@ -449,5 +450,33 @@ func mockPod(name string, ports []corev1.ContainerPort, creationTime time.Time) 
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,
 		},
+	}
+}
+
+func TestStartAndForward(t *testing.T) {
+	tests := []struct {
+		description string
+		startFirst  bool
+	}{
+		{
+			description: "Forward() before Start() errors",
+			startFirst:  false,
+		}, {
+			description: "Start() before Forward()",
+			startFirst:  true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(_ *testutil.T) {
+			k := &KubectlForwarder{}
+			if test.startFirst {
+				k.Start(ioutil.Discard)
+				testutil.CheckDeepEqual(t, k.started, int32(1))
+			} else {
+				err := k.Forward(context.Background(), nil)
+				testutil.CheckError(t, true, err)
+			}
+		})
 	}
 }

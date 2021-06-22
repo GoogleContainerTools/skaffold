@@ -25,6 +25,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -41,11 +42,13 @@ import (
 )
 
 type EntryForwarder interface {
+	Start(io.Writer)
 	Forward(parentCtx context.Context, pfe *portForwardEntry) error
 	Terminate(p *portForwardEntry)
 }
 
 type KubectlForwarder struct {
+	started int32
 	out     io.Writer
 	kubectl *kubectl.CLI
 }
@@ -66,11 +69,19 @@ var (
 	waitErrorLogs       = 1 * time.Second
 )
 
+func (k *KubectlForwarder) Start(out io.Writer) {
+	k.out = out
+	atomic.StoreInt32(&k.started, 1)
+}
+
 // Forward port-forwards a pod using kubectl port-forward in the background
 // It kills the command on errors in the kubectl port-forward log
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
+	if atomic.LoadInt32(&k.started) == 0 {
+		return fmt.Errorf("Forward() called before kubectl fowarder was started")
+	}
 	errChan := make(chan error, 1)
 	go k.forward(parentCtx, pfe, errChan)
 	return <-errChan

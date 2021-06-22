@@ -67,6 +67,7 @@ func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.
 func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	p.podWatcher.Register(p.events)
 	p.output = out
+	p.entryManager.Start(out)
 	stopWatcher, err := p.podWatcher.Start(namespaces)
 	if err != nil {
 		return err
