@@ -37,6 +37,7 @@ type bomMetadata struct {
 type syncRule struct {
 	Src  string `json:"src"`
 	Dest string `json:"dest"`
+	Type string `json:"type"`
 }
 
 // $ docker inspect demo/buildpacks | jq -r '.[].Config.Labels["io.buildpacks.build.metadata"] | fromjson.bom[].metadata["devmode.sync"]'
@@ -58,6 +59,7 @@ func SyncRules(labels map[string]string) ([]*latestV1.SyncRule, error) {
 			rules = append(rules, &latestV1.SyncRule{
 				Src:  sync.Src,
 				Dest: sync.Dest,
+				Type: sync.Type,
 			})
 		}
 	}

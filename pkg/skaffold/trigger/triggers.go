@@ -67,10 +67,18 @@ func NewTrigger(cfg Config, isActive func() bool) (Trigger, error) {
 
 func newFSNotifyTrigger(cfg Config, isActive func() bool) Trigger {
 	workspaces := map[string]struct{}{}
+	var absPaths []string
 	for _, a := range cfg.Artifacts() {
 		workspaces[a.Workspace] = struct{}{}
+		// Add absolute typed rules
+		for _, pt := range a.Sync.Manual {
+			if pt.Type == "absolute" {
+				absPaths = append(absPaths, pt.Src)
+			}
+
+		}
 	}
-	return fsNotify.New(workspaces, isActive, cfg.WatchPollInterval())
+	return fsNotify.New(workspaces, absPaths, isActive, cfg.WatchPollInterval())
 }
 
 // pollTrigger watches for changes on a given interval of time.

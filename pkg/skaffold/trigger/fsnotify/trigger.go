@@ -34,18 +34,20 @@ var (
 	Watch = notify.Watch
 )
 
-func New(workspaces map[string]struct{}, isActive func() bool, duration int) *Trigger {
+func New(workspaces map[string]struct{}, absPath []string, isActive func() bool, duration int) *Trigger {
 	return &Trigger{
 		Interval:   time.Duration(duration) * time.Millisecond,
 		workspaces: workspaces,
 		isActive:   isActive,
 		watchFunc:  Watch,
+		absPath:    absPath,
 	}
 }
 
 // Trigger watches for changes with fsnotify
 type Trigger struct {
 	Interval   time.Duration
+	absPath    []string
 	workspaces map[string]struct{}
 	isActive   func() bool
 	watchFunc  func(path string, c chan<- notify.EventInfo, events ...notify.Event) error
@@ -83,6 +85,15 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 	// Watch current directory recursively
 	if err := t.watchFunc(filepath.Join(wd, "..."), c, notify.All); err != nil {
 		return nil, err
+	}
+
+	// Watch folders that are typed with absolute
+	for _, pat := range t.absPath {
+		// Find dir of
+		pat = filepath.Dir(pat)
+		if err := t.watchFunc(filepath.Join(pat, "..."), c, notify.All); err != nil {
+			return nil, err
+		}
 	}
 
 	// Watch all workspaces recursively

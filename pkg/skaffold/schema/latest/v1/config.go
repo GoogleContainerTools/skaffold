@@ -874,6 +874,10 @@ type SyncRule struct {
 	// transplanting the files into the destination folder.
 	// For example: `"css/"`
 	Strip string `yaml:"strip,omitempty"`
+
+	// Type specifies the path type
+	// For example: `"absolute"`
+	Type string `yaml:"type,omitempty"`
 }
 
 // Profile is used to override any `build`, `test` or `deploy` configuration.
