@@ -21,9 +21,11 @@ import (
 	"io"
 )
 
-// Monitor is an interface for checking a resource deployment status.
+// Monitor is an interface for checking resource deployment status.
 type Monitor interface {
+	// Check runs the status check monitor for a deployment
 	Check(context.Context, io.Writer) error
+	// Reset executes any reset behavior required by the status monitor between dev loops.
 	Reset()
 }
 
