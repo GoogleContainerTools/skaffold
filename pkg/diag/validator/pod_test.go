@@ -695,6 +695,36 @@ func TestRun(t *testing.T) {
 					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
 				}, nil)},
 		},
+		{
+			description: "pod terminated with exec error",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
+							},
+						},
+					}},
+			}},
+			logOutput: mockLogOutput{
+				output: []byte("standard_init_linux.go:219: exec user process caused: exec format error"),
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "container foo-container terminated with exit code 1",
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_EXEC_ERROR,
+				}, []string{"[foo foo-container] standard_init_linux.go:219: exec user process caused: exec format error"})},
+		},
 	}
 
 	for _, test := range tests {

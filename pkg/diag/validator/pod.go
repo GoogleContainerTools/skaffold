@@ -51,6 +51,7 @@ const (
 
 	failedScheduling = "FailedScheduling"
 	unhealthy        = "Unhealthy"
+	execFmtError     = "exec format error"
 )
 
 var (
@@ -145,7 +146,8 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 				if c.State.Waiting != nil {
 					return statusCode, []string{}, fmt.Errorf("waiting for init container %s to start", c.Name)
 				} else if c.State.Running != nil {
-					return statusCode, getPodLogs(pod, c.Name), fmt.Errorf("waiting for init container %s to complete", c.Name)
+					sc, l := getPodLogs(pod, c.Name, statusCode)
+					return sc, l, fmt.Errorf("waiting for init container %s to complete", c.Name)
 				}
 			}
 		}
@@ -210,8 +212,8 @@ func getContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, 
 		case c.State.Waiting != nil:
 			return extractErrorMessageFromWaitingContainerStatus(po, c)
 		case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
-			l := getPodLogs(po, c.Name)
-			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, l, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
+			sc, l := getPodLogs(po, c.Name, proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED)
+			return sc, l, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
 		}
 	}
 	// No waiting or terminated containers, pod should be in good health.
@@ -357,8 +359,8 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, nil, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
-		l := getPodLogs(po, c.Name)
-		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, l, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
+		sc, l := getPodLogs(po, c.Name, proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING)
+		return sc, l, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
 	case imagePullErr, imagePullBackOff, errImagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
@@ -386,12 +388,15 @@ func trimSpace(msg string) string {
 	return strings.Trim(msg, " ")
 }
 
-func getPodLogs(po *v1.Pod, c string) []string {
+func getPodLogs(po *v1.Pod, c string, sc proto.StatusCode) (proto.StatusCode, []string) {
 	logrus.Debugf("Fetching logs for container %s/%s", po.Name, c)
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {
-		return []string{fmt.Sprintf("Error retrieving logs for pod %s. Try `%s`", po.Name, strings.Join(logCommand, " "))}
+		return sc, []string{fmt.Sprintf("Error retrieving logs for pod %s. Try `%s`", po.Name, strings.Join(logCommand, " "))}
+	}
+	if strings.Contains(string(logs), execFmtError) {
+		sc = proto.StatusCode_STATUSCHECK_CONTAINER_EXEC_ERROR
 	}
 	output := strings.Split(string(logs), "\n")
 	// remove spurious empty lines (empty string or from trailing newline)
@@ -402,7 +407,7 @@ func getPodLogs(po *v1.Pod, c string) []string {
 		}
 		lines = append(lines, fmt.Sprintf("[%s %s] %s", po.Name, c, s))
 	}
-	return lines
+	return sc, lines
 }
 
 func executeCLI(cmdName string, args []string) ([]byte, error) {

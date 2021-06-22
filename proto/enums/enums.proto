@@ -184,6 +184,7 @@ enum StatusCode {
     STATUSCHECK_CONTAINER_RESTARTING = 356;
     // Readiness probe failed
     STATUSCHECK_UNHEALTHY = 357;
+    STATUSCHECK_CONTAINER_EXEC_ERROR = 358;
 
     // K8 infra errors
 

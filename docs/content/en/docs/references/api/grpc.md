@@ -916,6 +916,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
 | STATUSCHECK_UNHEALTHY | 357 | Readiness probe failed |
+| STATUSCHECK_CONTAINER_EXEC_ERROR | 358 |  |
 | STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
 | STATUSCHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
