@@ -60,8 +60,8 @@ func (m *MockDeployer) GetLogger() log.Logger {
 	return &log.NoopLogger{}
 }
 
-func (m *MockDeployer) GetStatusChecker() status.Checker {
-	return &status.NoopChecker{}
+func (m *MockDeployer) GetStatusMonitor() status.Monitor {
+	return &status.NoopMonitor{}
 }
 
 func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}

@@ -387,7 +387,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			checker := Checker{labeller: labeller}
+			monitor := Monitor{labeller: labeller}
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
@@ -396,7 +396,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
 			r.UpdateStatus(test.ae)
-			checker.printStatusCheckSummary(out, r, *rc)
+			monitor.printStatusCheckSummary(out, r, *rc)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
@@ -482,8 +482,8 @@ func TestPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
-			checker := Checker{labeller: labeller}
-			actual := checker.printStatus(test.rs, out)
+			monitor := Monitor{labeller: labeller}
+			actual := monitor.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
 		})

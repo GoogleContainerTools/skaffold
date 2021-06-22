@@ -74,7 +74,7 @@ type Deployer struct {
 	accessor      access.Accessor
 	logger        log.Logger
 	debugger      debug.Debugger
-	statusChecker status.Checker
+	statusMonitor status.Monitor
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
@@ -101,7 +101,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		accessor:           provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
 		logger:             provider.Logger.GetKubernetesLogger(podSelector),
-		statusChecker:      provider.Checker.GetKubernetesChecker(),
+		statusMonitor:      provider.Monitor.GetKubernetesMonitor(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -124,8 +124,8 @@ func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
 }
 
-func (k *Deployer) GetStatusChecker() status.Checker {
-	return k.statusChecker
+func (k *Deployer) GetStatusMonitor() status.Monitor {
+	return k.statusMonitor
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

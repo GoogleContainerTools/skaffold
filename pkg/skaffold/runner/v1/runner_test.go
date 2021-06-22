@@ -117,8 +117,8 @@ func (t *TestBench) GetLogger() log.Logger {
 	return &log.NoopLogger{}
 }
 
-func (t *TestBench) GetStatusChecker() status.Checker {
-	return &status.NoopChecker{}
+func (t *TestBench) GetStatusMonitor() status.Monitor {
+	return &status.NoopMonitor{}
 }
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 

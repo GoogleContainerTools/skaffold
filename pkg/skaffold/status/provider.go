@@ -24,12 +24,12 @@ import (
 )
 
 type Provider interface {
-	GetKubernetesChecker() Checker
-	GetNoopChecker() Checker
+	GetKubernetesMonitor() Monitor
+	GetNoopMonitor() Monitor
 }
 
 type fullProvider struct {
-	kubernetesChecker Checker
+	kubernetesMonitor Monitor
 }
 
 var (
@@ -37,37 +37,37 @@ var (
 	once     sync.Once
 )
 
-func NewCheckerProvider(config status.Config, l *label.DefaultLabeller) Provider {
+func NewMonitorProvider(config status.Config, l *label.DefaultLabeller) Provider {
 	once.Do(func() {
-		var c Checker
+		var c Monitor
 		enabled, _ := config.StatusCheck()
 		if enabled != nil && !*enabled { // assume enabled if value unspecified
-			c = &NoopChecker{}
+			c = &NoopMonitor{}
 		} else {
-			c = status.NewStatusChecker(config, l)
+			c = status.NewStatusMonitor(config, l)
 		}
 		provider = &fullProvider{
-			kubernetesChecker: c,
+			kubernetesMonitor: c,
 		}
 	})
 	return provider
 }
 
-func (p *fullProvider) GetKubernetesChecker() Checker {
-	return p.kubernetesChecker
+func (p *fullProvider) GetKubernetesMonitor() Monitor {
+	return p.kubernetesMonitor
 }
 
-func (p *fullProvider) GetNoopChecker() Checker {
-	return &NoopChecker{}
+func (p *fullProvider) GetNoopMonitor() Monitor {
+	return &NoopMonitor{}
 }
 
 // NoopProvider is used in tests
 type NoopProvider struct{}
 
-func (p *NoopProvider) GetKubernetesChecker() Checker {
-	return &NoopChecker{}
+func (p *NoopProvider) GetKubernetesMonitor() Monitor {
+	return &NoopMonitor{}
 }
 
-func (p *NoopProvider) GetNoopChecker() Checker {
-	return &NoopChecker{}
+func (p *NoopProvider) GetNoopMonitor() Monitor {
+	return &NoopMonitor{}
 }

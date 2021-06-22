@@ -78,8 +78,8 @@ type Config interface {
 	StatusCheck() (*bool, error)
 }
 
-// statusChecker runs status checks for pods and deployments
-type Checker struct {
+// Monitor runs status checks for pods and deployments
+type Monitor struct {
 	cfg             Config
 	labeller        *label.DefaultLabeller
 	deadlineSeconds int
@@ -88,9 +88,9 @@ type Checker struct {
 	singleRun       singleflight.Group
 }
 
-// NewStatusChecker returns a status checker which runs checks on deployments and pods.
-func NewStatusChecker(cfg Config, labeller *label.DefaultLabeller) *Checker {
-	return &Checker{
+// NewStatusMonitor returns a status monitor which runs checks on deployments and pods.
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller) *Monitor {
+	return &Monitor{
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,
 		labeller:        labeller,
@@ -101,14 +101,14 @@ func NewStatusChecker(cfg Config, labeller *label.DefaultLabeller) *Checker {
 }
 
 // Check runs the status checks on deployments and pods deployed in current skaffold dev iteration.
-func (s *Checker) Check(ctx context.Context, out io.Writer) error {
+func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
 	_, err, _ := s.singleRun.Do(s.labeller.GetRunID(), func() (interface{}, error) {
 		return struct{}{}, s.check(ctx, out)
 	})
 	return err
 }
 
-func (s *Checker) check(ctx context.Context, out io.Writer) error {
+func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
 	eventV2.TaskInProgress(constants.StatusCheck, "Verifying service availability")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
@@ -129,11 +129,11 @@ func (s *Checker) check(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (s *Checker) Reset() {
+func (s *Monitor) Reset() {
 	s.seenResources.Reset()
 }
 
-func (s *Checker) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
+func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
 	client, err := kubernetesclient.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
@@ -280,7 +280,7 @@ func getDeadline(d int) time.Duration {
 	return DefaultStatusCheckDeadline
 }
 
-func (s *Checker) printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
+func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	ae := r.Status().ActionableError()
 	if r.StatusCode() == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 		// Don't print the status summary if the user ctrl-C or
@@ -306,7 +306,7 @@ func (s *Checker) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 }
 
 // printDeploymentStatus prints resource statuses until all status check are completed or context is cancelled.
-func (s *Checker) printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
+func (s *Monitor) printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
 	ticker := time.NewTicker(reportStatusTime)
 	defer ticker.Stop()
 	for {
@@ -323,7 +323,7 @@ func (s *Checker) printDeploymentStatus(ctx context.Context, out io.Writer, depl
 	}
 }
 
-func (s *Checker) printStatus(deployments []*resource.Deployment, out io.Writer) bool {
+func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 	allDone := true
 	for _, r := range deployments {
 		if r.IsStatusCheckCompleteOrCancelled() {

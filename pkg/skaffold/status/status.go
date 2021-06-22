@@ -21,14 +21,14 @@ import (
 	"io"
 )
 
-// Checker is an interface for checking a resource deployment status.
-type Checker interface {
+// Monitor is an interface for checking a resource deployment status.
+type Monitor interface {
 	Check(context.Context, io.Writer) error
 	Reset()
 }
 
-type NoopChecker struct{}
+type NoopMonitor struct{}
 
-func (n *NoopChecker) Check(context.Context, io.Writer) error { return nil }
+func (n *NoopMonitor) Check(context.Context, io.Writer) error { return nil }
 
-func (n *NoopChecker) Reset() {}
+func (n *NoopMonitor) Reset() {}

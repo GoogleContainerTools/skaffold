@@ -65,12 +65,12 @@ func (m DeployerMux) GetLogger() log.Logger {
 	return loggers
 }
 
-func (m DeployerMux) GetStatusChecker() status.Checker {
-	var checkers status.CheckerMux
+func (m DeployerMux) GetStatusMonitor() status.Monitor {
+	var monitors status.MonitorMux
 	for _, deployer := range m {
-		checkers = append(checkers, deployer.GetStatusChecker())
+		monitors = append(monitors, deployer.GetStatusMonitor())
 	}
-	return checkers
+	return monitors
 }
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {

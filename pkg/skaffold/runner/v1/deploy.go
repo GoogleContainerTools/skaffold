@@ -141,7 +141,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	event.DeployComplete()
 	eventV2.TaskSucceeded(constants.Deploy)
 	r.runCtx.UpdateNamespaces(namespaces)
-	sErr := r.deployer.GetStatusChecker().Check(ctx, statusCheckOut)
+	sErr := r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut)
 	return sErr
 }
 

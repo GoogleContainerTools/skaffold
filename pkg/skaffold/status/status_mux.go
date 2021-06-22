@@ -23,24 +23,24 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type CheckerMux []Checker
+type MonitorMux []Monitor
 
-func (c CheckerMux) Check(ctx context.Context, out io.Writer) error {
+func (c MonitorMux) Check(ctx context.Context, out io.Writer) error {
 	g, gCtx := errgroup.WithContext(ctx)
 
-	// run all status checkers in parallel.
-	// the kubernetes status checker is a singleton for all deployers of that type, and runs only one concurrent check at a time across all deployed resources.
-	for _, checker := range c {
-		checker := checker // https://golang.org/doc/faq#closures_and_goroutines
+	// run all status monitors in parallel.
+	// the kubernetes status monitor is a singleton for all deployers of that type, and runs only one concurrent check at a time across all deployed resources.
+	for _, monitor := range c {
+		monitor := monitor // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
-			return checker.Check(gCtx, out)
+			return monitor.Check(gCtx, out)
 		})
 	}
 	return g.Wait()
 }
 
-func (c CheckerMux) Reset() {
-	for _, checker := range c {
-		checker.Reset()
+func (c MonitorMux) Reset() {
+	for _, monitor := range c {
+		monitor.Reset()
 	}
 }
