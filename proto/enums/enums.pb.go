@@ -345,7 +345,8 @@ const (
 	// Container restarting error
 	StatusCode_STATUSCHECK_CONTAINER_RESTARTING StatusCode = 356
 	// Readiness probe failed
-	StatusCode_STATUSCHECK_UNHEALTHY            StatusCode = 357
+	StatusCode_STATUSCHECK_UNHEALTHY StatusCode = 357
+	// Executable binary format error
 	StatusCode_STATUSCHECK_CONTAINER_EXEC_ERROR StatusCode = 358
 	// Node memory pressure error
 	StatusCode_STATUSCHECK_NODE_MEMORY_PRESSURE StatusCode = 400

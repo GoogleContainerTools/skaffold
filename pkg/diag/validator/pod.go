@@ -393,7 +393,7 @@ func getPodLogs(po *v1.Pod, c string, sc proto.StatusCode) (proto.StatusCode, []
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {
-		return sc, []string{fmt.Sprintf("Error retrieving logs for pod %s. Try `%s`", po.Name, strings.Join(logCommand, " "))}
+		return sc, []string{fmt.Sprintf("Error retrieving logs for pod %s: %s.\nTry `%s`", po.Name, err, strings.Join(logCommand, " "))}
 	}
 	if strings.Contains(string(logs), execFmtError) {
 		sc = proto.StatusCode_STATUSCHECK_CONTAINER_EXEC_ERROR

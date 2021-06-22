@@ -432,7 +432,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			logOutput: mockLogOutput{
-				err: fmt.Errorf("error"),
+				err: fmt.Errorf("error retrieving"),
 			},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running",
 				proto.ActionableErr{
@@ -443,7 +443,7 @@ func TestRun(t *testing.T) {
 						Action:         "Try checking container logs",
 					}},
 				}, []string{
-					"Error retrieving logs for pod foo. Try `kubectl logs foo -n test -c foo-container`"},
+					"Error retrieving logs for pod foo: error retrieving.\nTry `kubectl logs foo -n test -c foo-container`"},
 			)},
 		},
 		// Events Test cases
