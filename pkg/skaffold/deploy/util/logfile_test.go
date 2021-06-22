@@ -151,7 +151,7 @@ func TestWithStatusCheckLogFile(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var mockOut bytes.Buffer
 
-			var deployer = mockStatusChecker{
+			var deployer = mockStatusMonitor{
 				muted:     test.muted,
 				shouldErr: test.shouldErr,
 			}
@@ -188,12 +188,12 @@ func (fd *mockDeployer) Deploy(ctx context.Context, out io.Writer, _ []graph.Art
 }
 
 // Used just to show how output gets routed to different writers with the log file
-type mockStatusChecker struct {
+type mockStatusMonitor struct {
 	muted     Muted
 	shouldErr bool
 }
 
-func (fd *mockStatusChecker) Deploy(ctx context.Context, out io.Writer, _ []graph.Artifact) ([]string, error) {
+func (fd *mockStatusMonitor) Deploy(ctx context.Context, out io.Writer, _ []graph.Artifact) ([]string, error) {
 	if fd.shouldErr {
 		fmt.Fprintln(out, " - deployment/leeroy-app failed. could not pull image")
 		return nil, errors.New("- deployment/leeroy-app failed. could not pull image")

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -51,8 +50,3 @@ type Runner interface {
 	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
 	Test(context.Context, io.Writer, []graph.Artifact) error
 }
-
-// for testing
-var (
-	NewStatusCheck = status.NewStatusChecker
-)

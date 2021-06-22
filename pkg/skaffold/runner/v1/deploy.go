@@ -35,8 +35,6 @@ import (
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
@@ -143,7 +141,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	event.DeployComplete()
 	eventV2.TaskSucceeded(constants.Deploy)
 	r.runCtx.UpdateNamespaces(namespaces)
-	sErr := r.performStatusCheck(ctx, statusCheckOut)
+	sErr := r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut)
 	return sErr
 }
 
@@ -197,32 +195,4 @@ func failIfClusterIsNotReachable() error {
 
 	_, err = client.Discovery().ServerVersion()
 	return err
-}
-
-func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
-	// Check if we need to perform deploy status
-	enabled, err := r.runCtx.StatusCheck()
-	if err != nil {
-		return err
-	}
-	if enabled != nil && !*enabled {
-		return nil
-	}
-
-	eventV2.TaskInProgress(constants.StatusCheck, "Verifying service availability")
-	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
-	defer endTrace()
-
-	start := time.Now()
-	output.Default.Fprintln(out, "Waiting for deployments to stabilize...")
-
-	s := runner.NewStatusCheck(r.runCtx, r.labeller)
-	if err := s.Check(ctx, out); err != nil {
-		eventV2.TaskFailed(constants.StatusCheck, err)
-		return err
-	}
-
-	output.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
-	eventV2.TaskSucceeded(constants.StatusCheck)
-	return nil
 }

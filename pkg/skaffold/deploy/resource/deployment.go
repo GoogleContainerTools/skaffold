@@ -56,6 +56,23 @@ var (
 	}
 )
 
+type Group map[string]*Deployment
+
+func (r Group) Add(d *Deployment) {
+	r[d.ID()] = d
+}
+
+func (r Group) Contains(d *Deployment) bool {
+	_, found := r[d.ID()]
+	return found
+}
+
+func (r Group) Reset() {
+	for k := range r {
+		delete(r, k)
+	}
+}
+
 type Deployment struct {
 	name         string
 	namespace    string
@@ -66,6 +83,10 @@ type Deployment struct {
 	deadline     time.Duration
 	pods         map[string]validator.Resource
 	podValidator diag.Diagnose
+}
+
+func (d *Deployment) ID() string {
+	return fmt.Sprintf("%s:%s:%s", d.name, d.namespace, d.rType)
 }
 
 func (d *Deployment) Deadline() time.Duration {

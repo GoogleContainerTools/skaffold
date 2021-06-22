@@ -42,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -100,9 +101,10 @@ type secretGenerator struct {
 type Deployer struct {
 	*latestV1.KustomizeDeploy
 
-	accessor access.Accessor
-	debugger debug.Debugger
-	logger   log.Logger
+	accessor      access.Accessor
+	logger        log.Logger
+	debugger      debug.Debugger
+	statusMonitor status.Monitor
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
@@ -135,6 +137,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 		accessor:            provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
 		logger:              provider.Logger.GetKubernetesLogger(podSelector),
+		statusMonitor:       provider.Monitor.GetKubernetesMonitor(),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
@@ -153,6 +156,10 @@ func (k *Deployer) GetDebugger() debug.Debugger {
 
 func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
+}
+
+func (k *Deployer) GetStatusMonitor() status.Monitor {
+	return k.statusMonitor
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

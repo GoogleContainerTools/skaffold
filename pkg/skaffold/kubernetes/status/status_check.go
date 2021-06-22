@@ -26,20 +26,24 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -71,40 +75,65 @@ type Config interface {
 	GetNamespaces() []string
 	StatusCheckDeadlineSeconds() int
 	Muted() config.Muted
+	StatusCheck() (*bool, error)
 }
 
-// Checker waits for the application to be totally deployed.
-type Checker interface {
-	Check(context.Context, io.Writer) error
-}
-
-// statusChecker runs status checks for pods and deployments
-type statusChecker struct {
+// Monitor runs status checks for pods and deployments
+type Monitor struct {
 	cfg             Config
 	labeller        *label.DefaultLabeller
 	deadlineSeconds int
 	muteLogs        bool
+	seenResources   resource.Group
+	singleRun       singleflight.Group
 }
 
-// NewStatusChecker returns a status checker which runs checks on deployments and pods.
-func NewStatusChecker(cfg Config, labeller *label.DefaultLabeller) Checker {
-	return statusChecker{
+// NewStatusMonitor returns a status monitor which runs checks on deployments and pods.
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller) *Monitor {
+	return &Monitor{
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,
 		labeller:        labeller,
 		deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
+		seenResources:   make(resource.Group),
+		singleRun:       singleflight.Group{},
 	}
 }
 
-// Run runs the status checks on deployments and pods deployed in current skaffold dev iteration.
-func (s statusChecker) Check(ctx context.Context, out io.Writer) error {
-	event.StatusCheckEventStarted()
-	errCode, err := s.statusCheck(ctx, out)
-	event.StatusCheckEventEnded(errCode, err)
+// Check runs the status checks on deployments and pods deployed in current skaffold dev iteration.
+func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
+	_, err, _ := s.singleRun.Do(s.labeller.GetRunID(), func() (interface{}, error) {
+		return struct{}{}, s.check(ctx, out)
+	})
 	return err
 }
 
-func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
+func (s *Monitor) check(ctx context.Context, out io.Writer) error {
+	event.StatusCheckEventStarted()
+	eventV2.TaskInProgress(constants.StatusCheck, "Verifying service availability")
+	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
+	defer endTrace()
+
+	start := time.Now()
+	output.Default.Fprintln(out, "Waiting for deployments to stabilize...")
+
+	errCode, err := s.statusCheck(ctx, out)
+	event.StatusCheckEventEnded(errCode, err)
+	if err != nil {
+		eventV2.TaskFailed(constants.StatusCheck, err)
+		return err
+	}
+
+	output.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
+	eventV2.TaskSucceeded(constants.StatusCheck)
+	return nil
+}
+
+func (s *Monitor) Reset() {
+	s.seenResources.Reset()
+}
+
+func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
 	client, err := kubernetesclient.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
@@ -117,7 +146,13 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
-		deployments = append(deployments, newDeployments...)
+		for _, d := range newDeployments {
+			if s.seenResources.Contains(d) {
+				continue
+			}
+			deployments = append(deployments, d)
+			s.seenResources.Add(d)
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -182,7 +217,7 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 	return deployments, nil
 }
 
-func pollDeploymentStatus(ctx context.Context, cfg pkgkubectl.Config, r *resource.Deployment) {
+func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
@@ -245,7 +280,7 @@ func getDeadline(d int) time.Duration {
 	return DefaultStatusCheckDeadline
 }
 
-func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
+func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	ae := r.Status().ActionableError()
 	if r.StatusCode() == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 		// Don't print the status summary if the user ctrl-C or
@@ -271,7 +306,7 @@ func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deploy
 }
 
 // printDeploymentStatus prints resource statuses until all status check are completed or context is cancelled.
-func (s statusChecker) printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
+func (s *Monitor) printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
 	ticker := time.NewTicker(reportStatusTime)
 	defer ticker.Stop()
 	for {
@@ -288,7 +323,7 @@ func (s statusChecker) printDeploymentStatus(ctx context.Context, out io.Writer,
 	}
 }
 
-func (s statusChecker) printStatus(deployments []*resource.Deployment, out io.Writer) bool {
+func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 	allDone := true
 	for _, r := range deployments {
 		if r.IsStatusCheckCompleteOrCancelled() {
