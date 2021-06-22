@@ -33,11 +33,11 @@ import (
 
 type Runner struct {
 	structureTests    []string
+	structureTestArgs []string
 	imageName         string
 	imageIsLocal      bool
 	workspace         string
 	localDaemon       docker.LocalDaemon
-	structureTestArgs []string
 }
 
 // New creates a new structure.Runner.
