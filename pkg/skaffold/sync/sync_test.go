@@ -800,6 +800,16 @@ func TestIntersect(t *testing.T) {
 			},
 		},
 		{
+			description: "absolute path",
+			files:       []string{"/home/test/example.html"},
+			syncRules: []*latestV1.SyncRule{
+				{Src: "/home/test/**", Dest: "/html", Type: "absolute"},
+			},
+			expected: map[string][]string{
+				"/home/test/example.html": {"/html/example.html"},
+			},
+		},
+		{
 			description: "file not in . copies to correct destination",
 			files:       []string{filepath.Join("node", "server.js")},
 			context:     "node",
