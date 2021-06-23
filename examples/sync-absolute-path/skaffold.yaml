@@ -1,0 +1,15 @@
+apiVersion: skaffold/v2beta18
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-absolute
+    context: .
+    sync:
+      manual:
+        - src: '/home/test/**'
+          dest: /config/
+          type: absolute
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
