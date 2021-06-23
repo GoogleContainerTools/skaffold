@@ -230,15 +230,17 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		var absMatches []string
 		// Add absolute typed rules
-		for _, pt := range artifact.Sync.Manual {
-			if pt.Type == "absolute" {
-				// list files and add to dependencies list
-				matches, err := doublestar.Glob(pt.Src)
-				if err != nil {
-					return  fmt.Errorf("pattern error for %q: %w", filepath.Dir(pt.Src), err)
-				}
+		if artifact.Sync != nil {
+			for _, pt := range artifact.Sync.Manual {
+				if pt.Type == "absolute" {
+					// list files and add to dependencies list
+					matches, err := doublestar.Glob(pt.Src)
+					if err != nil {
+						return fmt.Errorf("pattern error for %q: %w", filepath.Dir(pt.Src), err)
+					}
 
-				absMatches = append(absMatches, matches...)
+					absMatches = append(absMatches, matches...)
+				}
 			}
 		}
 

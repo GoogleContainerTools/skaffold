@@ -71,12 +71,14 @@ func newFSNotifyTrigger(cfg Config, isActive func() bool) Trigger {
 	for _, a := range cfg.Artifacts() {
 		workspaces[a.Workspace] = struct{}{}
 		// Add absolute typed rules
-		for _, pt := range a.Sync.Manual {
-			if pt.Type == "absolute" {
-				absPaths = append(absPaths, pt.Src)
+		if a.Sync != nil {
+			for _, pt := range a.Sync.Manual {
+				if pt.Type == "absolute" {
+					absPaths = append(absPaths, pt.Src)
+				}
 			}
-
 		}
+
 	}
 	return fsNotify.New(workspaces, absPaths, isActive, cfg.WatchPollInterval())
 }
