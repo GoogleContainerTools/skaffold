@@ -875,7 +875,7 @@ type SyncRule struct {
 	// For example: `"css/"`
 	Strip string `yaml:"strip,omitempty"`
 
-	// Type specifies the path type
+	// Type specifies the path type.
 	// For example: `"absolute"`
 	Type string `yaml:"type,omitempty"`
 }
