@@ -87,7 +87,9 @@ func getRepoDir(g latestV1.GitInfo) (string, error) {
 	if err := enc.Encode(inputs); err != nil {
 		return "", err
 	}
-	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))[:32], nil
+
+	// UrlEncoding supports '-' as a 63rd character, which can cause dir name issues
+	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))[:32], nil
 }
 
 // GetRepoCacheDir returns the directory for the remote git repo cache
