@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
 const Version string = "skaffold/v3alpha2"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -106,12 +107,16 @@ type Generate struct {
 type Transformer struct {
 	// Name is the transformer name. Can only accept skaffold whitelisted tools.
 	Name string `yaml:"name" yamltags:"required"`
+	// ConfigMapData allows users to provide additional config data to the kpt function.
+	ConfigMapData []string `yaml:"configMapData,omitempty"`
 }
 
-// Transformer describes the supported kpt transformers.
+// Validator describes the supported kpt validators.
 type Validator struct {
 	// Name is the Validator name. Can only accept skaffold whitelisted tools.
 	Name string `yaml:"name" yamltags:"required"`
+	// ConfigMapData allows users to provide additional config data to the kpt function.
+	ConfigMapData []string `yaml:"configMapData,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.
