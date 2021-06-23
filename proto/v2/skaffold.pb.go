@@ -8,12 +8,12 @@ import (
 	fmt "fmt"
 	enums "github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/golang/protobuf/proto"
-	empty "github.com/golang/protobuf/ptypes/empty"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	math "math"
 )
 
@@ -1175,7 +1175,7 @@ func (m *FileSyncState) GetAutoTrigger() bool {
 // `Event` describes an event in the Skaffold process.
 // It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 type Event struct {
-	Timestamp *timestamp.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// Types that are valid to be assigned to EventType:
 	//	*Event_MetaEvent
 	//	*Event_SkaffoldLogEvent
@@ -1220,7 +1220,7 @@ func (m *Event) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Event proto.InternalMessageInfo
 
-func (m *Event) GetTimestamp() *timestamp.Timestamp {
+func (m *Event) GetTimestamp() *timestamppb.Timestamp {
 	if m != nil {
 		return m.Timestamp
 	}
@@ -2904,23 +2904,23 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SkaffoldV2ServiceClient interface {
 	// Returns the state of the current Skaffold execution
-	GetState(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*State, error)
+	GetState(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*State, error)
 	// Returns all the events of the current Skaffold execution from the start
-	Events(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_EventsClient, error)
+	Events(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_EventsClient, error)
 	// Returns all the user application logs of the current Skaffold execution
-	ApplicationLogs(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_ApplicationLogsClient, error)
+	ApplicationLogs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_ApplicationLogsClient, error)
 	// Returns all the skaffold output of the current Skaffold execution
-	SkaffoldLogs(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_SkaffoldLogsClient, error)
+	SkaffoldLogs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_SkaffoldLogsClient, error)
 	// Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
-	Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Allows for enabling or disabling automatic build trigger
-	AutoBuild(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	AutoBuild(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Allows for enabling or disabling automatic sync trigger
-	AutoSync(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	AutoSync(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Allows for enabling or disabling automatic deploy trigger
-	AutoDeploy(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	AutoDeploy(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
-	Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error)
+	Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type skaffoldV2ServiceClient struct {
@@ -2931,7 +2931,7 @@ func NewSkaffoldV2ServiceClient(cc grpc.ClientConnInterface) SkaffoldV2ServiceCl
 	return &skaffoldV2ServiceClient{cc}
 }
 
-func (c *skaffoldV2ServiceClient) GetState(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*State, error) {
+func (c *skaffoldV2ServiceClient) GetState(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*State, error) {
 	out := new(State)
 	err := c.cc.Invoke(ctx, "/proto.v2.SkaffoldV2Service/GetState", in, out, opts...)
 	if err != nil {
@@ -2940,7 +2940,7 @@ func (c *skaffoldV2ServiceClient) GetState(ctx context.Context, in *empty.Empty,
 	return out, nil
 }
 
-func (c *skaffoldV2ServiceClient) Events(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_EventsClient, error) {
+func (c *skaffoldV2ServiceClient) Events(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_EventsClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_SkaffoldV2Service_serviceDesc.Streams[0], "/proto.v2.SkaffoldV2Service/Events", opts...)
 	if err != nil {
 		return nil, err
@@ -2972,7 +2972,7 @@ func (x *skaffoldV2ServiceEventsClient) Recv() (*Event, error) {
 	return m, nil
 }
 
-func (c *skaffoldV2ServiceClient) ApplicationLogs(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_ApplicationLogsClient, error) {
+func (c *skaffoldV2ServiceClient) ApplicationLogs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_ApplicationLogsClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_SkaffoldV2Service_serviceDesc.Streams[1], "/proto.v2.SkaffoldV2Service/ApplicationLogs", opts...)
 	if err != nil {
 		return nil, err
@@ -3004,7 +3004,7 @@ func (x *skaffoldV2ServiceApplicationLogsClient) Recv() (*Event, error) {
 	return m, nil
 }
 
-func (c *skaffoldV2ServiceClient) SkaffoldLogs(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_SkaffoldLogsClient, error) {
+func (c *skaffoldV2ServiceClient) SkaffoldLogs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (SkaffoldV2Service_SkaffoldLogsClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_SkaffoldV2Service_serviceDesc.Streams[2], "/proto.v2.SkaffoldV2Service/SkaffoldLogs", opts...)
 	if err != nil {
 		return nil, err
@@ -3036,8 +3036,8 @@ func (x *skaffoldV2ServiceSkaffoldLogsClient) Recv() (*Event, error) {
 	return m, nil
 }
 
-func (c *skaffoldV2ServiceClient) Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *skaffoldV2ServiceClient) Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/proto.v2.SkaffoldV2Service/Execute", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -3045,8 +3045,8 @@ func (c *skaffoldV2ServiceClient) Execute(ctx context.Context, in *UserIntentReq
 	return out, nil
 }
 
-func (c *skaffoldV2ServiceClient) AutoBuild(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *skaffoldV2ServiceClient) AutoBuild(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/proto.v2.SkaffoldV2Service/AutoBuild", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -3054,8 +3054,8 @@ func (c *skaffoldV2ServiceClient) AutoBuild(ctx context.Context, in *TriggerRequ
 	return out, nil
 }
 
-func (c *skaffoldV2ServiceClient) AutoSync(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *skaffoldV2ServiceClient) AutoSync(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/proto.v2.SkaffoldV2Service/AutoSync", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -3063,8 +3063,8 @@ func (c *skaffoldV2ServiceClient) AutoSync(ctx context.Context, in *TriggerReque
 	return out, nil
 }
 
-func (c *skaffoldV2ServiceClient) AutoDeploy(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *skaffoldV2ServiceClient) AutoDeploy(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/proto.v2.SkaffoldV2Service/AutoDeploy", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -3072,8 +3072,8 @@ func (c *skaffoldV2ServiceClient) AutoDeploy(ctx context.Context, in *TriggerReq
 	return out, nil
 }
 
-func (c *skaffoldV2ServiceClient) Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *skaffoldV2ServiceClient) Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/proto.v2.SkaffoldV2Service/Handle", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -3084,54 +3084,54 @@ func (c *skaffoldV2ServiceClient) Handle(ctx context.Context, in *Event, opts ..
 // SkaffoldV2ServiceServer is the server API for SkaffoldV2Service service.
 type SkaffoldV2ServiceServer interface {
 	// Returns the state of the current Skaffold execution
-	GetState(context.Context, *empty.Empty) (*State, error)
+	GetState(context.Context, *emptypb.Empty) (*State, error)
 	// Returns all the events of the current Skaffold execution from the start
-	Events(*empty.Empty, SkaffoldV2Service_EventsServer) error
+	Events(*emptypb.Empty, SkaffoldV2Service_EventsServer) error
 	// Returns all the user application logs of the current Skaffold execution
-	ApplicationLogs(*empty.Empty, SkaffoldV2Service_ApplicationLogsServer) error
+	ApplicationLogs(*emptypb.Empty, SkaffoldV2Service_ApplicationLogsServer) error
 	// Returns all the skaffold output of the current Skaffold execution
-	SkaffoldLogs(*empty.Empty, SkaffoldV2Service_SkaffoldLogsServer) error
+	SkaffoldLogs(*emptypb.Empty, SkaffoldV2Service_SkaffoldLogsServer) error
 	// Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
-	Execute(context.Context, *UserIntentRequest) (*empty.Empty, error)
+	Execute(context.Context, *UserIntentRequest) (*emptypb.Empty, error)
 	// Allows for enabling or disabling automatic build trigger
-	AutoBuild(context.Context, *TriggerRequest) (*empty.Empty, error)
+	AutoBuild(context.Context, *TriggerRequest) (*emptypb.Empty, error)
 	// Allows for enabling or disabling automatic sync trigger
-	AutoSync(context.Context, *TriggerRequest) (*empty.Empty, error)
+	AutoSync(context.Context, *TriggerRequest) (*emptypb.Empty, error)
 	// Allows for enabling or disabling automatic deploy trigger
-	AutoDeploy(context.Context, *TriggerRequest) (*empty.Empty, error)
+	AutoDeploy(context.Context, *TriggerRequest) (*emptypb.Empty, error)
 	// EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
-	Handle(context.Context, *Event) (*empty.Empty, error)
+	Handle(context.Context, *Event) (*emptypb.Empty, error)
 }
 
 // UnimplementedSkaffoldV2ServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedSkaffoldV2ServiceServer struct {
 }
 
-func (*UnimplementedSkaffoldV2ServiceServer) GetState(ctx context.Context, req *empty.Empty) (*State, error) {
+func (*UnimplementedSkaffoldV2ServiceServer) GetState(ctx context.Context, req *emptypb.Empty) (*State, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetState not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) Events(req *empty.Empty, srv SkaffoldV2Service_EventsServer) error {
+func (*UnimplementedSkaffoldV2ServiceServer) Events(req *emptypb.Empty, srv SkaffoldV2Service_EventsServer) error {
 	return status.Errorf(codes.Unimplemented, "method Events not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) ApplicationLogs(req *empty.Empty, srv SkaffoldV2Service_ApplicationLogsServer) error {
+func (*UnimplementedSkaffoldV2ServiceServer) ApplicationLogs(req *emptypb.Empty, srv SkaffoldV2Service_ApplicationLogsServer) error {
 	return status.Errorf(codes.Unimplemented, "method ApplicationLogs not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) SkaffoldLogs(req *empty.Empty, srv SkaffoldV2Service_SkaffoldLogsServer) error {
+func (*UnimplementedSkaffoldV2ServiceServer) SkaffoldLogs(req *emptypb.Empty, srv SkaffoldV2Service_SkaffoldLogsServer) error {
 	return status.Errorf(codes.Unimplemented, "method SkaffoldLogs not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) Execute(ctx context.Context, req *UserIntentRequest) (*empty.Empty, error) {
+func (*UnimplementedSkaffoldV2ServiceServer) Execute(ctx context.Context, req *UserIntentRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) AutoBuild(ctx context.Context, req *TriggerRequest) (*empty.Empty, error) {
+func (*UnimplementedSkaffoldV2ServiceServer) AutoBuild(ctx context.Context, req *TriggerRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AutoBuild not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) AutoSync(ctx context.Context, req *TriggerRequest) (*empty.Empty, error) {
+func (*UnimplementedSkaffoldV2ServiceServer) AutoSync(ctx context.Context, req *TriggerRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AutoSync not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) AutoDeploy(ctx context.Context, req *TriggerRequest) (*empty.Empty, error) {
+func (*UnimplementedSkaffoldV2ServiceServer) AutoDeploy(ctx context.Context, req *TriggerRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AutoDeploy not implemented")
 }
-func (*UnimplementedSkaffoldV2ServiceServer) Handle(ctx context.Context, req *Event) (*empty.Empty, error) {
+func (*UnimplementedSkaffoldV2ServiceServer) Handle(ctx context.Context, req *Event) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Handle not implemented")
 }
 
@@ -3140,7 +3140,7 @@ func RegisterSkaffoldV2ServiceServer(s *grpc.Server, srv SkaffoldV2ServiceServer
 }
 
 func _SkaffoldV2Service_GetState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -3152,13 +3152,13 @@ func _SkaffoldV2Service_GetState_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: "/proto.v2.SkaffoldV2Service/GetState",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SkaffoldV2ServiceServer).GetState(ctx, req.(*empty.Empty))
+		return srv.(SkaffoldV2ServiceServer).GetState(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _SkaffoldV2Service_Events_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(empty.Empty)
+	m := new(emptypb.Empty)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -3179,7 +3179,7 @@ func (x *skaffoldV2ServiceEventsServer) Send(m *Event) error {
 }
 
 func _SkaffoldV2Service_ApplicationLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(empty.Empty)
+	m := new(emptypb.Empty)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -3200,7 +3200,7 @@ func (x *skaffoldV2ServiceApplicationLogsServer) Send(m *Event) error {
 }
 
 func _SkaffoldV2Service_SkaffoldLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(empty.Empty)
+	m := new(emptypb.Empty)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}

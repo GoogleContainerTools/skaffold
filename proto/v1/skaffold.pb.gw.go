@@ -15,7 +15,6 @@ import (
 
 	"github.com/golang/protobuf/descriptor"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/utilities"
 	"google.golang.org/grpc"
@@ -23,6 +22,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Suppress "imported and not used" errors
@@ -35,7 +35,7 @@ var _ = descriptor.ForMessage
 var _ = metadata.Join
 
 func request_SkaffoldService_GetState_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq empty.Empty
+	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.GetState(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -44,7 +44,7 @@ func request_SkaffoldService_GetState_0(ctx context.Context, marshaler runtime.M
 }
 
 func local_request_SkaffoldService_GetState_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq empty.Empty
+	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.GetState(ctx, &protoReq)
@@ -105,7 +105,7 @@ func request_SkaffoldService_EventLog_0(ctx context.Context, marshaler runtime.M
 }
 
 func request_SkaffoldService_Events_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldServiceClient, req *http.Request, pathParams map[string]string) (SkaffoldService_EventsClient, runtime.ServerMetadata, error) {
-	var protoReq empty.Empty
+	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
 	stream, err := client.Events(ctx, &protoReq)
