@@ -491,6 +491,10 @@ type TestCase struct {
 	// to run on that artifact.
 	// For example: `["./test/*"]`.
 	StructureTests []string `yaml:"structureTests,omitempty" skaffold:"filepath"`
+
+	// StructureTestArgs lists additional configuration arguments passed to `container-structure-test` binary.
+	// For example: `["--driver=tar", "--no-color", "-q"]`.
+	StructureTestArgs []string `yaml:"structureTestsArgs,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.

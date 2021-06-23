@@ -94,6 +94,58 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 	})
 }
 
+func TestCustomParams(t *testing.T) {
+	testCases := []struct {
+		structureTestArgs []string
+		expectedCmd       string
+	}{
+		{
+			structureTestArgs: []string{"--driver=tar", "--force", "-q", "--save"},
+			expectedCmd:       " --driver=tar --force -q --save",
+		},
+		{
+			structureTestArgs: []string{},
+			expectedCmd:       "",
+		},
+		{
+			structureTestArgs: nil,
+			expectedCmd:       "",
+		},
+	}
+
+	for _, tc := range testCases {
+		testutil.Run(t, "", func(t *testutil.T) {
+			tmpDir := t.NewTempDir().Touch("test.yaml")
+			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+
+			baseCmd := "container-structure-test test -v warn --image image:tag --config " + tmpDir.Path("test.yaml")
+			t.Override(&util.DefaultExecCommand, testutil.CmdRun(baseCmd+tc.expectedCmd))
+
+			cfg := &mockConfig{
+				tests: []*latestV1.TestCase{{
+					ImageName:         "image",
+					Workspace:         tmpDir.Root(),
+					StructureTests:    []string{"test.yaml"},
+					StructureTestArgs: tc.structureTestArgs,
+				}},
+			}
+
+			testCase := &latestV1.TestCase{
+				ImageName:         "image",
+				Workspace:         tmpDir.Root(),
+				StructureTests:    []string{"test.yaml"},
+				StructureTestArgs: tc.structureTestArgs,
+			}
+			testEvent.InitializeState([]latestV1.Pipeline{{}})
+
+			testRunner, err := New(cfg, testCase, true)
+			t.CheckNoError(err)
+			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+			t.CheckNoError(err)
+		})
+	}
+}
+
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	tests                 []*latestV1.TestCase
