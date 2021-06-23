@@ -25,3 +25,9 @@ profiles:
           - command: echo Hello!
         structureTests:
           - ./test/*
+  - name: noimagenames
+    test:
+      - custom:
+          - command: echo Hello!
+        structureTests:
+          - ./test/*

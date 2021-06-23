@@ -203,7 +203,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error) {
 	pipeline, found := runCtx.PipelineForImage(imageName)
 	if !found {
-		pipeline = runCtx.DefaultPipeline()
+		return false, nil // if image doesn't match any artifact definition then it's probably pulled from a registry
 	}
 	if pipeline.Build.GoogleCloudBuild != nil || pipeline.Build.Cluster != nil {
 		return false, nil

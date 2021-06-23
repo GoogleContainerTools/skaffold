@@ -54,7 +54,7 @@ type FullTester struct {
 // running a single test on a single artifact image and returning its result.
 // Any new test type should implement this interface.
 type ImageTester interface {
-	Test(ctx context.Context, out io.Writer, tag string) error
+	Test(ctx context.Context, out io.Writer, image graph.Artifact) error
 
 	TestDependencies() ([]string, error)
 }

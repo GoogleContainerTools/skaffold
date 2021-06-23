@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -69,9 +70,9 @@ func TestNewCustomTestRunner(t *testing.T) {
 		}
 		testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
+		testRunner, err := New(cfg, testCase.Workspace, custom)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+		err = testRunner.Test(context.Background(), ioutil.Discard, graph.Artifact{ImageName: "image", Tag: "image:tag"})
 
 		t.CheckNoError(err)
 	})
@@ -131,9 +132,9 @@ func TestCustomCommandError(t *testing.T) {
 			}
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, test.custom)
+			testRunner, err := New(cfg, testCase.Workspace, test.custom)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+			err = testRunner.Test(context.Background(), ioutil.Discard, graph.Artifact{ImageName: "image", Tag: "image:tag"})
 
 			// TODO(modali): Update the logic to check for error code instead of error string.
 			t.CheckError(test.shouldErr, err)
@@ -179,7 +180,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 		}
 
 		expected := []string{"file1", "file2", "file3"}
-		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
+		testRunner, err := New(cfg, testCase.Workspace, custom)
 		t.CheckNoError(err)
 		deps, err := testRunner.TestDependencies()
 
@@ -250,7 +251,7 @@ func TestTestDependenciesPaths(t *testing.T) {
 			}
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
+			testRunner, err := New(cfg, testCase.Workspace, custom)
 			t.CheckNoError(err)
 			deps, err := testRunner.TestDependencies()
 
@@ -318,7 +319,7 @@ func TestGetEnv(t *testing.T) {
 			}
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
+			testRunner, err := New(cfg, testCase.Workspace, custom)
 			t.CheckNoError(err)
 			actual, err := testRunner.getEnv(test.tag)
 

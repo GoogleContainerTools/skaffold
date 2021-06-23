@@ -476,10 +476,6 @@ type ResourceRequirement struct {
 
 // TestCase is a list of tests to run on images that Skaffold builds.
 type TestCase struct {
-	// ImageName is the artifact on which to run those tests.
-	// For example: `gcr.io/k8s-skaffold/example`.
-	ImageName string `yaml:"image" yamltags:"required"`
-
 	// Workspace is the directory containing the test sources.
 	// Defaults to `.`.
 	Workspace string `yaml:"context,omitempty" skaffold:"filepath"`
@@ -491,6 +487,10 @@ type TestCase struct {
 	// to run on that artifact.
 	// For example: `["./test/*"]`.
 	StructureTests []string `yaml:"structureTests,omitempty" skaffold:"filepath"`
+
+	// ImageName is the artifact on which to run those tests. If unspecified that these tests will run for all artifacts.
+	// For example: `gcr.io/k8s-skaffold/example`.
+	ImageName string `yaml:"image,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.

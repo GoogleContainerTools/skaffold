@@ -62,9 +62,9 @@ build:
     docker:
       dockerfile: dockerfile.test
 test:
-- image: docker/image
-  structureTests:
+- structureTests:
   - ./test/*
+  image: docker/image
 deploy:
   kubectl:
     manifests:
@@ -190,9 +190,9 @@ build:
     docker:
       dockerfile: dockerfile.test
 test:
-- image: docker/image
-  structureTests:
+- structureTests:
   - ./test/*
+  image: docker/image
 deploy:
   kubectl:
     manifests:

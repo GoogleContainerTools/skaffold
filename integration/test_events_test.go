@@ -61,6 +61,14 @@ func TestTestEvents(t *testing.T) {
 			args:        []string{"--profile", "customandstructure"},
 			numOfTests:  2,
 		},
+		{
+			description: "test events for tests without explicit image names",
+			podName:     "test-events",
+			testDir:     "testdata/test-events",
+			config:      "skaffold.yaml",
+			args:        []string{"--profile", "noimagenames"},
+			numOfTests:  2,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

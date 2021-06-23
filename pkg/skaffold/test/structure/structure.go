@@ -27,51 +27,54 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type Runner struct {
 	structureTests []string
-	imageName      string
-	imageIsLocal   bool
+	isImageLocal   func(imageName string) (bool, error)
 	workspace      string
 	localDaemon    docker.LocalDaemon
 }
 
 // New creates a new structure.Runner.
-func New(cfg docker.Config, tc *latestV1.TestCase, imageIsLocal bool) (*Runner, error) {
+func New(cfg docker.Config, tc *latestV1.TestCase, isImageLocal func(imageName string) (bool, error)) (*Runner, error) {
 	localDaemon, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &Runner{
 		structureTests: tc.StructureTests,
-		imageName:      tc.ImageName,
 		workspace:      tc.Workspace,
 		localDaemon:    localDaemon,
-		imageIsLocal:   imageIsLocal,
+		isImageLocal:   isImageLocal,
 	}, nil
 }
 
 // Test is the entrypoint for running structure tests
-func (cst *Runner) Test(ctx context.Context, out io.Writer, imageTag string) error {
+func (cst *Runner) Test(ctx context.Context, out io.Writer, image graph.Artifact) error {
 	event.TestInProgress()
-	if err := cst.runStructureTests(ctx, out, imageTag); err != nil {
-		event.TestFailed(cst.imageName, err)
+	if err := cst.runStructureTests(ctx, out, image); err != nil {
+		event.TestFailed(image.ImageName, err)
 		return containerStructureTestErr(err)
 	}
 	event.TestComplete()
 	return nil
 }
 
-func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTag string) error {
-	if !cst.imageIsLocal {
+func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, image graph.Artifact) error {
+	isLocal, err := cst.isImageLocal(image.ImageName)
+	if err != nil {
+		return err
+	}
+	if !isLocal {
 		// The image is remote so we have to pull it locally.
 		// `container-structure-test` currently can't do it:
 		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
-		if err := cst.localDaemon.Pull(ctx, out, imageTag); err != nil {
-			return dockerPullImageErr(imageTag, err)
+		if err := cst.localDaemon.Pull(ctx, out, image.Tag); err != nil {
+			return dockerPullImageErr(image.Tag, err)
 		}
 	}
 
@@ -82,7 +85,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 
 	logrus.Infof("Running structure tests for files %v", files)
 
-	args := []string{"test", "-v", "warn", "--image", imageTag}
+	args := []string{"test", "-v", "warn", "--image", image.Tag}
 	for _, f := range files {
 		args = append(args, "--config", f)
 	}

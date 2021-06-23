@@ -34,6 +34,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
 )
 
+const commonTestsKey = "" // map key for tests that don't specify a target artifact, and are run against all artifacts.
+
 type Config interface {
 	docker.Config
 
@@ -59,7 +61,7 @@ func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) 
 // TestDependencies returns the watch dependencies for the target artifact to the runner.
 func (t FullTester) TestDependencies(artifact *latestV1.Artifact) ([]string, error) {
 	var deps []string
-	for _, tester := range t.Testers[artifact.ImageName] {
+	for _, tester := range append(t.Testers[commonTestsKey], t.Testers[artifact.ImageName]...) {
 		result, err := tester.TestDependencies()
 		if err != nil {
 			return nil, err
@@ -114,9 +116,9 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
 	testerID := 0
 	for _, b := range bRes {
-		for _, tester := range t.Testers[b.ImageName] {
+		for _, tester := range append(t.Testers[commonTestsKey], t.Testers[b.ImageName]...) {
 			eventV2.TesterInProgress(testerID)
-			if err := tester.Test(ctx, out, b.Tag); err != nil {
+			if err := tester.Test(ctx, out, b); err != nil {
 				eventV2.TesterFailed(testerID, err)
 				return fmt.Errorf("running tests: %w", err)
 			}
@@ -127,16 +129,11 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Ar
 	return nil
 }
 
-func getImageTesters(cfg docker.Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latestV1.TestCase) (ImageTesters, error) {
+func getImageTesters(cfg docker.Config, isImageLocal func(imageName string) (bool, error), tcs []*latestV1.TestCase) (ImageTesters, error) {
 	runners := make(map[string][]ImageTester)
 	for _, tc := range tcs {
-		isLocal, err := imagesAreLocal(tc.ImageName)
-		if err != nil {
-			return nil, err
-		}
-
 		if len(tc.StructureTests) != 0 {
-			structureRunner, err := structure.New(cfg, tc, isLocal)
+			structureRunner, err := structure.New(cfg, tc, isImageLocal)
 			if err != nil {
 				return nil, err
 			}
@@ -144,7 +141,7 @@ func getImageTesters(cfg docker.Config, imagesAreLocal func(imageName string) (b
 		}
 
 		for _, customTest := range tc.CustomTests {
-			customRunner, err := custom.New(cfg, tc.ImageName, tc.Workspace, customTest)
+			customRunner, err := custom.New(cfg, tc.Workspace, customTest)
 			if err != nil {
 				return nil, err
 			}

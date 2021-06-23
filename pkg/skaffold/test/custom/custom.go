@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -44,32 +45,30 @@ const Windows string = "windows"
 type Runner struct {
 	cfg        docker.Config
 	customTest latestV1.CustomTest
-	imageName  string
 	workspace  string
 }
 
 // New creates a new custom.Runner.
-func New(cfg docker.Config, imageName string, ws string, ct latestV1.CustomTest) (*Runner, error) {
+func New(cfg docker.Config, ws string, ct latestV1.CustomTest) (*Runner, error) {
 	return &Runner{
 		cfg:        cfg,
-		imageName:  imageName,
 		customTest: ct,
 		workspace:  ws,
 	}, nil
 }
 
 // Test is the entrypoint for running custom tests
-func (ct *Runner) Test(ctx context.Context, out io.Writer, imageTag string) error {
+func (ct *Runner) Test(ctx context.Context, out io.Writer, image graph.Artifact) error {
 	event.TestInProgress()
-	if err := ct.runCustomTest(ctx, out, imageTag); err != nil {
-		event.TestFailed(ct.imageName, err)
+	if err := ct.runCustomTest(ctx, out, image); err != nil {
+		event.TestFailed(image.ImageName, err)
 		return err
 	}
 	event.TestComplete()
 	return nil
 }
 
-func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, imageTag string) error {
+func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, image graph.Artifact) error {
 	test := ct.customTest
 
 	// Expand command
@@ -88,9 +87,9 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, imageTag str
 		ctx = newCtx
 	}
 
-	cmd, err := ct.retrieveCmd(ctx, out, command, imageTag)
+	cmd, err := ct.retrieveCmd(ctx, out, command, image.Tag)
 	if err != nil {
-		return cmdRunRetrieveErr(command, ct.imageName, err)
+		return cmdRunRetrieveErr(command, image.ImageName, err)
 	}
 
 	if err := util.RunCmd(cmd); err != nil {
