@@ -53,7 +53,7 @@ func TestNewTrigger(t *testing.T) {
 			watchPollInterval: 1,
 			expected: fsNotify.New(map[string]struct{}{
 				"../workspace":            {},
-				"../some/other/workspace": {}}, nil, 1),
+				"../some/other/workspace": {}}, nil,nil, 1),
 		},
 		{
 			description: "manual trigger",
@@ -197,7 +197,7 @@ func TestStartTrigger(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&fsNotify.Watch, test.mockWatch)
-			trigger := fsNotify.New(nil, func() bool { return false }, 1)
+			trigger := fsNotify.New(nil, nil, func() bool { return false },1)
 			_, err := StartTrigger(context.Background(), trigger)
 			time.Sleep(1 * time.Second)
 			t.CheckNoError(err)
