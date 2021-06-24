@@ -116,14 +116,14 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, h *latestV1.HelmDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, h *latestV1.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
-		return nil, nil, versionGetErr(err)
+		return nil, versionGetErr(err)
 	}
 
 	if hv.LT(helm3Version) {
-		return nil, nil, minVersionErr()
+		return nil, minVersionErr()
 	}
 
 	originalImages := []graph.Artifact{}
@@ -155,7 +155,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		bV:             hv,
 		enableDebug:    cfg.Mode() == config.RunModes.Debug,
 		isMultiConfig:  cfg.IsMultiConfig(),
-	}, podSelector, nil
+	}, nil
 }
 
 func (h *Deployer) GetAccessor() access.Accessor {

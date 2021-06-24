@@ -49,7 +49,7 @@ func (t *T) RequireNoError(err error) {
 	}
 }
 
-func (t *T) RequireNonNilResult(x interface{}, y interface{}, err error) interface{} {
+func (t *T) RequireNonNilResult(x interface{}, err error) interface{} {
 	t.Helper()
 
 	if err != nil {
@@ -57,10 +57,6 @@ func (t *T) RequireNonNilResult(x interface{}, y interface{}, err error) interfa
 		t.FailNow()
 	}
 	if x == nil {
-		t.Errorf("unexpected nil value (failing test now)")
-		t.FailNow()
-	}
-	if y == nil {
 		t.Errorf("unexpected nil value (failing test now)")
 		t.FailNow()
 	}
