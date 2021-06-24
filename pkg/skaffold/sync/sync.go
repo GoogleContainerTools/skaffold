@@ -226,7 +226,7 @@ func matchSyncRules(syncRules []*latestV1.SyncRule, contextWd, f, containerWd st
 	dsts := make([]string, 0, 1)
 	for _, r := range syncRules {
 		// Add directly file to destination
-		if filepath.IsAbs(f)  {
+		if filepath.IsAbs(f) {
 			dsts = append(dsts, path.Join(r.Dest, filepath.Base(f)))
 			continue
 		}

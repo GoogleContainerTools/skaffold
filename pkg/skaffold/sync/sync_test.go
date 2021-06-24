@@ -829,7 +829,7 @@ func TestIntersect(t *testing.T) {
 			},
 			expected: map[string][]string{
 				"/something/test.js": {"/test.js"},
-				"node/server.js": {"/server.js"},
+				"node/server.js":     {"/server.js"},
 			},
 		},
 	}

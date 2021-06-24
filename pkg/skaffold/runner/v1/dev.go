@@ -232,7 +232,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		// Add absolute typed rules
 		if artifact.Sync != nil {
 			for _, pt := range artifact.Sync.Manual {
-				if filepath.IsAbs(pt.Src){
+				if filepath.IsAbs(pt.Src) {
 					// list files and add to dependencies list
 					matches, err := doublestar.Glob(pt.Src)
 					if err != nil {
