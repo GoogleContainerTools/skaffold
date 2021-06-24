@@ -15,30 +15,10 @@ sync:
   manual:
     - src: '/home/config/**'
       dest: /config/
-      type: absolute
 ```
 ___
 
 ## Design
-
-### Config Changes
-
-Added new configuration field (Type) in `SyncRule`.
-```yaml
-// SyncRule specifies which local files to sync to remote folders.
-type SyncRule struct {
-  ...
-  ...
-  ...
-
-  // Type specifies the path type
-  // For example: `"absolute"`
-  Type string `yaml:"type,omitempty"`
-}
-```
-The `Type` can only be "absolute" or empty.
-
-The change of config doesn't affect older skaffold configuration files.
 
 
 ### Open Issues
@@ -47,11 +27,9 @@ The change of config doesn't affect older skaffold configuration files.
 
 ## Implementation plan
 ___
-
-1. Add new config key `Type` to `sync.manual` and test schema validation.
-2. Change path watchers to able to watch absolute paths.
-3. Add files inside the absolute path to the dependencies list of the artifact.
-
+1. Change path watchers to able to watch absolute paths.
+2. Add files inside the absolute path to the dependencies list of the artifact.
+3. Remove relative path restrictions.
 ___
 
 
