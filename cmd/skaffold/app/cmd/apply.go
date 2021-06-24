@@ -27,7 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // NewCmdApply describes the CLI command to apply manifests to a cluster.
@@ -53,7 +53,7 @@ func doApply(ctx context.Context, out io.Writer, args []string) error {
 	if err := validateManifests(args); err != nil {
 		return err
 	}
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		return r.Apply(ctx, out)
 	})
 }

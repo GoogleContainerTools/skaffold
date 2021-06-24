@@ -27,6 +27,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -199,11 +200,11 @@ func (rc *RunContext) BuildConcurrency() int                         { return rc
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
 
-func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
-			pipelines = append(pipelines, cfg.Pipeline)
+			pipelines = append(pipelines, cfg.(*latestV1.SkaffoldConfig).Pipeline)
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()
