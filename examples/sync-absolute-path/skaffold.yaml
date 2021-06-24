@@ -8,7 +8,6 @@ build:
       manual:
         - src: '/home/test/**'
           dest: /config/
-          type: absolute
 deploy:
   kubectl:
     manifests:

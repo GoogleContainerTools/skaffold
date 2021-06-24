@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -70,10 +71,10 @@ func newFSNotifyTrigger(cfg Config, isActive func() bool) Trigger {
 	var absPaths []string
 	for _, a := range cfg.Artifacts() {
 		workspaces[a.Workspace] = struct{}{}
-		// Add absolute typed rules
+		// Add absolute paths
 		if a.Sync != nil {
 			for _, pt := range a.Sync.Manual {
-				if pt.Type == "absolute" {
+				if filepath.IsAbs(pt.Src) {
 					absPaths = append(absPaths, pt.Src)
 				}
 			}

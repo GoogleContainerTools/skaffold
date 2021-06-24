@@ -446,11 +446,6 @@ func validateSyncRules(artifacts []*latestV1.Artifact) []error {
 					err := fmt.Errorf("sync rule pattern '%s' does not have prefix '%s'", r.Src, r.Strip)
 					errs = append(errs, err)
 				}
-
-				if len(r.Type) != 0 && r.Type != "absolute" {
-					err := fmt.Errorf("sync rule type should be absolute or empty")
-					errs = append(errs, err)
-				}
 			}
 		}
 	}

@@ -786,39 +786,6 @@ func TestValidateSyncRules(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "good type",
-			artifacts: []*latestV1.Artifact{{
-				ImageName: "img",
-				Sync: &latestV1.Sync{Manual: []*latestV1.SyncRule{
-					{
-						Src:  "src/**/*.js",
-						Dest: ".",
-						Type: "absolute",
-					},
-					{
-						Src:   "src/**/*.js",
-						Dest:  ".",
-						Strip: "src/",
-						Type:  "",
-					},
-				}},
-			}},
-		},
-		{
-			description: "bad type",
-			artifacts: []*latestV1.Artifact{{
-				ImageName: "img",
-				Sync: &latestV1.Sync{Manual: []*latestV1.SyncRule{
-					{
-						Src:  "src/**/*.js",
-						Dest: ".",
-						Type: "nicepath",
-					},
-				}},
-			}},
-			shouldErr: true,
-		},
-		{
 			description: "stripping part of folder name is valid",
 			artifacts: []*latestV1.Artifact{{
 				ImageName: "img",
