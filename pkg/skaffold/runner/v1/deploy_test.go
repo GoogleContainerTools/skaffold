@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -123,7 +124,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 			KubeContext: "does-not-exist",
 		}
 
-		deployer, _, err := getDeployer(runCtx, deploy.NoopComponentProvider, nil)
+		deployer, _, err := runner.GetDeployer(runCtx, deploy.NoopComponentProvider, nil)
 		t.RequireNoError(err)
 		r := SkaffoldRunner{
 			runCtx:     runCtx,

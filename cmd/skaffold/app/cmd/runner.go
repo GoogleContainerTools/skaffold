@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
 	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -79,9 +78,6 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 		return nil, nil, err
 	}
 	setDefaultDeployer(configs)
-
-	// TODO: Should support per-config kubecontext. Right now we constrain all configs to define the same kubecontext.
-	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, configs[0].Deploy.KubeContext)
 
 	if err := validation.Process(configs); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)

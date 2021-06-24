@@ -139,7 +139,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 		accessor:            provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
 		logger:              provider.Logger.GetKubernetesLogger(podSelector),
-		statusMonitor:       provider.Monitor.GetKubernetesMonitor(),
+		statusMonitor:       provider.Monitor.GetKubernetesMonitor(cfg),
 		syncer:              provider.Syncer.GetKubernetesSyncer(podSelector),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),

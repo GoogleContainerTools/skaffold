@@ -17,42 +17,34 @@ limitations under the License.
 package status
 
 import (
-	"sync"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 )
 
 type Provider interface {
-	GetKubernetesMonitor() Monitor
+	GetKubernetesMonitor(config status.Config) Monitor
 	GetNoopMonitor() Monitor
 }
 
 type fullProvider struct {
-	kubernetesMonitor Monitor
+	k8sMonitor map[string]Monitor // keyed on KubeContext. TODO: make KubeContext a struct type.
+	labeller   *label.DefaultLabeller
 }
 
-var (
-	provider *fullProvider
-	once     sync.Once
-)
-
-func NewMonitorProvider(config status.Config, l *label.DefaultLabeller) Provider {
-	once.Do(func() {
-		var m Monitor = &NoopMonitor{}
-		enabled, _ := config.StatusCheck()
-		if enabled == nil || *enabled { // assume enabled if value is nil
-			m = status.NewStatusMonitor(config, l)
-		}
-		provider = &fullProvider{
-			kubernetesMonitor: m,
-		}
-	})
-	return provider
+func NewMonitorProvider(l *label.DefaultLabeller) Provider {
+	return &fullProvider{k8sMonitor: make(map[string]Monitor), labeller: l}
 }
 
-func (p *fullProvider) GetKubernetesMonitor() Monitor {
-	return p.kubernetesMonitor
+func (p *fullProvider) GetKubernetesMonitor(config status.Config) Monitor {
+	enabled := config.StatusCheck()
+	if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
+		return &NoopMonitor{}
+	}
+	context := config.GetKubeContext()
+	if p.k8sMonitor[context] == nil {
+		p.k8sMonitor[context] = status.NewStatusMonitor(config, p.labeller)
+	}
+	return p.k8sMonitor[context]
 }
 
 func (p *fullProvider) GetNoopMonitor() Monitor {
@@ -62,7 +54,7 @@ func (p *fullProvider) GetNoopMonitor() Monitor {
 // NoopProvider is used in tests
 type NoopProvider struct{}
 
-func (p *NoopProvider) GetKubernetesMonitor() Monitor {
+func (p *NoopProvider) GetKubernetesMonitor(config status.Config) Monitor {
 	return &NoopMonitor{}
 }
 
