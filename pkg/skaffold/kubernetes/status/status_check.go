@@ -75,7 +75,7 @@ type Config interface {
 	GetNamespaces() []string
 	StatusCheckDeadlineSeconds() int
 	Muted() config.Muted
-	StatusCheck() (*bool, error)
+	StatusCheck() *bool
 }
 
 // Monitor runs status checks for pods and deployments

@@ -19,8 +19,6 @@ package runcontext
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -88,63 +86,6 @@ func TestRunContext_UpdateNamespaces(t *testing.T) {
 			runCtx.UpdateNamespaces(test.newNamespaces)
 
 			t.CheckDeepEqual(test.expected, runCtx.Namespaces)
-		})
-	}
-}
-
-func TestPipelines_StatusCheck(t *testing.T) {
-	tests := []struct {
-		description   string
-		statusCheckP1 *bool
-		statusCheckP2 *bool
-		wantEnabled   *bool
-		wantErr       bool
-	}{
-		{
-			description: "both pipelines' statusCheck values are unspecified",
-			wantEnabled: util.BoolPtr(true),
-		},
-		{
-			description:   "one pipeline's statusCheck value is true",
-			statusCheckP1: util.BoolPtr(true),
-			wantEnabled:   util.BoolPtr(true),
-		},
-		{
-			description:   "one pipeline's statusCheck value is false",
-			statusCheckP1: util.BoolPtr(false),
-			wantEnabled:   util.BoolPtr(false),
-		},
-		{
-			description:   "one pipeline's statusCheck value is true, one pipeline's statusCheck value is false",
-			statusCheckP1: util.BoolPtr(true),
-			statusCheckP2: util.BoolPtr(false),
-			wantErr:       true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			p := &Pipelines{
-				pipelines: []latestV1.Pipeline{
-					{
-						Deploy: latestV1.DeployConfig{
-							StatusCheck: test.statusCheckP1,
-						},
-					},
-					{
-						Deploy: latestV1.DeployConfig{
-							StatusCheck: test.statusCheckP2,
-						},
-					},
-				},
-			}
-			gotEnabled, err := p.StatusCheck()
-			if err != nil && !test.wantErr {
-				t.Errorf("p.StatusCheck() got error %v, want no error", err)
-			}
-			if err == nil && test.wantErr {
-				t.Errorf("p.StatusCheck() got no error, want error")
-			}
-			t.CheckDeepEqual(test.wantEnabled, gotEnabled)
 		})
 	}
 }

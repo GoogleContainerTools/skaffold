@@ -59,7 +59,9 @@ type mockConfig struct {
 	statusCheck *bool
 }
 
-func (m mockConfig) StatusCheck() (*bool, error) { return m.statusCheck, nil }
+func (m mockConfig) StatusCheck() *bool { return m.statusCheck }
+
+func (m mockConfig) GetKubeContext() string { return "" }
 
 func (m mockConfig) StatusCheckDeadlineSeconds() int { return 0 }
 

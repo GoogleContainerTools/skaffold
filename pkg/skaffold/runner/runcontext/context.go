@@ -112,28 +112,6 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 	return tests
 }
 
-func (ps Pipelines) StatusCheck() (*bool, error) {
-	var enabled, disabled bool
-	for _, p := range ps.pipelines {
-		if p.Deploy.StatusCheck != nil {
-			if *p.Deploy.StatusCheck {
-				enabled = true
-			} else {
-				disabled = true
-			}
-			if enabled && disabled {
-				return nil, fmt.Errorf("cannot explicitly enable StatusCheck in one pipeline and explicitly disable it in another pipeline, see https://skaffold.dev/docs/workflows/ci-cd/#waiting-for-skaffold-deployments-using-healthcheck")
-			}
-		}
-	}
-	// set the group status check to disabled if any pipeline has StatusCheck
-	// set to false.
-	if disabled {
-		return util.BoolPtr(false), nil
-	}
-	return util.BoolPtr(true), nil
-}
-
 func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	c := 0
 	// set the group status check deadline to maximum of any individually specified value
@@ -169,22 +147,6 @@ func (rc *RunContext) DeployConfigs() []latestV1.DeployConfig { return rc.Pipeli
 func (rc *RunContext) Deployers() []latestV1.DeployConfig { return rc.Pipelines.Deployers() }
 
 func (rc *RunContext) TestCases() []*latestV1.TestCase { return rc.Pipelines.TestCases() }
-
-func (rc *RunContext) StatusCheck() (*bool, error) {
-	scOpts := rc.Opts.StatusCheck.Value()
-	scConfig, err := rc.Pipelines.StatusCheck()
-	if err != nil {
-		return nil, err
-	}
-	switch {
-	case scOpts != nil:
-		return util.BoolPtr(*scOpts), nil
-	case scConfig != nil:
-		return util.BoolPtr(*scConfig), nil
-	default:
-		return util.BoolPtr(true), nil
-	}
-}
 
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
@@ -226,6 +188,7 @@ func (rc *RunContext) RenderOnly() bool                              { return rc
 func (rc *RunContext) RenderOutput() string                          { return rc.Opts.RenderOutput }
 func (rc *RunContext) SkipRender() bool                              { return rc.Opts.SkipRender }
 func (rc *RunContext) SkipTests() bool                               { return rc.Opts.SkipTests }
+func (rc *RunContext) StatusCheck() *bool                            { return rc.Opts.StatusCheck.Value() }
 func (rc *RunContext) Tail() bool                                    { return rc.Opts.Tail }
 func (rc *RunContext) Trigger() string                               { return rc.Opts.Trigger }
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions     { return rc.Opts.WaitForDeletions }

@@ -17,8 +17,6 @@ limitations under the License.
 package status
 
 import (
-	"sync"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 )
@@ -29,24 +27,24 @@ type Provider interface {
 }
 
 type fullProvider struct {
-	k8sMonitor Monitor
+	k8sMonitor map[string]Monitor // keyed on KubeContext. TODO: make KubeContext a struct type.
 	labeller   *label.DefaultLabeller
-	once       sync.Once
 }
 
 func NewMonitorProvider(l *label.DefaultLabeller) Provider {
-	return &fullProvider{labeller: l}
+	return &fullProvider{k8sMonitor: make(map[string]Monitor), labeller: l}
 }
 
 func (p *fullProvider) GetKubernetesMonitor(config status.Config) Monitor {
-	enabled, _ := config.StatusCheck()
+	enabled := config.StatusCheck()
 	if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
 		return &NoopMonitor{}
 	}
-	p.once.Do(func() {
-		p.k8sMonitor = status.NewStatusMonitor(config, p.labeller)
-	})
-	return p.k8sMonitor
+	context := config.GetKubeContext()
+	if p.k8sMonitor[context] == nil {
+		p.k8sMonitor[context] = status.NewStatusMonitor(config, p.labeller)
+	}
+	return p.k8sMonitor[context]
 }
 
 func (p *fullProvider) GetNoopMonitor() Monitor {

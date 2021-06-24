@@ -46,6 +46,15 @@ func (d *deployerCtx) GetKubeContext() string {
 	return d.RunContext.GetKubeContext()
 }
 
+func (d *deployerCtx) StatusCheck() *bool {
+	// runcontext StatusCheck method returns the value set by the cli flag `--status-check`
+	// which overrides the value set in the individual configs.
+	if cliValue := d.RunContext.StatusCheck(); cliValue != nil {
+		return cliValue
+	}
+	return d.deploy.StatusCheck
+}
+
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
 func GetDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvider, labels map[string]string) (deploy.Deployer, kubernetes.ImageListMux, error) {
 	var podSelectors kubernetes.ImageListMux
