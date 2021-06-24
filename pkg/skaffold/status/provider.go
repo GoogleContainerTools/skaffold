@@ -24,35 +24,29 @@ import (
 )
 
 type Provider interface {
-	GetKubernetesMonitor() Monitor
+	GetKubernetesMonitor(config status.Config) Monitor
 	GetNoopMonitor() Monitor
 }
 
 type fullProvider struct {
-	kubernetesMonitor Monitor
+	k8sMonitor Monitor
+	labeller   *label.DefaultLabeller
+	once       sync.Once
 }
 
-var (
-	provider *fullProvider
-	once     sync.Once
-)
+func NewMonitorProvider(l *label.DefaultLabeller) Provider {
+	return &fullProvider{labeller: l}
+}
 
-func NewMonitorProvider(config status.Config, l *label.DefaultLabeller) Provider {
-	once.Do(func() {
-		var m Monitor = &NoopMonitor{}
-		enabled, _ := config.StatusCheck()
-		if enabled == nil || *enabled { // assume enabled if value is nil
-			m = status.NewStatusMonitor(config, l)
-		}
-		provider = &fullProvider{
-			kubernetesMonitor: m,
-		}
+func (p *fullProvider) GetKubernetesMonitor(config status.Config) Monitor {
+	enabled, _ := config.StatusCheck()
+	if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
+		return &NoopMonitor{}
+	}
+	p.once.Do(func() {
+		p.k8sMonitor = status.NewStatusMonitor(config, p.labeller)
 	})
-	return provider
-}
-
-func (p *fullProvider) GetKubernetesMonitor() Monitor {
-	return p.kubernetesMonitor
+	return p.k8sMonitor
 }
 
 func (p *fullProvider) GetNoopMonitor() Monitor {
@@ -62,7 +56,7 @@ func (p *fullProvider) GetNoopMonitor() Monitor {
 // NoopProvider is used in tests
 type NoopProvider struct{}
 
-func (p *NoopProvider) GetKubernetesMonitor() Monitor {
+func (p *NoopProvider) GetKubernetesMonitor(config status.Config) Monitor {
 	return &NoopMonitor{}
 }
 

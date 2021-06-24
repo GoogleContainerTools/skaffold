@@ -33,6 +33,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation/prompt"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
@@ -94,6 +95,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			if err := setUpLogs(errOut, v, timestamps); err != nil {
 				return err
 			}
+
+			// Setup kubeContext and kubeConfig
+			kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext)
 
 			// Start API Server
 			shutdown, err := server.Initialize(opts)

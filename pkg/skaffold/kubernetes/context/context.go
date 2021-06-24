@@ -44,21 +44,14 @@ var (
 // When given, the firstCliValue always takes precedence over the yamlValue.
 // Changing the kube-context of a running Skaffold process is not supported, so
 // after the first call, the kube-context will be locked.
-func ConfigureKubeConfig(cliKubeConfig, cliKubeContext, yamlKubeContext string) {
-	newKubeContext := yamlKubeContext
-	if cliKubeContext != "" {
-		newKubeContext = cliKubeContext
-	}
+func ConfigureKubeConfig(cliKubeConfig, cliKubeContext string) {
 	configureOnce.Do(func() {
-		kubeContext = newKubeContext
+		kubeContext = cliKubeContext
 		kubeConfigFile = cliKubeConfig
 		if kubeContext != "" {
 			logrus.Infof("Activated kube-context %q", kubeContext)
 		}
 	})
-	if kubeContext != newKubeContext {
-		logrus.Warn("Changing the kube-context is not supported after startup. Please restart Skaffold to take effect.")
-	}
 }
 
 // GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.

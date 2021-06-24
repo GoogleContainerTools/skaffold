@@ -96,10 +96,10 @@ func (ps Pipelines) DeployConfigs() []latestV1.DeployConfig {
 	return cfgs
 }
 
-func (ps Pipelines) Deployers() []latestV1.DeployType {
-	var deployers []latestV1.DeployType
+func (ps Pipelines) Deployers() []latestV1.DeployConfig {
+	var deployers []latestV1.DeployConfig
 	for _, p := range ps.pipelines {
-		deployers = append(deployers, p.Deploy.DeployType)
+		deployers = append(deployers, p.Deploy)
 	}
 	return deployers
 }
@@ -166,7 +166,7 @@ func (rc *RunContext) Artifacts() []*latestV1.Artifact { return rc.Pipelines.Art
 
 func (rc *RunContext) DeployConfigs() []latestV1.DeployConfig { return rc.Pipelines.DeployConfigs() }
 
-func (rc *RunContext) Deployers() []latestV1.DeployType { return rc.Pipelines.Deployers() }
+func (rc *RunContext) Deployers() []latestV1.DeployConfig { return rc.Pipelines.Deployers() }
 
 func (rc *RunContext) TestCases() []*latestV1.TestCase { return rc.Pipelines.TestCases() }
 

@@ -18,7 +18,6 @@ package status
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -48,9 +47,8 @@ func TestMonitorProvider(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		once = sync.Once{} // reset once for tests
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			m := NewMonitorProvider(mockConfig{statusCheck: test.statusCheck}, nil).GetKubernetesMonitor()
+			m := NewMonitorProvider(nil).GetKubernetesMonitor(mockConfig{statusCheck: test.statusCheck})
 			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(m)).Type() == reflect.TypeOf(NoopMonitor{}))
 		})
 	}
