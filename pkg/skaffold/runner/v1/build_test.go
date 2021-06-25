@@ -140,7 +140,7 @@ func TestBuildTestDeploy(t *testing.T) {
 			}}
 
 			runner := createRunner(t, test.testBench, nil, artifacts, nil)
-			bRes, err := runner.Build(ctx, ioutil.Discard, artifacts)
+			bRes, err := runner.Build(ctx, ioutil.Discard, config.SkaffoldOptions{})
 			if err == nil {
 				err = runner.Test(ctx, ioutil.Discard, bRes)
 				if err == nil {
@@ -163,7 +163,7 @@ func TestBuildDryRun(t *testing.T) {
 		runner := createRunner(t, testBench, nil, artifacts, nil)
 		runner.runCtx.Opts.DryRun = true
 
-		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+		bRes, err := runner.Build(context.Background(), ioutil.Discard, config.SkaffoldOptions{})
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]graph.Artifact{
@@ -184,7 +184,7 @@ func TestBuildPushFlag(t *testing.T) {
 		runner := createRunner(t, testBench, nil, artifacts, nil)
 		runner.runCtx.Opts.PushImages = config.NewBoolOrUndefined(util.BoolPtr(true))
 
-		_, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+		_, err := runner.Build(context.Background(), ioutil.Discard, config.SkaffoldOptions{})
 
 		t.CheckNoError(err)
 	})
@@ -227,7 +227,7 @@ func TestDigestSources(t *testing.T) {
 			runner.runCtx.Opts.DigestSource = test.digestSource
 			runner.runCtx.Opts.RenderOnly = true
 
-			bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+			bRes, err := runner.Build(context.Background(), ioutil.Discard, config.SkaffoldOptions{})
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, bRes)

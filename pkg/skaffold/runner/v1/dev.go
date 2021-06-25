@@ -121,7 +121,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		}
 
 		var err error
-		bRes, err = r.Build(childCtx, out, r.changeSet.NeedsRebuild())
+		bRes, err = r.Builder.Build(childCtx, out, r.changeSet.NeedsRebuild())
 		if err != nil {
 			logrus.Warnln("Skipping test and deploy due to build error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
@@ -303,7 +303,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First build
-	bRes, err := r.Build(ctx, out, artifacts)
+	bRes, err := r.Builder.Build(ctx, out, artifacts)
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
 		eventV2.TaskFailed(constants.DevLoop, err)

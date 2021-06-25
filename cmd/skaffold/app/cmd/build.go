@@ -26,9 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 var (
@@ -67,22 +65,19 @@ func doBuild(ctx context.Context, out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
-		bRes, err := r.Build(ctx, buildOut, targetArtifacts(opts, configs))
-
+	return withRunner(ctx, out, func(r runner.Runner) error {
+		bRes, err := r.Build(ctx, buildOut, opts)
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
 			var buildOutput bytes.Buffer
 			if err := buildFormatFlag.Template().Execute(&buildOutput, cmdOut); err != nil {
 				return fmt.Errorf("executing template: %w", err)
 			}
-
 			if quietFlag {
 				if _, err := out.Write(buildOutput.Bytes()); err != nil {
 					return fmt.Errorf("writing build output: %w", err)
 				}
 			}
-
 			if buildOutputFlag != "" {
 				if err := ioutil.WriteFile(buildOutputFlag, buildOutput.Bytes(), 0644); err != nil {
 					return fmt.Errorf("writing build output to file: %w", err)
@@ -92,16 +87,4 @@ func doBuild(ctx context.Context, out io.Writer) error {
 
 		return err
 	})
-}
-
-func targetArtifacts(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) []*latestV1.Artifact {
-	var targetArtifacts []*latestV1.Artifact
-	for _, cfg := range configs {
-		for _, artifact := range cfg.Build.Artifacts {
-			if opts.IsTargetImage(artifact) {
-				targetArtifacts = append(targetArtifacts, artifact)
-			}
-		}
-	}
-	return targetArtifacts
 }

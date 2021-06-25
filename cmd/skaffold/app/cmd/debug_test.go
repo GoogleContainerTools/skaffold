@@ -23,8 +23,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -49,8 +49,8 @@ func TestNewCmdDebug(t *testing.T) {
 func TestDebugIndependentFromDev(t *testing.T) {
 	mockRunner := &mockDevRunner{}
 	testutil.Run(t, "DevDebug", func(t *testutil.T) {
-		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV1.SkaffoldConfig, *runcontext.RunContext, error) {
-			return mockRunner, []*latestV1.SkaffoldConfig{{}}, nil, nil
+		t.Override(&createRunner, func(config.SkaffoldOptions, []util.VersionedConfig) (runner.Runner, *runcontext.RunContext, error) {
+			return mockRunner, nil, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{})
 		t.Override(&doDev, func(context.Context, io.Writer) error {

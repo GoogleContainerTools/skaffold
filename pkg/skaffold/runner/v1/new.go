@@ -37,7 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -69,7 +69,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV1.Pipeline) (build.PipelineBuilder, error) {
-		return runner.GetBuilder(runCtx, store, sourceDependencies, p)
+		return runner.GetBuilder(runCtx, store, sourceDependencies, p.Build)
 	})
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -125,7 +125,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	builder, tester, deployer = runner.WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
+	builder, tester, _, deployer = runner.WithTimings(builder, tester, nil, deployer, runCtx.CacheArtifacts())
 	if runCtx.Notification() {
 		deployer = runner.WithNotification(deployer)
 	}

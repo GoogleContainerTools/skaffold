@@ -18,6 +18,7 @@ package v1
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -25,7 +26,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
@@ -53,9 +56,46 @@ type SkaffoldRunner struct {
 	isLocalImage func(imageName string) (bool, error)
 	hasDeployed  bool
 	intents      *runner.Intents
+	configs      []*latestV1.SkaffoldConfig
 }
 
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed
+}
+
+func (r *SkaffoldRunner) SetV1Config(config []*latestV1.SkaffoldConfig) {
+	r.configs = config
+}
+
+func (r *SkaffoldRunner) SetV2Config(config []*latestV2.SkaffoldConfig) {
+	panic("skaffold runner v1 shall not use V2 config.")
+}
+
+func TargetArtifacts(configs []*latestV1.SkaffoldConfig, opts config.SkaffoldOptions) []*latestV1.Artifact {
+	var targetArtifacts []*latestV1.Artifact
+	for _, cfg := range configs {
+		for _, artifact := range cfg.Build.Artifacts {
+			if opts.IsTargetImage(artifact) {
+				targetArtifacts = append(targetArtifacts, artifact)
+			}
+		}
+	}
+	return targetArtifacts
+}
+
+func (r *SkaffoldRunner) GetArtifacts() []*latestV1.Artifact {
+	var artifacts []*latestV1.Artifact
+	for _, cfg := range r.configs {
+		artifacts = append(artifacts, cfg.Build.Artifacts...)
+	}
+	return artifacts
+}
+
+func (r *SkaffoldRunner) GetInsecureRegistries() []string {
+	var regList []string
+	for _, cfg := range r.configs {
+		regList = append(regList, cfg.Build.InsecureRegistries...)
+	}
+	return regList
 }

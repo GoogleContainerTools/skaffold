@@ -26,8 +26,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -66,7 +67,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 	}
 	// remove the dependency config references since they have already been imported and will be marshalled together.
 	for i := range configs {
-		configs[i].Dependencies = nil
+		configs[i].(*latestV1.SkaffoldConfig).Dependencies = nil
 	}
 	buf, err := yaml.MarshalWithSeparator(configs)
 	if err != nil {
@@ -77,12 +78,13 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []*latestV1.SkaffoldConfig) error {
+func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []schemaUtil.VersionedConfig) error {
 	runCtx, err := getRunContext(opts, configs)
 	if err != nil {
 		return fmt.Errorf("getting run context: %w", err)
 	}
-	for _, config := range configs {
+	for _, c := range configs {
+		config := c.(*latestV1.SkaffoldConfig)
 		fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
 		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))

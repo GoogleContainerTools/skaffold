@@ -121,6 +121,9 @@ type Validator struct {
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
 
+	// StatusCheck enables waiting for deployments to stabilize.
+	StatusCheck *bool `yaml:"statusCheck,omitempty"`
+
 	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold renders the raw manifests
 	// and store them to a a hidden directory `.kpt-hydrated`, and deploys the hidden directory.
 	Dir string `yaml:"dir,omitempty"`
@@ -132,7 +135,7 @@ type DeployConfig struct {
 	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
 
 	// StatusCheckDeadlineSeconds sets for the polling period for resource statuses. Default to 2s. Values can be "2s", "1min", "3h", etc
-	StatusCheckDeadlineSeconds string `statusCheckDeadlineSeconds:"pollPeriod,omitempty"`
+	StatusCheckDeadlineSeconds int `statusCheckDeadlineSeconds:"pollPeriod,omitempty"`
 	// PrunePropagationPolicy sets the propagation policy for pruning.
 	// Possible settings are Background, Foreground, Orphan.
 	// Default to "Background".

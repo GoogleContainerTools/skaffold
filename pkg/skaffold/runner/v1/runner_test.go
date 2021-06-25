@@ -39,7 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -283,7 +283,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	}
 	runner, err := NewForConfig(runCtx)
 	t.CheckNoError(err)
-
+	runner.SetV1Config([]*latestV1.SkaffoldConfig{cfg})
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
 	runner.Builder.Builder = testBench
 	runner.Tester = testBench
@@ -456,7 +456,7 @@ func TestNewForConfig(t *testing.T) {
 			cfg, err := NewForConfig(runCtx)
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
-				b, _t, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
+				b, _t, _, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, nil, test.expectedDeployer, test.cacheArtifacts)
 				if test.shouldErr {
 					t.CheckError(true, err)
 				} else {

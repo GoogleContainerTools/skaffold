@@ -13,14 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package v2
+
+package v1
 
 import (
 	"context"
-	"fmt"
 	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
-func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configPaths []string, fileOut string) error {
-	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).GeneratePipeline")
+// Apply sends Kubernetes manifests to the cluster.
+func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, ops config.SkaffoldOptions) ([]graph.Artifact, error) {
+	artifacts := TargetArtifacts(r.configs, ops)
+	return r.Builder.Build(ctx, out, artifacts)
 }

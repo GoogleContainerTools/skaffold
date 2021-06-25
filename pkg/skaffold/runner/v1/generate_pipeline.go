@@ -29,11 +29,11 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latestV1.SkaffoldConfig, configPaths []string, fileOut string) error {
+func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configPaths []string, fileOut string) error {
 	// Keep track of files, configs, and profiles. This will be used to know which files to write
 	// profiles to and what flags to add to task commands
 	var baseConfig []*pipeline.ConfigFile
-	for _, config := range configs {
+	for _, config := range r.configs {
 		cfgFile := &pipeline.ConfigFile{
 			Path:    r.runCtx.ConfigurationFile(),
 			Config:  config,

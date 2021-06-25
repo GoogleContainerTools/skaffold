@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -30,12 +29,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation/prompt"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -264,24 +261,6 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 		FullTimestamp: timestamp,
 	})
 	return nil
-}
-
-// alwaysSucceedWhenCancelled returns nil if the context was cancelled.
-// If the error is due to cancellation, return it as it gets swallowed
-// in skaffold main.
-// For all other errors, pass through known errors.
-// TODO: Return nil if error is `context.Cancelled` and remove check in main.
-func alwaysSucceedWhenCancelled(ctx context.Context, runCtx *runcontext.RunContext, err error) error {
-	if err == nil {
-		return err
-	}
-	// if the context was cancelled act as if all is well
-	if ctx.Err() == context.Canceled {
-		return nil
-	} else if err == context.Canceled {
-		return err
-	}
-	return sErrors.ShowAIError(runCtx, err)
 }
 
 func isHouseKeepingMessagesAllowed(cmd *cobra.Command) bool {

@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -62,6 +63,18 @@ type mockTester struct {
 func (m *mockTester) Test(context.Context, io.Writer, []graph.Artifact) error {
 	if m.err {
 		return errors.New("Unable to test")
+	}
+	return nil
+}
+
+type mockRenderer struct {
+	renderer.Renderer
+	err bool
+}
+
+func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+	if m.err {
+		return errors.New("Unable to render")
 	}
 	return nil
 }
@@ -109,7 +122,7 @@ func TestTimingsBuild(t *testing.T) {
 			hook := logrustest.NewGlobal()
 
 			b := &mockBuilder{err: test.shouldErr}
-			builder, _, _ := WithTimings(b, nil, nil, false)
+			builder, _, _, _ := WithTimings(b, nil, nil, nil, false)
 
 			var out bytes.Buffer
 			_, err := builder.Build(context.Background(), &out, nil, nil)
@@ -145,7 +158,7 @@ func TestTimingsPrune(t *testing.T) {
 			hook := logrustest.NewGlobal()
 
 			b := &mockBuilder{err: test.shouldErr}
-			builder, _, _ := WithTimings(b, nil, nil, false)
+			builder, _, _, _ := WithTimings(b, nil, nil, nil, false)
 
 			var out bytes.Buffer
 			err := builder.Prune(context.Background(), &out)
@@ -181,11 +194,46 @@ func TestTimingsTest(t *testing.T) {
 			hook := logrustest.NewGlobal()
 
 			tt := &mockTester{err: test.shouldErr}
-			_, tester, _ := WithTimings(nil, tt, nil, false)
+			_, tester, _, _ := WithTimings(nil, tt, nil, nil, false)
 
 			var out bytes.Buffer
 			err := tester.Test(context.Background(), &out, nil)
 
+			t.CheckError(test.shouldErr, err)
+			t.CheckMatches(test.shouldOutput, out.String())
+			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
+		})
+	}
+}
+
+func TestTimingsRender(t *testing.T) {
+	tests := []struct {
+		description  string
+		shouldOutput string
+		shouldLog    string
+		shouldErr    bool
+	}{
+		{
+			description:  "render success",
+			shouldOutput: "(?m)^Starting render...\n",
+			shouldLog:    "Render completed in .+$",
+			shouldErr:    false,
+		},
+		{
+			description:  "render failure",
+			shouldOutput: "^Starting render...\n$",
+			shouldErr:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			hook := logrustest.NewGlobal()
+
+			r := &mockRenderer{err: test.shouldErr}
+			_, _, renderer, _ := WithTimings(nil, nil, r, nil, false)
+
+			var out bytes.Buffer
+			err := renderer.Render(context.Background(), &out, nil, false, "")
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
 			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
@@ -217,7 +265,7 @@ func TestTimingsDeploy(t *testing.T) {
 			hook := logrustest.NewGlobal()
 
 			d := &mockDeployer{err: test.shouldErr}
-			_, _, deployer := WithTimings(nil, nil, d, false)
+			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
 
 			var out bytes.Buffer
 			_, err := deployer.Deploy(context.Background(), &out, nil)
@@ -253,7 +301,7 @@ func TestTimingsCleanup(t *testing.T) {
 			hook := logrustest.NewGlobal()
 
 			d := &mockDeployer{err: test.shouldErr}
-			_, _, deployer := WithTimings(nil, nil, d, false)
+			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
 
 			var out bytes.Buffer
 			err := deployer.Cleanup(context.Background(), &out)

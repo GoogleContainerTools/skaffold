@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -46,31 +46,31 @@ func (b *builderCtx) SourceDependenciesResolver() graph.SourceDependenciesCache 
 }
 
 // GetBuilder creates a builder from a given RunContext and build pipeline type.
-func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latestV1.Pipeline) (build.PipelineBuilder, error) {
+func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, build latestV1.BuildConfig) (build.PipelineBuilder, error) {
 	bCtx := &builderCtx{artifactStore: s, sourceDependenciesCache: d, RunContext: r}
 	switch {
-	case p.Build.LocalBuild != nil:
+	case build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		builder, err := local.NewBuilder(bCtx, p.Build.LocalBuild)
+		builder, err := local.NewBuilder(bCtx, build.LocalBuild)
 		if err != nil {
 			return nil, err
 		}
 		return builder, nil
 
-	case p.Build.GoogleCloudBuild != nil:
+	case build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		builder := gcb.NewBuilder(bCtx, p.Build.GoogleCloudBuild)
+		builder := gcb.NewBuilder(bCtx, build.GoogleCloudBuild)
 		return builder, nil
 
-	case p.Build.Cluster != nil:
+	case build.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
-		builder, err := cluster.NewBuilder(bCtx, p.Build.Cluster)
+		builder, err := cluster.NewBuilder(bCtx, build.Cluster)
 		if err != nil {
 			return nil, err
 		}
 		return builder, err
 
 	default:
-		return nil, fmt.Errorf("unknown builder for config %+v", p.Build)
+		return nil, fmt.Errorf("unknown builder for config %+v", build)
 	}
 }
