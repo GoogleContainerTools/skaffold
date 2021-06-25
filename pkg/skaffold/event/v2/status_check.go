@@ -18,13 +18,10 @@ package v2
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
-
-var resourceIDs = map[string]int{}
 
 func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
@@ -65,16 +62,8 @@ func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
 	})
 }
 
-func getResourceID(resource string) int {
-	if _, contains := resourceIDs[resource]; !contains {
-		resourceIDs[resource] = len(resourceIDs)
-	}
-
-	return resourceIDs[resource]
-}
-
 func (ev *eventHandler) handleStatusCheckSubtaskEvent(e *proto.StatusCheckSubtaskEvent) {
-	e.Id = strconv.Itoa(getResourceID(e.Resource))
+	e.Id = e.Resource
 
 	ev.handle(&proto.Event{
 		EventType: &proto.Event_StatusCheckSubtaskEvent{
