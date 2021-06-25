@@ -33,6 +33,7 @@ func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
 
 func resourceStatusCheckEventSucceeded(r string) {
 	handler.handleStatusCheckSubtaskEvent(&proto.StatusCheckSubtaskEvent{
+		Id:         r,
 		TaskId:     fmt.Sprintf("%s-%d", constants.StatusCheck, handler.iteration),
 		Resource:   r,
 		Status:     Succeeded,
@@ -43,6 +44,7 @@ func resourceStatusCheckEventSucceeded(r string) {
 
 func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
 	handler.handleStatusCheckSubtaskEvent(&proto.StatusCheckSubtaskEvent{
+		Id:            r,
 		TaskId:        fmt.Sprintf("%s-%d", constants.StatusCheck, handler.iteration),
 		Resource:      r,
 		Status:        Failed,
@@ -53,6 +55,7 @@ func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
 
 func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
 	handler.handleStatusCheckSubtaskEvent(&proto.StatusCheckSubtaskEvent{
+		Id:            r,
 		TaskId:        fmt.Sprintf("%s-%d", constants.StatusCheck, handler.iteration),
 		Resource:      r,
 		Status:        InProgress,
@@ -63,8 +66,6 @@ func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
 }
 
 func (ev *eventHandler) handleStatusCheckSubtaskEvent(e *proto.StatusCheckSubtaskEvent) {
-	e.Id = e.Resource
-
 	ev.handle(&proto.Event{
 		EventType: &proto.Event_StatusCheckSubtaskEvent{
 			StatusCheckSubtaskEvent: e,
