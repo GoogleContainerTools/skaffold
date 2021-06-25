@@ -30,6 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
@@ -57,6 +59,14 @@ func (m *MockDeployer) GetDebugger() debug.Debugger {
 
 func (m *MockDeployer) GetLogger() log.Logger {
 	return &log.NoopLogger{}
+}
+
+func (m *MockDeployer) GetStatusMonitor() status.Monitor {
+	return &status.NoopMonitor{}
+}
+
+func (m *MockDeployer) GetSyncer() sync.Syncer {
+	return &sync.NoopSyncer{}
 }
 
 func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}

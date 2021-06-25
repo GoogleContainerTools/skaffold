@@ -32,11 +32,12 @@ import (
 )
 
 type Runner struct {
-	structureTests []string
-	imageName      string
-	imageIsLocal   bool
-	workspace      string
-	localDaemon    docker.LocalDaemon
+	structureTests    []string
+	structureTestArgs []string
+	imageName         string
+	imageIsLocal      bool
+	workspace         string
+	localDaemon       docker.LocalDaemon
 }
 
 // New creates a new structure.Runner.
@@ -46,11 +47,12 @@ func New(cfg docker.Config, tc *latestV1.TestCase, imageIsLocal bool) (*Runner, 
 		return nil, err
 	}
 	return &Runner{
-		structureTests: tc.StructureTests,
-		imageName:      tc.ImageName,
-		workspace:      tc.Workspace,
-		localDaemon:    localDaemon,
-		imageIsLocal:   imageIsLocal,
+		structureTests:    tc.StructureTests,
+		structureTestArgs: tc.StructureTestArgs,
+		imageName:         tc.ImageName,
+		workspace:         tc.Workspace,
+		localDaemon:       localDaemon,
+		imageIsLocal:      imageIsLocal,
 	}, nil
 }
 
@@ -86,7 +88,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 	for _, f := range files {
 		args = append(args, "--config", f)
 	}
-
+	args = append(args, cst.structureTestArgs...)
 	cmd := exec.CommandContext(ctx, "container-structure-test", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out

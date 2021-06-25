@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,37 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sync
+package status
 
 import (
 	"context"
-
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"io"
 )
 
-type syncMap map[string][]string
-
-type Item struct {
-	Image  string
-	Copy   map[string][]string
-	Delete map[string][]string
+// Monitor is an interface for checking resource deployment status.
+type Monitor interface {
+	// Check runs the status check monitor for a deployment
+	Check(context.Context, io.Writer) error
+	// Reset executes any reset behavior required by the status monitor between dev loops.
+	Reset()
 }
 
-type Syncer interface {
-	Sync(context.Context, *Item) error
-}
+type NoopMonitor struct{}
 
-type podSyncer struct {
-	kubectl    *pkgkubectl.CLI
-	namespaces []string
-}
+func (n *NoopMonitor) Check(context.Context, io.Writer) error { return nil }
 
-type Config interface {
-	GetNamespaces() []string
-}
-
-type NoopSyncer struct{}
-
-func (s *NoopSyncer) Sync(context.Context, *Item) error {
-	return nil
-}
+func (n *NoopMonitor) Reset() {}

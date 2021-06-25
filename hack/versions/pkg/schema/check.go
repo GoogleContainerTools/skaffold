@@ -41,6 +41,13 @@ func RunSchemaCheckOnChangedFiles() error {
 	}
 	var changedConfigFiles []string
 	for _, file := range changedFiles {
+		if strings.Contains(file, "v3alpha") {
+			continue
+		}
+		if strings.Contains(file, "latest/v2") {
+			continue
+		}
+
 		if strings.Contains(file, "config.go") {
 			changedConfigFiles = append(changedConfigFiles, file)
 		}

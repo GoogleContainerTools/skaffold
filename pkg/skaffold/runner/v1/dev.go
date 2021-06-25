@@ -92,7 +92,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
 
-			if err := r.syncer.Sync(childCtx, s); err != nil {
+			if err := r.deployer.GetSyncer().Sync(childCtx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				fileSyncFailed(fileCount, s.Image, err)
 				event.DevLoopFailedInPhase(r.devIteration, constants.Sync, err)
@@ -336,11 +336,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	defer r.deployer.GetAccessor().Stop()
 
-	// forwarderManager := r.createForwarder(out)
-	// defer forwarderManager.Stop()
-
 	if err := r.deployer.GetAccessor().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
-		logrus.Warnln("Error starting port forwarding:", err)
+		logrus.Warnln("Error starting resource accessor:", err)
 	}
 	if err := r.deployer.GetDebugger().Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)

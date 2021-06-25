@@ -42,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -114,6 +115,14 @@ func (t *TestBench) GetDebugger() debug.Debugger {
 
 func (t *TestBench) GetLogger() log.Logger {
 	return &log.NoopLogger{}
+}
+
+func (t *TestBench) GetStatusMonitor() status.Monitor {
+	return &status.NoopMonitor{}
+}
+
+func (t *TestBench) GetSyncer() sync.Syncer {
+	return t
 }
 
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
@@ -277,7 +286,6 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
 	runner.Builder.Builder = testBench
-	runner.syncer = testBench
 	runner.Tester = testBench
 	runner.deployer = testBench
 	runner.listener = testBench

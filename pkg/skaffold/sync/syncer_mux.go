@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,35 +16,15 @@ limitations under the License.
 
 package sync
 
-import (
-	"context"
+import "context"
 
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-)
+type SyncerMux []Syncer
 
-type syncMap map[string][]string
-
-type Item struct {
-	Image  string
-	Copy   map[string][]string
-	Delete map[string][]string
-}
-
-type Syncer interface {
-	Sync(context.Context, *Item) error
-}
-
-type podSyncer struct {
-	kubectl    *pkgkubectl.CLI
-	namespaces []string
-}
-
-type Config interface {
-	GetNamespaces() []string
-}
-
-type NoopSyncer struct{}
-
-func (s *NoopSyncer) Sync(context.Context, *Item) error {
+func (s SyncerMux) Sync(ctx context.Context, item *Item) error {
+	for _, syncer := range s {
+		if err := syncer.Sync(ctx, item); err != nil {
+			return err
+		}
+	}
 	return nil
 }

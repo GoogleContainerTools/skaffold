@@ -44,9 +44,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -70,9 +73,11 @@ const (
 type Deployer struct {
 	*latestV1.KptDeploy
 
-	accessor access.Accessor
-	debugger debug.Debugger
-	logger   log.Logger
+	accessor      access.Accessor
+	logger        log.Logger
+	debugger      debug.Debugger
+	statusMonitor status.Monitor
+	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
@@ -88,6 +93,7 @@ type Deployer struct {
 
 type Config interface {
 	kubectl.Config
+	kstatus.Config
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
@@ -99,6 +105,8 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		accessor:           provider.Accessor.GetKubernetesAccessor(podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
 		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
+		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -119,6 +127,14 @@ func (k *Deployer) GetDebugger() debug.Debugger {
 
 func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
+}
+
+func (k *Deployer) GetStatusMonitor() status.Monitor {
+	return k.statusMonitor
+}
+
+func (k *Deployer) GetSyncer() sync.Syncer {
+	return k.syncer
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

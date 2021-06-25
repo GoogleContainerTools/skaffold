@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"sync"
 	"testing"
@@ -59,6 +60,8 @@ func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	f.forwardedResources.Delete(pfe.key())
 	f.forwardedPorts.Delete(pfe.localPort)
 }
+
+func (f *testForwarder) Start(io.Writer) {}
 
 func newTestForwarder() *testForwarder {
 	return &testForwarder{}

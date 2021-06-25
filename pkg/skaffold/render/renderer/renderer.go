@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -74,12 +75,24 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Rend
 		validator, _ = validate.NewValidator([]latestV2.Validator{})
 	}
 
-	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, workingDir: workingDir, hydrationDir: hydrationDir}, nil
+	var transformer *transform.Transformer
+	if config.Transform != nil {
+		var err error
+		transformer, err = transform.NewTransformer(*config.Transform)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
+	}
+	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, Transformer: *transformer,
+		workingDir: workingDir, hydrationDir: hydrationDir}, nil
 }
 
 type SkaffoldRenderer struct {
 	generate.Generator
 	validate.Validator
+	transform.Transformer
 	workingDir   string
 	hydrationDir string
 	labels       map[string]string
@@ -164,7 +177,10 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 
 	kfConfig.Pipeline.Validators = r.GetDeclarativeValidators()
-	// TODO: Update the Kptfile with the new mutators.
+	kfConfig.Pipeline.Mutators, err = r.GetDeclarativeTransformers()
+	if err != nil {
+		return err
+	}
 
 	configByte, err := yaml.Marshal(kfConfig)
 	if err != nil {

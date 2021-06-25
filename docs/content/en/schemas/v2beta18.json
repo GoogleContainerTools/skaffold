@@ -3146,13 +3146,26 @@
           "examples": [
             "[\"./test/*\"]"
           ]
+        },
+        "structureTestsArgs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional configuration arguments passed to `container-structure-test` binary.",
+          "x-intellij-html-description": "additional configuration arguments passed to <code>container-structure-test</code> binary.",
+          "default": "[]",
+          "examples": [
+            "[\"--driver=tar\", \"--no-color\", \"-q\"]"
+          ]
         }
       },
       "preferredOrder": [
         "image",
         "context",
         "custom",
-        "structureTests"
+        "structureTests",
+        "structureTestsArgs"
       ],
       "additionalProperties": false,
       "type": "object",

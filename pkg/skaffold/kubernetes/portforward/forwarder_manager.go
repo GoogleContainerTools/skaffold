@@ -48,7 +48,8 @@ type Forwarder interface {
 
 // ForwarderManager manages all forwarders
 type ForwarderManager struct {
-	forwarders []Forwarder
+	forwarders   []Forwarder
+	entryManager *EntryManager
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
@@ -73,7 +74,8 @@ func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, l
 	}
 
 	return &ForwarderManager{
-		forwarders: forwarders,
+		forwarders:   forwarders,
+		entryManager: entryManager,
 	}
 }
 
@@ -120,6 +122,7 @@ func (p *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces 
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Start")
 	defer endTrace()
 
+	p.entryManager.Start(out)
 	for _, f := range p.forwarders {
 		if err := f.Start(ctx, out, namespaces); err != nil {
 			eventV2.TaskFailed(constants.PortForward, err)

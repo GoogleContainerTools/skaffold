@@ -137,6 +137,11 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Write
 	portForwardEventV2(entry)
 }
 
+// Start ensures the underlying entryForwarder is ready to forward.
+func (b *EntryManager) Start(out io.Writer) {
+	b.entryForwarder.Start(out)
+}
+
 // Stop terminates all kubectl port-forward commands.
 func (b *EntryManager) Stop() {
 	for _, pfe := range b.forwardedResources.resources {
