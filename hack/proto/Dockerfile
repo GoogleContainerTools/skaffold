@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.15-alpine AS generate-files
-RUN apk add --no-cache protobuf=3.13.0-r2 unzip jq moreutils
+FROM golang:1.15 AS generate-files
+RUN apt-get update && apt-get install -y unzip moreutils
 
 WORKDIR /protoc
-ENV PROTOC_VERSION=3.13.0
+ENV PROTOC_VERSION=3.17.3
 RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
 RUN unzip protoc.zip
+ENV PATH="/protoc/bin:${PATH}"
 
 WORKDIR /grpc-gateway
 RUN wget -q -O- https://github.com/grpc-ecosystem/grpc-gateway/tarball/v1.16.0 | tar --strip-components 1 -zx
@@ -75,8 +76,9 @@ RUN protoc \
   v2/*.proto
 
 # this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
-RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v1/skaffold.swagger.json | sponge v1/skaffold.swagger.json
-RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v2/skaffold.swagger.json | sponge v2/skaffold.swagger.json
+RUN wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && chmod +x ./jq
+RUN ./jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v1/skaffold.swagger.json | sponge v1/skaffold.swagger.json
+RUN ./jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v2/skaffold.swagger.json | sponge v2/skaffold.swagger.json
 
 # Append enum docs content to main docs content
 RUN cat enums/enums.md >> v1/index.md
