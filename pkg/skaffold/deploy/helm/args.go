@@ -173,10 +173,6 @@ func (h *Deployer) installArgs(r latestV1.HelmRelease, builds []graph.Artifact, 
 		return nil, err
 	}
 
-	if len(r.Overrides.Values) != 0 {
-		args = append(args, "-f", constants.HelmOverridesFilename)
-	}
-
 	for k, v := range params {
 		var value string
 
@@ -196,6 +192,10 @@ func (h *Deployer) installArgs(r latestV1.HelmRelease, builds []graph.Artifact, 
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(r.Overrides.Values) != 0 {
+		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
 	if r.Wait {
