@@ -144,7 +144,7 @@ var SchemaVersionsV1 = Versions{
 // SchemaVersionsV2 refers to all the supported API Schemas for skaffold v2 executables. The API schema versions are
 // in the range of v3alpha*.
 var SchemaVersionsV2 = Versions{
-	{v3alpha1.Version, v1alpha1.NewSkaffoldConfig},
+	{v3alpha1.Version, v3alpha1.NewSkaffoldConfig},
 	{latestV2.Version, latestV2.NewSkaffoldConfig},
 }
 
