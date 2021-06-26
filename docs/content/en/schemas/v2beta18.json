@@ -748,6 +748,15 @@
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
           "x-intellij-html-description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
         },
+        "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "describes the Kubernetes node selector for the pod.",
+          "x-intellij-html-description": "describes the Kubernetes node selector for the pod.",
+          "default": "{}"
+        },
         "pullSecretMountPath": {
           "type": "string",
           "description": "path the pull secret will be mounted at within the running container.",
@@ -822,6 +831,7 @@
         "dockerConfig",
         "serviceAccount",
         "tolerations",
+        "nodeSelector",
         "annotations",
         "runAsUser",
         "resources",

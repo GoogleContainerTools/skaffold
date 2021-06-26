@@ -109,6 +109,11 @@ func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string) (
 		pod.Spec.Tolerations = b.ClusterDetails.Tolerations
 	}
 
+	// Add nodeSelector for kaniko pod setup
+	if b.ClusterDetails.NodeSelector != nil {
+	    pod.Spec.NodeSelector = b.ClusterDetails.NodeSelector
+	}
+
 	// Add used-defines Volumes
 	pod.Spec.Volumes = append(pod.Spec.Volumes, b.Volumes...)
 
