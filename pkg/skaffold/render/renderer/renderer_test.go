@@ -68,20 +68,8 @@ func TestRender(t *testing.T) {
 		{
 			description: "single manifests, no hydration rule",
 			renderConfig: &latestV2.RenderConfig{
-				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 			},
-			originalKptfile: initKptfile,
-			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
-kind: Kptfile
-metadata:
-  name: skaffold
-pipeline: {}
-`,
-		},
-
-		{
-			description:     "manifests not given.",
-			renderConfig:    &latestV2.RenderConfig{},
 			originalKptfile: initKptfile,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -93,7 +81,7 @@ pipeline: {}
 		{
 			description: "single manifests with validation rule.",
 			renderConfig: &latestV2.RenderConfig{
-				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
 			},
 			originalKptfile: initKptfile,
@@ -109,7 +97,7 @@ pipeline:
 		{
 			description: "Validation rule needs to be updated.",
 			renderConfig: &latestV2.RenderConfig{
-				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
 			},
 			originalKptfile: `apiVersion: kpt.dev/v1alpha2
@@ -153,7 +141,7 @@ pipeline:
 func TestRender_UserErr(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
-			Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+			Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 			Validate: &[]latestV2.Validator{{Name: "kubeval"}},
 		}, "")
 		t.CheckNoError(err)
