@@ -503,7 +503,7 @@ type TestCase struct {
 type RenderConfig struct {
 
 	// Generate defines the dry manifests from a variety of sources.
-	Generate *Generate `yaml:"generate,omitempty"`
+	Generate `yaml:",inline"`
 
 	// Transform defines a set of transformation operations to run in series
 	Transform *[]Transformer `yaml:"transform,omitempty"`
@@ -517,11 +517,20 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
+	RawK8s    []string `yaml:"rawYaml/k8s,omitempty"`
+	Kustomize []string `yaml:"kustomize,omitempty"`
+	Helm      Helm     `yaml:"helm,omitempty"`
+	Kpt       []string `yaml:"kpt,omitempty"`
+}
 
-	// Manifests contains the raw kubernetes manifest paths and kustomize paths.
-	Manifests []string `yaml:"manifests,omitempty"`
+type Helm struct {
+	Releases *[]HelmRelease `yaml:"releases,omitempty"`
+}
 
-	// TODO: Implement the "HelmCharts" and "RemoteResoruces" fields.
+// DeployType contains the specific implementation and parameters needed
+// for the deploy step. All three deployer types can be used at the same
+// time for hybrid workflows.
+type GenerateType struct {
 }
 
 // Transformer describes the supported kpt transformers.

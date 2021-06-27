@@ -55,15 +55,16 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Rend
 	// TODO(yuwenma): The current work directory may not be accurate if users use --filepath flag.
 	hydrationDir := filepath.Join(workingDir, DefaultHydrationDir)
 
-	var generator *generate.Generator
-	if config.Generate == nil {
+	generator := generate.NewGenerator(workingDir, config.Generate)
+	/* TODO(yuwenma): Apply new UX
+		if config.Generate == nil {
 		// If render.generate is not given, default to current working directory.
 		defaultManifests := filepath.Join(workingDir, "*.yaml")
 		generator = generate.NewGenerator(workingDir, latestV2.Generate{Manifests: []string{defaultManifests}})
 	} else {
 		generator = generate.NewGenerator(workingDir, *config.Generate)
 	}
-
+	*/
 	var validator *validate.Validator
 	if config.Validate != nil {
 		var err error
