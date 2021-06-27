@@ -51,7 +51,8 @@ type Generator struct {
 func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error) {
 	// exclude remote url.
 	var paths []string
-	for _, path := range g.config.Manifests {
+	// TODO(yuwenma): Apply new UX, kustomize kpt and helm
+	for _, path := range g.config.RawK8s {
 		switch {
 		case util.IsURL(path):
 			// TODO(yuwenma): remote URL should be changed to use kpt package management approach, via API Schema
@@ -62,7 +63,6 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 			paths = append(paths, path)
 		}
 	}
-
 	// expend the glob paths.
 	expanded, err := util.ExpandPathsGlob(g.workingDir, paths)
 	if err != nil {
@@ -107,7 +107,7 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 	}
 	for _, nkPath := range nonKustomizePaths {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
-			if !util.StrSliceContains(g.config.Manifests, nkPath) {
+			if !util.StrSliceContains(g.config.RawK8s, nkPath) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
