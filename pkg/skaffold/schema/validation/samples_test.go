@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package schema
+package validation
 
 import (
 	"bytes"
@@ -24,16 +24,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 const (
-	samplesRoot = "../../../docs/content/en/samples"
+	samplesRoot = "../../../../docs/content/en/samples"
 )
 
 var (
@@ -43,9 +44,9 @@ var (
 // Test that every example can be parsed and produces a valid
 // Skaffold configuration.
 func TestParseExamples(t *testing.T) {
-	parseConfigFiles(t, "../../../examples")
-	parseConfigFiles(t, "../../../integration/examples")
-	parseConfigFiles(t, "../../../integration/testdata/regressions")
+	parseConfigFiles(t, "../../../../examples")
+	parseConfigFiles(t, "../../../../integration/examples")
+	parseConfigFiles(t, "../../../../integration/testdata/regressions")
 }
 
 // Samples are skaffold.yaml fragments that are used
@@ -77,17 +78,17 @@ func TestParseSamples(t *testing.T) {
 
 func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 	configFile := t.TempFile("skaffold.yaml", yaml)
-	parsed, err := ParseConfigAndUpgrade(configFile)
+	parsed, err := schema.ParseConfigAndUpgrade(configFile)
 	t.CheckNoError(err)
-	var cfgs []*latestV1.SkaffoldConfig
+	var cfgs parser.SkaffoldConfigSet
 	for _, p := range parsed {
-		cfg := p.(*latestV1.SkaffoldConfig)
-		err = defaults.Set(cfg)
-		defaults.SetDefaultDeployer(cfg)
+		cfg := &parser.SkaffoldConfigEntry{SkaffoldConfig: p.(*latestV1.SkaffoldConfig)}
+		err = defaults.Set(cfg.SkaffoldConfig)
+		defaults.SetDefaultDeployer(cfg.SkaffoldConfig)
 		t.CheckNoError(err)
 		cfgs = append(cfgs, cfg)
 	}
-	err = validation.Process(cfgs)
+	err = Process(cfgs)
 	t.CheckNoError(err)
 }
 
