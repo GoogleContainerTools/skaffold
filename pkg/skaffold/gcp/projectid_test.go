@@ -40,6 +40,11 @@ func TestExtractProjectID(t *testing.T) {
 			expected:    "project",
 		},
 		{
+			description: "us-east1-docker.pkg.dev",
+			imageName:   "us-east1-docker.pkg.dev/project/yyy/go-hello-world:latest",
+			expected:    "project",
+		},
+		{
 			description: "docker hub",
 			imageName:   "project/image",
 			shouldErr:   true,
