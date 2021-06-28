@@ -118,13 +118,13 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KustomizeDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
@@ -146,7 +146,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 		globalConfig:        cfg.GlobalConfig(),
 		labels:              labels,
 		useKubectlKustomize: useKubectlKustomize,
-	}, podSelector, nil
+	}, nil
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {

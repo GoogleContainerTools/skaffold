@@ -132,7 +132,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					))
 				}
 
-				deployer, _, err := GetDeployer(&runcontext.RunContext{
+				deployer, err := GetDeployer(&runcontext.RunContext{
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},
@@ -251,7 +251,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						},
 					})
 				}
-				deployer, _, err := getDefaultDeployer(&runcontext.RunContext{
+				deployer, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines),
 				}, deploy.NoopComponentProvider, nil)
 

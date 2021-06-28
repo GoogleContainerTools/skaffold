@@ -72,13 +72,13 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KubectlDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
@@ -100,7 +100,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
 		hydratedManifests:  cfg.HydratedManifests(),
-	}, podSelector, nil
+	}, nil
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {

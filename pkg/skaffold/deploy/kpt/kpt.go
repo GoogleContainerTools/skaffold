@@ -97,7 +97,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KptDeploy) (*Deployer, *kubernetes.ImageList) {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
 	return &Deployer{
 		KptDeploy:          d,
@@ -114,7 +114,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		kubeContext:        cfg.GetKubeContext(),
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
-	}, podSelector
+	}
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {

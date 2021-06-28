@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -85,7 +84,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
 
-	var podSelectors kubernetes.ImageListMux
 	var deployer deploy.Deployer
 	provider := deploy.ComponentProvider{
 		Accessor: access.NewAccessorProvider(runCtx, labeller, kubectlCLI),
@@ -95,7 +93,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Syncer:   sync.NewSyncProvider(runCtx, kubectlCLI),
 	}
 
-	deployer, podSelectors, err = runner.GetDeployer(runCtx, provider, labeller.Labels())
+	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
@@ -150,7 +148,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		sourceDependencies: sourceDependencies,
 		kubectlCLI:         kubectlCLI,
 		labeller:           labeller,
-		podSelector:        podSelectors,
 		cache:              artifactCache,
 		runCtx:             runCtx,
 		intents:            intents,
