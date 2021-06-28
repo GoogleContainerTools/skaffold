@@ -35,6 +35,8 @@ import (
 )
 
 type Config interface {
+	kubectl.Config
+
 	Mode() config.RunMode
 	PortForwardResources() []*latestV1.PortForwardResource
 	PortForwardOptions() config.PortForwardOptions
