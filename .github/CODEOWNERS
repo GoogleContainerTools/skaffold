@@ -7,7 +7,7 @@
 **/**jib** @GoogleContainerTools/skaffold-team @chanseokoh
 
 # kpt owners
-pkg/skaffold/deploy/**kpt** @GoogleContainerTools/skaffold-team @yuwenma
+* @GoogleContainerTools/skaffold-team @yuwenma
 
 # Debug owners
 
