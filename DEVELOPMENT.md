@@ -111,15 +111,15 @@ Also, [v1.19.0](https://github.com/GoogleContainerTools/skaffold/releases/tag/v1
 To take advantage of this framework, contributors can simply use the [`ErrDef`](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/errors/err_def.go#L32) struct to throw meaningful actionable error messages and 
 improve user experience.
 
-e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5273), 
-1. The contributor created 3 distinct error codes in [skaffold.proto](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3883fe4549a47ae73a7a3a0afc00896b197d5ba8570906ba423769cf5a93a26f)
+e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5953), 
+1. The contributor created distinct error codes in [enums.proto](https://github.com/GoogleContainerTools/skaffold/commit/59edbda57ae7d2f5d0b53c075497bca480f555f5#diff-b9c28b2c93efad2841c587b3e93d2d83722c9ae26f5f9c961f87e1ca716b0e69R388)
    ```
-    // Docker build error when listing containers.
-    INIT_DOCKER_NETWORK_LISTING_CONTAINERS = 122;
-    // Docker build error indicating an invalid container name (or id).
-    INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME = 123;
-    // Docker build error indicating the container referenced does not exists in the docker context used.
-    INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST = 124
+    // The Kptfile cannot be created via `kpt pkg init`.
+    RENDER_KPTFILE_INIT_ERR = 1501;
+    // The Kptfile is not a valid yaml file
+    RENDER_KPTFILE_INVALID_YAML_ERR = 1401;
+    // The Kptfile is not a valid API schema
+    RENDER_KPTFILE_INVALID_SCHEMA_ERR = 1402;
    ```
    The `INIT` in this case stands for skaffold `INIT` phase which includes, parsing of skaffold config and creating a skaffold runner. 
    The other valid phases are `BUILD`, `DEPLOY`, `STATUSCHECK`. Complete list [here](https://skaffold.dev/docs/references/api/grpc/#statuscode)
@@ -128,31 +128,33 @@ e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5
     git status
 	   modified:   docs/content/en/api/skaffold.swagger.json
 	   modified:   docs/content/en/docs/references/api/grpc.md
-	   modified:   proto/skaffold.pb.go
-	   modified:   proto/skaffold.proto
+	   modified:   proto/enums/enums.pb.go
+	   modified:   proto/enums/enums.proto
    ```
-3. The contributor then used these error codes when creating an error in their [proposed code change](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3fc5246574bf7367a232c6d682b22a4e22795d52eb1c81fe2c27ff052939d507R220).
-   They used the constructor `sErrors.NewError` in [pkg/skaffold/errors](https://github.com/GoogleContainerTools/skaffold/blob/54466ff6983e9fcf977d6e549119b4c1c4dc9e2b/pkg/skaffold/errors/err_def.go#L57) to inantiate an object of struct `ErrDef`. 
+3. The contributor then used these error codes when creating an error in their [proposed code change](https://github.com/GoogleContainerTools/skaffold/pull/5953/files#diff-4d18270998dbca6b8378ad2e7720a797044d1357d2c5a7a61f2af56b9f2d1a5dR152).
+   They used the constructor `sErrors.NewErrorWithStatusCode` in [pkg/skaffold/errors](https://github.com/GoogleContainerTools/skaffold/blob/54466ff6983e9fcf977d6e549119b4c1c4dc9e2b/pkg/skaffold/errors/err_def.go#L65) to instantiate an object of struct `ErrDef`. 
    `ErrDef` implements the golang `error` interface.
    ```
-    err :=  sErrors.NewError(fmt.Errorf(errMsg), 
-      proto.ActionableErr{
-	    Message: errMsg,
-	    ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
-		  Suggestions: []*proto.Suggestion{
-	  	    {
-			  SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
-			  Action:         "Please fix the docker network container name and try again",
-		    },
-		  },
-	  }))
+    err :=  sErrors.NewErrorWithStatusCode(
+	proto.ActionableErr{
+	  Message: fmt.Sprintf("unsupported validator %q", c.Name),
+	  ErrCode: proto.StatusCode_CONFIG_UNKNOWN_VALIDATOR,
+	  Suggestions: []*proto.Suggestion{
+	    {
+	       SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS,
+	       Action: fmt.Sprintf(
+		  	"please only use the following validators in skaffold-managed mode: %v. "+
+			 "to use custom validators, please use kpt-managed mode.", AllowlistedValidators),
+	   },
+	  },
+    })
    ```
 
 With above two changes, skaffold will now show a meaning full error message when this error condition is met. 
 ```shell script
 skaffold dev 
-invalid skaffold config: container 'does-not-exits' not found, required by image 'skaffold-example' for docker network stack sharing.
-Please fix the docker network container name and try again.
+unsupported validator "foo" please only use the following validators in skaffold-managed mode: [kubeval].
+To use custom validators, please use kpt-managed mode.
 ```
 
 ## Building skaffold
