@@ -136,7 +136,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
-		accessor:            provider.Accessor.GetKubernetesAccessor(podSelector),
+		accessor:            provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
 		logger:              provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:       provider.Monitor.GetKubernetesMonitor(cfg),

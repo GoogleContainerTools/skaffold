@@ -1190,7 +1190,8 @@ type kptConfig struct {
 	config                string
 }
 
-func (c *kptConfig) WorkingDir() string       { return c.workingDir }
-func (c *kptConfig) GetKubeContext() string   { return kubectl.TestKubeContext }
-func (c *kptConfig) GetKubeNamespace() string { return kubectl.TestNamespace }
-func (c *kptConfig) GetKubeConfig() string    { return c.config }
+func (c *kptConfig) WorkingDir() string                                    { return c.workingDir }
+func (c *kptConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
+func (c *kptConfig) GetKubeNamespace() string                              { return kubectl.TestNamespace }
+func (c *kptConfig) GetKubeConfig() string                                 { return c.config }
+func (c *kptConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }

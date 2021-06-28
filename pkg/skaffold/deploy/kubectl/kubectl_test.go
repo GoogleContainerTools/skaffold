@@ -739,10 +739,11 @@ type kubectlConfig struct {
 	waitForDeletions      config.WaitForDeletions
 }
 
-func (c *kubectlConfig) GetKubeContext() string                    { return "kubecontext" }
-func (c *kubectlConfig) GetKubeNamespace() string                  { return c.Opts.Namespace }
-func (c *kubectlConfig) WorkingDir() string                        { return c.workingDir }
-func (c *kubectlConfig) SkipRender() bool                          { return c.skipRender }
-func (c *kubectlConfig) ForceDeploy() bool                         { return c.force }
-func (c *kubectlConfig) DefaultRepo() *string                      { return &c.defaultRepo }
-func (c *kubectlConfig) WaitForDeletions() config.WaitForDeletions { return c.waitForDeletions }
+func (c *kubectlConfig) GetKubeContext() string                                { return "kubecontext" }
+func (c *kubectlConfig) GetKubeNamespace() string                              { return c.Opts.Namespace }
+func (c *kubectlConfig) WorkingDir() string                                    { return c.workingDir }
+func (c *kubectlConfig) SkipRender() bool                                      { return c.skipRender }
+func (c *kubectlConfig) ForceDeploy() bool                                     { return c.force }
+func (c *kubectlConfig) DefaultRepo() *string                                  { return &c.defaultRepo }
+func (c *kubectlConfig) WaitForDeletions() config.WaitForDeletions             { return c.waitForDeletions }
+func (c *kubectlConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }

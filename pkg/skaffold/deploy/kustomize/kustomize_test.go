@@ -719,8 +719,9 @@ type kustomizeConfig struct {
 	waitForDeletions      config.WaitForDeletions
 }
 
-func (c *kustomizeConfig) ForceDeploy() bool                         { return c.force }
-func (c *kustomizeConfig) WaitForDeletions() config.WaitForDeletions { return c.waitForDeletions }
-func (c *kustomizeConfig) WorkingDir() string                        { return c.workingDir }
-func (c *kustomizeConfig) GetKubeContext() string                    { return kubectl.TestKubeContext }
-func (c *kustomizeConfig) GetKubeNamespace() string                  { return c.Opts.Namespace }
+func (c *kustomizeConfig) ForceDeploy() bool                                     { return c.force }
+func (c *kustomizeConfig) WaitForDeletions() config.WaitForDeletions             { return c.waitForDeletions }
+func (c *kustomizeConfig) WorkingDir() string                                    { return c.workingDir }
+func (c *kustomizeConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
+func (c *kustomizeConfig) GetKubeNamespace() string                              { return c.Opts.Namespace }
+func (c *kustomizeConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }

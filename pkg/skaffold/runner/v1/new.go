@@ -86,7 +86,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	var deployer deploy.Deployer
 	provider := deploy.ComponentProvider{
-		Accessor: access.NewAccessorProvider(runCtx, labeller, kubectlCLI),
+		Accessor: access.NewAccessorProvider(labeller),
 		Debugger: debug.NewDebugProvider(runCtx),
 		Logger:   log.NewLogProvider(runCtx, kubectlCLI),
 		Monitor:  status.NewMonitorProvider(labeller),

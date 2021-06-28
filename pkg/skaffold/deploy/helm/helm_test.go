@@ -1539,11 +1539,12 @@ type helmConfig struct {
 	configFile            string
 }
 
-func (c *helmConfig) ForceDeploy() bool         { return c.force }
-func (c *helmConfig) GetKubeConfig() string     { return kubectl.TestKubeConfig }
-func (c *helmConfig) GetKubeContext() string    { return kubectl.TestKubeContext }
-func (c *helmConfig) GetKubeNamespace() string  { return c.namespace }
-func (c *helmConfig) ConfigurationFile() string { return c.configFile }
+func (c *helmConfig) ForceDeploy() bool                                     { return c.force }
+func (c *helmConfig) GetKubeConfig() string                                 { return kubectl.TestKubeConfig }
+func (c *helmConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
+func (c *helmConfig) GetKubeNamespace() string                              { return c.namespace }
+func (c *helmConfig) ConfigurationFile() string                             { return c.configFile }
+func (c *helmConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }
 
 // helmReleaseInfo returns the result of `helm --namespace <namespace> get all <name>` with the given KRM manifest.
 func helmReleaseInfo(namespace, manifest string) string {

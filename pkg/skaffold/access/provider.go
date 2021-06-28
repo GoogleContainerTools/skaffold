@@ -17,8 +17,6 @@ limitations under the License.
 package access
 
 import (
-	"sync"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -26,41 +24,34 @@ import (
 )
 
 type Provider interface {
-	GetKubernetesAccessor(*kubernetes.ImageList) Accessor
+	GetKubernetesAccessor(portforward.Config, *kubernetes.ImageList) Accessor
 	GetNoopAccessor() Accessor
 }
 
 type fullProvider struct {
-	kubernetesAccessor func(*kubernetes.ImageList) Accessor
+	label       label.Config
+	k8sAccessor map[string]Accessor
 }
 
-var (
-	provider *fullProvider
-	once     sync.Once
-)
-
-func NewAccessorProvider(config portforward.Config, labelConfig label.Config, cli *kubectl.CLI) Provider {
-	once.Do(func() {
-		provider = &fullProvider{
-			kubernetesAccessor: func(podSelector *kubernetes.ImageList) Accessor {
-				if !config.PortForwardOptions().Enabled() {
-					return &NoopAccessor{}
-				}
-
-				return portforward.NewForwarderManager(cli,
-					podSelector,
-					labelConfig.RunIDSelector(),
-					config.Mode(),
-					config.PortForwardOptions(),
-					config.PortForwardResources())
-			},
-		}
-	})
-	return provider
+func NewAccessorProvider(labelConfig label.Config) Provider {
+	return &fullProvider{label: labelConfig, k8sAccessor: make(map[string]Accessor)}
 }
 
-func (p *fullProvider) GetKubernetesAccessor(s *kubernetes.ImageList) Accessor {
-	return p.kubernetesAccessor(s)
+func (p *fullProvider) GetKubernetesAccessor(config portforward.Config, podSelector *kubernetes.ImageList) Accessor {
+	if !config.PortForwardOptions().Enabled() {
+		return &NoopAccessor{}
+	}
+	context := config.GetKubeContext()
+
+	if p.k8sAccessor[context] == nil {
+		p.k8sAccessor[context] = portforward.NewForwarderManager(kubectl.NewCLI(config, ""),
+			podSelector,
+			p.label.RunIDSelector(),
+			config.Mode(),
+			config.PortForwardOptions(),
+			config.PortForwardResources())
+	}
+	return p.k8sAccessor[context]
 }
 
 func (p *fullProvider) GetNoopAccessor() Accessor {
@@ -70,7 +61,7 @@ func (p *fullProvider) GetNoopAccessor() Accessor {
 // NoopProvider is used in tests
 type NoopProvider struct{}
 
-func (p *NoopProvider) GetKubernetesAccessor(_ *kubernetes.ImageList) Accessor {
+func (p *NoopProvider) GetKubernetesAccessor(_ portforward.Config, _ *kubernetes.ImageList) Accessor {
 	return &NoopAccessor{}
 }
 
