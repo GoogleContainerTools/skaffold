@@ -527,7 +527,7 @@ func shJoin(args []string) string {
 		if i > 0 {
 			result += " "
 		}
-		if strings.ContainsAny(arg, " \t\r\n\"") {
+		if strings.ContainsAny(arg, " \t\r\n\"'()[]{}") {
 			arg := strings.ReplaceAll(arg, `"`, `\"`)
 			result += `"` + arg + `"`
 		} else {

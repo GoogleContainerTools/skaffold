@@ -202,6 +202,11 @@ func TestShJoin(t *testing.T) {
 		{[]string{`a"b`}, `"a\"b"`},
 		{[]string{`a"b`}, `"a\"b"`},
 		{[]string{"a", `a"b`, "b c"}, `a "a\"b" "b c"`},
+		{[]string{"a", "b'c'd"}, `a "b'c'd"`},
+		{[]string{"a", "b()"}, `a "b()"`},
+		{[]string{"a", "b[]"}, `a "b[]"`},
+		{[]string{"a", "b{}"}, `a "b{}"`},
+		{[]string{"a", "$PORT", "${PORT}", "a ${PORT} and $PORT"}, `a $PORT "${PORT}" "a ${PORT} and $PORT"`},
 	}
 	for _, test := range tests {
 		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
