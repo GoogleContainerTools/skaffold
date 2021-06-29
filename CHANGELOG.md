@@ -1,3 +1,64 @@
+# v1.27.0 Release - 06/29/2021
+Note: This release comes with a new config version, `v2beta18`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Skaffold CLI respects `--kube-context` & `--kubeconfig` command line flags and uses it instead of active kubernetes context.
+* Status-Check now runs per deployer sequentially. For `skaffold.yaml` with multiple deployers, the next deploy will start after previous deployed resources stabilize. Docs coming soon! 
+
+New Features:
+* Configure nodes for running cluster builds (e.g. kaniko) by using the node selector config option `cluster.nodeSelector`. [#6083](https://github.com/GoogleContainerTools/skaffold/pull/6083)
+* Better defaults for GCB project when using Artifact Registry images [#6093](https://github.com/GoogleContainerTools/skaffold/pull/6093)
+* Skaffold init now supports Jib and Buildpacks artifacts by default [#6063](https://github.com/GoogleContainerTools/skaffold/pull/6063)
+* Structured tests configuration supports custom parameters [#6055](https://github.com/GoogleContainerTools/skaffold/pull/6055)
+
+Fixes:
+* log metrics upload failure and write to file instead. [#6108](https://github.com/GoogleContainerTools/skaffold/pull/6108)
+* Skaffold Render now validates manifests [#6043](https://github.com/GoogleContainerTools/skaffold/pull/6043)
+* Port-forwarding improvements for multi-config projects [#6090](https://github.com/GoogleContainerTools/skaffold/pull/6090)
+* Fix helm deploy error when configuring helm arg list and skaffold overrides[#6080](https://github.com/GoogleContainerTools/skaffold/pull/6080)
+* Use non alpine image and protoc 3.17.3 in proto generation [#6073](https://github.com/GoogleContainerTools/skaffold/pull/6073)
+* Fix setting `kubeContext` in skaffold [#6024](https://github.com/GoogleContainerTools/skaffold/pull/6024)
+* Use StdEncoding for git hash directory name [#6071](https://github.com/GoogleContainerTools/skaffold/pull/6071)
+* fix status-check to return success only on exact success criteria match [#6010](https://github.com/GoogleContainerTools/skaffold/pull/6010)
+* fix: gcb api throttling retry backoff not implemented correctly [#6023](https://github.com/GoogleContainerTools/skaffold/pull/6023)
+* Ensure events are serialized [#6064](https://github.com/GoogleContainerTools/skaffold/pull/6064)
+
+Updates and Refactors:
+* add source file and module to config parsing error description [#6087](https://github.com/GoogleContainerTools/skaffold/pull/6087)
+* Refactor to move podSelector, Syncer, StatusCheck, Debugger, Port-forwarder under Deployer [#6076](https://github.com/GoogleContainerTools/skaffold/pull/6076), 
+  [#6053](https://github.com/GoogleContainerTools/skaffold/pull/6053), [#6026](https://github.com/GoogleContainerTools/skaffold/pull/6026),
+  [#6021](https://github.com/GoogleContainerTools/skaffold/pull/6021),
+  [#6044](https://github.com/GoogleContainerTools/skaffold/pull/6044)
+* fix v3alpha version [#6084](https://github.com/GoogleContainerTools/skaffold/pull/6084),
+* [v2] Update v2 with new UX [#6086](https://github.com/GoogleContainerTools/skaffold/pull/6086)
+* Update to github.com/gogo/protobuf v1.3.2 (GO-2021-0053) [#6022](https://github.com/GoogleContainerTools/skaffold/pull/6022)
+
+Docs, Test, and Release Updates:
+* Document Helm image reference strategies [#6017](https://github.com/GoogleContainerTools/skaffold/pull/6017)
+* Optimize k8s-skaffold/skaffold image [#6106](https://github.com/GoogleContainerTools/skaffold/pull/6106)
+* Fix typo in executed file name [#6105](https://github.com/GoogleContainerTools/skaffold/pull/6105)
+* Escape parentheses in shJoin [#6101](https://github.com/GoogleContainerTools/skaffold/pull/6101)
+* Fix instructions to add actionable error codes. [#6094](https://github.com/GoogleContainerTools/skaffold/pull/6094)
+* Updates to ko builder design proposal to add implementation approach [#6046](https://github.com/GoogleContainerTools/skaffold/pull/6046)
+* fix invalid config version links in DEVELOPMENT.md [#6058](https://github.com/GoogleContainerTools/skaffold/pull/6058)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Brian de Alwis
+- Chanseok Oh
+- Daniel Petró
+- Gaurav
+- Halvard Skogsrud
+- Jack
+- Kaan Karakaya
+- Marlon Gamez
+- Mridula
+- Nick Kubala
+- Tejal Desai
+- Yuwen Ma
+
 # v1.26.0 Release - 06/08/2021
 
 Highlights:
