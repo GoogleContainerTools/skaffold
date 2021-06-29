@@ -238,7 +238,7 @@ func TestKanikoPodSpec(t *testing.T) {
 					TolerationSeconds: nil,
 				},
 			},
-			NodeSelector:  map[string]string{"kubernetes.io/os": "linux"},
+			NodeSelector: map[string]string{"kubernetes.io/os": "linux"},
 		},
 	}
 	pod, _ := builder.kanikoPodSpec(artifact, "tag")
@@ -378,7 +378,7 @@ func TestKanikoPodSpec(t *testing.T) {
 					TolerationSeconds: nil,
 				},
 			},
-			NodeSelector:  map[string]string{"kubernetes.io/os": "linux"},
+			NodeSelector: map[string]string{"kubernetes.io/os": "linux"},
 		},
 	}
 
