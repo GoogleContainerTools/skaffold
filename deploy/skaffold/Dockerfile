@@ -15,10 +15,12 @@
 # This base image has to be updated manually after running `make build_deps`
 FROM gcr.io/k8s-skaffold/build_deps:45b0b2b2c59e1b381f5386d6c960dd87c3a3c9d8 as builder
 WORKDIR /skaffold
+
+FROM builder as build
+ARG VERSION
 COPY . .
+RUN make clean out/skaffold VERSION=$VERSION
 
 FROM builder as release
-ARG VERSION
-RUN make clean out/skaffold VERSION=$VERSION && mv out/skaffold /usr/bin/skaffold
-RUN rm -rf secrets $SECRET cmd/skaffold/app/cmd/statik/statik.go
+COPY --from=build /skaffold/out/skaffold /usr/bin/skaffold
 RUN skaffold credits -d /THIRD_PARTY_NOTICES
