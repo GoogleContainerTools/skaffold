@@ -22,7 +22,7 @@ import (
 	"io"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 type Formatter interface {

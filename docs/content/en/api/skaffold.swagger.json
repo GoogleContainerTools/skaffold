@@ -35,7 +35,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/protoTriggerState"
+              "$ref": "#/definitions/v1TriggerState"
             }
           }
         ],
@@ -68,7 +68,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/protoTriggerState"
+              "$ref": "#/definitions/v1TriggerState"
             }
           }
         ],
@@ -88,13 +88,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/protoLogEntry"
+                  "$ref": "#/definitions/v1LogEntry"
                 },
                 "error": {
                   "$ref": "#/definitions/runtimeStreamError"
                 }
               },
-              "description": "Stream result of protoLogEntry"
+              "description": "Stream result of v1LogEntry"
             }
           },
           "default": {
@@ -2519,13 +2519,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/protoLogEntry"
+                  "$ref": "#/definitions/v1LogEntry"
                 },
                 "error": {
                   "$ref": "#/definitions/runtimeStreamError"
                 }
               },
-              "description": "Stream result of protoLogEntry"
+              "description": "Stream result of v1LogEntry"
             }
           },
           "default": {
@@ -2564,7 +2564,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/protoEvent"
+              "$ref": "#/definitions/v1Event"
             }
           }
         ],
@@ -2597,7 +2597,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/protoIntent"
+              "$ref": "#/definitions/v1Intent"
             }
           }
         ],
@@ -2614,7 +2614,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/protoState"
+              "$ref": "#/definitions/v1State"
             }
           },
           "default": {
@@ -2653,7 +2653,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/protoTriggerState"
+              "$ref": "#/definitions/v1TriggerState"
             }
           }
         ],
@@ -2984,555 +2984,6 @@
       "default": "UNKNOWN_TEST_TYPE",
       "description": "Enum indicating test tools used\n- UNKNOWN_TEST_TYPE: Could not determine Test Type\n - UNIT: Unit tests\n - CONTAINER_STRUCTURE_TEST: Container Structure tests"
     },
-    "protoActionableErr": {
-      "type": "object",
-      "properties": {
-        "errCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        },
-        "message": {
-          "type": "string"
-        },
-        "suggestions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protoSuggestion"
-          }
-        }
-      },
-      "description": "`ActionableErr` defines an error that occurred along with an optional list of suggestions"
-    },
-    "protoBuildEvent": {
-      "type": "object",
-      "properties": {
-        "artifact": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        },
-        "err": {
-          "type": "string"
-        },
-        "errCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        },
-        "actionableErr": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
-    },
-    "protoBuildMetadata": {
-      "type": "object",
-      "properties": {
-        "numberOfArtifacts": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "builders": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/BuildMetadataImageBuilder"
-          }
-        },
-        "type": {
-          "$ref": "#/definitions/enumsBuildType"
-        },
-        "additional": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Additional key value pairs to describe the deploy pipeline"
-        }
-      }
-    },
-    "protoBuildState": {
-      "type": "object",
-      "properties": {
-        "artifacts": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"Not started\"`: not yet started <br>\n- `\"In progress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
-        },
-        "autoTrigger": {
-          "type": "boolean"
-        },
-        "statusCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        }
-      },
-      "description": "`BuildState` maps Skaffold artifacts to their current build states"
-    },
-    "protoDebuggingContainerEvent": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "podName": {
-          "type": "string"
-        },
-        "containerName": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "artifact": {
-          "type": "string"
-        },
-        "runtime": {
-          "type": "string"
-        },
-        "workingDir": {
-          "type": "string"
-        },
-        "debugPorts": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "description": "DebuggingContainerEvent is raised when a debugging container is started or terminated"
-    },
-    "protoDeployEvent": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "err": {
-          "type": "string"
-        },
-        "errCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        },
-        "actionableErr": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
-    },
-    "protoDeployMetadata": {
-      "type": "object",
-      "properties": {
-        "deployers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/DeployMetadataDeployer"
-          }
-        },
-        "cluster": {
-          "$ref": "#/definitions/enumsClusterType"
-        }
-      }
-    },
-    "protoDeployState": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "autoTrigger": {
-          "type": "boolean"
-        },
-        "statusCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        }
-      },
-      "description": "`DeployState` describes the status of the current deploy"
-    },
-    "protoDevLoopEvent": {
-      "type": "object",
-      "properties": {
-        "iteration": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "status": {
-          "type": "string"
-        },
-        "err": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "`DevLoopEvent` marks the start and end of a dev loop."
-    },
-    "protoEvent": {
-      "type": "object",
-      "properties": {
-        "metaEvent": {
-          "$ref": "#/definitions/protoMetaEvent"
-        },
-        "buildEvent": {
-          "$ref": "#/definitions/protoBuildEvent"
-        },
-        "deployEvent": {
-          "$ref": "#/definitions/protoDeployEvent"
-        },
-        "portEvent": {
-          "$ref": "#/definitions/protoPortEvent"
-        },
-        "statusCheckEvent": {
-          "$ref": "#/definitions/protoStatusCheckEvent"
-        },
-        "resourceStatusCheckEvent": {
-          "$ref": "#/definitions/protoResourceStatusCheckEvent"
-        },
-        "fileSyncEvent": {
-          "$ref": "#/definitions/protoFileSyncEvent"
-        },
-        "debuggingContainerEvent": {
-          "$ref": "#/definitions/protoDebuggingContainerEvent"
-        },
-        "devLoopEvent": {
-          "$ref": "#/definitions/protoDevLoopEvent"
-        },
-        "terminationEvent": {
-          "$ref": "#/definitions/protoTerminationEvent"
-        },
-        "TestEvent": {
-          "$ref": "#/definitions/protoTestEvent"
-        }
-      },
-      "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent."
-    },
-    "protoFileSyncEvent": {
-      "type": "object",
-      "properties": {
-        "fileCount": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "image": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        },
-        "err": {
-          "type": "string"
-        },
-        "errCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        },
-        "actionableErr": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "FileSyncEvent describes the sync status."
-    },
-    "protoFileSyncState": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "autoTrigger": {
-          "type": "boolean"
-        }
-      },
-      "description": "`FileSyncState` contains the status of the current file sync"
-    },
-    "protoIntOrString": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "intVal": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "strVal": {
-          "type": "string"
-        }
-      },
-      "description": "IntOrString is a type that can hold an int32 or a string."
-    },
-    "protoIntent": {
-      "type": "object",
-      "properties": {
-        "build": {
-          "type": "boolean"
-        },
-        "sync": {
-          "type": "boolean"
-        },
-        "deploy": {
-          "type": "boolean"
-        }
-      },
-      "description": "Intent represents user intents for a given phase."
-    },
-    "protoLogEntry": {
-      "type": "object",
-      "properties": {
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "event": {
-          "$ref": "#/definitions/protoEvent"
-        },
-        "entry": {
-          "type": "string"
-        }
-      },
-      "description": "LogEntry describes an event and a string description of the event."
-    },
-    "protoMetaEvent": {
-      "type": "object",
-      "properties": {
-        "entry": {
-          "type": "string",
-          "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`"
-        },
-        "metadata": {
-          "$ref": "#/definitions/protoMetadata",
-          "description": "Metadata describing skaffold pipeline"
-        }
-      },
-      "description": "`MetaEvent` provides general information regarding Skaffold"
-    },
-    "protoMetadata": {
-      "type": "object",
-      "properties": {
-        "build": {
-          "$ref": "#/definitions/protoBuildMetadata"
-        },
-        "deploy": {
-          "$ref": "#/definitions/protoDeployMetadata"
-        },
-        "test": {
-          "$ref": "#/definitions/protoTestMetadata"
-        },
-        "additional": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Additional key value pairs to describe the build pipeline"
-        }
-      }
-    },
-    "protoPortEvent": {
-      "type": "object",
-      "properties": {
-        "localPort": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "remotePort": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "podName": {
-          "type": "string"
-        },
-        "containerName": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "portName": {
-          "type": "string"
-        },
-        "resourceType": {
-          "type": "string"
-        },
-        "resourceName": {
-          "type": "string"
-        },
-        "address": {
-          "type": "string"
-        },
-        "targetPort": {
-          "$ref": "#/definitions/protoIntOrString"
-        }
-      },
-      "description": "PortEvent Event describes each port forwarding event."
-    },
-    "protoResourceStatusCheckEvent": {
-      "type": "object",
-      "properties": {
-        "resource": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        },
-        "err": {
-          "type": "string"
-        },
-        "statusCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        },
-        "actionableErr": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "A Resource StatusCheck Event, indicates progress for each kubernetes deployment.\nFor every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.\nThere can be multiple events with `status` *Pending*.\nSkaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”\nwill be sent with the new status."
-    },
-    "protoState": {
-      "type": "object",
-      "properties": {
-        "buildState": {
-          "$ref": "#/definitions/protoBuildState"
-        },
-        "deployState": {
-          "$ref": "#/definitions/protoDeployState"
-        },
-        "forwardedPorts": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/protoPortEvent"
-          }
-        },
-        "statusCheckState": {
-          "$ref": "#/definitions/protoStatusCheckState"
-        },
-        "fileSyncState": {
-          "$ref": "#/definitions/protoFileSyncState"
-        },
-        "debuggingContainers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protoDebuggingContainerEvent"
-          }
-        },
-        "metadata": {
-          "$ref": "#/definitions/protoMetadata"
-        },
-        "testState": {
-          "$ref": "#/definitions/protoTestState"
-        }
-      },
-      "description": "`State` represents the current state of the Skaffold components"
-    },
-    "protoStatusCheckEvent": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        },
-        "err": {
-          "type": "string"
-        },
-        "errCode": {
-          "$ref": "#/definitions/enumsStatusCode"
-        },
-        "actionableErr": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
-    },
-    "protoStatusCheckState": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "resources": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.\nThe `status-check-state` can be <br>\n- `\"Not started\"`: indicates that `status-check` has just started. <br>\n- `\"In progress\"`: InProgress is sent after every resource check is complete. <br>\n- `\"Succeeded\"`:\n- `\"Failed\"`:"
-        },
-        "statusCode": {
-          "$ref": "#/definitions/enumsStatusCode",
-          "description": "StatusCheck statusCode"
-        }
-      },
-      "description": "`StatusCheckState` describes the state of status check of current deployed resources."
-    },
-    "protoSuggestion": {
-      "type": "object",
-      "properties": {
-        "suggestionCode": {
-          "$ref": "#/definitions/enumsSuggestionCode"
-        },
-        "action": {
-          "type": "string"
-        }
-      },
-      "description": "Suggestion defines the action a user needs to recover from an error."
-    },
-    "protoTerminationEvent": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "err": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "`TerminationEvent` marks the end of the skaffold session"
-    },
-    "protoTestEvent": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "actionableErr": {
-          "$ref": "#/definitions/protoActionableErr"
-        }
-      },
-      "description": "`TestEvent` represents the status of a test, and is emitted by Skaffold\nanytime a test starts or completes, successfully or not."
-    },
-    "protoTestMetadata": {
-      "type": "object",
-      "properties": {
-        "Testers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/TestMetadataTester"
-          }
-        }
-      },
-      "description": "TestMetadata describes the test pipeline"
-    },
-    "protoTestState": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "description": "Status of the current test"
-        },
-        "statusCode": {
-          "$ref": "#/definitions/enumsStatusCode",
-          "description": "Teststate status code"
-        }
-      },
-      "description": "`TestState` describes the current state of the test"
-    },
-    "protoTriggerState": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        }
-      },
-      "description": "TriggerState represents trigger state for a given phase."
-    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -3590,6 +3041,555 @@
           }
         }
       }
+    },
+    "v1ActionableErr": {
+      "type": "object",
+      "properties": {
+        "errCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Suggestion"
+          }
+        }
+      },
+      "description": "`ActionableErr` defines an error that occurred along with an optional list of suggestions"
+    },
+    "v1BuildEvent": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
+    },
+    "v1BuildMetadata": {
+      "type": "object",
+      "properties": {
+        "numberOfArtifacts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "builders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BuildMetadataImageBuilder"
+          }
+        },
+        "type": {
+          "$ref": "#/definitions/enumsBuildType"
+        },
+        "additional": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional key value pairs to describe the deploy pipeline"
+        }
+      }
+    },
+    "v1BuildState": {
+      "type": "object",
+      "properties": {
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"Not started\"`: not yet started <br>\n- `\"In progress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
+        },
+        "autoTrigger": {
+          "type": "boolean"
+        },
+        "statusCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        }
+      },
+      "description": "`BuildState` maps Skaffold artifacts to their current build states"
+    },
+    "v1DebuggingContainerEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "containerName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "workingDir": {
+          "type": "string"
+        },
+        "debugPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "description": "DebuggingContainerEvent is raised when a debugging container is started or terminated"
+    },
+    "v1DeployEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
+    },
+    "v1DeployMetadata": {
+      "type": "object",
+      "properties": {
+        "deployers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeployMetadataDeployer"
+          }
+        },
+        "cluster": {
+          "$ref": "#/definitions/enumsClusterType"
+        }
+      }
+    },
+    "v1DeployState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "autoTrigger": {
+          "type": "boolean"
+        },
+        "statusCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        }
+      },
+      "description": "`DeployState` describes the status of the current deploy"
+    },
+    "v1DevLoopEvent": {
+      "type": "object",
+      "properties": {
+        "iteration": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "`DevLoopEvent` marks the start and end of a dev loop."
+    },
+    "v1Event": {
+      "type": "object",
+      "properties": {
+        "metaEvent": {
+          "$ref": "#/definitions/v1MetaEvent"
+        },
+        "buildEvent": {
+          "$ref": "#/definitions/v1BuildEvent"
+        },
+        "deployEvent": {
+          "$ref": "#/definitions/v1DeployEvent"
+        },
+        "portEvent": {
+          "$ref": "#/definitions/v1PortEvent"
+        },
+        "statusCheckEvent": {
+          "$ref": "#/definitions/v1StatusCheckEvent"
+        },
+        "resourceStatusCheckEvent": {
+          "$ref": "#/definitions/v1ResourceStatusCheckEvent"
+        },
+        "fileSyncEvent": {
+          "$ref": "#/definitions/v1FileSyncEvent"
+        },
+        "debuggingContainerEvent": {
+          "$ref": "#/definitions/v1DebuggingContainerEvent"
+        },
+        "devLoopEvent": {
+          "$ref": "#/definitions/v1DevLoopEvent"
+        },
+        "terminationEvent": {
+          "$ref": "#/definitions/v1TerminationEvent"
+        },
+        "TestEvent": {
+          "$ref": "#/definitions/v1TestEvent"
+        }
+      },
+      "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent."
+    },
+    "v1FileSyncEvent": {
+      "type": "object",
+      "properties": {
+        "fileCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "image": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "FileSyncEvent describes the sync status."
+    },
+    "v1FileSyncState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "autoTrigger": {
+          "type": "boolean"
+        }
+      },
+      "description": "`FileSyncState` contains the status of the current file sync"
+    },
+    "v1IntOrString": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "intVal": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "strVal": {
+          "type": "string"
+        }
+      },
+      "description": "IntOrString is a type that can hold an int32 or a string."
+    },
+    "v1Intent": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "boolean"
+        },
+        "sync": {
+          "type": "boolean"
+        },
+        "deploy": {
+          "type": "boolean"
+        }
+      },
+      "description": "Intent represents user intents for a given phase."
+    },
+    "v1LogEntry": {
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event": {
+          "$ref": "#/definitions/v1Event"
+        },
+        "entry": {
+          "type": "string"
+        }
+      },
+      "description": "LogEntry describes an event and a string description of the event."
+    },
+    "v1MetaEvent": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "type": "string",
+          "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1Metadata",
+          "description": "Metadata describing skaffold pipeline"
+        }
+      },
+      "description": "`MetaEvent` provides general information regarding Skaffold"
+    },
+    "v1Metadata": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "$ref": "#/definitions/v1BuildMetadata"
+        },
+        "deploy": {
+          "$ref": "#/definitions/v1DeployMetadata"
+        },
+        "test": {
+          "$ref": "#/definitions/v1TestMetadata"
+        },
+        "additional": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional key value pairs to describe the build pipeline"
+        }
+      }
+    },
+    "v1PortEvent": {
+      "type": "object",
+      "properties": {
+        "localPort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "remotePort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "containerName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "portName": {
+          "type": "string"
+        },
+        "resourceType": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "targetPort": {
+          "$ref": "#/definitions/v1IntOrString"
+        }
+      },
+      "description": "PortEvent Event describes each port forwarding event."
+    },
+    "v1ResourceStatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "statusCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "A Resource StatusCheck Event, indicates progress for each kubernetes deployment.\nFor every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.\nThere can be multiple events with `status` *Pending*.\nSkaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”\nwill be sent with the new status."
+    },
+    "v1State": {
+      "type": "object",
+      "properties": {
+        "buildState": {
+          "$ref": "#/definitions/v1BuildState"
+        },
+        "deployState": {
+          "$ref": "#/definitions/v1DeployState"
+        },
+        "forwardedPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1PortEvent"
+          }
+        },
+        "statusCheckState": {
+          "$ref": "#/definitions/v1StatusCheckState"
+        },
+        "fileSyncState": {
+          "$ref": "#/definitions/v1FileSyncState"
+        },
+        "debuggingContainers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1DebuggingContainerEvent"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1Metadata"
+        },
+        "testState": {
+          "$ref": "#/definitions/v1TestState"
+        }
+      },
+      "description": "`State` represents the current state of the Skaffold components"
+    },
+    "v1StatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/enumsStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
+    },
+    "v1StatusCheckState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.\nThe `status-check-state` can be <br>\n- `\"Not started\"`: indicates that `status-check` has just started. <br>\n- `\"In progress\"`: InProgress is sent after every resource check is complete. <br>\n- `\"Succeeded\"`:\n- `\"Failed\"`:"
+        },
+        "statusCode": {
+          "$ref": "#/definitions/enumsStatusCode",
+          "description": "StatusCheck statusCode"
+        }
+      },
+      "description": "`StatusCheckState` describes the state of status check of current deployed resources."
+    },
+    "v1Suggestion": {
+      "type": "object",
+      "properties": {
+        "suggestionCode": {
+          "$ref": "#/definitions/enumsSuggestionCode"
+        },
+        "action": {
+          "type": "string"
+        }
+      },
+      "description": "Suggestion defines the action a user needs to recover from an error."
+    },
+    "v1TerminationEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "`TerminationEvent` marks the end of the skaffold session"
+    },
+    "v1TestEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/v1ActionableErr"
+        }
+      },
+      "description": "`TestEvent` represents the status of a test, and is emitted by Skaffold\nanytime a test starts or completes, successfully or not."
+    },
+    "v1TestMetadata": {
+      "type": "object",
+      "properties": {
+        "Testers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestMetadataTester"
+          }
+        }
+      },
+      "description": "TestMetadata describes the test pipeline"
+    },
+    "v1TestState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Status of the current test"
+        },
+        "statusCode": {
+          "$ref": "#/definitions/enumsStatusCode",
+          "description": "Teststate status code"
+        }
+      },
+      "description": "`TestState` describes the current state of the test"
+    },
+    "v1TriggerState": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "description": "TriggerState represents trigger state for a given phase."
     }
   }
 }

@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // BuildEnvAlreadyExists specifies that there's an existing build environment definition for the same type.
