@@ -45,7 +45,9 @@ message Metadata {
 message BuildMetadata {
   message Artifact {
       enums.BuilderType type = 1;
-      string name = 2;
+      string name = 2; // image name
+      string context = 3; // skaffold.yaml context field
+      string dockerfile = 4; // skaffold.yaml path to dockerfile. Not guaranteed to be filled
   }
   repeated Artifact artifacts = 1;
   enums.BuildType type = 2;
