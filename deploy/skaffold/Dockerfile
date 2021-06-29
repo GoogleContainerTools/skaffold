@@ -19,8 +19,8 @@ WORKDIR /skaffold
 FROM build as builder
 ARG VERSION
 COPY . .
-RUN make clean out/skaffold VERSION=$VERSION
+RUN make clean out/skaffold VERSION=$VERSION && mv out/skaffold /usr/bin/skaffold && rm -rf secrets $SECRET cmd/skaffold/app/cmd/statik/statik.go
 
 FROM build as release
-COPY --from=build /skaffold/out/skaffold /usr/bin/skaffold
+COPY --from=builder /usr/bin/skaffold /usr/bin/skaffold
 RUN skaffold credits -d /THIRD_PARTY_NOTICES
