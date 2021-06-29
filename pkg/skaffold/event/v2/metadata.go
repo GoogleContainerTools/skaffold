@@ -82,7 +82,7 @@ func getArtifacts(b latestV1.BuildConfig) []*proto.BuildMetadata_Artifact {
 	result := []*proto.BuildMetadata_Artifact{}
 	for _, a := range b.Artifacts {
 		artifact := &proto.BuildMetadata_Artifact{
-			Name: a.ImageName,
+			Name:    a.ImageName,
 			Context: a.Workspace,
 		}
 		switch {
