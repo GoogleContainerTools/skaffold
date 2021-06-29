@@ -411,6 +411,9 @@ type ClusterDetails struct {
 	// Tolerations describes the Kubernetes tolerations for the pod.
 	Tolerations []v1.Toleration `yaml:"tolerations,omitempty"`
 
+	// NodeSelector describes the Kubernetes node selector for the pod.
+	NodeSelector map[string]string `yaml:"nodeSelector,omitempty"`
+
 	// Annotations describes the Kubernetes annotations for the pod.
 	Annotations map[string]string `yaml:"annotations,omitempty"`
 
