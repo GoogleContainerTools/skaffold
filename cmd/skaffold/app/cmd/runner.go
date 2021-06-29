@@ -79,7 +79,7 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 	}
 	setDefaultDeployer(cfgSet)
 
-	if err := validation.Process(cfgSet); err != nil {
+	if err := validation.Process(cfgSet, validation.GetValidationOpts(opts)); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 	var configs []*latestV1.SkaffoldConfig

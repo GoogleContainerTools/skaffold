@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -90,7 +92,8 @@ func TestValidateSchema(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{SkaffoldConfig: test.cfg}})
+			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{SkaffoldConfig: test.cfg}},
+				Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -511,7 +514,7 @@ func TestValidateNetworkMode(t *testing.T) {
 							Artifacts: test.artifacts,
 						},
 					},
-				}}})
+				}}}, Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -812,7 +815,7 @@ func TestValidateSyncRules(t *testing.T) {
 							Artifacts: test.artifacts,
 						},
 					},
-				}}})
+				}}}, Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -970,7 +973,7 @@ func TestValidateImageNames(t *testing.T) {
 							},
 						},
 					},
-				})
+				}, Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -1074,7 +1077,7 @@ func TestValidateJibPluginType(t *testing.T) {
 						},
 					},
 				},
-			}})
+			}}, Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -1108,7 +1111,7 @@ func TestValidateLogsConfig(t *testing.T) {
 							},
 						},
 					},
-				}}})
+				}}}, Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -1441,7 +1444,7 @@ func TestValidateTaggingPolicy(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -1504,6 +1507,78 @@ func TestValidateCustomTest(t *testing.T) {
 
 			errs := validateCustomTest([]*latestV1.TestCase{testCase})
 			t.CheckDeepEqual(test.expectedErrors, len(errs))
+		})
+	}
+}
+
+func TestValidateKubectlManifests(t *testing.T) {
+	tempDir := t.TempDir()
+	tests := []struct {
+		description string
+		configs     []*latestV1.SkaffoldConfig
+		files       []string
+		shouldErr   bool
+	}{
+		{
+			description: "specified manifest file exists",
+			configs: []*latestV1.SkaffoldConfig{
+				{
+					Pipeline: latestV1.Pipeline{
+						Deploy: latestV1.DeployConfig{
+							DeployType: latestV1.DeployType{
+								KubectlDeploy: &latestV1.KubectlDeploy{
+									Manifests: []string{filepath.Join(tempDir, "validation-test-exists.yaml")},
+								},
+							},
+						},
+					},
+				},
+			},
+			files: []string{"validation-test-exists.yaml"},
+		},
+		{
+			description: "specified manifest file does not exist",
+			configs: []*latestV1.SkaffoldConfig{
+				{
+					Pipeline: latestV1.Pipeline{
+						Deploy: latestV1.DeployConfig{
+							DeployType: latestV1.DeployType{
+								KubectlDeploy: &latestV1.KubectlDeploy{
+									Manifests: []string{filepath.Join(tempDir, "validation-test-missing.yaml")},
+								},
+							},
+						},
+					},
+				},
+			},
+			files:     []string{},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			for _, file := range test.files {
+				out, err := os.Create(filepath.Join(tempDir, file))
+				if err != nil {
+					t.Errorf("error creating manifest file %s: %v", file, err)
+				}
+				err = out.Close()
+				if err != nil {
+					t.Errorf("error closing manifest file %s: %v", file, err)
+				}
+			}
+
+			set := parser.SkaffoldConfigSet{}
+			for _, c := range test.configs {
+				set = append(set, &parser.SkaffoldConfigEntry{SkaffoldConfig: c})
+			}
+			errs := validateKubectlManifests(set)
+			var err error
+			if len(errs) > 0 {
+				err = errs[0]
+			}
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

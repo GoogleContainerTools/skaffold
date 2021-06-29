@@ -427,6 +427,8 @@ enum StatusCode {
     CONFIG_UNKNOWN_VALIDATOR = 1214;
     // The transformer is not allowed in skaffold-managed mode.
     CONFIG_UNKNOWN_TRANSFORMER = 1215;
+    // Manifest file not found
+    CONFIG_MISSING_MANIFEST_FILE_ERR = 1216;
 
     // Inspect command errors
 
@@ -581,6 +583,8 @@ enum SuggestionCode {
     CONFIG_ALLOWLIST_VALIDATORS = 708;
     // Only the allow listed transformers are acceptable in skaffold-managed mode.
     CONFIG_ALLOWLIST_transformers = 709;
+    // Check mising manifest file section of config and fix as needed.
+    CONFIG_FIX_MISSING_MANIFEST_FILE = 710;
 
     // `skaffold inspect` command error suggestion codes
 
