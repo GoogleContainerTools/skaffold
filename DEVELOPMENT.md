@@ -123,7 +123,7 @@ e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5
    ```
    The `INIT` in this case stands for skaffold `INIT` phase which includes, parsing of skaffold config and creating a skaffold runner. 
    The other valid phases are `BUILD`, `DEPLOY`, `STATUSCHECK`. Complete list [here](https://skaffold.dev/docs/references/api/grpc/#statuscode)
-2. Run `hack/generate_proto.sh`. These will generate go code and structs for the newly added proto fields.
+2. Run `hack/generate-proto.sh`. These will generate go code and structs for the newly added proto fields.
    ```shell script
     git status
 	   modified:   docs/content/en/api/skaffold.swagger.json
