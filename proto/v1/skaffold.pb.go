@@ -192,6 +192,7 @@ const StatusCode_INIT_CREATE_TEST_DEP_ERROR = StatusCode(enums.StatusCode_INIT_C
 const StatusCode_INIT_CACHE_ERROR = StatusCode(enums.StatusCode_INIT_CACHE_ERROR)
 const StatusCode_INIT_CREATE_WATCH_TRIGGER_ERROR = StatusCode(enums.StatusCode_INIT_CREATE_WATCH_TRIGGER_ERROR)
 const StatusCode_INIT_CREATE_ARTIFACT_DEP_ERROR = StatusCode(enums.StatusCode_INIT_CREATE_ARTIFACT_DEP_ERROR)
+const StatusCode_INIT_SYNC_ABS_PATH_ERR = StatusCode(enums.StatusCode_INIT_SYNC_ABS_PATH_ERR)
 const StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR = StatusCode(enums.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR)
 const StatusCode_DEPLOY_DEBUG_HELPER_RETRIEVE_ERR = StatusCode(enums.StatusCode_DEPLOY_DEBUG_HELPER_RETRIEVE_ERR)
 const StatusCode_DEPLOY_CLEANUP_ERR = StatusCode(enums.StatusCode_DEPLOY_CLEANUP_ERR)

@@ -19,15 +19,17 @@ package v1
 import (
 	"context"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"path/filepath"
 	"strconv"
 	"time"
 
+	"github.com/bmatcuk/doublestar"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -236,7 +238,17 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					// list files and add to dependencies list
 					matches, err := doublestar.Glob(pt.Src)
 					if err != nil {
-						return fmt.Errorf("pattern error for %q: %w", pt.Src, err)
+						return sErrors.NewErrorWithStatusCode(
+							proto.ActionableErr{
+								Message: fmt.Sprintf("`%q` pattern: %s", pt.Src, err.Error()),
+								ErrCode: proto.StatusCode_INIT_SYNC_ABS_PATH_ERR,
+								Suggestions: []*proto.Suggestion{
+									{
+										SuggestionCode: proto.SuggestionCode_CONFIG_CHECK_FILE_PATH,
+										Action:         "pls fix your abs path pattern",
+									},
+								},
+							})
 					}
 
 					absMatches = append(absMatches, matches...)

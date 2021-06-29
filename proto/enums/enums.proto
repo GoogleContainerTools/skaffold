@@ -304,6 +304,8 @@ enum StatusCode {
     INIT_CREATE_WATCH_TRIGGER_ERROR = 908;
     // Skaffold encountered an error when evaluating artifact dependencies
     INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
+    // Skaffold encountered an error when listing abs path
+    INIT_SYNC_ABS_PATH_ERR = 910;
 
     // Deploy errors
 
