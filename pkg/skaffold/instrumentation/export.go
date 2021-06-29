@@ -94,7 +94,12 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	for _, m := range meters {
 		createMetrics(ctx, m)
 	}
-	p.Stop(ctx)
+	if err := p.Stop(ctx); err != nil {
+		logrus.Debugf("error uploading metrics: %s", err)
+		logrus.Debugf("writing to file %s instead", filename)
+		b, _ = json.Marshal(meters)
+		return ioutil.WriteFile(filename, b, 0666)
+	}
 	logrus.Debugf("metrics uploading complete in %s", time.Since(start).String())
 
 	if fileExists {
