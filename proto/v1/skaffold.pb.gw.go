@@ -2,11 +2,11 @@
 // source: v1/skaffold.proto
 
 /*
-Package proto is a reverse proxy.
+Package v1 is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package proto
+package v1
 
 import (
 	"context"
