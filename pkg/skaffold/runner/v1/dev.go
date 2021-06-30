@@ -240,7 +240,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					if err != nil {
 						return sErrors.NewErrorWithStatusCode(
 							proto.ActionableErr{
-								Message: fmt.Sprintf("`%q` pattern: %s", pt.Src, err.Error()),
+								Message: fmt.Sprintf("%q pattern: %s", pt.Src, err.Error()),
 								ErrCode: proto.StatusCode_INIT_SYNC_ABS_PATH_ERR,
 								Suggestions: []*proto.Suggestion{
 									{
