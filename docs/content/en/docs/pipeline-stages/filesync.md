@@ -26,7 +26,8 @@ Multiple types of sync are supported by Skaffold:
 ### Manual sync mode
 
 A manual sync rule must specify the `src` and `dest` field.
-The `src` field is a glob pattern to match files relative to the artifact _context_ directory, which may contain `**` to match nested files.
+The `src` field is a glob pattern to match files, which may contain `**` to match nested files.
+Relative paths are resolved from the artifact _context_ directory.  Absolute paths may also be used.
 The `dest` field is the absolute or relative destination path in the container.
 If the destination is a relative path, an absolute path will be inferred by prepending the path with the container's `WORKDIR`.
 By default, matched files are transplanted with their whole directory hierarchy below the artifact context directory onto the destination.
