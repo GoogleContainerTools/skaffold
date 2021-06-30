@@ -68,20 +68,20 @@ func NewTrigger(cfg Config, isActive func() bool) (Trigger, error) {
 
 func newFSNotifyTrigger(cfg Config, isActive func() bool) Trigger {
 	workspaces := map[string]struct{}{}
-	var absPaths []string
+	var absGlobs []string
 	for _, a := range cfg.Artifacts() {
 		workspaces[a.Workspace] = struct{}{}
 		// Add absolute paths
 		if a.Sync != nil {
 			for _, pt := range a.Sync.Manual {
 				if filepath.IsAbs(pt.Src) {
-					absPaths = append(absPaths, pt.Src)
+					absGlobs = append(absGlobs, pt.Src)
 				}
 			}
 		}
 
 	}
-	return fsNotify.New(workspaces, absPaths, isActive, cfg.WatchPollInterval())
+	return fsNotify.New(workspaces, absGlobs, isActive, cfg.WatchPollInterval())
 }
 
 // pollTrigger watches for changes on a given interval of time.
