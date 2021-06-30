@@ -821,16 +821,13 @@ func TestIntersect(t *testing.T) {
 			},
 		},
 		{
-			description: "file change not relative to context should allowed",
+			description: "file change not relative to context throws error",
 			files:       []string{filepath.Join("node", "server.js"), filepath.Join("/", "something", "test.js")},
 			context:     "node",
 			syncRules: []*latestV1.SyncRule{
 				{Src: "*.js", Dest: "/"},
 			},
-			expected: map[string][]string{
-				"/something/test.js": {"/test.js"},
-				"node/server.js":     {"/server.js"},
-			},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
