@@ -62,7 +62,7 @@ func GetDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvide
 
 	deployerCfg := runCtx.Deployers()
 
-	var deployers deploy.DeployerMux
+	var deployers []deploy.Deployer
 	for _, d := range deployerCfg {
 		dCtx := &deployerCtx{runCtx, d}
 		if d.HelmDeploy != nil {
@@ -95,7 +95,7 @@ func GetDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvide
 		}
 	}
 
-	return deployers, nil
+	return deploy.NewDeployerMux(deployers, runCtx.IterativeStatusCheck()), nil
 }
 
 /*

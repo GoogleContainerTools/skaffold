@@ -69,8 +69,9 @@ type SkaffoldOptions struct {
 	AddSkaffoldLabels bool
 	DetectMinikube    bool
 	// Experimental is the entrypoint to run skaffold v3 before it's fully implemented.
-	Experimental bool
-	StatusCheck  BoolOrUndefined
+	Experimental         bool
+	StatusCheck          BoolOrUndefined
+	IterativeStatusCheck bool
 
 	PortForward        PortForwardOptions
 	CustomTag          string

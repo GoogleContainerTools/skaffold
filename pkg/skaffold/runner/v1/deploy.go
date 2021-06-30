@@ -71,6 +71,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if r.runCtx.RenderOnly() {
 		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
+	defer r.deployer.GetStatusMonitor().Reset()
 
 	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone, "skaffold")
 
@@ -141,8 +142,11 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	event.DeployComplete()
 	eventV2.TaskSucceeded(constants.Deploy)
 	r.runCtx.UpdateNamespaces(namespaces)
-	sErr := r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut)
-	return sErr
+	if !r.runCtx.Opts.IterativeStatusCheck {
+		// run final aggregated status check only if iterative status check is turned off.
+		return r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut)
+	}
+	return nil
 }
 
 func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {

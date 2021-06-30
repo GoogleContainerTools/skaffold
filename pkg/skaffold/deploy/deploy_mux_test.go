@@ -178,10 +178,10 @@ func TestDeployerMux_Deploy(t *testing.T) {
 					},
 				}}})
 
-			deployerMux := DeployerMux([]Deployer{
+			deployerMux := NewDeployerMux([]Deployer{
 				NewMockDeployer().WithDeployNamespaces(test.namespaces1).WithDeployErr(test.err1),
 				NewMockDeployer().WithDeployNamespaces(test.namespaces2).WithDeployErr(test.err2),
-			})
+			}, false)
 
 			namespaces, err := deployerMux.Deploy(context.Background(), nil, nil)
 
@@ -230,10 +230,10 @@ func TestDeployerMux_Dependencies(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			deployerMux := DeployerMux([]Deployer{
+			deployerMux := NewDeployerMux([]Deployer{
 				NewMockDeployer().WithDependencies(test.deps1).WithDependenciesErr(test.err1),
 				NewMockDeployer().WithDependencies(test.deps2).WithDependenciesErr(test.err2),
-			})
+			}, false)
 
 			dependencies, err := deployerMux.Dependencies()
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDeps, dependencies)
@@ -275,10 +275,10 @@ func TestDeployerMux_Render(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("output to writer "+test.name, func(t *testing.T) {
-			deployerMux := DeployerMux([]Deployer{
+			deployerMux := NewDeployerMux([]Deployer{
 				NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
 				NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
-			})
+			}, false)
 
 			buf := &bytes.Buffer{}
 			err := deployerMux.Render(context.Background(), buf, nil, true, "")
@@ -292,10 +292,10 @@ func TestDeployerMux_Render(t *testing.T) {
 
 		tmpDir := testutil.NewTempDir(t)
 
-		deployerMux := DeployerMux([]Deployer{
+		deployerMux := NewDeployerMux([]Deployer{
 			NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
 			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
-		})
+		}, false)
 
 		err := deployerMux.Render(context.Background(), nil, nil, true, tmpDir.Path("render"))
 		testutil.CheckError(t, false, err)

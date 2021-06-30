@@ -294,6 +294,15 @@ var flagRegistry = []Flag{
 		NoOptDefVal:   "true",
 	},
 	{
+		Name:          "iterative-status-check",
+		Usage:         "Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).",
+		Value:         &opts.IterativeStatusCheck,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "render-only",
 		Usage:         "Print rendered Kubernetes manifests instead of deploying them",
 		Value:         &opts.RenderOnly,
