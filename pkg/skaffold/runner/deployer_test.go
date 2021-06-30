@@ -144,7 +144,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					))
 				}
 
-				deployer, err := GetDeployer(&runcontext.RunContext{
+				deployer, _, err := GetDeployer(&runcontext.RunContext{
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},
@@ -281,7 +281,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						},
 					})
 				}
-				deployer, err := getDefaultDeployer(&runcontext.RunContext{
+				deployer, _, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines),
 				}, &label.DefaultLabeller{})
 

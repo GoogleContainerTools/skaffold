@@ -1,0 +1,11 @@
+apiVersion: skaffold/v2beta19
+kind: Config
+build:
+  local:
+    push: false
+  artifacts:
+  - image: skaffold-example
+deploy:
+  docker:
+    useCompose: false
+    images: [skaffold-example]
