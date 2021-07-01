@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -30,11 +31,12 @@ import (
 
 // NoopComponentProvider is for tests
 var NoopComponentProvider = ComponentProvider{
-	Accessor: &access.NoopProvider{},
-	Debugger: &debug.NoopProvider{},
-	Logger:   &log.NoopProvider{},
-	Monitor:  &status.NoopProvider{},
-	Syncer:   &sync.NoopProvider{},
+	Accessor:    &access.NoopProvider{},
+	Debugger:    &debug.NoopProvider{},
+	ImageLoader: &loader.NoopProvider{},
+	Logger:      &log.NoopProvider{},
+	Monitor:     &status.NoopProvider{},
+	Syncer:      &sync.NoopProvider{},
 }
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
@@ -72,14 +74,18 @@ type Deployer interface {
 
 	// GetStatusMonitor returns a Deployer's implementation of a StatusMonitor
 	GetStatusMonitor() status.Monitor
+
+	// GetImageLoader returns a Deployer's implementation of an ImageLoader
+	GetImageLoader() loader.ImageLoader
 }
 
 // ComponentProvider serves as a clean way to send three providers
 // as params to the Deployer constructors
 type ComponentProvider struct {
-	Accessor access.Provider
-	Debugger debug.Provider
-	Logger   log.Provider
-	Monitor  status.Provider
-	Syncer   sync.Provider
+	Accessor    access.Provider
+	Debugger    debug.Provider
+	ImageLoader loader.Provider
+	Logger      log.Provider
+	Monitor     status.Provider
+	Syncer      sync.Provider
 }

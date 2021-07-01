@@ -52,12 +52,9 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	}
 
 	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_LoadImagesIntoCluster")
-	if len(localImages) > 0 && r.runCtx.Cluster.LoadImages {
-		err := r.loadImagesIntoCluster(ctx, out, localImages)
-		if err != nil {
-			endTrace(instrumentation.TraceEndError(err))
-			return err
-		}
+	if err := r.deployer.GetImageLoader().LoadImages(ctx, out, localImages); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
 	}
 	endTrace()
 

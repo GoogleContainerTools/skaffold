@@ -51,6 +51,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -86,6 +87,7 @@ type Deployer struct {
 
 	accessor      access.Accessor
 	debugger      debug.Debugger
+	imageLoader   loader.ImageLoader
 	logger        log.Logger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
@@ -144,6 +146,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		podSelector:    podSelector,
 		accessor:       provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
+		imageLoader:    provider.ImageLoader.GetKubernetesImageLoader(),
 		logger:         provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:  provider.Monitor.GetKubernetesMonitor(cfg),
 		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector),
@@ -178,6 +181,10 @@ func (h *Deployer) GetStatusMonitor() status.Monitor {
 
 func (h *Deployer) GetSyncer() sync.Syncer {
 	return h.syncer
+}
+
+func (h *Deployer) GetImageLoader() loader.ImageLoader {
+	return h.imageLoader
 }
 
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {

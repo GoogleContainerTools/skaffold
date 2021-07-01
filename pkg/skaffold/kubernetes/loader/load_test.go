@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package loader
 
 import (
 	"context"
@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -109,8 +108,8 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		},
 	}
 
-	runImageLoadingTests(t, tests, func(r *SkaffoldRunner, test ImageLoadingTest) error {
-		return r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+	runImageLoadingTests(t, tests, func(i *ImageLoader, test ImageLoadingTest) error {
+		return i.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
 	})
 }
 
@@ -182,12 +181,12 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 		},
 	}
 
-	runImageLoadingTests(t, tests, func(r *SkaffoldRunner, test ImageLoadingTest) error {
-		return r.loadImagesInK3dNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+	runImageLoadingTests(t, tests, func(i *ImageLoader, test ImageLoadingTest) error {
+		return i.loadImagesInK3dNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
 	})
 }
 
-func runImageLoadingTests(t *testing.T, tests []ImageLoadingTest, loadingFunc func(r *SkaffoldRunner, test ImageLoadingTest) error) {
+func runImageLoadingTests(t *testing.T, tests []ImageLoadingTest, loadingFunc func(i *ImageLoader, test ImageLoadingTest) error) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
@@ -199,12 +198,9 @@ func runImageLoadingTests(t *testing.T, tests []ImageLoadingTest, loadingFunc fu
 				KubeContext: "kubecontext",
 			}
 
-			r := &SkaffoldRunner{
-				runCtx:     runCtx,
-				kubectlCLI: kubectl.NewCLI(runCtx, ""),
-				Builder:    runner.Builder{Builds: test.built},
-			}
-			err := loadingFunc(r, test)
+			i := NewImageLoader(runCtx.KubeContext, kubectl.NewCLI(runCtx, ""))
+			i.builds = test.built
+			err := loadingFunc(i, test)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)

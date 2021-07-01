@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package loader
 
 import (
 	"context"
@@ -25,37 +25,89 @@ import (
 	"time"
 
 	"github.com/docker/distribution/reference"
+	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type ImageLoader struct {
+	kubeContext string
+	builds      []graph.Artifact
+	cli         *kubectl.CLI
+}
+
+type Config interface {
+	GetKubeContext() string
+	LoadImages() bool
+}
+
+func NewImageLoader(kubeContext string, cli *kubectl.CLI) *ImageLoader {
+	return &ImageLoader{
+		kubeContext: kubeContext,
+		cli:         cli,
+	}
+}
+
+func (i *ImageLoader) TrackBuildArtifacts(builds []graph.Artifact) {
+	i.builds = append(i.builds, builds...)
+}
+
+func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	currentContext, err := i.getCurrentContext()
+	if err != nil {
+		return err
+	}
+
+	if config.IsKindCluster(i.kubeContext) {
+		kindCluster := config.KindClusterName(currentContext.Cluster)
+
+		// With `kind`, docker images have to be loaded with the `kind` CLI.
+		if err := i.loadImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
+			return fmt.Errorf("loading images into kind nodes: %w", err)
+		}
+	}
+
+	if config.IsK3dCluster(i.kubeContext) {
+		k3dCluster := config.K3dClusterName(currentContext.Cluster)
+
+		// With `k3d`, docker images have to be loaded with the `k3d` CLI.
+		if err := i.loadImagesInK3dNodes(ctx, out, k3dCluster, artifacts); err != nil {
+			return fmt.Errorf("loading images into k3d nodes: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // loadImagesInKindNodes loads artifact images into every node of a kind cluster.
-func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
+func (i *ImageLoader) loadImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
 	output.Default.Fprintln(out, "Loading images into kind cluster nodes...")
-	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
+	return i.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
 		return exec.CommandContext(ctx, "kind", "load", "docker-image", "--name", kindCluster, tag)
 	})
 }
 
 // loadImagesInK3dNodes loads artifact images into every node of a k3s cluster.
-func (r *SkaffoldRunner) loadImagesInK3dNodes(ctx context.Context, out io.Writer, k3dCluster string, artifacts []graph.Artifact) error {
+func (i *ImageLoader) loadImagesInK3dNodes(ctx context.Context, out io.Writer, k3dCluster string, artifacts []graph.Artifact) error {
 	output.Default.Fprintln(out, "Loading images into k3d cluster nodes...")
-	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
+	return i.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
 		return exec.CommandContext(ctx, "k3d", "image", "import", "--cluster", k3dCluster, tag)
 	})
 }
 
-func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifacts []graph.Artifact, createCmd func(tag string) *exec.Cmd) error {
+func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts []graph.Artifact, createCmd func(tag string) *exec.Cmd) error {
 	start := time.Now()
 
 	var knownImages []string
 
 	for _, artifact := range artifacts {
 		// Only load images that this runner built
-		if !r.wasBuilt(artifact.Tag) {
+		if !i.wasBuilt(artifact.Tag) {
 			continue
 		}
 
@@ -64,7 +116,7 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 		// Only load images that are unknown to the node
 		if knownImages == nil {
 			var err error
-			if knownImages, err = findKnownImages(ctx, r.kubectlCLI); err != nil {
+			if knownImages, err = findKnownImages(ctx, i.cli); err != nil {
 				return fmt.Errorf("unable to retrieve node's images: %w", err)
 			}
 		}
@@ -100,12 +152,25 @@ func findKnownImages(ctx context.Context, cli *kubectl.CLI) ([]string, error) {
 	return knownImages, nil
 }
 
-func (r *SkaffoldRunner) wasBuilt(tag string) bool {
-	for _, built := range r.Builds {
+func (i *ImageLoader) wasBuilt(tag string) bool {
+	for _, built := range i.builds {
 		if built.Tag == tag {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (i *ImageLoader) getCurrentContext() (*api.Context, error) {
+	currentCfg, err := kubectx.CurrentConfig()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get kubernetes config: %w", err)
+	}
+
+	currentContext, present := currentCfg.Contexts[i.kubeContext]
+	if !present {
+		return nil, fmt.Errorf("unable to get current kubernetes context: %w", err)
+	}
+	return currentContext, nil
 }
