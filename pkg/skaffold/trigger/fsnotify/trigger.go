@@ -91,7 +91,15 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 			continue
 		}
 
-		if err := t.watchFunc(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
+		// Workspace paths may already have been converted to absolute paths (e.g. in a multi-config project).
+		var path string
+		if filepath.IsAbs(w) {
+			path = w
+		} else {
+			path = filepath.Join(wd, w)
+		}
+
+		if err := t.watchFunc(filepath.Join(path, "..."), c, notify.All); err != nil {
 			return nil, err
 		}
 	}
