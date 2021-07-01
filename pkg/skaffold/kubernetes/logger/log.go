@@ -17,7 +17,6 @@ limitations under the License.
 package logger
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -28,10 +27,10 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -184,18 +183,8 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 
 	headerColor := a.colorPicker.Pick(pod)
 	prefix := a.prefix(pod, container)
-	if err := a.streamRequest(ctx, headerColor, prefix, pod.Name, container.Name, tr); err != nil {
+	if err := stream.StreamRequest(ctx, a.output, headerColor, prefix, pod.Name, container.Name, make(chan bool), &a.outputLock, a.IsMuted, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
-	}
-}
-
-func (a *LogAggregator) printLogLine(text string) {
-	if !a.IsMuted() {
-		a.outputLock.Lock()
-
-		fmt.Fprint(a.output, text)
-
-		a.outputLock.Unlock()
 	}
 }
 
@@ -240,30 +229,6 @@ func containerPrefix(container v1.ContainerStatus) string {
 
 func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
-}
-
-func (a *LogAggregator) streamRequest(ctx context.Context, headerColor output.Color, prefix, podName, containerName string, rc io.Reader) error {
-	r := bufio.NewReader(rc)
-	for {
-		select {
-		case <-ctx.Done():
-			logrus.Infof("%s interrupted", prefix)
-			return nil
-		default:
-			// Read up to newline
-			line, err := r.ReadString('\n')
-			if err == io.EOF {
-				return nil
-			}
-			if err != nil {
-				return fmt.Errorf("reading bytes from log stream: %w", err)
-			}
-
-			formattedLine := headerColor.Sprintf("%s ", prefix) + line
-			a.printLogLine(formattedLine)
-			eventV2.ApplicationLog(podName, containerName, line, formattedLine)
-		}
-	}
 }
 
 // Mute mutes the logs.

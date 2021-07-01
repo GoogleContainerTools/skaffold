@@ -17,11 +17,8 @@ limitations under the License.
 package logger
 
 import (
-	"bytes"
 	"context"
 	"io/ioutil"
-	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -29,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -96,34 +92,6 @@ func TestSelect(t *testing.T) {
 			t.CheckDeepEqual(test.expectedMatch, selected)
 		})
 	}
-}
-
-func TestPrintLogLine(t *testing.T) {
-	testutil.Run(t, "verify lines are not intermixed", func(t *testutil.T) {
-		var buf bytes.Buffer
-
-		logger := &LogAggregator{
-			output: &buf,
-		}
-
-		var wg sync.WaitGroup
-		for i := 0; i < 5; i++ {
-			wg.Add(1)
-
-			go func() {
-				for i := 0; i < 100; i++ {
-					logger.printLogLine(output.Default.Sprintf("%s ", "PREFIX") + "TEXT\n")
-				}
-				wg.Done()
-			}()
-		}
-		wg.Wait()
-
-		lines := strings.Split(buf.String(), "\n")
-		for i := 0; i < 5*100; i++ {
-			t.CheckDeepEqual("PREFIX TEXT", lines[i])
-		}
-	})
 }
 
 func TestLogAggregatorZeroValue(t *testing.T) {
