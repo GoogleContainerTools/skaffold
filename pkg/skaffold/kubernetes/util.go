@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -150,4 +151,16 @@ func parseImagesFromYaml(obj interface{}) []string {
 	}
 
 	return images
+}
+
+// FailIfClusterIsNotReachable checks that Kubernetes is reachable.
+// This gives a clear early error when the cluster can't be reached.
+func FailIfClusterIsNotReachable() error {
+	c, err := client.Client()
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Discovery().ServerVersion()
+	return err
 }

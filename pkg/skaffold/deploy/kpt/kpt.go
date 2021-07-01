@@ -213,6 +213,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		"DeployerType": "kpt",
 	})
 
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
 	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_sanityCheck")
 	if err := sanityCheck(k.Dir, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))

@@ -197,10 +197,17 @@ func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
-	ctx, endTrace := instrumentation.StartTrace(ctx, "Render", map[string]string{
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
 	defer endTrace()
+
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
