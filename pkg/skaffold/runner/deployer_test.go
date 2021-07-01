@@ -50,9 +50,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "helm deployer with 3.0.0 version",
 				cfg:         latestV1.DeployType{HelmDeploy: &latestV1.HelmDeploy{}},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
-				expected: deploy.DeployerMux{
-					&helm.Deployer{},
-				},
+				expected:    deploy.NewDeployerMux([]deploy.Deployer{&helm.Deployer{}}, false),
 			},
 			{
 				description: "helm deployer with less than 3.0.0 version",
@@ -63,31 +61,31 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "kubectl deployer",
 				cfg:         latestV1.DeployType{KubectlDeploy: &latestV1.KubectlDeploy{}},
-				expected: deploy.DeployerMux{
+				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 						Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
 					}, nil, deploy.NoopComponentProvider, &latestV1.KubectlDeploy{
 						Flags: latestV1.KubectlFlags{},
 					})).(deploy.Deployer),
-				},
+				}, false),
 			},
 			{
 				description: "kustomize deployer",
 				cfg:         latestV1.DeployType{KustomizeDeploy: &latestV1.KustomizeDeploy{}},
-				expected: deploy.DeployerMux{
+				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					t.RequireNonNilResult(kustomize.NewDeployer(&runcontext.RunContext{
 						Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
 					}, nil, deploy.NoopComponentProvider, &latestV1.KustomizeDeploy{
 						Flags: latestV1.KubectlFlags{},
 					})).(deploy.Deployer),
-				},
+				}, false),
 			},
 			{
 				description: "kpt deployer",
 				cfg:         latestV1.DeployType{KptDeploy: &latestV1.KptDeploy{}},
-				expected: deploy.DeployerMux{
+				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&kpt.Deployer{},
-				},
+				}, false),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with kpt config",
@@ -117,10 +115,10 @@ func TestGetDeployer(tOuter *testing.T) {
 					KptDeploy:  &latestV1.KptDeploy{},
 				},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
-				expected: deploy.DeployerMux{
+				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&helm.Deployer{},
 					&kpt.Deployer{},
-				},
+				}, false),
 			},
 		}
 		for _, test := range tests {
@@ -147,8 +145,8 @@ func TestGetDeployer(tOuter *testing.T) {
 				t.CheckTypeEquality(test.expected, deployer)
 
 				if reflect.TypeOf(test.expected) == reflect.TypeOf(deploy.DeployerMux{}) {
-					expected := test.expected.(deploy.DeployerMux)
-					deployers := deployer.(deploy.DeployerMux)
+					expected := test.expected.(deploy.DeployerMux).GetDeployers()
+					deployers := deployer.(deploy.DeployerMux).GetDeployers()
 					t.CheckDeepEqual(len(expected), len(deployers))
 					for i, v := range expected {
 						t.CheckTypeEquality(v, deployers[i])

@@ -431,11 +431,11 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester: &test.FullTester{},
-			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
+			expectedDeployer: deploy.NewDeployerMux([]deploy.Deployer{
 				&helm.Deployer{},
 				&kubectl.Deployer{},
 				&kustomize.Deployer{},
-			}),
+			}, false),
 		},
 	}
 	for _, test := range tests {
