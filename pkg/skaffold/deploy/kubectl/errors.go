@@ -21,7 +21,7 @@ import (
 
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 const (

@@ -17,7 +17,7 @@ limitations under the License.
 package validator
 
 import (
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // Recommender makes recommendations based on err in the actionable error

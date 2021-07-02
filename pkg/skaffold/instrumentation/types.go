@@ -21,7 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // skaffoldMeter describes the data used to determine operational metrics.

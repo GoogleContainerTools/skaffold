@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 

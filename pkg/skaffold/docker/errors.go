@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 func remoteDigestGetErr(err error) error {

@@ -19,7 +19,7 @@ package resource
 import (
 	"fmt"
 
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 type Status struct {
