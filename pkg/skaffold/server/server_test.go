@@ -24,7 +24,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

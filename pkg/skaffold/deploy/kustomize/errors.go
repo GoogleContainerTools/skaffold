@@ -18,7 +18,7 @@ package kustomize
 
 import (
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 func userErr(err error) error {

@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	debugannotations "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

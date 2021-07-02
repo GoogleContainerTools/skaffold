@@ -29,21 +29,21 @@ You can find the source for v1/skaffold.proto [on Github](https://github.com/Goo
 
 ### Services
 
-<a name="proto.v1.SkaffoldService"></a>
+<a name="proto.SkaffoldService"></a>
 
 #### SkaffoldService
 Describes all the methods for the Skaffold API
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetState | [.google.protobuf.Empty](#google.protobuf.Empty) | [State](#proto.v1.State) | Returns the state of the current Skaffold execution |
-| EventLog | [LogEntry](#proto.v1.LogEntry) stream | [LogEntry](#proto.v1.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
-| Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.v1.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
-| Execute | [UserIntentRequest](#proto.v1.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
-| AutoBuild | [TriggerRequest](#proto.v1.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic build trigger |
-| AutoSync | [TriggerRequest](#proto.v1.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic sync trigger |
-| AutoDeploy | [TriggerRequest](#proto.v1.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic deploy trigger |
-| Handle | [Event](#proto.v1.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
+| GetState | [.google.protobuf.Empty](#google.protobuf.Empty) | [State](#proto.State) | Returns the state of the current Skaffold execution |
+| EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
+| Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
+| Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
+| AutoBuild | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic build trigger |
+| AutoSync | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic sync trigger |
+| AutoDeploy | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic deploy trigger |
+| Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
  <!-- end services -->
 
@@ -52,16 +52,16 @@ Describes all the methods for the Skaffold API
 
 
 
-<a name="proto.v1.ActionableErr"></a>
+<a name="proto.ActionableErr"></a>
 #### ActionableErr
 `ActionableErr` defines an error that occurred along with an optional list of suggestions
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| errCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | error code representing the error |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | error code representing the error |
 | message | [string](#string) |  | message describing the error. |
-| suggestions | [Suggestion](#proto.v1.Suggestion) | repeated | list of suggestions |
+| suggestions | [Suggestion](#proto.Suggestion) | repeated | list of suggestions |
 
 
 
@@ -69,7 +69,7 @@ Describes all the methods for the Skaffold API
 
 
 
-<a name="proto.v1.BuildEvent"></a>
+<a name="proto.BuildEvent"></a>
 #### BuildEvent
 `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
 If the build fails, an error will be attached to the event.
@@ -80,8 +80,8 @@ If the build fails, an error will be attached to the event.
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
-| errCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -89,7 +89,7 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.v1.BuildMetadata"></a>
+<a name="proto.BuildMetadata"></a>
 #### BuildMetadata
 
 
@@ -97,9 +97,9 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | numberOfArtifacts | [int32](#int32) |  |  |
-| builders | [BuildMetadata.ImageBuilder](#proto.v1.BuildMetadata.ImageBuilder) | repeated |  |
-| type | [proto.enums.BuildType](#proto.enums.BuildType) |  |  |
-| additional | [BuildMetadata.AdditionalEntry](#proto.v1.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
+| builders | [BuildMetadata.ImageBuilder](#proto.BuildMetadata.ImageBuilder) | repeated |  |
+| type | [enums.BuildType](#proto.enums.BuildType) |  |  |
+| additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
 
 
 
@@ -107,7 +107,7 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.v1.BuildMetadata.AdditionalEntry"></a>
+<a name="proto.BuildMetadata.AdditionalEntry"></a>
 #### BuildMetadata.AdditionalEntry
 
 
@@ -123,14 +123,14 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.v1.BuildMetadata.ImageBuilder"></a>
+<a name="proto.BuildMetadata.ImageBuilder"></a>
 #### BuildMetadata.ImageBuilder
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [proto.enums.BuilderType](#proto.enums.BuilderType) |  |  |
+| type | [enums.BuilderType](#proto.enums.BuilderType) |  |  |
 | count | [int32](#int32) |  |  |
 
 
@@ -139,16 +139,16 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.v1.BuildState"></a>
+<a name="proto.BuildState"></a>
 #### BuildState
 `BuildState` maps Skaffold artifacts to their current build states
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| artifacts | [BuildState.ArtifactsEntry](#proto.v1.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
+| artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
 | autoTrigger | [bool](#bool) |  |  |
-| statusCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  |  |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  |  |
 
 
 
@@ -156,7 +156,7 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.v1.BuildState.ArtifactsEntry"></a>
+<a name="proto.BuildState.ArtifactsEntry"></a>
 #### BuildState.ArtifactsEntry
 
 
@@ -172,7 +172,7 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.v1.DebuggingContainerEvent"></a>
+<a name="proto.DebuggingContainerEvent"></a>
 #### DebuggingContainerEvent
 DebuggingContainerEvent is raised when a debugging container is started or terminated
 
@@ -186,7 +186,7 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 | artifact | [string](#string) |  | the corresponding artifact's image name |
 | runtime | [string](#string) |  | the detected language runtime |
 | workingDir | [string](#string) |  | the working directory in the container image |
-| debugPorts | [DebuggingContainerEvent.DebugPortsEntry](#proto.v1.DebuggingContainerEvent.DebugPortsEntry) | repeated | the exposed debugging-related ports |
+| debugPorts | [DebuggingContainerEvent.DebugPortsEntry](#proto.DebuggingContainerEvent.DebugPortsEntry) | repeated | the exposed debugging-related ports |
 
 
 
@@ -194,7 +194,7 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 
 
 
-<a name="proto.v1.DebuggingContainerEvent.DebugPortsEntry"></a>
+<a name="proto.DebuggingContainerEvent.DebugPortsEntry"></a>
 #### DebuggingContainerEvent.DebugPortsEntry
 
 
@@ -210,7 +210,7 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 
 
 
-<a name="proto.v1.DeployEvent"></a>
+<a name="proto.DeployEvent"></a>
 #### DeployEvent
 `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
 anytime a deployment starts or completes, successfully or not.
@@ -220,8 +220,8 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
-| errCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -229,15 +229,15 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
-<a name="proto.v1.DeployMetadata"></a>
+<a name="proto.DeployMetadata"></a>
 #### DeployMetadata
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| deployers | [DeployMetadata.Deployer](#proto.v1.DeployMetadata.Deployer) | repeated |  |
-| cluster | [proto.enums.ClusterType](#proto.enums.ClusterType) |  |  |
+| deployers | [DeployMetadata.Deployer](#proto.DeployMetadata.Deployer) | repeated |  |
+| cluster | [enums.ClusterType](#proto.enums.ClusterType) |  |  |
 
 
 
@@ -245,14 +245,14 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
-<a name="proto.v1.DeployMetadata.Deployer"></a>
+<a name="proto.DeployMetadata.Deployer"></a>
 #### DeployMetadata.Deployer
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [proto.enums.DeployerType](#proto.enums.DeployerType) |  |  |
+| type | [enums.DeployerType](#proto.enums.DeployerType) |  |  |
 | count | [int32](#int32) |  |  |
 
 
@@ -261,7 +261,7 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
-<a name="proto.v1.DeployState"></a>
+<a name="proto.DeployState"></a>
 #### DeployState
 `DeployState` describes the status of the current deploy
 
@@ -270,7 +270,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | autoTrigger | [bool](#bool) |  |  |
-| statusCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  |  |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  |  |
 
 
 
@@ -278,7 +278,7 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
-<a name="proto.v1.DevLoopEvent"></a>
+<a name="proto.DevLoopEvent"></a>
 #### DevLoopEvent
 `DevLoopEvent` marks the start and end of a dev loop.
 
@@ -287,7 +287,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
-| err | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -295,7 +295,7 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
-<a name="proto.v1.Event"></a>
+<a name="proto.Event"></a>
 #### Event
 `Event` describes an event in the Skaffold process.
 It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
@@ -303,17 +303,17 @@ It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusChe
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| metaEvent | [MetaEvent](#proto.v1.MetaEvent) |  | contains general information regarding Skaffold like version info |
-| buildEvent | [BuildEvent](#proto.v1.BuildEvent) |  | describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed". |
-| deployEvent | [DeployEvent](#proto.v1.DeployEvent) |  | describes if the deployment has started, is in progress or is complete. |
-| portEvent | [PortEvent](#proto.v1.PortEvent) |  | describes each port forwarding event. |
-| statusCheckEvent | [StatusCheckEvent](#proto.v1.StatusCheckEvent) |  | describes if the Status check has started, is in progress, has succeeded or failed. |
-| resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.v1.ResourceStatusCheckEvent) |  | indicates progress for each kubernetes deployment. |
-| fileSyncEvent | [FileSyncEvent](#proto.v1.FileSyncEvent) |  | describes the sync status. |
-| debuggingContainerEvent | [DebuggingContainerEvent](#proto.v1.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
-| devLoopEvent | [DevLoopEvent](#proto.v1.DevLoopEvent) |  | describes a start and end of a dev loop. |
-| terminationEvent | [TerminationEvent](#proto.v1.TerminationEvent) |  | describes a skaffold termination event |
-| TestEvent | [TestEvent](#proto.v1.TestEvent) |  | describes if the test has started, is in progress or is complete. |
+| metaEvent | [MetaEvent](#proto.MetaEvent) |  | contains general information regarding Skaffold like version info |
+| buildEvent | [BuildEvent](#proto.BuildEvent) |  | describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed". |
+| deployEvent | [DeployEvent](#proto.DeployEvent) |  | describes if the deployment has started, is in progress or is complete. |
+| portEvent | [PortEvent](#proto.PortEvent) |  | describes each port forwarding event. |
+| statusCheckEvent | [StatusCheckEvent](#proto.StatusCheckEvent) |  | describes if the Status check has started, is in progress, has succeeded or failed. |
+| resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.ResourceStatusCheckEvent) |  | indicates progress for each kubernetes deployment. |
+| fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
+| debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
+| devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
+| terminationEvent | [TerminationEvent](#proto.TerminationEvent) |  | describes a skaffold termination event |
+| TestEvent | [TestEvent](#proto.TestEvent) |  | describes if the test has started, is in progress or is complete. |
 
 
 
@@ -321,7 +321,7 @@ It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusChe
 
 
 
-<a name="proto.v1.FileSyncEvent"></a>
+<a name="proto.FileSyncEvent"></a>
 #### FileSyncEvent
 FileSyncEvent describes the sync status.
 
@@ -332,8 +332,8 @@ FileSyncEvent describes the sync status.
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error in case of status failed. |
-| errCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -341,7 +341,7 @@ FileSyncEvent describes the sync status.
 
 
 
-<a name="proto.v1.FileSyncState"></a>
+<a name="proto.FileSyncState"></a>
 #### FileSyncState
 `FileSyncState` contains the status of the current file sync
 
@@ -357,7 +357,7 @@ FileSyncEvent describes the sync status.
 
 
 
-<a name="proto.v1.IntOrString"></a>
+<a name="proto.IntOrString"></a>
 #### IntOrString
 IntOrString is a type that can hold an int32 or a string.
 
@@ -374,7 +374,7 @@ IntOrString is a type that can hold an int32 or a string.
 
 
 
-<a name="proto.v1.Intent"></a>
+<a name="proto.Intent"></a>
 #### Intent
 Intent represents user intents for a given phase.
 
@@ -391,7 +391,7 @@ Intent represents user intents for a given phase.
 
 
 
-<a name="proto.v1.LogEntry"></a>
+<a name="proto.LogEntry"></a>
 #### LogEntry
 LogEntry describes an event and a string description of the event.
 
@@ -399,7 +399,7 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | timestamp | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | timestamp of the event. |
-| event | [Event](#proto.v1.Event) |  | the actual event that is one of |
+| event | [Event](#proto.Event) |  | the actual event that is one of |
 | entry | [string](#string) |  | description of the event. |
 
 
@@ -408,7 +408,7 @@ LogEntry describes an event and a string description of the event.
 
 
 
-<a name="proto.v1.MetaEvent"></a>
+<a name="proto.MetaEvent"></a>
 #### MetaEvent
 `MetaEvent` provides general information regarding Skaffold
 
@@ -416,7 +416,7 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | entry | [string](#string) |  | entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"` |
-| metadata | [Metadata](#proto.v1.Metadata) |  | Metadata describing skaffold pipeline |
+| metadata | [Metadata](#proto.Metadata) |  | Metadata describing skaffold pipeline |
 
 
 
@@ -424,17 +424,17 @@ LogEntry describes an event and a string description of the event.
 
 
 
-<a name="proto.v1.Metadata"></a>
+<a name="proto.Metadata"></a>
 #### Metadata
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| build | [BuildMetadata](#proto.v1.BuildMetadata) |  |  |
-| deploy | [DeployMetadata](#proto.v1.DeployMetadata) |  |  |
-| test | [TestMetadata](#proto.v1.TestMetadata) |  |  |
-| additional | [Metadata.AdditionalEntry](#proto.v1.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
+| build | [BuildMetadata](#proto.BuildMetadata) |  |  |
+| deploy | [DeployMetadata](#proto.DeployMetadata) |  |  |
+| test | [TestMetadata](#proto.TestMetadata) |  |  |
+| additional | [Metadata.AdditionalEntry](#proto.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
 
 
 
@@ -442,7 +442,7 @@ LogEntry describes an event and a string description of the event.
 
 
 
-<a name="proto.v1.Metadata.AdditionalEntry"></a>
+<a name="proto.Metadata.AdditionalEntry"></a>
 #### Metadata.AdditionalEntry
 
 
@@ -458,7 +458,7 @@ LogEntry describes an event and a string description of the event.
 
 
 
-<a name="proto.v1.PortEvent"></a>
+<a name="proto.PortEvent"></a>
 #### PortEvent
 PortEvent Event describes each port forwarding event.
 
@@ -474,7 +474,7 @@ PortEvent Event describes each port forwarding event.
 | resourceType | [string](#string) |  | resource type e.g. "pod", "service". |
 | resourceName | [string](#string) |  | name of the resource to forward. |
 | address | [string](#string) |  | address on which to bind |
-| targetPort | [IntOrString](#proto.v1.IntOrString) |  | target port is the resource port that will be forwarded. |
+| targetPort | [IntOrString](#proto.IntOrString) |  | target port is the resource port that will be forwarded. |
 
 
 
@@ -482,7 +482,7 @@ PortEvent Event describes each port forwarding event.
 
 
 
-<a name="proto.v1.Request"></a>
+<a name="proto.Request"></a>
 #### Request
 
 
@@ -497,7 +497,7 @@ PortEvent Event describes each port forwarding event.
 
 
 
-<a name="proto.v1.ResourceStatusCheckEvent"></a>
+<a name="proto.ResourceStatusCheckEvent"></a>
 #### ResourceStatusCheckEvent
 A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
 For every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.
@@ -512,8 +512,8 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. |
-| statusCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  |  |
-| actionableErr | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  |  |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -521,7 +521,7 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.Response"></a>
+<a name="proto.Response"></a>
 #### Response
 
 
@@ -536,21 +536,21 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.State"></a>
+<a name="proto.State"></a>
 #### State
 `State` represents the current state of the Skaffold components
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| buildState | [BuildState](#proto.v1.BuildState) |  |  |
-| deployState | [DeployState](#proto.v1.DeployState) |  |  |
-| forwardedPorts | [State.ForwardedPortsEntry](#proto.v1.State.ForwardedPortsEntry) | repeated |  |
-| statusCheckState | [StatusCheckState](#proto.v1.StatusCheckState) |  |  |
-| fileSyncState | [FileSyncState](#proto.v1.FileSyncState) |  |  |
-| debuggingContainers | [DebuggingContainerEvent](#proto.v1.DebuggingContainerEvent) | repeated |  |
-| metadata | [Metadata](#proto.v1.Metadata) |  |  |
-| testState | [TestState](#proto.v1.TestState) |  |  |
+| buildState | [BuildState](#proto.BuildState) |  |  |
+| deployState | [DeployState](#proto.DeployState) |  |  |
+| forwardedPorts | [State.ForwardedPortsEntry](#proto.State.ForwardedPortsEntry) | repeated |  |
+| statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
+| fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
+| debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
+| metadata | [Metadata](#proto.Metadata) |  |  |
+| testState | [TestState](#proto.TestState) |  |  |
 
 
 
@@ -558,7 +558,7 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.State.ForwardedPortsEntry"></a>
+<a name="proto.State.ForwardedPortsEntry"></a>
 #### State.ForwardedPortsEntry
 
 
@@ -566,7 +566,7 @@ will be sent with the new status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | key | [int32](#int32) |  |  |
-| value | [PortEvent](#proto.v1.PortEvent) |  |  |
+| value | [PortEvent](#proto.PortEvent) |  |  |
 
 
 
@@ -574,14 +574,14 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.StateResponse"></a>
+<a name="proto.StateResponse"></a>
 #### StateResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| state | [State](#proto.v1.State) |  |  |
+| state | [State](#proto.State) |  |  |
 
 
 
@@ -589,7 +589,7 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.StatusCheckEvent"></a>
+<a name="proto.StatusCheckEvent"></a>
 #### StatusCheckEvent
 `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
 
@@ -599,8 +599,8 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. |
-| errCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -608,7 +608,7 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.StatusCheckState"></a>
+<a name="proto.StatusCheckState"></a>
 #### StatusCheckState
 `StatusCheckState` describes the state of status check of current deployed resources.
 
@@ -616,8 +616,8 @@ will be sent with the new status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
-| resources | [StatusCheckState.ResourcesEntry](#proto.v1.StatusCheckState.ResourcesEntry) | repeated | A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name. The `status-check-state` can be <br> - `"Not started"`: indicates that `status-check` has just started. <br> - `"In progress"`: InProgress is sent after every resource check is complete. <br> - `"Succeeded"`: - `"Failed"`: |
-| statusCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | StatusCheck statusCode |
+| resources | [StatusCheckState.ResourcesEntry](#proto.StatusCheckState.ResourcesEntry) | repeated | A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name. The `status-check-state` can be <br> - `"Not started"`: indicates that `status-check` has just started. <br> - `"In progress"`: InProgress is sent after every resource check is complete. <br> - `"Succeeded"`: - `"Failed"`: |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  | StatusCheck statusCode |
 
 
 
@@ -625,7 +625,7 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.StatusCheckState.ResourcesEntry"></a>
+<a name="proto.StatusCheckState.ResourcesEntry"></a>
 #### StatusCheckState.ResourcesEntry
 
 
@@ -641,14 +641,14 @@ will be sent with the new status.
 
 
 
-<a name="proto.v1.Suggestion"></a>
+<a name="proto.Suggestion"></a>
 #### Suggestion
 Suggestion defines the action a user needs to recover from an error.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| suggestionCode | [proto.enums.SuggestionCode](#proto.enums.SuggestionCode) |  | code representing a suggestion |
+| suggestionCode | [enums.SuggestionCode](#proto.enums.SuggestionCode) |  | code representing a suggestion |
 | action | [string](#string) |  | action represents the suggestion action |
 
 
@@ -657,7 +657,7 @@ Suggestion defines the action a user needs to recover from an error.
 
 
 
-<a name="proto.v1.TerminationEvent"></a>
+<a name="proto.TerminationEvent"></a>
 #### TerminationEvent
 `TerminationEvent` marks the end of the skaffold session
 
@@ -665,7 +665,7 @@ Suggestion defines the action a user needs to recover from an error.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | status oneof: Completed or Failed |
-| err | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -673,7 +673,7 @@ Suggestion defines the action a user needs to recover from an error.
 
 
 
-<a name="proto.v1.TestEvent"></a>
+<a name="proto.TestEvent"></a>
 #### TestEvent
 `TestEvent` represents the status of a test, and is emitted by Skaffold
 anytime a test starts or completes, successfully or not.
@@ -682,7 +682,7 @@ anytime a test starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | test status oneof: InProgress, Completed, Failed |
-| actionableErr | [ActionableErr](#proto.v1.ActionableErr) |  | actionable error message |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -690,14 +690,14 @@ anytime a test starts or completes, successfully or not.
 
 
 
-<a name="proto.v1.TestMetadata"></a>
+<a name="proto.TestMetadata"></a>
 #### TestMetadata
 TestMetadata describes the test pipeline
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| Testers | [TestMetadata.Tester](#proto.v1.TestMetadata.Tester) | repeated |  |
+| Testers | [TestMetadata.Tester](#proto.TestMetadata.Tester) | repeated |  |
 
 
 
@@ -705,14 +705,14 @@ TestMetadata describes the test pipeline
 
 
 
-<a name="proto.v1.TestMetadata.Tester"></a>
+<a name="proto.TestMetadata.Tester"></a>
 #### TestMetadata.Tester
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [proto.enums.TesterType](#proto.enums.TesterType) |  |  |
+| type | [enums.TesterType](#proto.enums.TesterType) |  |  |
 | count | [int32](#int32) |  |  |
 
 
@@ -721,7 +721,7 @@ TestMetadata describes the test pipeline
 
 
 
-<a name="proto.v1.TestState"></a>
+<a name="proto.TestState"></a>
 #### TestState
 `TestState` describes the current state of the test
 
@@ -729,7 +729,7 @@ TestMetadata describes the test pipeline
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | Status of the current test |
-| statusCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | Teststate status code |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Teststate status code |
 
 
 
@@ -737,14 +737,14 @@ TestMetadata describes the test pipeline
 
 
 
-<a name="proto.v1.TriggerRequest"></a>
+<a name="proto.TriggerRequest"></a>
 #### TriggerRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| state | [TriggerState](#proto.v1.TriggerState) |  |  |
+| state | [TriggerState](#proto.TriggerState) |  |  |
 
 
 
@@ -752,7 +752,7 @@ TestMetadata describes the test pipeline
 
 
 
-<a name="proto.v1.TriggerState"></a>
+<a name="proto.TriggerState"></a>
 #### TriggerState
 TriggerState represents trigger state for a given phase.
 
@@ -767,14 +767,14 @@ TriggerState represents trigger state for a given phase.
 
 
 
-<a name="proto.v1.UserIntentRequest"></a>
+<a name="proto.UserIntentRequest"></a>
 #### UserIntentRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| intent | [Intent](#proto.v1.Intent) |  |  |
+| intent | [Intent](#proto.Intent) |  |  |
 
 
 
