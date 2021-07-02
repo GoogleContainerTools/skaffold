@@ -18,6 +18,7 @@ package fsnotify
 
 import (
 	"context"
+	"github.com/bmatcuk/doublestar"
 	"io"
 	"path/filepath"
 	"time"
@@ -40,14 +41,14 @@ func New(workspaces map[string]struct{}, absGlobs []string, isActive func() bool
 		workspaces: workspaces,
 		isActive:   isActive,
 		watchFunc:  Watch,
-		absGlobs:    absGlobs,
+		absGlobs:   absGlobs,
 	}
 }
 
 // Trigger watches for changes with fsnotify
 type Trigger struct {
 	Interval   time.Duration
-	absGlobs    []string
+	absGlobs   []string
 	workspaces map[string]struct{}
 	isActive   func() bool
 	watchFunc  func(path string, c chan<- notify.EventInfo, events ...notify.Event) error
@@ -88,11 +89,17 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 	}
 
 	// Watch folders that are typed with absolute
-	for _, pat := range t.absGlobs {
-		// Find dir of
-		pat = filepath.Dir(pat)
-		if err := t.watchFunc(filepath.Join(pat, "..."), c, notify.All); err != nil {
+	for _, pattern := range t.absGlobs {
+		// Find dir with doublestar.glob
+		paths,err := doublestar.Glob(pattern)
+		if err != nil {
 			return nil, err
+		}
+
+		for _, pat := range paths {
+			if err := t.watchFunc(filepath.Join(pat, "..."), c, notify.All); err != nil {
+				return nil, err
+			}
 		}
 	}
 
