@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -94,12 +93,10 @@ func (m DeployerMux) GetSyncer() sync.Syncer {
 	return syncers
 }
 
-func (m DeployerMux) GetImageLoader() loader.ImageLoader {
-	var loaders loader.ImageLoaderMux
+func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 	for _, deployer := range m.deployers {
-		loaders = append(loaders, deployer.GetImageLoader())
+		deployer.RegisterLocalImages(images)
 	}
-	return loaders
 }
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {

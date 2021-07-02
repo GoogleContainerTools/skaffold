@@ -72,11 +72,11 @@ type Deployer interface {
 	// TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
 	TrackBuildArtifacts([]graph.Artifact)
 
+	// RegisterLocalImages tracks all local images to be loaded by the Deployer
+	RegisterLocalImages([]graph.Artifact)
+
 	// GetStatusMonitor returns a Deployer's implementation of a StatusMonitor
 	GetStatusMonitor() status.Monitor
-
-	// GetImageLoader returns a Deployer's implementation of an ImageLoader
-	GetImageLoader() loader.ImageLoader
 }
 
 // ComponentProvider serves as a clean way to send three providers

@@ -27,6 +27,7 @@ import (
 
 	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -60,6 +61,7 @@ type Deployer struct {
 	syncer        sync.Syncer
 
 	originalImages     []graph.Artifact
+	localImages        []graph.Artifact
 	podSelector        *kubernetes.ImageList
 	hydratedManifests  []string
 	workingDir         string
@@ -126,8 +128,8 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
 }
 
-func (k *Deployer) GetImageLoader() loader.ImageLoader {
-	return k.imageLoader
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
@@ -141,6 +143,8 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	var (
 		manifests manifest.ManifestList
 		err       error
+		childCtx  context.Context
+		endTrace  func(...trace.SpanOption)
 	)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
@@ -150,7 +154,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// also, manually set the labels to ensure the runID is added
 	switch {
 	case len(k.hydratedManifests) > 0:
-		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_createManifestList")
+		_, endTrace = instrumentation.StartTrace(ctx, "Deploy_createManifestList")
 		manifests, err = createManifestList(k.hydratedManifests)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
@@ -159,11 +163,11 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		manifests, err = manifests.SetLabels(k.labels)
 		endTrace()
 	case k.skipRender:
-		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_readManifests")
+		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
 		manifests, err = k.readManifests(childCtx, false)
 		endTrace()
 	default:
-		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 		manifests, err = k.renderManifests(childCtx, out, builds, false)
 		endTrace()
 	}
@@ -175,7 +179,15 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	if len(manifests) == 0 {
 		return nil, nil
 	}
-	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
@@ -183,7 +195,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
 	if err := k.kubectl.WaitForDeletions(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err

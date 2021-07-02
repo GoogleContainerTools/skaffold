@@ -51,21 +51,15 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_LoadImagesIntoCluster")
-	if err := r.deployer.GetImageLoader().LoadImages(ctx, out, localImages); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	endTrace()
-
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err
 	}
 
 	event.DeployInProgress()
-	ctx, endTrace = instrumentation.StartTrace(ctx, "applyResources_Deploying")
+	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_Deploying")
 	defer endTrace()
+	r.deployer.RegisterLocalImages(localImages)
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {

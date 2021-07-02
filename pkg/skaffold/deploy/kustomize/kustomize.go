@@ -112,6 +112,7 @@ type Deployer struct {
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
+	localImages    []graph.Artifact
 
 	kubectl             kubectl.CLI
 	insecureRegistries  map[string]bool
@@ -172,8 +173,8 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
 }
 
-func (k *Deployer) GetImageLoader() loader.ImageLoader {
-	return k.imageLoader
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
@@ -204,7 +205,14 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		"DeployerType": "kustomize",
 	})
 
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
+
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 	manifests, err := k.renderManifests(childCtx, out, builds)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))

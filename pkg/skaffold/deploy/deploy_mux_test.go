@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -70,9 +69,7 @@ func (m *MockDeployer) GetSyncer() sync.Syncer {
 	return &sync.NoopSyncer{}
 }
 
-func (m *MockDeployer) GetImageLoader() loader.ImageLoader {
-	return &loader.NoopImageLoader{}
-}
+func (m *MockDeployer) RegisterLocalImages(_ []graph.Artifact) {}
 
 func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}
 

@@ -94,6 +94,7 @@ type Deployer struct {
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
+	localImages    []graph.Artifact
 
 	kubeContext string
 	kubeConfig  string
@@ -183,8 +184,8 @@ func (h *Deployer) GetSyncer() sync.Syncer {
 	return h.syncer
 }
 
-func (h *Deployer) GetImageLoader() loader.ImageLoader {
-	return h.imageLoader
+func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	h.localImages = images
 }
 
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
@@ -198,6 +199,13 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		"DeployerType": "helm",
 	})
 	defer endTrace()
+
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
 
 	logrus.Infof("Deploying with helm v%s ...", h.bV)
 

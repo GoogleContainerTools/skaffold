@@ -37,7 +37,6 @@ import (
 
 type ImageLoader struct {
 	kubeContext string
-	builds      []graph.Artifact
 	cli         *kubectl.CLI
 }
 
@@ -53,15 +52,41 @@ func NewImageLoader(kubeContext string, cli *kubectl.CLI) *ImageLoader {
 	}
 }
 
-func (i *ImageLoader) TrackBuildArtifacts(builds []graph.Artifact) {
-	i.builds = append(i.builds, builds...)
+// We only load images that
+//    1) Were identified as local images by the Runner, and
+//    2) Are part of the set of images being deployed by a given Deployer, so we don't duplicate effort
+func imagesToLoad(localImages, deployerImages, images []graph.Artifact) []graph.Artifact {
+	local := map[string]bool{}
+	for _, image := range localImages {
+		local[image.ImageName] = true
+	}
+
+	tracked := map[string]bool{}
+	for _, image := range deployerImages {
+		if local[image.ImageName] {
+			tracked[image.ImageName] = true
+		}
+	}
+
+	var res []graph.Artifact
+	for _, image := range images {
+		if tracked[image.ImageName] {
+			res = append(res, image)
+		}
+	}
+	return res
 }
 
-func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+// LoadImages loads images into a local cluster.
+// imagesToLoad is used to determine the set of images we should load, based on images that are
+// marked as local by the Runner, and part of the calling Deployer's set of manifests
+func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages, deployerImages, images []graph.Artifact) error {
 	currentContext, err := i.getCurrentContext()
 	if err != nil {
 		return err
 	}
+
+	artifacts := imagesToLoad(localImages, deployerImages, images)
 
 	if config.IsKindCluster(i.kubeContext) {
 		kindCluster := config.KindClusterName(currentContext.Cluster)
@@ -106,11 +131,6 @@ func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts [
 	var knownImages []string
 
 	for _, artifact := range artifacts {
-		// Only load images that this runner built
-		if !i.wasBuilt(artifact.Tag) {
-			continue
-		}
-
 		output.Default.Fprintf(out, " - %s -> ", artifact.Tag)
 
 		// Only load images that are unknown to the node
@@ -150,16 +170,6 @@ func findKnownImages(ctx context.Context, cli *kubectl.CLI) ([]string, error) {
 
 	knownImages := strings.Split(string(nodeGetOut), " ")
 	return knownImages, nil
-}
-
-func (i *ImageLoader) wasBuilt(tag string) bool {
-	for _, built := range i.builds {
-		if built.Tag == tag {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (i *ImageLoader) getCurrentContext() (*api.Context, error) {

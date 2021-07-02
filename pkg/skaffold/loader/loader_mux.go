@@ -25,9 +25,9 @@ import (
 
 type ImageLoaderMux []ImageLoader
 
-func (i ImageLoaderMux) LoadImages(ctx context.Context, out io.Writer, images []graph.Artifact) error {
+func (i ImageLoaderMux) LoadImages(ctx context.Context, out io.Writer, localImages, originalImages, images []graph.Artifact) error {
 	for _, loader := range i {
-		if err := loader.LoadImages(ctx, out, images); err != nil {
+		if err := loader.LoadImages(ctx, out, localImages, originalImages, images); err != nil {
 			return err
 		}
 	}

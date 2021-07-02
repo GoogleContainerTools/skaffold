@@ -26,9 +26,13 @@ import (
 // ImageLoader defines the behavior for loading images into a cluster.
 type ImageLoader interface {
 	// LoadImages loads the images into the cluster.
-	LoadImages(context.Context, io.Writer, []graph.Artifact) error
+	LoadImages(context.Context, io.Writer, []graph.Artifact, []graph.Artifact, []graph.Artifact) error
 }
 
 type NoopImageLoader struct{}
 
-func (n *NoopImageLoader) LoadImages(context.Context, io.Writer, []graph.Artifact) error { return nil }
+func (n *NoopImageLoader) LoadImages(context.Context, io.Writer, []graph.Artifact, []graph.Artifact, []graph.Artifact) error {
+	return nil
+}
+
+func (n *NoopImageLoader) TrackBuildArtifacts([]graph.Artifact, []graph.Artifact) {}
