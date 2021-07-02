@@ -41,6 +41,8 @@ type ImageLoader struct {
 }
 
 type Config interface {
+	kubectl.Config
+
 	GetKubeContext() string
 	LoadImages() bool
 }

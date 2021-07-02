@@ -22,27 +22,19 @@ import (
 )
 
 type Provider interface {
-	GetKubernetesImageLoader() ImageLoader
+	GetKubernetesImageLoader(loader.Config) ImageLoader
 	GetNoopImageLoader() ImageLoader
 }
 
-type fullProvider struct {
-	loadImages  bool
-	kubeContext string
-	cli         *kubectl.CLI
+type fullProvider struct{}
+
+func NewImageLoaderProvider() Provider {
+	return &fullProvider{}
 }
 
-func NewImageLoaderProvider(config loader.Config, cli *kubectl.CLI) Provider {
-	return &fullProvider{
-		loadImages:  config.LoadImages(),
-		kubeContext: config.GetKubeContext(),
-		cli:         cli,
-	}
-}
-
-func (p *fullProvider) GetKubernetesImageLoader() ImageLoader {
-	if p.loadImages {
-		return loader.NewImageLoader(p.kubeContext, p.cli)
+func (p *fullProvider) GetKubernetesImageLoader(config loader.Config) ImageLoader {
+	if config.LoadImages() {
+		return loader.NewImageLoader(config.GetKubeContext(), kubectl.NewCLI(config, ""))
 	}
 	return &NoopImageLoader{}
 }
@@ -54,7 +46,7 @@ func (p *fullProvider) GetNoopImageLoader() ImageLoader {
 // NoopProvider is used in tests
 type NoopProvider struct{}
 
-func (p *NoopProvider) GetKubernetesImageLoader() ImageLoader {
+func (p *NoopProvider) GetKubernetesImageLoader(loader.Config) ImageLoader {
 	return &NoopImageLoader{}
 }
 

@@ -48,6 +48,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
@@ -116,6 +117,7 @@ type Deployer struct {
 type Config interface {
 	kubectl.Config
 	kstatus.Config
+	kloader.Config
 	portforward.Config
 	IsMultiConfig() bool
 }
@@ -147,7 +149,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		podSelector:    podSelector,
 		accessor:       provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
-		imageLoader:    provider.ImageLoader.GetKubernetesImageLoader(),
+		imageLoader:    provider.ImageLoader.GetKubernetesImageLoader(cfg),
 		logger:         provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:  provider.Monitor.GetKubernetesMonitor(cfg),
 		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector),

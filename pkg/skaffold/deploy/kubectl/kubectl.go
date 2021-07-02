@@ -93,7 +93,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		podSelector:        podSelector,
 		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		imageLoader:        provider.ImageLoader.GetKubernetesImageLoader(),
+		imageLoader:        provider.ImageLoader.GetKubernetesImageLoader(cfg),
 		logger:             provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
 		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
