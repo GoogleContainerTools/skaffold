@@ -111,7 +111,15 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy_Deploying")
 	defer endTrace()
 
-	r.deployer.RegisterLocalImages(localImages)
+	// we only want to register images that are local AND were built by this runner
+	var localAndBuiltImages []graph.Artifact
+	for _, image := range localImages {
+		if r.wasBuilt(image.Tag) {
+			localAndBuiltImages = append(localAndBuiltImages, image)
+		}
+	}
+
+	r.deployer.RegisterLocalImages(localAndBuiltImages)
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
@@ -150,4 +158,14 @@ func failIfClusterIsNotReachable() error {
 
 	_, err = client.Discovery().ServerVersion()
 	return err
+}
+
+func (r *SkaffoldRunner) wasBuilt(tag string) bool {
+	for _, built := range r.Builds {
+		if built.Tag == tag {
+			return true
+		}
+	}
+
+	return false
 }

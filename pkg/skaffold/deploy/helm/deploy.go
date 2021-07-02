@@ -94,8 +94,8 @@ type Deployer struct {
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
-	localImages    []graph.Artifact
+	originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubeContext string
 	kubeConfig  string
