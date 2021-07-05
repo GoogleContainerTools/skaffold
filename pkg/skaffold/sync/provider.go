@@ -44,7 +44,7 @@ func NewSyncProvider(config Config, cli *kubectl.CLI) Provider {
 			kubernetesSyncer: func(podSelector *kubernetes.ImageList) Syncer {
 				return &podSyncer{
 					kubectl:    cli,
-					namespaces: config.GetNamespaces(),
+					config: config,
 				}
 			},
 			noopSyncer: func() Syncer {

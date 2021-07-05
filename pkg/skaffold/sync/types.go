@@ -35,8 +35,8 @@ type Syncer interface {
 }
 
 type podSyncer struct {
-	kubectl    *pkgkubectl.CLI
-	namespaces []string
+	kubectl *pkgkubectl.CLI
+	config  Config
 }
 
 type Config interface {
