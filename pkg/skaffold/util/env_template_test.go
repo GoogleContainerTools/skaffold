@@ -62,6 +62,13 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 			env:         []string{"VAL=KEY"},
 			shouldErr:   true,
 		},
+		{
+			description: "missing results in empty",
+			template:    "{{.FOO}}:{{.BAR}}",
+			customMap: map[string]string{
+			},
+			want: ":",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -85,7 +92,6 @@ func TestEnvTemplate_ExpandEnvTemplateOrFail(t *testing.T) {
 		template    string
 		customMap   map[string]string
 		env         []string
-		option      string
 		want        string
 		shouldErr   bool
 	}{
@@ -102,7 +108,6 @@ func TestEnvTemplate_ExpandEnvTemplateOrFail(t *testing.T) {
 		{
 			description: "variable does not exist",
 			template:    "{{.DOES_NOT_EXIST}}",
-			option:      "missingkey=error",
 			shouldErr:   true,
 		},
 	}
