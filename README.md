@@ -56,7 +56,7 @@ We welcome any contributions from the community with open arms - Skaffold wouldn
 
 **Office Hours**
 
-We hold open office hours every other Wednesday at 9:30 AM Pacific Time. This is an open forum for anyone to show up and bring ideas, concerns, or just in general come hang out with the team! This is also a great time to get direct feedback on contributions, or give us feedback on ways you think we can improve the project. Come show us how you're using Skaffold!
+We hold open office hours on the last Wednesday of the month at 9:30 AM Pacific Time. This is an open forum for anyone to show up and bring ideas, concerns, or just in general come hang out with the team! This is also a great time to get direct feedback on contributions, or give us feedback on ways you think we can improve the project. Come show us how you're using Skaffold!
 
 Join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.
 You can access the hangouts invite directly from this calendar invite.
@@ -71,3 +71,7 @@ Survey Link - https://forms.gle/BMTbGQXLWSdn7vEs6
 
 Skaffold is generally available and considered production ready.
 Detailed feature maturity information and how we deprecate features are described in our [Deprecation Policy](https://skaffold.dev/docs/references/deprecation).
+
+## Security Disclosures
+
+Please see our [security disclosure process](SECURITY.md).  All [security advisories](https://github.com/GoogleContainerTools/skaffold/security/advisories) are managed on Github.
