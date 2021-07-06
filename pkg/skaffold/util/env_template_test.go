@@ -65,9 +65,8 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 		{
 			description: "missing results in empty",
 			template:    "{{.FOO}}:{{.BAR}}",
-			customMap: map[string]string{
-			},
-			want: ":",
+			customMap:   map[string]string{},
+			want:        ":",
 		},
 	}
 	for _, test := range tests {
