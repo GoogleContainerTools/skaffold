@@ -39,6 +39,7 @@ func NewValidator(config []latestV2.Validator) (*Validator, error) {
 		fn, ok := validatorAllowlist[c.Name]
 		if !ok {
 			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
+			// TODO: add the errors to errors/errors.go
 			return nil, sErrors.NewErrorWithStatusCode(
 				proto.ActionableErr{
 					Message: fmt.Sprintf("unsupported validator %q", c.Name),

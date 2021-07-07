@@ -18,8 +18,6 @@ package renderer
 import (
 	"bytes"
 	"context"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -67,7 +65,7 @@ func TestRender(t *testing.T) {
 		updatedKptfile  string
 	}{
 		{
-			description: "single manifests, no hydration rule",
+			description: "single manifest, no hydration rule",
 			renderConfig: &latestV2.RenderConfig{
 				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 			},
@@ -80,7 +78,7 @@ pipeline: {}
 `,
 		},
 		{
-			description: "single manifests with validation rule.",
+			description: "manifests with validation rule.",
 			renderConfig: &latestV2.RenderConfig{
 				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
@@ -96,7 +94,7 @@ pipeline:
 `,
 		},
 		{
-			description: "Validation rule needs to be updated.",
+			description: "manifests with updated validation rule.",
 			renderConfig: &latestV2.RenderConfig{
 				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
@@ -118,12 +116,55 @@ pipeline:
   - image: gcr.io/kpt-fn/kubeval:v0.1
 `,
 		},
+		{
+			description: "manifests with transformation rule.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMapData: []string{"owner:tester"}}},
+			},
+			originalKptfile: initKptfile,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/set-labels:v0.1
+    configMap:
+      owner: tester
+`,
+		},
+		{
+			description: "manifests with updated transformation rule.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMapData: []string{"owner:tester"}}},
+			},
+			originalKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
+`,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/set-labels:v0.1
+    configMap:
+      owner: tester
+`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			r, err := NewSkaffoldRenderer(test.renderConfig, "")
 			t.CheckNoError(err)
-			fakeCmd := testutil.CmdRunOut(fmt.Sprintf("kpt pkg init %v", DefaultHydrationDir), "")
+			fakeCmd := testutil.CmdRun("kpt fn render .kpt-pipeline")
 			t.Override(&util.DefaultExecCommand, fakeCmd)
 			t.NewTempDir().
 				Write("pod.yaml", podYaml).
@@ -132,7 +173,8 @@ pipeline:
 				Chdir()
 
 			var b bytes.Buffer
-			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}})
+			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
+				true, "")
 			defer os.RemoveAll(".kpt-pipeline")
 			t.CheckNoError(err)
 			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
@@ -140,18 +182,67 @@ pipeline:
 		})
 	}
 }
-func TestRender_UserErr(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
-			Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-			Validate: &[]latestV2.Validator{{Name: "kubeval"}},
-		}, "")
-		t.CheckNoError(err)
-		fakeCmd := testutil.CmdRunOutErr(fmt.Sprintf("kpt pkg init %v", DefaultHydrationDir), "",
-			errors.New("fake err"))
-		t.Override(&util.DefaultExecCommand, fakeCmd)
-		err = r.Render(context.Background(), &bytes.Buffer{}, []graph.Artifact{{ImageName: "leeroy-web",
-			Tag: "leeroy-web:v1"}})
-		t.CheckContains("please manually run `kpt pkg init", err.Error())
-	})
+
+func TestRender_StashKptinfo(t *testing.T) {
+	tests := []struct {
+		description     string
+		originalKptfile string
+		updatedKptfile  string
+		commands        util.Command
+	}{
+		{
+			description:     "kpt initialized, manifests are not kpt applied before (no inventory info)",
+			originalKptfile: initKptfile,
+			commands:        testutil.CmdRun("kpt fn render .kpt-pipeline"),
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  validators:
+  - image: gcr.io/kpt-fn/kubeval:v0.1
+`,
+		},
+		{
+			description: "manifests has been previously kpt applied (with inventory info)",
+			originalKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+inventory:
+  namespace: skaffold-test
+  inventoryID: 11111
+`,
+			commands: testutil.CmdRun("kpt fn render .kpt-pipeline"),
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  validators:
+  - image: gcr.io/kpt-fn/kubeval:v0.1
+inventory:
+  namespace: skaffold-test
+  inventoryID: "11111"
+`,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, "")
+			t.CheckNoError(err)
+			t.Override(&util.DefaultExecCommand, test.commands)
+			t.NewTempDir().
+				Write("pod.yaml", podYaml).
+				Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
+				Chdir()
+			var b bytes.Buffer
+			err = r.Render(context.Background(), &b, []graph.Artifact{},
+				true, "")
+			t.CheckNoError(err)
+			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
+		})
+	}
 }

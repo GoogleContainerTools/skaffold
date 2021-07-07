@@ -117,33 +117,33 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 			kptPathMap[dir] = true
 		}
 	}
-	var rawManifestsFromKpt []string
+	var kptManifests []string
 	for kPath := range kptPathMap {
 		// kpt manifests will be hydrated and stored in the subdir of the hydrated dir, where the subdir name
 		// matches the kPath dir name.
 		outputDir := filepath.Join(g.hydrationDir, filepath.Base(kPath))
-		_, endTrace := instrumentation.StartTrace(ctx, "Render_generateKptManifests")
-		cmd := exec.CommandContext(ctx, "kpt", "fn", "render", kPath,
+		tCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateKptManifests")
+		cmd := exec.CommandContext(tCtx, "kpt", "fn", "render", kPath,
 			fmt.Sprintf("--output=%v", outputDir))
 		cmd.Stderr = out
 		if err = util.RunCmd(cmd); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
-		rawManifestsFromKpt = append(rawManifestsFromKpt, outputDir)
+		kptManifests = append(kptManifests, outputDir)
 	}
 
 	// Generate Raw Manifests
-	rawK8sPaths := excludeRemote(g.config.RawK8s)
-	rawK8sPaths = append(rawK8sPaths, rawManifestsFromKpt...)
+	sourceManifests := excludeRemote(g.config.RawK8s)
+	sourceManifests = append(sourceManifests, kptManifests...)
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobRawManifests")
-	rawK8sPaths, err = util.ExpandPathsGlob(g.workingDir, rawK8sPaths)
+	sourceManifests, err = util.ExpandPathsGlob(g.workingDir, sourceManifests)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
 		return nil, err
 	}
 	endTrace()
-	for _, nkPath := range rawK8sPaths {
+	for _, nkPath := range sourceManifests {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
 			if !util.StrSliceContains(g.config.RawK8s, nkPath) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)

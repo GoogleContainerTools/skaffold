@@ -26,13 +26,36 @@ import (
 )
 
 var (
-	allowListedTransformer = []string{"set-label"}
-	transformerAllowlist   = map[string]kptfile.Function{
-		"set-label": {
-			Image:     "gcr.io/kpt-functions/set-namespace",
+	transformerAllowlist = map[string]kptfile.Function{
+		"set-namespace": {
+			Image:     "gcr.io/kpt-fn/set-namespace",
+			ConfigMap: map[string]string{},
+		},
+		"set-labels": {
+			Image:     "gcr.io/kpt-fn/set-labels:v0.1",
+			ConfigMap: map[string]string{},
+		},
+		"set-annotations": {
+			Image:     "gcr.io/kpt-fn/set-annotations:v0.1",
+			ConfigMap: map[string]string{},
+		},
+		"create-setters": {
+			Image:     "gcr.io/kpt-fn/create-setters:unstable",
+			ConfigMap: map[string]string{},
+		},
+		"apply-setters": {
+			Image:     "gcr.io/kpt-fn/apply-setters:unstable",
 			ConfigMap: map[string]string{},
 		},
 	}
+
+	allowListedTransformer = func() []string {
+		transformers := make([]string, 0, len(transformerAllowlist))
+		for funcName := range transformerAllowlist {
+			transformers = append(transformers, funcName)
+		}
+		return transformers
+	}()
 )
 
 // NewTransformer instantiates a Transformer object.
@@ -70,6 +93,7 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 		newFunc, ok := transformerAllowlist[c.Name]
 		if !ok {
 			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
+			// TODO: Move the error to errors/errors.go pkg.
 			return nil, sErrors.NewErrorWithStatusCode(
 				proto.ActionableErr{
 					Message: fmt.Sprintf("unsupported transformer %q", c.Name),
@@ -86,8 +110,9 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 		}
 		if c.ConfigMapData != nil {
 			for _, stringifiedData := range c.ConfigMapData {
-				items := strings.Split(stringifiedData, "=")
+				items := strings.Split(stringifiedData, ":")
 				if len(items) != 2 {
+					// TODO: Move the error to errors/errors.go pkg.
 					return nil, sErrors.NewErrorWithStatusCode(
 						proto.ActionableErr{
 							Message: fmt.Sprintf("unknown arguments for transformer %v", c.Name),

@@ -34,7 +34,7 @@ func TestNewTransformer(t *testing.T) {
 		{
 			description: "set-label",
 			config: []latestV2.Transformer{
-				{Name: "set-label"},
+				{Name: "set-annotations", ConfigMapData: []string{"owner:skaffold-test"}},
 			},
 		},
 	}
