@@ -66,5 +66,5 @@ profiles:
                 command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"]
             - container:
                 command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
-                containerName: hooks-example* # can use a glob pattern to prefix-match the container name
-                podName: hooks-example-deployment* # can use a glob pattern to prefix-match the pod name
+                containerName: hooks-example* # use a glob pattern to prefix-match the container name for deployments, stateful-sets, etc.
+                podName: hooks-example-deployment* # can use a glob pattern to prefix-match the pod name for deployments, stateful-sets, etc.

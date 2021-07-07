@@ -2729,12 +2729,11 @@
     },
     "NamedContainerHook": {
       "required": [
-        "containerName",
-        "containerName",
-        "containerCommand"
+        "podName",
+        "command"
       ],
       "properties": {
-        "containerCommand": {
+        "command": {
           "items": {
             "type": "string"
           },
@@ -2747,11 +2746,16 @@
           "type": "string",
           "description": "name of the container to execute the command in.",
           "x-intellij-html-description": "name of the container to execute the command in."
+        },
+        "podName": {
+          "type": "string",
+          "description": "name of the pod to execute the command in.",
+          "x-intellij-html-description": "name of the pod to execute the command in."
         }
       },
       "preferredOrder": [
-        "containerCommand",
-        "containerName",
+        "command",
+        "podName",
         "containerName"
       ],
       "additionalProperties": false,
