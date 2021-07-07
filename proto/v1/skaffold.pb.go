@@ -63,6 +63,18 @@ const TesterType_UNKNOWN_TEST_TYPE = TesterType(enums.TesterType_UNKNOWN_TEST_TY
 const TesterType_UNIT = TesterType(enums.TesterType_UNIT)
 const TesterType_CONTAINER_STRUCTURE_TEST = TesterType(enums.TesterType_CONTAINER_STRUCTURE_TEST)
 
+// RenderType from public import enums/enums.proto
+type RenderType = enums.RenderType
+
+var RenderType_name = enums.RenderType_name
+var RenderType_value = enums.RenderType_value
+
+const RenderType_UNKNOWN_RENDER_TYPE = RenderType(enums.RenderType_UNKNOWN_RENDER_TYPE)
+const RenderType_RAWK8S = RenderType(enums.RenderType_RAWK8S)
+const RenderType_KUSTOMIZE_MANIFEST = RenderType(enums.RenderType_KUSTOMIZE_MANIFEST)
+const RenderType_HELM_CHART = RenderType(enums.RenderType_HELM_CHART)
+const RenderType_KPT_MANIFEST = RenderType(enums.RenderType_KPT_MANIFEST)
+
 // DeployerType from public import enums/enums.proto
 type DeployerType = enums.DeployerType
 
