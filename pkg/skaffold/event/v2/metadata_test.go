@@ -52,6 +52,7 @@ func TestEmptyState(t *testing.T) {
 					Type:      proto.BuildType_LOCAL,
 					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-1"}},
 				},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster: proto.ClusterType_MINIKUBE,
 					Deployers: []*proto.DeployMetadata_Deployer{
@@ -89,6 +90,7 @@ func TestEmptyState(t *testing.T) {
 						{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-2"},
 					},
 				},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_GKE,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
@@ -112,6 +114,7 @@ func TestEmptyState(t *testing.T) {
 					Type:      proto.BuildType_GCB,
 					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_KANIKO, Name: "artifact-1"}},
 				},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{},
 				RunID:  "run-id",
 			},
@@ -127,7 +130,8 @@ func TestEmptyState(t *testing.T) {
 			},
 			cluster: "some-private",
 			expected: &proto.Metadata{
-				Build: &proto.BuildMetadata{},
+				Build:  &proto.BuildMetadata{},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_OTHER,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
