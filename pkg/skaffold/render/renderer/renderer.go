@@ -52,19 +52,13 @@ type Renderer interface {
 func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Renderer, error) {
 	// TODO(yuwenma): return instance of kpt-managed mode or skaffold-managed mode defer to the config.Path fields.
 	// The alpha implementation only has skaffold-managed mode.
-	// TODO(yuwenma): The current work directory may not be accurate if users use --filepath flag.
-	hydrationDir := filepath.Join(workingDir, DefaultHydrationDir)
-
-	generator := generate.NewGenerator(workingDir, config.Generate)
-	/* TODO(yuwenma): Apply new UX
-		if config.Generate == nil {
-		// If render.generate is not given, default to current working directory.
-		defaultManifests := filepath.Join(workingDir, "*.yaml")
-		generator = generate.NewGenerator(workingDir, latestV2.Generate{Manifests: []string{defaultManifests}})
+	var hydrationDir string
+	if config.Output == "" {
+		hydrationDir = filepath.Join(workingDir, DefaultHydrationDir)
 	} else {
-		generator = generate.NewGenerator(workingDir, *config.Generate)
+		hydrationDir = config.Output
 	}
-	*/
+	generator := generate.NewGenerator(workingDir, config.Generate, hydrationDir)
 	var validator *validate.Validator
 	if config.Validate != nil {
 		var err error
@@ -135,7 +129,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 		return err
 	}
 
-	manifests, err := r.Generate(ctx)
+	manifests, err := r.Generate(ctx, out)
 	if err != nil {
 		return err
 	}

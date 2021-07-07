@@ -17,6 +17,8 @@ package generate
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -26,33 +28,34 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // NewGenerator instantiates a Generator object.
-func NewGenerator(workingDir string, config latestV2.Generate) *Generator {
+func NewGenerator(workingDir string, config latestV2.Generate, hydrationDir string) *Generator {
 	return &Generator{
-		workingDir: workingDir,
-		config:     config,
+		workingDir:   workingDir,
+		hydrationDir: hydrationDir,
+		config:       config,
 	}
 }
 
 // Generator provides the functions for the manifest sources (raw manifests, helm charts, kustomize configs and remote packages).
 type Generator struct {
-	workingDir string
-	config     latestV2.Generate
+	workingDir   string
+	hydrationDir string
+	config       latestV2.Generate
 }
 
-// Generate parses the config resources from the paths in .Generate.Manifests. This path can be the path to raw manifest,
-// kustomize manifests, helm charts or kpt function configs. All should be file-watched.
-func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error) {
-	// exclude remote url.
-	var paths []string
-	// TODO(yuwenma): Apply new UX, kustomize kpt and helm
-	for _, path := range g.config.RawK8s {
+func excludeRemote(paths []string) []string {
+	var localPaths []string
+	for _, path := range paths {
 		switch {
 		case util.IsURL(path):
 			// TODO(yuwenma): remote URL should be changed to use kpt package management approach, via API Schema
@@ -60,41 +63,34 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 		case strings.HasPrefix(path, "gs://"):
 			// TODO(yuwenma): handle GS packages.
 		default:
-			paths = append(paths, path)
+			localPaths = append(localPaths, path)
 		}
 	}
-	// expend the glob paths.
-	expanded, err := util.ExpandPathsGlob(g.workingDir, paths)
+	return localPaths
+}
+
+// Generate parses the config resources from the paths in .Generate.Manifests. This path can be the path to raw manifest,
+// kustomize manifests, helm charts or kpt function configs. All should be file-watched.
+func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
+	var manifests manifest.ManifestList
+
+	// Generate kustomize Manifests
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
+	kustomizePaths := excludeRemote(g.config.Kustomize)
+	kustomizePaths, err := util.ExpandPathsGlob(g.workingDir, kustomizePaths)
 	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
 		return nil, err
 	}
-
-	// Parse kustomize manifests and non-kustomize manifests.  We may also want to parse (and exclude) kpt function manifests later.
-	// TODO: Update `kustomize build` to kustomize kpt-fn once https://github.com/GoogleContainerTools/kpt/issues/1447 is fixed.
+	endTrace()
 	kustomizePathMap := make(map[string]bool)
-	var nonKustomizePaths []string
-	for _, path := range expanded {
+	for _, path := range kustomizePaths {
 		if dir, ok := isKustomizeDir(path); ok {
 			kustomizePathMap[dir] = true
 		}
 	}
-	for _, path := range expanded {
-		kustomizeDirDup := false
-		for kPath := range kustomizePathMap {
-			// Before kustomize kpt-fn can provide a way to parse the kustomize content, we assume the users do not place non-kustomize manifests under the kustomization.yaml directory.
-			if strings.HasPrefix(path, kPath) {
-				kustomizeDirDup = true
-				break
-			}
-		}
-		if !kustomizeDirDup {
-			nonKustomizePaths = append(nonKustomizePaths, path)
-		}
-	}
-
-	var manifests manifest.ManifestList
 	for kPath := range kustomizePathMap {
-		// TODO:  support kustomize buildArgs (shall we support it in kpt-fn)?
+		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
 		cmd := exec.CommandContext(ctx, "kustomize", "build", kPath)
 		out, err := util.RunCmdOut(cmd)
 		if err != nil {
@@ -105,7 +101,49 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 		}
 		manifests.Append(out)
 	}
-	for _, nkPath := range nonKustomizePaths {
+
+	// Generate in-place hydrated kpt Manifests
+	kptPaths := excludeRemote(g.config.Kpt)
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
+	kptPaths, err = util.ExpandPathsGlob(g.workingDir, kptPaths)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
+		return nil, err
+	}
+	endTrace()
+	kptPathMap := make(map[string]bool)
+	for _, path := range kptPaths {
+		if dir, ok := isKptDir(path); ok {
+			kptPathMap[dir] = true
+		}
+	}
+	var rawManifestsFromKpt []string
+	for kPath := range kptPathMap {
+		// kpt manifests will be hydrated and stored in the subdir of the hydrated dir, where the subdir name
+		// matches the kPath dir name.
+		outputDir := filepath.Join(g.hydrationDir, filepath.Base(kPath))
+		_, endTrace := instrumentation.StartTrace(ctx, "Render_generateKptManifests")
+		cmd := exec.CommandContext(ctx, "kpt", "fn", "render", kPath,
+			fmt.Sprintf("--output=%v", outputDir))
+		cmd.Stderr = out
+		if err = util.RunCmd(cmd); err != nil {
+			endTrace(instrumentation.TraceEndError(err))
+			return nil, err
+		}
+		rawManifestsFromKpt = append(rawManifestsFromKpt, outputDir)
+	}
+
+	// Generate Raw Manifests
+	rawK8sPaths := excludeRemote(g.config.RawK8s)
+	rawK8sPaths = append(rawK8sPaths, rawManifestsFromKpt...)
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobRawManifests")
+	rawK8sPaths, err = util.ExpandPathsGlob(g.workingDir, rawK8sPaths)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
+		return nil, err
+	}
+	endTrace()
+	for _, nkPath := range rawK8sPaths {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
 			if !util.StrSliceContains(g.config.RawK8s, nkPath) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
@@ -119,6 +157,7 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 		}
 		manifests.Append(manifestFileContent)
 	}
+
 	// TODO(yuwenma): helm resources. `render.generate.helmCharts`
 	return manifests, nil
 }
@@ -147,4 +186,22 @@ func isKustomizeDir(path string) (string, bool) {
 		return dir, true
 	}
 	return "", false
+}
+
+func isKptDir(path string) (string, bool) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return "", false
+	}
+	var dir string
+	switch mode := fileInfo.Mode(); {
+	case mode.IsDir():
+		dir = path
+	case mode.IsRegular():
+		dir = filepath.Dir(path)
+	}
+	if _, err := os.Stat(filepath.Join(dir, kptfile.KptFileName)); os.IsNotExist(err) {
+		return "", false
+	}
+	return dir, true
 }
