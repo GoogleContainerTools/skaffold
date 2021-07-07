@@ -1385,7 +1385,7 @@ type NamedContainerHook struct {
 	// PodName is the name of the pod to execute the command in.
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.
-	ContainerName string `yaml:"containerName" yamltags:"required"`
+	ContainerName string `yaml:"containerName,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

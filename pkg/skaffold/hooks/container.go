@@ -34,6 +34,7 @@ import (
 
 type containerSelector func(v1.Pod, v1.Container) (bool, error)
 
+// imageSelector chooses containers that run the given image name
 func imageSelector(image string) containerSelector {
 	return func(p v1.Pod, c v1.Container) (bool, error) {
 		if p.Status.Phase != v1.PodRunning {
@@ -43,6 +44,7 @@ func imageSelector(image string) containerSelector {
 	}
 }
 
+// nameSelector chooses containers that match the glob patterns for pod and container names
 func nameSelector(podName, containerName string) containerSelector {
 	return func(p v1.Pod, c v1.Container) (bool, error) {
 		if p.Status.Phase != v1.PodRunning {
@@ -50,13 +52,13 @@ func nameSelector(podName, containerName string) containerSelector {
 		}
 		if matched, err := path.Match(podName, p.Name); err != nil {
 			return false, fmt.Errorf("failed to evaluate pod name %q due to error %w", podName, err)
-		} else if !matched {
+		} else if podName != "" && !matched {
 			return false, nil
 		}
 
 		if matched, err := path.Match(containerName, c.Name); err != nil {
 			return false, fmt.Errorf("failed to evaluate container name %q due to error %w", containerName, err)
-		} else if !matched {
+		} else if containerName != "" && !matched {
 			return false, nil
 		}
 		return true, nil
