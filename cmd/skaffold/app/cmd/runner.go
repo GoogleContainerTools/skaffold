@@ -64,7 +64,6 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 		return nil, nil, nil, err
 	}
 
-	// TODO yuwen Check v1 or v2.
 	var v1Configs []*latestV1.SkaffoldConfig
 	for _, c := range configs {
 		v1Configs = append(v1Configs, c.(*latestV1.SkaffoldConfig))
