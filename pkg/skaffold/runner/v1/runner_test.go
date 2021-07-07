@@ -160,7 +160,7 @@ func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artif
 	return builds, nil
 }
 
-func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
+func (t *TestBench) Sync(_ context.Context, _ io.Writer, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]

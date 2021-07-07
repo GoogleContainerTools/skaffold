@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
 	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -64,6 +65,7 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	}
 
 	instrumentation.Init(configs, opts.User)
+	hooks.SetupStaticEnvOptions(runCtx)
 	runner, err := v1.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)

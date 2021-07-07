@@ -1,0 +1,47 @@
+apiVersion: skaffold/v2beta19
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+    hooks:
+      before:
+        - command: ["sh", "-c", "echo hello build!"]
+          os: [darwin]
+      after:
+        - command: ["sh", "-c", "echo bye build!"]
+          os: [darwin]
+    sync: 
+      auto: true
+      hooks:
+        before:
+          - host:
+              command: ["sh", "-c", "echo hello sync!"]
+              os: [darwin]
+          - container:
+              command: ["sh", "-c", "echo hello container sync!"]
+        after:
+          - host:
+              command: ["sh", "-c", "echo bye sync!"]
+          - container:
+              command: ["sh", "-c", "echo bye container sync!"]
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo hello deploy!"]
+            os: [darwin]
+        - container:
+            command: ["sh", "-c", "echo hello container deploy!"]
+            containerName: skaffold-example*
+            podName: '*'
+
+      after:
+        - host:
+            command: ["sh", "-c", "echo bye deploy!"]
+        - container:
+            command: ["sh", "-c", "echo bye container deploy!"]
+            containerName: skaffold-example
+            podName: bar

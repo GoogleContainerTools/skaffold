@@ -92,7 +92,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
 
-			if err := r.deployer.GetSyncer().Sync(childCtx, s); err != nil {
+			if err := r.deployer.GetSyncer().Sync(childCtx, out, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				fileSyncFailed(fileCount, s.Image, err)
 				event.DevLoopFailedInPhase(r.devIteration, constants.Sync, err)

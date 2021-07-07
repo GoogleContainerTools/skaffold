@@ -36,6 +36,7 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -183,6 +184,14 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_PreHooks")
+	r := hooks.DeployRunner(k.kubectl.CLI, k.KubectlDeploy.LifecycleHooks, namespaces, hooks.DeployEnvOpts{RunID: k.labels[deployutil.RunIDLabel], KubeContext: k.kubectl.KubeContext, Namespaces: strings.Join(namespaces, ",")})
+	if err := r.RunPreHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
+
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_KubectlApply")
 	if err := k.kubectl.Apply(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -191,6 +200,14 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	k.TrackBuildArtifacts(builds)
 	endTrace()
+
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_PostHooks")
+	if err := r.RunPostHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
+
 	return namespaces, nil
 }
 

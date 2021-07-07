@@ -14,20 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sync
+package hooks
 
 import (
 	"context"
 	"io"
 )
 
-type SyncerMux []Syncer
+type Runner interface {
+	RunPreHooks(ctx context.Context, out io.Writer) error
+	RunPostHooks(ctx context.Context, out io.Writer) error
+}
 
-func (s SyncerMux) Sync(ctx context.Context, out io.Writer, item *Item) error {
-	for _, syncer := range s {
-		if err := syncer.Sync(ctx, out, item); err != nil {
-			return err
-		}
-	}
-	return nil
+type phase string
+
+var phases = struct {
+	PreBuild   phase
+	PostBuild  phase
+	PreSync    phase
+	PostSync   phase
+	PreDeploy  phase
+	PostDeploy phase
+}{
+	PreBuild:   "pre-build",
+	PostBuild:  "post-build",
+	PreSync:    "pre-sync",
+	PostSync:   "post-sync",
+	PreDeploy:  "pre-deploy",
+	PostDeploy: "post-deploy",
 }

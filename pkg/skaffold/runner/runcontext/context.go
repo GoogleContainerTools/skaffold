@@ -196,6 +196,8 @@ func (rc *RunContext) WatchPollInterval() int                        { return rc
 func (rc *RunContext) BuildConcurrency() int                         { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
+func (rc *RunContext) RPCPort() int                                  { return rc.Opts.RPCPort }
+func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
 
 func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline

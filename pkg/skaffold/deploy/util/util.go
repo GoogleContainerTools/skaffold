@@ -25,6 +25,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
+const (
+	RunIDLabel = "skaffold.dev/run-id"
+)
+
 // ApplyDefaultRepo applies the default repo to a given image tag.
 func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (string, error) {
 	repo, err := config.GetDefaultRepo(globalConfig, defaultRepo)
