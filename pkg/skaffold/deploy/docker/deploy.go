@@ -153,3 +153,7 @@ func (d *Deployer) GetSyncer() pkgsync.Syncer {
 func (d *Deployer) GetStatusMonitor() status.Monitor {
 	return d.monitor
 }
+
+func (d *Deployer) RegisterLocalImages([]graph.Artifact) {
+	// all images are local, so this is a noop
+}

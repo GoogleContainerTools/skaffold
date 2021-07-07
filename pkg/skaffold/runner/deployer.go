@@ -57,7 +57,11 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
+<<<<<<< HEAD
 func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
+=======
+func GetDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvider, labels map[string]string) (deploy.Deployer, error) {
+>>>>>>> d00ae06c7 (remove unnecessary isLocal variable)
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, labeller)
 	}
@@ -72,7 +76,7 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 			localDeploy = true
 			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy, runCtx.PortForwardResources(), provider)
 			if err != nil {
-				return nil, remoteDeploy, err
+				return nil, err
 			}
 			deployers = append(deployers, d)
 		}
@@ -81,7 +85,7 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 		if d.HelmDeploy != nil {
 			h, err := helm.NewDeployer(dCtx, labeller, d.HelmDeploy)
 			if err != nil {
-				return nil, remoteDeploy, err
+				return nil, err
 			}
 			deployers = append(deployers, h)
 		}
@@ -94,7 +98,7 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 		if d.KubectlDeploy != nil {
 			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy)
 			if err != nil {
-				return nil, remoteDeploy, err
+				return nil, err
 			}
 			deployers = append(deployers, deployer)
 		}
@@ -102,17 +106,17 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 		if d.KustomizeDeploy != nil {
 			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy)
 			if err != nil {
-				return nil, remoteDeploy, err
+				return nil, err
 			}
 			deployers = append(deployers, deployer)
 		}
 	}
 
 	if localDeploy && remoteDeploy {
-		return nil, false, errors.New("docker deployment not supported alongside cluster deployments")
+		return nil, errors.New("docker deployment not supported alongside cluster deployments")
 	}
 
-	return deploy.NewDeployerMux(deployers, runCtx.IterativeStatusCheck()), localDeploy, nil
+	return deploy.NewDeployerMux(deployers, runCtx.IterativeStatusCheck()), nil
 }
 
 /*
@@ -140,19 +144,19 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 	for _, d := range deployCfgs {
 		if d.KubeContext != "" {
 			if kubeContext != "" && kubeContext != d.KubeContext {
-				return nil, true, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
+				return nil, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
 			}
 			kubeContext = d.KubeContext
 		}
 		if d.StatusCheckDeadlineSeconds != 0 && d.StatusCheckDeadlineSeconds != int(status.DefaultStatusCheckDeadline.Seconds()) {
 			if statusCheckTimeout != -1 && statusCheckTimeout != d.StatusCheckDeadlineSeconds {
-				return nil, true, fmt.Errorf("found multiple status check timeouts in skaffold.yaml (not supported in `skaffold apply`): %d, %d", statusCheckTimeout, d.StatusCheckDeadlineSeconds)
+				return nil, fmt.Errorf("found multiple status check timeouts in skaffold.yaml (not supported in `skaffold apply`): %d, %d", statusCheckTimeout, d.StatusCheckDeadlineSeconds)
 			}
 			statusCheckTimeout = d.StatusCheckDeadlineSeconds
 		}
 		if d.Logs.Prefix != "" {
 			if logPrefix != "" && logPrefix != d.Logs.Prefix {
-				return nil, true, fmt.Errorf("found multiple log prefixes in skaffold.yaml (not supported in `skaffold apply`): %s, %s", logPrefix, d.Logs.Prefix)
+				return nil, fmt.Errorf("found multiple log prefixes in skaffold.yaml (not supported in `skaffold apply`): %s, %s", logPrefix, d.Logs.Prefix)
 			}
 			logPrefix = d.Logs.Prefix
 		}
@@ -170,11 +174,11 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 			kFlags = &currentKubectlFlags
 		}
 		if err := validateKubectlFlags(kFlags, currentKubectlFlags); err != nil {
-			return nil, true, err
+			return nil, err
 		}
 		if currentDefaultNamespace != nil {
 			if defaultNamespace != nil && *defaultNamespace != *currentDefaultNamespace {
-				return nil, true, fmt.Errorf("found multiple namespaces in skaffold.yaml (not supported in `skaffold apply`): %s, %s", *defaultNamespace, *currentDefaultNamespace)
+				return nil, fmt.Errorf("found multiple namespaces in skaffold.yaml (not supported in `skaffold apply`): %s, %s", *defaultNamespace, *currentDefaultNamespace)
 			}
 			defaultNamespace = currentDefaultNamespace
 		}
@@ -188,9 +192,9 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 	}
 	defaultDeployer, err := kubectl.NewDeployer(runCtx, labeller, k)
 	if err != nil {
-		return nil, false, fmt.Errorf("instantiating default kubectl deployer: %w", err)
+		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
-	return defaultDeployer, true, nil
+	return defaultDeployer, nil
 }
 
 func validateKubectlFlags(flags *v1.KubectlFlags, additional v1.KubectlFlags) error {

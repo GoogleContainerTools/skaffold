@@ -47,7 +47,6 @@ type SkaffoldRunner struct {
 	devIteration int
 	isLocalImage func(imageName string) (bool, error)
 	hasDeployed  bool
-	localDeploy  bool
 	intents      *runner.Intents
 }
 

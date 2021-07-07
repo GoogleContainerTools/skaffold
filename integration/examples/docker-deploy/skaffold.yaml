@@ -7,5 +7,4 @@ build:
   - image: skaffold-example
 deploy:
   docker:
-    useCompose: false
     images: [skaffold-example]

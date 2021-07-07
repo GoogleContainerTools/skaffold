@@ -136,7 +136,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		runCtx:             runCtx,
 		intents:            intents,
 		isLocalImage:       isLocalImage,
-		localDeploy:        local,
 	}, nil
 }
 
