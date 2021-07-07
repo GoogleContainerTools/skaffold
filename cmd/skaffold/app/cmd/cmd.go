@@ -78,22 +78,26 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.Root().SilenceUsage = true
 
-			opts.Command = cmd.Use
-			instrumentation.SetCommand(cmd.Use)
-			out := output.GetWriter(out, defaultColor, forceColors)
-			if timestamps {
-				l := logrus.New()
-				l.SetOutput(out)
-				l.SetFormatter(&logrus.TextFormatter{
-					DisableTimestamp: false,
-				})
-				out = l.Writer()
-			}
-			cmd.Root().SetOutput(out)
+			opts.Command = cmd.Name()
+			// Don't redirect output for Cobra internal `__complete` and `__completeNoDesc` commands.
+			// These are used for command completion and send debug messages on stderr.
+			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
+				instrumentation.SetCommand(cmd.Name())
+				out := output.GetWriter(out, defaultColor, forceColors)
+				if timestamps {
+					l := logrus.New()
+					l.SetOutput(out)
+					l.SetFormatter(&logrus.TextFormatter{
+						DisableTimestamp: false,
+					})
+					out = l.Writer()
+				}
+				cmd.Root().SetOutput(out)
 
-			// Setup logs
-			if err := setUpLogs(errOut, v, timestamps); err != nil {
-				return err
+				// Setup logs
+				if err := setUpLogs(errOut, v, timestamps); err != nil {
+					return err
+				}
 			}
 
 			// Setup kubeContext and kubeConfig
