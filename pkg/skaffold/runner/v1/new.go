@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -86,11 +87,12 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	var deployer deploy.Deployer
 	provider := deploy.ComponentProvider{
-		Accessor: access.NewAccessorProvider(labeller),
-		Debugger: debug.NewDebugProvider(runCtx),
-		Logger:   log.NewLogProvider(runCtx, kubectlCLI),
-		Monitor:  status.NewMonitorProvider(labeller),
-		Syncer:   sync.NewSyncProvider(runCtx, kubectlCLI),
+		Accessor:    access.NewAccessorProvider(labeller),
+		Debugger:    debug.NewDebugProvider(runCtx),
+		ImageLoader: loader.NewImageLoaderProvider(),
+		Logger:      log.NewLogProvider(runCtx, kubectlCLI),
+		Monitor:     status.NewMonitorProvider(labeller),
+		Syncer:      sync.NewSyncProvider(runCtx, kubectlCLI),
 	}
 
 	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels())

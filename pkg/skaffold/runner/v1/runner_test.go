@@ -125,6 +125,7 @@ func (t *TestBench) GetSyncer() sync.Syncer {
 	return t
 }
 
+func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
 func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }

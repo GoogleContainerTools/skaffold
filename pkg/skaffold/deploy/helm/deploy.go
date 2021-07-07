@@ -48,9 +48,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -86,12 +88,14 @@ type Deployer struct {
 
 	accessor      access.Accessor
 	debugger      debug.Debugger
+	imageLoader   loader.ImageLoader
 	logger        log.Logger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubeContext string
 	kubeConfig  string
@@ -113,6 +117,7 @@ type Deployer struct {
 type Config interface {
 	kubectl.Config
 	kstatus.Config
+	kloader.Config
 	portforward.Config
 	IsMultiConfig() bool
 }
@@ -144,6 +149,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		podSelector:    podSelector,
 		accessor:       provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
+		imageLoader:    provider.ImageLoader.GetKubernetesImageLoader(cfg),
 		logger:         provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:  provider.Monitor.GetKubernetesMonitor(cfg),
 		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector),
@@ -180,6 +186,10 @@ func (h *Deployer) GetSyncer() sync.Syncer {
 	return h.syncer
 }
 
+func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	h.localImages = images
+}
+
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
@@ -191,6 +201,13 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		"DeployerType": "helm",
 	})
 	defer endTrace()
+
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
 
 	logrus.Infof("Deploying with helm v%s ...", h.bV)
 
