@@ -29,7 +29,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -229,6 +231,7 @@ func TestKpt_Deploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&client.Client, deployutil.MockK8sClient)
 			t.NewTempDir().Chdir()
 
 			k := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt)
@@ -1169,6 +1172,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, commands)
+		t.Override(&client.Client, deployutil.MockK8sClient)
 		k := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, deploy.NoopComponentProvider, &latestV1.KptDeploy{
 			Dir: ".",
 			Live: latestV1.KptLive{

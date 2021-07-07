@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -44,13 +43,6 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 }
 
 func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, localImages []graph.Artifact) error {
-	// Check that the cluster is reachable.
-	// This gives a better error message when the cluster can't
-	// be reached.
-	if err := failIfClusterIsNotReachable(); err != nil {
-		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
-	}
-
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err

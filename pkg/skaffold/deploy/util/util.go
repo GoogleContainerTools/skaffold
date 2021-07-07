@@ -19,6 +19,9 @@ package util
 import (
 	"fmt"
 
+	k8s "k8s.io/client-go/kubernetes"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -51,4 +54,8 @@ func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.
 			podSelector.Add(artifact.Tag)
 		}
 	}
+}
+
+func MockK8sClient() (k8s.Interface, error) {
+	return fakekubeclientset.NewSimpleClientset(), nil
 }

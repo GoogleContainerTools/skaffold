@@ -30,7 +30,6 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
@@ -94,13 +93,6 @@ They are tagged and referenced by a unique, local only, tag instead.
 See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
-	// Check that the cluster is reachable.
-	// This gives a better error message when the cluster can't
-	// be reached.
-	if err := failIfClusterIsNotReachable(); err != nil {
-		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
-	}
-
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err
@@ -148,24 +140,11 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	return nil
 }
 
-// failIfClusterIsNotReachable checks that Kubernetes is reachable.
-// This gives a clear early error when the cluster can't be reached.
-func failIfClusterIsNotReachable() error {
-	client, err := kubernetesclient.Client()
-	if err != nil {
-		return err
-	}
-
-	_, err = client.Discovery().ServerVersion()
-	return err
-}
-
 func (r *SkaffoldRunner) wasBuilt(tag string) bool {
 	for _, built := range r.Builds {
 		if built.Tag == tag {
 			return true
 		}
 	}
-
 	return false
 }
