@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hooks-example-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hooks
+  template:
+    metadata:
+      labels:
+        app: hooks
+    spec:
+      containers:
+      - name: hooks-example
+        image: hooks-example

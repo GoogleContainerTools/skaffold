@@ -2,46 +2,69 @@ apiVersion: skaffold/v2beta19
 kind: Config
 build:
   artifacts:
-  - image: skaffold-example
+  - image: hooks-example
     hooks:
       before:
-        - command: ["sh", "-c", "echo hello build!"]
-          os: [darwin]
+        - command: ["sh", "-c", "echo pre-build host hook running on $(hostname)!"]
+          os: [darwin, linux]
       after:
-        - command: ["sh", "-c", "echo bye build!"]
-          os: [darwin]
+        - command: ["sh", "-c", "echo post-build host hook running on $(hostname)!"]
+          os: [darwin, linux]
     sync: 
       auto: true
       hooks:
         before:
           - host:
-              command: ["sh", "-c", "echo hello sync!"]
+              command: ["sh", "-c", "echo pre-sync host hook running on $(hostname)!"]
               os: [darwin]
           - container:
-              command: ["sh", "-c", "echo hello container sync!"]
+              command: ["sh", "-c", "echo pre-sync container hook running on $(hostname)!"]
         after:
           - host:
-              command: ["sh", "-c", "echo bye sync!"]
+              command: ["sh", "-c", "echo post-sync host hook running on $(hostname)!"]
           - container:
-              command: ["sh", "-c", "echo bye container sync!"]
+              command: ["sh", "-c", "echo post-sync container hook running on $(hostname)!"]
 deploy:
   kubectl:
     manifests:
-      - k8s-*
+      - k8s-pod.yaml
     hooks:
       before:
         - host:
-            command: ["sh", "-c", "echo hello deploy!"]
+            command: ["sh", "-c", "echo pre-deploy host hook running on $(hostname)!"]
             os: [darwin]
         - container:
-            command: ["sh", "-c", "echo hello container deploy!"]
-            containerName: skaffold-example*
-            podName: '*'
-
+            # this will only run when there's a matching container from a previous deploy iteration like in `skaffold dev` 
+            command: ["sh", "-c", "echo pre-deploy container hook running on $(hostname)!"]
+            containerName: hooks-example
+            podName: hooks-example-pod
       after:
         - host:
-            command: ["sh", "-c", "echo bye deploy!"]
+            command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"]
         - container:
-            command: ["sh", "-c", "echo bye container deploy!"]
-            containerName: skaffold-example
-            podName: bar
+            command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
+            containerName: hooks-example
+            podName: hooks-example-pod
+profiles:
+  - name: deployment
+    deploy:
+      kubectl:
+        manifests:
+          - k8s-deployment.yaml
+        hooks:
+          before:
+            - host:
+                command: ["sh", "-c", "echo pre-deploy host hook running on $(hostname)!"]
+                os: [darwin]
+            - container:
+                # this will only run when there's a matching container from a previous deploy iteration like in `skaffold dev` 
+                command: ["sh", "-c", "echo pre-deploy container hook running on $(hostname)!"]
+                containerName: hooks-example*
+                podName: hooks-example-deployment*
+          after:
+            - host:
+                command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"]
+            - container:
+                command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
+                containerName: hooks-example* # can use a glob pattern to prefix-match the container name
+                podName: hooks-example-deployment* # can use a glob pattern to prefix-match the pod name
