@@ -29,7 +29,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -222,6 +224,7 @@ func TestKubectlDeploy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetEnvs(test.envs)
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&client.Client, deployutil.MockK8sClient)
 			t.NewTempDir().
 				Write("deployment.yaml", DeploymentWebYAML).
 				Touch("empty.ignored").
@@ -375,6 +378,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 
 func TestKubectlRedeploy(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&client.Client, deployutil.MockK8sClient)
 		tmpDir := t.NewTempDir().
 			Write("deployment-web.yaml", DeploymentWebYAML).
 			Write("deployment-app.yaml", DeploymentAppYAML)
@@ -425,6 +429,7 @@ func TestKubectlRedeploy(t *testing.T) {
 
 func TestKubectlWaitForDeletions(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&client.Client, deployutil.MockK8sClient)
 		tmpDir := t.NewTempDir().Write("deployment-web.yaml", DeploymentWebYAML)
 
 		t.Override(&util.DefaultExecCommand, testutil.
@@ -480,6 +485,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("deployment-web.yaml", DeploymentWebYAML)
 
+		t.Override(&client.Client, deployutil.MockK8sClient)
 		t.Override(&util.DefaultExecCommand, testutil.
 			CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
 			AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), DeploymentWebYAML).
@@ -709,6 +715,7 @@ func TestGCSManifests(t *testing.T) {
 		}}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&client.Client, deployutil.MockK8sClient)
 			t.Override(&util.DefaultExecCommand, test.commands)
 			if err := os.MkdirAll(manifest.ManifestTmpDir, os.ModePerm); err != nil {
 				t.Fatal(err)
