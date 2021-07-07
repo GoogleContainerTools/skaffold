@@ -177,6 +177,7 @@ func (rc *RunContext) GetKubeConfig() string                         { return rc
 func (rc *RunContext) GetKubeNamespace() string                      { return rc.Opts.Namespace }
 func (rc *RunContext) GlobalConfig() string                          { return rc.Opts.GlobalConfig }
 func (rc *RunContext) HydratedManifests() []string                   { return rc.Opts.HydratedManifests }
+func (rc *RunContext) LoadImages() bool                              { return rc.Cluster.LoadImages }
 func (rc *RunContext) MinikubeProfile() string                       { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) Muted() config.Muted                           { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                         { return rc.Opts.NoPruneChildren }

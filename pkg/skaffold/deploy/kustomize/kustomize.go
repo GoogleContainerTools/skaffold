@@ -39,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -104,12 +105,14 @@ type Deployer struct {
 
 	accessor      access.Accessor
 	logger        log.Logger
+	imageLoader   loader.ImageLoader
 	debugger      debug.Debugger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubectl             kubectl.CLI
 	insecureRegistries  map[string]bool
@@ -138,6 +141,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 		podSelector:         podSelector,
 		accessor:            provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
+		imageLoader:         provider.ImageLoader.GetKubernetesImageLoader(cfg),
 		logger:              provider.Logger.GetKubernetesLogger(podSelector),
 		statusMonitor:       provider.Monitor.GetKubernetesMonitor(cfg),
 		syncer:              provider.Syncer.GetKubernetesSyncer(podSelector),
@@ -167,6 +171,10 @@ func (k *Deployer) GetStatusMonitor() status.Monitor {
 
 func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
+}
+
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
@@ -207,6 +215,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	if len(manifests) == 0 {
 		endTrace()
 		return nil, nil
+	}
+	endTrace()
+
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
 	}
 	endTrace()
 
