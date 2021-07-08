@@ -25,7 +25,7 @@ import (
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -376,7 +376,7 @@ func (ev *eventHandler) setState(state proto.State) {
 }
 
 func (ev *eventHandler) handle(event *proto.Event) {
-	event.Timestamp = ptypes.TimestampNow()
+	event.Timestamp = timestamppb.Now()
 	ev.eventChan <- event
 	if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
 		// close the event channel indicating there are no more events to all the
