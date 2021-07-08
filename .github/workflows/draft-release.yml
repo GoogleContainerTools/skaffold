@@ -18,8 +18,11 @@ jobs:
       uses: actions-ecosystem/action-regex-match@v2
       with:
         text: ${{ github.event.head_commit.message }}
-        # allow v1.2.3 and v1.2.3-beta.1
-        regex: '^release: v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.])?)$'
+        # Allow optional `v` prefix and GitHub PR reference suffix on first line only
+        #   release: v1.2.3
+        #   release: 1.2.3-beta.1
+        #   release: v1.2.3-beta.1 (#9456)
+        regex: '^release: v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.])?)(\s+\(#[0-9]+\))?$'
         flags: m
 
     - name: Determine if applicable
