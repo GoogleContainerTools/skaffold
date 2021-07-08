@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -152,10 +153,13 @@ func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts [
 		}
 
 		cmd := createCmd(artifact.Tag)
-		if cmdOut, err := util.RunCmdOut(cmd); err != nil {
+		cmdOut, err := util.RunCmdOut(cmd)
+		if err != nil {
 			output.Red.Fprintln(out, "Failed")
 			return fmt.Errorf("unable to load image %q into cluster: %w, %s", artifact.Tag, err, cmdOut)
 		}
+
+		fmt.Fprintf(os.Stdout, "logs from successful load: %s\n", string(cmdOut))
 
 		output.Green.Fprintln(out, "Loaded")
 	}
