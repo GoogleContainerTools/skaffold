@@ -22,7 +22,7 @@ jobs:
         #   release: v1.2.3
         #   release: 1.2.3-beta.1
         #   release: v1.2.3-beta.1 (#9456)
-        regex: '^release: v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.])?)(\s+\(#[0-9]+\))?$'
+        regex: '^release: v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?)(\s+\(#[0-9]+\))?$'
         flags: m
 
     - name: Determine if applicable
