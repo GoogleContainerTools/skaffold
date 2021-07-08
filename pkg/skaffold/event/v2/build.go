@@ -18,11 +18,9 @@ package v2
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -30,22 +28,6 @@ const (
 	Cache = "Cache"
 	Build = "Build"
 )
-
-var artifactIDs = map[string]int{}
-
-func AssignArtifactIDs(artifacts []*latestV1.Artifact) {
-	for i, a := range artifacts {
-		artifactIDs[a.ImageName] = i
-	}
-}
-
-func GetArtifactID(a *latestV1.Artifact) int {
-	if id, ok := artifactIDs[a.ImageName]; ok {
-		return id
-	}
-
-	return -1
-}
 
 func CacheCheckInProgress(artifact string) {
 	buildSubtaskEvent(artifact, Cache, InProgress, nil)
@@ -77,7 +59,7 @@ func buildSubtaskEvent(artifact, step, status string, err error) {
 		aErr = sErrors.ActionableErrV2(handler.cfg, constants.Build, err)
 	}
 	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
-		Id:            strconv.Itoa(artifactIDs[artifact]),
+		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
 		Step:          step,
