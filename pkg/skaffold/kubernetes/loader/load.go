@@ -123,7 +123,7 @@ func (i *ImageLoader) loadImagesInKindNodes(ctx context.Context, out io.Writer, 
 func (i *ImageLoader) loadImagesInK3dNodes(ctx context.Context, out io.Writer, k3dCluster string, artifacts []graph.Artifact) error {
 	output.Default.Fprintln(out, "Loading images into k3d cluster nodes...")
 	return i.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
-		return exec.CommandContext(ctx, "k3d", "image", "import", "--cluster", k3dCluster, tag)
+		return exec.CommandContext(ctx, "k3d", "image", "import", "--cluster", k3dCluster, tag, "--trace")
 	})
 }
 
