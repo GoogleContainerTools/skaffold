@@ -83,15 +83,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// These are used for command completion and send debug messages on stderr.
 			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
 				instrumentation.SetCommand(cmd.Name())
-				out := output.GetWriter(out, defaultColor, forceColors)
-				if timestamps {
-					l := logrus.New()
-					l.SetOutput(out)
-					l.SetFormatter(&logrus.TextFormatter{
-						DisableTimestamp: false,
-					})
-					out = l.Writer()
-				}
+				out := output.GetWriter(out, defaultColor, forceColors, timestamps)
 				cmd.Root().SetOutput(out)
 
 				// Setup logs
