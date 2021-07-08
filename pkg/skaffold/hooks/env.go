@@ -94,19 +94,17 @@ func getEnv(optsStruct interface{}) []string {
 }
 
 func toScreamingSnakeCase(s string) string {
+	r := []rune(s)
 	var b strings.Builder
-	isPrevUpper := false
-	for _, c := range s {
-		if unicode.IsUpper(c) {
-			if !isPrevUpper {
+	for i := 0; i < len(r); i++ {
+		if unicode.IsUpper(r[i]) {
+			if i > 0 && !unicode.IsUpper(r[i-1]) {
+				b.WriteRune('_')
+			} else if i > 0 && i+1 < len(r) && !unicode.IsUpper(r[i+1]) {
 				b.WriteRune('_')
 			}
-			isPrevUpper = true
-			b.WriteRune(c)
-		} else {
-			isPrevUpper = false
-			b.WriteRune(unicode.ToUpper(c))
 		}
+		b.WriteRune(unicode.ToUpper(r[i]))
 	}
 	return b.String()
 }
