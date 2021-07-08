@@ -54,6 +54,9 @@ type PipelineBuilder interface {
 
 	// Prune removes images built in this pipeline
 	Prune(context.Context, io.Writer) error
+
+	// PushImages specifies if the built image needs to be explicitly pushed to an image registry.
+	PushImages() bool
 }
 
 type ErrSyncMapNotSupported struct{}

@@ -116,3 +116,7 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.GoogleCloudBuild) *Build
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil // noop
 }
+
+func (b *Builder) PushImages() bool {
+	return true
+}
