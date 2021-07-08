@@ -117,6 +117,7 @@ func TestResetStateOnBuild(t *testing.T) {
 				"image1": Complete,
 			},
 		},
+		RenderState: &proto.RenderState{Status: Complete},
 		DeployState: &proto.DeployState{Status: Complete},
 		ForwardedPorts: map[int32]*proto.PortForwardEvent{
 			2001: {
@@ -137,6 +138,7 @@ func TestResetStateOnBuild(t *testing.T) {
 			},
 		},
 		TestState:        &proto.TestState{Status: NotStarted},
+		RenderState:      &proto.RenderState{Status: NotStarted},
 		DeployState:      &proto.DeployState{Status: NotStarted},
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},

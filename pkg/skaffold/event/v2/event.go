@@ -217,6 +217,10 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 			Status:     NotStarted,
 			StatusCode: proto.StatusCode_OK,
 		},
+		RenderState: &proto.RenderState{
+			Status:     NotStarted,
+			StatusCode: proto.StatusCode_OK,
+		},
 		DeployState: &proto.DeployState{
 			Status:      NotStarted,
 			AutoTrigger: autoDeploy,
@@ -412,6 +416,11 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 		te := e.TestEvent
 		ev.stateLock.Lock()
 		ev.state.TestState.Status = te.Status
+		ev.stateLock.Unlock()
+	case *proto.Event_RenderEvent:
+		te := e.RenderEvent
+		ev.stateLock.Lock()
+		ev.state.RenderState.Status = te.Status
 		ev.stateLock.Unlock()
 	case *proto.Event_DeploySubtaskEvent:
 		de := e.DeploySubtaskEvent

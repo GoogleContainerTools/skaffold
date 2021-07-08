@@ -31,6 +31,7 @@ message State {
     repeated DebuggingContainerEvent debuggingContainers = 6;
     Metadata metadata = 7;
     TestState testState = 8;
+    RenderState renderState = 9;
 }
 
 message Metadata {
@@ -38,6 +39,7 @@ message Metadata {
     DeployMetadata deploy = 2;
     TestMetadata test = 3;
     string runID = 4;
+    RenderMetadata render = 5;
     // Additional key value pairs to describe the build pipeline
     map<string, string> additional = 99;
 }
@@ -62,6 +64,16 @@ message TestMetadata {
         int32 count = 2;
     }
     repeated Tester Testers = 1;
+}
+
+
+// RenderMetadata describes the render pipeline
+message RenderMetadata {
+    message Renderer {
+        enums.RenderType type = 1;
+        int32 count = 2;
+    }
+    repeated Renderer Renderers = 1;
 }
 
 message DeployMetadata {
@@ -92,6 +104,14 @@ message TestState {
     // Status of the current test
     string status = 1;
     // Teststate status code
+    enums.StatusCode statusCode = 2;
+}
+
+// `RenderState` describes the current state of the render
+message RenderState {
+    // Status of the current render
+    string status = 1;
+    // Renderstate status code
     enums.StatusCode statusCode = 2;
 }
 
@@ -140,6 +160,7 @@ message Event {
         DebuggingContainerEvent debuggingContainerEvent = 11; // describes the appearance or disappearance of a debugging container
         TerminationEvent terminationEvent = 12; // describes a skaffold termination event
         TestSubtaskEvent testEvent = 13; // describes if the test has started, is in progress or is complete.
+        RenderSubtaskEvent renderEvent = 14; // describes if the render has started, is in progress or is complete.
     }
 }
 
@@ -207,6 +228,15 @@ message TestSubtaskEvent {
     string id = 1; // id of the subtask which will be used in SkaffoldLog
     string task_id = 2; // id of the task of skaffold that this event came from
     string status = 3; // test status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `RenderSubtaskEvent` represents the status of a render, and is emitted by Skaffold
+// anytime a render starts or completes, successfully or not.
+message RenderSubtaskEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // render status oneof: InProgress, Completed, Failed
     ActionableErr actionableErr = 4; // actionable error message
 }
 
