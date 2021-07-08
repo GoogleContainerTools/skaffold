@@ -47,7 +47,7 @@ jobs:
 
     - name: Calculate Tag and Release names
       run: |
-        echo TAG_NAME="${{ needs.check.outputs.version }}" >> $GITHUB_ENV
+        echo TAG_NAME="v${{ needs.check.outputs.version }}" >> $GITHUB_ENV
         echo RELEASE_NAME="v${{ needs.check.outputs.version }} Release" >> $GITHUB_ENV
 
     - name: Create and push Tag
