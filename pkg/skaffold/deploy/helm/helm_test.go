@@ -952,9 +952,10 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --version 1.0 examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
-			env:    []string{"VERSION=1.0"},
-			helm:   testDeployConfigVersionTemplated,
-			builds: testBuilds,
+			env:                []string{"VERSION=1.0"},
+			helm:               testDeployConfigVersionTemplated,
+			builds:             testBuilds,
+			expectedNamespaces: []string{},
 		},
 		{
 			description: "deploy with setFiles",

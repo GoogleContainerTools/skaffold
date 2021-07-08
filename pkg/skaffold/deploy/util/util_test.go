@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestRunContext_UpdateNamespaces(t *testing.T) {
+func TestConsolidateNamespaces(t *testing.T) {
 	tests := []struct {
 		description   string
 		oldNamespaces []string

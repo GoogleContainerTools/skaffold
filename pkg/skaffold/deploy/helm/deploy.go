@@ -240,7 +240,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		}
 		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
+			return userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
 		}
 		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV, chartVersion)
 		if err != nil {

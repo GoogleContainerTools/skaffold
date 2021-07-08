@@ -105,14 +105,13 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 		w = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i), "skaffold")
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 
-		var err error
-		if err = deployer.Deploy(ctx, w, as); err != nil {
+		if err := deployer.Deploy(ctx, w, as); err != nil {
 			eventV2.DeployFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
 		if m.iterativeStatusCheck {
-			if err = deployer.GetStatusMonitor().Check(ctx, w); err != nil {
+			if err := deployer.GetStatusMonitor().Check(ctx, w); err != nil {
 				eventV2.DeployFailed(i, err)
 				endTrace(instrumentation.TraceEndError(err))
 				return err
