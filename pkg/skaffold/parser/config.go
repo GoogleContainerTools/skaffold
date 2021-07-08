@@ -33,7 +33,6 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
