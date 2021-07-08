@@ -38,19 +38,15 @@ type Syncer interface {
 }
 
 type PodSyncer struct {
-	kubectl *pkgkubectl.CLI
-	config  Config
+	kubectl    *pkgkubectl.CLI
+	namespaces *[]string
 }
 
-func NewPodSyncer(cli *pkgkubectl.CLI, config Config) *PodSyncer {
+func NewPodSyncer(cli *pkgkubectl.CLI, namespaces *[]string) *PodSyncer {
 	return &PodSyncer{
-		kubectl: cli,
-		config:  config,
+		kubectl:    cli,
+		namespaces: namespaces,
 	}
-}
-
-type Config interface {
-	GetNamespaces() []string
 }
 
 type NoopSyncer struct{}

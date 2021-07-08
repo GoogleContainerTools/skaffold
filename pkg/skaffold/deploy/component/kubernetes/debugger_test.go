@@ -48,7 +48,7 @@ func TestGetDebugger(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			d := NewDebugger(test.runMode, nil)
+			d := NewDebugger(test.runMode, nil, nil)
 			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(d)).Type() == reflect.TypeOf(debug.NoopDebugger{}))
 		})
 	}

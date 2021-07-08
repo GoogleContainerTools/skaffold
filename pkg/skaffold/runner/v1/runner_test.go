@@ -187,17 +187,17 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) ([]string, error) {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return t.namespaces, nil
+	return nil
 }
 
 func (t *TestBench) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {

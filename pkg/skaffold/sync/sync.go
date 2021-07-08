@@ -257,7 +257,7 @@ func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 	if len(item.Copy) > 0 {
 		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
 
-		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, s.config.GetNamespaces()); err != nil {
+		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, *s.namespaces); err != nil {
 			return fmt.Errorf("copying files: %w", err)
 		}
 	}
@@ -265,7 +265,7 @@ func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 	if len(item.Delete) > 0 {
 		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
 
-		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, s.config.GetNamespaces()); err != nil {
+		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, *s.namespaces); err != nil {
 			return fmt.Errorf("deleting files: %w", err)
 		}
 	}

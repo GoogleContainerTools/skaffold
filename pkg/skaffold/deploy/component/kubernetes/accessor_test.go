@@ -67,7 +67,7 @@ func TestGetAccessor(t *testing.T) {
 			if test.enabled {
 				opts.Append("1") // default enabled mode
 			}
-			a := NewAccessor(mockAccessConfig{opts: opts}, test.description, nil, nil, label.NewLabeller(false, nil, ""))
+			a := NewAccessor(mockAccessConfig{opts: opts}, test.description, nil, nil, label.NewLabeller(false, nil, ""), nil)
 			fmt.Fprintf(os.Stdout, "retrieved accessor: %+v\n", a)
 			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(a)).Type() == reflect.TypeOf(access.NoopAccessor{}))
 		})

@@ -186,11 +186,11 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			return nil
 		}
 
-		if err := r.deployer.GetAccessor().Start(childCtx, out, r.runCtx.GetNamespaces()); err != nil {
+		if err := r.deployer.GetAccessor().Start(childCtx, out); err != nil {
 			logrus.Warnf("failed to start accessor: %v", err)
 		}
 
-		if err := r.deployer.GetDebugger().Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
+		if err := r.deployer.GetDebugger().Start(childCtx); err != nil {
 			logrus.Warnf("failed to start debugger: %v", err)
 		}
 
@@ -336,14 +336,14 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	defer r.deployer.GetAccessor().Stop()
 
-	if err := r.deployer.GetAccessor().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetAccessor().Start(ctx, out); err != nil {
 		logrus.Warnln("Error starting resource accessor:", err)
 	}
-	if err := r.deployer.GetDebugger().Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetDebugger().Start(ctx); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
 	// Start printing the logs after deploy is finished
-	if err := r.deployer.GetLogger().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetLogger().Start(ctx, out); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 

@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
@@ -58,4 +59,14 @@ func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.
 
 func MockK8sClient() (k8s.Interface, error) {
 	return fakekubeclientset.NewSimpleClientset(), nil
+}
+
+func ConsolidateNamespaces(original, new []string) []string {
+	if len(new) == 0 {
+		return original
+	}
+	namespaces := util.NewStringSet()
+	namespaces.Insert(append(original, new...)...)
+	namespaces.Delete("")
+	return namespaces.ToList()
 }
