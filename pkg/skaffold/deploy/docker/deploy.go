@@ -28,7 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	dockerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
@@ -52,7 +52,7 @@ type Deployer struct {
 	once               sync.Once
 }
 
-func NewDeployer(cfg dockerutil.Config, labels map[string]string, d *v1.DockerDeploy, resources []*v1.PortForwardResource, provider deploy.ComponentProvider) (*Deployer, error) {
+func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(cfg)
 	if err != nil {
 		return nil, err
@@ -64,11 +64,11 @@ func NewDeployer(cfg dockerutil.Config, labels map[string]string, d *v1.DockerDe
 		deployedContainers: make(map[string]string),
 		network:            fmt.Sprintf("skaffold-network-%s", uuid.New().String()),
 		// TODO(nkubala): implement components
-		accessor: provider.Accessor.GetNoopAccessor(),
-		debugger: provider.Debugger.GetNoopDebugger(),
-		logger:   provider.Logger.GetNoopLogger(),
-		monitor:  provider.Monitor.GetNoopMonitor(),
-		syncer:   provider.Syncer.GetNoopSyncer(),
+		accessor: &access.NoopAccessor{},
+		debugger: &debug.NoopDebugger{},
+		logger:   &log.NoopLogger{},
+		monitor:  &status.NoopMonitor{},
+		syncer:   &pkgsync.NoopSyncer{},
 	}, nil
 }
 
@@ -76,13 +76,13 @@ func (d *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	// TODO(nkubala): implement
 }
 
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("creating skaffold network %s: %w", d.network, err)
+		return fmt.Errorf("creating skaffold network %s: %w", d.network, err)
 	}
 	for _, b := range builds {
 		// TODO(nkubala): parallelize this
@@ -92,25 +92,25 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		if containerID, found := d.deployedContainers[b.ImageName]; found {
 			logrus.Debugf("removing old container %s for image %s", containerID, b.ImageName)
 			if err := d.client.Delete(ctx, out, containerID); err != nil {
-				return nil, fmt.Errorf("failed to remove old container %s for image %s: %w", containerID, b.ImageName, err)
+				return fmt.Errorf("failed to remove old container %s for image %s: %w", containerID, b.ImageName, err)
 			}
 		}
 		container, initContainers, err := containerFromImage(b.Tag, b.ImageName)
 		if err != nil {
-			return nil, errors.Wrap(err, "instantiating containers from image names")
+			return errors.Wrap(err, "instantiating containers from image names")
 		}
 		if d.cfg.UseCompose {
 			// TODO(nkubala): implement
-			return nil, fmt.Errorf("docker compose not yet supported by skaffold")
+			return fmt.Errorf("docker compose not yet supported by skaffold")
 		}
 		id, err := d.client.Run(ctx, out, b.ImageName, b.Tag, d.network, container, initContainers)
 		if err != nil {
-			return nil, errors.Wrap(err, "creating container in local docker")
+			return errors.Wrap(err, "creating container in local docker")
 		}
 		d.deployedContainers[b.ImageName] = id
 	}
 
-	return nil, nil
+	return nil
 }
 
 func (d *Deployer) Dependencies() ([]string, error) {

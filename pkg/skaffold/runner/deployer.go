@@ -57,11 +57,7 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
-<<<<<<< HEAD
 func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
-=======
-func GetDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvider, labels map[string]string) (deploy.Deployer, error) {
->>>>>>> d00ae06c7 (remove unnecessary isLocal variable)
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, labeller)
 	}
@@ -74,7 +70,7 @@ func GetDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvide
 	for _, d := range deployerCfg {
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy, runCtx.PortForwardResources(), provider)
+			d, err := docker.NewDeployer(runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
 			if err != nil {
 				return nil, err
 			}
