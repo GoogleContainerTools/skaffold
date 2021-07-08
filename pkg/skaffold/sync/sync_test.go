@@ -829,6 +829,22 @@ func TestIntersect(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			description: "only matching absolute paths are sent",
+			files:       []string{"/an/absolute/file"},
+			syncRules: []*latestV1.SyncRule{
+				{Src: "/home/test/**", Dest: "/html"},
+			},
+			expected: nil,
+		},
+		{
+			description: "only matching absolute paths file pattern are sent",
+			files:       []string{"/home/test/hi.html"},
+			syncRules: []*latestV1.SyncRule{
+				{Src: "/home/test/*.go", Dest: "/html"},
+			},
+			expected: nil,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
