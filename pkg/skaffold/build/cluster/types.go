@@ -75,3 +75,5 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.ClusterDetails) (*Builde
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil
 }
+
+func (b *Builder) PushImages() bool { return true }
