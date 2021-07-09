@@ -160,7 +160,7 @@ func TestGenerate(t *testing.T) {
 		{
 			description: "render kustomize manifests",
 			generateConfig: latestV2.Generate{
-				Kustomize: []string{"base"},
+				Kustomize: []string{"bpkg/skaffold/render/generate/generate_test.goase"},
 			},
 			commands: testutil.CmdRunOut("kustomize build base", kustomizePatchedOutput),
 			expected: manifest.ManifestList{[]byte(kustomizePatchedOutput)},
