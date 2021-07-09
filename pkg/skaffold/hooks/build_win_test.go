@@ -48,13 +48,13 @@ func TestBuildHooks(t *testing.T) {
 					PreHooks: []v1.HostHook{
 						{
 							OS:      []string{"linux", "darwin"},
-							Command: []string{"sh", "-c", "echo pre-hook running with IMAGE=$IMAGE,PUSH_IMAGE=$PUSH_IMAGE,IMAGE_REPO=$IMAGE_REPO,IMAGE_TAG=$IMAGE_TAG,BUILD_CONTEXT=$BUILD_CONTEXT"},
+							Command: []string{"sh", "-c", "echo pre-hook running with SKAFFOLD_IMAGE=$SKAFFOLD_IMAGE,SKAFFOLD_PUSH_IMAGE=$SKAFFOLD_PUSH_IMAGE,SKAFFOLD_IMAGE_REPO=$SKAFFOLD_IMAGE_REPO,SKAFFOLD_IMAGE_TAG=$SKAFFOLD_IMAGE_TAG,SKAFFOLD_BUILD_CONTEXT=$SKAFFOLD_BUILD_CONTEXT"},
 						},
 					},
 					PostHooks: []v1.HostHook{
 						{
 							OS:      []string{"linux", "darwin"},
-							Command: []string{"sh", "-c", "echo post-hook running with IMAGE=$IMAGE,PUSH_IMAGE=$PUSH_IMAGE,IMAGE_REPO=$IMAGE_REPO,IMAGE_TAG=$IMAGE_TAG,BUILD_CONTEXT=$BUILD_CONTEXT"},
+							Command: []string{"sh", "-c", "echo post-hook running with SKAFFOLD_IMAGE=$SKAFFOLD_IMAGE,SKAFFOLD_PUSH_IMAGE=$SKAFFOLD_PUSH_IMAGE,SKAFFOLD_IMAGE_REPO=$SKAFFOLD_IMAGE_REPO,SKAFFOLD_IMAGE_TAG=$SKAFFOLD_IMAGE_TAG,SKAFFOLD_BUILD_CONTEXT=$SKAFFOLD_BUILD_CONTEXT"},
 						},
 					},
 				},
@@ -71,21 +71,21 @@ func TestBuildHooks(t *testing.T) {
 					PreHooks: []v1.HostHook{
 						{
 							OS:      []string{"windows"},
-							Command: []string{"cmd.exe", "/C", "echo pre-hook running with %IMAGE%,%PUSH_IMAGE%,%IMAGE_REPO%,%IMAGE_TAG%,%BUILD_CONTEXT%"},
+							Command: []string{"cmd.exe", "/C", "echo pre-hook running with %SKAFFOLD_IMAGE%,%SKAFFOLD_PUSH_IMAGE%,%SKAFFOLD_IMAGE_REPO%,%SKAFFOLD_IMAGE_TAG%,%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
 					PostHooks: []v1.HostHook{
 						{
 							OS:      []string{"windows"},
-							Command: []string{"cmd.exe", "/C", "echo pre-hook running with %IMAGE%,%PUSH_IMAGE%,%IMAGE_REPO%,%IMAGE_TAG%,%BUILD_CONTEXT%"},
+							Command: []string{"cmd.exe", "/C", "echo pre-hook running with %SKAFFOLD_IMAGE%,%SKAFFOLD_PUSH_IMAGE%,%SKAFFOLD_IMAGE_REPO%,%SKAFFOLD_IMAGE_TAG%,%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
 				},
 			},
 			image:       "gcr.io/foo/img1:latest",
 			pushImage:   true,
-			preHookOut:  fmt.Sprintf("pre-hook running with IMAGE=gcr.io/foo/img1:latest,PUSH_IMAGE=true,IMAGE_REPO=gcr.io/foo,IMAGE_TAG=latest,BUILD_CONTEXT=%s\r\n", workDir),
-			postHookOut: fmt.Sprintf("post-hook running with IMAGE=gcr.io/foo/img1:latest,PUSH_IMAGE=true,IMAGE_REPO=gcr.io/foo,IMAGE_TAG=latest,BUILD_CONTEXT=%s\r\n", workDir),
+			preHookOut:  fmt.Sprintf("pre-hook running with SKAFFOLD_IMAGE=gcr.io/foo/img1:latest,SKAFFOLD_PUSH_IMAGE=true,SKAFFOLD_IMAGE_REPO=gcr.io/foo,SKAFFOLD_IMAGE_TAG=latest,SKAFFOLD_BUILD_CONTEXT=%s\r\n", workDir),
+			postHookOut: fmt.Sprintf("post-hook running with SKAFFOLD_IMAGE=gcr.io/foo/img1:latest,SKAFFOLD_PUSH_IMAGE=true,SKAFFOLD_IMAGE_REPO=gcr.io/foo,SKAFFOLD_IMAGE_TAG=latest,SKAFFOLD_BUILD_CONTEXT=%s\r\n", workDir),
 		},
 	}
 
