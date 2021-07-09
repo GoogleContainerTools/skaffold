@@ -24,12 +24,12 @@ import (
 )
 
 type Provider interface {
-	GetKubernetesSyncer(*kubernetes.ImageList) Syncer
+	GetKubernetesSyncer(*kubernetes.ImageList, *kubectl.CLI) Syncer
 	GetNoopSyncer() Syncer
 }
 
 type fullProvider struct {
-	kubernetesSyncer func(*kubernetes.ImageList) Syncer
+	kubernetesSyncer func(*kubernetes.ImageList, *kubectl.CLI) Syncer
 	noopSyncer       func() Syncer
 }
 
@@ -38,10 +38,10 @@ var (
 	once     gosync.Once
 )
 
-func NewSyncProvider(config Config, cli *kubectl.CLI) Provider {
+func NewSyncProvider(config Config) Provider {
 	once.Do(func() {
 		provider = &fullProvider{
-			kubernetesSyncer: func(podSelector *kubernetes.ImageList) Syncer {
+			kubernetesSyncer: func(podSelector *kubernetes.ImageList, cli *kubectl.CLI) Syncer {
 				return &podSyncer{
 					kubectl: cli,
 					config:  config,
@@ -55,8 +55,8 @@ func NewSyncProvider(config Config, cli *kubectl.CLI) Provider {
 	return provider
 }
 
-func (p *fullProvider) GetKubernetesSyncer(s *kubernetes.ImageList) Syncer {
-	return p.kubernetesSyncer(s)
+func (p *fullProvider) GetKubernetesSyncer(s *kubernetes.ImageList, cli *kubectl.CLI) Syncer {
+	return p.kubernetesSyncer(s, cli)
 }
 
 func (p *fullProvider) GetNoopSyncer() Syncer {
@@ -65,7 +65,7 @@ func (p *fullProvider) GetNoopSyncer() Syncer {
 
 type NoopProvider struct{}
 
-func (p *NoopProvider) GetKubernetesSyncer(_ *kubernetes.ImageList) Syncer {
+func (p *NoopProvider) GetKubernetesSyncer(*kubernetes.ImageList, *kubectl.CLI) Syncer {
 	return &NoopSyncer{}
 }
 

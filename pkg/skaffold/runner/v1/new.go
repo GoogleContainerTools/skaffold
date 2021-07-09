@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -53,7 +52,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.LogMetaEvent()
 	eventV2.InitializeState(runCtx)
 	eventV2.LogMetaEvent()
-	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
+	// kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 	_, endTrace := instrumentation.StartTrace(context.Background(), "NewForConfig")
 	defer endTrace()
 
@@ -90,9 +89,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Accessor:    access.NewAccessorProvider(labeller),
 		Debugger:    debug.NewDebugProvider(runCtx),
 		ImageLoader: loader.NewImageLoaderProvider(),
-		Logger:      log.NewLogProvider(runCtx, kubectlCLI),
+		Logger:      log.NewLogProvider(runCtx),
 		Monitor:     status.NewMonitorProvider(labeller),
-		Syncer:      sync.NewSyncProvider(runCtx, kubectlCLI),
+		Syncer:      sync.NewSyncProvider(runCtx),
 	}
 
 	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels())
@@ -148,7 +147,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
 		artifactStore:      store,
 		sourceDependencies: sourceDependencies,
-		kubectlCLI:         kubectlCLI,
 		labeller:           labeller,
 		cache:              artifactCache,
 		runCtx:             runCtx,
