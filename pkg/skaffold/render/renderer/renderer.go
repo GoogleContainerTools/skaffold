@@ -26,17 +26,16 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 const (
@@ -126,31 +125,10 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 	defer func() { _ = file.Close() }()
 	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
-		return sErrors.NewError(err,
-			proto.ActionableErr{
-				Message: fmt.Sprintf("unable to parse Kptfile in %v", r.hydrationDir),
-				ErrCode: proto.StatusCode_RENDER_KPTFILE_INVALID_YAML_ERR,
-				Suggestions: []*proto.Suggestion{
-					{
-						SuggestionCode: proto.SuggestionCode_KPTFILE_CHECK_YAML,
-						Action: fmt.Sprintf("please check if the Kptfile is correct and " +
-							"the `apiVersion` is greater than `v1alpha2`"),
-					},
-				},
-			})
+		return errors.ParseKptfileError(err, r.hydrationDir)
 	}
 	if err := os.RemoveAll(r.hydrationDir); err != nil {
-		return sErrors.NewError(err,
-			proto.ActionableErr{
-				Message: fmt.Sprintf("unable to delete Kptfile in %v", r.hydrationDir),
-				ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
-				Suggestions: []*proto.Suggestion{
-					{
-						SuggestionCode: proto.SuggestionCode_KPTFILE_MANUAL_INIT,
-						Action:         fmt.Sprintf("suggest manually delete `rm -rf %v`", r.hydrationDir),
-					},
-				},
-			})
+		return errors.DeleteKptfileError(err, r.hydrationDir)
 	}
 	if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
 		return err

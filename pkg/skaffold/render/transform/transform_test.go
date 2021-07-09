@@ -51,6 +51,6 @@ func TestNewValidator_Error(t *testing.T) {
 		_, err := NewTransformer([]latestV2.Transformer{
 			{Name: "bad-transformer"},
 		})
-		t.CheckContains(`unsupported transformer "bad-transformer". please only use the`, err.Error())
+		t.CheckErrorContains(`unsupported transformer "bad-transformer". please only use the`, err)
 	})
 }

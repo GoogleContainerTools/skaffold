@@ -16,13 +16,11 @@ limitations under the License.
 package transform
 
 import (
-	"fmt"
 	"strings"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 var (
@@ -49,7 +47,7 @@ var (
 		},
 	}
 
-	allowListedTransformer = func() []string {
+	AllowListedTransformer = func() []string {
 		transformers := make([]string, 0, len(transformerAllowlist))
 		for funcName := range transformerAllowlist {
 			transformers = append(transformers, funcName)
@@ -92,39 +90,13 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 	for _, c := range config {
 		newFunc, ok := transformerAllowlist[c.Name]
 		if !ok {
-			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
-			// TODO: Move the error to errors/errors.go pkg.
-			return nil, sErrors.NewErrorWithStatusCode(
-				proto.ActionableErr{
-					Message: fmt.Sprintf("unsupported transformer %q", c.Name),
-					ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
-					Suggestions: []*proto.Suggestion{
-						{
-							SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_transformers,
-							Action: fmt.Sprintf(
-								"please only use the following transformers in skaffold-managed mode: %v. "+
-									"to use custom transformers, please use kpt-managed mode.", allowListedTransformer),
-						},
-					},
-				})
+			return nil, errors.UnknownTransformerError(c.Name, AllowListedTransformer)
 		}
 		if c.ConfigMapData != nil {
 			for _, stringifiedData := range c.ConfigMapData {
 				items := strings.Split(stringifiedData, ":")
 				if len(items) != 2 {
-					// TODO: Move the error to errors/errors.go pkg.
-					return nil, sErrors.NewErrorWithStatusCode(
-						proto.ActionableErr{
-							Message: fmt.Sprintf("unknown arguments for transformer %v", c.Name),
-							ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
-							Suggestions: []*proto.Suggestion{
-								{
-									SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_transformers,
-									Action: fmt.Sprintf("please check if the .transformer field and " +
-										"make sure `configMapData` is a list of data in the form of `${KEY}=${VALUE}`"),
-								},
-							},
-						})
+					return nil, errors.BadTransformerParamsError(c.Name)
 				}
 				newFunc.ConfigMap[items[0]] = items[1]
 			}
