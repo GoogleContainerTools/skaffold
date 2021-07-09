@@ -7,12 +7,11 @@ no_list: true
 
 ## Community
 
-You can join the Skaffold community and discuss the project at:
+Join the Skaffold community and discuss the project at:
 
-* The [`skaffold` tag on StackOverflow](https://stackoverflow.com/questions/tagged/skaffold)
+* StackOverflow using the [`skaffold` tag](https://stackoverflow.com/questions/tagged/skaffold)
 * [Skaffold Mailing List]
-* [Skaffold Topic on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/) (click on _Create
-* an account_ to join)
+* [#Skaffold channel on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/) (click on _Create an account_ to join)
 * [Give us feedback](feedback)
 
 The Skaffold Project also holds a monthly meeting on the last

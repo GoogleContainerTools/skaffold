@@ -182,6 +182,6 @@ using [Builders]({{<relref "/docs/pipeline-stages/builders" >}}), [Taggers]({{< 
 
 [Skaffold Tutorials]({{< relref "/docs/tutorials" >}}) details some of the common use cases of Skaffold.
 
-Questions?  See our [Community section]({{< relref "/docs/resources#Community" }}) for ways to get in touch.
+Questions?  See our [Community section]({{< relref "/docs/resources#Community" >}}) for ways to get in touch.
 
 :mega: **Please fill out our [quick 5-question survey](https://forms.gle/BMTbGQXLWSdn7vEs6)** to tell us how satisfied you are with Skaffold, and what improvements we should make. Thank you! :dancers:
