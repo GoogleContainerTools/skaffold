@@ -139,6 +139,17 @@ var testDeployConfigValuesFilesTemplated = latestV1.HelmDeploy{
 	}},
 }
 
+var testDeployConfigVersionTemplated = latestV1.HelmDeploy{
+	Releases: []latestV1.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		ArtifactOverrides: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Version: "{{.VERSION}}",
+	}},
+}
+
 var testDeployConfigSetFiles = latestV1.HelmDeploy{
 	Releases: []latestV1.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -895,6 +906,18 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 -f /some/file-FOOBAR.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:   testDeployConfigValuesFilesTemplated,
+			builds: testBuilds,
+		},
+		{
+			description: "deploy with templated version",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --version 1.0 examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
+			env:    []string{"VERSION=1.0"},
+			helm:   testDeployConfigVersionTemplated,
 			builds: testBuilds,
 		},
 		{

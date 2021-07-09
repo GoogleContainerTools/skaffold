@@ -406,7 +406,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		chartPath:   chartSource(r),
 		helmVersion: helmVersion,
 		repo:        r.Repo,
-		Version:     chartVersion,
+		version:     chartVersion,
 	}
 
 	var installEnv []string
