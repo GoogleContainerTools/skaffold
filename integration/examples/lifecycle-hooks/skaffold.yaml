@@ -1,0 +1,16 @@
+apiVersion: skaffold/v2beta19
+kind: Config
+build:
+  artifacts:
+  - image: hooks-example
+    hooks:
+      before:
+        - command: ["sh", "-c", "./hook.sh"]
+          os: [darwin, linux]
+      after:
+        - command: ["sh", "-c", "docker images $IMAGE --digests"]
+          os: [darwin, linux]
+deploy:
+  kubectl:
+    manifests:
+      - k8s-pod.yaml

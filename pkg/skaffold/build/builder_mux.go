@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -99,7 +100,22 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	builder := func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
 		p := b.byImageName[artifact.ImageName]
 		artifactBuilder := p.Build(ctx, out, artifact)
-		return artifactBuilder(ctx, out, artifact, tag)
+		hooksOpts, err := hooks.NewBuildEnvOpts(artifact, tag, p.PushImages())
+		if err != nil {
+			return "", err
+		}
+		r := hooks.BuildRunner(artifact.LifecycleHooks, hooksOpts)
+		var built string
+		if err = r.RunPreHooks(ctx, out); err != nil {
+			return "", err
+		}
+		if built, err = artifactBuilder(ctx, out, artifact, tag); err != nil {
+			return "", err
+		}
+		if err = r.RunPostHooks(ctx, out); err != nil {
+			return "", err
+		}
+		return built, nil
 	}
 	ar, err := InOrder(ctx, out, tags, artifacts, builder, b.concurrency, b.store)
 	if err != nil {
