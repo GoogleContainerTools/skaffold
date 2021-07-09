@@ -12,11 +12,11 @@ replace (
 )
 
 require (
-	4d63.com/tz v1.1.0
+	4d63.com/tz v1.2.0
 	cloud.google.com/go v0.84.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/AlecAivazis/survey/v2 v2.2.7
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
 	github.com/aws/aws-sdk-go v1.36.30 // indirect
 	github.com/blang/semver v3.5.1+incompatible
