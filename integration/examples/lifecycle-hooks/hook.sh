@@ -2,14 +2,14 @@
 
 cat << EOF
 Build specification:
-    DefaultRepo:    $DEFAULT_REPO
-    RPCPort:        $RPC_PORT
-    HTTPPort:       $HTTP_PORT
-    WorkDir:        $WORK_DIR
-    Image:          $IMAGE
-    PushImage:      $PUSH_IMAGE
-    ImageRepo:      $IMAGE_REPO
-    ImageTag:       $IMAGE_TAG
-    BuildContext:   $BUILD_CONTEXT
+    DefaultRepo:    $SKAFFOLD_DEFAULT_REPO
+    RPCPort:        $SKAFFOLD_RPC_PORT
+    HTTPPort:       $SKAFFOLD_HTTP_PORT
+    WorkDir:        $SKAFFOLD_WORK_DIR
+    Image:          $SKAFFOLD_IMAGE
+    PushImage:      $SKAFFOLD_PUSH_IMAGE
+    ImageRepo:      $SKAFFOLD_IMAGE_REPO
+    ImageTag:       $SKAFFOLD_IMAGE_TAG
+    BuildContext:   $SKAFFOLD_BUILD_CONTEXT
 EOF
 

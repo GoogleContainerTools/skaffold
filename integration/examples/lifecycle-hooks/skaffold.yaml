@@ -8,7 +8,7 @@ build:
         - command: ["sh", "-c", "./hook.sh"]
           os: [darwin, linux]
       after:
-        - command: ["sh", "-c", "docker images $IMAGE --digests"]
+        - command: ["sh", "-c", "docker images $SKAFFOLD_IMAGE --digests"]
           os: [darwin, linux]
 deploy:
   kubectl:
