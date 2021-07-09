@@ -12,7 +12,7 @@ replace (
 )
 
 require (
-	4d63.com/tz v1.1.0
+	4d63.com/tz v1.2.0
 	cloud.google.com/go v0.84.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/AlecAivazis/survey/v2 v2.2.7
