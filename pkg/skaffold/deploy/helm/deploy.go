@@ -47,6 +47,7 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -143,6 +144,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}
 
 	podSelector := kubernetes.NewImageList()
+	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
 
 	return &Deployer{
 		HelmDeploy:     h,
@@ -150,9 +152,9 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		accessor:       provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
 		imageLoader:    provider.ImageLoader.GetKubernetesImageLoader(cfg),
-		logger:         provider.Logger.GetKubernetesLogger(podSelector),
+		logger:         provider.Logger.GetKubernetesLogger(podSelector, kubectl),
 		statusMonitor:  provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector),
+		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector, kubectl),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),

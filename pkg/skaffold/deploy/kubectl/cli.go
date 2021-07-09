@@ -60,9 +60,9 @@ type Config interface {
 	HydratedManifests() []string
 }
 
-func NewCLI(cfg Config, flags latestV1.KubectlFlags, defaultNameSpace string) CLI {
+func NewCLI(cfg Config, flags latestV1.KubectlFlags, defaultNamespace string) CLI {
 	return CLI{
-		CLI:              kubectl.NewCLI(cfg, defaultNameSpace),
+		CLI:              kubectl.NewCLI(cfg, defaultNamespace),
 		Flags:            flags,
 		forceDeploy:      cfg.ForceDeploy(),
 		waitForDeletions: cfg.WaitForDeletions(),

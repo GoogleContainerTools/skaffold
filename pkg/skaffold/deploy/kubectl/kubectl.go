@@ -87,6 +87,7 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}
 
 	podSelector := kubernetes.NewImageList()
+	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
 
 	return &Deployer{
 		KubectlDeploy:      d,
@@ -94,13 +95,13 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
 		imageLoader:        provider.ImageLoader.GetKubernetesImageLoader(cfg),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		logger:             provider.Logger.GetKubernetesLogger(podSelector, kubectl.CLI),
 		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
+		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector, kubectl.CLI),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
-		kubectl:            NewCLI(cfg, d.Flags, defaultNamespace),
+		kubectl:            kubectl,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
