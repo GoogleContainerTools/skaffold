@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -104,17 +104,17 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KptDeploy) *Deployer {
+func NewDeployer(cfg Config, labels map[string]string, provider component.Provider, d *latestV1.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
 	return &Deployer{
 		KptDeploy:          d,
 		podSelector:        podSelector,
-		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		imageLoader:        provider.ImageLoader.GetKubernetesImageLoader(cfg),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
-		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
+		accessor:           provider.GetKubernetesAccessor(cfg, podSelector),
+		debugger:           provider.GetKubernetesDebugger(podSelector),
+		imageLoader:        provider.GetKubernetesImageLoader(cfg),
+		logger:             provider.GetKubernetesLogger(podSelector),
+		statusMonitor:      provider.GetKubernetesMonitor(cfg),
+		syncer:             provider.GetKubernetesSyncer(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),

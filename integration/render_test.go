@@ -30,7 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -89,7 +89,7 @@ spec:
 					},
 				},
 			}}),
-		}, nil, deploy.NoopComponentProvider, &latestV1.KubectlDeploy{
+		}, nil, component.NoopComponentProvider{}, &latestV1.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -249,7 +249,7 @@ spec:
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil, deploy.NoopComponentProvider, &latestV1.KubectlDeploy{
+			}, nil, component.NoopComponentProvider{}, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -435,7 +435,7 @@ spec:
 						},
 					},
 				}}),
-			}, nil, deploy.NoopComponentProvider, &latestV1.HelmDeploy{
+			}, nil, component.NoopComponentProvider{}, &latestV1.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)

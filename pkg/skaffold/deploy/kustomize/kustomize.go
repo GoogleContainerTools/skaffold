@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -121,7 +121,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, provider component.Provider, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -139,12 +139,12 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
-		accessor:            provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
-		imageLoader:         provider.ImageLoader.GetKubernetesImageLoader(cfg),
-		logger:              provider.Logger.GetKubernetesLogger(podSelector),
-		statusMonitor:       provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:              provider.Syncer.GetKubernetesSyncer(podSelector),
+		accessor:            provider.GetKubernetesAccessor(cfg, podSelector),
+		debugger:            provider.GetKubernetesDebugger(podSelector),
+		imageLoader:         provider.GetKubernetesImageLoader(cfg),
+		logger:              provider.GetKubernetesLogger(podSelector),
+		statusMonitor:       provider.GetKubernetesMonitor(cfg),
+		syncer:              provider.GetKubernetesSyncer(),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
