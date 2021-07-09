@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"sync"
+	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -32,6 +34,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+)
+
+// A Singleton manager is kept to share across Deployers, since Port Forwarding is not yet
+// aware of it's corresponding Deployer's tracked resources
+var (
+	once    sync.Once
+	manager *ForwarderManager
 )
 
 type Config interface {
@@ -52,33 +61,43 @@ type Forwarder interface {
 type ForwarderManager struct {
 	forwarders   []Forwarder
 	entryManager *EntryManager
+
+	started   int32
+	startLock sync.Mutex
+
+	stopped  int32
+	stopLock sync.Mutex
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
 func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latestV1.PortForwardResource) *ForwarderManager {
-	if !options.Enabled() {
-		return nil
-	}
+	once.Do(func() {
+		if !options.Enabled() {
+			return
+		}
 
-	entryManager := NewEntryManager(NewKubectlForwarder(cli))
+		entryManager := NewEntryManager(NewKubectlForwarder(cli))
 
-	var forwarders []Forwarder
-	if options.ForwardUser(runMode) {
-		forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, userDefined))
-	}
-	if options.ForwardServices(runMode) {
-		forwarders = append(forwarders, NewServicesForwarder(entryManager, label))
-	}
-	if options.ForwardPods(runMode) {
-		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, allPorts))
-	} else if options.ForwardDebug(runMode) {
-		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, debugPorts))
-	}
+		var forwarders []Forwarder
+		if options.ForwardUser(runMode) {
+			forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, userDefined))
+		}
+		if options.ForwardServices(runMode) {
+			forwarders = append(forwarders, NewServicesForwarder(entryManager, label))
+		}
+		if options.ForwardPods(runMode) {
+			forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, allPorts))
+		} else if options.ForwardDebug(runMode) {
+			forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, debugPorts))
+		}
 
-	return &ForwarderManager{
-		forwarders:   forwarders,
-		entryManager: entryManager,
-	}
+		manager = &ForwarderManager{
+			forwarders:   forwarders,
+			entryManager: entryManager,
+		}
+	})
+
+	return manager
 }
 
 func allPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
@@ -120,6 +139,13 @@ func (p *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces 
 		return nil
 	}
 
+	p.startLock.Lock()
+	defer p.startLock.Unlock()
+	if atomic.LoadInt32(&p.started) == 1 {
+		return nil
+	}
+	atomic.StoreInt32(&p.started, 1)
+
 	eventV2.TaskInProgress(constants.PortForward, "Port forward URLs")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Start")
 	defer endTrace()
@@ -143,6 +169,13 @@ func (p *ForwarderManager) Stop() {
 	if p == nil {
 		return
 	}
+
+	p.stopLock.Lock()
+	defer p.stopLock.Unlock()
+	if atomic.LoadInt32(&p.stopped) == 1 {
+		return
+	}
+	atomic.StoreInt32(&p.stopped, 1)
 
 	for _, f := range p.forwarders {
 		f.Stop()

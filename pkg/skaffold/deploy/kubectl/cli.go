@@ -58,6 +58,9 @@ type Config interface {
 	WaitForDeletions() config.WaitForDeletions
 	Mode() config.RunMode
 	HydratedManifests() []string
+	DefaultPipeline() latestV1.Pipeline
+	Tail() bool
+	PipelineForImage(imageName string) (latestV1.Pipeline, bool)
 }
 
 func NewCLI(cfg Config, flags latestV1.KubectlFlags, defaultNamespace string) CLI {

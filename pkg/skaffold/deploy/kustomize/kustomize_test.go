@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
@@ -190,7 +190,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, nil, deploy.NoopComponentProvider, &test.kustomize)
+				}}}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
 			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
@@ -256,7 +256,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, nil, deploy.NoopComponentProvider, &test.kustomize)
+			}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
 			err = k.Cleanup(context.Background(), ioutil.Discard)
 
@@ -458,7 +458,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, nil, deploy.NoopComponentProvider, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -541,7 +541,7 @@ func TestKustomizeRender(t *testing.T) {
 	tests := []struct {
 		description    string
 		builds         []graph.Artifact
-		labels         map[string]string
+		labels         []string
 		kustomizations []kustomizationCall
 		expected       string
 		shouldErr      bool
@@ -598,7 +598,7 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			labels: map[string]string{"user/label": "test"},
+			labels: []string{"user/label=test"},
 			kustomizations: []kustomizationCall{
 				{
 					folder: ".",
@@ -699,10 +699,12 @@ spec:
 			t.Override(&util.DefaultExecCommand, fakeCmd)
 			t.NewTempDir().Chdir()
 
+			labeller := label.NewLabeller(false, test.labels, "")
+
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, test.labels, deploy.NoopComponentProvider, &latestV1.KustomizeDeploy{
+			}, labeller, &latestV1.KustomizeDeploy{
 				KustomizePaths: kustomizationPaths,
 			})
 			t.RequireNoError(err)
