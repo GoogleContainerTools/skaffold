@@ -76,7 +76,8 @@ func SetupStaticEnvOptions(cfg Config) {
 }
 
 // getEnv converts the fields of BuildEnvOpts, SyncEnvOpts, DeployEnvOpts and CommonEnvOpts structs to a `key=value` environment variables slice.
-// Each field name is converted from CamelCase to SCREAMING_SNAKE_CASE like `FilesAddedOrModified` to `FILES_ADDED_OR_MODIFIED`
+// Each field name is converted from CamelCase to SCREAMING_SNAKE_CASE and prefixed with `SKAFFOLD`.
+// For example the field `KubeContext` with value `kind` becomes `SKAFFOLD_KUBE_CONTEXT=kind`
 func getEnv(optsStruct interface{}) []string {
 	var env []string
 	structVal := reflect.ValueOf(optsStruct)
@@ -88,7 +89,7 @@ func getEnv(optsStruct interface{}) []string {
 			continue
 		}
 		v = reflect.Indirect(v)
-		env = append(env, fmt.Sprintf("%s=%v", toScreamingSnakeCase(f.Name), v.Interface()))
+		env = append(env, fmt.Sprintf("SKAFFOLD_%s=%v", toScreamingSnakeCase(f.Name), v.Interface()))
 	}
 	return env
 }
