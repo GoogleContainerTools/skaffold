@@ -94,14 +94,16 @@ func getEnv(optsStruct interface{}) []string {
 	return env
 }
 
+// toScreamingSnakeCase converts CamelCase strings to SCREAMING_SNAKE_CASE.
+// For example KubeContext to KUBE_CONTEXT
 func toScreamingSnakeCase(s string) string {
 	r := []rune(s)
 	var b strings.Builder
 	for i := 0; i < len(r); i++ {
-		if unicode.IsUpper(r[i]) {
-			if i > 0 && !unicode.IsUpper(r[i-1]) {
+		if i > 0 && unicode.IsUpper(r[i]) {
+			if !unicode.IsUpper(r[i-1]) {
 				b.WriteRune('_')
-			} else if i > 0 && i+1 < len(r) && !unicode.IsUpper(r[i+1]) {
+			} else if i+1 < len(r) && !unicode.IsUpper(r[i+1]) {
 				b.WriteRune('_')
 			}
 		}
