@@ -21,6 +21,7 @@ package hooks
 import (
 	"bytes"
 	"context"
+	"runtime"
 	"testing"
 
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -29,12 +30,13 @@ import (
 
 func TestRun(t *testing.T) {
 	tests := []struct {
-		description string
-		hook        hostHook
-		expected    string
+		description       string
+		requiresWindowsOS bool
+		hook              hostHook
+		expected          string
 	}{
 		{
-			description: "linux, darwin host hook",
+			description: "linux/darwin host hook on matching host",
 			hook: hostHook{
 				cfg: v1.HostHook{
 					OS:      []string{"linux", "darwin"},
@@ -45,7 +47,7 @@ func TestRun(t *testing.T) {
 			expected: "FOO=bar\n",
 		},
 		{
-			description: "windows host hook",
+			description: "windows host hook on non-matching host",
 			hook: hostHook{
 				cfg: v1.HostHook{
 					OS:      []string{"windows"},
@@ -54,9 +56,35 @@ func TestRun(t *testing.T) {
 				env: []string{"FOO=bar"},
 			},
 		},
+		{
+			description:       "linux/darwin host hook on non-matching host",
+			requiresWindowsOS: true,
+			hook: hostHook{
+				cfg: v1.HostHook{
+					OS:      []string{"linux", "darwin"},
+					Command: []string{"sh", "-c", "echo FOO=$FOO"},
+				},
+				env: []string{"FOO=bar"},
+			},
+		},
+		{
+			description:       "windows host hook on matching host",
+			requiresWindowsOS: true,
+			hook: hostHook{
+				cfg: v1.HostHook{
+					OS:      []string{"windows"},
+					Command: []string{"cmd.exe", "/C", "echo %FOO%"},
+				},
+				env: []string{"FOO=bar"},
+			},
+			expected: "FOO=bar\r\n",
+		},
 	}
 
 	for _, test := range tests {
+		if test.requiresWindowsOS != (runtime.GOOS == "windows") {
+			continue
+		}
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var buf bytes.Buffer
 			err := test.hook.run(context.Background(), &buf)

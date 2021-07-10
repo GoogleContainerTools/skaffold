@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -32,15 +33,16 @@ import (
 func TestBuildHooks(t *testing.T) {
 	workDir, _ := filepath.Abs("./foo")
 	tests := []struct {
-		description string
-		artifact    v1.Artifact
-		image       string
-		pushImage   bool
-		preHookOut  string
-		postHookOut string
+		description       string
+		artifact          v1.Artifact
+		image             string
+		pushImage         bool
+		requiresWindowsOS bool
+		preHookOut        string
+		postHookOut       string
 	}{
 		{
-			description: "linux, darwin build hook",
+			description: "linux/darwin build hook on matching host",
 			artifact: v1.Artifact{
 				ImageName: "img1",
 				Workspace: "./foo",
@@ -65,7 +67,32 @@ func TestBuildHooks(t *testing.T) {
 			postHookOut: fmt.Sprintf("post-hook running with SKAFFOLD_IMAGE=gcr.io/foo/img1:latest,SKAFFOLD_PUSH_IMAGE=true,SKAFFOLD_IMAGE_REPO=gcr.io/foo,SKAFFOLD_IMAGE_TAG=latest,SKAFFOLD_BUILD_CONTEXT=%s\n", workDir),
 		},
 		{
-			description: "windows build hook",
+			description:       "linux/darwin build hook on non-matching host",
+			requiresWindowsOS: true,
+			artifact: v1.Artifact{
+				ImageName: "img1",
+				Workspace: "./foo",
+				LifecycleHooks: v1.BuildHooks{
+					PreHooks: []v1.HostHook{
+						{
+							OS:      []string{"linux", "darwin"},
+							Command: []string{"sh", "-c", "echo pre-hook running with SKAFFOLD_IMAGE=$SKAFFOLD_IMAGE,SKAFFOLD_PUSH_IMAGE=$SKAFFOLD_PUSH_IMAGE,SKAFFOLD_IMAGE_REPO=$SKAFFOLD_IMAGE_REPO,SKAFFOLD_IMAGE_TAG=$SKAFFOLD_IMAGE_TAG,SKAFFOLD_BUILD_CONTEXT=$SKAFFOLD_BUILD_CONTEXT"},
+						},
+					},
+					PostHooks: []v1.HostHook{
+						{
+							OS:      []string{"linux", "darwin"},
+							Command: []string{"sh", "-c", "echo post-hook running with SKAFFOLD_IMAGE=$SKAFFOLD_IMAGE,SKAFFOLD_PUSH_IMAGE=$SKAFFOLD_PUSH_IMAGE,SKAFFOLD_IMAGE_REPO=$SKAFFOLD_IMAGE_REPO,SKAFFOLD_IMAGE_TAG=$SKAFFOLD_IMAGE_TAG,SKAFFOLD_BUILD_CONTEXT=$SKAFFOLD_BUILD_CONTEXT"},
+						},
+					},
+				},
+			},
+			image:     "gcr.io/foo/img1:latest",
+			pushImage: true,
+		},
+		{
+			description:       "windows build hook on matching host",
+			requiresWindowsOS: true,
 			artifact: v1.Artifact{
 				ImageName: "img1",
 				Workspace: "./foo",
@@ -73,13 +100,38 @@ func TestBuildHooks(t *testing.T) {
 					PreHooks: []v1.HostHook{
 						{
 							OS:      []string{"windows"},
-							Command: []string{"cmd.exe", "/C", "echo pre-hook running with %SKAFFOLD_IMAGE%,%SKAFFOLD_PUSH_IMAGE%,%SKAFFOLD_IMAGE_REPO%,%SKAFFOLD_IMAGE_TAG%,%SKAFFOLD_BUILD_CONTEXT%"},
+							Command: []string{"cmd.exe", "/C", "echo pre-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
 					PostHooks: []v1.HostHook{
 						{
 							OS:      []string{"windows"},
-							Command: []string{"cmd.exe", "/C", "echo pre-hook running with %SKAFFOLD_IMAGE%,%SKAFFOLD_PUSH_IMAGE%,%SKAFFOLD_IMAGE_REPO%,%SKAFFOLD_IMAGE_TAG%,%SKAFFOLD_BUILD_CONTEXT%"},
+							Command: []string{"cmd.exe", "/C", "echo post-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
+						},
+					},
+				},
+			},
+			image:       "gcr.io/foo/img1:latest",
+			pushImage:   true,
+			preHookOut:  fmt.Sprintf("pre-hook running with SKAFFOLD_IMAGE=gcr.io/foo/img1:latest,SKAFFOLD_PUSH_IMAGE=true,SKAFFOLD_IMAGE_REPO=gcr.io/foo,SKAFFOLD_IMAGE_TAG=latest,SKAFFOLD_BUILD_CONTEXT=%s\r\n", workDir),
+			postHookOut: fmt.Sprintf("post-hook running with SKAFFOLD_IMAGE=gcr.io/foo/img1:latest,SKAFFOLD_PUSH_IMAGE=true,SKAFFOLD_IMAGE_REPO=gcr.io/foo,SKAFFOLD_IMAGE_TAG=latest,SKAFFOLD_BUILD_CONTEXT=%s\r\n", workDir),
+		},
+		{
+			description: "windows build hook on non-matching host",
+			artifact: v1.Artifact{
+				ImageName: "img1",
+				Workspace: "./foo",
+				LifecycleHooks: v1.BuildHooks{
+					PreHooks: []v1.HostHook{
+						{
+							OS:      []string{"windows"},
+							Command: []string{"cmd.exe", "/C", "echo pre-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
+						},
+					},
+					PostHooks: []v1.HostHook{
+						{
+							OS:      []string{"windows"},
+							Command: []string{"cmd.exe", "/C", "echo post-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
 				},
@@ -90,6 +142,9 @@ func TestBuildHooks(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		if test.requiresWindowsOS != (runtime.GOOS == "windows") {
+			continue
+		}
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			opts, err := NewBuildEnvOpts(&test.artifact, test.image, test.pushImage)
 			t.CheckNoError(err)
