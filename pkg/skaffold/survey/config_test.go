@@ -214,10 +214,11 @@ func TestIsValid(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.s.isValid(), test.expected)
+			t.CheckDeepEqual(test.s.isRelevant(test.cfgs), test.expected)
 		})
 	}
 }
+
 
 // mockVersionedConfig implements util.VersionedConfig.
 type mockVersionedConfig struct {
