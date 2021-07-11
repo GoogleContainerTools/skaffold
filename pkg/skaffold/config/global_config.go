@@ -42,9 +42,15 @@ type ContextConfig struct {
 
 // SurveyConfig is the survey config information
 type SurveyConfig struct {
-	DisablePrompt *bool  `yaml:"disable-prompt,omitempty"`
-	LastTaken     string `yaml:"last-taken,omitempty"`
-	LastPrompted  string `yaml:"last-prompted,omitempty"`
+	DisablePrompt *bool         `yaml:"disable-prompt,omitempty"`
+	LastTaken     string        `yaml:"last-taken,omitempty"`
+	LastPrompted  string        `yaml:"last-prompted,omitempty"`
+	UserSurveys   []*UserSurvey `yaml:"user-surveys,omitempty"`
+}
+
+type UserSurvey struct {
+	ID    string `yaml:"id"`
+	Taken *bool  `yaml:"taken,omitempty"`
 }
 
 // UpdateConfig is the update config information
