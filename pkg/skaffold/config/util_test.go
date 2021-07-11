@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -545,7 +544,7 @@ kubeContexts: []`,
 			})
 
 			// update the time
-			err := UpdateGlobalSurveyTaken(cfg, constants.HaTS)
+			err := UpdateGlobalSurveyTaken(cfg)
 			t.CheckNoError(err)
 
 			actualConfig, cfgErr := ReadConfigFile(cfg)
@@ -605,7 +604,7 @@ kubeContexts: []`,
 			})
 
 			// update the time
-			err := UpdateGlobalSurveyPrompted(cfg, constants.HaTS)
+			err := UpdateGlobalSurveyPrompted(cfg)
 			t.CheckNoError(err)
 
 			actualConfig, cfgErr := ReadConfigFile(cfg)
