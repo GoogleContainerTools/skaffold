@@ -34,7 +34,7 @@ var (
 		promptText: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
 `,
 		isRelevantFn: func(_ []util.VersionedConfig) bool { return true },
-		link:         hatsURL,
+		URL:          hatsURL,
 	}
 	// surveys contains all the skaffold survey information
 	surveys = []config{hats}
@@ -46,14 +46,12 @@ var (
 // config defines a survey.
 type config struct {
 	id           string
-	promptText   string
-	expiresAt    time.Time
-	isRelevantFn func([]util.VersionedConfig) bool
-	link         string
-}
 
-func (s config) Link() string {
-	return s.link
+	promptText   string
+
+	expiresAt    time.Time
+	isRelevantFn func([]util.VersionedConfig, ) bool
+	URL          string
 }
 
 func (s config) isActive() bool {

@@ -31,7 +31,7 @@ import (
 const (
 	Form = `Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
 
-Skaffold will now attempt to open the survey in your default web browser. You may also manually open it using this link:
+Skaffold will now attempt to open the survey in your default web browser. You may also manually open it using this URL:
 
 %s
 
@@ -60,7 +60,7 @@ func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
 		output.Green.Fprintf(out, hats.prompt())
 	}
-	return updateConfig(s.configFile, hats.id)
+	return updateConfig(s.configFile)
 }
 
 func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) error {
@@ -68,15 +68,15 @@ func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) err
 	if !ok {
 		return fmt.Errorf("invalid survey id %q - please enter one of %s", id, validKeys())
 	}
-	_, err := fmt.Fprintln(out, fmt.Sprintf(Form, sc.link))
+	_, err := fmt.Fprintln(out, fmt.Sprintf(Form, sc.URL))
 	if err != nil {
 		return err
 	}
-	if err := open(sc.link); err != nil {
-		logrus.Debugf("could not open url %s", sc.link)
+	if err := open(sc.URL); err != nil {
+		logrus.Debugf("could not open url %s", sc.URL)
 		return err
 	}
 	// Currently we will only update the global survey taken
 	// When prompting for the survey, we need to use the same field.
-	return sConfig.UpdateGlobalSurveyTaken(s.configFile, id)
+	return sConfig.UpdateGlobalSurveyTaken(s.configFile)
 }
