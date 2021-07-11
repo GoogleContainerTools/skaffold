@@ -573,6 +573,14 @@ var flagRegistry = []Flag{
 		},
 		IsEnum: true,
 	},
+	{
+		Name:          "id",
+		Usage:         "Survey id for survey command to open.",
+		Value:         &surveyID,
+		DefValue:      constants.HaTS,
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"survey"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {

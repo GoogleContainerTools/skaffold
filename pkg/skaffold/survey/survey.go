@@ -24,31 +24,29 @@ import (
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
 const (
-	Prompt = `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
+	Prompt = `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey -id %s'
 `
 
-	URL = "https://forms.gle/BMTbGQXLWSdn7vEs6"
-)
-
-var (
-	Form = fmt.Sprintf(`Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
+	Form = `Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
 
 Skaffold will now attempt to open the survey in your default web browser. You may also manually open it using this link:
 
 %s
 
 Tip: To permanently disable the survey prompt, run:
-   skaffold config set --survey --global disable-prompt true`, URL)
+   skaffold config set --survey --global disable-prompt true`
+)
 
+var (
 	// for testing
 	isStdOut     = output.IsStdout
 	open         = browser.OpenURL
-	updateConfig = config.UpdateGlobalSurveyPrompted
+	updateConfig = sConfig.UpdateGlobalSurveyPrompted
 )
 
 type Runner struct {
@@ -63,21 +61,25 @@ func New(configFile string) *Runner {
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
-		output.Green.Fprintf(out, Prompt)
+		output.Green.Fprintf(out, fmt.Sprintf(Prompt, hats.id))
 	}
-	return updateConfig(s.configFile)
+	return updateConfig(s.configFile, hats.id)
 }
 
-func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer) error {
-	_, err := fmt.Fprintln(out, Form)
+func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) error {
+	sc, ok := getSurvey(id)
+	if !ok {
+		return fmt.Errorf("invalid survey id %q - please enter one of %s", id, validKeys())
+	}
+	_, err := fmt.Fprintln(out, fmt.Sprintf(Form, sc.link))
 	if err != nil {
 		return err
 	}
-	if err := open(URL); err != nil {
-		logrus.Debugf("could not open url %s", URL)
+	if err := open(sc.link); err != nil {
+		logrus.Debugf("could not open url %s", sc.link)
 		return err
 	}
 	// Currently we will only update the global survey taken
 	// When prompting for the survey, we need to use the same field.
-	return config.UpdateGlobalSurveyTaken(s.configFile)
+	return sConfig.UpdateGlobalSurveyTaken(s.configFile, id)
 }

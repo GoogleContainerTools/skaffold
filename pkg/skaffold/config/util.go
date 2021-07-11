@@ -372,7 +372,11 @@ func lessThan(date string, duration time.Duration) bool {
 	return current().Sub(t) < duration
 }
 
-func UpdateGlobalSurveyTaken(configFile string) error {
+func UpdateGlobalSurveyTaken(configFile string, id string) error {
+	if id != constants.HaTS {
+		return fmt.Errorf("unexpected survey id %q. Please report an issue at "+constants.GithubIssueLink, id)
+	}
+
 	// Today's date
 	today := current().Format(time.RFC3339)
 	ai := fmt.Sprintf(updateLastTaken, today)
@@ -400,7 +404,10 @@ func UpdateGlobalSurveyTaken(configFile string) error {
 	return err
 }
 
-func UpdateGlobalSurveyPrompted(configFile string) error {
+func UpdateGlobalSurveyPrompted(configFile string, id string) error {
+	if id != constants.HaTS {
+		return fmt.Errorf("unexpected survey id %q. Please report an issue at "+constants.GithubIssueLink, id)
+	}
 	// Today's date
 	today := current().Format(time.RFC3339)
 	ai := fmt.Sprintf(updateLastPrompted, today)

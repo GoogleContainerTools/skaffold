@@ -18,9 +18,11 @@ package survey
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -33,7 +35,7 @@ func TestDisplaySurveyForm(t *testing.T) {
 		{
 			description: "std out",
 			mockStdOut:  true,
-			expected:    Prompt,
+			expected:    fmt.Sprintf(Prompt, constants.HaTS),
 		},
 		{
 			description: "not std out",
@@ -45,7 +47,7 @@ func TestDisplaySurveyForm(t *testing.T) {
 			t.Override(&isStdOut, mock)
 			mockOpen := func(string) error { return nil }
 			t.Override(&open, mockOpen)
-			t.Override(&updateConfig, func(_ string) error { return nil })
+			t.Override(&updateConfig, func(_, _ string) error { return nil })
 			var buf bytes.Buffer
 			New("test").DisplaySurveyPrompt(&buf)
 			t.CheckDeepEqual(test.expected, buf.String())

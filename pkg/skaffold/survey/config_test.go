@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,26 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package survey
 
 import (
-	"context"
-	"io"
+	"testing"
 
-	"github.com/spf13/cobra"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var surveyID string
+func TestSurveyConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		mockStdOut  bool
+		expected    string
+	}{
+		{
+			description: "std out",
+			mockStdOut:  true,
+			expected:    Prompt,
+		},
+		{
+			description: "not std out",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 
-func NewCmdSurvey() *cobra.Command {
-	return NewCmd("survey").
-		WithDescription("Opens a web browser to fill out the Skaffold survey").
-		NoArgs(showSurvey)
-}
-
-func showSurvey(ctx context.Context, out io.Writer) error {
-	s := survey.New(opts.GlobalConfig)
-	return s.OpenSurveyForm(ctx, out, surveyID)
+		})
+	}
 }

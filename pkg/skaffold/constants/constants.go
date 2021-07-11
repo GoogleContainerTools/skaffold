@@ -73,6 +73,9 @@ const (
 	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
 
 	Windows = "windows"
+
+	// HaTS is the HaTS Survey ID
+	HaTS = "hats"
 )
 
 type Phase string
