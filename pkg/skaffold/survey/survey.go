@@ -82,7 +82,7 @@ func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
 		output.Green.Fprintf(out, hats.prompt())
 	}
-	return updateConfig(s.configFile)
+	return updateConfig(s.configFile, hats.id)
 }
 
 func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) error {
