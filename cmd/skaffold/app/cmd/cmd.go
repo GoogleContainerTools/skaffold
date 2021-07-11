@@ -65,6 +65,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
 	surveyPrompt := make(chan bool, 1)
 	var metricsPrompt bool
+	s := survey.New(opts.GlobalConfig)
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -113,7 +114,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-				surveyPrompt <- config.ShouldDisplaySurveyPrompt(opts.GlobalConfig)
+				surveyPrompt <- s.ShouldDisplaySurveyPrompt()
 			}()
 			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
@@ -134,7 +135,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			select {
 			case shouldDisplay := <-surveyPrompt:
 				if shouldDisplay {
-					if err := survey.New(opts.GlobalConfig).DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
+					if err := s.DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
 						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 					}
 				}

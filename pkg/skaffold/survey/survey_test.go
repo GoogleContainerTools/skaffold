@@ -20,7 +20,10 @@ import (
 	"bytes"
 	"io"
 	"testing"
+	"time"
 
+	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -50,6 +53,77 @@ func TestDisplaySurveyForm(t *testing.T) {
 			var buf bytes.Buffer
 			New("test").DisplaySurveyPrompt(&buf)
 			t.CheckDeepEqual(test.expected, buf.String())
+		})
+	}
+}
+
+func TestShouldDisplayPrompt(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *sConfig.ContextConfig
+		expected    bool
+	}{
+		{
+			description: "should not display prompt when prompt is disabled",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+		},
+		{
+			description: "should not display prompt when last prompted is less than 2 weeks",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastPrompted:  "2019-01-22T00:00:00Z",
+				},
+			},
+		},
+		{
+			description: "should not display prompt when last taken in less than 3 months",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     "2018-11-22T00:00:00Z",
+				},
+			},
+		},
+		{
+			description: "should display prompt when last prompted is before 2 weeks",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastPrompted:  "2019-01-10T00:00:00Z",
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "should display prompt when last taken is before than 3 months ago",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     "2017-11-10T00:00:00Z",
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "should not display prompt when last taken is recent than 3 months ago",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     "2019-01-10T00:00:00Z",
+					LastPrompted:  "2019-01-10T00:00:00Z",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, nil })
+			t.Override(&current, func() time.Time {
+				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
+				return t
+			})
+			t.CheckDeepEqual(test.expected, New("test").ShouldDisplaySurveyPrompt())
 		})
 	}
 }

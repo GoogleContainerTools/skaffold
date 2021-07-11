@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
@@ -44,6 +45,7 @@ var (
 	isStdOut     = output.IsStdout
 	open         = browser.OpenURL
 	updateConfig = sConfig.UpdateGlobalSurveyPrompted
+	current      = time.Now
 )
 
 type Runner struct {
@@ -54,6 +56,11 @@ func New(configFile string) *Runner {
 	return &Runner{
 		configFile: configFile,
 	}
+}
+
+func (s *Runner) ShouldDisplaySurveyPrompt() bool {
+	cfg, disabled := sConfig.IsSurveyPromptDisabled(s.configFile)
+	return !disabled && !sConfig.RecentlyPromptedOrTaken(cfg, current())
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {

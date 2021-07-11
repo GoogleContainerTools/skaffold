@@ -488,7 +488,7 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, test.readErr })
-			_, actual := isSurveyPromptDisabled("dummyconfig")
+			_, actual := IsSurveyPromptDisabled("dummyconfig")
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
@@ -525,77 +525,6 @@ func TestLessThan(t *testing.T) {
 				return t
 			})
 			t.CheckDeepEqual(test.expected, lessThan(test.date, test.duration))
-		})
-	}
-}
-
-func TestShouldDisplayPrompt(t *testing.T) {
-	tests := []struct {
-		description string
-		cfg         *ContextConfig
-		expected    bool
-	}{
-		{
-			description: "should not display prompt when prompt is disabled",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
-		},
-		{
-			description: "should not display prompt when last prompted is less than 2 weeks",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-22T00:00:00Z",
-				},
-			},
-		},
-		{
-			description: "should not display prompt when last taken in less than 3 months",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2018-11-22T00:00:00Z",
-				},
-			},
-		},
-		{
-			description: "should display prompt when last prompted is before 2 weeks",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-10T00:00:00Z",
-				},
-			},
-			expected: true,
-		},
-		{
-			description: "should display prompt when last taken is before than 3 months ago",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2017-11-10T00:00:00Z",
-				},
-			},
-			expected: true,
-		},
-		{
-			description: "should not display prompt when last taken is recent than 3 months ago",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2019-01-10T00:00:00Z",
-					LastPrompted:  "2019-01-10T00:00:00Z",
-				},
-			},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
-			t.Override(&current, func() time.Time {
-				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
-				return t
-			})
-			t.CheckDeepEqual(test.expected, ShouldDisplaySurveyPrompt("dummyconfig"))
 		})
 	}
 }
