@@ -7,9 +7,13 @@ build:
       before:
         - command: ["sh", "-c", "./hook.sh"]
           os: [darwin, linux]
+        - command: ["cmd.exe", "/C", "hook.bat"]
+          os: [windows]
       after:
         - command: ["sh", "-c", "docker images $SKAFFOLD_IMAGE --digests"]
           os: [darwin, linux]
+        - command: ["cmd.exe", "/C", "docker images %SKAFFOLD_IMAGE% --digests"]
+          os: [windows]
 deploy:
   kubectl:
     manifests:
