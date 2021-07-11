@@ -41,11 +41,7 @@ func TestSurveyPrompt(t *testing.T) {
 			s: config{
 				id:         "foo",
 				promptText: "Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey",
-				expiresAt: time.Date(2021, time.August,
-					14, 00, 00, 00, 0, time.UTC),
-				isRelevantFn: func(_ []util.VersionedConfig) bool {
-					return true
-				},
+				expiresAt:  time.Date(2021, time.August, 14, 00, 00, 00, 0, time.UTC),
 			},
 			expected: `Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey: run 'skaffold survey -id foo'
 `,
@@ -72,17 +68,15 @@ func TestSurveyActive(t *testing.T) {
 		{
 			description: "expiry in past",
 			s: config{
-				id: "expired",
-				expiresAt: time.Date(2020, time.August,
-					14, 00, 00, 00, 0, time.UTC),
+				id:        "expired",
+				expiresAt: time.Date(2020, time.August, 14, 00, 00, 00, 0, time.UTC),
 			},
 		},
 		{
 			description: "expiry in future",
 			s: config{
-				id: "active",
-				expiresAt: time.Date(2022, time.August,
-					14, 00, 00, 00, 0, time.UTC),
+				id:        "active",
+				expiresAt: time.Date(2022, time.August, 14, 00, 00, 00, 0, time.UTC),
 			},
 			expected: true,
 		},
@@ -113,7 +107,7 @@ func TestSurveyRelevant(t *testing.T) {
 		{
 			description: "relevant based on input configs",
 			s: config{
-				id: "expired",
+				id: "foo",
 				isRelevantFn: func(cfgs []util.VersionedConfig) bool {
 					return len(cfgs) > 1
 				},
@@ -124,7 +118,7 @@ func TestSurveyRelevant(t *testing.T) {
 		{
 			description: "not relevant based on config",
 			s: config{
-				id: "expired",
+				id: "foo",
 				isRelevantFn: func(cfgs []util.VersionedConfig) bool {
 					return len(cfgs) > 1
 				},
@@ -150,7 +144,7 @@ func TestSurveyRelevant(t *testing.T) {
 			expected: true,
 		},
 		{
-			description: "any config is test version config.",
+			description: "does not contains a config with test version",
 			s: config{
 				id: "version-value-test",
 				isRelevantFn: func(cfgs []util.VersionedConfig) bool {
