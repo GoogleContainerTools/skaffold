@@ -18,11 +18,9 @@ package survey
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
