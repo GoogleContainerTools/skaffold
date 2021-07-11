@@ -17,6 +17,7 @@ limitations under the License.
 package survey
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -29,20 +30,26 @@ const (
 
 var (
 	hats = config{
-		id:     constants.HaTS,
-		showFn: func(_ util.VersionedConfig) bool { return true },
-		link:   hatsURL,
+		id: constants.HaTS,
+		promptText: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
+`,
+		isRelevantFn: func(_ []util.VersionedConfig) bool { return true },
+		link:         hatsURL,
 	}
 	// surveys contains all the skaffold survey information
 	surveys = []config{hats}
+
+	// for testing
+	today = time.Now()
 )
 
-// config defines a survey item.
+// config defines a survey.
 type config struct {
-	id        string
-	expiresAt time.Time
-	showFn    func(util.VersionedConfig) bool
-	link      string
+	id           string
+	promptText   string
+	expiresAt    time.Time
+	isRelevantFn func([]util.VersionedConfig) bool
+	link         string
 }
 
 func (s config) Link() string {
@@ -51,6 +58,18 @@ func (s config) Link() string {
 
 func (s config) isActive() bool {
 	return s.expiresAt.IsZero() || s.expiresAt.After(time.Now())
+}
+
+func (s config) prompt() string {
+	if s.id == hats.id {
+		return s.promptText
+	}
+	return fmt.Sprintf(`%s: run 'skaffold survey -id %s'
+`, s.promptText, s.id)
+}
+
+func (s config) isRelevant(cfgs []util.VersionedConfig) bool {
+	return s.isRelevantFn(cfgs)
 }
 
 func getSurvey(id string) (config, bool) {

@@ -29,9 +29,6 @@ import (
 )
 
 const (
-	Prompt = `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey -id %s'
-`
-
 	Form = `Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
 
 Skaffold will now attempt to open the survey in your default web browser. You may also manually open it using this link:
@@ -61,7 +58,7 @@ func New(configFile string) *Runner {
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
-		output.Green.Fprintf(out, fmt.Sprintf(Prompt, hats.id))
+		output.Green.Fprintf(out, hats.prompt())
 	}
 	return updateConfig(s.configFile, hats.id)
 }

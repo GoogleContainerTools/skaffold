@@ -18,11 +18,9 @@ package survey
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -35,7 +33,8 @@ func TestDisplaySurveyForm(t *testing.T) {
 		{
 			description: "std out",
 			mockStdOut:  true,
-			expected:    fmt.Sprintf(Prompt, constants.HaTS),
+			expected: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
+`,
 		},
 		{
 			description: "not std out",
