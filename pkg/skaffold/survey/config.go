@@ -20,37 +20,42 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 const (
+	HatsID  = "hats"
 	hatsURL = "https://forms.gle/BMTbGQXLWSdn7vEs6"
 )
 
 var (
 	hats = config{
-		id: constants.HaTS,
-		promptText: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
-`,
-		isRelevantFn: func(_ []util.VersionedConfig) bool { return true },
-		URL:          hatsURL,
+		id:         HatsID,
+		promptText: "Help improve Skaffold with our 2-minute anonymous survey",
+		isRelevantFn: func([]util.VersionedConfig, sConfig.RunMode) bool {
+			return true
+		},
+		URL: hatsURL,
 	}
 	// surveys contains all the skaffold survey information
 	surveys = []config{hats}
-
-	// for testing
-	today = time.Now()
 )
 
 // config defines a survey.
 type config struct {
-	id           string
-
-	promptText   string
-
+	id string
+	// promptText is shown to the user and should be formatted so each line should fit in < 80 characters.
+	// For example: `As a Helm user, we are requesting your feedback on a proposed change to Skaffold's integration with Helm.`
+	promptText string
+	// startsAt mentions the date after the users survey should be prompted. This will ensure, Skaffold team can finalize the survey
+	// even after release date.
+	startsAt time.Time
+	// expiresAt places a time limit of the user survey. As users are only prompted every two weeks
+	// by design, this time limit should be at least 4 weeks after the upcoming release date to account
+	// for release propagation lag to Cloud SDK and Cloud Shell.
 	expiresAt    time.Time
-	isRelevantFn func([]util.VersionedConfig, ) bool
+	isRelevantFn func([]util.VersionedConfig, sConfig.RunMode) bool
 	URL          string
 }
 
@@ -60,14 +65,26 @@ func (s config) isActive() bool {
 
 func (s config) prompt() string {
 	if s.id == hats.id {
-		return s.promptText
+		return fmt.Sprintf(`%s: run 'skaffold survey'
+`, s.promptText)
 	}
 	return fmt.Sprintf(`%s: run 'skaffold survey -id %s'
 `, s.promptText, s.id)
 }
 
-func (s config) isRelevant(cfgs []util.VersionedConfig) bool {
-	return s.isRelevantFn(cfgs)
+func (s config) isRelevant(cfgs []util.VersionedConfig, cmd sConfig.RunMode) bool {
+	return s.isRelevantFn(cfgs, cmd)
+}
+
+func (s config) isValid() bool {
+	if s.id == HatsID {
+		return true
+	}
+	today := s.startsAt
+	if today.IsZero() {
+		today = time.Now()
+	}
+	return s.expiresAt.Sub(today) < 60*24*time.Hour
 }
 
 func getSurvey(id string) (config, bool) {
@@ -85,4 +102,12 @@ func validKeys() []string {
 		keys = append(keys, s.id)
 	}
 	return keys
+}
+
+func init() {
+	for _, s := range surveys {
+		if !s.isValid() {
+			panic(fmt.Errorf("survey %q is valid for more than a 60 days - user surveys must be valid for 60 days or less", s.id))
+		}
+	}
 }

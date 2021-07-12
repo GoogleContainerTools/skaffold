@@ -30,6 +30,9 @@ var surveyID string
 func NewCmdSurvey() *cobra.Command {
 	return NewCmd("survey").
 		WithDescription("Opens a web browser to fill out the Skaffold survey").
+		WithFlags([]*Flag{
+			{Value: &surveyID, Name: "id", DefValue: survey.HatsID, Usage: "Survey ID for survey command to open."},
+		}).
 		NoArgs(showSurvey)
 }
 

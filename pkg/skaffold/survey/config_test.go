@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -69,21 +70,20 @@ func TestSurveyActive(t *testing.T) {
 			description: "expiry in past",
 			s: config{
 				id:        "expired",
-				expiresAt: time.Date(2020, time.August, 14, 00, 00, 00, 0, time.UTC),
+				expiresAt: time.Date(2020, 8, 1, 0, 0, 0, 0, time.UTC),
 			},
 		},
 		{
 			description: "expiry in future",
 			s: config{
 				id:        "active",
-				expiresAt: time.Date(2022, time.August, 14, 00, 00, 00, 0, time.UTC),
+				expiresAt: time.Now().AddDate(1, 0, 0),
 			},
 			expected: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&today, time.Date(2021, time.August, 14, 0, 0, 0, 0, time.UTC))
 			t.CheckDeepEqual(test.s.isActive(), test.expected)
 		})
 	}
@@ -108,7 +108,7 @@ func TestSurveyRelevant(t *testing.T) {
 			description: "relevant based on input configs",
 			s: config{
 				id: "foo",
-				isRelevantFn: func(cfgs []util.VersionedConfig) bool {
+				isRelevantFn: func(cfgs []util.VersionedConfig, _ sConfig.RunMode) bool {
 					return len(cfgs) > 1
 				},
 			},
@@ -119,7 +119,7 @@ func TestSurveyRelevant(t *testing.T) {
 			description: "not relevant based on config",
 			s: config{
 				id: "foo",
-				isRelevantFn: func(cfgs []util.VersionedConfig) bool {
+				isRelevantFn: func(cfgs []util.VersionedConfig, _ sConfig.RunMode) bool {
 					return len(cfgs) > 1
 				},
 			},
@@ -129,7 +129,7 @@ func TestSurveyRelevant(t *testing.T) {
 			description: "contains a config with test version",
 			s: config{
 				id: "version-value-test",
-				isRelevantFn: func(cfgs []util.VersionedConfig) bool {
+				isRelevantFn: func(cfgs []util.VersionedConfig, _ sConfig.RunMode) bool {
 					for _, cfg := range cfgs {
 						if m, ok := cfg.(mockVersionedConfig); ok {
 							if m.version == "test" {
@@ -147,7 +147,7 @@ func TestSurveyRelevant(t *testing.T) {
 			description: "does not contains a config with test version",
 			s: config{
 				id: "version-value-test",
-				isRelevantFn: func(cfgs []util.VersionedConfig) bool {
+				isRelevantFn: func(cfgs []util.VersionedConfig, _ sConfig.RunMode) bool {
 					for _, cfg := range cfgs {
 						if m, ok := cfg.(mockVersionedConfig); ok {
 							if m.version == "test" {
@@ -163,7 +163,58 @@ func TestSurveyRelevant(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.s.isRelevant(test.cfgs), test.expected)
+			t.CheckDeepEqual(test.s.isRelevant(test.cfgs, "dev"), test.expected)
+		})
+	}
+}
+
+func TestIsValid(t *testing.T) {
+	tests := []struct {
+		description string
+		s           config
+		expected    bool
+	}{
+		{
+			description: "only hats",
+			s:           hats,
+			expected:    true,
+		},
+		{
+			description: "4 weeks valid survey with start date",
+			s: config{
+				id:        "invalid",
+				startsAt:  time.Now().AddDate(0, 1, 0),
+				expiresAt: time.Now().AddDate(0, 2, 0),
+			},
+			expected: true,
+		},
+		{
+			description: "4 weeks valid survey without start date",
+			s: config{
+				id:        "valid",
+				expiresAt: time.Now().AddDate(0, 1, 0),
+			},
+			expected: true,
+		},
+		{
+			description: "90 days invalid survey without start date",
+			s: config{
+				id:        "invalid",
+				expiresAt: time.Now().AddDate(0, 0, 90),
+			},
+		},
+		{
+			description: "90 days invalid survey with start date",
+			s: config{
+				id:        "invalid",
+				startsAt:  time.Now().AddDate(0, 1, 0),
+				expiresAt: time.Now().AddDate(0, 1, 90),
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.s.isValid(), test.expected)
 		})
 	}
 }

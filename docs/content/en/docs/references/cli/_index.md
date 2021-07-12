@@ -1125,6 +1125,9 @@ Opens a web browser to fill out the Skaffold survey
 ```
 
 
+Options:
+      --id='hats': Survey ID for survey command to open.
+
 Usage:
   skaffold survey [options]
 
@@ -1132,6 +1135,9 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_ID` (same as `--id`)
 
 ### skaffold test
 
