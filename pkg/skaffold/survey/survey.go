@@ -20,12 +20,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
 	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 )
 
 const (
@@ -54,6 +56,26 @@ func New(configFile string) *Runner {
 	return &Runner{
 		configFile: configFile,
 	}
+}
+
+func (s *Runner) ShouldDisplaySurveyPrompt() bool {
+	cfg, disabled := isSurveyPromptDisabled(s.configFile)
+	return !disabled && !recentlyPromptedOrTaken(cfg)
+}
+
+func isSurveyPromptDisabled(configfile string) (*sConfig.ContextConfig, bool) {
+	cfg, err := sConfig.GetConfigForCurrentKubectx(configfile)
+	if err != nil {
+		return nil, false
+	}
+	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
+}
+
+func recentlyPromptedOrTaken(cfg *sConfig.ContextConfig) bool {
+	if cfg == nil || cfg.Survey == nil {
+		return false
+	}
+	return timeutil.LessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || timeutil.LessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {

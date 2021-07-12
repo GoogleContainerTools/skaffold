@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -307,26 +308,6 @@ func IsUpdateCheckEnabled(configfile string) bool {
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }
 
-func ShouldDisplaySurveyPrompt(configfile string) bool {
-	cfg, disabled := isSurveyPromptDisabled(configfile)
-	return !disabled && !recentlyPromptedOrTaken(cfg)
-}
-
-func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
-	cfg, err := GetConfigForCurrentKubectx(configfile)
-	if err != nil {
-		return nil, false
-	}
-	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
-}
-
-func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
-	if cfg == nil || cfg.Survey == nil {
-		return false
-	}
-	return lessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
-}
-
 func ShouldDisplayUpdateMsg(configfile string) bool {
 	cfg, err := GetConfigForCurrentKubectx(configfile)
 	if err != nil {
@@ -335,7 +316,7 @@ func ShouldDisplayUpdateMsg(configfile string) bool {
 	if cfg == nil || cfg.UpdateCheckConfig == nil {
 		return true
 	}
-	return !lessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
+	return !timeutil.LessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
 }
 
 // UpdateMsgDisplayed updates the `last-prompted` config for `update-config` in
@@ -361,15 +342,6 @@ func UpdateMsgDisplayed(configFile string) error {
 	fullConfig.Global.UpdateCheckConfig.LastPrompted = today
 	err = WriteFullConfig(configFile, fullConfig)
 	return err
-}
-
-func lessThan(date string, duration time.Duration) bool {
-	t, err := time.Parse(time.RFC3339, date)
-	if err != nil {
-		logrus.Debugf("could not parse date %q", date)
-		return false
-	}
-	return current().Sub(t) < duration
 }
 
 func UpdateGlobalSurveyTaken(configFile string) error {

@@ -18,9 +18,13 @@ package survey
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"testing"
+	"time"
 
+	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -50,6 +54,123 @@ func TestDisplaySurveyForm(t *testing.T) {
 			var buf bytes.Buffer
 			New("test").DisplaySurveyPrompt(&buf)
 			t.CheckDeepEqual(test.expected, buf.String())
+		})
+	}
+}
+
+func TestShouldDisplayPrompt(t *testing.T) {
+	tenDaysAgo := time.Now().AddDate(0, 0, -10).Format(time.RFC3339)
+	fiveDaysAgo := time.Now().AddDate(0, 0, -5).Format(time.RFC3339)
+	// less than 90 days ago
+	twoMonthsAgo := time.Now().AddDate(0, -2, -5).Format(time.RFC3339)
+	// at least 90 days ago
+	threeMonthsAgo := time.Now().AddDate(0, -3, -5).Format(time.RFC3339)
+
+	tests := []struct {
+		description string
+		cfg         *sConfig.ContextConfig
+		expected    bool
+	}{
+		{
+			description: "should not display prompt when prompt is disabled",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+		},
+		{
+			description: "should not display prompt when last prompted is less than 2 weeks",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastPrompted:  fiveDaysAgo,
+				},
+			},
+		},
+		{
+			description: "should not display prompt when last taken in less than 3 months",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     twoMonthsAgo,
+				},
+			},
+		},
+		{
+			description: "should display prompt when last prompted is before 2 weeks",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastPrompted:  tenDaysAgo,
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "should display prompt when last taken is before than 3 months ago",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     threeMonthsAgo,
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "should not display prompt when last taken is recent than 3 months ago",
+			cfg: &sConfig.ContextConfig{
+				Survey: &sConfig.SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     twoMonthsAgo,
+					LastPrompted:  twoMonthsAgo,
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, nil })
+			t.CheckDeepEqual(test.expected, New("test").ShouldDisplaySurveyPrompt())
+		})
+	}
+}
+
+func TestIsSurveyPromptDisabled(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *sConfig.ContextConfig
+		readErr     error
+		expected    bool
+	}{
+		{
+			description: "config disable-prompt is nil returns false",
+			cfg:         &sConfig.ContextConfig{},
+		},
+		{
+			description: "config disable-prompt is true",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+			expected:    true,
+		},
+		{
+			description: "config disable-prompt is false",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
+		},
+		{
+			description: "disable prompt is nil",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{}},
+		},
+		{
+			description: "config is nil",
+			cfg:         nil,
+		},
+		{
+			description: "config has err",
+			cfg:         nil,
+			readErr:     fmt.Errorf("error while reading"),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, test.readErr })
+			_, actual := isSurveyPromptDisabled("dummyconfig")
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
