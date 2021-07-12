@@ -7,23 +7,30 @@
 
 ## Background
 
-Currently, we get feedback on skaffold via skaffold HaTs survey. 
-However, in this survey we don't get feedback on new or existing features. 
-We also can't get enough information from our existing customers on how they are using certain features in case we want to make any changes.
-e.g.
-With render v2, we are changing how deploy works. This may affect our existing helm deployer users. 
+Currently, we get feedback on Skaffold via Skaffold HaTS survey. 
+However, in this survey we cannot prompt users for feedback on existing features or new proposed features. 
+It is difficult for us to solicit feedback on existing features and the impact of proposed changes.
+For example, with render v2, we are changing how deploy works. This may affect our existing helm deployer users. 
 See [#6166](https://github.com/GoogleContainerTools/skaffold/issues/6166)
+
 ## Design
 
-### User survey Definition
+This document proposes to extend the existing HaTS survey framework to incorporate a set of user surveys.
+
+### User survey definition
 In order to make sure only relevant surveys are shown to user, we have added a survey config.
 ```
 type config struct {
 	id           string
+	// promptText is shown to the user and should be formatted so each line should fit in < 80 characters.
+	// For example: `As a Helm user, we are requesting your feedback on a proposed change to Skaffold's integration with Helm.`
 	promptText   string
+	// expiresAt places a time limit of the user survey. As users are only prompted every two weeks
+	// by design, this time limit should be at least 4 weeks after the upcoming release date to account
+	// for release propagation lag to Cloud SDK and Cloud Shell.
 	expiresAt    time.Time
 	isRelevantFn func([]util.VersionedConfig) bool
-	link         string
+	surveyURL         string
 }
 
 ```
@@ -47,7 +54,7 @@ link: helmURL,
 },
 
 ```
-something similar can be imaged for multi-module users
+For multi-module users, we could use something like the following:
 ```
   isRelevantFn: func(cfgs []util.VersionedConfig) bool {
 	return len(cfgs) > 1
@@ -58,12 +65,12 @@ something similar can be imaged for multi-module users
 
 #### Rules to show survey prompt
 When prompting users with surveys, we need to keep in mind 2 important rules
-1) Don't prompt users too often.
+1) *Don't prompt users too often.*
    Currently, we only prompt users to fill in HaTs survey every two weeks until they fill.
-2) Don't prompt users if they have already taken the survey.
-   Currently, we only prompt users to fill in Hats Survey if they haven't taken it in last 3 months.
+2) *Don't prompt users if they have already taken the survey.*
+   Currently, we only prompt users to fill in HaTS Survey if they haven't taken it in last 3 months.
 
-For non HaTs surveys or user surveys, we will follow the same rules,
+For non HaTS surveys or user surveys, we will follow the same rules,
 1) Prompt users to fill in the survey once 2 weeks if its relevant to them until they fill it.
 2) Stop prompting once they have taken the survey.
 
@@ -87,40 +94,19 @@ type UserSurvey struct {
 ### Implementation details.
 The current `ShouldDisplaySurveyPrompt` returns true only if
 1) If survey prompt is not disabled and
-2) If Hats survey was not taken in last 3 months (stored in  `SurveyConfig.LastTaken`) and
+2) If HaTS survey was not taken in last 3 months (stored in  `SurveyConfig.LastTaken`) and
 3) If survey prompt was not shown `SurveyConfig.LastPrompted` in last 2 weeks.
 
 This behavior will be changed to `ShouldDisplaySurveyPrompt` returns true if
 1) If survey prompt is not disabled and
 2)  If survey prompt was not shown `SurveyConfig.LastPrompted` in last 2 weeks and
-3) If there is an active relevant user survey is available or Hats survey was not taken in last 3 months
+3) If there is an active relevant user survey is available or HaTS survey was not taken in last 3 months
 
-If both active relevant user survey is available or Hats survey was not taken, then skaffold will give preference to user survey over hats survey.
-Since, hats survey never expire,
-- if user takes the user survey this time, hats survey will be prompted the next time.
--  if the user never takes the user survey, the hats survey will be prompted once the user survey expires.
-   **Note User surveys should not run longer than a quarter so that we don't reduce the volume of Hats Survey,
-```
-pkg survey/config
-
-def init() {
-  for _, s := range surveys {
-     if s.id != hats.id {
-       if s.expiresAt.IsZero() || s.expiresAt.Sub(time.Now) > 90days
-          panic(fmt.Errorf("survey %s is running longer than 90 days. This will starve users from being shown the hats survey."))
-    }
-  }
-}
-
-```
-
-Alternate options:
-1) Another option is to show the Hats survey right after user survey. 
-   Look into if we can keep the same Hats response Form.
-
-## Metrics
-1) Measure sample responses to user surveys
-2) Monitor the number of Hats responses per month is not reducing.
+If both active relevant user survey is available or HaTS survey was not taken, then Skaffold will give preference to user survey over hats survey.
+Since, HaTS survey never expire,
+- if user takes the user survey this time, HaTS survey will be prompted the next time.
+-  if the user never takes the user survey, the HaTS survey will be prompted once the user survey expires.
+   **Note User surveys should not run longer than a quarter so that we don't reduce the volume of HaTS Survey,
 
 ## Alternate Methods
 Other methods to get feedback is manually via pinging slack users to fill in a survey.
