@@ -25,8 +25,8 @@ import (
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -554,7 +554,7 @@ func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 func LogMetaEvent() {
 	metadata := handler.state.Metadata
 	handler.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: timestamppb.Now(),
 		Event: &proto.Event{
 			EventType: &proto.Event_MetaEvent{
 				MetaEvent: &proto.MetaEvent{
@@ -569,7 +569,7 @@ func LogMetaEvent() {
 func (ev *eventHandler) handle(event *proto.Event) {
 	ev.eventChan <- firedEvent{
 		event: event,
-		ts:    ptypes.TimestampNow(),
+		ts:    timestamppb.Now(),
 	}
 	if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
 		// close the event channel indicating there are no more events to all the

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -100,7 +101,7 @@ func syncItem(a *latestV1.Artifact, tag string, e filemon.Events, syncRules []*l
 		return nil, nil
 	}
 
-	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
+	return &Item{Image: tag, Artifact: a, Copy: toCopy, Delete: toDelete}, nil
 }
 
 func inferredSyncItem(a *latestV1.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
@@ -144,7 +145,7 @@ func inferredSyncItem(a *latestV1.Artifact, tag string, e filemon.Events, cfg do
 		}
 	}
 
-	return &Item{Image: tag, Copy: toCopy}, nil
+	return &Item{Image: tag, Artifact: a, Copy: toCopy}, nil
 }
 
 func syncMapForArtifact(a *latestV1.Artifact, cfg docker.Config) (map[string][]string, error) {
@@ -187,7 +188,7 @@ func autoSyncItem(ctx context.Context, a *latestV1.Artifact, tag string, e filem
 			// do a rebuild
 			return nil, nil
 		}
-		return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
+		return &Item{Image: tag, Artifact: a, Copy: toCopy, Delete: toDelete}, nil
 
 	default:
 		// TODO: this error does appear a little late in the build, perhaps it could surface at first run, rather than first sync?
@@ -252,11 +253,11 @@ func matchSyncRules(syncRules []*latestV1.SyncRule, relPath, containerWd string)
 	return dsts, nil
 }
 
-func (s *podSyncer) Sync(ctx context.Context, item *Item) error {
+func (s *podSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 	if len(item.Copy) > 0 {
 		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
 
-		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, s.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, s.config.GetNamespaces()); err != nil {
 			return fmt.Errorf("copying files: %w", err)
 		}
 	}
@@ -264,7 +265,7 @@ func (s *podSyncer) Sync(ctx context.Context, item *Item) error {
 	if len(item.Delete) > 0 {
 		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
 
-		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, s.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, s.config.GetNamespaces()); err != nil {
 			return fmt.Errorf("deleting files: %w", err)
 		}
 	}

@@ -758,7 +758,9 @@ func TestNewSyncItem(t *testing.T) {
 			})
 
 			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, &mockConfig{}, 0)
-
+			if test.expected != nil {
+				test.expected.Artifact = test.artifact
+			}
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}

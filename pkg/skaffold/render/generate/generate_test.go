@@ -134,32 +134,26 @@ func TestGenerate(t *testing.T) {
 		{
 			description: "render raw manifests",
 			generateConfig: latestV2.Generate{
-				Manifests: []string{"pod.yaml"},
+				RawK8s: []string{"pod.yaml"},
 			},
 			expected: manifest.ManifestList{[]byte(podYaml)},
 		},
 		{
 			description: "render glob raw manifests",
 			generateConfig: latestV2.Generate{
-				Manifests: []string{"*.yaml"},
+				RawK8s: []string{"*.yaml"},
 			},
 			expected: manifest.ManifestList{[]byte(podYaml), []byte(podsYaml)},
 		},
+		/* disabled
 		{
 			description: "render kustomize manifests",
 			generateConfig: latestV2.Generate{
-				Manifests: []string{"base"},
+				Kustomize: []string{"base"},
 			},
 			expected: manifest.ManifestList{[]byte(kustomizePatchedOutput)},
 		},
-
-		{
-			description: "render mixed raw and kustomize manifests",
-			generateConfig: latestV2.Generate{
-				Manifests: []string{"*"},
-			},
-			expected: manifest.ManifestList{[]byte(kustomizePatchedOutput), []byte(podYaml), []byte(podsYaml)},
-		},
+		*/
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

@@ -42,10 +42,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -77,11 +80,13 @@ type Deployer struct {
 	accessor      access.Accessor
 	logger        log.Logger
 	debugger      debug.Debugger
+	imageLoader   loader.ImageLoader
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	insecureRegistries map[string]bool
 	labels             map[string]string
@@ -96,19 +101,23 @@ type Config interface {
 	kubectl.Config
 	kstatus.Config
 	portforward.Config
+	kloader.Config
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
 func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
+	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
+
 	return &Deployer{
 		KptDeploy:          d,
 		podSelector:        podSelector,
 		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		imageLoader:        provider.ImageLoader.GetKubernetesImageLoader(cfg),
+		logger:             provider.Logger.GetKubernetesLogger(podSelector, kubectl),
 		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
+		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector, kubectl),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -137,6 +146,10 @@ func (k *Deployer) GetStatusMonitor() status.Monitor {
 
 func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
+}
+
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
@@ -203,6 +216,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		"DeployerType": "kpt",
 	})
 
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
 	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_sanityCheck")
 	if err := sanityCheck(k.Dir, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -210,7 +230,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_loadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 	manifests, err := k.renderManifests(childCtx, builds)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))

@@ -47,10 +47,13 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -86,12 +89,14 @@ type Deployer struct {
 
 	accessor      access.Accessor
 	debugger      debug.Debugger
+	imageLoader   loader.ImageLoader
 	logger        log.Logger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubeContext string
 	kubeConfig  string
@@ -113,6 +118,7 @@ type Deployer struct {
 type Config interface {
 	kubectl.Config
 	kstatus.Config
+	kloader.Config
 	portforward.Config
 	IsMultiConfig() bool
 }
@@ -138,15 +144,17 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}
 
 	podSelector := kubernetes.NewImageList()
+	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
 
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
 		accessor:       provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:         provider.Logger.GetKubernetesLogger(podSelector),
+		imageLoader:    provider.ImageLoader.GetKubernetesImageLoader(cfg),
+		logger:         provider.Logger.GetKubernetesLogger(podSelector, kubectl),
 		statusMonitor:  provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector),
+		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector, kubectl),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -180,6 +188,10 @@ func (h *Deployer) GetSyncer() sync.Syncer {
 	return h.syncer
 }
 
+func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	h.localImages = images
+}
+
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
@@ -187,10 +199,24 @@ func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
-	ctx, endTrace := instrumentation.StartTrace(ctx, "Render", map[string]string{
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
 	defer endTrace()
+
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
 
 	logrus.Infof("Deploying with helm v%s ...", h.bV)
 

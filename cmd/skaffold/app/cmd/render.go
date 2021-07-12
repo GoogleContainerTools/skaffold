@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 var (
@@ -60,7 +60,7 @@ func doRender(ctx context.Context, out io.Writer) error {
 		buildOut = out
 	}
 
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		var bRes []graph.Artifact
 
 		if renderFromBuildOutputFile.String() != "" {

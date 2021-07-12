@@ -25,14 +25,14 @@ import (
 )
 
 type Provider interface {
-	GetKubernetesLogger(*kubernetes.ImageList) Logger
+	GetKubernetesLogger(*kubernetes.ImageList, *kubectl.CLI) Logger
 	GetNoopLogger() Logger
 }
 
 type fullProvider struct {
 	tail bool
 
-	kubernetesLogger func(*kubernetes.ImageList) Logger
+	kubernetesLogger func(*kubernetes.ImageList, *kubectl.CLI) Logger
 	noopLogger       func() Logger
 }
 
@@ -41,11 +41,11 @@ var (
 	once     sync.Once
 )
 
-func NewLogProvider(config logger.Config, cli *kubectl.CLI) Provider {
+func NewLogProvider(config logger.Config) Provider {
 	once.Do(func() {
 		provider = &fullProvider{
 			tail: config.Tail(),
-			kubernetesLogger: func(podSelector *kubernetes.ImageList) Logger {
+			kubernetesLogger: func(podSelector *kubernetes.ImageList, cli *kubectl.CLI) Logger {
 				return logger.NewLogAggregator(cli, podSelector, config)
 			},
 			noopLogger: func() Logger {
@@ -56,11 +56,11 @@ func NewLogProvider(config logger.Config, cli *kubectl.CLI) Provider {
 	return provider
 }
 
-func (p *fullProvider) GetKubernetesLogger(s *kubernetes.ImageList) Logger {
+func (p *fullProvider) GetKubernetesLogger(s *kubernetes.ImageList, cli *kubectl.CLI) Logger {
 	if !p.tail {
 		return p.noopLogger()
 	}
-	return p.kubernetesLogger(s)
+	return p.kubernetesLogger(s, cli)
 }
 
 func (p *fullProvider) GetNoopLogger() Logger {
@@ -70,7 +70,7 @@ func (p *fullProvider) GetNoopLogger() Logger {
 // NoopProvider is used in tests
 type NoopProvider struct{}
 
-func (p *NoopProvider) GetKubernetesLogger(_ *kubernetes.ImageList) Logger {
+func (p *NoopProvider) GetKubernetesLogger(*kubernetes.ImageList, *kubectl.CLI) Logger {
 	return &NoopLogger{}
 }
 

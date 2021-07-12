@@ -27,6 +27,7 @@ import (
 
 	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -39,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -52,12 +54,14 @@ type Deployer struct {
 	*latestV1.KubectlDeploy
 
 	accessor      access.Accessor
+	imageLoader   loader.ImageLoader
 	logger        log.Logger
 	debugger      debug.Debugger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
-	originalImages     []graph.Artifact
+	originalImages     []graph.Artifact // the set of images marked as "local" by the Runner
+	localImages        []graph.Artifact // the set of images parsed from the Deployer's manifest set
 	podSelector        *kubernetes.ImageList
 	hydratedManifests  []string
 	workingDir         string
@@ -83,19 +87,21 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}
 
 	podSelector := kubernetes.NewImageList()
+	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
 
 	return &Deployer{
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
 		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		imageLoader:        provider.ImageLoader.GetKubernetesImageLoader(cfg),
+		logger:             provider.Logger.GetKubernetesLogger(podSelector, kubectl.CLI),
 		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
+		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector, kubectl.CLI),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
-		kubectl:            NewCLI(cfg, d.Flags, defaultNamespace),
+		kubectl:            kubectl,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
@@ -123,6 +129,10 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
 }
 
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
+}
+
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
 	k.logger.RegisterArtifacts(artifacts)
@@ -134,16 +144,25 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	var (
 		manifests manifest.ManifestList
 		err       error
+		childCtx  context.Context
+		endTrace  func(...trace.SpanOption)
 	)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
 
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
 	// if any hydrated manifests are passed to `skaffold apply`, only deploy these
 	// also, manually set the labels to ensure the runID is added
 	switch {
 	case len(k.hydratedManifests) > 0:
-		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_createManifestList")
+		_, endTrace = instrumentation.StartTrace(ctx, "Deploy_createManifestList")
 		manifests, err = createManifestList(k.hydratedManifests)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
@@ -152,11 +171,11 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		manifests, err = manifests.SetLabels(k.labels)
 		endTrace()
 	case k.skipRender:
-		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_readManifests")
+		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
 		manifests, err = k.readManifests(childCtx, false)
 		endTrace()
 	default:
-		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 		manifests, err = k.renderManifests(childCtx, out, builds, false)
 		endTrace()
 	}
@@ -168,7 +187,16 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	if len(manifests) == 0 {
 		return nil, nil
 	}
-	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
+	endTrace()
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
+	}
+	endTrace()
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
@@ -176,7 +204,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
 	if err := k.kubectl.WaitForDeletions(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err

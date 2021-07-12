@@ -4,6 +4,9 @@ on:
   push:
     branches:
     - master
+
+permissions: read-all
+
 jobs:
   check:
     name: Check if release commit
@@ -17,13 +20,15 @@ jobs:
         str='${{ github.event.head_commit.message }}'
         regex="^release\s*:\s*(v[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+\.[0-9]+)"
         if [[ "$str" =~ $regex ]]; then
-        echo "::set-output name=applicable::true"
-        echo This is a release commit.
+          echo "::set-output name=applicable::true"
+          echo This is a release commit.
         fi
 
   release:
     needs: check
     if: needs.check.outputs.applicable == 'true'
+    permissions:
+      contents: write
     name: Create Tag and Draft Release
     runs-on: ubuntu-latest
     steps:
@@ -62,9 +67,9 @@ jobs:
         found=0
         while [ $found -lt 10 -a $retries -gt 0 ]
         do
-        sleep 3m
-        found=$(gsutil du  gs://skaffold/releases/${{ env.TAG_NAME }}/ | wc -l)
-        retries=$((retries-1))
+          sleep 3m
+          found=$(gsutil du  gs://skaffold/releases/${{ env.TAG_NAME }}/ | wc -l)
+          retries=$((retries-1))
         done
         gsutil -m cp -r gs://skaffold/releases/${{ env.TAG_NAME }}/ $HOME
 
@@ -75,7 +80,7 @@ jobs:
         body=$(git log -p --follow -1 CHANGELOG.md | grep '^\+' | cut -c 2- | tail -n +2)
         assets=()
         for asset in $HOME/${{ env.TAG_NAME }}/*; do
-        assets+=("-a" "$asset")
+          assets+=("-a" "$asset")
         done
         bin/hub release create "${assets[@]}" -m "${{ env.RELEASE_NAME }}" -m "$body" --draft ${{ env.TAG_NAME }}
       env:

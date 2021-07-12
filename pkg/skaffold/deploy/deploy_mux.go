@@ -93,6 +93,12 @@ func (m DeployerMux) GetSyncer() sync.Syncer {
 	return syncers
 }
 
+func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
+	for _, deployer := range m.deployers {
+		deployer.RegisterLocalImages(images)
+	}
+}
+
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {
 	seenNamespaces := util.NewStringSet()
 

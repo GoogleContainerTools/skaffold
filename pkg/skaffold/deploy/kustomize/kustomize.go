@@ -39,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -104,12 +105,14 @@ type Deployer struct {
 
 	accessor      access.Accessor
 	logger        log.Logger
+	imageLoader   loader.ImageLoader
 	debugger      debug.Debugger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubectl             kubectl.CLI
 	insecureRegistries  map[string]bool
@@ -138,9 +141,10 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 		podSelector:         podSelector,
 		accessor:            provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
 		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:              provider.Logger.GetKubernetesLogger(podSelector),
+		imageLoader:         provider.ImageLoader.GetKubernetesImageLoader(cfg),
+		logger:              provider.Logger.GetKubernetesLogger(podSelector, kubectl.CLI),
 		statusMonitor:       provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:              provider.Syncer.GetKubernetesSyncer(podSelector),
+		syncer:              provider.Syncer.GetKubernetesSyncer(podSelector, kubectl.CLI),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
@@ -167,6 +171,10 @@ func (k *Deployer) GetStatusMonitor() status.Monitor {
 
 func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
+}
+
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
@@ -197,6 +205,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		"DeployerType": "kustomize",
 	})
 
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 	manifests, err := k.renderManifests(childCtx, out, builds)
 	if err != nil {
@@ -207,6 +222,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	if len(manifests) == 0 {
 		endTrace()
 		return nil, nil
+	}
+	endTrace()
+
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
 	}
 	endTrace()
 

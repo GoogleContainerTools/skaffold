@@ -28,6 +28,7 @@ const (
 	Init        = Phase("Init")
 	Build       = Phase("Build")
 	Test        = Phase("Test")
+	Render      = Phase("Render")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
 	PortForward = Phase("PortForward")

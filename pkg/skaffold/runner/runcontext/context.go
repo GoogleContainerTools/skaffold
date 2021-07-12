@@ -27,6 +27,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -177,6 +178,7 @@ func (rc *RunContext) GetKubeConfig() string                         { return rc
 func (rc *RunContext) GetKubeNamespace() string                      { return rc.Opts.Namespace }
 func (rc *RunContext) GlobalConfig() string                          { return rc.Opts.GlobalConfig }
 func (rc *RunContext) HydratedManifests() []string                   { return rc.Opts.HydratedManifests }
+func (rc *RunContext) LoadImages() bool                              { return rc.Cluster.LoadImages }
 func (rc *RunContext) MinikubeProfile() string                       { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) Muted() config.Muted                           { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                         { return rc.Opts.NoPruneChildren }
@@ -197,12 +199,14 @@ func (rc *RunContext) WatchPollInterval() int                        { return rc
 func (rc *RunContext) BuildConcurrency() int                         { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
+func (rc *RunContext) RPCPort() int                                  { return rc.Opts.RPCPort }
+func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
 
-func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
-			pipelines = append(pipelines, cfg.Pipeline)
+			pipelines = append(pipelines, cfg.(*latestV1.SkaffoldConfig).Pipeline)
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()

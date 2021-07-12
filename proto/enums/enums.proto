@@ -43,6 +43,20 @@ enum TesterType {
     CONTAINER_STRUCTURE_TEST = 2;
 }
 
+// Enum indicating render manifests type
+enum RenderType {
+    // Could not determine Render Type
+    UNKNOWN_RENDER_TYPE = 0;
+    // Raw Manifests
+    RAWK8S = 1;
+    // kustomize manifests
+    KUSTOMIZE_MANIFEST = 2;
+    // helm charts
+    HELM_CHART = 3;
+    // kpt manifests
+    KPT_MANIFEST = 4;
+}
+
 // Enum indicating deploy tools used
 enum DeployerType {
     // Could not determine Deployer Type
