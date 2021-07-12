@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"google.golang.org/api/cloudbuild/v1"
+	kv1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -35,6 +36,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		description  string
 		artifact     *latestV1.KanikoArtifact
 		expectedArgs []string
+		expectedEnv  []string
 	}{
 		{
 			description: "simple build",
@@ -56,6 +58,14 @@ func TestKanikoBuildSpec(t *testing.T) {
 				kaniko.BuildArgsFlag, "arg1=value1",
 				kaniko.BuildArgsFlag, "arg2",
 			},
+		},
+		{
+			description: "with Env",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Env:            []kv1.EnvVar{{Name: "KEY1", Value: "VALUE1"}, {Name: "KEY2", Value: "VALUE2"}},
+			},
+			expectedEnv: []string{"KEY1=VALUE1", "KEY2=VALUE2"},
 		},
 		{
 			description: "with Cache",
@@ -409,6 +419,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Steps: []*cloudbuild.BuildStep{{
 					Name: "gcr.io/kaniko-project/executor",
 					Args: append(append(defaultExpectedArgs, imageArgs...), test.expectedArgs...),
+					Env:  test.expectedEnv,
 				}},
 				Options: &cloudbuild.BuildOptions{
 					DiskSizeGb:  100,
