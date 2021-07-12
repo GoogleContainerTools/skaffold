@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 	"text/template"
@@ -30,6 +31,9 @@ import (
 // For testing
 var (
 	OSEnviron = os.Environ
+	funcsMap  = template.FuncMap{
+		"default": defaultFunc,
+	}
 )
 
 // ExpandEnvTemplate parses and executes template s with an optional environment map
@@ -53,7 +57,7 @@ func ExpandEnvTemplateOrFail(s string, envMap map[string]string) (string, error)
 
 // ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {
-	return template.New("envTemplate").Option("missingkey=zero").Parse(t)
+	return template.New("envTemplate").Funcs(funcsMap).Parse(t)
 }
 
 // ExecuteEnvTemplate executes an envTemplate based on OS environment variables and a custom map
@@ -130,4 +134,28 @@ func MapToFlag(m map[string]*string, flag string) ([]string, error) {
 	}
 
 	return kvFlags, nil
+}
+
+// defaultFunc is a template function that behaves as sprig's default function.
+// See https://masterminds.github.io/sprig/defaults.html#default
+func defaultFunc(dflt, value interface{}) interface{} {
+	if value == nil {
+		return dflt
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Array, reflect.Slice:
+		if v.Len() == 0 {
+			return dflt
+		}
+	case reflect.Ptr:
+		if v.IsNil() {
+			return dflt
+		}
+	default:
+		if v.IsZero() {
+			return dflt
+		}
+	}
+	return value
 }
