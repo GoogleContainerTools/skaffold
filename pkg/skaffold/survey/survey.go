@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
