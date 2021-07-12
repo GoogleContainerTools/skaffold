@@ -59,9 +59,11 @@ func TestDisplaySurveyForm(t *testing.T) {
 }
 
 func TestShouldDisplayPrompt(t *testing.T) {
-	tenDaysAgo := time.Now().AddDate(0, 0, -12).Format(time.RFC3339)
+	tenDaysAgo := time.Now().AddDate(0, 0, -10).Format(time.RFC3339)
 	fiveDaysAgo := time.Now().AddDate(0, 0, -5).Format(time.RFC3339)
+	// less than 90 days ago
 	twoMonthsAgo := time.Now().AddDate(0, -2, -5).Format(time.RFC3339)
+	// at least 90 days ago
 	threeMonthsAgo := time.Now().AddDate(0, -3, -5).Format(time.RFC3339)
 
 	tests := []struct {

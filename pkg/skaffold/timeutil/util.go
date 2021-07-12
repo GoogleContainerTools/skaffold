@@ -28,5 +28,5 @@ func LessThan(date string, duration time.Duration) bool {
 		logrus.Debugf("could not parse date %q", date)
 		return false
 	}
-	return time.Now().Sub(t) < duration
+	return time.Since(t) < duration
 }

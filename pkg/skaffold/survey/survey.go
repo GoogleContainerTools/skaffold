@@ -22,12 +22,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
 	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 )
 
 const (
