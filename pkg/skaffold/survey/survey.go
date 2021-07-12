@@ -45,7 +45,6 @@ var (
 	isStdOut     = output.IsStdout
 	open         = browser.OpenURL
 	updateConfig = sConfig.UpdateGlobalSurveyPrompted
-	current      = time.Now
 )
 
 type Runner struct {
@@ -60,7 +59,7 @@ func New(configFile string) *Runner {
 
 func (s *Runner) ShouldDisplaySurveyPrompt() bool {
 	cfg, disabled := sConfig.IsSurveyPromptDisabled(s.configFile)
-	return !disabled && !sConfig.RecentlyPromptedOrTaken(cfg, current())
+	return !disabled && !sConfig.RecentlyPromptedOrTaken(cfg, time.Now())
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {

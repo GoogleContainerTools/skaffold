@@ -58,6 +58,11 @@ func TestDisplaySurveyForm(t *testing.T) {
 }
 
 func TestShouldDisplayPrompt(t *testing.T) {
+	tenDaysAgo := time.Now().AddDate(0, 0, -12).Format(time.RFC3339)
+	fiveDaysAgo := time.Now().AddDate(0, 0, -5).Format(time.RFC3339)
+	twoMonthsAgo := time.Now().AddDate(0, -2, -5).Format(time.RFC3339)
+	threeMonthsAgo := time.Now().AddDate(0, -3, -5).Format(time.RFC3339)
+
 	tests := []struct {
 		description string
 		cfg         *sConfig.ContextConfig
@@ -72,7 +77,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.ContextConfig{
 				Survey: &sConfig.SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-22T00:00:00Z",
+					LastPrompted:  fiveDaysAgo,
 				},
 			},
 		},
@@ -81,7 +86,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.ContextConfig{
 				Survey: &sConfig.SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2018-11-22T00:00:00Z",
+					LastTaken:     twoMonthsAgo,
 				},
 			},
 		},
@@ -90,7 +95,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.ContextConfig{
 				Survey: &sConfig.SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-10T00:00:00Z",
+					LastPrompted:  tenDaysAgo,
 				},
 			},
 			expected: true,
@@ -100,7 +105,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.ContextConfig{
 				Survey: &sConfig.SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2017-11-10T00:00:00Z",
+					LastTaken:     threeMonthsAgo,
 				},
 			},
 			expected: true,
@@ -110,8 +115,8 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.ContextConfig{
 				Survey: &sConfig.SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2019-01-10T00:00:00Z",
-					LastPrompted:  "2019-01-10T00:00:00Z",
+					LastTaken:     twoMonthsAgo,
+					LastPrompted:  twoMonthsAgo,
 				},
 			},
 		},
@@ -119,10 +124,6 @@ func TestShouldDisplayPrompt(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, nil })
-			t.Override(&current, func() time.Time {
-				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
-				return t
-			})
 			t.CheckDeepEqual(test.expected, New("test").ShouldDisplaySurveyPrompt())
 		})
 	}
