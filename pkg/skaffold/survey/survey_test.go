@@ -33,7 +33,8 @@ func TestDisplaySurveyForm(t *testing.T) {
 		{
 			description: "std out",
 			mockStdOut:  true,
-			expected:    Prompt,
+			expected: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
+`,
 		},
 		{
 			description: "not std out",
