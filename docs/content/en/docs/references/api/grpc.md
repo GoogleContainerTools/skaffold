@@ -864,6 +864,21 @@ Enum indicating the log level of a line of output
 
 
 
+<a name="proto.enums.RenderType"></a>
+
+### RenderType
+Enum indicating render manifests type
+
+| Name | Number | Description |
+| ---- |:------:| ----------- |
+| UNKNOWN_RENDER_TYPE | 0 | Could not determine Render Type |
+| RAWK8S | 1 | Raw Manifests |
+| KUSTOMIZE_MANIFEST | 2 | kustomize manifests |
+| HELM_CHART | 3 | helm charts |
+| KPT_MANIFEST | 4 | kpt manifests |
+
+
+
 <a name="proto.enums.StatusCode"></a>
 
 ### StatusCode

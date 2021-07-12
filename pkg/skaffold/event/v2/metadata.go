@@ -42,6 +42,7 @@ func LogMetaEvent() {
 func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID string) *proto.Metadata {
 	m := &proto.Metadata{
 		Build:  &proto.BuildMetadata{},
+		Render: &proto.RenderMetadata{},
 		Deploy: &proto.DeployMetadata{},
 		RunID:  runID,
 	}
@@ -75,6 +76,7 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID
 			Cluster:   getClusterType(kubeContext),
 		}
 	}
+	// TODO(v2 render): Add the renderMetadata initialization once the pipeline is switched to latestV2.Pipeline
 	return m
 }
 
