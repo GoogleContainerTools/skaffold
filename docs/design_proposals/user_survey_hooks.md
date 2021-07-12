@@ -25,12 +25,15 @@ type config struct {
 	// promptText is shown to the user and should be formatted so each line should fit in < 80 characters.
 	// For example: `As a Helm user, we are requesting your feedback on a proposed change to Skaffold's integration with Helm.`
 	promptText   string
+	// startsAt mentions the date after the users survey should be prompted. This will ensure, skaffold team can finalize the survey 
+	// even after release date.
+	startsAt time.Time
 	// expiresAt places a time limit of the user survey. As users are only prompted every two weeks
 	// by design, this time limit should be at least 4 weeks after the upcoming release date to account
 	// for release propagation lag to Cloud SDK and Cloud Shell.
 	expiresAt    time.Time
 	isRelevantFn func([]util.VersionedConfig) bool
-	surveyURL         string
+	URL         string
 }
 
 ```
@@ -41,22 +44,23 @@ The survey config has two key fields
 {
   id: helmID,
   expiresAt: time.Date(2021, time.August, 14, 00, 00, 00, 0, time.UTC),
-  isRelevantFn: func(cfgs []util.VersionedConfig) bool {
+  isRelevantFn: func(cfgs []util.VersionedConfig, command string) bool {
 	for _, cfg := range cfgs {
-		v1Cfg := cfg.(*latestV1.SkaffoldConfig)
-		if h := v1Cfg.Deploy.HelmDeploy; h != nil {
-			return true
+		if v1Cfg, ok  := cfg.(*latestV1.SkaffoldConfig) ; ok {
+		    if h := v1Cfg.Deploy.HelmDeploy; h != nil {
+			    return true
 	        }
-        }
+	    }    
+    }
 	return false
  },
-link: helmURL,
+URL: helmURL,
 },
 
 ```
 For multi-module users, we could use something like the following:
 ```
-  isRelevantFn: func(cfgs []util.VersionedConfig) bool {
+  isRelevantFn: func(cfgs []util.VersionedConfig, _ string) bool {
 	return len(cfgs) > 1
  },
 ```
@@ -111,6 +115,8 @@ Since, HaTS survey never expire,
 ## Alternate Methods
 Other methods to get feedback is manually via pinging slack users to fill in a survey.
 However, this requires a core member to manually remind users from time to time to fill in a survey.
+Another disadvantage is users could form a biased opinion due to the questions asked in the user survey and 
+rate low on the NPS score.
 
 
 ## Implementation plan
