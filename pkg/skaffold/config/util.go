@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -307,21 +308,6 @@ func IsUpdateCheckEnabled(configfile string) bool {
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }
 
-func IsSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
-	cfg, err := GetConfigForCurrentKubectx(configfile)
-	if err != nil {
-		return nil, false
-	}
-	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
-}
-
-func RecentlyPromptedOrTaken(cfg *ContextConfig, current time.Time) bool {
-	if cfg == nil || cfg.Survey == nil {
-		return false
-	}
-	return lessThanWithTime(cfg.Survey.LastTaken, 90*24*time.Hour, current) || lessThanWithTime(cfg.Survey.LastPrompted, 10*24*time.Hour, current)
-}
-
 func ShouldDisplayUpdateMsg(configfile string) bool {
 	cfg, err := GetConfigForCurrentKubectx(configfile)
 	if err != nil {
@@ -330,7 +316,7 @@ func ShouldDisplayUpdateMsg(configfile string) bool {
 	if cfg == nil || cfg.UpdateCheckConfig == nil {
 		return true
 	}
-	return !lessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
+	return !timeutil.LessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
 }
 
 // UpdateMsgDisplayed updates the `last-prompted` config for `update-config` in
@@ -356,19 +342,6 @@ func UpdateMsgDisplayed(configFile string) error {
 	fullConfig.Global.UpdateCheckConfig.LastPrompted = today
 	err = WriteFullConfig(configFile, fullConfig)
 	return err
-}
-
-func lessThanWithTime(date string, duration time.Duration, current time.Time) bool {
-	t, err := time.Parse(time.RFC3339, date)
-	if err != nil {
-		logrus.Debugf("could not parse date %q", date)
-		return false
-	}
-	return current.Sub(t) < duration
-}
-
-func lessThan(date string, duration time.Duration) bool {
-	return lessThanWithTime(date, duration, current())
 }
 
 func UpdateGlobalSurveyTaken(configFile string) error {

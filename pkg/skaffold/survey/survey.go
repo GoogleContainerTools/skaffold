@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
@@ -58,8 +59,23 @@ func New(configFile string) *Runner {
 }
 
 func (s *Runner) ShouldDisplaySurveyPrompt() bool {
-	cfg, disabled := sConfig.IsSurveyPromptDisabled(s.configFile)
-	return !disabled && !sConfig.RecentlyPromptedOrTaken(cfg, time.Now())
+	cfg, disabled := isSurveyPromptDisabled(s.configFile)
+	return !disabled && !recentlyPromptedOrTaken(cfg)
+}
+
+func isSurveyPromptDisabled(configfile string) (*sConfig.ContextConfig, bool) {
+	cfg, err := sConfig.GetConfigForCurrentKubectx(configfile)
+	if err != nil {
+		return nil, false
+	}
+	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
+}
+
+func recentlyPromptedOrTaken(cfg *sConfig.ContextConfig) bool {
+	if cfg == nil || cfg.Survey == nil {
+		return false
+	}
+	return timeutil.LessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || timeutil.LessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {

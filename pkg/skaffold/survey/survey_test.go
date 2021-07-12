@@ -18,6 +18,7 @@ package survey
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -125,6 +126,49 @@ func TestShouldDisplayPrompt(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, nil })
 			t.CheckDeepEqual(test.expected, New("test").ShouldDisplaySurveyPrompt())
+		})
+	}
+}
+
+func TestIsSurveyPromptDisabled(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *sConfig.ContextConfig
+		readErr     error
+		expected    bool
+	}{
+		{
+			description: "config disable-prompt is nil returns false",
+			cfg:         &sConfig.ContextConfig{},
+		},
+		{
+			description: "config disable-prompt is true",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+			expected:    true,
+		},
+		{
+			description: "config disable-prompt is false",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
+		},
+		{
+			description: "disable prompt is nil",
+			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{}},
+		},
+		{
+			description: "config is nil",
+			cfg:         nil,
+		},
+		{
+			description: "config has err",
+			cfg:         nil,
+			readErr:     fmt.Errorf("error while reading"),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, test.readErr })
+			_, actual := isSurveyPromptDisabled("dummyconfig")
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
