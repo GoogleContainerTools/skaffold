@@ -31,16 +31,15 @@ const (
 
 var (
 	hats = config{
-		id: HatsID,
+		id:         HatsID,
 		promptText: "Help improve Skaffold with our 2-minute anonymous survey",
-		isRelevantFn: func(_ []util.VersionedConfig, mode sConfig.RunMode) bool {
+		isRelevantFn: func([]util.VersionedConfig, sConfig.RunMode) bool {
 			return true
 		},
-		URL:         hatsURL,
+		URL: hatsURL,
 	}
 	// surveys contains all the skaffold survey information
 	surveys = []config{hats}
-
 )
 
 // config defines a survey.
