@@ -230,7 +230,11 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		if err != nil {
 			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
-		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV)
+		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
+		if err != nil {
+			return nil, userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
+		}
+		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV, chartVersion)
 		if err != nil {
 			return nil, userErr(fmt.Sprintf("deploying %q", releaseName), err)
 		}
@@ -418,7 +422,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 }
 
 // deployRelease deploys a single release
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latestV1.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latestV1.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
 	var err error
 	opts := installOpts{
 		releaseName: releaseName,
@@ -428,6 +432,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		chartPath:   chartSource(r),
 		helmVersion: helmVersion,
 		repo:        r.Repo,
+		version:     chartVersion,
 	}
 
 	var installEnv []string
