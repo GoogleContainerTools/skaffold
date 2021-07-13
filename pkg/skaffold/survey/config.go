@@ -60,7 +60,8 @@ type config struct {
 }
 
 func (s config) isActive() bool {
-	return s.expiresAt.IsZero() || s.expiresAt.After(time.Now())
+	return s.expiresAt.IsZero() ||
+		(s.startsAt.Before(time.Now()) && s.expiresAt.After(time.Now()))
 }
 
 func (s config) prompt() string {
