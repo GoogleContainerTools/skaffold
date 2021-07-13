@@ -30,18 +30,23 @@ import (
 
 func TestDisplaySurveyForm(t *testing.T) {
 	tests := []struct {
-		description string
-		mockStdOut  bool
-		expected    string
+		description        string
+		mockSurveyPrompted func(_ string) error
+		expected           string
+		mockStdOut         bool
 	}{
 		{
-			description: "std out",
-			mockStdOut:  true,
+			description:        "std out",
+			mockStdOut:         true,
+			mockSurveyPrompted: func(_ string) error { return nil },
 			expected: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
 `,
 		},
 		{
 			description: "not std out",
+			mockSurveyPrompted: func(_ string) error {
+				return fmt.Errorf("not expected to call")
+			},
 		},
 	}
 	for _, test := range tests {
@@ -50,9 +55,10 @@ func TestDisplaySurveyForm(t *testing.T) {
 			t.Override(&isStdOut, mock)
 			mockOpen := func(string) error { return nil }
 			t.Override(&open, mockOpen)
-			t.Override(&updateConfig, func(_ string) error { return nil })
+			t.Override(&updateSurveyPrompted, test.mockSurveyPrompted)
 			var buf bytes.Buffer
-			New("test").DisplaySurveyPrompt(&buf)
+			err := New("test").DisplaySurveyPrompt(&buf)
+			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}
