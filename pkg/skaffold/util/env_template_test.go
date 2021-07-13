@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -62,6 +63,12 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 			env:         []string{"VAL=KEY"},
 			shouldErr:   true,
 		},
+		{
+			description: "missing results in empty",
+			template:    `{{default "a" .FOO}}:{{.BAR}}`,
+			customMap:   map[string]string{},
+			want:        "a:<no value>",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -85,7 +92,6 @@ func TestEnvTemplate_ExpandEnvTemplateOrFail(t *testing.T) {
 		template    string
 		customMap   map[string]string
 		env         []string
-		option      string
 		want        string
 		shouldErr   bool
 	}{
@@ -102,7 +108,6 @@ func TestEnvTemplate_ExpandEnvTemplateOrFail(t *testing.T) {
 		{
 			description: "variable does not exist",
 			template:    "{{.DOES_NOT_EXIST}}",
-			option:      "missingkey=error",
 			shouldErr:   true,
 		},
 	}
@@ -171,6 +176,26 @@ func TestMapToFlag(t *testing.T) {
 			got, err := MapToFlag(test.args.m, test.args.flag)
 			t.CheckNoError(err)
 			t.CheckErrorAndDeepEqual(test.wantErr, err, test.want, got)
+		})
+	}
+}
+
+func TestDefaultFunc(t *testing.T) {
+	for _, empty := range []interface{}{nil, false, 0, "", []string{}} {
+		t.Run(fmt.Sprintf("empties: %v (%T)", empty, empty), func(t *testing.T) {
+			dflt := "default"
+			if defaultFunc(dflt, empty) != dflt {
+				t.Error("did not return default")
+			}
+		})
+	}
+	s := "string"
+	for _, nonEmpty := range []interface{}{&s, true, 1, "hoot", []string{"hoot"}} {
+		t.Run(fmt.Sprintf("non-empty: %v (%T)", nonEmpty, nonEmpty), func(t *testing.T) {
+			dflt := "default"
+			if defaultFunc(dflt, nonEmpty) == dflt {
+				t.Error("should not return default")
+			}
 		})
 	}
 }
