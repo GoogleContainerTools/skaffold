@@ -68,65 +68,73 @@ func TestShouldDisplayPrompt(t *testing.T) {
 
 	tests := []struct {
 		description string
-		cfg         *sConfig.ContextConfig
+		cfg         *sConfig.GlobalConfig
 		expected    bool
 	}{
 		{
 			description: "should not display prompt when prompt is disabled",
-			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{
+					Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)},
+				}},
 		},
 		{
 			description: "should not display prompt when last prompted is less than 2 weeks",
-			cfg: &sConfig.ContextConfig{
-				Survey: &sConfig.SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  fiveDaysAgo,
-				},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{
+					Survey: &sConfig.SurveyConfig{
+						DisablePrompt: util.BoolPtr(false),
+						LastPrompted:  fiveDaysAgo,
+					}},
 			},
 		},
 		{
 			description: "should not display prompt when last taken in less than 3 months",
-			cfg: &sConfig.ContextConfig{
-				Survey: &sConfig.SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     twoMonthsAgo,
-				},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{
+					Survey: &sConfig.SurveyConfig{
+						DisablePrompt: util.BoolPtr(false),
+						LastTaken:     twoMonthsAgo,
+					}},
 			},
 		},
 		{
 			description: "should display prompt when last prompted is before 2 weeks",
-			cfg: &sConfig.ContextConfig{
-				Survey: &sConfig.SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  tenDaysAgo,
-				},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{
+					Survey: &sConfig.SurveyConfig{
+						DisablePrompt: util.BoolPtr(false),
+						LastPrompted:  tenDaysAgo,
+					}},
 			},
 			expected: true,
 		},
 		{
 			description: "should display prompt when last taken is before than 3 months ago",
-			cfg: &sConfig.ContextConfig{
-				Survey: &sConfig.SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     threeMonthsAgo,
-				},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{
+					Survey: &sConfig.SurveyConfig{
+						DisablePrompt: util.BoolPtr(false),
+						LastTaken:     threeMonthsAgo,
+					}},
 			},
 			expected: true,
 		},
 		{
 			description: "should not display prompt when last taken is recent than 3 months ago",
-			cfg: &sConfig.ContextConfig{
-				Survey: &sConfig.SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     twoMonthsAgo,
-					LastPrompted:  twoMonthsAgo,
-				},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{
+					Survey: &sConfig.SurveyConfig{
+						DisablePrompt: util.BoolPtr(false),
+						LastTaken:     twoMonthsAgo,
+						LastPrompted:  twoMonthsAgo,
+					}},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, nil })
+			t.Override(&sConfig.ReadConfigFile, func(string) (*sConfig.GlobalConfig, error) { return test.cfg, nil })
 			t.CheckDeepEqual(test.expected, New("test").ShouldDisplaySurveyPrompt())
 		})
 	}
@@ -135,26 +143,32 @@ func TestShouldDisplayPrompt(t *testing.T) {
 func TestIsSurveyPromptDisabled(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         *sConfig.ContextConfig
+		cfg         *sConfig.GlobalConfig
 		readErr     error
 		expected    bool
 	}{
 		{
 			description: "config disable-prompt is nil returns false",
-			cfg:         &sConfig.ContextConfig{},
+			cfg:         &sConfig.GlobalConfig{},
 		},
 		{
 			description: "config disable-prompt is true",
-			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
-			expected:    true,
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+			},
+			expected: true,
 		},
 		{
 			description: "config disable-prompt is false",
-			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
+			},
 		},
 		{
 			description: "disable prompt is nil",
-			cfg:         &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{}},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{}},
+			},
 		},
 		{
 			description: "config is nil",
@@ -168,7 +182,7 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&sConfig.GetConfigForCurrentKubectx, func(string) (*sConfig.ContextConfig, error) { return test.cfg, test.readErr })
+			t.Override(&sConfig.ReadConfigFile, func(string) (*sConfig.GlobalConfig, error) { return test.cfg, test.readErr })
 			_, actual := isSurveyPromptDisabled("dummyconfig")
 			t.CheckDeepEqual(test.expected, actual)
 		})
