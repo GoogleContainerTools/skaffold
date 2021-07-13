@@ -146,7 +146,8 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			t.Override(&parseConfig, func(string) ([]schemaUtil.VersionedConfig, error) {
 				return []schemaUtil.VersionedConfig{mockVersionedConfig{version: "test"}}, nil
 			})
-			t.CheckDeepEqual(test.expected, New("test", "yaml", "dev").shouldDisplaySurveyPrompt())
+			_, actual := New("test", "yaml", "dev").shouldDisplaySurveyPrompt()
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
@@ -210,14 +211,13 @@ func TestTaken(t *testing.T) {
 		description string
 		cfg         *sConfig.SurveyConfig
 		input       []config
-		expectedID  string
-		expected    bool
+		expected    string
 	}{
 		{
-			description: "nil test",
+			description: "nil test - do not remove",
 			cfg:         nil,
 			input:       []config{hats},
-			expectedID:  HatsID,
+			expected:    HatsID,
 		},
 
 		// Current world when no user surveys are configured.
@@ -225,20 +225,19 @@ func TestTaken(t *testing.T) {
 			description: "no user surveys - hats not taken",
 			cfg:         &sConfig.SurveyConfig{},
 			input:       []config{hats},
-			expectedID:  HatsID,
+			expected:    HatsID,
 		},
 		{
 			description: "no user surveys - hats taken more than 3 months",
 			cfg:         &sConfig.SurveyConfig{LastTaken: threeMonthsAgo},
 			input:       []config{hats},
-			expectedID:  HatsID,
+			expected:    HatsID,
 		},
 		{
 			description: "no user surveys - hats taken less than 3 months",
 			cfg:         &sConfig.SurveyConfig{LastTaken: twoMonthsAgo},
 			input:       []config{hats},
-			expectedID:  "",
-			expected:    true,
+			expected:    "",
 		},
 		// User survey configured and are relevant
 		{
@@ -249,7 +248,7 @@ func TestTaken(t *testing.T) {
 					return true
 				}},
 			},
-			expectedID: "user",
+			expected: "user",
 		},
 		{
 			description: "user survey taken, hats taken",
@@ -262,8 +261,7 @@ func TestTaken(t *testing.T) {
 					return true
 				}},
 			},
-			expectedID: "",
-			expected:   true,
+			expected: "",
 		},
 		{
 			description: "user survey taken, hats not taken",
@@ -276,7 +274,7 @@ func TestTaken(t *testing.T) {
 					return true
 				}},
 			},
-			expectedID: HatsID,
+			expected: HatsID,
 		},
 	}
 	for _, test := range tests {
@@ -285,9 +283,8 @@ func TestTaken(t *testing.T) {
 			t.Override(&parseConfig, func(string) ([]schemaUtil.VersionedConfig, error) {
 				return []schemaUtil.VersionedConfig{mockVersionedConfig{version: "test"}}, nil
 			})
-			s := New("dummy", "yaml", "cmd")
-			t.CheckDeepEqual(test.expected, s.taken(test.cfg))
-			t.CheckDeepEqual(test.expectedID, s.surveyID)
+			actual := New("dummy", "yaml", "cmd").taken(test.cfg)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

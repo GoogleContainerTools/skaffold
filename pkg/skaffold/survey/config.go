@@ -29,9 +29,6 @@ import (
 const (
 	HatsID  = "hats"
 	hatsURL = "https://forms.gle/BMTbGQXLWSdn7vEs6"
-
-	helmID  = "helm"
-	helmURL = "https://forms.gle/cLQg8sGD71JnPSZf6"
 )
 
 var (
@@ -47,7 +44,7 @@ var (
 	surveys = []config{
 		hats,
 		{
-			id:       helmID,
+			id:       "helm",
 			startsAt: time.Date(2021, time.July, 15, 0, 0, 0, 0, time.UTC),
 			expiresAt: time.Date(2021, time.August,
 				14, 00, 00, 00, 0, time.UTC),
@@ -64,7 +61,7 @@ var (
 				}
 				return false
 			},
-			URL: helmURL,
+			URL: "https://forms.gle/cLQg8sGD71JnPSZf6",
 		},
 	}
 )

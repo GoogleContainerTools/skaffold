@@ -65,18 +65,22 @@ func New(configFile string, skaffoldConfig string, mode string) *Runner {
 	}
 }
 
-// SurveyPromptID returns the survey id of the survey to be shown
+// NextSurveyID returns the survey id of the survey to be shown
 // to the user. In case no survey is available, it returns empty string.
-func (s *Runner) SurveyPromptID() string {
-	if s.shouldDisplaySurveyPrompt() {
-		return s.surveyID
+func (s *Runner) NextSurveyID() string {
+	if id, ok := s.shouldDisplaySurveyPrompt(); ok {
+		return id
 	}
 	return ""
 }
 
-func (s *Runner) shouldDisplaySurveyPrompt() bool {
+func (s *Runner) shouldDisplaySurveyPrompt() (string, bool) {
 	cfg, disabled := isSurveyPromptDisabled(s.configFile)
-	return !disabled && !s.recentlyPromptedOrTaken(cfg)
+	if disabled {
+		return "", !disabled
+	}
+	id := s.recentlyPromptedOrTaken(cfg)
+	return s.recentlyPromptedOrTaken(cfg), id != ""
 }
 
 func isSurveyPromptDisabled(configfile string) (*sConfig.GlobalConfig, bool) {
@@ -90,11 +94,14 @@ func isSurveyPromptDisabled(configfile string) (*sConfig.GlobalConfig, bool) {
 		*cfg.Global.Survey.DisablePrompt
 }
 
-func (s *Runner) recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) bool {
+func (s *Runner) recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) string {
 	if cfg == nil || cfg.Global == nil || cfg.Global.Survey == nil {
 		return s.taken(cfg.Global.Survey)
 	}
-	return recentlyPrompted(cfg.Global.Survey) || s.taken(cfg.Global.Survey)
+	if recentlyPrompted(cfg.Global.Survey) {
+		return ""
+	}
+	return s.taken(cfg.Global.Survey)
 }
 
 // recentlyPrompted returns true if the user has been recently prompted for a survey.
@@ -102,10 +109,9 @@ func recentlyPrompted(gc *sConfig.SurveyConfig) bool {
 	return timeutil.LessThan(gc.LastPrompted, 10*24*time.Hour)
 }
 
-func (s *Runner) taken(gc *sConfig.SurveyConfig) bool {
+func (s *Runner) taken(gc *sConfig.SurveyConfig) string {
 	// fetch candidate surveys not taken by the user.
-	s.surveyID = s.presentSurvey(gc)
-	return s.surveyID == ""
+	return s.selectSurvey(gc)
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer, id string) error {
@@ -134,8 +140,6 @@ func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) err
 	}
 
 	if id == HatsID {
-		// Currently we will only update the global config survey taken
-		// When prompting for the survey, we need to use the same field.
 		return sConfig.UpdateHaTSSurveyTaken(s.configFile)
 	}
 	return sConfig.UpdateUserSurveyTaken(s.configFile, id)
@@ -157,11 +161,11 @@ func surveysTaken(sc *sConfig.SurveyConfig) map[string]struct{} {
 	return taken
 }
 
-func (s *Runner) presentSurvey(gc *sConfig.SurveyConfig) string {
-	taken := surveysTaken(gc)
+func (s *Runner) selectSurvey(gc *sConfig.SurveyConfig) string {
+	takenSurveys := surveysTaken(gc)
 	var candidates []config
 	for _, sc := range surveys {
-		if _, found := taken[sc.id]; !found && sc.isActive() {
+		if _, taken := takenSurveys[sc.id]; !taken && sc.isActive() {
 			candidates = append(candidates, sc)
 		}
 	}

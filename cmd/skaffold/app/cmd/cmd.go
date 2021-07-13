@@ -115,7 +115,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-				surveyPrompt <- s.SurveyPromptID()
+				surveyPrompt <- s.NextSurveyID()
 			}()
 			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil

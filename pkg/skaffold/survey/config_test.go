@@ -254,8 +254,8 @@ func TestIsValid(t *testing.T) {
 
 func TestSortSurveys(t *testing.T) {
 	expected := []config{
-		{id: "started", startsAt: time.Now().AddDate(0, 0, -10), expiresAt: time.Now().AddDate(0, 0, 20)},
 		{id: "10Day", expiresAt: time.Now().AddDate(0, 0, 10)},
+		{id: "started", startsAt: time.Now().AddDate(0, 0, -10), expiresAt: time.Now().AddDate(0, 0, 20)},
 		{id: "2Months", expiresAt: time.Now().AddDate(0, 2, 0)},
 		hats,
 	}
@@ -286,7 +286,7 @@ func TestSortSurveys(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			for i, a := range sortSurveys(test.input) {
 				if expected[i].id != a.id {
-					t.Errorf("expectedID to see %s, found %s at position %d",
+					t.Errorf("expected to see %s, found %s at position %d",
 						expected[i].id, a.id, i)
 				}
 			}

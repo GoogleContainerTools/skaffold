@@ -373,38 +373,6 @@ func UpdateHaTSSurveyTaken(configFile string) error {
 	return err
 }
 
-func UpdateUserSurveyTaken(configFile string, id string) error {
-	ai := fmt.Sprintf(updateUserTaken, id)
-	aiErr := fmt.Errorf("could not automatically update the survey prompted timestamp - please run `%s`", ai)
-	configFile, err := ResolveConfigFile(configFile)
-	if err != nil {
-		return aiErr
-	}
-	fullConfig, err := ReadConfigFile(configFile)
-	if err != nil {
-		return aiErr
-	}
-	if fullConfig.Global == nil {
-		fullConfig.Global = &ContextConfig{}
-	}
-	if fullConfig.Global.Survey == nil {
-		fullConfig.Global.Survey = &SurveyConfig{}
-	}
-	for _, s := range fullConfig.Global.Survey.UserSurveys {
-		if s.ID == id {
-			s.Taken = util.BoolPtr(true)
-			return nil
-		}
-	}
-	fullConfig.Global.Survey.UserSurveys = append(fullConfig.Global.Survey.UserSurveys,
-		&UserSurvey{ID: id, Taken: util.BoolPtr(true)})
-	err = WriteFullConfig(configFile, fullConfig)
-	if err != nil {
-		return aiErr
-	}
-	return nil
-}
-
 func UpdateGlobalSurveyPrompted(configFile string) error {
 	// Today's date
 	today := current().Format(time.RFC3339)
@@ -466,4 +434,39 @@ func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 	return nil
+}
+
+func UpdateUserSurveyTaken(configFile string, id string) error {
+	ai := fmt.Sprintf(updateUserTaken, id)
+	aiErr := fmt.Errorf("could not automatically update the survey prompted timestamp - please run `%s`", ai)
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.Survey == nil {
+		fullConfig.Global.Survey = &SurveyConfig{}
+	}
+	fullConfig.Global.Survey.UserSurveys = updatedUserSurveys(fullConfig.Global.Survey.UserSurveys, id)
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return aiErr
+	}
+	return nil
+}
+
+func updatedUserSurveys(us []*UserSurvey, id string) []*UserSurvey {
+	for _, s := range us {
+		if s.ID == id {
+			s.Taken = util.BoolPtr(true)
+			return us
+		}
+	}
+	return append(us, &UserSurvey{ID: id, Taken: util.BoolPtr(true)})
 }
