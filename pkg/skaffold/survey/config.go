@@ -48,10 +48,10 @@ var (
 		hats,
 		{
 			id:       helmID,
-			startsAt: time.Date(2021, time.July, 11, 0, 0, 0, 0, time.UTC),
+			startsAt: time.Date(2021, time.July, 15, 0, 0, 0, 0, time.UTC),
 			expiresAt: time.Date(2021, time.August,
 				14, 00, 00, 00, 0, time.UTC),
-			promptText: "Skaffold is working on revamping helm deployer support. Help us understand your helm deployer use case with our 2-minute anonymous survey",
+			promptText: "Help improve Skaffold's Helm support by taking our 2-minute anonymous survey!",
 			isRelevantFn: func(cfgs []util.VersionedConfig, _ sConfig.RunMode) bool {
 				for _, cfg := range cfgs {
 					v1Cfg, ok := cfg.(*latestV1.SkaffoldConfig)

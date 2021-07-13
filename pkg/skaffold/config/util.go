@@ -398,6 +398,10 @@ func UpdateUserSurveyTaken(configFile string, id string) error {
 	}
 	fullConfig.Global.Survey.UserSurveys = append(fullConfig.Global.Survey.UserSurveys,
 		&UserSurvey{ID: id, Taken: util.BoolPtr(true)})
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return aiErr
+	}
 	return nil
 }
 

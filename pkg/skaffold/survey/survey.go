@@ -97,6 +97,7 @@ func (s *Runner) recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) bool {
 	return recentlyPrompted(cfg.Global.Survey) || s.taken(cfg.Global.Survey)
 }
 
+// recentlyPrompted returns true if the user has been recently prompted for a survey.
 func recentlyPrompted(gc *sConfig.SurveyConfig) bool {
 	return timeutil.LessThan(gc.LastPrompted, 10*24*time.Hour)
 }
@@ -160,9 +161,12 @@ func (s *Runner) presentSurvey(gc *sConfig.SurveyConfig) string {
 	taken := surveysTaken(gc)
 	var candidates []config
 	for _, sc := range surveys {
-		if _, ok := taken[sc.id]; !ok && sc.isActive() {
+		if _, found := taken[sc.id]; !found && sc.isActive() {
 			candidates = append(candidates, sc)
 		}
+	}
+	if len(candidates) == 0 {
+		return ""
 	}
 	sortSurveys(candidates)
 	cfgs, err := parseConfig(s.skaffoldConfig)
