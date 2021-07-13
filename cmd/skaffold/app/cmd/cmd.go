@@ -63,9 +63,9 @@ const (
 
 func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
-	surveyPrompt := make(chan bool, 1)
+	surveyPrompt := make(chan string, 1)
 	var metricsPrompt bool
-	s := survey.New(opts.GlobalConfig)
+	var s *survey.Runner
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -111,10 +111,11 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				logrus.Debugf("Disable housekeeping messages for command explicitly")
 				return nil
 			}
+			s = survey.New(opts.GlobalConfig, opts.ConfigurationFile, opts.Command)
 			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-				surveyPrompt <- s.ShouldDisplaySurveyPrompt()
+				surveyPrompt <- s.SurveyPromptID()
 			}()
 			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
@@ -133,9 +134,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			}
 			// check if survey prompt needs to be displayed
 			select {
-			case shouldDisplay := <-surveyPrompt:
-				if shouldDisplay {
-					if err := s.DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
+			case promptSurveyID := <-surveyPrompt:
+				if promptSurveyID != "" {
+					if err := s.DisplaySurveyPrompt(cmd.OutOrStdout(), promptSurveyID); err != nil {
 						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 					}
 				}

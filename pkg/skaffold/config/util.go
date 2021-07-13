@@ -58,6 +58,7 @@ var (
 
 	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
+	updateUserTaken = "skaffold config set --survey --global --id %s taken true"
 	// update global config with the time the survey was last prompted
 	updateLastPrompted = "skaffold config set --survey --global last-prompted %s"
 )
@@ -344,7 +345,7 @@ func UpdateMsgDisplayed(configFile string) error {
 	return err
 }
 
-func UpdateGlobalSurveyTaken(configFile string) error {
+func UpdateHaTSSurveyTaken(configFile string) error {
 	// Today's date
 	today := current().Format(time.RFC3339)
 	ai := fmt.Sprintf(updateLastTaken, today)
@@ -370,6 +371,34 @@ func UpdateGlobalSurveyTaken(configFile string) error {
 		return aiErr
 	}
 	return err
+}
+
+func UpdateUserSurveyTaken(configFile string, id string) error {
+	ai := fmt.Sprintf(updateUserTaken, id)
+	aiErr := fmt.Errorf("could not automatically update the survey prompted timestamp - please run `%s`", ai)
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.Survey == nil {
+		fullConfig.Global.Survey = &SurveyConfig{}
+	}
+	for _, s := range fullConfig.Global.Survey.UserSurveys {
+		if s.ID == id {
+			s.Taken = util.BoolPtr(true)
+			return nil
+		}
+	}
+	fullConfig.Global.Survey.UserSurveys = append(fullConfig.Global.Survey.UserSurveys,
+		&UserSurvey{ID: id, Taken: util.BoolPtr(true)})
+	return nil
 }
 
 func UpdateGlobalSurveyPrompted(configFile string) error {

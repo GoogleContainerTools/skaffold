@@ -44,7 +44,7 @@ func TestSurveyPrompt(t *testing.T) {
 				promptText: "Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey",
 				expiresAt:  time.Date(2021, time.August, 14, 00, 00, 00, 0, time.UTC),
 			},
-			expected: `Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey: run 'skaffold survey -id foo'
+			expected: `Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey: run 'skaffold survey --id foo'
 `,
 		},
 	}
@@ -74,9 +74,42 @@ func TestSurveyActive(t *testing.T) {
 			},
 		},
 		{
+			description: "start date set but expiry in past",
+			s: config{
+				id:        "expired",
+				startsAt:  time.Date(2020, 7, 1, 0, 0, 0, 0, time.UTC),
+				expiresAt: time.Date(2020, 8, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
 			description: "expiry in future",
 			s: config{
 				id:        "active",
+				expiresAt: time.Now().AddDate(1, 0, 0),
+			},
+			expected: true,
+		},
+		{
+			description: "no start date set and expiry in future",
+			s: config{
+				id:        "active",
+				expiresAt: time.Now().AddDate(1, 0, 0),
+			},
+			expected: true,
+		},
+		{
+			description: "start date set in a month from now",
+			s: config{
+				id:        "inactive",
+				startsAt:  time.Now().AddDate(0, 1, 0),
+				expiresAt: time.Now().AddDate(1, 0, 0),
+			},
+		},
+		{
+			description: "start date set in past and expiry in future",
+			s: config{
+				id:        "active",
+				startsAt:  time.Now().AddDate(0, -1, 0),
 				expiresAt: time.Now().AddDate(1, 0, 0),
 			},
 			expected: true,
@@ -215,6 +248,45 @@ func TestIsValid(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.CheckDeepEqual(test.s.isValid(), test.expected)
+		})
+	}
+}
+
+func TestSortSurveys(t *testing.T) {
+	expected := []config{
+		{id: "10Day", expiresAt: time.Now().AddDate(0, 0, 10)},
+		{id: "2Months", expiresAt: time.Now().AddDate(0, 2, 0)},
+		hats,
+	}
+	tests := []struct {
+		description string
+		input       []config
+	}{
+		{
+			description: "no expiry set at 0th position",
+			input: []config{
+				hats,
+				{id: "2Months", expiresAt: time.Now().AddDate(0, 2, 0)},
+				{id: "10Day", expiresAt: time.Now().AddDate(0, 0, 10)},
+			},
+		},
+		{
+			description: "no expiry set in middle position",
+			input: []config{
+				{id: "2Months", expiresAt: time.Now().AddDate(0, 2, 0)},
+				hats,
+				{id: "10Day", expiresAt: time.Now().AddDate(0, 0, 10)},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			for i, a := range sortSurveys(test.input) {
+				if expected[i].id != a.id {
+					t.Errorf("expectedID to see %s, found %s at position %d",
+						expected[i].id, a.id, i)
+				}
+			}
 		})
 	}
 }
