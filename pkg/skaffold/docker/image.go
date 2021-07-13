@@ -38,7 +38,6 @@ import (
 	"github.com/docker/docker/pkg/streamformatter"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
-	k8sv1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -60,6 +59,14 @@ type ContainerRun struct {
 	BeforeStart func(context.Context, string) error
 }
 
+type ContainerCreateOpts struct {
+	Name        string
+	Image       string
+	Network     string
+	VolumesFrom []string
+	Wait        bool
+}
+
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
 	Close() error
@@ -71,7 +78,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, name, ref, network string, container k8sv1.Container, initContainers []k8sv1.Container) (string, error)
+	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -159,65 +166,26 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns then container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, name, ref, network string, cr k8sv1.Container, initCr []k8sv1.Container) (string, error) {
-	var volFrom []string
-	for _, c := range initCr {
-		if len(c.VolumeMounts) > 0 {
-			volFrom = append(volFrom, c.Name)
-		}
-		if err := l.Pull(ctx, out, c.Image); err != nil {
-			return "", err
-		}
-		if _, err := l.run(ctx, network, c, nil, true); err != nil {
-			return "", err
-		}
-	}
-
-	return l.run(ctx, network, cr, volFrom, false)
-}
-
-func (l *localDaemon) run(ctx context.Context, network string, cr k8sv1.Container, volFrom []string, wait bool) (string, error) {
-	var mount map[string]struct{}
-	if len(cr.VolumeMounts) > 0 {
-		mount = make(map[string]struct{})
-	}
-	for _, m := range cr.VolumeMounts {
-		mount[m.MountPath] = struct{}{}
-	}
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error) {
 	cfg := &container.Config{
-		Tty:        cr.TTY,
-		OpenStdin:  cr.Stdin,
-		StdinOnce:  cr.StdinOnce,
-		Env:        toSlice(cr.Env),
-		Entrypoint: cr.Command,
-		Image:      cr.Image,
-		Volumes:    mount,
-		WorkingDir: cr.WorkingDir,
+		Image: opts.Image,
 	}
 
 	hCfg := &container.HostConfig{
-		NetworkMode: container.NetworkMode(network),
-		VolumesFrom: volFrom,
+		NetworkMode: container.NetworkMode(opts.Network),
+		VolumesFrom: opts.VolumesFrom,
 	}
-	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, cr.Name)
+	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, opts.Name)
 	if err != nil {
 		return "", err
 	}
 	if err := l.apiClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return "", err
 	}
-	if wait {
+	if opts.Wait {
 		l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
 	}
 	return c.ID, nil
-}
-
-func toSlice(env []k8sv1.EnvVar) []string {
-	var sl []string
-	for _, e := range env {
-		sl = append(sl, fmt.Sprintf("%s=%s", e.Name, e.Value))
-	}
-	return sl
 }
 
 func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {

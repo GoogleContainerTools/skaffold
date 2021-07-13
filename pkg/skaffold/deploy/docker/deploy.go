@@ -73,7 +73,7 @@ func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.D
 }
 
 func (d *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	// TODO(nkubala): implement
+	// TODO(nkubala): implement with components
 }
 
 func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
@@ -95,15 +95,16 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 				return fmt.Errorf("failed to remove old container %s for image %s: %w", containerID, b.ImageName, err)
 			}
 		}
-		container, initContainers, err := containerFromImage(b.Tag, b.ImageName)
-		if err != nil {
-			return errors.Wrap(err, "instantiating containers from image names")
-		}
 		if d.cfg.UseCompose {
 			// TODO(nkubala): implement
 			return fmt.Errorf("docker compose not yet supported by skaffold")
 		}
-		id, err := d.client.Run(ctx, out, b.ImageName, b.Tag, d.network, container, initContainers)
+		opts := dockerutil.ContainerCreateOpts{
+			Name:    b.ImageName,
+			Image:   b.Tag,
+			Network: d.network,
+		}
+		id, err := d.client.Run(ctx, out, opts)
 		if err != nil {
 			return errors.Wrap(err, "creating container in local docker")
 		}
