@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -34,7 +33,6 @@ type RunContext struct {
 	Opts               config.SkaffoldOptions
 	Pipelines          Pipelines
 	KubeContext        string
-	Namespaces         []string
 	WorkingDir         string
 	InsecureRegistries map[string]bool
 	Cluster            config.Cluster
@@ -216,11 +214,6 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, pipelines)
-	if err != nil {
-		return nil, fmt.Errorf("getting namespace list: %w", err)
-	}
-
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
@@ -253,7 +246,6 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		Pipelines:          ps,
 		WorkingDir:         cwd,
 		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 		Cluster:            cluster,
 		RunID:              runID,
