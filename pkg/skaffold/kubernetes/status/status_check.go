@@ -72,7 +72,6 @@ type counter struct {
 type Config interface {
 	kubectl.Config
 
-	GetNamespaces() []string
 	StatusCheckDeadlineSeconds() int
 	Muted() config.Muted
 	StatusCheck() *bool
@@ -86,10 +85,11 @@ type Monitor struct {
 	muteLogs        bool
 	seenResources   resource.Group
 	singleRun       singleflight.Group
+	namespaces      *[]string
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on deployments and pods.
-func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller) *Monitor {
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) *Monitor {
 	return &Monitor{
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,
@@ -97,6 +97,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller) *Monitor {
 		deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
 		seenResources:   make(resource.Group),
 		singleRun:       singleflight.Group{},
+		namespaces:      namespaces,
 	}
 }
 
@@ -140,7 +141,7 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range s.cfg.GetNamespaces() {
+	for _, n := range *s.namespaces {
 		newDeployments, err := getDeployments(ctx, client, n, s.labeller,
 			getDeadline(s.deadlineSeconds))
 		if err != nil {

@@ -103,6 +103,8 @@ type Deployer struct {
 	namespace   string
 	configFile  string
 
+	namespaces *[]string
+
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
 
@@ -145,16 +147,18 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 
 	podSelector := kubernetes.NewImageList()
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
+	namespaces := []string{}
 
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
-		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller),
-		debugger:       component.NewDebugger(cfg.Mode(), podSelector),
+		namespaces:     &namespaces,
+		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
 		imageLoader:    component.NewImageLoader(cfg, kubectl),
-		logger:         component.NewLogger(cfg, kubectl, podSelector),
-		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
-		syncer:         component.NewSyncer(cfg, kubectl),
+		logger:         component.NewLogger(cfg, kubectl, podSelector, &namespaces),
+		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:         component.NewSyncer(kubectl, &namespaces),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -166,6 +170,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 		enableDebug:    cfg.Mode() == config.RunModes.Debug,
 		isMultiConfig:  cfg.IsMultiConfig(),
 	}, nil
+}
+
+func (h *Deployer) trackNamespaces(namespaces []string) {
+	*h.namespaces = deployutil.ConsolidateNamespaces(*h.namespaces, namespaces)
 }
 
 func (h *Deployer) GetAccessor() access.Accessor {
@@ -198,7 +206,7 @@ func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
@@ -208,13 +216,13 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// This gives a better error message when the cluster can't
 	// be reached.
 	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
-		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
@@ -228,15 +236,15 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
 		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
+			return userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
 		}
 		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV, chartVersion)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("deploying %q", releaseName), err)
+			return userErr(fmt.Sprintf("deploying %q", releaseName), err)
 		}
 
 		// collect namespaces
@@ -257,7 +265,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	if err := label.Apply(ctx, h.labels, dRes); err != nil {
-		return nil, helmLabelErr(fmt.Errorf("adding labels: %w", err))
+		return helmLabelErr(fmt.Errorf("adding labels: %w", err))
 	}
 
 	// Collect namespaces in a string
@@ -267,7 +275,8 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	h.TrackBuildArtifacts(builds)
-	return namespaces, nil
+	h.trackNamespaces(namespaces)
+	return nil
 }
 
 // Dependencies returns a list of files that the deployer depends on.

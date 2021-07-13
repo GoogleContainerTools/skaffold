@@ -52,7 +52,7 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_Deploying")
 	defer endTrace()
 	r.deployer.RegisterLocalImages(localImages)
-	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
+	err = r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
@@ -61,6 +61,5 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	}
 	r.hasDeployed = true
 	event.DeployComplete()
-	r.runCtx.UpdateNamespaces(namespaces)
 	return nil
 }

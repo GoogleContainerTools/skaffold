@@ -248,7 +248,7 @@ func TestKubectlDeploy(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl)
 			t.RequireNoError(err)
 
-			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -405,21 +405,21 @@ func TestKubectlRedeploy(t *testing.T) {
 		t.RequireNoError(err)
 
 		// Deploy one manifest
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
 		})
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		})
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		})
@@ -470,7 +470,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
-		_, err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		})
 
@@ -507,7 +507,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 		}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
 		t.RequireNoError(err)
 
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		})
 
@@ -730,7 +730,7 @@ func TestGCSManifests(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl)
 			t.RequireNoError(err)
 
-			_, err = k.Deploy(context.Background(), ioutil.Discard, nil)
+			err = k.Deploy(context.Background(), ioutil.Discard, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})

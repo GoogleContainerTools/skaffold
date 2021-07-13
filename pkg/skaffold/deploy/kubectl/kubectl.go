@@ -73,6 +73,8 @@ type Deployer struct {
 	insecureRegistries map[string]bool
 	labeller           *label.DefaultLabeller
 	skipRender         bool
+
+	namespaces *[]string
 }
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
@@ -89,16 +91,18 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.Kubect
 
 	podSelector := kubernetes.NewImageList()
 	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
+	namespaces := []string{}
 
 	return &Deployer{
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
-		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller),
-		debugger:           component.NewDebugger(cfg.Mode(), podSelector),
+		namespaces:         &namespaces,
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
 		imageLoader:        component.NewImageLoader(cfg, kubectl.CLI),
-		logger:             component.NewLogger(cfg, kubectl.CLI, podSelector),
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
-		syncer:             component.NewSyncer(cfg, kubectl.CLI),
+		logger:             component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces),
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:             component.NewSyncer(kubectl.CLI, &namespaces),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
@@ -139,9 +143,13 @@ func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	k.logger.RegisterArtifacts(artifacts)
 }
 
+func (k *Deployer) trackNamespaces(namespaces []string) {
+	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
+}
+
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	var (
 		manifests manifest.ManifestList
 		err       error
@@ -156,7 +164,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// This gives a better error message when the cluster can't
 	// be reached.
 	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
-		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
 	// if any hydrated manifests are passed to `skaffold apply`, only deploy these
@@ -167,7 +175,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		manifests, err = createManifestList(k.hydratedManifests)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
+			return err
 		}
 		manifests, err = manifests.SetLabels(k.labeller.Labels())
 		endTrace()
@@ -182,18 +190,18 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if len(manifests) == 0 {
-		return nil, nil
+		return nil
 	}
 	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
@@ -208,19 +216,20 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
 	if err := k.kubectl.WaitForDeletions(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_KubectlApply")
 	if err := k.kubectl.Apply(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	k.TrackBuildArtifacts(builds)
 	endTrace()
-	return namespaces, nil
+	k.trackNamespaces(namespaces)
+	return nil
 }
 
 func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {

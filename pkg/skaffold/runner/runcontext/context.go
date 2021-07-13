@@ -25,21 +25,14 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-)
-
-const (
-	emptyNamespace = ""
 )
 
 type RunContext struct {
 	Opts               config.SkaffoldOptions
 	Pipelines          Pipelines
 	KubeContext        string
-	Namespaces         []string
 	WorkingDir         string
 	InsecureRegistries map[string]bool
 	Cluster            config.Cluster
@@ -155,7 +148,6 @@ func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 
 func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
-func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }
 func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
@@ -222,11 +214,6 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, pipelines)
-	if err != nil {
-		return nil, fmt.Errorf("getting namespace list: %w", err)
-	}
-
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
@@ -259,19 +246,8 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		Pipelines:          ps,
 		WorkingDir:         cwd,
 		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 		Cluster:            cluster,
 		RunID:              runID,
 	}, nil
-}
-
-func (rc *RunContext) UpdateNamespaces(ns []string) {
-	if len(ns) == 0 {
-		return
-	}
-	namespaces := util.NewStringSet()
-	namespaces.Insert(append(rc.Namespaces, ns...)...)
-	namespaces.Delete(emptyNamespace)
-	rc.Namespaces = namespaces.ToList()
 }

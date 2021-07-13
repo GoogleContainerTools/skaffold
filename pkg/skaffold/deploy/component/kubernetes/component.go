@@ -52,7 +52,7 @@ var (
 	k8sMonitor  map[string]status.Monitor
 )
 
-func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, podSelector kubernetes.PodSelector, labeller label.Config) access.Accessor {
+func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, podSelector kubernetes.PodSelector, labeller label.Config, namespaces *[]string) access.Accessor {
 	accessLock.Lock()
 	defer accessLock.Unlock()
 	if k8sAccessor == nil {
@@ -62,7 +62,7 @@ func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, p
 		if !cfg.PortForwardOptions().Enabled() {
 			k8sAccessor[kubeContext] = &access.NoopAccessor{}
 		}
-		m := portforward.NewForwarderManager(cli, podSelector, labeller.RunIDSelector(), cfg.Mode(), cfg.PortForwardOptions(), cfg.PortForwardResources())
+		m := portforward.NewForwarderManager(cli, podSelector, labeller.RunIDSelector(), cfg.Mode(), namespaces, cfg.PortForwardOptions(), cfg.PortForwardResources())
 		if m == nil {
 			k8sAccessor[kubeContext] = &access.NoopAccessor{}
 		} else {
@@ -73,12 +73,12 @@ func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, p
 	return k8sAccessor[kubeContext]
 }
 
-func newDebugger(mode config.RunMode, podSelector kubernetes.PodSelector) debug.Debugger {
+func newDebugger(mode config.RunMode, podSelector kubernetes.PodSelector, namespaces *[]string) debug.Debugger {
 	if mode != config.RunModes.Debug {
 		return &debug.NoopDebugger{}
 	}
 
-	return debugging.NewContainerManager(podSelector)
+	return debugging.NewContainerManager(podSelector, namespaces)
 }
 
 func newImageLoader(cfg k8sloader.Config, cli *kubectl.CLI) loader.ImageLoader {
@@ -88,11 +88,11 @@ func newImageLoader(cfg k8sloader.Config, cli *kubectl.CLI) loader.ImageLoader {
 	return &loader.NoopImageLoader{}
 }
 
-func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes.PodSelector) log.Logger {
-	return k8slogger.NewLogAggregator(cli, podSelector, config)
+func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces *[]string) log.Logger {
+	return k8slogger.NewLogAggregator(cli, podSelector, namespaces, config)
 }
 
-func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller) status.Monitor {
+func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller, namespaces *[]string) status.Monitor {
 	monitorLock.Lock()
 	defer monitorLock.Unlock()
 	if k8sMonitor == nil {
@@ -103,12 +103,12 @@ func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.Defaul
 		if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
 			k8sMonitor[kubeContext] = &status.NoopMonitor{}
 		} else {
-			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller)
+			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller, namespaces)
 		}
 	}
 	return k8sMonitor[kubeContext]
 }
 
-func newSyncer(config sync.Config, cli *kubectl.CLI) sync.Syncer {
-	return sync.NewPodSyncer(cli, config)
+func newSyncer(cli *kubectl.CLI, namespaces *[]string) sync.Syncer {
+	return sync.NewPodSyncer(cli, namespaces)
 }

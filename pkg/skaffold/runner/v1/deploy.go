@@ -46,12 +46,12 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 	defer r.deployer.GetAccessor().Stop()
 
-	if err := r.deployer.GetAccessor().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetAccessor().Start(ctx, out); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
-	if err := r.deployer.GetLogger().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetLogger().Start(ctx, out); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
@@ -112,7 +112,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	r.deployer.RegisterLocalImages(localAndBuiltImages)
-	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
+	err = r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
@@ -132,7 +132,6 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	event.DeployComplete()
 	eventV2.TaskSucceeded(constants.Deploy)
-	r.runCtx.UpdateNamespaces(namespaces)
 	if !r.runCtx.Opts.IterativeStatusCheck {
 		// run final aggregated status check only if iterative status check is turned off.
 		return r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut)

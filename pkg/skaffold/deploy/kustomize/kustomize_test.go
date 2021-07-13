@@ -192,7 +192,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Namespace: skaffoldNamespaceOption,
 				}}}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
