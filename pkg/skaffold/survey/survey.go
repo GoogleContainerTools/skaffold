@@ -63,19 +63,23 @@ func (s *Runner) ShouldDisplaySurveyPrompt() bool {
 	return !disabled && !recentlyPromptedOrTaken(cfg)
 }
 
-func isSurveyPromptDisabled(configfile string) (*sConfig.ContextConfig, bool) {
-	cfg, err := sConfig.GetConfigForCurrentKubectx(configfile)
+func isSurveyPromptDisabled(configfile string) (*sConfig.GlobalConfig, bool) {
+	cfg, err := sConfig.ReadConfigFile(configfile)
 	if err != nil {
 		return nil, false
 	}
-	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
+	return cfg, cfg != nil && cfg.Global != nil &&
+		cfg.Global.Survey != nil &&
+		cfg.Global.Survey.DisablePrompt != nil &&
+		*cfg.Global.Survey.DisablePrompt
 }
 
-func recentlyPromptedOrTaken(cfg *sConfig.ContextConfig) bool {
-	if cfg == nil || cfg.Survey == nil {
+func recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) bool {
+	if cfg == nil || cfg.Global == nil || cfg.Global.Survey == nil {
 		return false
 	}
-	return timeutil.LessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || timeutil.LessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
+	return timeutil.LessThan(cfg.Global.Survey.LastTaken, 90*24*time.Hour) ||
+		timeutil.LessThan(cfg.Global.Survey.LastPrompted, 10*24*time.Hour)
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
