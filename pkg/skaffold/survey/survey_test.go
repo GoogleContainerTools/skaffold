@@ -201,7 +201,7 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 	}
 }
 
-func TestTaken(t *testing.T) {
+func TestRecentlyPromptedOrTaken(t *testing.T) {
 	// less than 90 days ago
 	twoMonthsAgo := time.Now().AddDate(0, -2, -5).Format(time.RFC3339)
 	// at least 90 days ago
@@ -209,7 +209,7 @@ func TestTaken(t *testing.T) {
 	future := time.Now().AddDate(1, 0, 0)
 	tests := []struct {
 		description string
-		cfg         *sConfig.SurveyConfig
+		cfg         *sConfig.GlobalConfig
 		input       []config
 		expected    string
 	}{
@@ -223,26 +223,30 @@ func TestTaken(t *testing.T) {
 		// Current world when no user surveys are configured.
 		{
 			description: "no user surveys - hats not taken",
-			cfg:         &sConfig.SurveyConfig{},
-			input:       []config{hats},
-			expected:    HatsID,
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{}}},
+			input:    []config{hats},
+			expected: HatsID,
 		},
 		{
 			description: "no user surveys - hats taken more than 3 months",
-			cfg:         &sConfig.SurveyConfig{LastTaken: threeMonthsAgo},
-			input:       []config{hats},
-			expected:    HatsID,
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{LastTaken: threeMonthsAgo}}},
+			input:    []config{hats},
+			expected: HatsID,
 		},
 		{
 			description: "no user surveys - hats taken less than 3 months",
-			cfg:         &sConfig.SurveyConfig{LastTaken: twoMonthsAgo},
-			input:       []config{hats},
-			expected:    "",
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{LastTaken: twoMonthsAgo}}},
+			input:    []config{hats},
+			expected: "",
 		},
 		// User survey configured and are relevant
 		{
 			description: "user surveys, hats not taken, relevant survey",
-			cfg:         &sConfig.SurveyConfig{},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{}}},
 			input: []config{hats, {id: "user", expiresAt: future,
 				isRelevantFn: func(_ []schemaUtil.VersionedConfig, _ sConfig.RunMode) bool {
 					return true
@@ -252,10 +256,11 @@ func TestTaken(t *testing.T) {
 		},
 		{
 			description: "user survey taken, hats taken",
-			cfg: &sConfig.SurveyConfig{LastTaken: twoMonthsAgo,
-				UserSurveys: []*sConfig.UserSurvey{
-					{ID: "user", Taken: util.BoolPtr(true)},
-				}},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{LastTaken: twoMonthsAgo,
+					UserSurveys: []*sConfig.UserSurvey{
+						{ID: "user", Taken: util.BoolPtr(true)},
+					}}}},
 			input: []config{hats, {id: "user", expiresAt: future,
 				isRelevantFn: func(_ []schemaUtil.VersionedConfig, _ sConfig.RunMode) bool {
 					return true
@@ -265,10 +270,11 @@ func TestTaken(t *testing.T) {
 		},
 		{
 			description: "user survey taken, hats not taken",
-			cfg: &sConfig.SurveyConfig{
-				UserSurveys: []*sConfig.UserSurvey{
-					{ID: "user", Taken: util.BoolPtr(true)},
-				}},
+			cfg: &sConfig.GlobalConfig{
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{
+					UserSurveys: []*sConfig.UserSurvey{
+						{ID: "user", Taken: util.BoolPtr(true)},
+					}}}},
 			input: []config{hats, {id: "user", expiresAt: future,
 				isRelevantFn: func(_ []schemaUtil.VersionedConfig, _ sConfig.RunMode) bool {
 					return true
@@ -283,7 +289,7 @@ func TestTaken(t *testing.T) {
 			t.Override(&parseConfig, func(string) ([]schemaUtil.VersionedConfig, error) {
 				return []schemaUtil.VersionedConfig{mockVersionedConfig{version: "test"}}, nil
 			})
-			actual := New("dummy", "yaml", "cmd").taken(test.cfg)
+			actual := New("dummy", "yaml", "cmd").recentlyPromptedOrTaken(test.cfg)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}

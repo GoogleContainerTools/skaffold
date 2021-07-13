@@ -45,10 +45,11 @@ var (
 		hats,
 		{
 			id:       "helm",
+			URL:      "https://forms.gle/cLQg8sGD71JnPSZf6",
 			startsAt: time.Date(2021, time.July, 15, 0, 0, 0, 0, time.UTC),
 			expiresAt: time.Date(2021, time.August,
 				14, 00, 00, 00, 0, time.UTC),
-			promptText: "Help improve Skaffold's Helm support by taking our 2-minute anonymous survey!",
+			promptText: "Help improve Skaffold's Helm support by taking our 2-minute anonymous survey",
 			isRelevantFn: func(cfgs []util.VersionedConfig, _ sConfig.RunMode) bool {
 				for _, cfg := range cfgs {
 					v1Cfg, ok := cfg.(*latestV1.SkaffoldConfig)
@@ -61,7 +62,6 @@ var (
 				}
 				return false
 			},
-			URL: "https://forms.gle/cLQg8sGD71JnPSZf6",
 		},
 	}
 )

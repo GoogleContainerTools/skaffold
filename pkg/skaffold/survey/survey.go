@@ -95,22 +95,17 @@ func isSurveyPromptDisabled(configfile string) (*sConfig.GlobalConfig, bool) {
 
 func (s *Runner) recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) string {
 	if cfg == nil || cfg.Global == nil || cfg.Global.Survey == nil {
-		return s.taken(cfg.Global.Survey)
+		return s.selectSurvey(map[string]struct{}{})
 	}
 	if recentlyPrompted(cfg.Global.Survey) {
 		return ""
 	}
-	return s.taken(cfg.Global.Survey)
+	return s.selectSurvey(surveysTaken(cfg.Global.Survey))
 }
 
 // recentlyPrompted returns true if the user has been recently prompted for a survey.
 func recentlyPrompted(gc *sConfig.SurveyConfig) bool {
 	return timeutil.LessThan(gc.LastPrompted, 10*24*time.Hour)
-}
-
-func (s *Runner) taken(gc *sConfig.SurveyConfig) string {
-	// fetch candidate surveys not taken by the user.
-	return s.selectSurvey(gc)
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer, id string) error {
@@ -160,8 +155,7 @@ func surveysTaken(sc *sConfig.SurveyConfig) map[string]struct{} {
 	return taken
 }
 
-func (s *Runner) selectSurvey(gc *sConfig.SurveyConfig) string {
-	takenSurveys := surveysTaken(gc)
+func (s *Runner) selectSurvey(takenSurveys map[string]struct{}) string {
 	var candidates []config
 	for _, sc := range surveys {
 		if _, taken := takenSurveys[sc.id]; !taken && sc.isActive() {
