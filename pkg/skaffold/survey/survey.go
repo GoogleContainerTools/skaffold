@@ -27,6 +27,7 @@ import (
 
 	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 )
 
@@ -46,21 +47,39 @@ var (
 	isStdOut             = output.IsStdout
 	open                 = browser.OpenURL
 	updateSurveyPrompted = sConfig.UpdateGlobalSurveyPrompted
+	parseConfig          = schema.ParseConfigAndUpgrade
 )
 
 type Runner struct {
-	configFile string
+	configFile     string
+	skaffoldConfig string
+	mode           sConfig.RunMode
 }
 
-func New(configFile string) *Runner {
+func New(configFile string, skaffoldConfig string, mode string) *Runner {
 	return &Runner{
-		configFile: configFile,
+		configFile:     configFile,
+		skaffoldConfig: skaffoldConfig,
+		mode:           sConfig.RunMode(mode),
 	}
 }
 
-func (s *Runner) ShouldDisplaySurveyPrompt() bool {
+// NextSurveyID returns the survey id of the survey to be shown
+// to the user. In case no survey is available, it returns empty string.
+func (s *Runner) NextSurveyID() string {
+	if id, ok := s.shouldDisplaySurveyPrompt(); ok {
+		return id
+	}
+	return ""
+}
+
+func (s *Runner) shouldDisplaySurveyPrompt() (string, bool) {
 	cfg, disabled := isSurveyPromptDisabled(s.configFile)
-	return !disabled && !recentlyPromptedOrTaken(cfg)
+	if disabled {
+		return "", !disabled
+	}
+	id := s.recentlyPromptedOrTaken(cfg)
+	return s.recentlyPromptedOrTaken(cfg), id != ""
 }
 
 func isSurveyPromptDisabled(configfile string) (*sConfig.GlobalConfig, bool) {
@@ -74,20 +93,30 @@ func isSurveyPromptDisabled(configfile string) (*sConfig.GlobalConfig, bool) {
 		*cfg.Global.Survey.DisablePrompt
 }
 
-func recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) bool {
+func (s *Runner) recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) string {
 	if cfg == nil || cfg.Global == nil || cfg.Global.Survey == nil {
-		return false
+		return s.selectSurvey(map[string]struct{}{})
 	}
-	return timeutil.LessThan(cfg.Global.Survey.LastTaken, 90*24*time.Hour) ||
-		timeutil.LessThan(cfg.Global.Survey.LastPrompted, 10*24*time.Hour)
+	if recentlyPrompted(cfg.Global.Survey) {
+		return ""
+	}
+	return s.selectSurvey(surveysTaken(cfg.Global.Survey))
 }
 
-func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
+// recentlyPrompted returns true if the user has been recently prompted for a survey.
+func recentlyPrompted(gc *sConfig.SurveyConfig) bool {
+	return timeutil.LessThan(gc.LastPrompted, 10*24*time.Hour)
+}
+
+func (s *Runner) DisplaySurveyPrompt(out io.Writer, id string) error {
 	if !isStdOut(out) {
 		return nil
 	}
-	output.Green.Fprintf(out, hats.prompt())
-	return updateSurveyPrompted(s.configFile)
+	if sc, ok := getSurvey(id); ok {
+		output.Green.Fprintf(out, sc.prompt())
+		return updateSurveyPrompted(s.configFile)
+	}
+	return nil
 }
 
 func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) error {
@@ -103,7 +132,49 @@ func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) err
 		logrus.Debugf("could not open url %s", sc.URL)
 		return err
 	}
-	// Currently we will only update the global config survey taken
-	// When prompting for the survey, we need to use the same field.
-	return sConfig.UpdateHaTSSurveyTaken(s.configFile)
+
+	if id == HatsID {
+		return sConfig.UpdateHaTSSurveyTaken(s.configFile)
+	}
+	return sConfig.UpdateUserSurveyTaken(s.configFile, id)
+}
+
+func surveysTaken(sc *sConfig.SurveyConfig) map[string]struct{} {
+	if sc == nil {
+		return map[string]struct{}{}
+	}
+	taken := map[string]struct{}{}
+	if timeutil.LessThan(sc.LastTaken, 90*24*time.Hour) {
+		taken[HatsID] = struct{}{}
+	}
+	for _, cs := range sc.UserSurveys {
+		if *cs.Taken {
+			taken[cs.ID] = struct{}{}
+		}
+	}
+	return taken
+}
+
+func (s *Runner) selectSurvey(takenSurveys map[string]struct{}) string {
+	var candidates []config
+	for _, sc := range surveys {
+		if _, taken := takenSurveys[sc.id]; !taken && sc.isActive() {
+			candidates = append(candidates, sc)
+		}
+	}
+	if len(candidates) == 0 {
+		return ""
+	}
+	sortSurveys(candidates)
+	cfgs, err := parseConfig(s.skaffoldConfig)
+	if err != nil {
+		logrus.Debugf("error parsing skaffold.yaml %s", err)
+		return ""
+	}
+	for _, sc := range candidates {
+		if sc.isRelevantFn(cfgs, s.mode) {
+			return sc.id
+		}
+	}
+	return ""
 }
