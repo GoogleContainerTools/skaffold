@@ -63,7 +63,7 @@ func TestGetMonitor(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			m := NewMonitor(mockStatusConfig{statusCheck: test.statusCheck}, label.NewLabeller(false, nil, ""))
+			m := NewMonitor(mockStatusConfig{statusCheck: test.statusCheck}, test.description, label.NewLabeller(false, nil, ""))
 			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(m)).Type() == reflect.TypeOf(status.NoopMonitor{}))
 		})
 	}

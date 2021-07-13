@@ -56,9 +56,6 @@ var (
 
 	// report resource status for pending resources 5 seconds.
 	reportStatusTime = 5 * time.Second
-
-	once    sync.Once
-	monitor *Monitor
 )
 
 const (
@@ -93,17 +90,14 @@ type Monitor struct {
 
 // NewStatusMonitor returns a status monitor which runs checks on deployments and pods.
 func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller) *Monitor {
-	once.Do(func() {
-		monitor = &Monitor{
-			muteLogs:        cfg.Muted().MuteStatusCheck(),
-			cfg:             cfg,
-			labeller:        labeller,
-			deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
-			seenResources:   make(resource.Group),
-			singleRun:       singleflight.Group{},
-		}
-	})
-	return monitor
+	return &Monitor{
+		muteLogs:        cfg.Muted().MuteStatusCheck(),
+		cfg:             cfg,
+		labeller:        labeller,
+		deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
+		seenResources:   make(resource.Group),
+		singleRun:       singleflight.Group{},
+	}
 }
 
 // Check runs the status checks on deployments and pods deployed in current skaffold dev iteration.

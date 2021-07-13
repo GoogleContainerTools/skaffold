@@ -17,6 +17,8 @@ limitations under the License.
 package kubernetes
 
 import (
+	gosync "sync"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
@@ -42,13 +44,33 @@ var (
 	NewLogger      = newLogger
 	NewMonitor     = newMonitor
 	NewSyncer      = newSyncer
+
+	accessLock  gosync.Mutex
+	k8sAccessor map[string]access.Accessor
+
+	monitorLock gosync.Mutex
+	k8sMonitor  map[string]status.Monitor
 )
 
-func newAccessor(cfg portforward.Config, cli *kubectl.CLI, podSelector kubernetes.PodSelector, labeller label.Config) access.Accessor {
-	if !cfg.PortForwardOptions().Enabled() {
-		return &access.NoopAccessor{}
+func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, podSelector kubernetes.PodSelector, labeller label.Config) access.Accessor {
+	accessLock.Lock()
+	defer accessLock.Unlock()
+	if k8sAccessor == nil {
+		k8sAccessor = make(map[string]access.Accessor)
 	}
-	return portforward.NewForwarderManager(cli, podSelector, labeller.RunIDSelector(), cfg.Mode(), cfg.PortForwardOptions(), cfg.PortForwardResources())
+	if k8sAccessor[kubeContext] == nil {
+		if !cfg.PortForwardOptions().Enabled() {
+			k8sAccessor[kubeContext] = &access.NoopAccessor{}
+		}
+		m := portforward.NewForwarderManager(cli, podSelector, labeller.RunIDSelector(), cfg.Mode(), cfg.PortForwardOptions(), cfg.PortForwardResources())
+		if m == nil {
+			k8sAccessor[kubeContext] = &access.NoopAccessor{}
+		} else {
+			k8sAccessor[kubeContext] = m
+		}
+	}
+
+	return k8sAccessor[kubeContext]
 }
 
 func newDebugger(mode config.RunMode, podSelector kubernetes.PodSelector) debug.Debugger {
@@ -70,12 +92,21 @@ func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes
 	return k8slogger.NewLogAggregator(cli, podSelector, config)
 }
 
-func newMonitor(cfg k8sstatus.Config, labeller *label.DefaultLabeller) status.Monitor {
-	enabled := cfg.StatusCheck()
-	if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
-		return &status.NoopMonitor{}
+func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller) status.Monitor {
+	monitorLock.Lock()
+	defer monitorLock.Unlock()
+	if k8sMonitor == nil {
+		k8sMonitor = make(map[string]status.Monitor)
 	}
-	return k8sstatus.NewStatusMonitor(cfg, labeller)
+	if k8sMonitor[kubeContext] == nil {
+		enabled := cfg.StatusCheck()
+		if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
+			k8sMonitor[kubeContext] = &status.NoopMonitor{}
+		} else {
+			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller)
+		}
+	}
+	return k8sMonitor[kubeContext]
 }
 
 func newSyncer(config sync.Config, cli *kubectl.CLI) sync.Syncer {

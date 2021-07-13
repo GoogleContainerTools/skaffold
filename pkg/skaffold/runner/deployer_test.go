@@ -173,13 +173,13 @@ func TestGetDeployer(tOuter *testing.T) {
 
 func TestGetDefaultDeployer(tOuter *testing.T) {
 	testutil.Run(tOuter, "TestGetDeployer", func(t *testutil.T) {
-		t.Override(&component.NewAccessor, func(portforward.Config, *pkgkubectl.CLI, kubernetes.PodSelector, label.Config) access.Accessor {
+		t.Override(&component.NewAccessor, func(portforward.Config, string, *pkgkubectl.CLI, kubernetes.PodSelector, label.Config) access.Accessor {
 			return &access.NoopAccessor{}
 		})
 		t.Override(&component.NewDebugger, func(config.RunMode, kubernetes.PodSelector) debug.Debugger {
 			return &debug.NoopDebugger{}
 		})
-		t.Override(&component.NewMonitor, func(k8sstatus.Config, *label.DefaultLabeller) status.Monitor {
+		t.Override(&component.NewMonitor, func(k8sstatus.Config, string, *label.DefaultLabeller) status.Monitor {
 			return &status.NoopMonitor{}
 		})
 		t.Override(&component.NewImageLoader, func(k8sloader.Config, *pkgkubectl.CLI) loader.ImageLoader {

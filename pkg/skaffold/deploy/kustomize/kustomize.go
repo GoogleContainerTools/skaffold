@@ -141,11 +141,11 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
-		accessor:            component.NewAccessor(cfg, kubectl.CLI, podSelector, labeller),
+		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller),
 		debugger:            component.NewDebugger(cfg.Mode(), podSelector),
 		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
 		logger:              component.NewLogger(cfg, kubectl.CLI, podSelector),
-		statusMonitor:       component.NewMonitor(cfg, labeller),
+		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
 		syncer:              component.NewSyncer(cfg, kubectl.CLI),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
