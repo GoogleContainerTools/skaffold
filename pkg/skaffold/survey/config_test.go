@@ -74,9 +74,42 @@ func TestSurveyActive(t *testing.T) {
 			},
 		},
 		{
+			description: "start date set but expiry in past",
+			s: config{
+				id:        "expired",
+				startsAt:  time.Date(2020, 7, 1, 0, 0, 0, 0, time.UTC),
+				expiresAt: time.Date(2020, 8, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
 			description: "expiry in future",
 			s: config{
 				id:        "active",
+				expiresAt: time.Now().AddDate(1, 0, 0),
+			},
+			expected: true,
+		},
+		{
+			description: "no start date set and expiry in future",
+			s: config{
+				id:        "active",
+				expiresAt: time.Now().AddDate(1, 0, 0),
+			},
+			expected: true,
+		},
+		{
+			description: "start date set in a month from now",
+			s: config{
+				id:        "inactive",
+				startsAt:  time.Now().AddDate(0, 1, 0),
+				expiresAt: time.Now().AddDate(1, 0, 0),
+			},
+		},
+		{
+			description: "start date set in past and expiry in future",
+			s: config{
+				id:        "active",
+				startsAt:  time.Now().AddDate(0, -1, 0),
 				expiresAt: time.Now().AddDate(1, 0, 0),
 			},
 			expected: true,
