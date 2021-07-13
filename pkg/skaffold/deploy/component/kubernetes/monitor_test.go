@@ -14,19 +14,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package status
+package kubernetes
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	k8sstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestMonitorProvider(t *testing.T) {
+type mockStatusConfig struct {
+	k8sstatus.Config
+	statusCheck *bool
+}
+
+func (m mockStatusConfig) StatusCheck() *bool { return m.statusCheck }
+
+func (m mockStatusConfig) GetKubeContext() string { return "" }
+
+func (m mockStatusConfig) StatusCheckDeadlineSeconds() int { return 0 }
+
+func (m mockStatusConfig) Muted() config.Muted { return config.Muted{} }
+
+func TestGetMonitor(t *testing.T) {
 	tests := []struct {
 		description string
 		statusCheck *bool
@@ -48,21 +63,8 @@ func TestMonitorProvider(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			m := NewMonitorProvider(nil).GetKubernetesMonitor(mockConfig{statusCheck: test.statusCheck})
-			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(m)).Type() == reflect.TypeOf(NoopMonitor{}))
+			m := NewMonitor(mockStatusConfig{statusCheck: test.statusCheck}, test.description, label.NewLabeller(false, nil, ""))
+			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(m)).Type() == reflect.TypeOf(status.NoopMonitor{}))
 		})
 	}
 }
-
-type mockConfig struct {
-	status.Config
-	statusCheck *bool
-}
-
-func (m mockConfig) StatusCheck() *bool { return m.statusCheck }
-
-func (m mockConfig) GetKubeContext() string { return "" }
-
-func (m mockConfig) StatusCheckDeadlineSeconds() int { return 0 }
-
-func (m mockConfig) Muted() config.Muted { return config.Muted{} }

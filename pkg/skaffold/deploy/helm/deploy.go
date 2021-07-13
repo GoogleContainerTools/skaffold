@@ -39,7 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -124,7 +124,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, h *latestV1.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -149,19 +149,19 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
-		accessor:       provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
-		imageLoader:    provider.ImageLoader.GetKubernetesImageLoader(cfg),
-		logger:         provider.Logger.GetKubernetesLogger(podSelector, kubectl),
-		statusMonitor:  provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector, kubectl),
+		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller),
+		debugger:       component.NewDebugger(cfg.Mode(), podSelector),
+		imageLoader:    component.NewImageLoader(cfg, kubectl),
+		logger:         component.NewLogger(cfg, kubectl, podSelector),
+		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
+		syncer:         component.NewSyncer(cfg, kubectl),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
 		namespace:      cfg.GetKubeNamespace(),
 		forceDeploy:    cfg.ForceDeploy(),
 		configFile:     cfg.ConfigurationFile(),
-		labels:         labels,
+		labels:         labeller.Labels(),
 		bV:             hv,
 		enableDebug:    cfg.Mode() == config.RunModes.Debug,
 		isMultiConfig:  cfg.IsMultiConfig(),

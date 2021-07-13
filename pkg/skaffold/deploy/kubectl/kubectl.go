@@ -32,8 +32,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -70,13 +71,13 @@ type Deployer struct {
 	defaultRepo        *string
 	kubectl            CLI
 	insecureRegistries map[string]bool
-	labels             map[string]string
+	labeller           *label.DefaultLabeller
 	skipRender         bool
 }
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -92,19 +93,19 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	return &Deployer{
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
-		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		imageLoader:        provider.ImageLoader.GetKubernetesImageLoader(cfg),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector, kubectl.CLI),
-		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector, kubectl.CLI),
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector),
+		imageLoader:        component.NewImageLoader(cfg, kubectl.CLI),
+		logger:             component.NewLogger(cfg, kubectl.CLI, podSelector),
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
+		syncer:             component.NewSyncer(cfg, kubectl.CLI),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
 		kubectl:            kubectl,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
-		labels:             labels,
+		labeller:           labeller,
 		hydratedManifests:  cfg.HydratedManifests(),
 	}, nil
 }
@@ -168,7 +169,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
-		manifests, err = manifests.SetLabels(k.labels)
+		manifests, err = manifests.SetLabels(k.labeller.Labels())
 		endTrace()
 	case k.skipRender:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
@@ -412,7 +413,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 		return nil, err
 	}
 
-	return manifests.SetLabels(k.labels)
+	return manifests.SetLabels(k.labeller.Labels())
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

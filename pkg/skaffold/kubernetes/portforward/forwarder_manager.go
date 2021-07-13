@@ -22,6 +22,7 @@ import (
 	"io"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/singleflight"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -52,6 +53,9 @@ type Forwarder interface {
 type ForwarderManager struct {
 	forwarders   []Forwarder
 	entryManager *EntryManager
+	label        string
+
+	singleRun singleflight.Group
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
@@ -78,6 +82,8 @@ func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, l
 	return &ForwarderManager{
 		forwarders:   forwarders,
 		entryManager: entryManager,
+		label:        label,
+		singleRun:    singleflight.Group{},
 	}
 }
 
@@ -113,13 +119,20 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 	return ports
 }
 
-// Start begins all forwarders managed by the ForwarderManager
 func (p *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	// Port forwarding is not enabled.
 	if p == nil {
 		return nil
 	}
 
+	_, err, _ := p.singleRun.Do(p.label, func() (interface{}, error) {
+		return struct{}{}, p.start(ctx, out, namespaces)
+	})
+	return err
+}
+
+// Start begins all forwarders managed by the ForwarderManager
+func (p *ForwarderManager) start(ctx context.Context, out io.Writer, namespaces []string) error {
 	eventV2.TaskInProgress(constants.PortForward, "Port forward URLs")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Start")
 	defer endTrace()
@@ -137,13 +150,19 @@ func (p *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces 
 	return nil
 }
 
-// Stop cleans up and terminates all forwarders managed by the ForwarderManager
 func (p *ForwarderManager) Stop() {
 	// Port forwarding is not enabled.
 	if p == nil {
 		return
 	}
+	p.singleRun.Do(p.label, func() (interface{}, error) {
+		p.stop()
+		return struct{}{}, nil
+	})
+}
 
+// Stop cleans up and terminates all forwarders managed by the ForwarderManager
+func (p *ForwarderManager) stop() {
 	for _, f := range p.forwarders {
 		f.Stop()
 	}

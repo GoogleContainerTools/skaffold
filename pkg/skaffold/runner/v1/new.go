@@ -22,10 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -33,14 +31,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
@@ -52,7 +46,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.LogMetaEvent()
 	eventV2.InitializeState(runCtx)
 	eventV2.LogMetaEvent()
-	// kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 	_, endTrace := instrumentation.StartTrace(context.Background(), "NewForConfig")
 	defer endTrace()
 
@@ -85,16 +78,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	var deployer deploy.Deployer
-	provider := deploy.ComponentProvider{
-		Accessor:    access.NewAccessorProvider(labeller),
-		Debugger:    debug.NewDebugProvider(runCtx),
-		ImageLoader: loader.NewImageLoaderProvider(),
-		Logger:      log.NewLogProvider(runCtx),
-		Monitor:     status.NewMonitorProvider(labeller),
-		Syncer:      sync.NewSyncProvider(runCtx),
-	}
-
-	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels())
+	deployer, err = runner.GetDeployer(runCtx, labeller)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)

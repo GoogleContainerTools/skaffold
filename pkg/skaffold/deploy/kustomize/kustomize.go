@@ -30,9 +30,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -121,7 +122,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -136,19 +137,20 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	podSelector := kubernetes.NewImageList()
+
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
-		accessor:            provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
-		imageLoader:         provider.ImageLoader.GetKubernetesImageLoader(cfg),
-		logger:              provider.Logger.GetKubernetesLogger(podSelector, kubectl.CLI),
-		statusMonitor:       provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:              provider.Syncer.GetKubernetesSyncer(podSelector, kubectl.CLI),
+		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller),
+		debugger:            component.NewDebugger(cfg.Mode(), podSelector),
+		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
+		logger:              component.NewLogger(cfg, kubectl.CLI, podSelector),
+		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
+		syncer:              component.NewSyncer(cfg, kubectl.CLI),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
-		labels:              labels,
+		labels:              labeller.Labels(),
 		useKubectlKustomize: useKubectlKustomize,
 	}, nil
 }
