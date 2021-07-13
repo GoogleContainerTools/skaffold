@@ -54,7 +54,6 @@ type Runner struct {
 	configFile     string
 	skaffoldConfig string
 	mode           sConfig.RunMode
-	surveyID       string
 }
 
 func New(configFile string, skaffoldConfig string, mode string) *Runner {
