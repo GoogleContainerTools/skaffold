@@ -544,7 +544,7 @@ kubeContexts: []`,
 			})
 
 			// update the time
-			err := UpdateGlobalSurveyTaken(cfg)
+			err := UpdateHaTSSurveyTaken(cfg)
 			t.CheckNoError(err)
 
 			actualConfig, cfgErr := ReadConfigFile(cfg)

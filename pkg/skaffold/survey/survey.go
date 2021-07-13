@@ -103,7 +103,7 @@ func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) err
 		logrus.Debugf("could not open url %s", sc.URL)
 		return err
 	}
-	// Currently we will only update the global survey taken
+	// Currently we will only update the global config survey taken
 	// When prompting for the survey, we need to use the same field.
-	return sConfig.UpdateGlobalSurveyTaken(s.configFile)
+	return sConfig.UpdateHaTSSurveyTaken(s.configFile)
 }

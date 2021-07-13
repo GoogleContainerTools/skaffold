@@ -344,7 +344,7 @@ func UpdateMsgDisplayed(configFile string) error {
 	return err
 }
 
-func UpdateGlobalSurveyTaken(configFile string) error {
+func UpdateHaTSSurveyTaken(configFile string) error {
 	// Today's date
 	today := current().Format(time.RFC3339)
 	ai := fmt.Sprintf(updateLastTaken, today)
