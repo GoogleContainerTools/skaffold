@@ -576,34 +576,6 @@
       "description": "contains all the configuration for the build steps.",
       "x-intellij-html-description": "contains all the configuration for the build steps."
     },
-    "BuildHooks": {
-      "properties": {
-        "after": {
-          "items": {
-            "$ref": "#/definitions/HostHook"
-          },
-          "type": "array",
-          "description": "describes the list of lifecycle hooks to execute *after* each artifact build step.",
-          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>after</em> each artifact build step."
-        },
-        "before": {
-          "items": {
-            "$ref": "#/definitions/HostHook"
-          },
-          "type": "array",
-          "description": "describes the list of lifecycle hooks to execute *before* each artifact build step.",
-          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>before</em> each artifact build step."
-        }
-      },
-      "preferredOrder": [
-        "before",
-        "after"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes the list of lifecycle hooks to execute before and after each artifact build step.",
-      "x-intellij-html-description": "describes the list of lifecycle hooks to execute before and after each artifact build step."
-    },
     "BuildpackArtifact": {
       "required": [
         "builder"
@@ -1162,56 +1134,6 @@
       "type": "object",
       "description": "contains all the configuration needed by the deploy steps.",
       "x-intellij-html-description": "contains all the configuration needed by the deploy steps."
-    },
-    "DeployHookItem": {
-      "properties": {
-        "container": {
-          "$ref": "#/definitions/NamedContainerHook",
-          "description": "describes a single lifecycle hook to run on a container.",
-          "x-intellij-html-description": "describes a single lifecycle hook to run on a container."
-        },
-        "host": {
-          "$ref": "#/definitions/HostHook",
-          "description": "describes a single lifecycle hook to run on the host machine.",
-          "x-intellij-html-description": "describes a single lifecycle hook to run on the host machine."
-        }
-      },
-      "preferredOrder": [
-        "host",
-        "container"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes a single lifecycle hook to execute before or after each deployer step.",
-      "x-intellij-html-description": "describes a single lifecycle hook to execute before or after each deployer step."
-    },
-    "DeployHooks": {
-      "properties": {
-        "after": {
-          "items": {
-            "$ref": "#/definitions/DeployHookItem"
-          },
-          "type": "array",
-          "description": "describes the list of lifecycle hooks to execute *after* each deployer step.",
-          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>after</em> each deployer step."
-        },
-        "before": {
-          "items": {
-            "$ref": "#/definitions/DeployHookItem"
-          },
-          "type": "array",
-          "description": "describes the list of lifecycle hooks to execute *before* each deployer step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).",
-          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>before</em> each deployer step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during <code>skaffold dev</code>)."
-        }
-      },
-      "preferredOrder": [
-        "before",
-        "after"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes the list of lifecycle hooks to execute before and after each deployer step.",
-      "x-intellij-html-description": "describes the list of lifecycle hooks to execute before and after each deployer step."
     },
     "DockerArtifact": {
       "properties": {
@@ -1870,39 +1792,6 @@
       "type": "object",
       "description": "describes a helm release to be deployed.",
       "x-intellij-html-description": "describes a helm release to be deployed."
-    },
-    "HostHook": {
-      "required": [
-        "command"
-      ],
-      "properties": {
-        "command": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "command to execute.",
-          "x-intellij-html-description": "command to execute.",
-          "default": "[]"
-        },
-        "os": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "an optional slice of operating system names. If the host machine OS is different, then it skips execution.",
-          "x-intellij-html-description": "an optional slice of operating system names. If the host machine OS is different, then it skips execution.",
-          "default": "[]"
-        }
-      },
-      "preferredOrder": [
-        "command",
-        "os"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes a lifecycle hook definition to execute on the host machine.",
-      "x-intellij-html-description": "describes a lifecycle hook definition to execute on the host machine."
     },
     "InputDigest": {
       "type": "object",
@@ -2661,42 +2550,6 @@
       "description": "holds an optional name of the project.",
       "x-intellij-html-description": "holds an optional name of the project."
     },
-    "NamedContainerHook": {
-      "required": [
-        "podName",
-        "command"
-      ],
-      "properties": {
-        "command": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "command to execute.",
-          "x-intellij-html-description": "command to execute.",
-          "default": "[]"
-        },
-        "containerName": {
-          "type": "string",
-          "description": "name of the container to execute the command in.",
-          "x-intellij-html-description": "name of the container to execute the command in."
-        },
-        "podName": {
-          "type": "string",
-          "description": "name of the pod to execute the command in.",
-          "x-intellij-html-description": "name of the pod to execute the command in."
-        }
-      },
-      "preferredOrder": [
-        "command",
-        "podName",
-        "containerName"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes a lifecycle hook definition to execute on a named container.",
-      "x-intellij-html-description": "describes a lifecycle hook definition to execute on a named container."
-    },
     "PortForwardResource": {
       "properties": {
         "address": {
@@ -3043,56 +2896,6 @@
       "description": "*beta* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files. If no files are listed, sync all the files and infer the destination.",
       "x-intellij-html-description": "<em>beta</em> specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files. If no files are listed, sync all the files and infer the destination.",
       "default": "infer: [\"**/*\"]"
-    },
-    "SyncHookItem": {
-      "properties": {
-        "container": {
-          "$ref": "#/definitions/ContainerHook",
-          "description": "describes a single lifecycle hook to run on a container.",
-          "x-intellij-html-description": "describes a single lifecycle hook to run on a container."
-        },
-        "host": {
-          "$ref": "#/definitions/HostHook",
-          "description": "describes a single lifecycle hook to run on the host machine.",
-          "x-intellij-html-description": "describes a single lifecycle hook to run on the host machine."
-        }
-      },
-      "preferredOrder": [
-        "host",
-        "container"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes a single lifecycle hook to execute before or after each artifact sync step.",
-      "x-intellij-html-description": "describes a single lifecycle hook to execute before or after each artifact sync step."
-    },
-    "SyncHooks": {
-      "properties": {
-        "after": {
-          "items": {
-            "$ref": "#/definitions/SyncHookItem"
-          },
-          "type": "array",
-          "description": "describes the list of lifecycle hooks to execute *after* each artifact sync step.",
-          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>after</em> each artifact sync step."
-        },
-        "before": {
-          "items": {
-            "$ref": "#/definitions/SyncHookItem"
-          },
-          "type": "array",
-          "description": "describes the list of lifecycle hooks to execute *before* each artifact sync step.",
-          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>before</em> each artifact sync step."
-        }
-      },
-      "preferredOrder": [
-        "before",
-        "after"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes the list of lifecycle hooks to execute before and after each artifact sync step.",
-      "x-intellij-html-description": "describes the list of lifecycle hooks to execute before and after each artifact sync step."
     },
     "SyncRule": {
       "required": [
