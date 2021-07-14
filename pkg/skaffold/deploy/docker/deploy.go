@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	dockerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
@@ -60,6 +61,7 @@ func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.D
 	}
 
 	tracker := tracker.NewContainerTracker()
+	l, err := logger.NewLogger(tracker, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +74,7 @@ func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.D
 		tracker:  tracker,
 		accessor: &access.NoopAccessor{},
 		debugger: &debug.NoopDebugger{},
-		logger:   &log.NoopLogger{},
+		logger:   l,
 		monitor:  &status.NoopMonitor{},
 		syncer:   &pkgsync.NoopSyncer{},
 	}, nil

@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -73,7 +74,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	ContainerLogs(ctx context.Context, out io.Writer, id string, muter chan bool) (io.ReadCloser, error)
+	ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error
 	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
@@ -146,8 +147,23 @@ func (l *localDaemon) Close() error {
 	return l.apiClient.Close()
 }
 
-func (l *localDaemon) ContainerLogs(ctx context.Context, out io.Writer, id string, muter chan bool) (io.ReadCloser, error) {
-	return l.apiClient.ContainerLogs(ctx, id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
+// ContainerLogs streams logs line by line from a container in the local daemon to the provided PipeWriter.
+func (l *localDaemon) ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error {
+	r, err := l.apiClient.ContainerLogs(ctx, id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
+	if err != nil {
+		return err
+	}
+	rd := bufio.NewReader(r)
+	for {
+		s, err := rd.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			return nil
+		}
+		w.Write([]byte(s))
+	}
 }
 
 // Delete stops, removes, and prunes a running container

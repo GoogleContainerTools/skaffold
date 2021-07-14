@@ -4,7 +4,10 @@ build:
   local:
     push: false
   artifacts:
-  - image: skaffold-example
+  - image: bert
+    context: bert
+  - image: ernie
+    context: ernie
 deploy:
   docker:
-    images: [skaffold-example]
+    images: [bert, ernie]
