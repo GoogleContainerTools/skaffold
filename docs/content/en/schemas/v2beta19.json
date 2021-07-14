@@ -58,11 +58,6 @@
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
             },
-            "hooks": {
-              "$ref": "#/definitions/BuildHooks",
-              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
-              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
-            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -90,8 +85,7 @@
             "image",
             "context",
             "sync",
-            "requires",
-            "hooks"
+            "requires"
           ],
           "additionalProperties": false
         },
@@ -108,11 +102,6 @@
               "description": "*beta* describes an artifact built from a Dockerfile.",
               "x-intellij-html-description": "<em>beta</em> describes an artifact built from a Dockerfile."
             },
-            "hooks": {
-              "$ref": "#/definitions/BuildHooks",
-              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
-              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
-            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -141,7 +130,6 @@
             "context",
             "sync",
             "requires",
-            "hooks",
             "docker"
           ],
           "additionalProperties": false
@@ -159,11 +147,6 @@
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
             },
-            "hooks": {
-              "$ref": "#/definitions/BuildHooks",
-              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
-              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
-            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -192,7 +175,6 @@
             "context",
             "sync",
             "requires",
-            "hooks",
             "bazel"
           ],
           "additionalProperties": false
@@ -204,11 +186,6 @@
               "description": "directory containing the artifact's sources.",
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
-            },
-            "hooks": {
-              "$ref": "#/definitions/BuildHooks",
-              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
-              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
             },
             "image": {
               "type": "string",
@@ -243,7 +220,6 @@
             "context",
             "sync",
             "requires",
-            "hooks",
             "jib"
           ],
           "additionalProperties": false
@@ -255,11 +231,6 @@
               "description": "directory containing the artifact's sources.",
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
-            },
-            "hooks": {
-              "$ref": "#/definitions/BuildHooks",
-              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
-              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
             },
             "image": {
               "type": "string",
@@ -294,7 +265,6 @@
             "context",
             "sync",
             "requires",
-            "hooks",
             "kaniko"
           ],
           "additionalProperties": false
@@ -312,11 +282,6 @@
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
             },
-            "hooks": {
-              "$ref": "#/definitions/BuildHooks",
-              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
-              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
-            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -345,7 +310,6 @@
             "context",
             "sync",
             "requires",
-            "hooks",
             "buildpacks"
           ],
           "additionalProperties": false
@@ -363,11 +327,6 @@
               "description": "*beta* builds images using a custom build script written by the user.",
               "x-intellij-html-description": "<em>beta</em> builds images using a custom build script written by the user."
             },
-            "hooks": {
-              "$ref": "#/definitions/BuildHooks",
-              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
-              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
-            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -396,7 +355,6 @@
             "context",
             "sync",
             "requires",
-            "hooks",
             "custom"
           ],
           "additionalProperties": false
