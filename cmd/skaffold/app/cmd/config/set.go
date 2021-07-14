@@ -151,7 +151,7 @@ func userSurveyStruct(as *config.UserSurvey, t reflect.Type, idx []int) (*cfgStr
 	}, nil
 }
 
-func parseAsType(value interface{}, field reflect.Value, idx int, v string) (reflect.Value, error) {
+func parseAsType(value interface{}, field reflect.Value, childIdx int, childValue string) (reflect.Value, error) {
 	fieldType := field.Type()
 	switch fieldType.String() {
 	case "string":
@@ -171,18 +171,18 @@ func parseAsType(value interface{}, field reflect.Value, idx int, v string) (ref
 		}
 		return reflect.ValueOf(&valBase), nil
 	case "[]*config.UserSurvey":
-		cs := field.Interface().([]*config.UserSurvey)
-		updated, index := hasUserSurvey(cs)
-		childField := reflect.Indirect(updated).FieldByIndex([]int{idx})
-		if v1, err := parseAsType(v, childField, 0, ""); err != nil {
+		us := field.Interface().([]*config.UserSurvey)
+		parentVal, parentIdx := hasUserSurvey(us)
+		childField := reflect.Indirect(parentVal).FieldByIndex([]int{childIdx})
+		v1, err := parseAsType(childValue, childField, 0, "")
+		if err != nil {
 			return reflect.Value{}, err
-		} else {
-			childField.Set(v1)
 		}
-		if index == -1 {
-			return reflect.Append(field, updated), nil
+		childField.Set(v1)
+		if parentIdx == -1 {
+			return reflect.Append(field, parentVal), nil
 		}
-		field.Index(index).Set(updated)
+		field.Index(parentIdx).Set(parentVal)
 		return field, nil
 	default:
 		return reflect.Value{}, fmt.Errorf("unsupported type: %s", fieldType)
