@@ -187,7 +187,6 @@ message MetaEvent {
 message SkaffoldLogEvent {
     string task_id = 1; // id of the task of skaffold that this log came from
     string subtask_id = 2; // id of the subtask that the log came from
-    string origin = 3; // which tool the output came from ex: skaffold, docker
     enums.LogLevel level = 4; // log level
     string message = 5; // contents of the log
 }

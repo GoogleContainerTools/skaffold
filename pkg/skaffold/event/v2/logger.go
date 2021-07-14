@@ -27,14 +27,12 @@ import (
 type logger struct {
 	Phase     constants.Phase
 	SubtaskID string
-	Origin    string
 }
 
-func NewLogger(phase constants.Phase, subtaskID, origin string) io.Writer {
+func NewLogger(phase constants.Phase, subtaskID string) io.Writer {
 	return logger{
 		Phase:     phase,
 		SubtaskID: subtaskID,
-		Origin:    origin,
 	}
 }
 
@@ -42,7 +40,6 @@ func (l logger) Write(p []byte) (int, error) {
 	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 		TaskId:    fmt.Sprintf("%s-%d", l.Phase, handler.iteration),
 		SubtaskId: l.SubtaskID,
-		Origin:    l.Origin,
 		Level:     0,
 		Message:   string(p),
 	})
