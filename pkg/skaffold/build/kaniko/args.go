@@ -136,7 +136,6 @@ func Args(artifact *latestV1.KanikoArtifact, tag, context string) ([]string, err
 
 	if artifact.PushRetry != "" {
 		args = append(args, PushRetryFlag, artifact.PushRetry)
-
 	}
 
 	if artifact.TarPath != "" {
