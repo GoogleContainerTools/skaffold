@@ -82,10 +82,10 @@ func TestRun(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if test.requiresWindowsOS != (runtime.GOOS == "windows") {
-			continue
-		}
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.requiresWindowsOS != (runtime.GOOS == "windows") {
+				t.Skip()
+			}
 			var buf bytes.Buffer
 			err := test.hook.run(context.Background(), &buf)
 			t.CheckNoError(err)

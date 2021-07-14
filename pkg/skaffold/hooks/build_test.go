@@ -142,10 +142,10 @@ func TestBuildHooks(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if test.requiresWindowsOS != (runtime.GOOS == "windows") {
-			continue
-		}
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.requiresWindowsOS != (runtime.GOOS == "windows") {
+				t.Skip()
+			}
 			opts, err := NewBuildEnvOpts(&test.artifact, test.image, test.pushImage)
 			t.CheckNoError(err)
 			runner := BuildRunner(test.artifact.LifecycleHooks, opts)
