@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -58,16 +59,27 @@ type ContainerRun struct {
 	BeforeStart func(context.Context, string) error
 }
 
+type ContainerCreateOpts struct {
+	Name        string
+	Image       string
+	Network     string
+	VolumesFrom []string
+	Wait        bool
+}
+
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
 	Close() error
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
+	ContainerLogs(ctx context.Context, out io.Writer, id string, muter chan bool) (io.ReadCloser, error)
 	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
+	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error)
+	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
 	ImageID(ctx context.Context, ref string) (string, error)
@@ -75,6 +87,8 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
+	NetworkCreate(ctx context.Context, name string) error
+	NetworkRemove(ctx context.Context, name string) error
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
@@ -130,6 +144,73 @@ func (l *localDaemon) RawClient() client.CommonAPIClient {
 // Close closes the connection with the local daemon.
 func (l *localDaemon) Close() error {
 	return l.apiClient.Close()
+}
+
+func (l *localDaemon) ContainerLogs(ctx context.Context, out io.Writer, id string, muter chan bool) (io.ReadCloser, error) {
+	return l.apiClient.ContainerLogs(ctx, id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
+}
+
+// Delete stops, removes, and prunes a running container
+func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
+	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
+		logrus.Warnf("unable to stop running container: %s", err.Error())
+	}
+	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+		return fmt.Errorf("removing stopped container: %w", err)
+	}
+	_, err := l.apiClient.ContainersPrune(ctx, filters.Args{})
+	if err != nil {
+		return fmt.Errorf("pruning removed container: %w", err)
+	}
+	return nil
+}
+
+// Run creates a container from a given image reference, and returns then container ID.
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error) {
+	cfg := &container.Config{
+		Image: opts.Image,
+	}
+
+	hCfg := &container.HostConfig{
+		NetworkMode: container.NetworkMode(opts.Network),
+		VolumesFrom: opts.VolumesFrom,
+	}
+	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, opts.Name)
+	if err != nil {
+		return "", err
+	}
+	if err := l.apiClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+		return "", err
+	}
+	if opts.Wait {
+		l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+	}
+	return c.ID, nil
+}
+
+func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
+	nr, err := l.apiClient.NetworkList(ctx, types.NetworkListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, network := range nr {
+		if network.Name == name {
+			return nil
+		}
+	}
+
+	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{})
+	if err != nil {
+		return err
+	}
+	if r.Warning != "" {
+		logrus.Warnln(r.Warning)
+	}
+	return nil
+}
+
+func (l *localDaemon) NetworkRemove(ctx context.Context, name string) error {
+	return l.apiClient.NetworkRemove(ctx, name)
 }
 
 // ServerVersion retrieves the version information from the server.
