@@ -2171,6 +2171,11 @@
           "description": "how Kaniko will snapshot the filesystem.",
           "x-intellij-html-description": "how Kaniko will snapshot the filesystem."
         },
+        "pushRetry": {
+          "type": "string",
+          "description": "sets the number of retries that should happen for the push of an image to a remote destination.",
+          "x-intellij-html-description": "sets the number of retries that should happen for the push of an image to a remote destination."
+        },
         "tarPath": {
           "type": "string",
           "description": "path to save the image as a tarball at path instead of pushing the image.",
@@ -2230,6 +2235,7 @@
         "ociLayoutPath",
         "registryMirror",
         "snapshotMode",
+        "pushRetry",
         "tarPath",
         "verbosity",
         "insecureRegistry",
