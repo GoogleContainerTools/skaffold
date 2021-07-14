@@ -270,7 +270,7 @@ func TestKubectlCleanup(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
 			description: "cleanup success (kubectl v1.18)",
@@ -280,7 +280,7 @@ func TestKubectlCleanup(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
 			description: "cleanup error",
@@ -290,7 +290,7 @@ func TestKubectlCleanup(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
+				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -306,7 +306,7 @@ func TestKubectlCleanup(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete -v=0 --grace-period=1 --ignore-not-found=true -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete -v=0 --grace-period=1 --ignore-not-found=true --wait=false -f -"),
 		},
 	}
 	for _, test := range tests {
@@ -342,7 +342,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRun("kubectl --context kubecontext --namespace testNamespace get pod/leeroy-web -o yaml").
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -").
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -").
 				AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", DeploymentWebYAML),
 		},
 		{
@@ -352,7 +352,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRun("kubectl --context kubecontext --namespace anotherNamespace get pod/leeroy-web -o yaml").
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -").
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -").
 				AndRunInput("kubectl --context kubecontext --namespace anotherNamespace apply -f -", DeploymentWebYAML),
 		},
 	}
