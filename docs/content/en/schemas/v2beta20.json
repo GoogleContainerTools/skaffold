@@ -58,49 +58,10 @@
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
             },
-            "image": {
-              "type": "string",
-              "description": "name of the image to be built.",
-              "x-intellij-html-description": "name of the image to be built.",
-              "examples": [
-                "gcr.io/k8s-skaffold/example"
-              ]
-            },
-            "requires": {
-              "items": {
-                "$ref": "#/definitions/ArtifactDependency"
-              },
-              "type": "array",
-              "description": "describes build artifacts that this artifact depends on.",
-              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
-            },
-            "sync": {
-              "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
-              "default": "infer: [\"**/*\"]"
-            }
-          },
-          "preferredOrder": [
-            "image",
-            "context",
-            "sync",
-            "requires"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "properties": {
-            "context": {
-              "type": "string",
-              "description": "directory containing the artifact's sources.",
-              "x-intellij-html-description": "directory containing the artifact's sources.",
-              "default": "."
-            },
-            "docker": {
-              "$ref": "#/definitions/DockerArtifact",
-              "description": "*beta* describes an artifact built from a Dockerfile.",
-              "x-intellij-html-description": "<em>beta</em> describes an artifact built from a Dockerfile."
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
             },
             "image": {
               "type": "string",
@@ -130,6 +91,57 @@
             "context",
             "sync",
             "requires",
+            "hooks"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "docker": {
+              "$ref": "#/definitions/DockerArtifact",
+              "description": "*beta* describes an artifact built from a Dockerfile.",
+              "x-intellij-html-description": "<em>beta</em> describes an artifact built from a Dockerfile."
+            },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "requires",
+            "hooks",
             "docker"
           ],
           "additionalProperties": false
@@ -147,6 +159,11 @@
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
             },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
+            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -175,6 +192,7 @@
             "context",
             "sync",
             "requires",
+            "hooks",
             "bazel"
           ],
           "additionalProperties": false
@@ -186,6 +204,11 @@
               "description": "directory containing the artifact's sources.",
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
+            },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
             },
             "image": {
               "type": "string",
@@ -220,6 +243,7 @@
             "context",
             "sync",
             "requires",
+            "hooks",
             "jib"
           ],
           "additionalProperties": false
@@ -231,6 +255,11 @@
               "description": "directory containing the artifact's sources.",
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
+            },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
             },
             "image": {
               "type": "string",
@@ -265,6 +294,7 @@
             "context",
             "sync",
             "requires",
+            "hooks",
             "kaniko"
           ],
           "additionalProperties": false
@@ -282,6 +312,11 @@
               "x-intellij-html-description": "directory containing the artifact's sources.",
               "default": "."
             },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
+            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -310,6 +345,7 @@
             "context",
             "sync",
             "requires",
+            "hooks",
             "buildpacks"
           ],
           "additionalProperties": false
@@ -327,6 +363,11 @@
               "description": "*beta* builds images using a custom build script written by the user.",
               "x-intellij-html-description": "<em>beta</em> builds images using a custom build script written by the user."
             },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
+            },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
@@ -355,6 +396,7 @@
             "context",
             "sync",
             "requires",
+            "hooks",
             "custom"
           ],
           "additionalProperties": false

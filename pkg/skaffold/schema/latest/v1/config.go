@@ -870,7 +870,7 @@ type Artifact struct {
 	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
-	LifecycleHooks BuildHooks `yaml:"-"`
+	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
