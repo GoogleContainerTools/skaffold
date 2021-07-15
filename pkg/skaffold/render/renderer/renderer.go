@@ -123,9 +123,11 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 			filepath.Dir(kptfilePath), err)))
 		return err
 	}
-	defer func() { _ = file.Close() }()
 	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
 		return errors.ParseKptfileError(err, r.hydrationDir)
+	}
+	if err = file.Close(); err != nil {
+		return fmt.Errorf("close file %v: %w", kptfilePath, err)
 	}
 	if err := os.RemoveAll(r.hydrationDir); err != nil {
 		return errors.DeleteKptfileError(err, r.hydrationDir)
@@ -143,7 +145,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 	endTrace()
 
-	// Update image labels.
+	// Update image labels.renderer_test.go
 	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setSkaffoldLabels")
 	manifests, err = manifests.ReplaceImages(rCtx, builds)
 	if err != nil {

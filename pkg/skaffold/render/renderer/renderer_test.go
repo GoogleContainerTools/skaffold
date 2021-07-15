@@ -18,6 +18,7 @@ package renderer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -161,22 +162,22 @@ pipeline:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			r, err := NewSkaffoldRenderer(test.renderConfig, "")
-			t.CheckNoError(err)
-			fakeCmd := testutil.CmdRun("kpt fn render .kpt-pipeline")
-			t.Override(&util.DefaultExecCommand, fakeCmd)
-			t.NewTempDir().
-				Write("pod.yaml", podYaml).
+			tmpDirObj := t.NewTempDir()
+			tmpDirObj.Write("pod.yaml", podYaml).
 				Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Touch("empty.ignored").
 				Chdir()
-
+			r, err := NewSkaffoldRenderer(test.renderConfig, tmpDirObj.Root())
+			t.CheckNoError(err)
+			t.Override(&util.DefaultExecCommand,
+				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
+					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
 			var b bytes.Buffer
 			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true, "")
 			t.CheckNoError(err)
-			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
-			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
 		})
 	}
 }
@@ -186,12 +187,10 @@ func TestRender_StashKptinfo(t *testing.T) {
 		description     string
 		originalKptfile string
 		updatedKptfile  string
-		commands        util.Command
 	}{
 		{
 			description:     "kpt initialized, manifests are not kpt applied before (no inventory info)",
 			originalKptfile: initKptfile,
-			commands:        testutil.CmdRun("kpt fn render .kpt-pipeline"),
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
 metadata:
@@ -211,7 +210,6 @@ inventory:
   namespace: skaffold-test
   inventoryID: 11111
 `,
-			commands: testutil.CmdRun("kpt fn render .kpt-pipeline"),
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
 metadata:
@@ -227,20 +225,23 @@ inventory:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
-				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, "")
-			t.CheckNoError(err)
-			t.Override(&util.DefaultExecCommand, test.commands)
-			t.NewTempDir().
-				Write("pod.yaml", podYaml).
+			tmpDirObj := t.NewTempDir()
+			tmpDirObj.Write("pod.yaml", podYaml).
 				Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Chdir()
+			r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, tmpDirObj.Root())
+			t.CheckNoError(err)
+			t.Override(&util.DefaultExecCommand,
+				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
+					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
 			var b bytes.Buffer
 			err = r.Render(context.Background(), &b, []graph.Artifact{},
 				true, "")
 			t.CheckNoError(err)
-			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), DefaultHydrationDir, kptfile.KptFileName),
+				[]byte(test.updatedKptfile))
 		})
 	}
 }
