@@ -1335,6 +1335,36 @@
       "description": "contains information about the docker `config.json` to mount.",
       "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount."
     },
+    "DockerDeploy": {
+      "required": [
+        "images"
+      ],
+      "properties": {
+        "images": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "container images to run in Docker.",
+          "x-intellij-html-description": "container images to run in Docker.",
+          "default": "[]"
+        },
+        "useCompose": {
+          "type": "boolean",
+          "description": "tells skaffold whether or not to deploy using `docker-compose`.",
+          "x-intellij-html-description": "tells skaffold whether or not to deploy using <code>docker-compose</code>.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "useCompose",
+        "images"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "uses the `docker` CLI to create application containers in Docker.",
+      "x-intellij-html-description": "uses the <code>docker</code> CLI to create application containers in Docker."
+    },
     "DockerSecret": {
       "required": [
         "id"
