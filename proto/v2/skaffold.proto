@@ -187,8 +187,8 @@ message MetaEvent {
 message SkaffoldLogEvent {
     string task_id = 1; // id of the task of skaffold that this log came from
     string subtask_id = 2; // id of the subtask that the log came from
-    enums.LogLevel level = 4; // log level
-    string message = 5; // contents of the log
+    enums.LogLevel level = 3; // log level
+    string message = 4; // contents of the log
 }
 
 // `ApplicationLogEvent` represents a log that comes from one of the pods running in the user's application.
