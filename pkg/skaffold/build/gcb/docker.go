@@ -24,12 +24,12 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
-func (b *Builder) dockerBuildSpec(a *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) dockerBuildSpec(a *latestV2.Artifact, tag string) (cloudbuild.Build, error) {
 	a = adjustCacheFrom(a, tag)
 
 	args, err := b.dockerBuildArgs(a, tag, a.Dependencies)
@@ -50,7 +50,7 @@ func (b *Builder) dockerBuildSpec(a *latestV1.Artifact, tag string) (cloudbuild.
 }
 
 // cacheFromSteps pulls images used by `--cache-from`.
-func (b *Builder) cacheFromSteps(artifact *latestV1.DockerArtifact) []*cloudbuild.BuildStep {
+func (b *Builder) cacheFromSteps(artifact *latestV2.DockerArtifact) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.CacheFrom {
@@ -65,7 +65,7 @@ func (b *Builder) cacheFromSteps(artifact *latestV1.DockerArtifact) []*cloudbuil
 }
 
 // dockerBuildArgs lists the arguments passed to `docker` to build a given image.
-func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*latestV1.ArtifactDependency) ([]string, error) {
+func (b *Builder) dockerBuildArgs(a *latestV2.Artifact, tag string, deps []*latestV2.ArtifactDependency) ([]string, error) {
 	d := a.DockerArtifact
 	// TODO(nkubala): remove when buildkit is supported in GCB (#4773)
 	if d.Secret != nil || d.SSH != "" {
@@ -90,7 +90,7 @@ func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*late
 }
 
 // adjustCacheFrom returns  an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
-func adjustCacheFrom(a *latestV1.Artifact, artifactTag string) *latestV1.Artifact {
+func adjustCacheFrom(a *latestV2.Artifact, artifactTag string) *latestV2.Artifact {
 	if os.Getenv("SKAFFOLD_DISABLE_GCB_CACHE_ADJUSTMENT") != "" {
 		// allow this behaviour to be disabled
 		return a

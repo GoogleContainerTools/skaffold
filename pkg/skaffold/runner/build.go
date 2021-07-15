@@ -32,13 +32,13 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, runCtx *runcontext.RunContext) *Builder {
+func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, runCtx *v2.RunContext) *Builder {
 	return &Builder{
 		Builder: builder,
 		tagger:  tagger,
@@ -54,7 +54,7 @@ type Builder struct {
 	Builds  []graph.Artifact
 
 	hasBuilt bool
-	runCtx   *runcontext.RunContext
+	runCtx   *v2.RunContext
 }
 
 // GetBuilds returns the builds value.
@@ -63,7 +63,7 @@ func (r *Builder) GetBuilds() []graph.Artifact {
 }
 
 // Build builds a list of artifacts.
-func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build, "Build containers")
 	eventV2.AssignArtifactIDs(artifacts)
 	out = output.WithEventContext(out, constants.Build, eventV2.SubtaskIDNone, "skaffold")
@@ -98,7 +98,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV
 	default:
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
@@ -129,7 +129,7 @@ func (r *Builder) HasBuilt() bool {
 	return r.hasBuilt
 }
 
-func artifactsWithTags(tags tag.ImageTags, artifacts []*latestV1.Artifact) []graph.Artifact {
+func artifactsWithTags(tags tag.ImageTags, artifacts []*latestV2.Artifact) []graph.Artifact {
 	var bRes []graph.Artifact
 	for _, artifact := range artifacts {
 		bRes = append(bRes, graph.Artifact{
@@ -152,7 +152,7 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) (tag.ImageTags, error) {
+func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latestV2.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	output.Default.Fprintln(out, "Generating tags...")
 
@@ -211,7 +211,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 	return imageTags, nil
 }
 
-func CheckWorkspaces(artifacts []*latestV1.Artifact) error {
+func CheckWorkspaces(artifacts []*latestV2.Artifact) error {
 	for _, a := range artifacts {
 		if a.Workspace != "" {
 			if info, err := os.Stat(a.Workspace); err != nil {

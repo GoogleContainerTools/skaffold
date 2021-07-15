@@ -19,7 +19,7 @@ package v2
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -27,7 +27,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	ResourceStatusCheckEventUpdated("ns:pod/foo", proto.ActionableErr{
@@ -41,7 +41,7 @@ func TestResourceStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	resourceStatusCheckEventSucceeded("ns:pod/foo")
@@ -52,7 +52,7 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	resourceStatusCheckEventFailed("ns:pod/foo", proto.ActionableErr{

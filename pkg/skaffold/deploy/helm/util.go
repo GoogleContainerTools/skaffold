@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -92,7 +92,7 @@ func binVer() (semver.Version, error) {
 }
 
 // imageSetFromConfig calculates the --set-string value from the helm config
-func imageSetFromConfig(cfg *latestV1.HelmConventionConfig, valueName string, tag string) (string, error) {
+func imageSetFromConfig(cfg *latestV2.HelmConventionConfig, valueName string, tag string) (string, error) {
 	if cfg == nil {
 		return fmt.Sprintf("%s=%s", valueName, tag), nil
 	}
@@ -153,7 +153,7 @@ func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
 	return args
 }
 
-func (h *Deployer) releaseNamespace(r latestV1.HelmRelease) (string, error) {
+func (h *Deployer) releaseNamespace(r latestV2.HelmRelease) (string, error) {
 	if h.namespace != "" {
 		return h.namespace, nil
 	} else if r.Namespace != "" {

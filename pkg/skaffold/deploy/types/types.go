@@ -20,13 +20,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 type Config interface {
 	docker.Config
 
-	GetPipelines() []latestV1.Pipeline
+	GetPipelines() []latestV2.Pipeline
 	GetWorkingDir() string
 	GlobalConfig() string
 	ConfigurationFile() string

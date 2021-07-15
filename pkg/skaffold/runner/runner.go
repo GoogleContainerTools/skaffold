@@ -22,7 +22,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 const (
@@ -38,12 +38,12 @@ var ErrorConfigurationChanged = errors.New("configuration changed")
 type Runner interface {
 	Apply(context.Context, io.Writer) error
 	ApplyDefaultRepo(tag string) (string, error)
-	Build(context.Context, io.Writer, []*latestV1.Artifact) ([]graph.Artifact, error)
+	Build(context.Context, io.Writer, []*latestV2.Artifact) ([]graph.Artifact, error)
 	Cleanup(context.Context, io.Writer) error
-	Dev(context.Context, io.Writer, []*latestV1.Artifact) error
+	Dev(context.Context, io.Writer, []*latestV2.Artifact) error
 	Deploy(context.Context, io.Writer, []graph.Artifact) error
 	DeployAndLog(context.Context, io.Writer, []graph.Artifact) error
-	GeneratePipeline(context.Context, io.Writer, []*latestV1.SkaffoldConfig, []string, string) error
+	GeneratePipeline(context.Context, io.Writer, []*latestV2.SkaffoldConfig, []string, string) error
 	HasBuilt() bool
 	HasDeployed() bool
 	Prune(context.Context, io.Writer) error

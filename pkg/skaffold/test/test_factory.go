@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
 )
@@ -37,7 +37,7 @@ import (
 type Config interface {
 	docker.Config
 
-	TestCases() []*latestV1.TestCase
+	TestCases() []*latestV2.TestCase
 	Muted() config.Muted
 }
 
@@ -57,7 +57,7 @@ func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) 
 }
 
 // TestDependencies returns the watch dependencies for the target artifact to the runner.
-func (t FullTester) TestDependencies(artifact *latestV1.Artifact) ([]string, error) {
+func (t FullTester) TestDependencies(artifact *latestV2.Artifact) ([]string, error) {
 	var deps []string
 	for _, tester := range t.Testers[artifact.ImageName] {
 		result, err := tester.TestDependencies()
@@ -127,7 +127,7 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Ar
 	return nil
 }
 
-func getImageTesters(cfg docker.Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latestV1.TestCase) (ImageTesters, error) {
+func getImageTesters(cfg docker.Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latestV2.TestCase) (ImageTesters, error) {
 	runners := make(map[string][]ImageTester)
 	for _, tc := range tcs {
 		isLocal, err := imagesAreLocal(tc.ImageName)

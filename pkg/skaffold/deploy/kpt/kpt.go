@@ -48,7 +48,7 @@ import (
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -72,7 +72,7 @@ const (
 
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
-	*latestV1.KptDeploy
+	*latestV2.KptDeploy
 
 	accessor      access.Accessor
 	logger        log.Logger
@@ -99,7 +99,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KptDeploy) *Deployer {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
 	return &Deployer{
 		KptDeploy:          d,

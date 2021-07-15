@@ -41,7 +41,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -100,7 +100,7 @@ type secretGenerator struct {
 
 // Deployer deploys workflows using kustomize CLI.
 type Deployer struct {
-	*latestV1.KustomizeDeploy
+	*latestV2.KustomizeDeploy
 
 	accessor      access.Accessor
 	logger        log.Logger
@@ -118,7 +118,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error

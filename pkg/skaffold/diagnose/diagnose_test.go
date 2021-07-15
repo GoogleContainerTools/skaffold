@@ -21,8 +21,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -61,11 +61,11 @@ func TestSizeOfDockerContext(t *testing.T) {
 				Write("Dockerfile", test.DockerfileContents).
 				WriteFiles(test.files)
 
-			dummyArtifact := &latestV1.Artifact{
+			dummyArtifact := &latestV2.Artifact{
 				Workspace: tmpDir.Root(),
 				ImageName: test.artifactName,
-				ArtifactType: latestV1.ArtifactType{
-					DockerArtifact: &latestV1.DockerArtifact{
+				ArtifactType: latestV2.ArtifactType{
+					DockerArtifact: &latestV2.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},
@@ -82,10 +82,10 @@ func TestCheckArtifacts(t *testing.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
 
 		err := CheckArtifacts(context.Background(), &mockConfig{
-			artifacts: []*latestV1.Artifact{{
+			artifacts: []*latestV2.Artifact{{
 				Workspace: tmpDir.Root(),
-				ArtifactType: latestV1.ArtifactType{
-					DockerArtifact: &latestV1.DockerArtifact{
+				ArtifactType: latestV2.ArtifactType{
+					DockerArtifact: &latestV2.DockerArtifact{
 						DockerfilePath: tmpDir.Path("Dockerfile"),
 					},
 				},
@@ -97,16 +97,16 @@ func TestCheckArtifacts(t *testing.T) {
 }
 
 type mockConfig struct {
-	runcontext.RunContext // Embedded to provide the default values.
-	artifacts             []*latestV1.Artifact
+	v2.RunContext // Embedded to provide the default values.
+	artifacts     []*latestV2.Artifact
 }
 
-func (c *mockConfig) PipelineForImage() latestV1.Pipeline {
-	var pipeline latestV1.Pipeline
+func (c *mockConfig) PipelineForImage() latestV2.Pipeline {
+	var pipeline latestV2.Pipeline
 	pipeline.Build.Artifacts = c.artifacts
 	return pipeline
 }
 
-func (c *mockConfig) Artifacts() []*latestV1.Artifact {
+func (c *mockConfig) Artifacts() []*latestV2.Artifact {
 	return c.artifacts
 }

@@ -28,12 +28,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds an artifact with Bazel.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
 	a := artifact.ArtifactType.BazelArtifact
 
 	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a)
@@ -47,7 +47,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.A
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
 
-func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latestV1.BazelArtifact) (string, error) {
+func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latestV2.BazelArtifact) (string, error) {
 	if !strings.HasSuffix(a.BuildTarget, ".tar") {
 		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
 	}
@@ -80,7 +80,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	return tarPath, nil
 }
 
-func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latestV1.BazelArtifact, tag string) (string, error) {
+func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latestV2.BazelArtifact, tag string) (string, error) {
 	imageTar, err := os.Open(tarPath)
 	if err != nil {
 		return "", fmt.Errorf("opening image tarball: %w", err)
@@ -100,7 +100,7 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	return imageID, nil
 }
 
-func bazelBin(ctx context.Context, workspace string, a *latestV1.BazelArtifact) (string, error) {
+func bazelBin(ctx context.Context, workspace string, a *latestV2.BazelArtifact) (string, error) {
 	args := []string{"info", "bazel-bin"}
 	args = append(args, a.BuildArgs...)
 

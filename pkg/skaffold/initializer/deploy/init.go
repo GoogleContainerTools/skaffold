@@ -19,13 +19,13 @@ package deploy
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // Initializer detects a deployment type and is able to extract image names from it
 type Initializer interface {
 	// deployConfig generates Deploy Config for skaffold configuration.
-	DeployConfig() (latestV1.DeployConfig, []latestV1.Profile)
+	DeployConfig() (latestV2.DeployConfig, []latestV2.Profile)
 	// GetImages fetches all the images defined in the manifest files.
 	GetImages() []string
 	// Validate ensures preconditions are met before generating a skaffold config
@@ -38,10 +38,10 @@ type cliDeployInit struct {
 	cliKubernetesManifests []string
 }
 
-func (c *cliDeployInit) DeployConfig() (latestV1.DeployConfig, []latestV1.Profile) {
-	return latestV1.DeployConfig{
-		DeployType: latestV1.DeployType{
-			KubectlDeploy: &latestV1.KubectlDeploy{
+func (c *cliDeployInit) DeployConfig() (latestV2.DeployConfig, []latestV2.Profile) {
+	return latestV2.DeployConfig{
+		DeployType: latestV2.DeployType{
+			KubectlDeploy: &latestV2.KubectlDeploy{
 				Manifests: c.cliKubernetesManifests,
 			},
 		},
@@ -64,8 +64,8 @@ func (c *cliDeployInit) AddManifestForImage(string, string) {}
 type emptyDeployInit struct {
 }
 
-func (e *emptyDeployInit) DeployConfig() (latestV1.DeployConfig, []latestV1.Profile) {
-	return latestV1.DeployConfig{}, nil
+func (e *emptyDeployInit) DeployConfig() (latestV2.DeployConfig, []latestV2.Profile) {
+	return latestV2.DeployConfig{}, nil
 }
 
 func (e *emptyDeployInit) GetImages() []string {

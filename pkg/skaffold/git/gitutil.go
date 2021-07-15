@@ -30,7 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -80,7 +80,7 @@ func branchExists(repo, branch string) (bool, error) {
 }
 
 // getRepoDir returns the cache directory name for a remote repo
-func getRepoDir(g latestV1.GitInfo) (string, error) {
+func getRepoDir(g latestV2.GitInfo) (string, error) {
 	inputs := []string{g.Repo, g.Ref}
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
@@ -106,7 +106,7 @@ func GetRepoCacheDir(opts config.SkaffoldOptions) (string, error) {
 	return filepath.Join(home, constants.DefaultSkaffoldDir, "repos"), nil
 }
 
-func syncRepo(g latestV1.GitInfo, opts config.SkaffoldOptions) (string, error) {
+func syncRepo(g latestV2.GitInfo, opts config.SkaffoldOptions) (string, error) {
 	skaffoldCacheDir, err := GetRepoCacheDir(opts)
 	r := gitCmd{Dir: skaffoldCacheDir}
 	if err != nil {

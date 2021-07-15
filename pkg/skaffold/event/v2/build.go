@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -33,13 +33,13 @@ const (
 
 var artifactIDs = map[string]int{}
 
-func AssignArtifactIDs(artifacts []*latestV1.Artifact) {
+func AssignArtifactIDs(artifacts []*latestV2.Artifact) {
 	for i, a := range artifacts {
 		artifactIDs[a.ImageName] = i
 	}
 }
 
-func GetArtifactID(a *latestV1.Artifact) int {
+func GetArtifactID(a *latestV2.Artifact) int {
 	if id, ok := artifactIDs[a.ImageName]; ok {
 		return id
 	}

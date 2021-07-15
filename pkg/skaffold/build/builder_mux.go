@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
@@ -39,14 +39,14 @@ type BuilderMux struct {
 
 // Config represents an interface for getting all config pipelines.
 type Config interface {
-	GetPipelines() []latestV1.Pipeline
+	GetPipelines() []latestV2.Pipeline
 	DefaultRepo() *string
 	GlobalConfig() string
 	BuildConcurrency() int
 }
 
 // NewBuilderMux returns an implementation of `build.BuilderMux`.
-func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latestV1.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
+func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latestV2.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
 	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
 	var pb []PipelineBuilder
@@ -84,7 +84,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latestV1.Pipe
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
-func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
 	m := make(map[PipelineBuilder]bool)
 	for _, a := range artifacts {
 		m[b.byImageName[a.ImageName]] = true
@@ -96,7 +96,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 	}
 
-	builder := func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+	builder := func(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
 		p := b.byImageName[artifact.ImageName]
 		artifactBuilder := p.Build(ctx, out, artifact)
 		return artifactBuilder(ctx, out, artifact, tag)

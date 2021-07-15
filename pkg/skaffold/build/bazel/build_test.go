@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -33,10 +33,10 @@ func TestBuildBazel(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut("bazel info bazel-bin", "bin"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
-		artifact := &latestV1.Artifact{
+		artifact := &latestV2.Artifact{
 			Workspace: ".",
-			ArtifactType: latestV1.ArtifactType{
-				BazelArtifact: &latestV1.BazelArtifact{
+			ArtifactType: latestV2.ArtifactType{
+				BazelArtifact: &latestV2.BazelArtifact{
 					BuildTarget: "//:app.tar",
 				},
 			},
@@ -51,9 +51,9 @@ func TestBuildBazel(t *testing.T) {
 
 func TestBuildBazelFailInvalidTarget(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		artifact := &latestV1.Artifact{
-			ArtifactType: latestV1.ArtifactType{
-				BazelArtifact: &latestV1.BazelArtifact{
+		artifact := &latestV2.Artifact{
+			ArtifactType: latestV2.ArtifactType{
+				BazelArtifact: &latestV2.BazelArtifact{
 					BuildTarget: "//:invalid-target",
 				},
 			},
@@ -73,7 +73,7 @@ func TestBazelBin(t *testing.T) {
 			"/absolute/path/bin\n",
 		))
 
-		bazelBin, err := bazelBin(context.Background(), ".", &latestV1.BazelArtifact{
+		bazelBin, err := bazelBin(context.Background(), ".", &latestV2.BazelArtifact{
 			BuildArgs: []string{"--arg1", "--arg2"},
 		})
 

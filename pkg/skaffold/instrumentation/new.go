@@ -21,11 +21,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // Init initializes the skaffold metrics and trace tooling built on top of open-telemetry (otel)
-func Init(configs []*latestV1.SkaffoldConfig, user string, opts ...TraceExporterOption) {
+func Init(configs []*latestV2.SkaffoldConfig, user string, opts ...TraceExporterOption) {
 	InitMeterFromConfig(configs, user)
 	InitTraceFromEnvVar()
 }

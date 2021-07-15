@@ -35,8 +35,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -314,7 +314,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testEvent.InitializeState([]latestV1.Pipeline{{}})
+			testEvent.InitializeState([]latestV2.Pipeline{{}})
 			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -391,7 +391,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
-			testEvent.InitializeState([]latestV1.Pipeline{{}})
+			testEvent.InitializeState([]latestV2.Pipeline{{}})
 			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
@@ -481,7 +481,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			testEvent.InitializeState([]latestV1.Pipeline{{}})
+			testEvent.InitializeState([]latestV2.Pipeline{{}})
 			monitor := Monitor{labeller: labeller}
 			actual := monitor.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
@@ -612,7 +612,7 @@ func TestPollDeployment(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.command)
 			t.Override(&defaultPollPeriodInMilliseconds, 100)
-			testEvent.InitializeState([]latestV1.Pipeline{{}})
+			testEvent.InitializeState([]latestV2.Pipeline{{}})
 			mockVal := mockValidator{runs: test.runs}
 			dep := test.dep.WithValidator(mockVal)
 
@@ -645,7 +645,7 @@ func (m mockValidator) WithValidators([]validator.Validator) diag.Diagnose {
 }
 
 type statusConfig struct {
-	runcontext.RunContext // Embedded to provide the default values.
+	v2.RunContext // Embedded to provide the default values.
 }
 
 func (c *statusConfig) GetKubeContext() string { return TestKubeContext }

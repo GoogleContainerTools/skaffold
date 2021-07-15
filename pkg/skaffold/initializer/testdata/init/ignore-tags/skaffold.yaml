@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta20
+apiVersion: skaffold/v3alpha2
 kind: Config
 metadata:
   name: ignore-tags

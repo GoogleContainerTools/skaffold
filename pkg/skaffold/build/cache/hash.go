@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -46,7 +46,7 @@ var (
 )
 
 type artifactHasher interface {
-	hash(ctx context.Context, a *latestV1.Artifact) (string, error)
+	hash(ctx context.Context, a *latestV2.Artifact) (string, error)
 }
 
 type artifactHasherImpl struct {
@@ -66,7 +66,7 @@ func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, m
 	}
 }
 
-func (h *artifactHasherImpl) hash(ctx context.Context, a *latestV1.Artifact) (string, error) {
+func (h *artifactHasherImpl) hash(ctx context.Context, a *latestV2.Artifact) (string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "hash_GenerateHashOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
@@ -93,7 +93,7 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latestV1.Artifact) (st
 	return encode(hashes)
 }
 
-func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latestV1.Artifact) (string, error) {
+func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latestV2.Artifact) (string, error) {
 	val := h.syncStore.Exec(a.ImageName,
 		func() interface{} {
 			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
@@ -113,7 +113,7 @@ func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latestV1.Artifact)
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
-func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latestV1.Artifact, mode config.RunMode) (string, error) {
+func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latestV2.Artifact, mode config.RunMode) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
@@ -165,7 +165,7 @@ func encode(inputs []string) (string, error) {
 }
 
 // TODO(dgageot): when the buildpacks builder image digest changes, we need to change the hash
-func artifactConfig(a *latestV1.Artifact) (string, error) {
+func artifactConfig(a *latestV2.Artifact) (string, error) {
 	buf, err := json.Marshal(a.ArtifactType)
 	if err != nil {
 		return "", fmt.Errorf("marshalling the artifact's configuration for %q: %w", a.ImageName, err)
@@ -173,7 +173,7 @@ func artifactConfig(a *latestV1.Artifact) (string, error) {
 	return string(buf), nil
 }
 
-func hashBuildArgs(artifact *latestV1.Artifact, mode config.RunMode) ([]string, error) {
+func hashBuildArgs(artifact *latestV2.Artifact, mode config.RunMode) ([]string, error) {
 	// only one of args or env is ever populated
 	var args map[string]*string
 	var env map[string]string
@@ -226,7 +226,7 @@ func fileHasher(p string) (string, error) {
 }
 
 // sortedDependencies returns the dependencies' corresponding Artifacts as sorted by their image name.
-func sortedDependencies(a *latestV1.Artifact, artifacts graph.ArtifactGraph) []*latestV1.Artifact {
+func sortedDependencies(a *latestV2.Artifact, artifacts graph.ArtifactGraph) []*latestV2.Artifact {
 	sl := artifacts.Dependencies(a)
 	sort.Slice(sl, func(i, j int) bool {
 		ia, ja := sl[i], sl[j]

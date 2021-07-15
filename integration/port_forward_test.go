@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 )
 
 func TestPortForward(t *testing.T) {
@@ -41,7 +41,7 @@ func TestPortForward(t *testing.T) {
 	cfg, err := kubectx.CurrentConfig()
 	failNowIfError(t, err)
 
-	kubectlCLI := kubectl.NewCLI(&runcontext.RunContext{
+	kubectlCLI := kubectl.NewCLI(&v2.RunContext{
 		KubeContext: cfg.CurrentContext,
 		Opts: config.SkaffoldOptions{
 			Namespace: ns.Name,

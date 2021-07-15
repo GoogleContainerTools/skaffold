@@ -23,11 +23,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // Build builds an artifact using a custom script
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "custom",
 		"Context":     instrumentation.PII(artifact.Workspace),

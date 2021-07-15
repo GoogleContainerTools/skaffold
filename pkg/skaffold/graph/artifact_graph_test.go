@@ -19,13 +19,13 @@ package graph
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestToArtifactGraph_shouldGenerateArtifactGraph(t *testing.T) {
 	testutil.Run(t, "generate artifacts graph", func(t *testutil.T) {
-		artifacts := []*latestV1.Artifact{
+		artifacts := []*latestV2.Artifact{
 			{
 				ImageName: "1",
 			},
@@ -43,10 +43,10 @@ func TestToArtifactGraph_shouldGenerateArtifactGraph(t *testing.T) {
 
 func TestToArtifactGraph_shouldReturnDependencies(t *testing.T) {
 	testutil.Run(t, "return artifact dependencies", func(t *testutil.T) {
-		artifacts := []*latestV1.Artifact{
+		artifacts := []*latestV2.Artifact{
 			{
 				ImageName: "1",
-				Dependencies: []*latestV1.ArtifactDependency{
+				Dependencies: []*latestV2.ArtifactDependency{
 					{
 						ImageName: "randomImageName",
 						Alias:     "alias",

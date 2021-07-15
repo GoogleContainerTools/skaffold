@@ -28,7 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -45,7 +45,7 @@ func (f *fakePack) runPack(_ context.Context, _ io.Writer, _ docker.LocalDaemon,
 func TestBuild(t *testing.T) {
 	tests := []struct {
 		description     string
-		artifact        *latestV1.Artifact
+		artifact        *latestV2.Artifact
 		tag             string
 		api             *testutil.FakeAPIClient
 		files           map[string]string
@@ -197,7 +197,7 @@ value = "VALUE2"
 		},
 		{
 			description: "dev mode",
-			artifact:    withSync(&latestV1.Sync{Auto: util.BoolPtr(true)}, buildpacksArtifact("another/builder", "another/run")),
+			artifact:    withSync(&latestV2.Sync{Auto: util.BoolPtr(true)}, buildpacksArtifact("another/builder", "another/run")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{},
@@ -292,7 +292,7 @@ value = "VALUE2"
 func TestBuildWithArtifactDependencies(t *testing.T) {
 	tests := []struct {
 		description     string
-		artifact        *latestV1.Artifact
+		artifact        *latestV2.Artifact
 		tag             string
 		api             *testutil.FakeAPIClient
 		files           map[string]string
@@ -304,7 +304,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 	}{
 		{
 			description: "custom builder image only with no push",
-			artifact:    withRequiredArtifacts([]*latestV1.ArtifactDependency{{ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "my/run")),
+			artifact:    withRequiredArtifacts([]*latestV2.ArtifactDependency{{ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "my/run")),
 			tag:         "img:tag",
 			pushImages:  false,
 			mode:        config.RunModes.Build,
@@ -321,7 +321,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 		},
 		{
 			description: "custom run image only with no push",
-			artifact:    withRequiredArtifacts([]*latestV1.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}}, buildpacksArtifact("my/builder", "RUN_IMAGE")),
+			artifact:    withRequiredArtifacts([]*latestV2.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}}, buildpacksArtifact("my/builder", "RUN_IMAGE")),
 			tag:         "img:tag",
 			pushImages:  false,
 			mode:        config.RunModes.Build,
@@ -338,7 +338,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 		},
 		{
 			description: "custom builder image only with push",
-			artifact:    withRequiredArtifacts([]*latestV1.ArtifactDependency{{ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "my/run")),
+			artifact:    withRequiredArtifacts([]*latestV2.ArtifactDependency{{ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "my/run")),
 			tag:         "img:tag",
 			pushImages:  true,
 			mode:        config.RunModes.Build,
@@ -355,7 +355,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 		},
 		{
 			description: "custom run image only with push",
-			artifact:    withRequiredArtifacts([]*latestV1.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}}, buildpacksArtifact("my/builder", "RUN_IMAGE")),
+			artifact:    withRequiredArtifacts([]*latestV2.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}}, buildpacksArtifact("my/builder", "RUN_IMAGE")),
 			tag:         "img:tag",
 			pushImages:  true,
 			mode:        config.RunModes.Build,
@@ -372,7 +372,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 		},
 		{
 			description: "custom run image and custom builder image with push",
-			artifact:    withRequiredArtifacts([]*latestV1.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}, {ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "RUN_IMAGE")),
+			artifact:    withRequiredArtifacts([]*latestV2.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}, {ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "RUN_IMAGE")),
 			tag:         "img:tag",
 			pushImages:  true,
 			mode:        config.RunModes.Build,
@@ -389,7 +389,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 		},
 		{
 			description: "custom run image and custom builder image with no push",
-			artifact:    withRequiredArtifacts([]*latestV1.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}, {ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "RUN_IMAGE")),
+			artifact:    withRequiredArtifacts([]*latestV2.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}, {ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "RUN_IMAGE")),
 			tag:         "img:tag",
 			pushImages:  false,
 			mode:        config.RunModes.Build,
@@ -429,15 +429,15 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 		})
 	}
 }
-func buildpacksArtifact(builder, runImage string) *latestV1.Artifact {
-	return &latestV1.Artifact{
+func buildpacksArtifact(builder, runImage string) *latestV2.Artifact {
+	return &latestV2.Artifact{
 		Workspace: ".",
-		ArtifactType: latestV1.ArtifactType{
-			BuildpackArtifact: &latestV1.BuildpackArtifact{
+		ArtifactType: latestV2.ArtifactType{
+			BuildpackArtifact: &latestV2.BuildpackArtifact{
 				Builder:           builder,
 				RunImage:          runImage,
 				ProjectDescriptor: "project.toml",
-				Dependencies: &latestV1.BuildpackDependencies{
+				Dependencies: &latestV2.BuildpackDependencies{
 					Paths: []string{"."},
 				},
 			},
@@ -445,27 +445,27 @@ func buildpacksArtifact(builder, runImage string) *latestV1.Artifact {
 	}
 }
 
-func withEnv(env []string, artifact *latestV1.Artifact) *latestV1.Artifact {
+func withEnv(env []string, artifact *latestV2.Artifact) *latestV2.Artifact {
 	artifact.BuildpackArtifact.Env = env
 	return artifact
 }
 
-func withSync(sync *latestV1.Sync, artifact *latestV1.Artifact) *latestV1.Artifact {
+func withSync(sync *latestV2.Sync, artifact *latestV2.Artifact) *latestV2.Artifact {
 	artifact.Sync = sync
 	return artifact
 }
 
-func withTrustedBuilder(artifact *latestV1.Artifact) *latestV1.Artifact {
+func withTrustedBuilder(artifact *latestV2.Artifact) *latestV2.Artifact {
 	artifact.BuildpackArtifact.TrustBuilder = true
 	return artifact
 }
 
-func withRequiredArtifacts(deps []*latestV1.ArtifactDependency, artifact *latestV1.Artifact) *latestV1.Artifact {
+func withRequiredArtifacts(deps []*latestV2.ArtifactDependency, artifact *latestV2.Artifact) *latestV2.Artifact {
 	artifact.Dependencies = deps
 	return artifact
 }
 
-func withBuildpacks(buildpacks []string, artifact *latestV1.Artifact) *latestV1.Artifact {
+func withBuildpacks(buildpacks []string, artifact *latestV2.Artifact) *latestV2.Artifact {
 	artifact.BuildpackArtifact.Buildpacks = buildpacks
 	return artifact
 }

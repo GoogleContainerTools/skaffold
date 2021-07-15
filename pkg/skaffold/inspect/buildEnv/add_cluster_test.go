@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"

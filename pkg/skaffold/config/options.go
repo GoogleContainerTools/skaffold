@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // WaitForDeletions configures the wait for pending deletions.
@@ -134,7 +134,7 @@ func (opts *SkaffoldOptions) Mode() RunMode {
 	return RunMode(opts.Command)
 }
 
-func (opts *SkaffoldOptions) IsTargetImage(artifact *latestV1.Artifact) bool {
+func (opts *SkaffoldOptions) IsTargetImage(artifact *latestV2.Artifact) bool {
 	if len(opts.TargetImages) == 0 {
 		return true
 	}

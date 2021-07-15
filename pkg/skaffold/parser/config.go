@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -61,12 +61,12 @@ func newRecord() *record {
 }
 
 // GetAllConfigs returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs.
-func GetAllConfigs(opts config.SkaffoldOptions) ([]*latestV1.SkaffoldConfig, error) {
+func GetAllConfigs(opts config.SkaffoldOptions) ([]*latestV2.SkaffoldConfig, error) {
 	set, err := GetConfigSet(opts)
 	if err != nil {
 		return nil, err
 	}
-	var cfgs []*latestV1.SkaffoldConfig
+	var cfgs []*latestV2.SkaffoldConfig
 	for _, cfg := range set {
 		cfgs = append(cfgs, cfg.SkaffoldConfig)
 	}
@@ -119,7 +119,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 	// validate that config names are unique if specified
 	seen := make(map[string]bool)
 	for _, cfg := range parsed {
-		cfgName := cfg.(*latestV1.SkaffoldConfig).Metadata.Name
+		cfgName := cfg.(*latestV2.SkaffoldConfig).Metadata.Name
 		if cfgName == "" {
 			continue
 		}
@@ -131,7 +131,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 
 	var configs SkaffoldConfigSet
 	for i, cfg := range parsed {
-		config := cfg.(*latestV1.SkaffoldConfig)
+		config := cfg.(*latestV2.SkaffoldConfig)
 		processed, err := processEachConfig(config, cfgOpts, opts, r, i)
 		if err != nil {
 			return nil, err
@@ -143,7 +143,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 
 // processEachConfig processes each parsed config by applying profiles and recursively processing its dependencies.
 // The `index` parameter specifies the index of the current config in its `skaffold.yaml` file. We use the `index` instead of the config `metadata.name` property to uniquely identify each config since not all configs define `name`.
-func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) (SkaffoldConfigSet, error) {
+func processEachConfig(config *latestV2.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) (SkaffoldConfigSet, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
 		prevConfig, found := r.configNameToFile[config.Metadata.Name]
@@ -226,7 +226,7 @@ func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts
 }
 
 // filterActiveProfiles selects the set of profiles to activate in the dependency config based on the current set of active profiles.
-func filterActiveProfiles(d latestV1.ConfigDependency, profiles []string) []string {
+func filterActiveProfiles(d latestV2.ConfigDependency, profiles []string) []string {
 	var depProfiles []string
 	for _, ap := range d.ActiveProfiles {
 		if len(ap.ActivatedBy) == 0 {
@@ -244,7 +244,7 @@ func filterActiveProfiles(d latestV1.ConfigDependency, profiles []string) []stri
 }
 
 // processEachDependency parses a config dependency with the calculated set of activated profiles.
-func processEachDependency(d latestV1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
+func processEachDependency(d latestV2.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
 	path := makeConfigPathAbsolute(d.Path, cfgOpts.file)
 
 	if d.GitRepo != nil {
@@ -285,7 +285,7 @@ func processEachDependency(d latestV1.ConfigDependency, cfgOpts configOpts, opts
 }
 
 // cacheRepo downloads the referenced git repository to skaffold's cache if required and returns the path to the target configuration file in that repository.
-func cacheRepo(g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
+func cacheRepo(g latestV2.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
 	key := fmt.Sprintf("%s@%s", g.Repo, g.Ref)
 	if p, found := r.cachedRepos[key]; found {
 		switch v := p.(type) {
@@ -310,7 +310,7 @@ func cacheRepo(g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (stri
 
 // checkRevisit ensures that each config is activated with the same set of active profiles
 // It returns true if this config was visited once before. It additionally returns an error if the previous visit was with a different set of active profiles.
-func checkRevisit(config *latestV1.SkaffoldConfig, profiles []string, appliedProfiles map[string]string, file string, required bool, index int) (bool, error) {
+func checkRevisit(config *latestV2.SkaffoldConfig, profiles []string, appliedProfiles map[string]string, file string, required bool, index int) (bool, error) {
 	key := fmt.Sprintf("%s:%d:%t", file, index, required)
 	expected := strings.Join(profiles, ",")
 	// including `required` in the key implies that we search this dependency tree once for a possible match of required named configs, but also again if the current config is itself required which makes all subsequent configs also required.

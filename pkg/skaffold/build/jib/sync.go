@@ -30,7 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -56,7 +56,7 @@ type JSONSyncEntry struct {
 
 var InitSync = initSync
 
-func initSync(ctx context.Context, workspace string, a *latestV1.JibArtifact) error {
+func initSync(ctx context.Context, workspace string, a *latestV2.JibArtifact) error {
 	syncMap, err := getSyncMapFunc(ctx, workspace, a)
 	if err != nil {
 		return fmt.Errorf("failed to initialize sync state for %q: %w", workspace, err)
@@ -68,7 +68,7 @@ func initSync(ctx context.Context, workspace string, a *latestV1.JibArtifact) er
 var GetSyncDiff = getSyncDiff
 
 // returns toCopy, toDelete, error
-func getSyncDiff(ctx context.Context, workspace string, a *latestV1.JibArtifact, e filemon.Events) (map[string][]string, map[string][]string, error) {
+func getSyncDiff(ctx context.Context, workspace string, a *latestV2.JibArtifact, e filemon.Events) (map[string][]string, map[string][]string, error) {
 	// no deletions allowed
 	if len(e.Deleted) != 0 {
 		// change into logging
@@ -154,7 +154,7 @@ var (
 	getSyncMapFunc = getSyncMap
 )
 
-func getSyncMap(ctx context.Context, workspace string, artifact *latestV1.JibArtifact) (*SyncMap, error) {
+func getSyncMap(ctx context.Context, workspace string, artifact *latestV2.JibArtifact) (*SyncMap, error) {
 	// cmd will hold context that identifies the project
 	cmd, err := getSyncMapCommand(ctx, workspace, artifact)
 	if err != nil {
@@ -168,7 +168,7 @@ func getSyncMap(ctx context.Context, workspace string, artifact *latestV1.JibArt
 	return sm, nil
 }
 
-func getSyncMapCommand(ctx context.Context, workspace string, artifact *latestV1.JibArtifact) (*exec.Cmd, error) {
+func getSyncMapCommand(ctx context.Context, workspace string, artifact *latestV2.JibArtifact) (*exec.Cmd, error) {
 	t, err := DeterminePluginType(workspace, artifact)
 	if err != nil {
 		return nil, err

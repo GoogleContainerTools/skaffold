@@ -19,7 +19,7 @@ package buildpacks
 import (
 	"encoding/json"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 type buildMetadata struct {
@@ -40,7 +40,7 @@ type syncRule struct {
 }
 
 // $ docker inspect demo/buildpacks | jq -r '.[].Config.Labels["io.buildpacks.build.metadata"] | fromjson.bom[].metadata["devmode.sync"]'
-func SyncRules(labels map[string]string) ([]*latestV1.SyncRule, error) {
+func SyncRules(labels map[string]string) ([]*latestV2.SyncRule, error) {
 	metadataJSON, present := labels["io.buildpacks.build.metadata"]
 	if !present {
 		return nil, nil
@@ -51,11 +51,11 @@ func SyncRules(labels map[string]string) ([]*latestV1.SyncRule, error) {
 		return nil, err
 	}
 
-	var rules []*latestV1.SyncRule
+	var rules []*latestV2.SyncRule
 
 	for _, b := range m.Bom {
 		for _, sync := range b.Metadata.Sync {
-			rules = append(rules, &latestV1.SyncRule{
+			rules = append(rules, &latestV2.SyncRule{
 				Src:  sync.Src,
 				Dest: sync.Dest,
 			})

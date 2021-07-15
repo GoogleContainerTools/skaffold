@@ -22,10 +22,10 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
-func (b *Builder) buildSpec(artifact *latestV1.Artifact, tag, bucket, object string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpec(artifact *latestV2.Artifact, tag, bucket, object string) (cloudbuild.Build, error) {
 	// Artifact specific build spec
 	buildSpec, err := b.buildSpecForArtifact(artifact, tag)
 	if err != nil {
@@ -53,7 +53,7 @@ func (b *Builder) buildSpec(artifact *latestV1.Artifact, tag, bucket, object str
 	return buildSpec, nil
 }
 
-func (b *Builder) buildSpecForArtifact(a *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpecForArtifact(a *latestV2.Artifact, tag string) (cloudbuild.Build, error) {
 	switch {
 	case a.KanikoArtifact != nil:
 		return b.kanikoBuildSpec(a, tag)

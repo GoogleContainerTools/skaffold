@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -43,7 +43,7 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 		// for these cases, don't add the new env definition to any configs imported as dependencies.
 		cfgs = cfgs.SelectRootConfigs()
 		for _, cfg := range cfgs {
-			if cfg.Build.GoogleCloudBuild != nil && (*cfg.Build.GoogleCloudBuild != latestV1.GoogleCloudBuild{}) {
+			if cfg.Build.GoogleCloudBuild != nil && (*cfg.Build.GoogleCloudBuild != latestV2.GoogleCloudBuild{}) {
 				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, ""))
 			}
 			cfg.Build.GoogleCloudBuild = constructGcbDefinition(cfg.Build.GoogleCloudBuild, opts.BuildEnvOptions)
@@ -61,9 +61,9 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 			}
 			if index < 0 {
 				index = len(cfg.Profiles)
-				cfg.Profiles = append(cfg.Profiles, latestV1.Profile{Name: opts.Profile})
+				cfg.Profiles = append(cfg.Profiles, latestV2.Profile{Name: opts.Profile})
 			}
-			if cfg.Profiles[index].Build.GoogleCloudBuild != nil && (*cfg.Profiles[index].Build.GoogleCloudBuild != latestV1.GoogleCloudBuild{}) {
+			if cfg.Profiles[index].Build.GoogleCloudBuild != nil && (*cfg.Profiles[index].Build.GoogleCloudBuild != latestV2.GoogleCloudBuild{}) {
 				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, opts.Profile))
 			}
 			cfg.Profiles[index].Build.GoogleCloudBuild = constructGcbDefinition(cfg.Profiles[index].Build.GoogleCloudBuild, opts.BuildEnvOptions)
@@ -76,8 +76,8 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 	return inspect.MarshalConfigSet(cfgs)
 }
 
-func constructGcbDefinition(existing *latestV1.GoogleCloudBuild, opts inspect.BuildEnvOptions) *latestV1.GoogleCloudBuild {
-	var b latestV1.GoogleCloudBuild
+func constructGcbDefinition(existing *latestV2.GoogleCloudBuild, opts inspect.BuildEnvOptions) *latestV2.GoogleCloudBuild {
+	var b latestV2.GoogleCloudBuild
 	if existing != nil {
 		b = *existing
 	}
@@ -122,6 +122,6 @@ func addProfileActivationStanza(cfg *parser.SkaffoldConfigEntry, profileName str
 				return
 			}
 		}
-		cfg.Dependencies[i].ActiveProfiles = append(cfg.Dependencies[i].ActiveProfiles, latestV1.ProfileDependency{Name: profileName, ActivatedBy: []string{profileName}})
+		cfg.Dependencies[i].ActiveProfiles = append(cfg.Dependencies[i].ActiveProfiles, latestV2.ProfileDependency{Name: profileName, ActivatedBy: []string{profileName}})
 	}
 }

@@ -40,12 +40,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact) build.ArtifactBuilder {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact) build.ArtifactBuilder {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType": "gcb",
 		"Context":   instrumentation.PII(artifact.Workspace),
@@ -66,7 +66,7 @@ func (b *Builder) Concurrency() int {
 	return b.GoogleCloudBuild.Concurrency
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"Destination": instrumentation.PII(tag),
 	})

@@ -16,14 +16,36 @@ limitations under the License.
 package v2
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
+// SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
 	runner.Builder
 	runner.Pruner
 	test.Tester
+
+	deployer deploy.Deployer
+	monitor  filemon.Monitor
+	listener runner.Listener
+
+	kubectlCLI         *kubectl.CLI
+	cache              cache.Cache
+	runCtx             *runcontext.RunContext
+	labeller           *label.DefaultLabeller
+	artifactStore      build.ArtifactStore
+	sourceDependencies graph.SourceDependenciesCache
+
+	isLocalImage func(imageName string) (bool, error)
 }
 
 func (r *SkaffoldRunner) HasDeployed() bool { return true }

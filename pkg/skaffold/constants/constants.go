@@ -19,7 +19,7 @@ package constants
 import (
 	"github.com/sirupsen/logrus"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 const (
@@ -78,8 +78,8 @@ const (
 type Phase string
 
 var (
-	Pod     latestV1.ResourceType = "pod"
-	Service latestV1.ResourceType = "service"
+	Pod     latestV2.ResourceType = "pod"
+	Service latestV2.ResourceType = "service"
 
 	DefaultLocalConcurrency = 1
 )

@@ -34,8 +34,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -78,18 +78,18 @@ spec:
 		t.NewTempDir().
 			Write("deployment.yaml", test.input).
 			Chdir()
-		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
+		deployer, err := kubectl.NewDeployer(&v2.RunContext{
 			WorkingDir: ".",
-			Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
-				Deploy: latestV1.DeployConfig{
-					DeployType: latestV1.DeployType{
-						KubectlDeploy: &latestV1.KubectlDeploy{
+			Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
+				Deploy: latestV2.DeployConfig{
+					DeployType: latestV2.DeployType{
+						KubectlDeploy: &latestV2.KubectlDeploy{
 							Manifests: []string{"deployment.yaml"},
 						},
 					},
 				},
 			}}),
-		}, nil, deploy.NoopComponentProvider, &latestV1.KubectlDeploy{
+		}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -235,12 +235,12 @@ spec:
 				Write("deployment.yaml", test.input).
 				Chdir()
 
-			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
+			deployer, err := kubectl.NewDeployer(&v2.RunContext{
 				WorkingDir: ".",
-				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
-					Deploy: latestV1.DeployConfig{
-						DeployType: latestV1.DeployType{
-							KubectlDeploy: &latestV1.KubectlDeploy{
+				Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							KubectlDeploy: &latestV2.KubectlDeploy{
 								Manifests: []string{"deployment.yaml"},
 							},
 						},
@@ -249,7 +249,7 @@ spec:
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil, deploy.NoopComponentProvider, &latestV1.KubectlDeploy{
+			}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -268,7 +268,7 @@ func TestHelmRender(t *testing.T) {
 	tests := []struct {
 		description  string
 		builds       []graph.Artifact
-		helmReleases []latestV1.HelmRelease
+		helmReleases []latestV2.HelmRelease
 		expectedOut  string
 	}{
 		{
@@ -279,7 +279,7 @@ func TestHelmRender(t *testing.T) {
 					Tag:       "gke-loadbalancer:test",
 				},
 			},
-			helmReleases: []latestV1.HelmRelease{{
+			helmReleases: []latestV2.HelmRelease{{
 				Name:      "gke_loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
 				ArtifactOverrides: map[string]string{
@@ -337,7 +337,7 @@ spec:
 					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",
 				},
 			},
-			helmReleases: []latestV1.HelmRelease{{
+			helmReleases: []latestV2.HelmRelease{{
 				Name:      "skaffold-helm",
 				ChartPath: "testdata/helm/skaffold-helm",
 				ArtifactOverrides: map[string]string{
@@ -425,17 +425,17 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer, err := helm.NewDeployer(&runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
-					Deploy: latestV1.DeployConfig{
-						DeployType: latestV1.DeployType{
-							HelmDeploy: &latestV1.HelmDeploy{
+			deployer, err := helm.NewDeployer(&v2.RunContext{
+				Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							HelmDeploy: &latestV2.HelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},
 					},
 				}}),
-			}, nil, deploy.NoopComponentProvider, &latestV1.HelmDeploy{
+			}, nil, deploy.NoopComponentProvider, &latestV2.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)

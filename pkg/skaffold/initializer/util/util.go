@@ -18,13 +18,13 @@ package util
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
 // ListBuilders returns a list of builder names being used in the given build config.
-func ListBuilders(build *latestV1.BuildConfig) []string {
+func ListBuilders(build *latestV2.BuildConfig) []string {
 	if build == nil {
 		return []string{}
 	}
@@ -38,7 +38,7 @@ func ListBuilders(build *latestV1.BuildConfig) []string {
 }
 
 // ListDeployers returns a list of deployer names being used in the given deploy config.
-func ListDeployers(deploy *latestV1.DeployConfig) []string {
+func ListDeployers(deploy *latestV2.DeployConfig) []string {
 	if deploy == nil {
 		return []string{}
 	}

@@ -33,8 +33,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -96,7 +96,7 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 
 // ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
 // It returns all encountered errors as a concatenated string.
-func ProcessWithRunContext(runCtx *runcontext.RunContext) error {
+func ProcessWithRunContext(runCtx *v2.RunContext) error {
 	var errs []error
 	errs = append(errs, validateDockerNetworkContainerExists(runCtx.Artifacts(), runCtx)...)
 
@@ -111,7 +111,7 @@ func ProcessWithRunContext(runCtx *runcontext.RunContext) error {
 }
 
 // validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
-func validateTaggingPolicy(bc latestV1.BuildConfig) (errs []error) {
+func validateTaggingPolicy(bc latestV2.BuildConfig) (errs []error) {
 	if bc.LocalBuild != nil {
 		// sha256 just uses `latest` tag, so tryImportMissing will virtually always succeed (#4889)
 		if bc.LocalBuild.TryImportMissing && bc.TagPolicy.ShaTagger != nil {
@@ -152,7 +152,7 @@ func validateImageNames(configs parser.SkaffoldConfigSet) (errs []error) {
 }
 
 func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (errs []error) {
-	var artifacts []*latestV1.Artifact
+	var artifacts []*latestV2.Artifact
 	for _, c := range configs {
 		artifacts = append(artifacts, c.Build.Artifacts...)
 	}
@@ -163,8 +163,8 @@ func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (errs []erro
 }
 
 // validateAcyclicDependencies makes sure all artifact dependencies are found and don't have cyclic references
-func validateAcyclicDependencies(artifacts []*latestV1.Artifact) (errs []error) {
-	m := make(map[string]*latestV1.Artifact)
+func validateAcyclicDependencies(artifacts []*latestV2.Artifact) (errs []error) {
+	m := make(map[string]*latestV2.Artifact)
 	for _, artifact := range artifacts {
 		m[artifact.ImageName] = artifact
 	}
@@ -179,7 +179,7 @@ func validateAcyclicDependencies(artifacts []*latestV1.Artifact) (errs []error) 
 }
 
 // dfs runs a Depth First Search algorithm for cycle detection in a directed graph
-func dfs(artifact *latestV1.Artifact, visited, marked map[string]bool, artifacts map[string]*latestV1.Artifact) error {
+func dfs(artifact *latestV2.Artifact, visited, marked map[string]bool, artifacts map[string]*latestV2.Artifact) error {
 	if marked[artifact.ImageName] {
 		return fmt.Errorf("cycle detected in build dependencies involving %q", artifact.ImageName)
 	}
@@ -206,7 +206,7 @@ func dfs(artifact *latestV1.Artifact, visited, marked map[string]bool, artifacts
 
 // validateValidDependencyAliases makes sure that artifact dependency aliases are valid.
 // docker and custom builders require aliases match [a-zA-Z_][a-zA-Z0-9_]* pattern
-func validateValidDependencyAliases(artifacts []*latestV1.Artifact) (errs []error) {
+func validateValidDependencyAliases(artifacts []*latestV2.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil && a.CustomArtifact == nil {
 			continue
@@ -221,7 +221,7 @@ func validateValidDependencyAliases(artifacts []*latestV1.Artifact) (errs []erro
 }
 
 // validateUniqueDependencyAliases makes sure that artifact dependency aliases are unique for each artifact
-func validateUniqueDependencyAliases(artifacts []*latestV1.Artifact) (errs []error) {
+func validateUniqueDependencyAliases(artifacts []*latestV2.Artifact) (errs []error) {
 	type State int
 	var (
 		unseen   State = 0
@@ -309,7 +309,7 @@ func validateDockerContainerExpression(image string, id string) error {
 }
 
 // validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, `container:<name|id>`, or `host` if set.
-func validateDockerNetworkMode(artifacts []*latestV1.Artifact) (errs []error) {
+func validateDockerNetworkMode(artifacts []*latestV2.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
 			continue
@@ -328,7 +328,7 @@ func validateDockerNetworkMode(artifacts []*latestV1.Artifact) (errs []error) {
 }
 
 // Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
-func validateDockerNetworkContainerExists(artifacts []*latestV1.Artifact, runCtx docker.Config) []error {
+func validateDockerNetworkContainerExists(artifacts []*latestV2.Artifact, runCtx docker.Config) []error {
 	var errs []error
 	apiClient, err := docker.NewAPIClient(runCtx)
 	if err != nil {
@@ -399,7 +399,7 @@ func validateDockerNetworkContainerExists(artifacts []*latestV1.Artifact, runCtx
 }
 
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
-func validateCustomDependencies(artifacts []*latestV1.Artifact) (errs []error) {
+func validateCustomDependencies(artifacts []*latestV2.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.CustomArtifact == nil || a.CustomArtifact.Dependencies == nil || a.CustomArtifact.Dependencies.Ignore == nil {
 			continue
@@ -460,7 +460,7 @@ func visitStructs(s interface{}, visitor func(interface{}) error) []error {
 }
 
 // validateSyncRules checks that all manual sync rules have a valid strip prefix
-func validateSyncRules(artifacts []*latestV1.Artifact) []error {
+func validateSyncRules(artifacts []*latestV2.Artifact) []error {
 	var errs []error
 	for _, a := range artifacts {
 		if a.Sync != nil {
@@ -477,7 +477,7 @@ func validateSyncRules(artifacts []*latestV1.Artifact) []error {
 
 // validatePortForwardResources checks that all user defined port forward resources
 // have a valid resourceType
-func validatePortForwardResources(pfrs []*latestV1.PortForwardResource) []error {
+func validatePortForwardResources(pfrs []*latestV2.PortForwardResource) []error {
 	var errs []error
 	validResourceTypes := map[string]struct{}{
 		"pod":                   {},
@@ -500,7 +500,7 @@ func validatePortForwardResources(pfrs []*latestV1.PortForwardResource) []error 
 }
 
 // validateJibPluginTypes makes sure that jib type is one of `maven`, or `gradle` if set.
-func validateJibPluginTypes(artifacts []*latestV1.Artifact) (errs []error) {
+func validateJibPluginTypes(artifacts []*latestV2.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.JibArtifact == nil || a.JibArtifact.Type == "" {
 			continue
@@ -515,7 +515,7 @@ func validateJibPluginTypes(artifacts []*latestV1.Artifact) (errs []error) {
 }
 
 // validateArtifactTypes checks that the artifact types are compatible with the specified builder.
-func validateArtifactTypes(bc latestV1.BuildConfig) (errs []error) {
+func validateArtifactTypes(bc latestV2.BuildConfig) (errs []error) {
 	switch {
 	case bc.LocalBuild != nil:
 		for _, a := range bc.Artifacts {
@@ -541,7 +541,7 @@ func validateArtifactTypes(bc latestV1.BuildConfig) (errs []error) {
 }
 
 // validateLogPrefix checks that logs are configured with a valid prefix.
-func validateLogPrefix(lc latestV1.LogsConfig) []error {
+func validateLogPrefix(lc latestV2.LogsConfig) []error {
 	validPrefixes := []string{"", "auto", "container", "podAndContainer", "none"}
 
 	if !util.StrSliceContains(validPrefixes, lc.Prefix) {
@@ -567,7 +567,7 @@ func validateSingleKubeContext(configs parser.SkaffoldConfigSet) []error {
 // validateCustomTest
 // - makes sure that command is not empty
 // - makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
-func validateCustomTest(tcs []*latestV1.TestCase) (errs []error) {
+func validateCustomTest(tcs []*latestV2.TestCase) (errs []error) {
 	for _, tc := range tcs {
 		for _, ct := range tc.CustomTests {
 			if ct.Command == "" {

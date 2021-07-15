@@ -34,7 +34,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // For testing
@@ -47,7 +47,7 @@ var (
 // to pull the images that are already pulled.
 var images pulledImages
 
-func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
@@ -187,7 +187,7 @@ func envMap(env []string) map[string]string {
 
 // resolveDependencyImages replaces the provided builder and run images with built images from the required artifacts if specified.
 // The return values are builder image, run image, and if remote pull is required.
-func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactResolver, deps []*latestV1.ArtifactDependency, pushImages bool) (string, string, packcfg.PullPolicy) {
+func resolveDependencyImages(artifact *latestV2.BuildpackArtifact, r ArtifactResolver, deps []*latestV2.ArtifactDependency, pushImages bool) (string, string, packcfg.PullPolicy) {
 	builderImage, runImage := artifact.Builder, artifact.RunImage
 	builderImageLocal, runImageLocal := false, false
 
@@ -222,12 +222,12 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 		// if only one of builder or run image is built locally, we can enable remote image pull only if that image is also pushed to remote.
 		pullPolicy = packcfg.PullIfNotPresent
 
-		// if remote image pull is disabled then the image that is not fetched from the required artifacts might not be latestV1.
+		// if remote image pull is disabled then the image that is not fetched from the required artifacts might not be latestV2.
 		if !pushImages && builderImageLocal {
-			logrus.Warnln("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
+			logrus.Warnln("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV2.")
 		}
 		if !pushImages && runImageLocal {
-			logrus.Warnln("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
+			logrus.Warnln("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV2.")
 		}
 	}
 
@@ -239,7 +239,7 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 	return builderImage, runImage, pullPolicy
 }
 
-func containerConfig(artifact *latestV1.BuildpackArtifact) (pack.ContainerConfig, error) {
+func containerConfig(artifact *latestV2.BuildpackArtifact) (pack.ContainerConfig, error) {
 	var vols []string
 	if artifact.Volumes != nil {
 		for _, v := range *artifact.Volumes {

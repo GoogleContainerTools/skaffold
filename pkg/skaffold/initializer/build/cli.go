@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 type cliBuildInitializer struct {
@@ -47,8 +47,8 @@ func (c *cliBuildInitializer) ProcessImages(images []string) error {
 	return nil
 }
 
-func (c *cliBuildInitializer) BuildConfig() (latestV1.BuildConfig, []*latestV1.PortForwardResource) {
-	return latestV1.BuildConfig{
+func (c *cliBuildInitializer) BuildConfig() (latestV2.BuildConfig, []*latestV2.PortForwardResource) {
+	return latestV2.BuildConfig{
 		Artifacts: Artifacts(c.artifactInfos),
 	}, nil
 }

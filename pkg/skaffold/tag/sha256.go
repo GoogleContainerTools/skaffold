@@ -18,14 +18,14 @@ package tag
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
 type ChecksumTagger struct{}
 
 // GenerateTag returns either the current tag or `latest`.
-func (t *ChecksumTagger) GenerateTag(image latestV1.Artifact) (string, error) {
+func (t *ChecksumTagger) GenerateTag(image latestV2.Artifact) (string, error) {
 	parsed, err := docker.ParseReference(image.ImageName)
 	if err != nil {
 		return "", err

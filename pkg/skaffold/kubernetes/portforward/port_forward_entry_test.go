@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -33,7 +33,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 	}{
 		{
 			description: "entry for pod",
-			pfe: newPortForwardEntry(0, latestV1.PortForwardResource{
+			pfe: newPortForwardEntry(0, latestV2.PortForwardResource{
 				Type:      "pod",
 				Name:      "podName",
 				Namespace: "default",
@@ -42,7 +42,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 			expected: "pod-podName-default-8080",
 		}, {
 			description: "entry for deploy",
-			pfe: newPortForwardEntry(0, latestV1.PortForwardResource{
+			pfe: newPortForwardEntry(0, latestV2.PortForwardResource{
 				Type:      "deployment",
 				Name:      "depName",
 				Namespace: "namespace",
@@ -51,7 +51,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 			expected: "deployment-depName-namespace-9000",
 		}, {
 			description: "entry for deployment with capital normalization",
-			pfe: newPortForwardEntry(0, latestV1.PortForwardResource{
+			pfe: newPortForwardEntry(0, latestV2.PortForwardResource{
 				Type:      "Deployment",
 				Name:      "depName",
 				Namespace: "namespace",
@@ -84,7 +84,7 @@ func TestAutomaticPodForwardingKey(t *testing.T) {
 	}{
 		{
 			description: "entry for automatically port forwarded pod",
-			pfe: newPortForwardEntry(0, latestV1.PortForwardResource{
+			pfe: newPortForwardEntry(0, latestV2.PortForwardResource{
 				Type:      "pod",
 				Name:      "podName",
 				Namespace: "default",

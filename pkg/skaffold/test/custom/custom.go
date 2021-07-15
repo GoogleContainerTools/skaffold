@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -43,13 +43,13 @@ const Windows string = "windows"
 
 type Runner struct {
 	cfg        docker.Config
-	customTest latestV1.CustomTest
+	customTest latestV2.CustomTest
 	imageName  string
 	workspace  string
 }
 
 // New creates a new custom.Runner.
-func New(cfg docker.Config, imageName string, ws string, ct latestV1.CustomTest) (*Runner, error) {
+func New(cfg docker.Config, imageName string, ws string, ct latestV2.CustomTest) (*Runner, error) {
 	return &Runner{
 		cfg:        cfg,
 		imageName:  imageName,

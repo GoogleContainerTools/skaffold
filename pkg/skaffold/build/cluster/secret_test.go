@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -39,7 +39,7 @@ func TestCreateSecret(t *testing.T) {
 			return fakeKubernetesclient, nil
 		})
 
-		builder, err := NewBuilder(&mockBuilderContext{}, &latestV1.ClusterDetails{
+		builder, err := NewBuilder(&mockBuilderContext{}, &latestV2.ClusterDetails{
 			Timeout:        "20m",
 			PullSecretName: "kaniko-secret",
 			PullSecretPath: tmpDir.Path("secret.json"),
@@ -70,7 +70,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 			return fake.NewSimpleClientset(), nil
 		})
 
-		builder, err := NewBuilder(&mockBuilderContext{}, &latestV1.ClusterDetails{
+		builder, err := NewBuilder(&mockBuilderContext{}, &latestV2.ClusterDetails{
 			Timeout:        "20m",
 			PullSecretName: "kaniko-secret",
 		})
@@ -93,7 +93,7 @@ func TestExistingSecret(t *testing.T) {
 			}), nil
 		})
 
-		builder, err := NewBuilder(&mockBuilderContext{}, &latestV1.ClusterDetails{
+		builder, err := NewBuilder(&mockBuilderContext{}, &latestV2.ClusterDetails{
 			Timeout:        "20m",
 			PullSecretName: "kaniko-secret",
 		})
@@ -113,7 +113,7 @@ func TestSkipSecretCreation(t *testing.T) {
 			return nil, nil
 		})
 
-		builder, err := NewBuilder(&mockBuilderContext{}, &latestV1.ClusterDetails{
+		builder, err := NewBuilder(&mockBuilderContext{}, &latestV2.ClusterDetails{
 			Timeout: "20m",
 		})
 		t.CheckNoError(err)

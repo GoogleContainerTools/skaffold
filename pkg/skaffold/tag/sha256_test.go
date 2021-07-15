@@ -19,14 +19,14 @@ package tag
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSha256_GenerateTag(t *testing.T) {
 	c := &ChecksumTagger{}
 
-	image := latestV1.Artifact{
+	image := latestV2.Artifact{
 		ImageName: "img:tag",
 	}
 

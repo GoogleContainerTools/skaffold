@@ -29,8 +29,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -47,8 +47,8 @@ var testBuildsFoo = []graph.Artifact{{
 	Tag:       "foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 }}
 
-var testDeployConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -61,8 +61,8 @@ var testDeployConfig = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployNamespacedConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployNamespacedConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -76,8 +76,8 @@ var testDeployNamespacedConfig = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployEnvTemplateNamespacedConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployEnvTemplateNamespacedConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -91,8 +91,8 @@ var testDeployEnvTemplateNamespacedConfig = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployConfigRemoteRepo = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployConfigRemoteRepo = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -106,8 +106,8 @@ var testDeployConfigRemoteRepo = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployConfigTemplated = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployConfigTemplated = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -125,8 +125,8 @@ var testDeployConfigTemplated = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployConfigValuesFilesTemplated = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployConfigValuesFilesTemplated = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -139,8 +139,8 @@ var testDeployConfigValuesFilesTemplated = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployConfigSetFiles = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployConfigSetFiles = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -154,8 +154,8 @@ var testDeployConfigSetFiles = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployRecreatePodsConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployRecreatePodsConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -169,8 +169,8 @@ var testDeployRecreatePodsConfig = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeploySkipBuildDependenciesConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeploySkipBuildDependenciesConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -184,8 +184,8 @@ var testDeploySkipBuildDependenciesConfig = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployHelmStyleConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployHelmStyleConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -195,16 +195,16 @@ var testDeployHelmStyleConfig = latestV1.HelmDeploy{
 		SetValues: map[string]string{
 			"some.key": "somevalue",
 		},
-		ImageStrategy: latestV1.HelmImageStrategy{
-			HelmImageConfig: latestV1.HelmImageConfig{
-				HelmConventionConfig: &latestV1.HelmConventionConfig{},
+		ImageStrategy: latestV2.HelmImageStrategy{
+			HelmImageConfig: latestV2.HelmImageConfig{
+				HelmConventionConfig: &latestV2.HelmConventionConfig{},
 			},
 		},
 	}},
 }
 
-var testDeployHelmExplicitRegistryStyleConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployHelmExplicitRegistryStyleConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -214,9 +214,9 @@ var testDeployHelmExplicitRegistryStyleConfig = latestV1.HelmDeploy{
 		SetValues: map[string]string{
 			"some.key": "somevalue",
 		},
-		ImageStrategy: latestV1.HelmImageStrategy{
-			HelmImageConfig: latestV1.HelmImageConfig{
-				HelmConventionConfig: &latestV1.HelmConventionConfig{
+		ImageStrategy: latestV2.HelmImageStrategy{
+			HelmImageConfig: latestV2.HelmImageConfig{
+				HelmConventionConfig: &latestV2.HelmConventionConfig{
 					ExplicitRegistry: true,
 				},
 			},
@@ -224,8 +224,8 @@ var testDeployHelmExplicitRegistryStyleConfig = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployConfigParameterUnmatched = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployConfigParameterUnmatched = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -234,22 +234,22 @@ var testDeployConfigParameterUnmatched = latestV1.HelmDeploy{
 	},
 }
 
-var testDeployFooWithPackaged = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployFooWithPackaged = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "foo",
 		ChartPath: "testdata/foo",
 		ArtifactOverrides: map[string]string{
 			"image": "foo",
 		},
-		Packaged: &latestV1.HelmPackaged{
+		Packaged: &latestV2.HelmPackaged{
 			Version:    "0.1.2",
 			AppVersion: "1.2.3",
 		},
 	}},
 }
 
-var testDeployWithTemplatedName = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployWithTemplatedName = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "{{.USER}}-skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -262,8 +262,8 @@ var testDeployWithTemplatedName = latestV1.HelmDeploy{
 	},
 }
 
-var testDeploySkipBuildDependencies = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeploySkipBuildDependencies = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "stable/chartmuseum",
 		ArtifactOverrides: map[string]string{
@@ -273,16 +273,16 @@ var testDeploySkipBuildDependencies = latestV1.HelmDeploy{
 	}},
 }
 
-var testDeployRemoteChart = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployRemoteChart = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:        "skaffold-helm-remote",
 		RemoteChart: "stable/chartmuseum",
 		Repo:        "https://charts.helm.sh/stable",
 	}},
 }
 
-var testDeployRemoteChartVersion = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployRemoteChartVersion = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:        "skaffold-helm-remote",
 		RemoteChart: "stable/chartmuseum",
 		Version:     "1.0.0",
@@ -291,23 +291,23 @@ var testDeployRemoteChartVersion = latestV1.HelmDeploy{
 }
 
 var upgradeOnChangeFalse = false
-var testDeployUpgradeOnChange = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployUpgradeOnChange = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:            "skaffold-helm-upgradeOnChange",
 		ChartPath:       "examples/test",
 		UpgradeOnChange: &upgradeOnChangeFalse,
 	}},
 }
 
-var testDeployWithoutTags = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployWithoutTags = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 	}},
 }
 
-var testTwoReleases = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testTwoReleases = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "other",
 		ChartPath: "examples/test",
 	}, {
@@ -320,8 +320,8 @@ var testTwoReleases = latestV1.HelmDeploy{
 }
 
 var createNamespaceFlag = true
-var testDeployCreateNamespaceConfig = latestV1.HelmDeploy{
-	Releases: []latestV1.HelmRelease{{
+var testDeployCreateNamespaceConfig = latestV2.HelmDeploy{
+	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
@@ -492,7 +492,7 @@ func TestHelmDeploy(t *testing.T) {
 		description        string
 		commands           util.Command
 		env                []string
-		helm               latestV1.HelmDeploy
+		helm               latestV2.HelmDeploy
 		namespace          string
 		configure          func(*Deployer)
 		builds             []graph.Artifact
@@ -1030,7 +1030,7 @@ func TestHelmCleanup(t *testing.T) {
 	tests := []struct {
 		description      string
 		commands         util.Command
-		helm             latestV1.HelmDeploy
+		helm             latestV2.HelmDeploy
 		namespace        string
 		builds           []graph.Artifact
 		expectedWarnings []string
@@ -1190,8 +1190,8 @@ func TestHelmDependencies(t *testing.T) {
 				local = tmpDir.Root()
 			}
 
-			deployer, err := NewDeployer(&helmConfig{}, nil, deploy.NoopComponentProvider, &latestV1.HelmDeploy{
-				Releases: []latestV1.HelmRelease{{
+			deployer, err := NewDeployer(&helmConfig{}, nil, deploy.NoopComponentProvider, &latestV2.HelmDeploy{
+				Releases: []latestV2.HelmRelease{{
 					Name:                  "skaffold-helm",
 					ChartPath:             local,
 					RemoteChart:           remote,
@@ -1217,7 +1217,7 @@ func TestImageSetFromConfig(t *testing.T) {
 		valueName   string
 		tag         string
 		expected    string
-		strategy    *latestV1.HelmConventionConfig
+		strategy    *latestV2.HelmConventionConfig
 		shouldErr   bool
 	}{
 		{
@@ -1233,7 +1233,7 @@ func TestImageSetFromConfig(t *testing.T) {
 			valueName:   "image",
 			tag:         "skaffold-helm:1.0.0",
 			expected:    "image.repository=skaffold-helm,image.tag=1.0.0",
-			strategy:    &latestV1.HelmConventionConfig{},
+			strategy:    &latestV2.HelmConventionConfig{},
 			shouldErr:   false,
 		},
 		{
@@ -1241,7 +1241,7 @@ func TestImageSetFromConfig(t *testing.T) {
 			valueName:   "image",
 			tag:         "docker.io/skaffold-helm:1.0.0",
 			expected:    "image.registry=docker.io,image.repository=skaffold-helm,image.tag=1.0.0",
-			strategy: &latestV1.HelmConventionConfig{
+			strategy: &latestV2.HelmConventionConfig{
 				ExplicitRegistry: true,
 			},
 			shouldErr: false,
@@ -1251,7 +1251,7 @@ func TestImageSetFromConfig(t *testing.T) {
 			valueName:   "image",
 			tag:         "skaffold-helm:1.0.0,0",
 			expected:    "",
-			strategy:    &latestV1.HelmConventionConfig{},
+			strategy:    &latestV2.HelmConventionConfig{},
 			shouldErr:   true,
 		},
 		{
@@ -1259,7 +1259,7 @@ func TestImageSetFromConfig(t *testing.T) {
 			valueName:   "image",
 			tag:         "skaffold-helm:1.0.0",
 			expected:    "",
-			strategy: &latestV1.HelmConventionConfig{
+			strategy: &latestV2.HelmConventionConfig{
 				ExplicitRegistry: true,
 			},
 			shouldErr: true,
@@ -1269,7 +1269,7 @@ func TestImageSetFromConfig(t *testing.T) {
 			valueName:   "image",
 			tag:         "skaffold-helm:stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
 			expected:    "image.repository=skaffold-helm,image.tag=stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
-			strategy:    &latestV1.HelmConventionConfig{},
+			strategy:    &latestV2.HelmConventionConfig{},
 			shouldErr:   false,
 		},
 	}
@@ -1287,7 +1287,7 @@ func TestHelmRender(t *testing.T) {
 		description string
 		shouldErr   bool
 		commands    util.Command
-		helm        latestV1.HelmDeploy
+		helm        latestV2.HelmDeploy
 		env         []string
 		outputFile  string
 		expected    string
@@ -1533,10 +1533,10 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 }
 
 type helmConfig struct {
-	runcontext.RunContext // Embedded to provide the default values.
-	namespace             string
-	force                 bool
-	configFile            string
+	v2.RunContext // Embedded to provide the default values.
+	namespace     string
+	force         bool
+	configFile    string
 }
 
 func (c *helmConfig) ForceDeploy() bool                                     { return c.force }
@@ -1544,7 +1544,7 @@ func (c *helmConfig) GetKubeConfig() string                                 { re
 func (c *helmConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
 func (c *helmConfig) GetKubeNamespace() string                              { return c.namespace }
 func (c *helmConfig) ConfigurationFile() string                             { return c.configFile }
-func (c *helmConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }
+func (c *helmConfig) PortForwardResources() []*latestV2.PortForwardResource { return nil }
 
 // helmReleaseInfo returns the result of `helm --namespace <namespace> get all <name>` with the given KRM manifest.
 func helmReleaseInfo(namespace, manifest string) string {

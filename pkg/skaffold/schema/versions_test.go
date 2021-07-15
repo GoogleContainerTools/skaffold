@@ -411,8 +411,13 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 
 			cfgs, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"))
 			for _, cfg := range cfgs {
-				err := defaults.Set(cfg.(*latestV1.SkaffoldConfig))
-				defaults.SetDefaultDeployer(cfg.(*latestV1.SkaffoldConfig))
+				if _, ok := SchemaVersionsV2.Find(test.apiVersion[0]); !ok {
+					// TODO: the "defaults" package below only accept latestV2 schema.
+					t.SkipNow()
+				}
+
+				err := defaults.Set(cfg.(*latestV2.SkaffoldConfig))
+				defaults.SetDefaultDeployer(cfg.(*latestV2.SkaffoldConfig))
 				t.CheckNoError(err)
 			}
 
@@ -424,7 +429,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 func TestMarshalConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		config      *latestV1.SkaffoldConfig
+		config      *latestV2.SkaffoldConfig
 		shouldErr   bool
 	}{
 		{
@@ -461,7 +466,7 @@ func TestMarshalConfig(t *testing.T) {
 			// TestParseConfigAndUpgrade verifies that YAML -> Go works correctly.
 			// This test verifies Go -> YAML -> Go returns the original structure. Since we know
 			// YAML -> Go is working this ensures Go -> YAML is correct.
-			recovered := &latestV1.SkaffoldConfig{}
+			recovered := &latestV2.SkaffoldConfig{}
 
 			err = yaml.Unmarshal(actual, recovered)
 
@@ -470,8 +475,8 @@ func TestMarshalConfig(t *testing.T) {
 	}
 }
 
-func config(ops ...func(*latestV1.SkaffoldConfig)) *latestV1.SkaffoldConfig {
-	cfg := &latestV1.SkaffoldConfig{APIVersion: latestV1.Version, Kind: "Config"}
+func config(ops ...func(*latestV2.SkaffoldConfig)) *latestV2.SkaffoldConfig {
+	cfg := &latestV2.SkaffoldConfig{APIVersion: latestV2.Version, Kind: "Config"}
 	for _, op := range ops {
 		op(cfg)
 	}
@@ -487,9 +492,9 @@ func format(t *testutil.T, configs []string, apiVersions []string) string {
 	return strings.Join(str, "\n---\n")
 }
 
-func withLocalBuild(ops ...func(*latestV1.BuildConfig)) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
-		b := latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{}}}
+func withLocalBuild(ops ...func(*latestV2.BuildConfig)) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
+		b := latestV2.BuildConfig{BuildType: latestV2.BuildType{LocalBuild: &latestV2.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
 		}
@@ -500,9 +505,9 @@ func withLocalBuild(ops ...func(*latestV1.BuildConfig)) func(*latestV1.SkaffoldC
 	}
 }
 
-func withGoogleCloudBuild(id string, ops ...func(*latestV1.BuildConfig)) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
-		b := latestV1.BuildConfig{BuildType: latestV1.BuildType{GoogleCloudBuild: &latestV1.GoogleCloudBuild{
+func withGoogleCloudBuild(id string, ops ...func(*latestV2.BuildConfig)) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
+		b := latestV2.BuildConfig{BuildType: latestV2.BuildType{GoogleCloudBuild: &latestV2.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
@@ -517,9 +522,9 @@ func withGoogleCloudBuild(id string, ops ...func(*latestV1.BuildConfig)) func(*l
 	}
 }
 
-func withClusterBuild(secretName, mountPath, namespace, secret string, timeout string, ops ...func(*latestV1.BuildConfig)) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
-		b := latestV1.BuildConfig{BuildType: latestV1.BuildType{Cluster: &latestV1.ClusterDetails{
+func withClusterBuild(secretName, mountPath, namespace, secret string, timeout string, ops ...func(*latestV2.BuildConfig)) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
+		b := latestV2.BuildConfig{BuildType: latestV2.BuildType{Cluster: &latestV2.ClusterDetails{
 			PullSecretName:      secretName,
 			Namespace:           namespace,
 			PullSecretPath:      secret,
@@ -533,44 +538,44 @@ func withClusterBuild(secretName, mountPath, namespace, secret string, timeout s
 	}
 }
 
-func withDockerConfig(secretName string, path string) func(*latestV1.BuildConfig) {
-	return func(cfg *latestV1.BuildConfig) {
-		cfg.Cluster.DockerConfig = &latestV1.DockerConfig{
+func withDockerConfig(secretName string, path string) func(*latestV2.BuildConfig) {
+	return func(cfg *latestV2.BuildConfig) {
+		cfg.Cluster.DockerConfig = &latestV2.DockerConfig{
 			SecretName: secretName,
 			Path:       path,
 		}
 	}
 }
 
-func withKubectlDeploy(manifests ...string) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
-		cfg.Deploy.DeployType.KubectlDeploy = &latestV1.KubectlDeploy{
+func withKubectlDeploy(manifests ...string) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
+		cfg.Deploy.DeployType.KubectlDeploy = &latestV2.KubectlDeploy{
 			Manifests: manifests,
 		}
 	}
 }
 
-func withKubeContext(kubeContext string) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
-		cfg.Deploy = latestV1.DeployConfig{
+func withKubeContext(kubeContext string) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
+		cfg.Deploy = latestV2.DeployConfig{
 			KubeContext: kubeContext,
 		}
 	}
 }
 
-func withHelmDeploy() func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
-		cfg.Deploy.DeployType.HelmDeploy = &latestV1.HelmDeploy{}
+func withHelmDeploy() func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
+		cfg.Deploy.DeployType.HelmDeploy = &latestV2.HelmDeploy{}
 	}
 }
 
-func withDockerArtifact(image, workspace, dockerfile string) func(*latestV1.BuildConfig) {
-	return func(cfg *latestV1.BuildConfig) {
-		cfg.Artifacts = append(cfg.Artifacts, &latestV1.Artifact{
+func withDockerArtifact(image, workspace, dockerfile string) func(*latestV2.BuildConfig) {
+	return func(cfg *latestV2.BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &latestV2.Artifact{
 			ImageName: image,
 			Workspace: workspace,
-			ArtifactType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{
+			ArtifactType: latestV2.ArtifactType{
+				DockerArtifact: &latestV2.DockerArtifact{
 					DockerfilePath: dockerfile,
 				},
 			},
@@ -578,13 +583,13 @@ func withDockerArtifact(image, workspace, dockerfile string) func(*latestV1.Buil
 	}
 }
 
-func withBazelArtifact() func(*latestV1.BuildConfig) {
-	return func(cfg *latestV1.BuildConfig) {
-		cfg.Artifacts = append(cfg.Artifacts, &latestV1.Artifact{
+func withBazelArtifact() func(*latestV2.BuildConfig) {
+	return func(cfg *latestV2.BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &latestV2.Artifact{
 			ImageName: "image2",
 			Workspace: "./examples/app2",
-			ArtifactType: latestV1.ArtifactType{
-				BazelArtifact: &latestV1.BazelArtifact{
+			ArtifactType: latestV2.ArtifactType{
+				BazelArtifact: &latestV2.BazelArtifact{
 					BuildTarget: "//:example.tar",
 				},
 			},
@@ -592,13 +597,13 @@ func withBazelArtifact() func(*latestV1.BuildConfig) {
 	}
 }
 
-func withKanikoArtifact() func(*latestV1.BuildConfig) {
-	return func(cfg *latestV1.BuildConfig) {
-		cfg.Artifacts = append(cfg.Artifacts, &latestV1.Artifact{
+func withKanikoArtifact() func(*latestV2.BuildConfig) {
+	return func(cfg *latestV2.BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &latestV2.Artifact{
 			ImageName: "image1",
 			Workspace: "./examples/app1",
-			ArtifactType: latestV1.ArtifactType{
-				KanikoArtifact: &latestV1.KanikoArtifact{
+			ArtifactType: latestV2.ArtifactType{
+				KanikoArtifact: &latestV2.KanikoArtifact{
 					DockerfilePath: "Dockerfile",
 					InitImage:      constants.DefaultBusyboxImage,
 					Image:          kaniko.DefaultImage,
@@ -609,8 +614,8 @@ func withKanikoArtifact() func(*latestV1.BuildConfig) {
 }
 
 // withKanikoVolumeMount appends a volume mount to the latest Kaniko artifact
-func withKanikoVolumeMount(name, mountPath string) func(*latestV1.BuildConfig) {
-	return func(cfg *latestV1.BuildConfig) {
+func withKanikoVolumeMount(name, mountPath string) func(*latestV2.BuildConfig) {
+	return func(cfg *latestV2.BuildConfig) {
 		if cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts == nil {
 			cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts = []v1.VolumeMount{}
 		}
@@ -626,50 +631,50 @@ func withKanikoVolumeMount(name, mountPath string) func(*latestV1.BuildConfig) {
 }
 
 // withVolume appends a volume to the cluster
-func withVolume(v v1.Volume) func(*latestV1.BuildConfig) {
-	return func(cfg *latestV1.BuildConfig) {
+func withVolume(v v1.Volume) func(*latestV2.BuildConfig) {
+	return func(cfg *latestV2.BuildConfig) {
 		cfg.Cluster.Volumes = append(cfg.Cluster.Volumes, v)
 	}
 }
 
-func withTagPolicy(tagPolicy latestV1.TagPolicy) func(*latestV1.BuildConfig) {
-	return func(cfg *latestV1.BuildConfig) { cfg.TagPolicy = tagPolicy }
+func withTagPolicy(tagPolicy latestV2.TagPolicy) func(*latestV2.BuildConfig) {
+	return func(cfg *latestV2.BuildConfig) { cfg.TagPolicy = tagPolicy }
 }
 
-func withGitTagger() func(*latestV1.BuildConfig) {
-	return withTagPolicy(latestV1.TagPolicy{GitTagger: &latestV1.GitTagger{}})
+func withGitTagger() func(*latestV2.BuildConfig) {
+	return withTagPolicy(latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}})
 }
 
-func withShaTagger() func(*latestV1.BuildConfig) {
-	return withTagPolicy(latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}})
+func withShaTagger() func(*latestV2.BuildConfig) {
+	return withTagPolicy(latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}})
 }
 
-func withProfiles(profiles ...latestV1.Profile) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
+func withProfiles(profiles ...latestV2.Profile) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
 		cfg.Profiles = profiles
 	}
 }
 
-func withTests(testCases ...*latestV1.TestCase) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
+func withTests(testCases ...*latestV2.TestCase) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
 		cfg.Test = testCases
 	}
 }
 
-func withPortForward(portForward ...*latestV1.PortForwardResource) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
+func withPortForward(portForward ...*latestV2.PortForwardResource) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
 		cfg.PortForward = portForward
 	}
 }
 
-func withStatusCheckDeadline(deadline int) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
+func withStatusCheckDeadline(deadline int) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
 		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
 	}
 }
 
-func withLogsPrefix(prefix string) func(*latestV1.SkaffoldConfig) {
-	return func(cfg *latestV1.SkaffoldConfig) {
+func withLogsPrefix(prefix string) func(*latestV2.SkaffoldConfig) {
+	return func(cfg *latestV2.SkaffoldConfig) {
 		cfg.Deploy.Logs.Prefix = prefix
 	}
 }

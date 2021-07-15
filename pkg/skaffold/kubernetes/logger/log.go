@@ -32,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
@@ -55,8 +55,8 @@ type LogAggregator struct {
 
 type Config interface {
 	Tail() bool
-	PipelineForImage(imageName string) (latestV1.Pipeline, bool)
-	DefaultPipeline() latestV1.Pipeline
+	PipelineForImage(imageName string) (latestV2.Pipeline, bool)
+	DefaultPipeline() latestV2.Pipeline
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
@@ -189,7 +189,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 }
 
 func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	var c latestV1.Pipeline
+	var c latestV2.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
 		if c, present = a.config.PipelineForImage(tag.StripTag(container.Image, false)); present {
