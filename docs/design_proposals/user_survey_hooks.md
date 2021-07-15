@@ -3,7 +3,7 @@
 * Author(s): Tejal Desai
 * Design Shepherd: Brian de Alwis
 * Date: 07/11/2021
-* Status: Proposed
+* Status: Completed
 
 ## Background
 
@@ -120,8 +120,8 @@ rate low on the NPS score.
 
 
 ## Implementation plan
-- [ ] add survey config struct
-- [ ] add `-id` flag to survey command with default as `hats`
-- [ ] add `UserSurvey` struct to skaffold global config
-- [ ] change prompt logic to show active relevant prompts
-- [ ] Change set and unset command to set user survey fields.
+- [X] add survey config struct
+- [X] add `-id` flag to survey command with default as `hats`
+- [X] add `UserSurvey` struct to skaffold global config
+- [X] change prompt logic to show active relevant prompts
+- [X] Change set and unset command to set user survey fields.

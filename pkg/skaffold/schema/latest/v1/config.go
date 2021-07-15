@@ -522,6 +522,9 @@ type DeployConfig struct {
 // for the deploy step. All three deployer types can be used at the same
 // time for hybrid workflows.
 type DeployType struct {
+	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
+	DockerDeploy *DockerDeploy `yaml:"-,omitempty"`
+
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
@@ -534,6 +537,15 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+}
+
+// DockerDeploy uses the `docker` CLI to create application containers in Docker.
+type DockerDeploy struct {
+	// UseCompose tells skaffold whether or not to deploy using `docker-compose`.
+	UseCompose bool `yaml:"useCompose,omitempty"`
+
+	// Images are the container images to run in Docker.
+	Images []string `yaml:"images" yamltags:"required"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -858,7 +870,7 @@ type Artifact struct {
 	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
-	LifecycleHooks BuildHooks `yaml:"-"`
+	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.

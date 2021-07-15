@@ -195,8 +195,9 @@ message SkaffoldLogEvent {
 message ApplicationLogEvent {
     string containerName = 1; // container that the log came from
     string podName = 2; // pod that the log came from
-    string message = 3; // contents of the log
-    string richFormattedMessage = 4; // full message that skaffold writes, with format and color
+    string prefix = 3;
+    string message = 4; // contents of the log
+    string richFormattedMessage = 5; // full message that skaffold writes, with format and color
 }
 
 // `TaskEvent` represent the different larger phases of a skaffold session, for example Build, Deploy, etc.

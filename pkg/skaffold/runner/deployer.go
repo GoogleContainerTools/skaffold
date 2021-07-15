@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -62,9 +63,20 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 	}
 
 	deployerCfg := runCtx.Deployers()
+	localDeploy := false
+	remoteDeploy := false
 
 	var deployers []deploy.Deployer
 	for _, d := range deployerCfg {
+		if d.DockerDeploy != nil {
+			localDeploy = true
+			d, err := docker.NewDeployer(runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, d)
+		}
+
 		dCtx := &deployerCtx{runCtx, d}
 		if d.HelmDeploy != nil {
 			h, err := helm.NewDeployer(dCtx, labeller, d.HelmDeploy)
@@ -94,6 +106,10 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 			}
 			deployers = append(deployers, deployer)
 		}
+	}
+
+	if localDeploy && remoteDeploy {
+		return nil, errors.New("docker deployment not supported alongside cluster deployments")
 	}
 
 	return deploy.NewDeployerMux(deployers, runCtx.IterativeStatusCheck()), nil
