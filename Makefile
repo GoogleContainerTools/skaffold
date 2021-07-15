@@ -101,7 +101,7 @@ $(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross
 		.
 
 	docker run --rm skaffold/cross cat /build/skaffold > $@
-	shasum -a 256 $@ | tee $@.sha256
+	(cd `dirname $@`; shasum -a 256 `basename $@`) | tee $@.sha256
 	file $@ || true
 
 .PHONY: $(BUILD_DIR)/VERSION
