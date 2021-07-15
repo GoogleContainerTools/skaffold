@@ -36,6 +36,20 @@ func init() {
 	colors.Disable(true)
 }
 
+var DefaultColorCodes = []Color{
+	LightRed,
+	LightGreen,
+	LightYellow,
+	LightBlue,
+	LightPurple,
+	Red,
+	Green,
+	Yellow,
+	Blue,
+	Purple,
+	Cyan,
+}
+
 // SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
 func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	_, isTerm := util.IsTerminal(out)

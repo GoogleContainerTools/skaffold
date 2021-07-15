@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )

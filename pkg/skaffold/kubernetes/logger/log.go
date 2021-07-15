@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
 // LogAggregator aggregates the logs for all the deployed pods.
@@ -43,7 +43,7 @@ type LogAggregator struct {
 	config      Config
 	podSelector kubernetes.PodSelector
 	podWatcher  kubernetes.PodWatcher
-	colorPicker kubernetes.ColorPicker
+	colorPicker output.ColorPicker
 
 	muted             int32
 	stopWatcher       func()
@@ -67,7 +67,7 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, name
 		config:      config,
 		podSelector: podSelector,
 		podWatcher:  kubernetes.NewPodWatcher(podSelector),
-		colorPicker: kubernetes.NewColorPicker(),
+		colorPicker: output.NewColorPicker(),
 		stopWatcher: func() {},
 		events:      make(chan kubernetes.PodEvent),
 		namespaces:  namespaces,
@@ -77,7 +77,9 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, name
 // RegisterArtifacts tracks the provided build artifacts in the colorpicker
 func (a *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
 	// image tags are added to the podSelector by the deployer, which are picked up by the podWatcher
-	// we just need to make sure the colorPicker knows about them.
+	// we just need to make sure the colorPicker knows about the base images.
+	// artifact.ImageName does not have a default repo substitution applied to it, so we use artifact.Tag.
+	// TODO(nkubala) [07/15/22]: can we apply default repo to artifact.Image and avoid stripping tags?
 	for _, artifact := range artifacts {
 		a.colorPicker.AddImage(artifact.Tag)
 	}
@@ -183,18 +185,29 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 		_ = tw.Close()
 	}()
 
-	headerColor := a.colorPicker.Pick(pod)
+	headerColor := a.PodColor(pod)
 	prefix := a.prefix(pod, container)
 	if err := stream.StreamRequest(ctx, a.output, headerColor, prefix, pod.Name, container.Name, make(chan bool), &a.outputLock, a.IsMuted, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
 }
 
+func (a *LogAggregator) PodColor(pod *v1.Pod) output.Color {
+	for _, container := range pod.Spec.Containers {
+		if c := a.colorPicker.Pick(container.Image); c != output.None {
+			return c
+		}
+	}
+
+	// If no mapping is found, don't add any color formatting
+	return output.None
+}
+
 func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	var c latestV1.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
-		if c, present = a.config.PipelineForImage(tag.StripTag(container.Image, false)); present {
+		if c, present = a.config.PipelineForImage(tagutil.StripTag(container.Image, false)); present {
 			break
 		}
 	}
