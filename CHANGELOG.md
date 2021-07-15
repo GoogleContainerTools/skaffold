@@ -1,3 +1,59 @@
+# v1.28.0 Release - 07/14/2021
+Note: This release comes with a new config version, `v2beta19`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Skaffold healthchecks can now be run per deployer using the `--iterative-status-check=true` flag (fixes [5774](https://github.com/GoogleContainerTools/skaffold/issues/5774)). See docs [here](https://skaffold.dev/docs/workflows/ci-cd/#waiting-for-skaffold-deployments-using-healthcheck).
+* If you use `helm` with `skaffold` you might see a new survey asking for feedback on an upcoming redesign of that integration. 
+
+New Features:
+* Allow iterative status checks [#6115](https://github.com/GoogleContainerTools/skaffold/pull/6115)
+* Add survey config and framework to show feature surveys to skaffold users. [#6185](https://github.com/GoogleContainerTools/skaffold/pull/6185)
+
+Fixes:
+* Make completion work again [#6138](https://github.com/GoogleContainerTools/skaffold/pull/6138)
+* Propagate kaniko environment to GCB [#6181](https://github.com/GoogleContainerTools/skaffold/pull/6181)
+* Fix couldn't start notify trigger in multi-config projects [#6114](https://github.com/GoogleContainerTools/skaffold/pull/6114)
+* Fetch namespaces at time of sync [#6135](https://github.com/GoogleContainerTools/skaffold/pull/6135)
+* Replace missing template values with empty string [#6136](https://github.com/GoogleContainerTools/skaffold/pull/6136)
+* Fix survey active logic [#6194](https://github.com/GoogleContainerTools/skaffold/pull/6194)
+* Don't update survey prompt if survey prompt is not shown to stdout [#6192](https://github.com/GoogleContainerTools/skaffold/pull/6192)
+* change ptypes call to timestamppb to fix linters [#6164](https://github.com/GoogleContainerTools/skaffold/pull/6164)
+
+Updates and Refactors:
+* Update Skaffold dependencies [#6155](https://github.com/GoogleContainerTools/skaffold/pull/6155)
+* Simplify `--timestamps` output [#6146](https://github.com/GoogleContainerTools/skaffold/pull/6146)
+* Update Jib build plugin versions after 3.1.2 release [#6168](https://github.com/GoogleContainerTools/skaffold/pull/6168)
+* Update feature maturities [#6202](https://github.com/GoogleContainerTools/skaffold/pull/6202)
+* Add logic to show user survey in DisplaySurveyPrompt flow. [#6196](https://github.com/GoogleContainerTools/skaffold/pull/6196)
+* refactor: Read globalConfig instead of kubecontext config for survey config [#6191](https://github.com/GoogleContainerTools/skaffold/pull/6191)
+* Add information about workspace and dockerfile to artifact metadata [#6111](https://github.com/GoogleContainerTools/skaffold/pull/6111)
+* Added template expansion for helm chart version (#5709) [#6157](https://github.com/GoogleContainerTools/skaffold/pull/6157)
+* add set command for survey ids [#6197](https://github.com/GoogleContainerTools/skaffold/pull/6197)
+* Bump schema version to v2beta19 [#6116](https://github.com/GoogleContainerTools/skaffold/pull/6116)
+
+Docs, Test, and Release Updates:
+* Create SECURITY.md [#6140](https://github.com/GoogleContainerTools/skaffold/pull/6140)
+* Update Jib docs with some advanced usage examples [#6169](https://github.com/GoogleContainerTools/skaffold/pull/6169)
+* Disable k3d integration tests [#6171](https://github.com/GoogleContainerTools/skaffold/pull/6171)
+* Check release workflow [#6188](https://github.com/GoogleContainerTools/skaffold/pull/6188)
+* design proposal to show user survey other than Hats [#6186](https://github.com/GoogleContainerTools/skaffold/pull/6186)
+* Doc tweaks [#6176](https://github.com/GoogleContainerTools/skaffold/pull/6176)
+* working cloud profiler export for skaffold [#6066](https://github.com/GoogleContainerTools/skaffold/pull/6066)
+* Set specific permissions for workflows [#6139](https://github.com/GoogleContainerTools/skaffold/pull/6139)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Brian de Alwis
+- Chanseok Oh
+- Gaurav
+- Hidenori Sugiyama
+- Marlon Gamez
+- Nick Kubala
+- Pablo Caderno
+- Tejal Desai
+- Yuwen Ma
+
 # v1.27.0 Release - 06/29/2021
 Note: This release comes with a new config version, `v2beta18`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
 
