@@ -49,14 +49,19 @@ func StreamRequest(ctx context.Context, out io.Writer, headerColor output.Color,
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
 
-			formattedLine := headerColor.Sprintf("%s ", prefix) + line
-			printLogLine(headerColor, out, isMuted, lock, prefix, line)
-			eventV2.ApplicationLog(podName, containerName, line, formattedLine)
+			printLogLine(headerColor, out, isMuted, lock, podName, containerName, prefix, line)
 		}
 	}
 }
 
-func printLogLine(headerColor output.Color, out io.Writer, isMuted func() bool, lock sync.Locker, prefix, text string) {
+func printLogLine(headerColor output.Color, out io.Writer, isMuted func() bool, lock sync.Locker, podName, containerName, prefix, text string) {
+	formattedPrefix := prefix
+	if output.IsColorable(out) {
+		formattedPrefix = headerColor.Sprintf("%s", prefix)
+	}
+	formattedLine := fmt.Sprintf("%s %s", formattedPrefix, text)
+	eventV2.ApplicationLog(podName, containerName, formattedPrefix, text, formattedLine)
+
 	if !isMuted() {
 		lock.Lock()
 
