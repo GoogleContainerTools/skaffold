@@ -20,9 +20,14 @@ import (
 	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
+type ColorPicker interface {
+	AddImage(string)
+	Pick(string) Color
+}
+
 // ColorPicker associates colors with images such that container logs can be output to
 // the terminal with a consistent color being used to identify individual log streams.
-type ColorPicker struct {
+type colorPicker struct {
 	imageColors map[string]Color
 }
 
@@ -30,7 +35,7 @@ type ColorPicker struct {
 func NewColorPicker() ColorPicker {
 	imageColors := make(map[string]Color)
 
-	return ColorPicker{
+	return &colorPicker{
 		imageColors: imageColors,
 	}
 }
@@ -39,7 +44,7 @@ func NewColorPicker() ColorPicker {
 // selected sequentially from `DefaultColorCodes`. If all colors are used, the first color
 // will be used again. The formatter for the associated color will then be returned by `Pick`
 // each time it is called for the artifact and can be used to write to out in that color.
-func (p *ColorPicker) AddImage(image string) {
+func (p *colorPicker) AddImage(image string) {
 	imageName := tag.StripTag(image, false)
 	if _, ok := p.imageColors[imageName]; ok {
 		return
@@ -50,7 +55,7 @@ func (p *ColorPicker) AddImage(image string) {
 // Pick will return the color that was associated with the image when it was added to the
 // ColorPicker. If no color was associated with the image, the none color will be returned,
 // which will write with no formatting.
-func (p *ColorPicker) Pick(image string) Color {
+func (p *colorPicker) Pick(image string) Color {
 	if c, present := p.imageColors[tag.StripTag(image, false)]; present {
 		return c
 	}
