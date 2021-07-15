@@ -59,7 +59,7 @@ func printLogLine(headerColor output.Color, out io.Writer, isMuted func() bool, 
 	if output.IsColorable(out) {
 		formattedLine = headerColor.Sprintf("%s ", prefix) + text
 	}
-	eventV2.ApplicationLog(podName, containerName, text, formattedLine)
+	eventV2.ApplicationLog(podName, containerName, prefix, text, formattedLine)
 
 	if !isMuted() {
 		lock.Lock()
