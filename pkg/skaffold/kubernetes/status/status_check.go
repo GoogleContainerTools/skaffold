@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -111,7 +110,6 @@ func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
 
 func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	eventV2.TaskInProgress(constants.StatusCheck, "Verify service availability")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
 
@@ -121,12 +119,10 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	errCode, err := s.statusCheck(ctx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	if err != nil {
-		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err
 	}
 
 	output.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
-	eventV2.TaskSucceeded(constants.StatusCheck)
 	return nil
 }
 
