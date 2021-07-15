@@ -42,7 +42,7 @@ func TestPrintLogLine(t *testing.T) {
 
 			go func() {
 				for i := 0; i < linesPerGroup; i++ {
-					printLogLine(output.Default, &buf, func() bool { return false }, &lock, "PREFIX", "TEXT\n")
+					printLogLine(output.Default, &buf, func() bool { return false }, &lock, "PODNAME", "CONTAINERNAME", "PREFIX", "TEXT\n")
 				}
 				wg.Done()
 			}()
