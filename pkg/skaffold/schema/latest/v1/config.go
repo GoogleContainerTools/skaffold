@@ -893,7 +893,7 @@ type Sync struct {
 	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers.
-	LifecycleHooks SyncHooks `yaml:"-"`
+	LifecycleHooks SyncHooks `yaml:"hooks,omitempty"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.

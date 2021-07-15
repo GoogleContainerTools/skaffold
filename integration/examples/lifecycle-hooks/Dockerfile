@@ -9,4 +9,5 @@ FROM alpine:3
 # for `skaffold debug` (https://skaffold.dev/docs/workflows/debug/).
 ENV GOTRACEBACK=single
 CMD ["./app"]
+COPY hello.txt .
 COPY --from=builder /app .

@@ -14,6 +14,23 @@ build:
           os: [darwin, linux]
         - command: ["cmd.exe", "/C", "docker images %SKAFFOLD_IMAGE% --digests"]
           os: [windows]
+    sync: 
+      manual:
+        - src: 'hello.txt'
+          dest: .
+      hooks:
+        before:
+          - host:
+              command: ["sh", "-c", "echo file changes detected: $SKAFFOLD_FILES_ADDED_OR_MODIFIED"]
+              os: [darwin, linux]
+          - host:
+              command: ["cmd.exe", "/C", "echo file changes detected: %SKAFFOLD_FILES_ADDED_OR_MODIFIED%"]
+              os: [windows]
+          - container:
+              command: ["sh", "-c", "echo pre-sync container hook running on $(hostname)!"]
+        after:
+          - container:
+              command: ["sh", "-c", "echo post-sync container hook running on $(hostname)!"]
 deploy:
   kubectl:
     manifests:

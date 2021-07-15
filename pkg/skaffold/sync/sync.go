@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -254,6 +255,36 @@ func matchSyncRules(syncRules []*latestV1.SyncRule, relPath, containerWd string)
 }
 
 func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
+	if !item.HasChanges() {
+		return nil
+	}
+
+	var copy, delete []string
+	for k := range item.Copy {
+		copy = append(copy, k)
+	}
+	for k := range item.Delete {
+		delete = append(delete, k)
+	}
+
+	opts, err := hooks.NewSyncEnvOpts(item.Artifact, item.Image, copy, delete, *s.namespaces, s.kubectl.KubeContext)
+	if err != nil {
+		return err
+	}
+	hooksRunner := hooks.SyncRunner(s.kubectl, item.Image, *s.namespaces, item.Artifact.Sync.LifecycleHooks, opts)
+	if err := hooksRunner.RunPreHooks(ctx, out); err != nil {
+		return fmt.Errorf("pre-sync hooks failed for artifact %q: %w", item.Artifact.ImageName, err)
+	}
+	if err := s.sync(ctx, item); err != nil {
+		return err
+	}
+	if err := hooksRunner.RunPostHooks(ctx, out); err != nil {
+		return fmt.Errorf("post-sync hooks failed for artifact %q: %w", item.Artifact.ImageName, err)
+	}
+	return nil
+}
+
+func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
 	if len(item.Copy) > 0 {
 		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
 

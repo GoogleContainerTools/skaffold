@@ -3093,6 +3093,11 @@
           "description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks.",
           "x-intellij-html-description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks."
         },
+        "hooks": {
+          "$ref": "#/definitions/SyncHooks",
+          "description": "describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers.",
+          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers."
+        },
         "infer": {
           "items": {
             "type": "string"
@@ -3114,7 +3119,8 @@
       "preferredOrder": [
         "manual",
         "infer",
-        "auto"
+        "auto",
+        "hooks"
       ],
       "additionalProperties": false,
       "type": "object",
