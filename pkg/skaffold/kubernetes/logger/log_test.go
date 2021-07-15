@@ -25,10 +25,82 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestColorForPod(t *testing.T) {
+	tests := []struct {
+		description   string
+		pod           *v1.Pod
+		expectedColor output.Color
+	}{
+		{
+			description:   "not found",
+			pod:           &v1.Pod{},
+			expectedColor: output.None,
+		},
+		{
+			description: "found",
+			pod: &v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{Image: "image"},
+					},
+				},
+			},
+			expectedColor: output.DefaultColorCodes[0],
+		},
+		{
+			description: "ignore tag",
+			pod: &v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{Image: "image:tag"},
+					},
+				},
+			},
+			expectedColor: output.DefaultColorCodes[0],
+		},
+		{
+			description: "second image",
+			pod: &v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{Image: "second:tag"},
+					},
+				},
+			},
+			expectedColor: output.DefaultColorCodes[1],
+		},
+		{
+			description: "accept image with digest",
+			pod: &v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{Image: "second:tag@sha256:d3f4dd1541ee34b96850efc46955bada1a415b0594dc9948607c0197d2d16749"},
+					},
+				},
+			},
+			expectedColor: output.DefaultColorCodes[1],
+		},
+	}
+
+	l := NewLogAggregator(nil, nil, nil, nil)
+	// artifacts are registered using their tag, since these have default repo substitutions applied
+	l.RegisterArtifacts([]graph.Artifact{{Tag: "image"}, {Tag: "second"}})
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			color := l.PodColor(test.pod)
+
+			t.CheckTrue(test.expectedColor == color)
+		})
+	}
+}
 
 func TestSinceSeconds(t *testing.T) {
 	tests := []struct {
