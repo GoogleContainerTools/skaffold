@@ -21,7 +21,7 @@ This will start a pod running the `hooks-example` image. The app simply reads th
 [hooks-example] Hello World!
 ...
 ```
-If you change the text of `hello.txt` file, say to `Hello World!!!`, Skaffold will `sync` it into the running container.
+If you change the text of `hello.txt` file, say to `Hello World!!`, Skaffold will `sync` it into the running container.
 You should also see a `pre-sync` hook that just echoes the filename that has changed, and a `post-sync` hook that sends a `SIGHUP` signal to the app. The app responds accordingly by reloading the modified `hello.txt` file and printing it to the console. 
 ```
 [hooks-example] Hello World!

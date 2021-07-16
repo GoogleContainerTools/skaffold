@@ -34,8 +34,8 @@ import (
 // containerSelector represents a policy for selecting target containers for running a particular lifecycle hook
 type containerSelector func(v1.Pod, v1.Container) (bool, error)
 
-// imageSelector chooses containers that run the given image name
-func imageSelector(image string) containerSelector {
+// runningImageSelector chooses containers that run the given image name
+func runningImageSelector(image string) containerSelector {
 	return func(p v1.Pod, c v1.Container) (bool, error) {
 		if p.Status.Phase != v1.PodRunning {
 			return false, nil

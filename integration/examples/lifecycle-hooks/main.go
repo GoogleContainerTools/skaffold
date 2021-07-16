@@ -18,7 +18,7 @@ func main() {
 	}
 	go func() {
 		for range sigs {
-			fmt.Printf("received SIGHUP signal. Reloading file hello.txt: %v\n", err)
+			fmt.Printf("received SIGHUP signal. Reloading file hello.txt\n")
 			data, err = ioutil.ReadFile("hello.txt")
 			if err != nil {
 				fmt.Printf("failed to read file hello.txt: %v", err)

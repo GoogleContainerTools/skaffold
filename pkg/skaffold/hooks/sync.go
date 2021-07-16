@@ -75,21 +75,21 @@ func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v1.SyncHookI
 		output.Default.Fprintf(out, "Starting %s hooks for artifact %q...\n", phase, r.imageName)
 	}
 	env := r.getEnv()
-	for _, h := range hooks {
+	for i, h := range hooks {
 		if h.HostHook != nil {
 			hook := hostHook{*h.HostHook, env}
 			if err := hook.run(ctx, out); err != nil {
-				return fmt.Errorf("failed to execute host %s hook for artifact %q: %w", phase, r.imageName, err)
+				return fmt.Errorf("failed to execute host %s hook %d for artifact %q: %w", phase, i+1, r.imageName, err)
 			}
 		} else if h.ContainerHook != nil {
 			hook := containerHook{
 				cfg:        *h.ContainerHook,
 				cli:        r.cli,
-				selector:   imageSelector(r.imageRef),
+				selector:   runningImageSelector(r.imageRef),
 				namespaces: r.namespaces,
 			}
 			if err := hook.run(ctx, out); err != nil {
-				return fmt.Errorf("failed to execute container %s hook for artifact %q: %w", phase, r.imageName, err)
+				return fmt.Errorf("failed to execute container %s hook %d for artifact %q: %w", phase, i+1, r.imageName, err)
 			}
 		}
 	}
