@@ -40,7 +40,6 @@ func TestHandleSkaffoldLogEvent(t *testing.T) {
 		testHandler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 			TaskId:    "Test-0",
 			SubtaskId: "1",
-			Origin:    "skaffold-test",
 			Level:     enums.LogLevel_INFO,
 			Message:   message,
 		})

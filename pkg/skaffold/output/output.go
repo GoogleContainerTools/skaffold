@@ -67,7 +67,7 @@ func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps boo
 
 	return skaffoldWriter{
 		MainWriter:  SetupColors(out, defaultColor, forceColors),
-		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1", "skaffold"),
+		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1"),
 		timestamps:  timestamps,
 	}
 }
@@ -99,11 +99,11 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
-func WithEventContext(out io.Writer, phase constants.Phase, subtaskID, origin string) io.Writer {
+func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) io.Writer {
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{
 			MainWriter:  sw.MainWriter,
-			EventWriter: eventV2.NewLogger(phase, subtaskID, origin),
+			EventWriter: eventV2.NewLogger(phase, subtaskID),
 			timestamps:  sw.timestamps,
 		}
 	}
