@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -34,20 +35,22 @@ import (
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
-func WithTimings(b build.Builder, t test.Tester, d deploy.Deployer, cacheArtifacts bool) (build.Builder, test.Tester, deploy.Deployer) {
+func WithTimings(b build.Builder, t test.Tester, r renderer.Renderer, d deploy.Deployer, cacheArtifacts bool) (build.Builder, test.Tester, renderer.Renderer, deploy.Deployer) {
 	w := withTimings{
 		Builder:        b,
 		Tester:         t,
+		Renderer:       r,
 		Deployer:       d,
 		cacheArtifacts: cacheArtifacts,
 	}
 
-	return w, w, w
+	return w, w, w, w
 }
 
 type withTimings struct {
 	build.Builder
 	test.Tester
+	renderer.Renderer
 	deploy.Deployer
 	cacheArtifacts bool
 }
@@ -76,6 +79,18 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 		return err
 	}
 	logrus.Infoln("Test completed in", util.ShowHumanizeTime(time.Since(start)))
+	return nil
+}
+
+func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+	start := time.Now()
+	output.Default.Fprintln(out, "Starting render...")
+
+	err := w.Renderer.Render(ctx, out, builds, offline, filepath)
+	if err != nil {
+		return err
+	}
+	logrus.Infoln("Render completed in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 

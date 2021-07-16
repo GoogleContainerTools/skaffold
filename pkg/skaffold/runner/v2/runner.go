@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -34,6 +35,7 @@ type SkaffoldRunner struct {
 	runner.Pruner
 	test.Tester
 
+	renderer renderer.Renderer
 	deployer deploy.Deployer
 	monitor  filemon.Monitor
 	listener runner.Listener
@@ -44,8 +46,8 @@ type SkaffoldRunner struct {
 	labeller           *label.DefaultLabeller
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
-
-	isLocalImage func(imageName string) (bool, error)
+	intents            *runner.Intents
+	isLocalImage       func(imageName string) (bool, error)
 }
 
 func (r *SkaffoldRunner) HasDeployed() bool { return true }
