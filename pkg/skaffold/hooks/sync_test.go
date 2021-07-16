@@ -96,7 +96,7 @@ func TestSyncHooks(t *testing.T) {
 		kubeContext := "context1"
 		opts, err := NewSyncEnvOpts(artifact, image, []string{"foo1", "bar1"}, []string{"foo2", "bar2"}, namespaces, kubeContext)
 		t.CheckNoError(err)
-		runner := SyncRunner(&kubectl.CLI{KubeContext: kubeContext}, image, namespaces, artifact.Sync.LifecycleHooks, opts)
+		runner := NewSyncRunner(&kubectl.CLI{KubeContext: kubeContext}, artifact.ImageName, image, namespaces, artifact.Sync.LifecycleHooks, opts)
 
 		t.Override(&util.DefaultExecCommand,
 			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).

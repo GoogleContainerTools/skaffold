@@ -40,6 +40,12 @@ func imageSelector(image string) containerSelector {
 		if p.Status.Phase != v1.PodRunning {
 			return false, nil
 		}
+		for _, status := range p.Status.ContainerStatuses {
+			if status.Name == c.Name && status.State.Running == nil {
+				return false, nil
+			}
+		}
+
 		return c.Image == image, nil
 	}
 }
@@ -79,15 +85,16 @@ func (h containerHook) run(ctx context.Context, out io.Writer) error {
 				cmd := h.cli.Command(ctx, "exec", args...)
 				cmd.Stderr = out
 				cmd.Stdout = out
+				imageName := c.Image
 				errs.Go(func() error {
-					return util.RunCmd(cmd)
+					err := util.RunCmd(cmd)
+					if err != nil {
+						return fmt.Errorf("container hook execution failed for artifact %q due to error %w", imageName, err)
+					}
+					return nil
 				})
 			}
 		}
 	}
-
-	if err := errs.Wait(); err != nil {
-		return fmt.Errorf("container hook execution failed due to error %w", err)
-	}
-	return nil
+	return errs.Wait()
 }

@@ -271,7 +271,7 @@ func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 	if err != nil {
 		return err
 	}
-	hooksRunner := hooks.SyncRunner(s.kubectl, item.Image, *s.namespaces, item.Artifact.Sync.LifecycleHooks, opts)
+	hooksRunner := hooks.NewSyncRunner(s.kubectl, item.Artifact.ImageName, item.Image, *s.namespaces, item.Artifact.Sync.LifecycleHooks, opts)
 	if err := hooksRunner.RunPreHooks(ctx, out); err != nil {
 		return fmt.Errorf("pre-sync hooks failed for artifact %q: %w", item.Artifact.ImageName, err)
 	}

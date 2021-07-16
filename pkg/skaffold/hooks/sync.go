@@ -29,8 +29,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func SyncRunner(cli *kubectl.CLI, image string, namespaces []string, d v1.SyncHooks, opts SyncEnvOpts) Runner {
-	return syncRunner{d, cli, image, namespaces, opts}
+func NewSyncRunner(cli *kubectl.CLI, imageName, imageRef string, namespaces []string, d v1.SyncHooks, opts SyncEnvOpts) Runner {
+	return syncRunner{d, cli, imageName, imageRef, namespaces, opts}
 }
 func NewSyncEnvOpts(a *v1.Artifact, image string, addOrModifyFiles []string, deleteFiles []string, namespaces []string, kubeContext string) (SyncEnvOpts, error) {
 	workDir, err := filepath.Abs(a.Workspace)
@@ -50,7 +50,8 @@ func NewSyncEnvOpts(a *v1.Artifact, image string, addOrModifyFiles []string, del
 type syncRunner struct {
 	v1.SyncHooks
 	cli        *kubectl.CLI
-	image      string
+	imageName  string
+	imageRef   string
 	namespaces []string
 	opts       SyncEnvOpts
 }
@@ -71,7 +72,7 @@ func (r syncRunner) getEnv() []string {
 
 func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v1.SyncHookItem, phase phase) error {
 	if len(hooks) > 0 {
-		output.Default.Fprintf(out, "Starting %s hooks for artifact image %q...\n", phase, r.image)
+		output.Default.Fprintf(out, "Starting %s hooks for artifact %q...\n", phase, r.imageName)
 	}
 	env := r.getEnv()
 	for _, h := range hooks {
@@ -84,7 +85,7 @@ func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v1.SyncHookI
 			hook := containerHook{
 				cfg:        *h.ContainerHook,
 				cli:        r.cli,
-				selector:   imageSelector(r.image),
+				selector:   imageSelector(r.imageRef),
 				namespaces: r.namespaces,
 			}
 			if err := hook.run(ctx, out); err != nil {
@@ -93,7 +94,7 @@ func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v1.SyncHookI
 		}
 	}
 	if len(hooks) > 0 {
-		output.Default.Fprintf(out, "Completed %s hooks for artifact image %q\n", phase, r.image)
+		output.Default.Fprintf(out, "Completed %s hooks for artifact %q\n", phase, r.imageName)
 	}
 	return nil
 }

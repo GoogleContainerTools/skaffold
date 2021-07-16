@@ -26,11 +26,9 @@ build:
           - host:
               command: ["cmd.exe", "/C", "echo file changes detected: %SKAFFOLD_FILES_ADDED_OR_MODIFIED%"]
               os: [windows]
-          - container:
-              command: ["sh", "-c", "echo pre-sync container hook running on $(hostname)!"]
         after:
           - container:
-              command: ["sh", "-c", "echo post-sync container hook running on $(hostname)!"]
+              command: ["sh", "-c", "echo Running command 'kill -HUP 1'; kill -HUP 1"]
 deploy:
   kubectl:
     manifests:
