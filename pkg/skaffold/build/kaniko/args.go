@@ -134,6 +134,10 @@ func Args(artifact *latestV1.KanikoArtifact, tag, context string) ([]string, err
 		args = append(args, SnapshotModeFlag, artifact.SnapshotMode)
 	}
 
+	if artifact.PushRetry != "" {
+		args = append(args, PushRetryFlag, artifact.PushRetry)
+	}
+
 	if artifact.TarPath != "" {
 		args = append(args, TarPathFlag, artifact.TarPath)
 	}

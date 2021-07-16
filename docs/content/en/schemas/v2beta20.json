@@ -2185,6 +2185,11 @@
           "description": "to specify a directory in the container where the OCI image layout of a built image will be placed. This can be used to automatically track the exact image built by kaniko.",
           "x-intellij-html-description": "to specify a directory in the container where the OCI image layout of a built image will be placed. This can be used to automatically track the exact image built by kaniko."
         },
+        "pushRetry": {
+          "type": "string",
+          "description": "Set this flag to the number of retries that should happen for the push of an image to a remote destination.",
+          "x-intellij-html-description": "Set this flag to the number of retries that should happen for the push of an image to a remote destination."
+        },
         "registryCertificate": {
           "additionalProperties": {
             "type": "string"
@@ -2302,6 +2307,7 @@
         "ociLayoutPath",
         "registryMirror",
         "snapshotMode",
+        "pushRetry",
         "tarPath",
         "verbosity",
         "insecureRegistry",
