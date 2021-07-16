@@ -26,10 +26,10 @@ import (
 )
 
 var (
-	allowListedTransformer = []string{"set-label"}
+	allowListedTransformer = []string{"set-labels"}
 	transformerAllowlist   = map[string]kptfile.Function{
-		"set-label": {
-			Image:     "gcr.io/kpt-functions/set-namespace",
+		"set-labels": {
+			Image:     "gcr.io/kpt-fn/set-labels:v0.1",
 			ConfigMap: map[string]string{},
 		},
 	}
@@ -84,9 +84,9 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 					},
 				})
 		}
-		if c.ConfigMapData != nil {
-			for _, stringifiedData := range c.ConfigMapData {
-				items := strings.Split(stringifiedData, "=")
+		if c.ConfigMap != nil {
+			for _, stringifiedData := range c.ConfigMap {
+				items := strings.Split(stringifiedData, ":")
 				if len(items) != 2 {
 					return nil, sErrors.NewErrorWithStatusCode(
 						proto.ActionableErr{

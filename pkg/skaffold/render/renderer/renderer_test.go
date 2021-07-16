@@ -117,6 +117,49 @@ pipeline:
   - image: gcr.io/kpt-fn/kubeval:v0.1
 `,
 		},
+		{
+			description: "manifests with transformation rule.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
+			},
+			originalKptfile: initKptfile,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/set-labels:v0.1
+    configMap:
+      owner: tester
+`,
+		},
+		{
+			description: "manifests with updated transformation rule.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
+			},
+			originalKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
+`,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/set-labels:v0.1
+    configMap:
+      owner: tester
+`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
