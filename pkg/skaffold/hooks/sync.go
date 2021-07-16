@@ -79,7 +79,7 @@ func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v1.SyncHookI
 		if h.HostHook != nil {
 			hook := hostHook{*h.HostHook, env}
 			if err := hook.run(ctx, out); err != nil {
-				return err
+				return fmt.Errorf("failed to execute host %s hook for artifact %q: %w", phase, r.imageName, err)
 			}
 		} else if h.ContainerHook != nil {
 			hook := containerHook{
@@ -89,7 +89,7 @@ func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v1.SyncHookI
 				namespaces: r.namespaces,
 			}
 			if err := hook.run(ctx, out); err != nil {
-				return err
+				return fmt.Errorf("failed to execute container %s hook for artifact %q: %w", phase, r.imageName, err)
 			}
 		}
 	}

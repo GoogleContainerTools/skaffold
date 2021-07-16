@@ -85,11 +85,12 @@ func (h containerHook) run(ctx context.Context, out io.Writer) error {
 				cmd := h.cli.Command(ctx, "exec", args...)
 				cmd.Stderr = out
 				cmd.Stdout = out
-				imageName := c.Image
+				podName := p.Name
+				containerName := c.Name
 				errs.Go(func() error {
 					err := util.RunCmd(cmd)
 					if err != nil {
-						return fmt.Errorf("container hook execution failed for artifact %q due to error %w", imageName, err)
+						return fmt.Errorf("hook execution failed for pod %q container %q: %w", podName, containerName, err)
 					}
 					return nil
 				})
