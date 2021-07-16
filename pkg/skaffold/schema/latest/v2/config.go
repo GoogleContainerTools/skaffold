@@ -560,6 +560,9 @@ type KptV2Deploy struct {
 	// and store them to a a hidden directory `.kpt-hydrated`, and deploys the hidden directory.
 	Dir string `yaml:"dir,omitempty"`
 
+	// Flags are additional flags passed to `kpt live apply`.
+	Flags []string `yaml:"flags,omitempty"`
+
 	// InventoryID *alpha* is the identifier for a group of applied resources.
 	// This value is only needed when the `kpt live` is working on a pre-applied cluster resources.
 	InventoryID string `yaml:"inventoryID,omitempty"`
