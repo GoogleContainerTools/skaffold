@@ -92,8 +92,8 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 		if !ok {
 			return nil, errors.UnknownTransformerError(c.Name, AllowListedTransformer)
 		}
-		if c.ConfigMapData != nil {
-			for _, stringifiedData := range c.ConfigMapData {
+		if c.ConfigMap != nil {
+			for _, stringifiedData := range c.ConfigMap {
 				items := strings.Split(stringifiedData, ":")
 				if len(items) != 2 {
 					return nil, errors.BadTransformerParamsError(c.Name)
