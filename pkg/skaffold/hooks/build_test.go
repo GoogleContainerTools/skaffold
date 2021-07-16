@@ -1,5 +1,3 @@
-// +build !windows
-
 /*
 Copyright 2021 The Skaffold Authors
 

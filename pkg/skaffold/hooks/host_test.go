@@ -1,5 +1,3 @@
-// +build !windows
-
 /*
 Copyright 2021 The Skaffold Authors
 
@@ -51,7 +49,7 @@ func TestRun(t *testing.T) {
 			hook: hostHook{
 				cfg: v1.HostHook{
 					OS:      []string{"windows"},
-					Command: []string{"cmd.exe", "/C", "echo %FOO%"},
+					Command: []string{"cmd.exe", "/C", "echo FOO=%FOO%"},
 				},
 				env: []string{"FOO=bar"},
 			},
@@ -73,7 +71,7 @@ func TestRun(t *testing.T) {
 			hook: hostHook{
 				cfg: v1.HostHook{
 					OS:      []string{"windows"},
-					Command: []string{"cmd.exe", "/C", "echo %FOO%"},
+					Command: []string{"cmd.exe", "/C", "echo FOO=%FOO%"},
 				},
 				env: []string{"FOO=bar"},
 			},
