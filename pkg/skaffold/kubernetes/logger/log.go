@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
 // LogAggregator aggregates the logs for all the deployed pods.
@@ -50,7 +49,6 @@ type LogAggregator struct {
 	sinceTime         time.Time
 	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
-	outputLock        sync.Mutex
 	namespaces        *[]string
 }
 
@@ -185,65 +183,10 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 		_ = tw.Close()
 	}()
 
-	headerColor := a.PodColor(pod)
-	prefix := a.prefix(pod, container)
-	if err := stream.StreamRequest(ctx, a.output, headerColor, prefix, pod.Name, container.Name, make(chan bool), &a.outputLock, a.IsMuted, tr); err != nil {
+	formatter := NewKubernetesLogFormatter(a.config, a.colorPicker, a.IsMuted, pod, container)
+	if err := stream.StreamRequest(ctx, a.output, formatter, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
-}
-
-func (a *LogAggregator) PodColor(pod *v1.Pod) output.Color {
-	for _, container := range pod.Spec.Containers {
-		if c := a.colorPicker.Pick(container.Image); c != output.None {
-			return c
-		}
-	}
-
-	// If no mapping is found, don't add any color formatting
-	return output.None
-}
-
-func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	var c latestV1.Pipeline
-	var present bool
-	for _, container := range pod.Spec.Containers {
-		if c, present = a.config.PipelineForImage(tagutil.StripTag(container.Image, false)); present {
-			break
-		}
-	}
-	if !present {
-		c = a.config.DefaultPipeline()
-	}
-	switch c.Deploy.Logs.Prefix {
-	case "auto":
-		if pod.Name != container.Name {
-			return podAndContainerPrefix(pod, container)
-		}
-		return autoPrefix(pod, container)
-	case "container":
-		return containerPrefix(container)
-	case "podAndContainer":
-		return podAndContainerPrefix(pod, container)
-	case "none":
-		return ""
-	default:
-		panic("unsupported prefix: " + c.Deploy.Logs.Prefix)
-	}
-}
-
-func autoPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	if pod.Name != container.Name {
-		return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
-	}
-	return fmt.Sprintf("[%s]", container.Name)
-}
-
-func containerPrefix(container v1.ContainerStatus) string {
-	return fmt.Sprintf("[%s]", container.Name)
-}
-
-func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 }
 
 // Mute mutes the logs.
@@ -280,12 +223,12 @@ type trackedContainers struct {
 // was already tracked.
 func (t *trackedContainers) add(id string) bool {
 	t.Lock()
+	defer t.Unlock()
 	alreadyTracked := t.ids[id]
 	if t.ids == nil {
 		t.ids = map[string]bool{}
 	}
 	t.ids[id] = true
-	t.Unlock()
 
 	return alreadyTracked
 }
