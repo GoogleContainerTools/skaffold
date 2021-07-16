@@ -520,7 +520,7 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	RawK8s    []string `yaml:"rawYaml/k8s,omitempty"`
+	RawK8s    []string `yaml:"rawYaml,omitempty"`
 	Kustomize []string `yaml:"kustomize,omitempty"`
 	Helm      Helm     `yaml:"helm,omitempty"`
 	Kpt       []string `yaml:"kpt,omitempty"`
@@ -540,16 +540,16 @@ type GenerateType struct {
 type Transformer struct {
 	// Name is the transformer name. Can only accept skaffold whitelisted tools.
 	Name string `yaml:"name" yamltags:"required"`
-	// ConfigMapData allows users to provide additional config data to the kpt function.
-	ConfigMapData []string `yaml:"configMapData,omitempty"`
+	// ConfigMap allows users to provide additional config data to the kpt function.
+	ConfigMap []string `yaml:"configMap,omitempty"`
 }
 
 // Validator describes the supported kpt validators.
 type Validator struct {
 	// Name is the Validator name. Can only accept skaffold whitelisted tools.
 	Name string `yaml:"name" yamltags:"required"`
-	// ConfigMapData allows users to provide additional config data to the kpt function.
-	ConfigMapData []string `yaml:"configMapData,omitempty"`
+	// ConfigMap allows users to provide additional config data to the kpt function.
+	ConfigMap []string `yaml:"configMap,omitempty"`
 }
 
 // KptV2Deploy contains all the configuration needed by the deploy steps.

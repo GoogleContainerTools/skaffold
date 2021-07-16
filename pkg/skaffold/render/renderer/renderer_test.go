@@ -120,7 +120,7 @@ pipeline:
 			description: "manifests with transformation rule.",
 			renderConfig: &latestV2.RenderConfig{
 				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMapData: []string{"owner:tester"}}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
 			},
 			originalKptfile: initKptfile,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
@@ -138,7 +138,7 @@ pipeline:
 			description: "manifests with updated transformation rule.",
 			renderConfig: &latestV2.RenderConfig{
 				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMapData: []string{"owner:tester"}}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
 			},
 			originalKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
