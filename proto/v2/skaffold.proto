@@ -185,10 +185,12 @@ message MetaEvent {
 
 // `SkaffoldLogEvent` represents a piece of output that comes from a skaffold run, for example: "Generating tags...", "Step 1/3 : FROM gcr.io/distroless/base"
 message SkaffoldLogEvent {
+    reserved 3;
     string task_id = 1; // id of the task of skaffold that this log came from
     string subtask_id = 2; // id of the subtask that the log came from
-    enums.LogLevel level = 3; // log level
-    string message = 4; // contents of the log
+    // string origin = 3; // REMOVED: which tool the output came from ex: skaffold, docker
+    enums.LogLevel level = 4; // log level
+    string message = 5; // contents of the log
 }
 
 // `ApplicationLogEvent` represents a log that comes from one of the pods running in the user's application.
