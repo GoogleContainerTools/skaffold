@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -286,6 +287,7 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
+	out = output.WithEventContext(out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -331,6 +333,7 @@ func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer)
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
 			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
+			out := output.WithEventContext(out, constants.Deploy, r.String())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}
