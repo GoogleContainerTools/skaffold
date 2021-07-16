@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
@@ -40,7 +41,11 @@ type kubernetesLogFormatter struct {
 	isMuted func() bool
 }
 
-func NewKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, isMuted func() bool, pod *v1.Pod, container v1.ContainerStatus) *kubernetesLogFormatter {
+func NewKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, isMuted func() bool, pod *v1.Pod, container v1.ContainerStatus) log.Formatter {
+	return newKubernetesLogFormatter(config, colorPicker, isMuted, pod, container)
+}
+
+func newKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, isMuted func() bool, pod *v1.Pod, container v1.ContainerStatus) *kubernetesLogFormatter {
 	return &kubernetesLogFormatter{
 		colorPicker: colorPicker,
 		pod:         pod,
