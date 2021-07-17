@@ -28,7 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -104,7 +104,7 @@ func TestBuild(t *testing.T) {
 		env           map[string]string
 		api           *testutil.FakeAPIClient
 		workspace     string
-		artifact      *latestV1.DockerArtifact
+		artifact      *latestV2.DockerArtifact
 		expected      types.ImageBuildOptions
 		mode          config.RunMode
 		shouldErr     bool
@@ -114,7 +114,7 @@ func TestBuild(t *testing.T) {
 			description: "build",
 			api:         &testutil.FakeAPIClient{},
 			workspace:   ".",
-			artifact:    &latestV1.DockerArtifact{},
+			artifact:    &latestV2.DockerArtifact{},
 			expected: types.ImageBuildOptions{
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
@@ -128,7 +128,7 @@ func TestBuild(t *testing.T) {
 				"VALUE3": "value3",
 			},
 			workspace: ".",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"k1": nil,
@@ -163,7 +163,7 @@ func TestBuild(t *testing.T) {
 			},
 			mode:          config.RunModes.Dev,
 			workspace:     ".",
-			artifact:      &latestV1.DockerArtifact{},
+			artifact:      &latestV2.DockerArtifact{},
 			shouldErr:     true,
 			expectedError: "docker build",
 		},
@@ -174,13 +174,13 @@ func TestBuild(t *testing.T) {
 			},
 			workspace:     ".",
 			mode:          config.RunModes.Dev,
-			artifact:      &latestV1.DockerArtifact{},
+			artifact:      &latestV2.DockerArtifact{},
 			shouldErr:     true,
 			expectedError: "unable to stream build output",
 		},
 		{
 			description: "bad build arg template",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				BuildArgs: map[string]*string{
 					"key": util.StringPtr("{{INVALID"),
 				},
@@ -268,14 +268,14 @@ func TestImageID(t *testing.T) {
 func TestGetBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    *latestV1.DockerArtifact
+		artifact    *latestV2.DockerArtifact
 		env         []string
 		want        []string
 		shouldErr   bool
 	}{
 		{
 			description: "build args",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				BuildArgs: map[string]*string{
 					"key1": util.StringPtr("value1"),
 					"key2": nil,
@@ -287,7 +287,7 @@ func TestGetBuildArgs(t *testing.T) {
 		},
 		{
 			description: "invalid build arg",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				BuildArgs: map[string]*string{
 					"key": util.StringPtr("{{INVALID"),
 				},
@@ -296,50 +296,50 @@ func TestGetBuildArgs(t *testing.T) {
 		},
 		{
 			description: "add host",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				AddHost: []string{"1.gcr.io:127.0.0.1", "2.gcr.io:127.0.0.1"},
 			},
 			want: []string{"--add-host", "1.gcr.io:127.0.0.1", "--add-host", "2.gcr.io:127.0.0.1"},
 		},
 		{
 			description: "cache from",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				CacheFrom: []string{"gcr.io/foo/bar", "baz:latest"},
 			},
 			want: []string{"--cache-from", "gcr.io/foo/bar", "--cache-from", "baz:latest"},
 		},
 		{
 			description: "target",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				Target: "stage1",
 			},
 			want: []string{"--target", "stage1"},
 		},
 		{
 			description: "network mode",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				NetworkMode: "Bridge",
 			},
 			want: []string{"--network", "bridge"},
 		},
 		{
 			description: "no-cache",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				NoCache: true,
 			},
 			want: []string{"--no-cache"},
 		},
 		{
 			description: "squash",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				Squash: true,
 			},
 			want: []string{"--squash"},
 		},
 		{
 			description: "secret with no source",
-			artifact: &latestV1.DockerArtifact{
-				Secret: &latestV1.DockerSecret{
+			artifact: &latestV2.DockerArtifact{
+				Secret: &latestV2.DockerSecret{
 					ID: "mysecret",
 				},
 			},
@@ -347,8 +347,8 @@ func TestGetBuildArgs(t *testing.T) {
 		},
 		{
 			description: "secret with source",
-			artifact: &latestV1.DockerArtifact{
-				Secret: &latestV1.DockerSecret{
+			artifact: &latestV2.DockerArtifact{
+				Secret: &latestV2.DockerSecret{
 					ID:     "mysecret",
 					Source: "foo.src",
 				},
@@ -357,14 +357,14 @@ func TestGetBuildArgs(t *testing.T) {
 		},
 		{
 			description: "ssh with no source",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				SSH: "default",
 			},
 			want: []string{"--ssh", "default"},
 		},
 		{
 			description: "all",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				BuildArgs: map[string]*string{
 					"key1": util.StringPtr("value1"),
 				},

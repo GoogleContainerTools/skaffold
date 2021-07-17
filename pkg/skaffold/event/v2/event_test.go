@@ -30,7 +30,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -77,7 +77,7 @@ func TestGetLogEvents(t *testing.T) {
 
 func TestGetState(t *testing.T) {
 	ev := newHandler()
-	ev.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	ev.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
 
 	ev.stateLock.Lock()
 	ev.state.BuildState.Artifacts["img"] = Complete
@@ -415,7 +415,7 @@ func TestSaveEventsToFile(t *testing.T) {
 }
 
 type config struct {
-	pipes   []latestV1.Pipeline
+	pipes   []latestV2.Pipeline
 	kubectx string
 }
 
@@ -423,10 +423,10 @@ func (c config) GetKubeContext() string            { return c.kubectx }
 func (c config) AutoBuild() bool                   { return true }
 func (c config) AutoDeploy() bool                  { return true }
 func (c config) AutoSync() bool                    { return true }
-func (c config) GetPipelines() []latestV1.Pipeline { return c.pipes }
+func (c config) GetPipelines() []latestV2.Pipeline { return c.pipes }
 func (c config) GetRunID() string                  { return "run-id" }
 
-func mockCfg(pipes []latestV1.Pipeline, kubectx string) config {
+func mockCfg(pipes []latestV2.Pipeline, kubectx string) config {
 	return config{
 		pipes:   pipes,
 		kubectx: kubectx,

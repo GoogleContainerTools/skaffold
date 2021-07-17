@@ -29,8 +29,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -38,7 +38,7 @@ import (
 func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
-		kustomize                   latestV1.KustomizeDeploy
+		kustomize                   latestV2.KustomizeDeploy
 		builds                      []graph.Artifact
 		commands                    util.Command
 		shouldErr                   bool
@@ -49,7 +49,7 @@ func TestKustomizeDeploy(t *testing.T) {
 	}{
 		{
 			description: "no manifest",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
@@ -59,7 +59,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
@@ -76,7 +76,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace)",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths:   []string{"."},
 				DefaultNamespace: &kubectl.TestNamespace2,
 			},
@@ -95,7 +95,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace with env template)",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths:   []string{"."},
 				DefaultNamespace: &kubectl.TestNamespace2FromEnvTemplate,
 			},
@@ -117,7 +117,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success with multiple kustomizations",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
@@ -141,7 +141,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "built-in kubectl kustomize",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
@@ -185,7 +185,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Delay:   0 * time.Second,
 					Max:     10 * time.Second,
 				},
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
+				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
 				}}}, nil, deploy.NoopComponentProvider, &test.kustomize)
 			t.RequireNoError(err)
@@ -201,13 +201,13 @@ func TestKustomizeCleanup(t *testing.T) {
 
 	tests := []struct {
 		description string
-		kustomize   latestV1.KustomizeDeploy
+		kustomize   latestV2.KustomizeDeploy
 		commands    util.Command
 		shouldErr   bool
 	}{
 		{
 			description: "cleanup success",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -216,7 +216,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success with multiple kustomizations",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: tmpDir.Paths("a", "b"),
 			},
 			commands: testutil.
@@ -226,7 +226,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -236,7 +236,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "fail to read manifests",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -251,7 +251,7 @@ func TestKustomizeCleanup(t *testing.T) {
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
+				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
 			}, nil, deploy.NoopComponentProvider, &test.kustomize)
 			t.RequireNoError(err)
@@ -455,7 +455,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, nil, deploy.NoopComponentProvider, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, err := NewDeployer(&kustomizeConfig{}, nil, deploy.NoopComponentProvider, &latestV2.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -698,8 +698,8 @@ spec:
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, test.labels, deploy.NoopComponentProvider, &latestV1.KustomizeDeploy{
+				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
+			}, test.labels, deploy.NoopComponentProvider, &latestV2.KustomizeDeploy{
 				KustomizePaths: kustomizationPaths,
 			})
 			t.RequireNoError(err)
@@ -713,10 +713,10 @@ spec:
 }
 
 type kustomizeConfig struct {
-	runcontext.RunContext // Embedded to provide the default values.
-	force                 bool
-	workingDir            string
-	waitForDeletions      config.WaitForDeletions
+	v2.RunContext    // Embedded to provide the default values.
+	force            bool
+	workingDir       string
+	waitForDeletions config.WaitForDeletions
 }
 
 func (c *kustomizeConfig) ForceDeploy() bool                                     { return c.force }
@@ -724,4 +724,4 @@ func (c *kustomizeConfig) WaitForDeletions() config.WaitForDeletions            
 func (c *kustomizeConfig) WorkingDir() string                                    { return c.workingDir }
 func (c *kustomizeConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
 func (c *kustomizeConfig) GetKubeNamespace() string                              { return c.Opts.Namespace }
-func (c *kustomizeConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }
+func (c *kustomizeConfig) PortForwardResources() []*latestV2.PortForwardResource { return nil }

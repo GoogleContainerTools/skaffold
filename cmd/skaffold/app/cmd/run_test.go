@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -52,7 +52,7 @@ type mockRunRunner struct {
 	artifactImageNames []string
 }
 
-func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
 	var result []graph.Artifact
 	for _, artifact := range artifacts {
 		imageName := artifact.ImageName
@@ -92,11 +92,11 @@ func TestDoRun(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
 			mockRunner := &mockRunRunner{}
-			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV1.SkaffoldConfig, *runcontext.RunContext, error) {
-				return mockRunner, []*latestV1.SkaffoldConfig{{
-					Pipeline: latestV1.Pipeline{
-						Build: latestV1.BuildConfig{
-							Artifacts: []*latestV1.Artifact{
+			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV2.SkaffoldConfig, *v2.RunContext, error) {
+				return mockRunner, []*latestV2.SkaffoldConfig{{
+					Pipeline: latestV2.Pipeline{
+						Build: latestV2.BuildConfig{
+							Artifacts: []*latestV2.Artifact{
 								{ImageName: "first"},
 								{ImageName: "second-test"},
 								{ImageName: "test"},

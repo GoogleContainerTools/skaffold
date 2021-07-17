@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runcontext
+package v2
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -47,22 +47,22 @@ type RunContext struct {
 
 // Pipelines encapsulates multiple config pipelines
 type Pipelines struct {
-	pipelines            []latestV1.Pipeline
-	pipelinesByImageName map[string]latestV1.Pipeline
+	pipelines            []latestV2.Pipeline
+	pipelinesByImageName map[string]latestV2.Pipeline
 }
 
 // All returns all config pipelines.
-func (ps Pipelines) All() []latestV1.Pipeline {
+func (ps Pipelines) All() []latestV2.Pipeline {
 	return ps.pipelines
 }
 
-// Head returns the first `latestV1.Pipeline`.
-func (ps Pipelines) Head() latestV1.Pipeline {
+// Head returns the first `latestV2.Pipeline`.
+func (ps Pipelines) Head() latestV2.Pipeline {
 	return ps.pipelines[0] // there always exists atleast one pipeline.
 }
 
-// Select returns the first `latestV1.Pipeline` that matches the given artifact `imageName`.
-func (ps Pipelines) Select(imageName string) (latestV1.Pipeline, bool) {
+// Select returns the first `latestV2.Pipeline` that matches the given artifact `imageName`.
+func (ps Pipelines) Select(imageName string) (latestV2.Pipeline, bool) {
 	p, found := ps.pipelinesByImageName[imageName]
 	return p, found
 }
@@ -72,40 +72,40 @@ func (ps Pipelines) IsMultiPipeline() bool {
 	return len(ps.pipelines) > 1
 }
 
-func (ps Pipelines) PortForwardResources() []*latestV1.PortForwardResource {
-	var pf []*latestV1.PortForwardResource
+func (ps Pipelines) PortForwardResources() []*latestV2.PortForwardResource {
+	var pf []*latestV2.PortForwardResource
 	for _, p := range ps.pipelines {
 		pf = append(pf, p.PortForward...)
 	}
 	return pf
 }
 
-func (ps Pipelines) Artifacts() []*latestV1.Artifact {
-	var artifacts []*latestV1.Artifact
+func (ps Pipelines) Artifacts() []*latestV2.Artifact {
+	var artifacts []*latestV2.Artifact
 	for _, p := range ps.pipelines {
 		artifacts = append(artifacts, p.Build.Artifacts...)
 	}
 	return artifacts
 }
 
-func (ps Pipelines) DeployConfigs() []latestV1.DeployConfig {
-	var cfgs []latestV1.DeployConfig
+func (ps Pipelines) DeployConfigs() []latestV2.DeployConfig {
+	var cfgs []latestV2.DeployConfig
 	for _, p := range ps.pipelines {
 		cfgs = append(cfgs, p.Deploy)
 	}
 	return cfgs
 }
 
-func (ps Pipelines) Deployers() []latestV1.DeployConfig {
-	var deployers []latestV1.DeployConfig
+func (ps Pipelines) Deployers() []latestV2.DeployConfig {
+	var deployers []latestV2.DeployConfig
 	for _, p := range ps.pipelines {
 		deployers = append(deployers, p.Deploy)
 	}
 	return deployers
 }
 
-func (ps Pipelines) TestCases() []*latestV1.TestCase {
-	var tests []*latestV1.TestCase
+func (ps Pipelines) TestCases() []*latestV2.TestCase {
+	var tests []*latestV2.TestCase
 	for _, p := range ps.pipelines {
 		tests = append(tests, p.Test...)
 	}
@@ -122,8 +122,8 @@ func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	}
 	return c
 }
-func NewPipelines(pipelines []latestV1.Pipeline) Pipelines {
-	m := make(map[string]latestV1.Pipeline)
+func NewPipelines(pipelines []latestV2.Pipeline) Pipelines {
+	m := make(map[string]latestV2.Pipeline)
 	for _, p := range pipelines {
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = p
@@ -132,30 +132,30 @@ func NewPipelines(pipelines []latestV1.Pipeline) Pipelines {
 	return Pipelines{pipelines: pipelines, pipelinesByImageName: m}
 }
 
-func (rc *RunContext) PipelineForImage(imageName string) (latestV1.Pipeline, bool) {
+func (rc *RunContext) PipelineForImage(imageName string) (latestV2.Pipeline, bool) {
 	return rc.Pipelines.Select(imageName)
 }
 
-func (rc *RunContext) PortForwardResources() []*latestV1.PortForwardResource {
+func (rc *RunContext) PortForwardResources() []*latestV2.PortForwardResource {
 	return rc.Pipelines.PortForwardResources()
 }
 
-func (rc *RunContext) Artifacts() []*latestV1.Artifact { return rc.Pipelines.Artifacts() }
+func (rc *RunContext) Artifacts() []*latestV2.Artifact { return rc.Pipelines.Artifacts() }
 
-func (rc *RunContext) DeployConfigs() []latestV1.DeployConfig { return rc.Pipelines.DeployConfigs() }
+func (rc *RunContext) DeployConfigs() []latestV2.DeployConfig { return rc.Pipelines.DeployConfigs() }
 
-func (rc *RunContext) Deployers() []latestV1.DeployConfig { return rc.Pipelines.Deployers() }
+func (rc *RunContext) Deployers() []latestV2.DeployConfig { return rc.Pipelines.Deployers() }
 
-func (rc *RunContext) TestCases() []*latestV1.TestCase { return rc.Pipelines.TestCases() }
+func (rc *RunContext) TestCases() []*latestV2.TestCase { return rc.Pipelines.TestCases() }
 
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
 }
 
-func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
+func (rc *RunContext) DefaultPipeline() latestV2.Pipeline            { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
 func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }
-func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc.Pipelines.All() }
+func (rc *RunContext) GetPipelines() []latestV2.Pipeline             { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
@@ -198,8 +198,8 @@ func (rc *RunContext) BuildConcurrency() int                         { return rc
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
 
-func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) (*RunContext, error) {
-	var pipelines []latestV1.Pipeline
+func GetRunContext(opts config.SkaffoldOptions, configs []*latestV2.SkaffoldConfig) (*RunContext, error) {
+	var pipelines []latestV2.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
 			pipelines = append(pipelines, cfg.Pipeline)

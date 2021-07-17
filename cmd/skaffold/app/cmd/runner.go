@@ -33,10 +33,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/v1"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -45,7 +45,7 @@ import (
 // For tests
 var createRunner = createNewRunner
 
-func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latestV1.SkaffoldConfig) error) error {
+func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latestV2.SkaffoldConfig) error) error {
 	runner, config, runCtx, err := createRunner(out, opts)
 	if err != nil {
 		return err
@@ -57,14 +57,14 @@ func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, [
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latestV1.SkaffoldConfig, *runcontext.RunContext, error) {
+func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latestV2.SkaffoldConfig, *runcontext.RunContext, error) {
 	runCtx, configs, err := runContext(out, opts)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	instrumentation.Init(configs, opts.User)
-	runner, err := v1.NewForConfig(runCtx)
+	runner, err := v2.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
 		return nil, nil, nil, fmt.Errorf("creating runner: %w", err)
@@ -72,7 +72,7 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	return runner, configs, runCtx, nil
 }
 
-func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latestV1.SkaffoldConfig, error) {
+func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latestV2.SkaffoldConfig, error) {
 	cfgSet, err := withFallbackConfig(out, opts, parser.GetConfigSet)
 	if err != nil {
 		return nil, nil, err
@@ -82,7 +82,7 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 	if err := validation.Process(cfgSet, validation.GetValidationOpts(opts)); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
-	var configs []*latestV1.SkaffoldConfig
+	var configs []*latestV2.SkaffoldConfig
 	for _, cfg := range cfgSet {
 		configs = append(configs, cfg.SkaffoldConfig)
 	}

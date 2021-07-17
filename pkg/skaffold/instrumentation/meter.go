@@ -24,7 +24,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
@@ -74,7 +74,7 @@ func SetOnlineStatus() {
 	}()
 }
 
-func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user string) {
+func InitMeterFromConfig(configs []*latestV2.SkaffoldConfig, user string) {
 	var platforms []string
 	for _, config := range configs {
 		pl := yamltags.GetYamlTag(config.Build.BuildType)

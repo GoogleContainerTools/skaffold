@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -155,7 +155,7 @@ func checkImageExists(t *testing.T, image string) {
 	failNowIfError(t, err)
 
 	// TODO: use the proper RunContext
-	client, err := docker.NewAPIClient(&runcontext.RunContext{
+	client, err := docker.NewAPIClient(&v2.RunContext{
 		KubeContext: cfg.CurrentContext,
 	})
 	failNowIfError(t, err)

@@ -30,14 +30,14 @@ import (
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // ConfigFile keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
 type ConfigFile struct {
 	Path    string
-	Config  *latestV1.SkaffoldConfig
-	Profile *latestV1.Profile
+	Config  *latestV2.SkaffoldConfig
+	Profile *latestV2.Profile
 }
 
 func Yaml(out io.Writer, namespace string, configFiles []*ConfigFile) (*bytes.Buffer, error) {

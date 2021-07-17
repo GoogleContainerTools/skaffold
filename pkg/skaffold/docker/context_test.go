@@ -22,7 +22,7 @@ import (
 	"io"
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -40,7 +40,7 @@ func TestDockerContext(t *testing.T) {
 				Touch(dir + "/alsoignored.txt").
 				Chdir()
 
-			artifact := &latestV1.DockerArtifact{
+			artifact := &latestV2.DockerArtifact{
 				DockerfilePath: "Dockerfile",
 			}
 

@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"io"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // Build builds an artifact with Cloud Native Buildpacks:
 // https://buildpacks.io/
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
 	built, err := b.build(ctx, out, artifact, tag)
 	if err != nil {
 		return "", err

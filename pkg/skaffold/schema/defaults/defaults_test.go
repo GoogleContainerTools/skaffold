@@ -23,20 +23,20 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSetDefaults(t *testing.T) {
-	cfg := &latestV1.SkaffoldConfig{
-		Pipeline: latestV1.Pipeline{
-			Build: latestV1.BuildConfig{
-				Artifacts: []*latestV1.Artifact{
+	cfg := &latestV2.SkaffoldConfig{
+		Pipeline: latestV2.Pipeline{
+			Build: latestV2.BuildConfig{
+				Artifacts: []*latestV2.Artifact{
 					{
 						ImageName: "first",
-						Dependencies: []*latestV1.ArtifactDependency{
+						Dependencies: []*latestV2.ArtifactDependency{
 							{ImageName: "second", Alias: "secondAlias"},
 							{ImageName: "third"},
 						},
@@ -44,44 +44,44 @@ func TestSetDefaults(t *testing.T) {
 					{
 						ImageName: "second",
 						Workspace: "folder",
-						ArtifactType: latestV1.ArtifactType{
-							DockerArtifact: &latestV1.DockerArtifact{
+						ArtifactType: latestV2.ArtifactType{
+							DockerArtifact: &latestV2.DockerArtifact{
 								DockerfilePath: "Dockerfile.second",
 							},
 						},
 					},
 					{
 						ImageName: "third",
-						ArtifactType: latestV1.ArtifactType{
-							CustomArtifact: &latestV1.CustomArtifact{},
+						ArtifactType: latestV2.ArtifactType{
+							CustomArtifact: &latestV2.CustomArtifact{},
 						},
 					},
 					{
 						ImageName: "fourth",
-						ArtifactType: latestV1.ArtifactType{
-							BuildpackArtifact: &latestV1.BuildpackArtifact{},
+						ArtifactType: latestV2.ArtifactType{
+							BuildpackArtifact: &latestV2.BuildpackArtifact{},
 						},
-						Sync: &latestV1.Sync{},
+						Sync: &latestV2.Sync{},
 					},
 					{
 						ImageName: "fifth",
-						ArtifactType: latestV1.ArtifactType{
-							JibArtifact: &latestV1.JibArtifact{},
+						ArtifactType: latestV2.ArtifactType{
+							JibArtifact: &latestV2.JibArtifact{},
 						},
-						Sync: &latestV1.Sync{},
+						Sync: &latestV2.Sync{},
 					},
 					{
 						ImageName: "sixth",
-						ArtifactType: latestV1.ArtifactType{
-							BuildpackArtifact: &latestV1.BuildpackArtifact{},
+						ArtifactType: latestV2.ArtifactType{
+							BuildpackArtifact: &latestV2.BuildpackArtifact{},
 						},
 					},
 					{
 						ImageName: "seventh",
-						ArtifactType: latestV1.ArtifactType{
-							BuildpackArtifact: &latestV1.BuildpackArtifact{},
+						ArtifactType: latestV2.ArtifactType{
+							BuildpackArtifact: &latestV2.BuildpackArtifact{},
 						},
-						Sync: &latestV1.Sync{Auto: util.BoolPtr(false)},
+						Sync: &latestV2.Sync{Auto: util.BoolPtr(false)},
 					},
 				},
 			},
@@ -139,37 +139,37 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		})
 
 		// no docker config
-		cfg := &latestV1.SkaffoldConfig{
-			Pipeline: latestV1.Pipeline{
-				Build: latestV1.BuildConfig{
-					Artifacts: []*latestV1.Artifact{
+		cfg := &latestV2.SkaffoldConfig{
+			Pipeline: latestV2.Pipeline{
+				Build: latestV2.BuildConfig{
+					Artifacts: []*latestV2.Artifact{
 						{
 							ImageName: "docker",
-							ArtifactType: latestV1.ArtifactType{
-								DockerArtifact: &latestV1.DockerArtifact{},
+							ArtifactType: latestV2.ArtifactType{
+								DockerArtifact: &latestV2.DockerArtifact{},
 							},
 						},
 						{
 							ImageName: "kaniko",
-							ArtifactType: latestV1.ArtifactType{
-								KanikoArtifact: &latestV1.KanikoArtifact{},
+							ArtifactType: latestV2.ArtifactType{
+								KanikoArtifact: &latestV2.KanikoArtifact{},
 							},
 						},
 						{
 							ImageName: "custom",
-							ArtifactType: latestV1.ArtifactType{
-								CustomArtifact: &latestV1.CustomArtifact{},
+							ArtifactType: latestV2.ArtifactType{
+								CustomArtifact: &latestV2.CustomArtifact{},
 							},
 						},
 						{
 							ImageName: "buildpacks",
-							ArtifactType: latestV1.ArtifactType{
-								BuildpackArtifact: &latestV1.BuildpackArtifact{},
+							ArtifactType: latestV2.ArtifactType{
+								BuildpackArtifact: &latestV2.BuildpackArtifact{},
 							},
 						},
 					},
-					BuildType: latestV1.BuildType{
-						Cluster: &latestV1.ClusterDetails{},
+					BuildType: latestV2.BuildType{
+						Cluster: &latestV2.ClusterDetails{},
 					},
 				},
 			},
@@ -188,11 +188,11 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckNil(cfg.Pipeline.Build.Artifacts[3].KanikoArtifact)
 
 		// pull secret set
-		cfg = &latestV1.SkaffoldConfig{
-			Pipeline: latestV1.Pipeline{
-				Build: latestV1.BuildConfig{
-					BuildType: latestV1.BuildType{
-						Cluster: &latestV1.ClusterDetails{
+		cfg = &latestV2.SkaffoldConfig{
+			Pipeline: latestV2.Pipeline{
+				Build: latestV2.BuildConfig{
+					BuildType: latestV2.BuildType{
+						Cluster: &latestV2.ClusterDetails{
 							PullSecretPath: "path/to/pull/secret",
 						},
 					},
@@ -208,11 +208,11 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		// pull secret mount path set
 		path := "/path"
-		cfg = &latestV1.SkaffoldConfig{
-			Pipeline: latestV1.Pipeline{
-				Build: latestV1.BuildConfig{
-					BuildType: latestV1.BuildType{
-						Cluster: &latestV1.ClusterDetails{
+		cfg = &latestV2.SkaffoldConfig{
+			Pipeline: latestV2.Pipeline{
+				Build: latestV2.BuildConfig{
+					BuildType: latestV2.BuildType{
+						Cluster: &latestV2.ClusterDetails{
 							PullSecretPath:      "path/to/pull/secret",
 							PullSecretMountPath: path,
 						},
@@ -227,14 +227,14 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckDeepEqual(path, cfg.Build.Cluster.PullSecretMountPath)
 
 		// default docker config
-		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latestV1.DockerConfig{}
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latestV2.DockerConfig{}
 		err = Set(cfg)
 		SetDefaultDeployer(cfg)
 
 		t.CheckNoError(err)
 
 		// docker config with path
-		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latestV1.DockerConfig{
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latestV2.DockerConfig{
 			Path: "/path",
 		}
 		err = Set(cfg)
@@ -244,7 +244,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
 
 		// docker config with secret name
-		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latestV1.DockerConfig{
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latestV2.DockerConfig{
 			SecretName: "secret",
 		}
 		err = Set(cfg)
@@ -257,21 +257,21 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 }
 
 func TestCustomBuildWithCluster(t *testing.T) {
-	cfg := &latestV1.SkaffoldConfig{
-		Pipeline: latestV1.Pipeline{
-			Build: latestV1.BuildConfig{
-				Artifacts: []*latestV1.Artifact{
+	cfg := &latestV2.SkaffoldConfig{
+		Pipeline: latestV2.Pipeline{
+			Build: latestV2.BuildConfig{
+				Artifacts: []*latestV2.Artifact{
 					{
 						ImageName: "image",
-						ArtifactType: latestV1.ArtifactType{
-							CustomArtifact: &latestV1.CustomArtifact{
+						ArtifactType: latestV2.ArtifactType{
+							CustomArtifact: &latestV2.CustomArtifact{
 								BuildCommand: "./build.sh",
 							},
 						},
 					},
 				},
-				BuildType: latestV1.BuildType{
-					Cluster: &latestV1.ClusterDetails{},
+				BuildType: latestV2.BuildType{
+					Cluster: &latestV2.ClusterDetails{},
 				},
 			},
 		},
@@ -281,18 +281,18 @@ func TestCustomBuildWithCluster(t *testing.T) {
 	SetDefaultDeployer(cfg)
 
 	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, (*latestV1.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
+	testutil.CheckDeepEqual(t, (*latestV2.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
 }
 
 func TestSetDefaultsOnCloudBuild(t *testing.T) {
-	cfg := &latestV1.SkaffoldConfig{
-		Pipeline: latestV1.Pipeline{
-			Build: latestV1.BuildConfig{
-				Artifacts: []*latestV1.Artifact{
+	cfg := &latestV2.SkaffoldConfig{
+		Pipeline: latestV2.Pipeline{
+			Build: latestV2.BuildConfig{
+				Artifacts: []*latestV2.Artifact{
 					{ImageName: "image"},
 				},
-				BuildType: latestV1.BuildType{
-					GoogleCloudBuild: &latestV1.GoogleCloudBuild{},
+				BuildType: latestV2.BuildType{
+					GoogleCloudBuild: &latestV2.GoogleCloudBuild{},
 				},
 			},
 		},
@@ -309,13 +309,13 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 }
 
 func TestSetDefaultsOnLocalBuild(t *testing.T) {
-	cfg1 := &latestV1.SkaffoldConfig{Pipeline: latestV1.Pipeline{Build: latestV1.BuildConfig{}}}
-	cfg2 := &latestV1.SkaffoldConfig{Pipeline: latestV1.Pipeline{Build: latestV1.BuildConfig{Artifacts: []*latestV1.Artifact{{ImageName: "foo"}}}}}
+	cfg1 := &latestV2.SkaffoldConfig{Pipeline: latestV2.Pipeline{Build: latestV2.BuildConfig{}}}
+	cfg2 := &latestV2.SkaffoldConfig{Pipeline: latestV2.Pipeline{Build: latestV2.BuildConfig{Artifacts: []*latestV2.Artifact{{ImageName: "foo"}}}}}
 
 	err := Set(cfg1)
 	testutil.CheckError(t, false, err)
 	SetDefaultDeployer(cfg1)
-	testutil.CheckDeepEqual(t, latestV1.LocalBuild{}, *cfg1.Build.LocalBuild)
+	testutil.CheckDeepEqual(t, latestV2.LocalBuild{}, *cfg1.Build.LocalBuild)
 	err = Set(cfg2)
 	testutil.CheckError(t, false, err)
 	SetDefaultDeployer(cfg2)
@@ -323,10 +323,10 @@ func TestSetDefaultsOnLocalBuild(t *testing.T) {
 }
 
 func TestSetPortForwardLocalPort(t *testing.T) {
-	cfg := &latestV1.SkaffoldConfig{
-		Pipeline: latestV1.Pipeline{
-			Build: latestV1.BuildConfig{},
-			PortForward: []*latestV1.PortForwardResource{
+	cfg := &latestV2.SkaffoldConfig{
+		Pipeline: latestV2.Pipeline{
+			Build: latestV2.BuildConfig{},
+			PortForward: []*latestV2.PortForwardResource{
 				{
 					Type: constants.Service,
 					Port: schemautil.FromInt(8080),
@@ -346,10 +346,10 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 }
 
 func TestSetPortForwardOnEmptyPortForwardResource(t *testing.T) {
-	cfg := &latestV1.SkaffoldConfig{
-		Pipeline: latestV1.Pipeline{
-			Build: latestV1.BuildConfig{},
-			PortForward: []*latestV1.PortForwardResource{
+	cfg := &latestV2.SkaffoldConfig{
+		Pipeline: latestV2.Pipeline{
+			Build: latestV2.BuildConfig{},
+			PortForward: []*latestV2.PortForwardResource{
 				nil,
 			},
 		},
@@ -359,10 +359,10 @@ func TestSetPortForwardOnEmptyPortForwardResource(t *testing.T) {
 }
 
 func TestSetDefaultPortForwardAddress(t *testing.T) {
-	cfg := &latestV1.SkaffoldConfig{
-		Pipeline: latestV1.Pipeline{
-			Build: latestV1.BuildConfig{},
-			PortForward: []*latestV1.PortForwardResource{
+	cfg := &latestV2.SkaffoldConfig{
+		Pipeline: latestV2.Pipeline{
+			Build: latestV2.BuildConfig{},
+			PortForward: []*latestV2.PortForwardResource{
 				{
 					Type:    constants.Service,
 					Address: "0.0.0.0",
@@ -382,60 +382,60 @@ func TestSetDefaultPortForwardAddress(t *testing.T) {
 func TestSetDefaultDeployer(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         *latestV1.SkaffoldConfig
-		expected    latestV1.DeployConfig
+		cfg         *latestV2.SkaffoldConfig
+		expected    latestV2.DeployConfig
 	}{
 		{
 			description: "no deployer definition",
-			cfg:         &latestV1.SkaffoldConfig{},
-			expected: latestV1.DeployConfig{
-				DeployType: latestV1.DeployType{
-					KubectlDeploy: &latestV1.KubectlDeploy{Manifests: []string{"k8s/*.yaml"}},
+			cfg:         &latestV2.SkaffoldConfig{},
+			expected: latestV2.DeployConfig{
+				DeployType: latestV2.DeployType{
+					KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"k8s/*.yaml"}},
 				},
 			},
 		},
 		{
 			description: "existing kubectl definition with local manifests",
-			cfg: &latestV1.SkaffoldConfig{
-				Pipeline: latestV1.Pipeline{
-					Deploy: latestV1.DeployConfig{DeployType: latestV1.DeployType{
-						KubectlDeploy: &latestV1.KubectlDeploy{Manifests: []string{"foo.yaml"}},
+			cfg: &latestV2.SkaffoldConfig{
+				Pipeline: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{DeployType: latestV2.DeployType{
+						KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"foo.yaml"}},
 					}},
 				},
 			},
-			expected: latestV1.DeployConfig{
-				DeployType: latestV1.DeployType{
-					KubectlDeploy: &latestV1.KubectlDeploy{Manifests: []string{"foo.yaml"}},
+			expected: latestV2.DeployConfig{
+				DeployType: latestV2.DeployType{
+					KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"foo.yaml"}},
 				},
 			},
 		},
 		{
 			description: "existing kubectl definition with remote manifests",
-			cfg: &latestV1.SkaffoldConfig{
-				Pipeline: latestV1.Pipeline{
-					Deploy: latestV1.DeployConfig{DeployType: latestV1.DeployType{
-						KubectlDeploy: &latestV1.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
+			cfg: &latestV2.SkaffoldConfig{
+				Pipeline: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{DeployType: latestV2.DeployType{
+						KubectlDeploy: &latestV2.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
 					}},
 				},
 			},
-			expected: latestV1.DeployConfig{
-				DeployType: latestV1.DeployType{
-					KubectlDeploy: &latestV1.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
+			expected: latestV2.DeployConfig{
+				DeployType: latestV2.DeployType{
+					KubectlDeploy: &latestV2.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
 				},
 			},
 		},
 		{
 			description: "existing helm definition",
-			cfg: &latestV1.SkaffoldConfig{
-				Pipeline: latestV1.Pipeline{
-					Deploy: latestV1.DeployConfig{DeployType: latestV1.DeployType{
-						HelmDeploy: &latestV1.HelmDeploy{Releases: []latestV1.HelmRelease{{ChartPath: "foo"}}},
+			cfg: &latestV2.SkaffoldConfig{
+				Pipeline: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{DeployType: latestV2.DeployType{
+						HelmDeploy: &latestV2.HelmDeploy{Releases: []latestV2.HelmRelease{{ChartPath: "foo"}}},
 					}},
 				},
 			},
-			expected: latestV1.DeployConfig{
-				DeployType: latestV1.DeployType{
-					HelmDeploy: &latestV1.HelmDeploy{Releases: []latestV1.HelmRelease{{ChartPath: "foo"}}},
+			expected: latestV2.DeployConfig{
+				DeployType: latestV2.DeployType{
+					HelmDeploy: &latestV2.HelmDeploy{Releases: []latestV2.HelmRelease{{ChartPath: "foo"}}},
 				},
 			},
 		},
@@ -451,31 +451,31 @@ func TestSetDefaultDeployer(t *testing.T) {
 func TestSetLogsConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		input       latestV1.LogsConfig
-		expected    latestV1.LogsConfig
+		input       latestV2.LogsConfig
+		expected    latestV2.LogsConfig
 	}{
 		{
 			description: "prefix defaults to 'container'",
-			input:       latestV1.LogsConfig{},
-			expected: latestV1.LogsConfig{
+			input:       latestV2.LogsConfig{},
+			expected: latestV2.LogsConfig{
 				Prefix: "container",
 			},
 		},
 		{
 			description: "don't override existing prefix",
-			input: latestV1.LogsConfig{
+			input: latestV2.LogsConfig{
 				Prefix: "none",
 			},
-			expected: latestV1.LogsConfig{
+			expected: latestV2.LogsConfig{
 				Prefix: "none",
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			cfg := latestV1.SkaffoldConfig{
-				Pipeline: latestV1.Pipeline{
-					Deploy: latestV1.DeployConfig{
+			cfg := latestV2.SkaffoldConfig{
+				Pipeline: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{
 						Logs: test.input,
 					},
 				},

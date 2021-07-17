@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -157,7 +157,7 @@ func TestPrefix(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			logger := NewLogAggregator(nil, nil, &mockConfig{log: latestV1.LogsConfig{
+			logger := NewLogAggregator(nil, nil, &mockConfig{log: latestV2.LogsConfig{
 				Prefix: test.prefix,
 			}})
 
@@ -183,21 +183,21 @@ func containerWithName(n string) v1.ContainerStatus {
 }
 
 type mockConfig struct {
-	log latestV1.LogsConfig
+	log latestV2.LogsConfig
 }
 
 func (c *mockConfig) Tail() bool {
 	return true
 }
 
-func (c *mockConfig) PipelineForImage(string) (latestV1.Pipeline, bool) {
-	var pipeline latestV1.Pipeline
+func (c *mockConfig) PipelineForImage(string) (latestV2.Pipeline, bool) {
+	var pipeline latestV2.Pipeline
 	pipeline.Deploy.Logs = c.log
 	return pipeline, true
 }
 
-func (c *mockConfig) DefaultPipeline() latestV1.Pipeline {
-	var pipeline latestV1.Pipeline
+func (c *mockConfig) DefaultPipeline() latestV2.Pipeline {
+	var pipeline latestV2.Pipeline
 	pipeline.Deploy.Logs = c.log
 	return pipeline
 }

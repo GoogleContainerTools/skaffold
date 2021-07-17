@@ -24,8 +24,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -37,7 +37,7 @@ type mockDevRunner struct {
 	calls       []string
 }
 
-func (r *mockDevRunner) Dev(context.Context, io.Writer, []*latestV1.Artifact) error {
+func (r *mockDevRunner) Dev(context.Context, io.Writer, []*latestV2.Artifact) error {
 	r.calls = append(r.calls, "Dev")
 	return r.errDev
 }
@@ -96,8 +96,8 @@ func TestDoDev(t *testing.T) {
 				hasDeployed: test.hasDeployed,
 				errDev:      context.Canceled,
 			}
-			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV1.SkaffoldConfig, *runcontext.RunContext, error) {
-				return mockRunner, []*latestV1.SkaffoldConfig{{}}, nil, nil
+			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV2.SkaffoldConfig, *v2.RunContext, error) {
+				return mockRunner, []*latestV2.SkaffoldConfig{{}}, nil, nil
 			})
 			t.Override(&opts, config.SkaffoldOptions{
 				Cleanup: true,
@@ -117,7 +117,7 @@ type mockConfigChangeRunner struct {
 	cycles int
 }
 
-func (m *mockConfigChangeRunner) Dev(context.Context, io.Writer, []*latestV1.Artifact) error {
+func (m *mockConfigChangeRunner) Dev(context.Context, io.Writer, []*latestV2.Artifact) error {
 	m.cycles++
 	if m.cycles == 1 {
 		// pass through the first cycle with a config reload
@@ -146,8 +146,8 @@ func TestDevConfigChange(t *testing.T) {
 	testutil.Run(t, "test config change", func(t *testutil.T) {
 		mockRunner := &mockConfigChangeRunner{}
 
-		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV1.SkaffoldConfig, *runcontext.RunContext, error) {
-			return mockRunner, []*latestV1.SkaffoldConfig{{}}, nil, nil
+		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV2.SkaffoldConfig, *v2.RunContext, error) {
+			return mockRunner, []*latestV2.SkaffoldConfig{{}}, nil, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{
 			Cleanup: true,

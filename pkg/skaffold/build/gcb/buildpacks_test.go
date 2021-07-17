@@ -21,7 +21,7 @@ import (
 
 	"google.golang.org/api/cloudbuild/v1"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -29,13 +29,13 @@ import (
 func TestBuildpackBuildSpec(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    *latestV1.BuildpackArtifact
+		artifact    *latestV2.BuildpackArtifact
 		expected    cloudbuild.Build
 		shouldErr   bool
 	}{
 		{
 			description: "default run image",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "builder",
 				ProjectDescriptor: "project.toml",
 			},
@@ -49,7 +49,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "env variables",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "builder",
 				Env:               []string{"KEY=VALUE", "FOO={{.BAR}}"},
 				ProjectDescriptor: "project.toml",
@@ -64,7 +64,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "run image",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "otherbuilder",
 				RunImage:          "run/image",
 				ProjectDescriptor: "project.toml",
@@ -79,7 +79,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "custom build image",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "img2",
 				RunImage:          "run/image",
 				ProjectDescriptor: "project.toml",
@@ -94,7 +94,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "custom run image",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "otherbuilder",
 				RunImage:          "img3",
 				ProjectDescriptor: "project.toml",
@@ -109,7 +109,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "custom build and run image",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "img2",
 				RunImage:          "img3",
 				ProjectDescriptor: "project.toml",
@@ -124,7 +124,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "invalid env",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder: "builder",
 				Env:     []string{"FOO={{INVALID}}"},
 			},
@@ -132,7 +132,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "buildpacks list",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "builder",
 				Buildpacks:        []string{"buildpack1", "buildpack2"},
 				ProjectDescriptor: "project.toml",
@@ -147,7 +147,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "trusted builder",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "builder",
 				ProjectDescriptor: "project.toml",
 				TrustBuilder:      true,
@@ -162,7 +162,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		},
 		{
 			description: "project descriptor",
-			artifact: &latestV1.BuildpackArtifact{
+			artifact: &latestV2.BuildpackArtifact{
 				Builder:           "builder",
 				ProjectDescriptor: "non-default.toml",
 			},
@@ -179,18 +179,18 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"BAR=bar"} })
 
-			artifact := &latestV1.Artifact{
+			artifact := &latestV2.Artifact{
 				ImageName: "img",
-				ArtifactType: latestV1.ArtifactType{
+				ArtifactType: latestV2.ArtifactType{
 					BuildpackArtifact: test.artifact,
 				},
-				Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img2", Alias: "img2"}, {ImageName: "img3", Alias: "img3"}},
+				Dependencies: []*latestV2.ArtifactDependency{{ImageName: "img2", Alias: "img2"}, {ImageName: "img3", Alias: "img3"}},
 			}
 			store := mockArtifactStore{
 				"img2": "img2:tag",
 				"img3": "img3:tag",
 			}
-			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latestV1.GoogleCloudBuild{
+			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latestV2.GoogleCloudBuild{
 				PackImage: "pack/image",
 			})
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")

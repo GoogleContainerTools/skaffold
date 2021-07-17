@@ -26,3 +26,7 @@ import (
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).Deploy")
 }
+
+func (r *SkaffoldRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifact) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).DeployAndLog")
+}

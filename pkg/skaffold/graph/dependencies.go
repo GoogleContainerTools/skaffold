@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -38,10 +38,10 @@ var getDependenciesFunc = sourceDependenciesForArtifact
 type SourceDependenciesCache interface {
 	// TransitiveArtifactDependencies returns the source dependencies for the target artifact, including the source dependencies from all other artifacts that are in the transitive closure of its artifact dependencies.
 	// The result (even if an error) is cached so that the function is evaluated only once for every artifact. The cache is reset before the start of the next devloop.
-	TransitiveArtifactDependencies(ctx context.Context, a *latestV1.Artifact) ([]string, error)
+	TransitiveArtifactDependencies(ctx context.Context, a *latestV2.Artifact) ([]string, error)
 	// SingleArtifactDependencies returns the source dependencies for only the target artifact.
 	// The result (even if an error) is cached so that the function is evaluated only once for every artifact. The cache is reset before the start of the next devloop.
-	SingleArtifactDependencies(ctx context.Context, a *latestV1.Artifact) ([]string, error)
+	SingleArtifactDependencies(ctx context.Context, a *latestV2.Artifact) ([]string, error)
 	// Reset removes the cached source dependencies for all artifacts
 	Reset()
 }
@@ -57,7 +57,7 @@ type dependencyResolverImpl struct {
 	cache            *util.SyncStore
 }
 
-func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Context, a *latestV1.Artifact) ([]string, error) {
+func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Context, a *latestV2.Artifact) ([]string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "TransitiveArtifactDependencies", map[string]string{
 		"ArtifactName": instrumentation.PII(a.ImageName),
 	})
@@ -79,7 +79,7 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 	return deps, nil
 }
 
-func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latestV1.Artifact) ([]string, error) {
+func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latestV2.Artifact) ([]string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "SingleArtifactDependencies", map[string]string{
 		"ArtifactName": instrumentation.PII(a.ImageName),
 	})
@@ -104,7 +104,7 @@ func (r *dependencyResolverImpl) Reset() {
 }
 
 // sourceDependenciesForArtifact returns the build dependencies for the current artifact.
-func sourceDependenciesForArtifact(ctx context.Context, a *latestV1.Artifact, cfg docker.Config, r docker.ArtifactResolver) ([]string, error) {
+func sourceDependenciesForArtifact(ctx context.Context, a *latestV2.Artifact, cfg docker.Config, r docker.ArtifactResolver) ([]string, error) {
 	var (
 		paths []string
 		err   error

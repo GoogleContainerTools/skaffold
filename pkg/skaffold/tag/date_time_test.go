@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -69,7 +69,7 @@ func TestDateTime_GenerateTag(t *testing.T) {
 				timeFn:   func() time.Time { return test.buildTime },
 			}
 
-			image := latestV1.Artifact{
+			image := latestV2.Artifact{
 				ImageName: "test",
 			}
 

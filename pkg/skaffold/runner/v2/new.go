@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"context"
@@ -36,8 +36,8 @@ import (
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -67,7 +67,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	sourceDependencies := graph.NewSourceDependenciesCache(runCtx, store, g)
 
 	var builder build.Builder
-	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV1.Pipeline) (build.PipelineBuilder, error) {
+	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV2.Pipeline) (build.PipelineBuilder, error) {
 		return runner.GetBuilder(runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
@@ -99,7 +99,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
 
-	depLister := func(ctx context.Context, artifact *latestV1.Artifact) ([]string, error) {
+	depLister := func(ctx context.Context, artifact *latestV2.Artifact) ([]string, error) {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
 
@@ -150,7 +150,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		labeller:           labeller,
 		cache:              artifactCache,
 		runCtx:             runCtx,
-		intents:            intents,
 		isLocalImage:       isLocalImage,
 	}, nil
 }

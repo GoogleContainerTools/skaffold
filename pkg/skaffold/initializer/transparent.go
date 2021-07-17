@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 var (
@@ -32,7 +32,7 @@ var (
 
 // Transparent executes the `skaffold init` flow, but always enables the --force flag.
 // It will also always prompt the user to confirm at the end of the flow.
-func Transparent(ctx context.Context, out io.Writer, c initConfig.Config) (*latestV1.SkaffoldConfig, error) {
+func Transparent(ctx context.Context, out io.Writer, c initConfig.Config) (*latestV2.SkaffoldConfig, error) {
 	// we set force to true because we want to have this happen invisibly to the user if possible
 	c.Force = true
 

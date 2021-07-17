@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -366,7 +366,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 }
 
 type statusConfig struct {
-	runcontext.RunContext // Embedded to provide the default values.
+	v2.RunContext // Embedded to provide the default values.
 }
 
 func (c *statusConfig) GetKubeContext() string { return "kubecontext" }

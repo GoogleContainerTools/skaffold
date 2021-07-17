@@ -37,7 +37,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -68,7 +68,7 @@ func TestUnavailablePort(t *testing.T) {
 		k := KubectlForwarder{
 			out: &buf,
 		}
-		pfe := newPortForwardEntry(0, latestV1.PortForwardResource{}, "", "", "", "", 8080, false)
+		pfe := newPortForwardEntry(0, latestV2.PortForwardResource{}, "", "", "", "", 8080, false)
 
 		k.Start(&buf)
 		go k.Forward(context.Background(), pfe)
@@ -90,7 +90,7 @@ func TestUnavailablePort(t *testing.T) {
 func TestTerminate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	pfe := newPortForwardEntry(0, latestV1.PortForwardResource{}, "", "", "", "", 8080, false)
+	pfe := newPortForwardEntry(0, latestV2.PortForwardResource{}, "", "", "", "", 8080, false)
 	pfe.cancel = cancel
 
 	k := &KubectlForwarder{}
@@ -202,29 +202,29 @@ func TestPortForwardArgs(t *testing.T) {
 	}{
 		{
 			description: "non-default address",
-			input:       newPortForwardEntry(0, latestV1.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9), Address: "0.0.0.0"}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latestV2.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9), Address: "0.0.0.0"}, "", "", "", "", 8080, false),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9", "--address", "0.0.0.0"},
 		},
 		{
 			description: "localhost is the default",
-			input:       newPortForwardEntry(0, latestV1.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9), Address: "127.0.0.1"}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latestV2.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9), Address: "127.0.0.1"}, "", "", "", "", 8080, false),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9"},
 		},
 		{
 			description: "no address",
-			input:       newPortForwardEntry(0, latestV1.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latestV2.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9"},
 		},
 		{
 			description: "service to pod",
-			input:       newPortForwardEntry(0, latestV1.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latestV2.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
 			servicePod:  "servicePod",
 			servicePort: 9999,
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/servicePod", "8080:9999"},
 		},
 		{
 			description: "service could not be mapped to pod",
-			input:       newPortForwardEntry(0, latestV1.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latestV2.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
 			serviceErr:  errors.New("error"),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "service/svc", "8080:9"},
 		},

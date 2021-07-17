@@ -26,12 +26,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "docker",
 		"Context":     instrumentation.PII(a.Workspace),
@@ -73,7 +73,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latestV1.DockerArtifact, opts docker.BuildOptions) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latestV2.DockerArtifact, opts docker.BuildOptions) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
 	ba, err := docker.EvalBuildArgs(b.cfg.Mode(), workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
@@ -104,7 +104,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	return b.localDocker.ImageID(ctx, opts.Tag)
 }
 
-func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latestV1.DockerArtifact) error {
+func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latestV2.DockerArtifact) error {
 	if len(a.CacheFrom) == 0 {
 		return nil
 	}

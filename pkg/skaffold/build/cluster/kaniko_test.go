@@ -21,13 +21,13 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestEnvInterpolation(t *testing.T) {
 	imageStr := "why.com/is/this/such/a/long/repo/name/testimage:testtag"
-	artifact := &latestV1.KanikoArtifact{
+	artifact := &latestV2.KanikoArtifact{
 		Env: []v1.EnvVar{{Name: "hui", Value: "buh"}},
 	}
 	generatedEnvs, err := generateEnvFromImage(imageStr)
@@ -51,7 +51,7 @@ func TestEnvInterpolation(t *testing.T) {
 
 func TestEnvInterpolation_IPPort(t *testing.T) {
 	imageStr := "10.10.10.10:1000/is/this/such/a/long/repo/name/testimage:testtag"
-	artifact := &latestV1.KanikoArtifact{
+	artifact := &latestV2.KanikoArtifact{
 		Env: []v1.EnvVar{{Name: "hui", Value: "buh"}},
 	}
 	generatedEnvs, err := generateEnvFromImage(imageStr)
@@ -75,7 +75,7 @@ func TestEnvInterpolation_IPPort(t *testing.T) {
 
 func TestEnvInterpolation_Latest(t *testing.T) {
 	imageStr := "why.com/is/this/such/a/long/repo/name/testimage"
-	artifact := &latestV1.KanikoArtifact{
+	artifact := &latestV2.KanikoArtifact{
 		Env: []v1.EnvVar{{Name: "hui", Value: "buh"}},
 	}
 	generatedEnvs, err := generateEnvFromImage(imageStr)

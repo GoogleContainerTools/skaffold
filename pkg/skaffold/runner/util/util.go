@@ -22,13 +22,14 @@ import (
 
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // GetAllPodNamespaces lists the namespaces that should be watched.
 // + The namespace passed on the command line
 // + Current kube context's namespace
 // + Namespaces referenced in Helm releases
-func GetAllPodNamespaces(configNamespace string, pipelines []latestV1.Pipeline) ([]string, error) {
+func GetAllPodNamespaces(configNamespace string, pipelines []latestV2.Pipeline) ([]string, error) {
 	nsMap := make(map[string]bool)
 
 	if configNamespace == "" {
@@ -63,7 +64,60 @@ func GetAllPodNamespaces(configNamespace string, pipelines []latestV1.Pipeline) 
 	return namespaces, nil
 }
 
-func collectHelmReleasesNamespaces(pipelines []latestV1.Pipeline) []string {
+func collectHelmReleasesNamespaces(pipelines []latestV2.Pipeline) []string {
+	var namespaces []string
+	for _, cfg := range pipelines {
+		if cfg.Deploy.HelmDeploy != nil {
+			for _, release := range cfg.Deploy.HelmDeploy.Releases {
+				if release.Namespace != "" {
+					namespaces = append(namespaces, release.Namespace)
+				}
+			}
+		}
+	}
+	return namespaces
+}
+
+// GetAllPodNamespacesV1 lists the namespaces that should be watched.
+// + The namespace passed on the command line
+// + Current kube context's namespace
+// + Namespaces referenced in Helm releases
+func GetAllPodNamespacesV1(configNamespace string, pipelines []latestV1.Pipeline) ([]string, error) {
+	nsMap := make(map[string]bool)
+
+	if configNamespace == "" {
+		// Get current kube context's namespace
+		config, err := kubectx.CurrentConfig()
+		if err != nil {
+			return nil, fmt.Errorf("getting k8s configuration: %w", err)
+		}
+
+		context, ok := config.Contexts[config.CurrentContext]
+		if ok {
+			nsMap[context.Namespace] = true
+		} else {
+			nsMap[""] = true
+		}
+	} else {
+		nsMap[configNamespace] = true
+	}
+
+	// Set additional namespaces each helm release referenced
+	for _, namespace := range collectHelmReleasesNamespacesV1(pipelines) {
+		nsMap[namespace] = true
+	}
+
+	// Collate the slice of namespaces.
+	namespaces := make([]string, 0, len(nsMap))
+	for ns := range nsMap {
+		namespaces = append(namespaces, ns)
+	}
+
+	sort.Strings(namespaces)
+	return namespaces, nil
+}
+
+func collectHelmReleasesNamespacesV1(pipelines []latestV1.Pipeline) []string {
 	var namespaces []string
 	for _, cfg := range pipelines {
 		if cfg.Deploy.HelmDeploy != nil {

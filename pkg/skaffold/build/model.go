@@ -19,7 +19,7 @@ package build
 import (
 	"context"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // node models the artifact dependency graph using a set of channels.
@@ -52,7 +52,7 @@ func (a *node) waitForDependencies(ctx context.Context) error {
 	return nil
 }
 
-func createNodes(artifacts []*latestV1.Artifact) []node {
+func createNodes(artifacts []*latestV2.Artifact) []node {
 	nodeMap := make(map[string]node)
 	for _, a := range artifacts {
 		nodeMap[a.ImageName] = node{

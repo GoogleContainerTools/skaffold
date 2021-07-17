@@ -20,13 +20,13 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestCreateComponents(t *testing.T) {
-	runCtx := &runcontext.RunContext{}
+	runCtx := &v2.RunContext{}
 
 	digestExample, _ := NewInputDigestTagger(runCtx, graph.ToArtifactGraph(runCtx.Artifacts()))
 	gitExample, _ := NewGitCommit("", "", false)
@@ -34,19 +34,19 @@ func TestCreateComponents(t *testing.T) {
 
 	tests := []struct {
 		description          string
-		customTemplateTagger *latestV1.CustomTemplateTagger
+		customTemplateTagger *latestV2.CustomTemplateTagger
 		expected             map[string]Tagger
 		shouldErr            bool
 	}{
 		{
 			description: "correct component types",
-			customTemplateTagger: &latestV1.CustomTemplateTagger{
-				Components: []latestV1.TaggerComponent{
-					{Name: "FOO", Component: latestV1.TagPolicy{GitTagger: &latestV1.GitTagger{}}},
-					{Name: "FOE", Component: latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}}},
-					{Name: "BAR", Component: latestV1.TagPolicy{EnvTemplateTagger: &latestV1.EnvTemplateTagger{Template: "test"}}},
-					{Name: "BAT", Component: latestV1.TagPolicy{DateTimeTagger: &latestV1.DateTimeTagger{}}},
-					{Name: "BAS", Component: latestV1.TagPolicy{InputDigest: &latestV1.InputDigest{}}},
+			customTemplateTagger: &latestV2.CustomTemplateTagger{
+				Components: []latestV2.TaggerComponent{
+					{Name: "FOO", Component: latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}}},
+					{Name: "FOE", Component: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}}},
+					{Name: "BAR", Component: latestV2.TagPolicy{EnvTemplateTagger: &latestV2.EnvTemplateTagger{Template: "test"}}},
+					{Name: "BAT", Component: latestV2.TagPolicy{DateTimeTagger: &latestV2.DateTimeTagger{}}},
+					{Name: "BAS", Component: latestV2.TagPolicy{InputDigest: &latestV2.InputDigest{}}},
 				},
 			},
 			expected: map[string]Tagger{
@@ -59,28 +59,28 @@ func TestCreateComponents(t *testing.T) {
 		},
 		{
 			description: "customTemplate is an invalid component",
-			customTemplateTagger: &latestV1.CustomTemplateTagger{
-				Components: []latestV1.TaggerComponent{
-					{Name: "FOO", Component: latestV1.TagPolicy{CustomTemplateTagger: &latestV1.CustomTemplateTagger{Template: "test"}}},
+			customTemplateTagger: &latestV2.CustomTemplateTagger{
+				Components: []latestV2.TaggerComponent{
+					{Name: "FOO", Component: latestV2.TagPolicy{CustomTemplateTagger: &latestV2.CustomTemplateTagger{Template: "test"}}},
 				},
 			},
 			shouldErr: true,
 		},
 		{
 			description: "recurring names",
-			customTemplateTagger: &latestV1.CustomTemplateTagger{
-				Components: []latestV1.TaggerComponent{
-					{Name: "FOO", Component: latestV1.TagPolicy{GitTagger: &latestV1.GitTagger{}}},
-					{Name: "FOO", Component: latestV1.TagPolicy{GitTagger: &latestV1.GitTagger{}}},
+			customTemplateTagger: &latestV2.CustomTemplateTagger{
+				Components: []latestV2.TaggerComponent{
+					{Name: "FOO", Component: latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}}},
+					{Name: "FOO", Component: latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}}},
 				},
 			},
 			shouldErr: true,
 		},
 		{
 			description: "unknown component",
-			customTemplateTagger: &latestV1.CustomTemplateTagger{
-				Components: []latestV1.TaggerComponent{
-					{Name: "FOO", Component: latestV1.TagPolicy{}},
+			customTemplateTagger: &latestV2.CustomTemplateTagger{
+				Components: []latestV2.TaggerComponent{
+					{Name: "FOO", Component: latestV2.TagPolicy{}},
 				},
 			},
 			shouldErr: true,

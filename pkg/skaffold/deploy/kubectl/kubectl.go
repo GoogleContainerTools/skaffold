@@ -41,7 +41,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -49,7 +49,7 @@ import (
 
 // Deployer deploys workflows using kubectl CLI.
 type Deployer struct {
-	*latestV1.KubectlDeploy
+	*latestV2.KubectlDeploy
 
 	accessor      access.Accessor
 	logger        log.Logger
@@ -72,7 +72,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error

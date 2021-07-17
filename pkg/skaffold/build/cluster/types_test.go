@@ -22,8 +22,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -37,12 +37,12 @@ func TestNewBuilder(t *testing.T) {
 		description string
 		shouldErr   bool
 		bCtx        BuilderContext
-		cluster     *latestV1.ClusterDetails
+		cluster     *latestV2.ClusterDetails
 	}{
 		{
 			description: "failed to parse cluster build timeout",
 			bCtx:        &mockBuilderContext{},
-			cluster: &latestV1.ClusterDetails{
+			cluster: &latestV2.ClusterDetails{
 				Timeout: "illegal",
 			},
 			shouldErr: true,
@@ -53,7 +53,7 @@ func TestNewBuilder(t *testing.T) {
 				kubeContext: kubeContext,
 				namespace:   namespace,
 			},
-			cluster: &latestV1.ClusterDetails{
+			cluster: &latestV2.ClusterDetails{
 				Timeout:   "100s",
 				Namespace: "test-ns",
 			},
@@ -65,7 +65,7 @@ func TestNewBuilder(t *testing.T) {
 				namespace:          namespace,
 				insecureRegistries: map[string]bool{"insecure-reg1": true},
 			},
-			cluster: &latestV1.ClusterDetails{
+			cluster: &latestV2.ClusterDetails{
 				Timeout:   "100s",
 				Namespace: "test-ns",
 			},
@@ -86,12 +86,12 @@ func TestPruneIsNoop(t *testing.T) {
 }
 
 type mockBuilderContext struct {
-	runcontext.RunContext // Embedded to provide the default values.
-	kubeContext           string
-	namespace             string
-	insecureRegistries    map[string]bool
-	runMode               config.RunMode
-	artifactStore         build.ArtifactStore
+	v2.RunContext      // Embedded to provide the default values.
+	kubeContext        string
+	namespace          string
+	insecureRegistries map[string]bool
+	runMode            config.RunMode
+	artifactStore      build.ArtifactStore
 }
 
 func (c *mockBuilderContext) GetKubeContext() string                 { return c.kubeContext }

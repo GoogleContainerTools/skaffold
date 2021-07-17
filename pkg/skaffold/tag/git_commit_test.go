@@ -30,7 +30,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -384,7 +384,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
 
-			image := latestV1.Artifact{
+			image := latestV2.Artifact{
 				ImageName: "test",
 				Workspace: tmpDir.Path(test.subDir),
 			}
@@ -446,7 +446,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
-			image := latestV1.Artifact{
+			image := latestV2.Artifact{
 				ImageName: "test",
 				Workspace: tmpDir.Path(test.subDir),
 			}
@@ -508,7 +508,7 @@ func TestGitCommit_CustomTemplate(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
-			image := latestV1.Artifact{
+			image := latestV2.Artifact{
 				ImageName: "test",
 				Workspace: tmpDir.Path(test.subDir),
 			}
@@ -529,7 +529,7 @@ func TestGitCommitSubDirectory(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
 		gitInit(t.T, tmpDir.Root()).mkdir("sub/sub").commit("initial")
-		image := latestV1.Artifact{
+		image := latestV2.Artifact{
 			ImageName: "test",
 			Workspace: tmpDir.Path("sub/sub"),
 		}
@@ -568,7 +568,7 @@ func TestPrefix(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
 		gitInit(t.T, tmpDir.Root()).commit("initial")
-		image := latestV1.Artifact{
+		image := latestV2.Artifact{
 			ImageName: "test",
 			Workspace: tmpDir.Path("."),
 		}
