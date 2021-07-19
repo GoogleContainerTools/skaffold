@@ -134,7 +134,7 @@ func (k *Deployer) getManifests(ctx context.Context) (manifest.ManifestList, err
 		ctx, "kpt", "fn", "source", k.applyDir)
 	buf, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("reading config manifests: %w", err)
+		return nil, sourceErr(err, k.applyDir)
 	}
 	input := bytes.NewBufferString(string(buf))
 	rl := framework.ResourceList{
@@ -143,13 +143,13 @@ func (k *Deployer) getManifests(ctx context.Context) (manifest.ManifestList, err
 	// Manipulate the kustomize "Rnode"(Kustomize term) and pulls out the "Items"
 	// from ResourceLists.
 	if err := rl.Read(); err != nil {
-		return nil, fmt.Errorf("reading ResourceList %w", err)
+		return nil, sourceErr(err, k.applyDir)
 	}
 	var newBuf []byte
 	for i := range rl.Items {
 		item, err := rl.Items[i].String()
 		if err != nil {
-			return nil, fmt.Errorf("reading Item %w", err)
+			return nil, sourceErr(err, k.applyDir)
 		}
 		newBuf = append(newBuf, []byte(item)...)
 	}
@@ -170,17 +170,17 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		cmd.Stderr = out
 		if err := util.RunCmd(cmd); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
-			return err
+			return pkgInitErr(err, k.applyDir)
 		}
 	}
 	file, err := openFile(kptFilePath)
 	if err != nil {
-		return err
+		return openFileErr(err, kptFilePath)
 	}
 	defer file.Close()
 	kfConfig := &kptfile.KptFile{}
 	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
-		return fmt.Errorf("unable to parse Kptfile %v", kptFilePath)
+		return parseFileErr(err, kptFilePath)
 	}
 	// Kptfile may already exist but do not contain the "Inventory" field, which is mandatory for `kpt live apply`.
 	// This case happens when Kptfile is created by `kpt pkg init` and can be resolved by running `kpt live init`.
@@ -227,7 +227,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return nil, liveInitErr(err, k.applyDir)
 	}
 
 	k.TrackBuildArtifacts(builds)
@@ -250,7 +250,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
-		return err
+		return liveDestroyErr(err, k.applyDir)
 	}
 
 	return nil
