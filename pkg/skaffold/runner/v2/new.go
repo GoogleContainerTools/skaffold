@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -93,7 +94,14 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Syncer:   sync.NewSyncProvider(runCtx, kubectlCLI),
 	}
 
+	renderer, err := renderer.NewSkaffoldRenderer(getRenderConfig(runCtx), runCtx.GetWorkingDir())
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, fmt.Errorf("creating renderer: %w", err)
+	}
+
 	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels())
+
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
@@ -123,7 +131,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	builder, tester, deployer = runner.WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
+	builder, tester, renderer, deployer = runner.WithTimings(builder, tester, renderer, deployer, runCtx.CacheArtifacts())
 	if runCtx.Notification() {
 		deployer = runner.WithNotification(deployer)
 	}
@@ -137,10 +145,12 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	rbuilder := runner.NewBuilder(builder, tagger, artifactCache, runCtx)
+
 	return &SkaffoldRunner{
 		Builder:            *rbuilder,
 		Pruner:             runner.Pruner{Builder: builder},
 		Tester:             tester,
+		renderer:           renderer,
 		deployer:           deployer,
 		monitor:            monitor,
 		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
@@ -150,6 +160,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		labeller:           labeller,
 		cache:              artifactCache,
 		runCtx:             runCtx,
+		intents:            intents,
 		isLocalImage:       isLocalImage,
 	}, nil
 }
