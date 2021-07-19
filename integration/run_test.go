@@ -198,7 +198,7 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
-			ns, client := DefaultNamespace(t)
+			_, client := DefaultNamespace(t)
 
 			args := append(test.args, "--tail")
 			out := skaffold.Run(args...).InDir(test.dir).WithEnv(test.env).RunLive(t)
@@ -208,7 +208,7 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 
 			WaitForLogs(t, out, test.targetLog)
 
-			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
 		})
 	}
 }
