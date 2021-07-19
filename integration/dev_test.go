@@ -280,6 +280,31 @@ func TestDevPortForward(t *testing.T) {
 	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
 }
 
+func TestDevPortForwardDefaultNamespace(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
+
+	rpcAddr := randomPort()
+	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").RunBackground(t)
+
+	_, entries := apiEvents(t, rpcAddr)
+
+	// No namespace was provided to `skaffold dev`, so we assume "default"
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", "default", "leeroooooy app!!\n")
+
+	original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", "examples/microservices/leeroy-app/app.go")
+	failNowIfError(t, fErr)
+	defer func() {
+		if original != nil {
+			ioutil.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
+		}
+	}()
+
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", "default", "test string\n")
+}
+
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
 
@@ -322,6 +347,7 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 	}
 }
 
+//nolint:unparam
 func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace, expected string) {
 	address, port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType, namespace)
 	assertResponseFromPort(t, address, port, expected)
