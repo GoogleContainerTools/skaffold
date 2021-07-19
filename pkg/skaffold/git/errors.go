@@ -26,7 +26,7 @@ import (
 
 // SyncOffErr returns error when git repository sync is turned off by the user but the repository clone doesn't exist inside the cache directory.
 func SyncOffErr(g latestV1.GitInfo, repoCacheDir string) error {
-	msg := fmt.Sprintf("cache directory %q for repository %q at ref %q does not exist, and repo sync is explicitly turned off via flag `--sync-remote-cache`", repoCacheDir, g.Repo, g.Ref)
+	msg := fmt.Sprintf("cache directory %q for repository %q at ref %q does not exist, and repository sync is explicitly disabled via flag `--sync-remote-cache`", repoCacheDir, g.Repo, g.Ref)
 	return sErrors.NewError(fmt.Errorf(msg),
 		proto.ActionableErr{
 			Message: msg,
