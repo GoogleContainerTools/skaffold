@@ -148,6 +148,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
+		Name:          "sync-remote-cache",
+		Usage:         "One of `always`(default), `missing`, or `never`.\nSet to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.\nSet to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.\nSet to `never` to manually manage the remote repositories.",
+		Value:         &opts.SyncRemoteCache,
+		DefValue:      "always",
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"all"},
+	},
+	{
 		Name:          "insecure-registry",
 		Usage:         "Target registries for built images which are not secure",
 		Value:         &opts.InsecureRegistries,
