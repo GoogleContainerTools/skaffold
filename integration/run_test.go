@@ -175,13 +175,10 @@ func TestRunTail(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
-			ns, client := SetupNamespace(t)
+			ns, _ := SetupNamespace(t)
 
 			args := append(test.args, "--tail")
 			out := skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunLive(t)
-
-			client.WaitForPodsReady(test.pods...)
-			client.WaitForDeploymentsToStabilize(test.deployments...)
 
 			WaitForLogs(t, out, test.targetLog)
 
@@ -198,13 +195,9 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
-			_, client := DefaultNamespace(t)
 
 			args := append(test.args, "--tail")
 			out := skaffold.Run(args...).InDir(test.dir).WithEnv(test.env).RunLive(t)
-
-			client.WaitForPodsReady(test.pods...)
-			client.WaitForDeploymentsToStabilize(test.deployments...)
 
 			WaitForLogs(t, out, test.targetLog)
 
