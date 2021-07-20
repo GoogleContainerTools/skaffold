@@ -132,10 +132,7 @@ Options:
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --status-check=true: Wait for deployed resources to stabilize
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --tail=false: Stream logs from deployed objects
       --v2=false: Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.
 
@@ -218,10 +215,7 @@ Options:
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --toot=false: Emit a terminal beep after the deploy is complete
 
@@ -454,10 +448,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
@@ -545,10 +536,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold delete [options]
@@ -619,10 +607,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-render=false: Don't render the manifests, just deploy them
       --status-check=true: Wait for deployed resources to stabilize
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
@@ -717,10 +702,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
@@ -810,10 +792,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --yaml-only=false: Only prints the effective skaffold.yaml configuration
 
 Usage:
@@ -854,10 +833,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --version='skaffold/v2beta20': Target schema version to upgrade to
 
 Usage:
@@ -896,10 +872,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --skip-build=false: Skip generating build artifacts in Skaffold config
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold init [options]
@@ -967,10 +940,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold render [options]
@@ -1047,10 +1017,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
@@ -1220,10 +1187,7 @@ Options:
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
-      --sync-remote-cache='always': One of `always`(default), `missing`, or `never`.
-Set to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.
-Set to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.
-Set to `never` to manually manage the remote repositories.
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold test [options]

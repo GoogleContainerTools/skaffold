@@ -149,7 +149,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "sync-remote-cache",
-		Usage:         "One of `always`(default), `missing`, or `never`.\nSet to `always` to sync remote git repositories cache in `remote-cache-dir` directory every time skaffold starts.\nSet to `missing` to only clone the remote git repositories once if they don't exist locally in the `remote-cache-dir` directory.\nSet to `never` to manually manage the remote repositories.",
+		Usage:         "Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.",
 		Value:         &opts.SyncRemoteCache,
 		DefValue:      "always",
 		FlagAddMethod: "Var",
