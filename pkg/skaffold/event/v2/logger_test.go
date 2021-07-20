@@ -19,11 +19,12 @@ package v2
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/sirupsen/logrus"
 )
 
 func TestHandleSkaffoldLogEvent(t *testing.T) {
@@ -55,45 +56,45 @@ func TestHandleSkaffoldLogEvent(t *testing.T) {
 }
 
 func TestLevelFromEntry(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		name      string
 		logrusLvl logrus.Level
 		enumLvl   enums.LogLevel
 	}{
 		{
-			name: "panic",
+			name:      "panic",
 			logrusLvl: logrus.PanicLevel,
-			enumLvl: enums.LogLevel_PANIC,
+			enumLvl:   enums.LogLevel_PANIC,
 		},
 		{
-			name: "fatal",
+			name:      "fatal",
 			logrusLvl: logrus.FatalLevel,
-			enumLvl: enums.LogLevel_FATAL,
+			enumLvl:   enums.LogLevel_FATAL,
 		},
 		{
-			name: "error",
+			name:      "error",
 			logrusLvl: logrus.ErrorLevel,
-			enumLvl: enums.LogLevel_ERROR,
+			enumLvl:   enums.LogLevel_ERROR,
 		},
 		{
-			name: "warn",
+			name:      "warn",
 			logrusLvl: logrus.WarnLevel,
-			enumLvl: enums.LogLevel_WARN,
+			enumLvl:   enums.LogLevel_WARN,
 		},
 		{
-			name: "info",
+			name:      "info",
 			logrusLvl: logrus.InfoLevel,
-			enumLvl: enums.LogLevel_INFO,
+			enumLvl:   enums.LogLevel_INFO,
 		},
 		{
-			name: "debug",
+			name:      "debug",
 			logrusLvl: logrus.DebugLevel,
-			enumLvl: enums.LogLevel_DEBUG,
+			enumLvl:   enums.LogLevel_DEBUG,
 		},
 		{
-			name: "trace",
+			name:      "trace",
 			logrusLvl: logrus.TraceLevel,
-			enumLvl: enums.LogLevel_TRACE,
+			enumLvl:   enums.LogLevel_TRACE,
 		},
 	}
 
