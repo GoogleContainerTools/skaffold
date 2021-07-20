@@ -172,6 +172,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
+		out := output.WithEventContext(out, constants.Build, imageName)
 		output.Default.Fprintf(out, " - %s -> ", imageName)
 
 		select {
