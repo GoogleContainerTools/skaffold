@@ -97,6 +97,8 @@ enum LogLevel {
     FATAL = 4;
     // Panic Level
     PANIC = 5;
+    // Trace Level
+    TRACE = 6;
 }
 
 // Enum for Status codes<br>

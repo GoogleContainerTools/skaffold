@@ -93,11 +93,11 @@ func levelFromEntry(entry *logrus.Entry) enums.LogLevel {
 		return enums.LogLevel_WARN
 	case logrus.InfoLevel:
 		return enums.LogLevel_INFO
-	case logrus.DebugLevel:
-		return enums.LogLevel_DEBUG
 	case logrus.PanicLevel:
 		return enums.LogLevel_PANIC
+	case logrus.TraceLevel:
+		return enums.LogLevel_TRACE
+	default:
+		return enums.LogLevel_DEBUG
 	}
-
-	return enums.LogLevel_DEBUG
 }
