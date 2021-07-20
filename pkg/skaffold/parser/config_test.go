@@ -65,7 +65,10 @@ func createCfg(name string, imageName string, workspace string, requires []lates
 				DockerArtifact: &latestV2.DockerArtifact{DockerfilePath: "Dockerfile"}}, Workspace: workspace}}, TagPolicy: latestV2.TagPolicy{
 				GitTagger: &latestV2.GitTagger{}}, BuildType: latestV2.BuildType{
 				LocalBuild: &latestV2.LocalBuild{Concurrency: concurrency()},
-			}}, Deploy: latestV2.DeployConfig{Logs: latestV2.LogsConfig{Prefix: "container"}}},
+			}},
+			Render: latestV2.RenderConfig{Generate: latestV2.Generate{RawK8s: []string{"k8s/*.yaml"}}},
+			Deploy: latestV2.DeployConfig{DeployType: latestV2.DeployType{KubectlDeploy: &latestV2.KubectlDeploy{}},
+				Logs: latestV2.LogsConfig{Prefix: "container"}}},
 	}
 }
 

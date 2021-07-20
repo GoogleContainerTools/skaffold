@@ -530,12 +530,6 @@ type Helm struct {
 	Releases *[]HelmRelease `yaml:"releases,omitempty"`
 }
 
-// DeployType contains the specific implementation and parameters needed
-// for the deploy step. All three deployer types can be used at the same
-// time for hybrid workflows.
-type GenerateType struct {
-}
-
 // Transformer describes the supported kpt transformers.
 type Transformer struct {
 	// Name is the transformer name. Can only accept skaffold whitelisted tools.
@@ -558,6 +552,9 @@ type KptV2Deploy struct {
 	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold renders the raw manifests
 	// and store them to a a hidden directory `.kpt-hydrated`, and deploys the hidden directory.
 	Dir string `yaml:"dir,omitempty"`
+
+	// Flags are additional flags passed to `kpt live apply`.
+	Flags []string `yaml:"flags,omitempty"`
 
 	// InventoryID *alpha* is the identifier for a group of applied resources.
 	// This value is only needed when the `kpt live` is working on a pre-applied cluster resources.
@@ -602,14 +599,30 @@ type DeployType struct {
 	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
 
-	KptV2Deploy *KptV2Deploy `yaml:"kptV2,omitempty"`
-
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+
+	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
+	KptV2Deploy *KptV2Deploy `yaml:"kptV2,omitempty"`
+
+	// KubectlV2Deploy *alpha* uses a client side `kubectl apply` to deploy manifests.
+	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
+	KubectlV2Deploy *KubectlV2Deploy `yaml:"kubectl,omitempty"`
+}
+
+type KubectlV2Deploy struct {
+	// Flags are additional flags passed to `kubectl`.
+	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"-"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.

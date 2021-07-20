@@ -43,7 +43,6 @@ const (
 func Set(c *latestV2.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
 	setDefaultTagger(c)
-	setDefaultKustomizePath(c)
 	setDefaultLogsConfig(c)
 
 	for _, a := range c.Build.Artifacts {
@@ -108,13 +107,37 @@ func Set(c *latestV2.SkaffoldConfig) error {
 	}
 
 	setDefaultTestWorkspace(c)
+	SetDefaultRenderer(c)
+	SetDefaultDeployer(c)
 	return nil
+}
+
+// SetDefaultRenderer sets the default manifests to rawYaml.
+func SetDefaultRenderer(c *latestV2.SkaffoldConfig) {
+	if len(c.Render.Generate.Kpt) > 0 {
+		return
+	}
+	if len(c.Render.Generate.RawK8s) > 0 {
+		return
+	}
+	if len(c.Render.Generate.Kustomize) > 0 {
+		return
+	}
+	if c.Render.Generate.Helm != (latestV2.Helm{}) {
+		return
+	}
+	// Set default manifests to "k8s/*.yaml", same as v1.
+	c.Render.Generate.RawK8s = constants.DefaultKubectlManifests
 }
 
 // SetDefaultDeployer adds a default kubectl deploy configuration.
 func SetDefaultDeployer(c *latestV2.SkaffoldConfig) {
-	defaultToKubectlDeploy(c)
-	setDefaultKubectlManifests(c)
+	if c.Deploy.DeployType != (latestV2.DeployType{}) {
+		return
+	}
+
+	logrus.Debugf("Defaulting deploy type to kubectl")
+	c.Deploy.DeployType.KubectlDeploy = &latestV2.KubectlDeploy{}
 }
 
 func defaultToLocalBuild(c *latestV2.SkaffoldConfig) {
@@ -124,15 +147,6 @@ func defaultToLocalBuild(c *latestV2.SkaffoldConfig) {
 
 	logrus.Debugf("Defaulting build type to local build")
 	c.Build.BuildType.LocalBuild = &latestV2.LocalBuild{}
-}
-
-func defaultToKubectlDeploy(c *latestV2.SkaffoldConfig) {
-	if c.Deploy.DeployType != (latestV2.DeployType{}) {
-		return
-	}
-
-	logrus.Debugf("Defaulting deploy type to kubectl")
-	c.Deploy.DeployType.KubectlDeploy = &latestV2.KubectlDeploy{}
 }
 
 func withLocalBuild(c *latestV2.SkaffoldConfig, operations ...func(*latestV2.LocalBuild)) {
@@ -183,22 +197,6 @@ func setDefaultTagger(c *latestV2.SkaffoldConfig) {
 	}
 
 	c.Build.TagPolicy = latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}}
-}
-
-func setDefaultKustomizePath(c *latestV2.SkaffoldConfig) {
-	kustomize := c.Deploy.KustomizeDeploy
-	if kustomize == nil {
-		return
-	}
-	if len(kustomize.KustomizePaths) == 0 {
-		kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
-	}
-}
-
-func setDefaultKubectlManifests(c *latestV2.SkaffoldConfig) {
-	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 && len(c.Deploy.KubectlDeploy.RemoteManifests) == 0 {
-		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
-	}
 }
 
 func setDefaultLogsConfig(c *latestV2.SkaffoldConfig) {

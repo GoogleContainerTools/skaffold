@@ -89,7 +89,6 @@ func TestSetDefaults(t *testing.T) {
 	}
 
 	err := Set(cfg)
-	SetDefaultDeployer(cfg)
 
 	testutil.CheckError(t, false, err)
 
@@ -175,7 +174,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 			},
 		}
 		err := Set(cfg)
-		SetDefaultDeployer(cfg)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
@@ -200,7 +198,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 			},
 		}
 		err = Set(cfg)
-		SetDefaultDeployer(cfg)
 
 		t.CheckNoError(err)
 
@@ -222,14 +219,12 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		}
 
 		err = Set(cfg)
-		SetDefaultDeployer(cfg)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(path, cfg.Build.Cluster.PullSecretMountPath)
 
 		// default docker config
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latestV2.DockerConfig{}
 		err = Set(cfg)
-		SetDefaultDeployer(cfg)
 
 		t.CheckNoError(err)
 
@@ -238,7 +233,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 			Path: "/path",
 		}
 		err = Set(cfg)
-		SetDefaultDeployer(cfg)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
@@ -248,7 +242,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 			SecretName: "secret",
 		}
 		err = Set(cfg)
-		SetDefaultDeployer(cfg)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("secret", cfg.Build.Cluster.DockerConfig.SecretName)
@@ -278,7 +271,6 @@ func TestCustomBuildWithCluster(t *testing.T) {
 	}
 
 	err := Set(cfg)
-	SetDefaultDeployer(cfg)
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, (*latestV2.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
@@ -299,7 +291,6 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	}
 
 	err := Set(cfg)
-	SetDefaultDeployer(cfg)
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, defaultCloudBuildDockerImage, cfg.Build.GoogleCloudBuild.DockerImage)
@@ -314,11 +305,9 @@ func TestSetDefaultsOnLocalBuild(t *testing.T) {
 
 	err := Set(cfg1)
 	testutil.CheckError(t, false, err)
-	SetDefaultDeployer(cfg1)
 	testutil.CheckDeepEqual(t, latestV2.LocalBuild{}, *cfg1.Build.LocalBuild)
 	err = Set(cfg2)
 	testutil.CheckError(t, false, err)
-	SetDefaultDeployer(cfg2)
 	testutil.CheckDeepEqual(t, 1, *cfg2.Build.LocalBuild.Concurrency)
 }
 
@@ -339,7 +328,6 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 		},
 	}
 	err := Set(cfg)
-	SetDefaultDeployer(cfg)
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, 8080, cfg.PortForward[0].LocalPort)
 	testutil.CheckDeepEqual(t, 9000, cfg.PortForward[1].LocalPort)
@@ -373,7 +361,6 @@ func TestSetDefaultPortForwardAddress(t *testing.T) {
 		},
 	}
 	err := Set(cfg)
-	SetDefaultDeployer(cfg)
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, "0.0.0.0", cfg.PortForward[0].Address)
 	testutil.CheckDeepEqual(t, constants.DefaultPortForwardAddress, cfg.PortForward[1].Address)
@@ -390,52 +377,7 @@ func TestSetDefaultDeployer(t *testing.T) {
 			cfg:         &latestV2.SkaffoldConfig{},
 			expected: latestV2.DeployConfig{
 				DeployType: latestV2.DeployType{
-					KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"k8s/*.yaml"}},
-				},
-			},
-		},
-		{
-			description: "existing kubectl definition with local manifests",
-			cfg: &latestV2.SkaffoldConfig{
-				Pipeline: latestV2.Pipeline{
-					Deploy: latestV2.DeployConfig{DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"foo.yaml"}},
-					}},
-				},
-			},
-			expected: latestV2.DeployConfig{
-				DeployType: latestV2.DeployType{
-					KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"foo.yaml"}},
-				},
-			},
-		},
-		{
-			description: "existing kubectl definition with remote manifests",
-			cfg: &latestV2.SkaffoldConfig{
-				Pipeline: latestV2.Pipeline{
-					Deploy: latestV2.DeployConfig{DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
-					}},
-				},
-			},
-			expected: latestV2.DeployConfig{
-				DeployType: latestV2.DeployType{
-					KubectlDeploy: &latestV2.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
-				},
-			},
-		},
-		{
-			description: "existing helm definition",
-			cfg: &latestV2.SkaffoldConfig{
-				Pipeline: latestV2.Pipeline{
-					Deploy: latestV2.DeployConfig{DeployType: latestV2.DeployType{
-						HelmDeploy: &latestV2.HelmDeploy{Releases: []latestV2.HelmRelease{{ChartPath: "foo"}}},
-					}},
-				},
-			},
-			expected: latestV2.DeployConfig{
-				DeployType: latestV2.DeployType{
-					HelmDeploy: &latestV2.HelmDeploy{Releases: []latestV2.HelmRelease{{ChartPath: "foo"}}},
+					KubectlDeploy: &latestV2.KubectlDeploy{},
 				},
 			},
 		},
@@ -482,9 +424,91 @@ func TestSetLogsConfig(t *testing.T) {
 			}
 
 			err := Set(&cfg)
-			SetDefaultDeployer(&cfg)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, cfg.Deploy.Logs)
+		})
+	}
+}
+
+func TestSetDefaultRenderer(t *testing.T) {
+	tests := []struct {
+		description string
+		input       latestV2.RenderConfig
+		expected    latestV2.RenderConfig
+	}{
+		{
+			description: "default to rawYaml",
+			input:       latestV2.RenderConfig{},
+			expected: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					RawK8s: []string{"k8s/*.yaml"},
+				},
+			},
+		},
+		{
+			description: "kustomize manifests",
+			input: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Kustomize: []string{"/kmanifests"},
+				},
+			},
+			expected: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Kustomize: []string{"/kmanifests"},
+				},
+			},
+		},
+		{
+			description: "kpt manifests",
+			input: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Kpt: []string{"/kmanifests"},
+				},
+			},
+			expected: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Kpt: []string{"/kmanifests"},
+				},
+			},
+		},
+		{
+			description: "helm manifests",
+			input: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Helm: latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
+				},
+			},
+			expected: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Helm: latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
+				},
+			},
+		},
+		{
+			description: "multi manifests",
+			input: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Kpt:       []string{"/kmanifests1"},
+					Kustomize: []string{"/kmanifests2"},
+					Helm:      latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
+				},
+			},
+			expected: latestV2.RenderConfig{
+				Generate: latestV2.Generate{
+					Kpt:       []string{"/kmanifests1"},
+					Kustomize: []string{"/kmanifests2"},
+					Helm:      latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := latestV2.SkaffoldConfig{
+				Pipeline: latestV2.Pipeline{Render: test.input},
+			}
+			SetDefaultRenderer(&cfg)
+			t.CheckDeepEqual(test.expected, cfg.Render)
 		})
 	}
 }

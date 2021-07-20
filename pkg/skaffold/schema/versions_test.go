@@ -417,7 +417,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				}
 
 				err := defaults.Set(cfg.(*latestV2.SkaffoldConfig))
-				defaults.SetDefaultDeployer(cfg.(*latestV2.SkaffoldConfig))
 				t.CheckNoError(err)
 			}
 

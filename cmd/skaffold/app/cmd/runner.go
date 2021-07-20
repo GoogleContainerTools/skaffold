@@ -77,7 +77,6 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 	if err != nil {
 		return nil, nil, err
 	}
-	setDefaultDeployer(cfgSet)
 
 	if err := validation.Process(cfgSet, validation.GetValidationOpts(opts)); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
@@ -102,6 +101,11 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error)) (parser.SkaffoldConfigSet, error) {
 	configs, err := getCfgs(opts)
 	if err == nil {
+		// do not set a default deployer in a multi-config application.
+		if len(configs) == 1 {
+			defaults.SetDefaultRenderer(configs[0].SkaffoldConfig)
+			defaults.SetDefaultDeployer(configs[0].SkaffoldConfig)
+		}
 		return configs, nil
 	}
 	var e sErrors.Error
@@ -131,15 +135,6 @@ func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func
 	// the configuration.
 	warnIfUpdateIsAvailable()
 	return nil, fmt.Errorf("parsing skaffold config: %w", err)
-}
-
-func setDefaultDeployer(configs parser.SkaffoldConfigSet) {
-	// do not set a default deployer in a multi-config application.
-	if len(configs) > 1 {
-		return
-	}
-	// there always exists at least one config
-	defaults.SetDefaultDeployer(configs[0].SkaffoldConfig)
 }
 
 func warnIfUpdateIsAvailable() {
