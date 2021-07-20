@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -42,12 +43,21 @@ type SkaffoldRunner struct {
 
 	kubectlCLI         *kubectl.CLI
 	cache              cache.Cache
+	changeSet          runner.ChangeSet
 	runCtx             *runcontext.RunContext
 	labeller           *label.DefaultLabeller
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
-	intents            *runner.Intents
-	isLocalImage       func(imageName string) (bool, error)
+	// podSelector is used to determine relevant pods for logging and portForwarding
+	podSelector kubernetes.ImageListMux
+
+	devIteration int
+	isLocalImage func(imageName string) (bool, error)
+	hasDeployed  bool
+	intents      *runner.Intents
 }
 
-func (r *SkaffoldRunner) HasDeployed() bool { return true }
+// HasDeployed returns true if this runner has deployed something.
+func (r *SkaffoldRunner) HasDeployed() bool {
+	return r.hasDeployed
+}
