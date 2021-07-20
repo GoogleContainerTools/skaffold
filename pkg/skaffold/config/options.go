@@ -70,8 +70,8 @@ type SkaffoldOptions struct {
 	DetectMinikube    bool
 	// Experimental is the entrypoint to run skaffold v3 before it's fully implemented.
 	Experimental         bool
-	StatusCheck          BoolOrUndefined
 	IterativeStatusCheck bool
+	StatusCheck          BoolOrUndefined
 
 	PortForward        PortForwardOptions
 	CustomTag          string
@@ -99,6 +99,7 @@ type SkaffoldOptions struct {
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile  string
 	RepoCacheDir     string
+	SyncRemoteCache  SyncRemoteCacheOption
 	WaitForDeletions WaitForDeletions
 }
 

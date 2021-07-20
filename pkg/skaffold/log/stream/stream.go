@@ -21,23 +21,19 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 
 	"github.com/sirupsen/logrus"
 
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 )
 
 //nolint:golint
-func StreamRequest(ctx context.Context, out io.Writer, headerColor output.Color, prefix, podName, containerName string, stopper chan bool, lock sync.Locker, isMuted func() bool, rc io.Reader) error {
+func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Infof("%s interrupted", prefix)
-			return nil
-		case <-stopper:
+			logrus.Infof("%s interrupted", formatter.Name())
 			return nil
 		default:
 			// Read up to newline
@@ -49,20 +45,7 @@ func StreamRequest(ctx context.Context, out io.Writer, headerColor output.Color,
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
 
-			formattedLine := headerColor.Sprintf("%s ", prefix) + line
-			printLogLine(headerColor, out, isMuted, lock, prefix, line)
-			eventV2.ApplicationLog(podName, containerName, line, formattedLine)
+			formatter.PrintLine(out, line)
 		}
-	}
-}
-
-func printLogLine(headerColor output.Color, out io.Writer, isMuted func() bool, lock sync.Locker, prefix, text string) {
-	if !isMuted() {
-		lock.Lock()
-
-		headerColor.Fprintf(out, "%s ", prefix)
-		fmt.Fprint(out, text)
-
-		lock.Unlock()
 	}
 }

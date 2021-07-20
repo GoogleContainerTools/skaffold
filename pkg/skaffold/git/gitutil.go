@@ -131,6 +131,9 @@ func syncRepo(g latestV1.GitInfo, opts config.SkaffoldOptions) (string, error) {
 	}
 	repoCacheDir := filepath.Join(skaffoldCacheDir, hash)
 	if _, err := os.Stat(repoCacheDir); os.IsNotExist(err) {
+		if opts.SyncRemoteCache.CloneDisabled() {
+			return "", SyncDisabledErr(g, repoCacheDir)
+		}
 		if _, err := r.Run("clone", g.Repo, hash, "--branch", ref, "--depth", "1"); err != nil {
 			return "", fmt.Errorf("failed to clone repo: %w", err)
 		}
@@ -145,6 +148,11 @@ func syncRepo(g latestV1.GitInfo, opts config.SkaffoldOptions) (string, error) {
 
 		// if sync property is false, then skip fetching latest from remote and resetting the branch.
 		if g.Sync != nil && !*g.Sync {
+			return repoCacheDir, nil
+		}
+
+		// if sync is turned off via flag `--sync-remote-cache`, then skip fetching latest from remote and resetting the branch.
+		if opts.SyncRemoteCache.FetchDisabled() {
 			return repoCacheDir, nil
 		}
 

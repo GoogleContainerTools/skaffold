@@ -69,7 +69,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 	defer r.deployer.GetStatusMonitor().Reset()
 
-	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone, "skaffold")
+	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
 
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
@@ -131,11 +131,14 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployComplete()
-	eventV2.TaskSucceeded(constants.Deploy)
 	if !r.runCtx.Opts.IterativeStatusCheck {
 		// run final aggregated status check only if iterative status check is turned off.
-		return r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut)
+		if err = r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut); err != nil {
+			eventV2.TaskFailed(constants.Deploy, err)
+			return err
+		}
 	}
+	eventV2.TaskSucceeded(constants.Deploy)
 	return nil
 }
 

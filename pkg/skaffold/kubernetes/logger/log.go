@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
 // LogAggregator aggregates the logs for all the deployed pods.
@@ -43,14 +42,13 @@ type LogAggregator struct {
 	config      Config
 	podSelector kubernetes.PodSelector
 	podWatcher  kubernetes.PodWatcher
-	colorPicker kubernetes.ColorPicker
+	colorPicker output.ColorPicker
 
 	muted             int32
 	stopWatcher       func()
 	sinceTime         time.Time
 	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
-	outputLock        sync.Mutex
 	namespaces        *[]string
 }
 
@@ -67,7 +65,7 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, name
 		config:      config,
 		podSelector: podSelector,
 		podWatcher:  kubernetes.NewPodWatcher(podSelector),
-		colorPicker: kubernetes.NewColorPicker(),
+		colorPicker: output.NewColorPicker(),
 		stopWatcher: func() {},
 		events:      make(chan kubernetes.PodEvent),
 		namespaces:  namespaces,
@@ -77,7 +75,9 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, name
 // RegisterArtifacts tracks the provided build artifacts in the colorpicker
 func (a *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
 	// image tags are added to the podSelector by the deployer, which are picked up by the podWatcher
-	// we just need to make sure the colorPicker knows about them.
+	// we just need to make sure the colorPicker knows about the base images.
+	// artifact.ImageName does not have a default repo substitution applied to it, so we use artifact.Tag.
+	// TODO(nkubala) [07/15/22]: can we apply default repo to artifact.Image and avoid stripping tags?
 	for _, artifact := range artifacts {
 		a.colorPicker.AddImage(artifact.Tag)
 	}
@@ -183,54 +183,10 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 		_ = tw.Close()
 	}()
 
-	headerColor := a.colorPicker.Pick(pod)
-	prefix := a.prefix(pod, container)
-	if err := stream.StreamRequest(ctx, a.output, headerColor, prefix, pod.Name, container.Name, make(chan bool), &a.outputLock, a.IsMuted, tr); err != nil {
+	formatter := NewKubernetesLogFormatter(a.config, a.colorPicker, a.IsMuted, pod, container)
+	if err := stream.StreamRequest(ctx, a.output, formatter, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
-}
-
-func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	var c latestV1.Pipeline
-	var present bool
-	for _, container := range pod.Spec.Containers {
-		if c, present = a.config.PipelineForImage(tag.StripTag(container.Image, false)); present {
-			break
-		}
-	}
-	if !present {
-		c = a.config.DefaultPipeline()
-	}
-	switch c.Deploy.Logs.Prefix {
-	case "auto":
-		if pod.Name != container.Name {
-			return podAndContainerPrefix(pod, container)
-		}
-		return autoPrefix(pod, container)
-	case "container":
-		return containerPrefix(container)
-	case "podAndContainer":
-		return podAndContainerPrefix(pod, container)
-	case "none":
-		return ""
-	default:
-		panic("unsupported prefix: " + c.Deploy.Logs.Prefix)
-	}
-}
-
-func autoPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	if pod.Name != container.Name {
-		return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
-	}
-	return fmt.Sprintf("[%s]", container.Name)
-}
-
-func containerPrefix(container v1.ContainerStatus) string {
-	return fmt.Sprintf("[%s]", container.Name)
-}
-
-func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 }
 
 // Mute mutes the logs.
@@ -267,12 +223,12 @@ type trackedContainers struct {
 // was already tracked.
 func (t *trackedContainers) add(id string) bool {
 	t.Lock()
+	defer t.Unlock()
 	alreadyTracked := t.ids[id]
 	if t.ids == nil {
 		t.ids = map[string]bool{}
 	}
 	t.ids[id] = true
-	t.Unlock()
 
 	return alreadyTracked
 }

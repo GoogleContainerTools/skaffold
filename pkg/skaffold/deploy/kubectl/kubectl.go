@@ -91,7 +91,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.Kubect
 
 	podSelector := kubernetes.NewImageList()
 	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
-	namespaces := []string{}
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
+	}
 
 	return &Deployer{
 		KubectlDeploy:      d,

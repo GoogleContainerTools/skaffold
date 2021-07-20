@@ -147,7 +147,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 
 	podSelector := kubernetes.NewImageList()
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
-	namespaces := []string{}
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
+	}
 
 	return &Deployer{
 		HelmDeploy:     h,

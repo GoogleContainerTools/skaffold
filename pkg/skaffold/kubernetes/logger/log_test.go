@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -104,70 +103,6 @@ func TestLogAggregatorZeroValue(t *testing.T) {
 	m.Stop()
 }
 
-func TestPrefix(t *testing.T) {
-	tests := []struct {
-		description    string
-		prefix         string
-		pod            v1.Pod
-		container      v1.ContainerStatus
-		expectedPrefix string
-	}{
-		{
-			description:    "auto (different names)",
-			prefix:         "auto",
-			pod:            podWithName("pod"),
-			container:      containerWithName("container"),
-			expectedPrefix: "[pod container]",
-		},
-		{
-			description:    "auto (same names)",
-			prefix:         "auto",
-			pod:            podWithName("hello"),
-			container:      containerWithName("hello"),
-			expectedPrefix: "[hello]",
-		},
-		{
-			description:    "container",
-			prefix:         "container",
-			pod:            podWithName("pod"),
-			container:      containerWithName("container"),
-			expectedPrefix: "[container]",
-		},
-		{
-			description:    "podAndContainer (different names)",
-			prefix:         "podAndContainer",
-			pod:            podWithName("pod"),
-			container:      containerWithName("container"),
-			expectedPrefix: "[pod container]",
-		},
-		{
-			description:    "podAndContainer (same names)",
-			prefix:         "podAndContainer",
-			pod:            podWithName("hello"),
-			container:      containerWithName("hello"),
-			expectedPrefix: "[hello hello]",
-		},
-		{
-			description:    "none",
-			prefix:         "none",
-			pod:            podWithName("hello"),
-			container:      containerWithName("hello"),
-			expectedPrefix: "",
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			logger := NewLogAggregator(nil, nil, nil, &mockConfig{log: latestV1.LogsConfig{
-				Prefix: test.prefix,
-			}})
-
-			p := logger.prefix(&test.pod, test.container)
-
-			t.CheckDeepEqual(test.expectedPrefix, p)
-		})
-	}
-}
-
 func podWithName(n string) v1.Pod {
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -180,24 +115,4 @@ func containerWithName(n string) v1.ContainerStatus {
 	return v1.ContainerStatus{
 		Name: n,
 	}
-}
-
-type mockConfig struct {
-	log latestV1.LogsConfig
-}
-
-func (c *mockConfig) Tail() bool {
-	return true
-}
-
-func (c *mockConfig) PipelineForImage(string) (latestV1.Pipeline, bool) {
-	var pipeline latestV1.Pipeline
-	pipeline.Deploy.Logs = c.log
-	return pipeline, true
-}
-
-func (c *mockConfig) DefaultPipeline() latestV1.Pipeline {
-	var pipeline latestV1.Pipeline
-	pipeline.Deploy.Logs = c.log
-	return pipeline
 }

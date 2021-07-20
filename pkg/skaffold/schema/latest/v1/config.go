@@ -870,7 +870,7 @@ type Artifact struct {
 	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
-	LifecycleHooks BuildHooks `yaml:"-"`
+	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -893,7 +893,7 @@ type Sync struct {
 	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers.
-	LifecycleHooks SyncHooks `yaml:"-"`
+	LifecycleHooks SyncHooks `yaml:"hooks,omitempty"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -1211,6 +1211,9 @@ type KanikoArtifact struct {
 
 	// SnapshotMode is how Kaniko will snapshot the filesystem.
 	SnapshotMode string `yaml:"snapshotMode,omitempty"`
+
+	// PushRetry Set this flag to the number of retries that should happen for the push of an image to a remote destination.
+	PushRetry string `yaml:"pushRetry,omitempty"`
 
 	// TarPath is path to save the image as a tarball at path instead of pushing the image.
 	TarPath string `yaml:"tarPath,omitempty"`
