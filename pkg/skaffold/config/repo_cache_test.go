@@ -13,44 +13,48 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package transform
+
+package config
 
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestNewTransformer(t *testing.T) {
+func TestSyncRemoteCacheOption(t *testing.T) {
 	tests := []struct {
 		description string
-		config      []latestV2.Transformer
+		option      string
+		shouldErr   bool
+		clone       bool
+		pull        bool
 	}{
 		{
-			description: "no transform",
-			config:      []latestV2.Transformer{},
+			description: "always",
+			option:      "always",
+			clone:       true,
+			pull:        true,
 		},
 		{
-			description: "set-labels",
-			config: []latestV2.Transformer{
-				{Name: "set-labels", ConfigMap: []string{"owner:skaffold-test"}},
-			},
+			description: "missing",
+			option:      "missing",
+			clone:       true,
+			pull:        false,
+		},
+		{
+			description: "never",
+			option:      "never",
+			clone:       false,
+			pull:        false,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := NewTransformer(test.config)
-			t.CheckNoError(err)
+			opt := &SyncRemoteCacheOption{}
+			err := opt.Set(test.option)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, !test.clone, opt.CloneDisabled())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, !test.pull, opt.FetchDisabled())
 		})
 	}
-}
-
-func TestNewValidator_Error(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		_, err := NewTransformer([]latestV2.Transformer{
-			{Name: "bad-transformer"},
-		})
-		t.CheckContains(`unsupported transformer "bad-transformer". please only use the`, err.Error())
-	})
 }

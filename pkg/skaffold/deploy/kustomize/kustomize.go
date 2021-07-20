@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 
 	"github.com/segmentio/textio"
+	"github.com/sirupsen/logrus"
 	yamlv3 "gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -139,7 +140,10 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV
 	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	podSelector := kubernetes.NewImageList()
-	namespaces := []string{}
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
+	}
 
 	return &Deployer{
 		KustomizeDeploy:     d,
