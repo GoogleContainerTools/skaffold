@@ -58,12 +58,14 @@ func (ev *eventHandler) handleSkaffoldLogEvent(e *proto.SkaffoldLogEvent) {
 	})
 }
 
+// logHook is an implementation of logrus.Hook used to send SkaffoldLogEvents
 type logHook struct{}
 
 func NewLogHook() logrus.Hook {
 	return logHook{}
 }
 
+// Levels returns all levels as we want to send events for all levels
 func (h logHook) Levels() []logrus.Level {
 	return []logrus.Level{
 		logrus.PanicLevel,
@@ -75,6 +77,7 @@ func (h logHook) Levels() []logrus.Level {
 	}
 }
 
+// Fire constructs a SkaffoldLogEvent and sends it to the event channel
 func (h logHook) Fire(entry *logrus.Entry) error {
 	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 		Level:   levelFromEntry(entry),
