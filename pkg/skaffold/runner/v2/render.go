@@ -17,12 +17,29 @@ package v2
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).Dev")
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
+	if err := r.renderer.Render(ctx, out, builds, offline, filepath); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
+}
+
+func getRenderConfig(runCtx *runcontext.RunContext) *latestV2.RenderConfig {
+	p := runCtx.GetPipelines()
+	if len(p) > 0 {
+		// TODO: support multi-config
+		return &p[0].Render
+	}
+	return &latestV2.RenderConfig{}
 }

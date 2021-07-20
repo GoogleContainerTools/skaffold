@@ -371,6 +371,10 @@ enum StatusCode {
     DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR = 1023;
     // The Kptfile cannot be created via `kpt live init`.
     DEPLOY_KPTFILE_INIT_ERR = 1024;
+    // The `kpt fn source` cannot read the given manifests.
+    DEPLOY_KPT_SOURCE_ERR = 1025;
+    // The Kptfile exists but cannot be opened or parsed.
+    DEPLOY_KPTFILE_INVALID_YAML_ERR = 1026;
 
     // Test errors
 
@@ -499,8 +503,6 @@ enum SuggestionCode {
     // Set Cleanup flag for skaffold command.
     SET_CLEANUP_FLAG = 116;
 
-
-
     // Deploy error suggestion codes
 
     // Check cluster connection
@@ -517,6 +519,8 @@ enum SuggestionCode {
     UPGRADE_HELM32 = 206;
     // Set `releases.createNamespace` to false.
     FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE = 207;
+    // Set `releases.createNamespace` to false.
+    INVALID_KPT_MANIFESTS = 208;
 
     // Install kubectl tool
     INSTALL_KUBECTL = 220;
