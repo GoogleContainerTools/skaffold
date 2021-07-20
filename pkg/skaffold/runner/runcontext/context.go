@@ -152,6 +152,7 @@ func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc
 func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
+func (rc *RunContext) GetNamespace() string                          { return rc.Opts.Namespace }
 func (rc *RunContext) AddSkaffoldLabels() bool                       { return rc.Opts.AddSkaffoldLabels }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
