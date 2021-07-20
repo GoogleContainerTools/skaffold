@@ -17,14 +17,8 @@ limitations under the License.
 package v2
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -94,26 +88,4 @@ func TestRunContext_UpdateNamespaces(t *testing.T) {
 			t.CheckDeepEqual(test.expected, runCtx.Namespaces)
 		})
 	}
-}
-
-func TestGetRunContextDefaultWorkdir(t *testing.T) {
-	testutil.Run(t, "default workdir", func(t *testutil.T) {
-		rctx, err := GetRunContext(config.SkaffoldOptions{}, []*latestV2.SkaffoldConfig{})
-		pwd, _ := os.Getwd()
-		t.CheckDeepEqual(pwd, rctx.WorkingDir)
-		t.CheckNoError(err)
-	})
-}
-
-func TestGetRunContextCustomWorkdir(t *testing.T) {
-	testutil.Run(t, "default workdir", func(t *testutil.T) {
-		tmpDir := t.NewTempDir()
-		tmpDir.Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config", latestV1.Version)).
-			Chdir()
-		rctx, err := GetRunContext(config.SkaffoldOptions{
-			ConfigurationFile: filepath.Join(tmpDir.Root(), "skaffold.yaml"),
-		}, []*latestV2.SkaffoldConfig{})
-		t.CheckDeepEqual(tmpDir.Root(), rctx.WorkingDir)
-		t.CheckNoError(err)
-	})
 }

@@ -19,7 +19,6 @@ package v2
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -213,14 +212,10 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV2.SkaffoldConf
 	kubeContext := kubeConfig.CurrentContext
 	logrus.Infof("Using kubectl context: %s", kubeContext)
 
-	var cwd string
-	if opts.ConfigurationFile == "" {
-		cwd, err = os.Getwd()
-		if err != nil {
-			return nil, fmt.Errorf("finding current directory: %w", err)
-		}
-	} else {
-		cwd = filepath.Dir(opts.ConfigurationFile)
+	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
 	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, pipelines)
