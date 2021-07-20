@@ -861,6 +861,7 @@ Enum indicating the log level of a line of output
 | ERROR | 3 | Error Level |
 | FATAL | 4 | Fatal Level |
 | PANIC | 5 | Panic Level |
+| TRACE | 6 | Trace Level |
 
 
 
