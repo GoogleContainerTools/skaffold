@@ -29,119 +29,129 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+// Note: `custom-buildx` is not included as it depends on having a
+// `skaffold-builder` builder configured and a registry to push to.
+var tests = []struct {
+	description string
+	dir         string
+	args        []string
+	deployments []string
+	pods        []string
+	env         []string
+	targetLog   string
+}{
+	{
+		description: "getting-started",
+		dir:         "examples/getting-started",
+		pods:        []string{"getting-started"},
+		targetLog:   "Hello world!",
+	},
+	{
+		description: "nodejs",
+		dir:         "examples/nodejs",
+		deployments: []string{"node"},
+		targetLog:   "Example app listening on port",
+	},
+	{
+		description: "structure-tests",
+		dir:         "examples/structure-tests",
+		pods:        []string{"getting-started"},
+	},
+	{
+		description: "custom-tests",
+		dir:         "examples/custom-tests",
+		pods:        []string{"custom-test"},
+	},
+	{
+		description: "microservices",
+		dir:         "examples/microservices",
+		// See https://github.com/GoogleContainerTools/skaffold/issues/2372
+		args:        []string{"--status-check=false"},
+		deployments: []string{"leeroy-app", "leeroy-web"},
+	},
+	{
+		description: "multi-config-microservices",
+		dir:         "examples/multi-config-microservices",
+		deployments: []string{"leeroy-app", "leeroy-web"},
+	},
+	{
+		description: "remote-multi-config-microservices",
+		dir:         "examples/remote-multi-config-microservices",
+		deployments: []string{"leeroy-app", "leeroy-web"},
+	},
+	{
+		description: "envTagger",
+		dir:         "examples/tagging-with-environment-variables",
+		pods:        []string{"getting-started"},
+		env:         []string{"FOO=foo"},
+	},
+	{
+		description: "bazel",
+		dir:         "examples/bazel",
+		pods:        []string{"bazel"},
+	},
+	{
+		description: "jib",
+		dir:         "testdata/jib",
+		deployments: []string{"web"},
+	},
+	{
+		description: "jib gradle",
+		dir:         "examples/jib-gradle",
+		deployments: []string{"web"},
+	},
+	{
+		description: "profiles",
+		dir:         "examples/profiles",
+		args:        []string{"-p", "minikube-profile"},
+		pods:        []string{"hello-service"},
+	},
+	{
+		description: "multiple deployers",
+		dir:         "testdata/deploy-multiple",
+		pods:        []string{"deploy-kubectl", "deploy-kustomize"},
+	},
+	{
+		description: "custom builder",
+		dir:         "examples/custom",
+		pods:        []string{"getting-started"},
+	},
+	{
+		description: "buildpacks Go",
+		dir:         "examples/buildpacks",
+		deployments: []string{"web"},
+	},
+	{
+		description: "buildpacks NodeJS",
+		dir:         "examples/buildpacks-node",
+		deployments: []string{"web"},
+	},
+	{
+		description: "buildpacks Python",
+		dir:         "examples/buildpacks-python",
+		deployments: []string{"web"},
+	},
+	{
+		description: "buildpacks Java",
+		dir:         "examples/buildpacks-java",
+		deployments: []string{"web"},
+	},
+	{
+		description: "kustomize",
+		dir:         "examples/getting-started-kustomize",
+		deployments: []string{"skaffold-kustomize-dev"},
+		targetLog:   "Hello world!",
+	},
+	{
+		description: "helm",
+		dir:         "examples/helm-deployment",
+		deployments: []string{"skaffold-helm"},
+		targetLog:   "Hello world!",
+	},
+}
+
 func TestRun(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-
-	// Note: `custom-buildx` is not included as it depends on having a
-	// `skaffold-builder` builder configured and a registry to push to.
-	tests := []struct {
-		description string
-		dir         string
-		args        []string
-		deployments []string
-		pods        []string
-		env         []string
-	}{
-		{
-			description: "getting-started",
-			dir:         "examples/getting-started",
-			pods:        []string{"getting-started"},
-		},
-		{
-			description: "nodejs",
-			dir:         "examples/nodejs",
-			deployments: []string{"node"},
-		},
-		{
-			description: "structure-tests",
-			dir:         "examples/structure-tests",
-			pods:        []string{"getting-started"},
-		},
-		{
-			description: "custom-tests",
-			dir:         "examples/custom-tests",
-			pods:        []string{"custom-test"},
-		},
-		{
-			description: "microservices",
-			dir:         "examples/microservices",
-			// See https://github.com/GoogleContainerTools/skaffold/issues/2372
-			args:        []string{"--status-check=false"},
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		},
-		{
-			description: "multi-config-microservices",
-			dir:         "examples/multi-config-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		},
-		{
-			description: "remote-multi-config-microservices",
-			dir:         "examples/remote-multi-config-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		},
-		{
-			description: "envTagger",
-			dir:         "examples/tagging-with-environment-variables",
-			pods:        []string{"getting-started"},
-			env:         []string{"FOO=foo"},
-		},
-		{
-			description: "bazel",
-			dir:         "examples/bazel",
-			pods:        []string{"bazel"},
-		},
-		{
-			description: "jib",
-			dir:         "testdata/jib",
-			deployments: []string{"web"},
-		},
-		{
-			description: "jib gradle",
-			dir:         "examples/jib-gradle",
-			deployments: []string{"web"},
-		},
-		{
-			description: "profiles",
-			dir:         "examples/profiles",
-			args:        []string{"-p", "minikube-profile"},
-			pods:        []string{"hello-service"},
-		},
-		{
-			description: "multiple deployers",
-			dir:         "testdata/deploy-multiple",
-			pods:        []string{"deploy-kubectl", "deploy-kustomize"},
-		},
-		{
-			description: "custom builder",
-			dir:         "examples/custom",
-			pods:        []string{"getting-started"},
-		},
-		{
-			description: "buildpacks Go",
-			dir:         "examples/buildpacks",
-			deployments: []string{"web"},
-		},
-		{
-			description: "buildpacks NodeJS",
-			dir:         "examples/buildpacks-node",
-			deployments: []string{"web"},
-		},
-		{
-			description: "buildpacks Python",
-			dir:         "examples/buildpacks-python",
-			deployments: []string{"web"},
-		},
-		{
-			description: "buildpacks Java",
-			dir:         "examples/buildpacks-java",
-			deployments: []string{"web"},
-		},
-		{
-			description: "kustomize",
-			dir:         "examples/getting-started-kustomize",
-			deployments: []string{"skaffold-kustomize-dev"},
-		},
-	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
@@ -153,6 +163,45 @@ func TestRun(t *testing.T) {
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+		})
+	}
+}
+
+func TestRunTail(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if test.targetLog == "" {
+				t.SkipNow()
+			}
+			ns, _ := SetupNamespace(t)
+
+			args := append(test.args, "--tail")
+			out := skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunLive(t)
+
+			WaitForLogs(t, out, test.targetLog)
+
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+		})
+	}
+}
+
+func TestRunTailDefaultNamespace(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if test.targetLog == "" {
+				t.SkipNow()
+			}
+
+			args := append(test.args, "--tail")
+			out := skaffold.Run(args...).InDir(test.dir).WithEnv(test.env).RunLive(t)
+
+			WaitForLogs(t, out, test.targetLog)
+
+			skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
 		})
 	}
 }
