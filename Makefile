@@ -312,3 +312,8 @@ flags-dashboard:
 
 $(STATIK_FILES): go.mod docs/content/en/schemas/*
 	hack/generate-statik.sh
+
+# run comparisonstats
+.PHONY: comparisonstats
+comparisonstats:
+	go run hack/comparisonstats/main.go $(COMPARISONSTATS_ARGS)

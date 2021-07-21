@@ -1,0 +1,5 @@
+/run-performance-comparison
+exampleAppName: helm-deployment
+exampleSrcFile: main.go
+commentText: //-aprindle-test-comment
+devIterations: 2
