@@ -19,11 +19,13 @@ package v2
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -197,6 +199,35 @@ func (rc *RunContext) WatchPollInterval() int                        { return rc
 func (rc *RunContext) BuildConcurrency() int                         { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
+
+// GetRenderOutputPath points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
+func (rc *RunContext) GetRenderOutputPath() (string, error) {
+	var hydratedDir string
+	var err error
+	if rc.Opts.RenderOutput == "" {
+		// Workdir is set to pwd and shall always exist.
+		hydratedDir = filepath.Join(rc.WorkingDir, constants.DefaultHydrationDir)
+	} else if hydratedDir, err = filepath.Abs(rc.Opts.RenderOutput); err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(hydratedDir); os.IsNotExist(err) {
+		logrus.Infof("render output path does not exist, creating %v\n", hydratedDir)
+		if err := os.MkdirAll(hydratedDir, os.ModePerm); err != nil {
+			return "", err
+		}
+	}
+	return hydratedDir, nil
+}
+
+// GetRenderConfig returns the top tier RenderConfig.
+// TODO: design how to support multi-module.
+func (rc *RunContext) GetRenderConfig() *latestV2.RenderConfig {
+	p := rc.GetPipelines()
+	if len(p) > 0 {
+		return &p[0].Render
+	}
+	return &latestV2.RenderConfig{}
+}
 
 func GetRunContext(opts config.SkaffoldOptions, configs []*latestV2.SkaffoldConfig) (*RunContext, error) {
 	var pipelines []latestV2.Pipeline

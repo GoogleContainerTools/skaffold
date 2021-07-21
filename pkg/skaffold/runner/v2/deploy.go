@@ -68,10 +68,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 }
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	if r.runCtx.RenderOnly() {
-		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
-	}
-
 	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone, "skaffold")
 
 	output.Default.Fprintln(out, "Tags used in deployment:")

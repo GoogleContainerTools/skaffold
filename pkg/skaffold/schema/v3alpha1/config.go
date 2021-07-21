@@ -550,7 +550,7 @@ type Validator struct {
 type KptV2Deploy struct {
 
 	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold renders the raw manifests
-	// and store them to a a hidden directory `.kpt-hydrated`, and deploys the hidden directory.
+	// and store them to a a hidden directory `.kpt-pipeline`, and deploys the hidden directory.
 	Dir string `yaml:"dir,omitempty"`
 
 	// Flags are additional flags passed to `kpt live apply`.
@@ -608,10 +608,6 @@ type DeployType struct {
 
 	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
 	KptV2Deploy *KptV2Deploy `yaml:"kptV2,omitempty"`
-
-	// KubectlV2Deploy *alpha* uses a client side `kubectl apply` to deploy manifests.
-	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
-	KubectlV2Deploy *KubectlV2Deploy `yaml:"kubectl,omitempty"`
 }
 
 type KubectlV2Deploy struct {
