@@ -1,0 +1,10 @@
+**Copy paste the msg below into a new comment and 'Comment' to trigger a run-comparisonstats job:**
+/run-comparisonstats
+exampleAppName: helm-deployment # helm-deployment, microservices, etc.
+exampleSrcFile: main.go # main.go, leeroy-app/app.go, etc.
+commentText: //per-dev-iteration-comment # go/js: //comment, python: #comment, etc.
+devIterations: 2 # number of dev iterations to run per binary
+\#mainBranchSkaffoldFlags: "--build-concurrency=0" # NOTE: only supports one flag
+\#thisPRSkaffoldFlags: "--build-concurrency=1" # NOTE: only supports one flag
+
+\#run-comparisonstats job adds a rocket emoji to your comment within ~30 seconds if kicked off successfully (refreshing might be required to see this)
