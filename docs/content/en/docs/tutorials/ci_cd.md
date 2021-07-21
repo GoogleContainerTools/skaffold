@@ -288,9 +288,9 @@ my-job:
           # Pass in all the environment variables to be passed to skaffold during build and deployment with all the args as documented in https://skaffold.dev/docs/references/cli/ (in our case our cluster context, env vars, namespace and some labels)
         - DOCKER_HOST="$DIND_DEV" NPM_REGISTRY="$NPM_REGISTRY_DEV" NPM_TOKEN="$NPM_TOKEN_DEV" skaffold run --kube-context $CLUSTER_DEV_CONTEXT -n default -l skaffold.dev/run-id=deploydep -p dev-svc --status-check
     only:
-        # Run this only for changes in the master branch
+        # Run this only for changes in the main branch
         refs:
-            - master
+            - main
 ```
 
 So, ultimately our Gitlab CI pipeline does not know anything about the helm charts or build strategy or any deployment methods and relies completely on skaffold to do the job for us.

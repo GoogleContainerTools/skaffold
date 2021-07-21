@@ -24,7 +24,7 @@ than 500MB.
 If there are multiple build configuration files, Skaffold will prompt you to pair your build configuration files
 with any images detected in your deploy configuration.
 
-E.g. For an application with [two microservices](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices):
+E.g. For an application with [two microservices](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/microservices):
 
 ```bash
 skaffold init
@@ -41,7 +41,7 @@ If this image is one you want Skaffold to build, you'll need to manually set up 
 `skaffold` init also recognizes Maven and Gradle projects, and will auto-suggest the [`jib`]({{<relref "/docs/pipeline-stages/builders#/local#jib-maven-and-gradle">}}) builder.
 Currently `jib` artifact detection is disabled by default, but can be enabled using the flag `--XXenableJibInit`.
 
-You can try this out on our example [jib project](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/jib-multimodule)
+You can try this out on our example [jib project](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/jib-multimodule)
 
 ```bash
 skaffold init --XXenableJibInit

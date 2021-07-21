@@ -34,14 +34,14 @@ We reprioritized these items for next year:
 
 ## Contributing
 
-See [Contributing Guide](https://github.com/GoogleContainerTools/skaffold/blob/master/CONTRIBUTING.md),
-[Developing Guide](https://github.com/GoogleContainerTools/skaffold/blob/master/DEVELOPMENT.md),
-and our [Code of Conduct](https://github.com/GoogleContainerTools/skaffold/blob/master/code-of-conduct.md)
+See [Contributing Guide](https://github.com/GoogleContainerTools/skaffold/blob/main/CONTRIBUTING.md),
+[Developing Guide](https://github.com/GoogleContainerTools/skaffold/blob/main/DEVELOPMENT.md),
+and our [Code of Conduct](https://github.com/GoogleContainerTools/skaffold/blob/main/code-of-conduct.md)
 on GitHub.
 
 ## Release Notes
 
-See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/master/CHANGELOG.md) on Github.
+See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/main/CHANGELOG.md) on Github.
 
 ## Community
 
@@ -51,8 +51,4 @@ You can join the Skaffold community and discuss the project at:
 * [Skaffold Topic on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
 * [Give us feedback](feedback)
 
-The Skaffold Project also holds a bi-weekly meeting at 9:30am PST on Google
-Hangouts. Everyone is welcome to add suggestions to the [Meeting Agenda](https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit)
-and [attend the meeting](https://hangouts.google.com/hangouts/_/google.com/skaffold).
-If you join the Skaffold Mailing List, a calendar invite will be sent to your Google
-Calendar.
+See our roadmap [in GitHub](https://github.com/GoogleContainerTools/skaffold/blob/main/ROADMAP.md).

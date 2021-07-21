@@ -16,7 +16,7 @@ To learn more about how to set up Skaffold and a Kubernetes cluster, see the [ge
 
 This tutorial will demonstrate how Skaffold can build a simple Hello World Go application with ko and deploy it to a Kubernetes cluster.
 
-First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [custom example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom) for sample code:
+First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [custom example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom) for sample code:
 
 ```shell
 $ git clone https://github.com/GoogleContainerTools/skaffold

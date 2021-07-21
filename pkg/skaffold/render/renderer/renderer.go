@@ -15,7 +15,7 @@ limitations under the License.
 */
 package renderer
 
-import (
+import .github/workflows/draft-release.yml(
 	"context"
 	"fmt"
 	"io"

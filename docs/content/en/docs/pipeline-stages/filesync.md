@@ -114,7 +114,7 @@ artifacts:
 Skaffold requires special collaboration from buildpacks for the `auto` sync to work.
 
 Cloud Native Buildpacks set a `io.buildpacks.build.metadata` label on the images they create.
-This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/master/buildpack.md#bill-of-materials-toml) of the build.
+This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/main/buildpack.md#bill-of-materials-toml) of the build.
 In the BOM, under the `metadata.devmode.sync` key, Buildpacks that want to collaborate with Skaffold
 have to output the sync rules based on their exploration of the source and the build process they had to apply to it.
 Those sync rules will then be used by Skaffold without the user having to configure them manually.
@@ -127,7 +127,7 @@ signal to change the way the application is built so that it reloads the changes
 
 Jib integration with Skaffold allows for zero-config `auto` sync. In this mode, Jib will sync your class files, resource files, and Jib's "extra directories" files to a remote container as changes are made. It can only be used with Jib in the default build mode (exploded) for non-WAR applications. It was primarily designed around [Spring Boot Developer Tools](https://docs.spring.io/spring-boot/docs/current/reference/html/using-spring-boot.html#using-boot-devtools), but can work with any embedded server that can reload/restart.
 
-Check out the [Jib Sync example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/jib-sync) for more details.
+Check out the [Jib Sync example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/jib-sync) for more details.
 
 ## Limitations
 
