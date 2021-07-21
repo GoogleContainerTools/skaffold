@@ -17,6 +17,7 @@ limitations under the License.
 package kubectl
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -106,9 +107,10 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 		args = append(args, "--validate=false")
 	}
 
-	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
+	var b bytes.Buffer
+	if err := c.Run(ctx, updated.Reader(), &b, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return userErr(fmt.Errorf("kubectl apply: %w", err))
+		return userErr(fmt.Errorf("kubectl apply: %w, %v", err, b.String()))
 	}
 
 	return nil

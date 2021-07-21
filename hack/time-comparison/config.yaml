@@ -1,0 +1,5 @@
+applications:
+- name: microservices
+  context: ../../examples/microservices
+  dev:
+    command: sh -c "printf "// test comment\n" >> leeroy-app/app.go"

@@ -1,0 +1,14 @@
+==========
+information for /usr/local/bin/skaff:
+binary size: 69.0 MB
+build time: 3.922516766s
+deploy time: 515.202591ms
+status check time: 2.123320421s
+total time: 6.561039778s
+==========
+information for /usr/local/bin/skaff:
+binary size: 69.0 MB
+build time: 3.823645508s
+deploy time: 508.732751ms
+status check time: 2.138383563s
+total time: 6.470761822s
