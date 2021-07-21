@@ -27,7 +27,7 @@ cluster.
 ##### Step 1: Obtain the example
 
 First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold)
-and navigate to the [`custom-buildx` example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom) for sample code:
+and navigate to the [`custom-buildx` example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom) for sample code:
 
 ```shell
 $ git clone https://github.com/GoogleContainerTools/skaffold

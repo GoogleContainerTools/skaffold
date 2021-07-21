@@ -15,7 +15,7 @@ To learn more about how to set up, see the [getting started docs](https://skaffo
 
 This tutorial will demonstrate how Skaffold can inject image repo and image tag values into the build and deploy stanzas.
 
-First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [templated-fields example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/templated-fields) for sample code:
+First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [templated-fields example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/templated-fields) for sample code:
 
 ```shell
 $ git clone https://github.com/GoogleContainerTools/skaffold
