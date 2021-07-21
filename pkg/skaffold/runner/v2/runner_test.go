@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -55,6 +56,7 @@ type Actions struct {
 	Built    []string
 	Synced   []string
 	Tested   []string
+	Rendered []string
 	Deployed []string
 }
 
@@ -206,7 +208,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return t.namespaces, nil
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _ bool, _ string) error {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) error {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]
@@ -214,7 +216,7 @@ func (t *TestBench) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _
 			return err
 		}
 	}
-
+	t.currentActions.Rendered = findTags(artifacts)
 	return nil
 }
 
@@ -269,6 +271,8 @@ type triggerState struct {
 }
 
 func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latestV2.Artifact, autoTriggers *triggerState) *SkaffoldRunner {
+	tmpDir := t.NewTempDir()
+	tmpDir.Chdir()
 	if autoTriggers == nil {
 		autoTriggers = &triggerState{true, true, true}
 	}
@@ -285,7 +289,6 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 		},
 	}
 	_ = defaults.Set(cfg)
-	defaults.SetDefaultDeployer(cfg)
 	runCtx := &v2.RunContext{
 		Pipelines: v2.NewPipelines([]latestV2.Pipeline{cfg.Pipeline}),
 		Opts: config.SkaffoldOptions{
@@ -295,13 +298,14 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			AutoSync:          autoTriggers.sync,
 			AutoDeploy:        autoTriggers.deploy,
 		},
+		WorkingDir: tmpDir.Root(),
 	}
 	r, err := NewForConfig(runCtx)
 	t.CheckNoError(err)
 
-	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
 	r.Builder.Builder = testBench
 	r.Tester = testBench
+	r.renderer = testBench
 	r.deployer = testBench
 	r.listener = testBench
 	r.monitor = monitor
@@ -348,6 +352,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -366,6 +371,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -384,6 +390,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -408,6 +415,7 @@ func TestNewForConfig(t *testing.T) {
 			pipeline:         latestV2.Pipeline{},
 			shouldErr:        true,
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -426,6 +434,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
@@ -447,8 +456,10 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedTester:   &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{},
+			expectedTester: &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{
+				Generator: generate.Generator{},
+			},
 			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
@@ -484,12 +495,14 @@ func TestNewForConfig(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
 				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
-
+			tmpDir := t.NewTempDir()
+			tmpDir.Chdir()
 			runCtx := &v2.RunContext{
 				Pipelines: v2.NewPipelines([]latestV2.Pipeline{tt.pipeline}),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
+				WorkingDir: tmpDir.Root(),
 			}
 
 			cfg, err := NewForConfig(runCtx)
@@ -561,6 +574,8 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 
 	for _, tt := range tests {
 		testutil.Run(t, tt.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Chdir()
 			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
@@ -582,8 +597,9 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				},
 			}
 			r, _ := NewForConfig(&v2.RunContext{
-				Opts:      opts,
-				Pipelines: v2.NewPipelines([]latestV2.Pipeline{pipeline}),
+				Opts:       opts,
+				Pipelines:  v2.NewPipelines([]latestV2.Pipeline{pipeline}),
+				WorkingDir: tmpDir.Root(),
 			})
 
 			r.intents.ResetBuild()

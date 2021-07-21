@@ -73,6 +73,8 @@ const (
 	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
 
 	Windows = "windows"
+
+	DefaultHydrationDir = ".kpt-pipeline"
 )
 
 type Phase string

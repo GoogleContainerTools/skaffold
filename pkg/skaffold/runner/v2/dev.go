@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package v2
 
 import (
@@ -178,6 +177,14 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
+		if err := r.Render(childCtx, out, r.Builds, false, ""); err != nil {
+			logrus.Warnln("Skipping render due to error:", err)
+			event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
+			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace(instrumentation.TraceEndError(err))
+			return nil
+		}
+
 		if err := r.Deploy(childCtx, out, r.Builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
@@ -269,6 +276,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			return fmt.Errorf("watching test files: %w", err)
 		}
 	}
+	// TODO(yuwenma): watch for render resources.
 
 	// Watch deployment configuration
 	if err := r.monitor.Register(
@@ -326,14 +334,23 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Logs should be retrieved up to just before the deploy
 	r.deployer.GetLogger().SetSince(time.Now())
 
-	// First deploy
-	if err := r.Deploy(ctx, out, r.Builds); err != nil {
-		event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
+	// First render
+	if err := r.Render(ctx, out, r.Builds, true, ""); err != nil {
+		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
 		endTrace()
-		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
+		return fmt.Errorf("exiting dev mode because first render failed: %w", err)
 	}
 
+	// First deploy
+	if !r.runCtx.RenderOnly() {
+		if err := r.Deploy(ctx, out, r.Builds); err != nil {
+			event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
+			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace()
+			return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
+		}
+	}
 	defer r.deployer.GetAccessor().Stop()
 
 	if err := r.deployer.GetAccessor().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {

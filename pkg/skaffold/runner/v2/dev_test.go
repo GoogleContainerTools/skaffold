@@ -121,12 +121,22 @@ func TestDevFailFirstCycle(t *testing.T) {
 			}},
 		},
 		{
-			description: "fails to deploy the first time",
-			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
+			description: "fails to render the first time",
+			testBench:   &TestBench{renderErrors: []error{errors.New("")}},
 			monitor:     &NoopMonitor{},
 			expectedActions: []Actions{{
 				Built:  []string{"img:1"},
 				Tested: []string{"img:1"},
+			}},
+		},
+		{
+			description: "fails to deploy the first time",
+			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
+			monitor:     &NoopMonitor{},
+			expectedActions: []Actions{{
+				Built:    []string{"img:1"},
+				Tested:   []string{"img:1"},
+				Rendered: []string{"img:1"},
 			}},
 		},
 		{
@@ -136,6 +146,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 			expectedActions: []Actions{{
 				Built:    []string{"img:1"},
 				Tested:   []string{"img:1"},
+				Rendered: []string{"img:1"},
 				Deployed: []string{"img:1"},
 			}},
 		},
@@ -174,6 +185,7 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{},
@@ -189,10 +201,30 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{
 					Built: []string{"img1:2", "img2:2"},
+				},
+			},
+		},
+		{
+			description: "ignore subsequent render errors",
+			testBench:   &TestBench{renderErrors: []error{nil, errors.New("")}},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1", "file2"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:  []string{"img1:2", "img2:2"},
+					Tested: []string{"img1:2", "img2:2"},
 				},
 			},
 		},
@@ -206,11 +238,13 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{
-					Built:  []string{"img1:2", "img2:2"},
-					Tested: []string{"img1:2", "img2:2"},
+					Built:    []string{"img1:2", "img2:2"},
+					Tested:   []string{"img1:2", "img2:2"},
+					Rendered: []string{"img1:2", "img2:2"},
 				},
 			},
 		},
@@ -224,11 +258,13 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{
 					Built:    []string{"img1:2", "img2:2"},
 					Tested:   []string{"img1:2", "img2:2"},
+					Rendered: []string{"img1:2", "img2:2"},
 					Deployed: []string{"img1:2", "img2:2"},
 				},
 			},
@@ -243,11 +279,13 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{
 					Built:    []string{"img2:2"},
 					Tested:   []string{"img2:2"},
+					Rendered: []string{"img1:1", "img2:2"},
 					Deployed: []string{"img1:1", "img2:2"},
 				},
 			},
@@ -262,9 +300,11 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 			},
@@ -316,6 +356,7 @@ func TestDevAutoTriggers(t *testing.T) {
 				{
 					Built:    []string{"img2:2"},
 					Tested:   []string{"img2:2"},
+					Rendered: []string{"img1:1", "img2:2"},
 					Deployed: []string{"img1:1", "img2:2"},
 				},
 			},
@@ -404,10 +445,11 @@ func TestDevAutoTriggers(t *testing.T) {
 			},
 		},
 	}
-	// first build-test-deploy sequence always happens
+	// first build-test-render-deploy sequence always happens
 	firstAction := Actions{
 		Built:    []string{"img1:1", "img2:1"},
 		Tested:   []string{"img1:1", "img2:1"},
+		Rendered: []string{"img1:1", "img2:1"},
 		Deployed: []string{"img1:1", "img2:1"},
 	}
 
@@ -477,6 +519,7 @@ func TestDevSync(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{
@@ -500,6 +543,7 @@ func TestDevSync(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+					Rendered: []string{"img1:1", "img2:1"},
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{
