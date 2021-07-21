@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -85,6 +86,13 @@ func TestGetDeployer(tOuter *testing.T) {
 				cfg:         latestV2.DeployType{KptDeploy: &latestV2.KptDeploy{}},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&kpt.Deployer{},
+				}, false),
+			},
+			{
+				description: "kpt V2 deployer",
+				cfg:         latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+				expected: deploy.NewDeployerMux([]deploy.Deployer{
+					&kptV2.Deployer{},
 				}, false),
 			},
 			{

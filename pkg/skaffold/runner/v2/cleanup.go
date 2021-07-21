@@ -17,10 +17,9 @@ package v2
 
 import (
 	"context"
-	"fmt"
 	"io"
 )
 
 func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer) error {
-	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).Cleanup")
+	return r.deployer.Cleanup(ctx, out)
 }

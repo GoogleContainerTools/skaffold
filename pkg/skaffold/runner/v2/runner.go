@@ -42,12 +42,19 @@ type SkaffoldRunner struct {
 
 	kubectlCLI         *kubectl.CLI
 	cache              cache.Cache
+	changeSet          runner.ChangeSet
 	runCtx             *runcontext.RunContext
 	labeller           *label.DefaultLabeller
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
-	intents            *runner.Intents
-	isLocalImage       func(imageName string) (bool, error)
+
+	devIteration int
+	isLocalImage func(imageName string) (bool, error)
+	hasDeployed  bool
+	intents      *runner.Intents
 }
 
-func (r *SkaffoldRunner) HasDeployed() bool { return true }
+// HasDeployed returns true if this runner has deployed something.
+func (r *SkaffoldRunner) HasDeployed() bool {
+	return r.hasDeployed
+}
