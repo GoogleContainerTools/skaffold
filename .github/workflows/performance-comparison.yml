@@ -1,14 +1,22 @@
-name: per-pr (linux)
+name: performance comparison
 
 # Triggers the workflow on push or pull request events
 on: [push, pull_request]
 
+# TODO(aaron-prindle) verify permissions are setup correctly to allow for 
+# - label removal (label edit/delete)
+# - ability to comment (comment edit/create)
+
+# on:
+#   pull_request:
+#     types: [ labeled ]
+
 permissions: read-all
 
-jobs:
 
+jobs:
   build:
-    name: PR integration tests
+    name: PR performance comparison
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,7 +25,6 @@ jobs:
         kompose_version: [1.21.0]
         gcloud_sdk_version: [335.0.0]
         container_structure_tests_version: [1.8.0]
-        integration_test_partitions: [0, 1, 2, 3]
     steps:
     - name: Set up Go
       uses: actions/setup-go@v2
@@ -29,6 +36,11 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
+
+    # - name: Remove performance:run-comparison label
+    # - uses: actions-ecosystem/action-remove-labels@v1
+    #   with:
+    #     labels: performance:run-comparison
 
     # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     # NOTE: grep output is stored in env var with `|| true` as the run command cannot fail or action will fail
@@ -96,8 +108,44 @@ jobs:
         make
         sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
 
-    - name: Run integration tests
+    - name: Install Skaffold Metrics Collector
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
+        chmod +x "${HOME}/work/skaffold/skaffold/hack/metrics-collector"
+        sudo install "${HOME}/work/skaffold/skaffold/hack/metrics-collector" /usr/local/bin
+
+   # checkout skaffold @ master and install as another binary
+    - name: Install Skaffold from main branch (built from CI/CD on merge)
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
+      run: |
+        curl -Lo skaffold-from-main-branch https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && \
+        sudo install skaffold-from-main-branch /usr/local/bin/
+
+    # TODO(aaron-prindle) this should use a Makefile rule, not `go build .`
+    - name: Install Skaffold performance comparison
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
+      working-directory: ./hack/time-comparison
+      run: |
+        go build .
+        chmod +x "${HOME}/work/skaffold/skaffold/hack/time-comparison/time-comparison"
+        sudo install "${HOME}/work/skaffold/skaffold/hack/time-comparison/time-comparison" /usr/local/bin
+
+    - name: Run performance comparison benchmarks
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
+      working-directory: ./hack/time-comparison
+      run: |
         skaffold config set --global collect-metrics false
-        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+        time-comparison-bin /usr/local/bin/skaffold-from-main-branch /usr/local/bin/skaffold gh-comment.txt
+        echo 'PERFORMANCE_COMPARISON_MSG=<<EOF' >> $GITHUB_ENV
+        cat gh-comment.txt >> $GITHUB_ENV
+        echo 'EOF' >> $GITHUB_ENV
+        echo $PERFORMANCE_COMPARISON_MSG
+
+    # - name: Comment on PR
+    #   if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
+    #   uses: thollander/actions-comment-pull-request@master
+    #   with:
+    #     message: '${PERFORMANCE_COMPARISON_MSG}'
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+

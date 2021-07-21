@@ -1,0 +1,33 @@
+name: Run Performance Comparison Parse Comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  run-performance-comparison-comment-v13:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Parse Comment To Yaml Format
+      if: ${{ startsWith(github.event.comment.body, '/run-performance-comparison') }}
+      working-directory: ./hack/time-comparison
+      run: |
+        tail -n +2 <<< "${{ github.event.comment.body }}" > yaml-input-file.yaml
+
+    # TODO(aaron-prindle) this should use a Makefile rule, not `go build .`
+    - name: Install Skaffold performance comparison
+      working-directory: ./hack/time-comparison
+      run: |
+        go build .
+        chmod +x "${HOME}/work/skaffold/skaffold/hack/time-comparison/time-comparison"
+        sudo install "${HOME}/work/skaffold/skaffold/hack/time-comparison/time-comparison" /usr/local/bin
+
+    - name: Run performance comparison benchmarks
+      working-directory: ./hack/time-comparison
+      run: |
+        time-comparison --yaml-input-file="yaml-input-file.yaml"
