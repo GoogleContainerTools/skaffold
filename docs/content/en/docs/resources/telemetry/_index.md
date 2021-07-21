@@ -24,7 +24,7 @@ The breakdown of data we collect is as follows:
 ```bash
 skaffold dev -v trace --port-forward --cache-artifacts=false --filename=./skaffold.yaml
 ```
-Running the above in the [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
+Running the above in the [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/microservices)
 after a couple of builds/deploys results in the following metrics being collected:
 ```json
 [{
