@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package v2
 
 import (
@@ -531,12 +530,6 @@ type Helm struct {
 	Releases *[]HelmRelease `yaml:"releases,omitempty"`
 }
 
-// DeployType contains the specific implementation and parameters needed
-// for the deploy step. All three deployer types can be used at the same
-// time for hybrid workflows.
-type GenerateType struct {
-}
-
 // Transformer describes the supported kpt transformers.
 type Transformer struct {
 	// Name is the transformer name. Can only accept skaffold whitelisted tools.
@@ -555,7 +548,6 @@ type Validator struct {
 
 // KptV2Deploy contains all the configuration needed by the deploy steps.
 type KptV2Deploy struct {
-
 	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold renders the raw manifests
 	// and store them to a a hidden directory `.kpt-hydrated`, and deploys the hidden directory.
 	Dir string `yaml:"dir,omitempty"`
@@ -573,6 +565,9 @@ type KptV2Deploy struct {
 	PruneTimeout string `yaml:"pruneTimeout,omitempty"`
 	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
 	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"-"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.
@@ -603,23 +598,25 @@ type DeployType struct {
 	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
 
-	KptV2Deploy *KptV2Deploy `yaml:"kptV2,omitempty"`
-
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+
+	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
+	KptV2Deploy *KptV2Deploy `yaml:"kptV2,omitempty"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 // You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 type KubectlDeploy struct {
+	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
 	// Manifests lists the Kubernetes yaml or json manifests.
-	// Defaults to `["k8s/*.yaml"]`.
 	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
+	// This field is only used by v1 kubectl deployer.
 	// RemoteManifests lists Kubernetes manifests in remote clusters.
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
@@ -628,6 +625,9 @@ type KubectlDeploy struct {
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"-"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -661,6 +661,9 @@ type KptDeploy struct {
 
 	// Live adds additional configurations for `kpt live`.
 	Live KptLive `yaml:"live,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"-"`
 }
 
 // KptFn adds additional configurations used when calling `kpt fn`.
@@ -763,6 +766,9 @@ type Artifact struct {
 
 	// Dependencies describes build artifacts that this artifact depends on.
 	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
+	LifecycleHooks BuildHooks `yaml:"-"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -783,6 +789,9 @@ type Sync struct {
 	// Auto delegates discovery of sync rules to the build system.
 	// Only available for jib and buildpacks.
 	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers.
+	LifecycleHooks SyncHooks `yaml:"-"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -1223,6 +1232,70 @@ type JibArtifact struct {
 
 	// BaseImage overrides the configured jib base image.
 	BaseImage string `yaml:"fromImage,omitempty"`
+}
+
+// BuildHooks describes the list of lifecycle hooks to execute before and after each artifact build step.
+type BuildHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each artifact build step.
+	PreHooks []HostHook `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each artifact build step.
+	PostHooks []HostHook `yaml:"after,omitempty"`
+}
+
+// SyncHookItem describes a single lifecycle hook to execute before or after each artifact sync step.
+type SyncHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=sync_hook"`
+	// ContainerHook describes a single lifecycle hook to run on a container.
+	ContainerHook *ContainerHook `yaml:"container,omitempty" yamltags:"oneOf=sync_hook"`
+}
+
+// SyncHooks describes the list of lifecycle hooks to execute before and after each artifact sync step.
+type SyncHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each artifact sync step.
+	PreHooks []SyncHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each artifact sync step.
+	PostHooks []SyncHookItem `yaml:"after,omitempty"`
+}
+
+// DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.
+type DeployHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=deploy_hook"`
+	// ContainerHook describes a single lifecycle hook to run on a container.
+	ContainerHook *NamedContainerHook `yaml:"container,omitempty" yamltags:"oneOf=deploy_hook"`
+}
+
+// DeployHooks describes the list of lifecycle hooks to execute before and after each deployer step.
+type DeployHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each deployer step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
+	PreHooks []DeployHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each deployer step.
+	PostHooks []DeployHookItem `yaml:"after,omitempty"`
+}
+
+// HostHook describes a lifecycle hook definition to execute on the host machine.
+type HostHook struct {
+	// Command is the command to execute.
+	Command []string `yaml:"command" yamltags:"required"`
+	// OS is an optional slice of operating system names. If the host machine OS is different, then it skips execution.
+	OS []string `yaml:"os,omitempty"`
+}
+
+// ContainerHook describes a lifecycle hook definition to execute on a container. The container name is inferred from the scope in which this hook is defined.
+type ContainerHook struct {
+	// Command is the command to execute.
+	Command []string `yaml:"command" yamltags:"required"`
+}
+
+// NamedContainerHook describes a lifecycle hook definition to execute on a named container.
+type NamedContainerHook struct {
+	// ContainerHook describes a lifecycle hook definition to execute on a container.
+	ContainerHook `yaml:",inline"`
+	// PodName is the name of the pod to execute the command in.
+	PodName string `yaml:"podName" yamltags:"required"`
+	// ContainerName is the name of the container to execute the command in.
+	ContainerName string `yaml:"containerName,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with
