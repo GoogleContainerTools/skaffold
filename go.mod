@@ -45,7 +45,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8
 	github.com/heroku/color v0.0.6
-	github.com/imdario/mergo v0.3.9
+	github.com/imdario/mergo v0.3.12
 	github.com/karrick/godirwalk v1.16.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/krishicks/yaml-patch v0.0.10
