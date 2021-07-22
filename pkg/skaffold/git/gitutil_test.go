@@ -55,14 +55,14 @@ func TestDefaultRef(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var f *testutil.FakeCmd
 			if test.masterExists {
-				f = testutil.CmdRunOut("git ls-remote https://github.com/foo.git master", "8be3f718c015a5fe190bebf356079a25afe0ca57  refs/heads/master")
+				f = testutil.CmdRunOut("git ls-remote --heads https://github.com/foo.git master", "8be3f718c015a5fe190bebf356079a25afe0ca57  refs/heads/master")
 			} else {
-				f = testutil.CmdRunOut("git ls-remote https://github.com/foo.git master", "")
+				f = testutil.CmdRunOut("git ls-remote --heads https://github.com/foo.git master", "")
 			}
 			if test.mainExists {
-				f = f.AndRunOut("git ls-remote https://github.com/foo.git main", "8be3f718c015a5fe190bebf356079a25afe0ca58  refs/heads/main")
+				f = f.AndRunOut("git ls-remote --heads https://github.com/foo.git main", "8be3f718c015a5fe190bebf356079a25afe0ca58  refs/heads/main")
 			} else {
-				f = f.AndRunOut("git ls-remote https://github.com/foo.git main", "")
+				f = f.AndRunOut("git ls-remote --heads https://github.com/foo.git main", "")
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
@@ -86,7 +86,7 @@ func TestSyncRepo(t *testing.T) {
 			description: "first time repo clone succeeds",
 			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			cmds: []cmdResponse{
-				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1"},
+				{cmd: "git clone http://github.com/foo.git ./iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1"},
 			},
 			syncFlag: "always",
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
@@ -95,7 +95,7 @@ func TestSyncRepo(t *testing.T) {
 			description: "first time repo clone fails",
 			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			cmds: []cmdResponse{
-				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1", err: errors.New("error")},
+				{cmd: "git clone http://github.com/foo.git ./iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1", err: errors.New("error")},
 			},
 			syncFlag:  "always",
 			shouldErr: true,
