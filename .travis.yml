@@ -63,6 +63,7 @@ jobs:
       <<: *registry_mirror
       name: "checks"
       script:
+        - git remote set-branches --add origin main && git fetch
         - make checks
       cache:
         directories:
