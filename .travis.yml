@@ -63,7 +63,7 @@ jobs:
       <<: *registry_mirror
       name: "checks"
       script:
-        - git fetch --depth=1 https://github.com/GoogleContainerTools/skaffold.git main
+        - git remote set-branches --add origin main && git fetch
         - make checks
       cache:
         directories:
