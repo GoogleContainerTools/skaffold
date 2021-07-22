@@ -33,6 +33,8 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
+	github.com/go-openapi/strfmt v0.19.5 // indirect
+	github.com/go-openapi/validate v0.19.8 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
@@ -49,6 +51,7 @@ require (
 	github.com/karrick/godirwalk v1.16.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/krishicks/yaml-patch v0.0.10
+	github.com/markbates/pkger v0.17.1 // indirect
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mitchellh/go-homedir v1.1.0
 	// github.com/moby/buildkit v0.7.1
@@ -59,6 +62,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
+	github.com/qri-io/starlib v0.4.2-0.20200213133954-ff2e8cd5ef8d // indirect
 	github.com/rakyll/statik v0.1.7
 	github.com/rjeczalik/notify v0.9.3-0.20201210012515-e2a77dcc14cf
 	github.com/russross/blackfriday/v2 v2.1.0
@@ -94,6 +98,6 @@ require (
 	k8s.io/kubectl v0.19.4
 	k8s.io/utils v0.0.0-20200729134348-d5654de09c73
 	knative.dev/pkg v0.0.0-20201119170152-e5e30edc364a // indirect
-	sigs.k8s.io/kustomize/kyaml v0.9.2
+	sigs.k8s.io/kustomize/kyaml v0.11.0
 	sigs.k8s.io/yaml v1.2.0
 )
