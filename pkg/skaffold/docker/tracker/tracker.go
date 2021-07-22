@@ -41,10 +41,10 @@ func NewContainerTracker() *ContainerTracker {
 	}
 }
 
-// GetNotifier returns the notifier channel for this tracker.
+// Notifier returns the notifier channel for this tracker.
 // Used by the log streamer to be notified when a new container is
 // added to the tracker.
-func (t *ContainerTracker) GetNotifier() chan string {
+func (t *ContainerTracker) Notifier() chan string {
 	return t.notifier
 }
 
@@ -54,7 +54,7 @@ func (t *ContainerTracker) ArtifactForContainer(id string) graph.Artifact {
 	return t.containerToArtifact[id]
 }
 
-// DeployedContainerForImage returns a the ID of a deployed container create from
+// DeployedContainerForImage returns a the ID of a deployed container created from
 // the provided image, if it exists.
 func (t *ContainerTracker) DeployedContainerForImage(image string) string {
 	t.Lock()
