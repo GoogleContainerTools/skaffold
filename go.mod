@@ -13,7 +13,7 @@ replace (
 
 require (
 	4d63.com/tz v1.2.0
-	cloud.google.com/go v0.84.0
+	cloud.google.com/go v0.87.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/AlecAivazis/survey/v2 v2.2.14
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
@@ -43,9 +43,9 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/ko v0.8.4-0.20210615195035-ee2353837872
 	github.com/google/uuid v1.1.2
-	github.com/grpc-ecosystem/grpc-gateway v1.14.8
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/heroku/color v0.0.6
-	github.com/imdario/mergo v0.3.9
+	github.com/imdario/mergo v0.3.12
 	github.com/karrick/godirwalk v1.16.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/krishicks/yaml-patch v0.0.10
@@ -77,14 +77,14 @@ require (
 	go.opentelemetry.io/otel/trace v0.20.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/mod v0.4.2
-	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
+	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210603125802-9665404d3644
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
-	google.golang.org/api v0.48.0
-	google.golang.org/genproto v0.0.0-20210608205507-b6d2f5bf0d7d
-	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/api v0.50.0
+	google.golang.org/genproto v0.0.0-20210713002101-d411969a0d9a
+	google.golang.org/grpc v1.39.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	honnef.co/go/tools v0.1.3 // indirect
