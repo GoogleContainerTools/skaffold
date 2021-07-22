@@ -50,7 +50,6 @@ var tests = []struct {
 		description: "nodejs",
 		dir:         "examples/nodejs",
 		deployments: []string{"node"},
-		targetLog:   "Example app listening on port",
 	},
 	{
 		description: "structure-tests",
