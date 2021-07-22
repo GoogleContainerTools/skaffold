@@ -1,0 +1,13 @@
+applications:
+- name: microservices
+  context: ../../examples/microservices
+  dev:
+    command: pwd && cp ../../hack/time-comparison/testdata/microservices/leeroy-app/app.go leeroy-app/app.go
+  labels:
+    app: microservices
+# - name: nodejs-guestbook
+#   context: testdata/nodejs-guestbook
+#   dev:
+#     command: cp testdata/backend/app.js src/backend/app.js
+#   labels:
+#     app: nodejs-guestbook

@@ -44,11 +44,10 @@ func main() {
 }
 
 func goTest(testArgs []string) error {
-	args := append([]string{"test", "-json"}, testArgs...)
+	args := append([]string{"dev", "-json"}, testArgs...)
 	verbose := isVerbose(testArgs)
 
-	cmd := exec.CommandContext(context.Background(), "go", args...)
-
+	cmd := exec.CommandContext(context.Background(), "skaffold", args...)
 	pr, pw := io.Pipe()
 	cmd.Stderr = pw
 	cmd.Stdout = pw
