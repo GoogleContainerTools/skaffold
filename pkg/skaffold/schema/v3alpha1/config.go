@@ -528,6 +528,9 @@ type Generate struct {
 
 type Helm struct {
 	Releases *[]HelmRelease `yaml:"releases,omitempty"`
+	// Flags are additional option flags that are passed on the command
+	// line to `helm`.
+	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 }
 
 // Transformer describes the supported kpt transformers.
