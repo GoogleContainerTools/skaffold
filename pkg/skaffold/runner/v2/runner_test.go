@@ -38,9 +38,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -54,6 +56,7 @@ type Actions struct {
 	Built    []string
 	Synced   []string
 	Tested   []string
+	Rendered []string
 	Deployed []string
 }
 
@@ -75,6 +78,10 @@ type TestBench struct {
 	currentActions Actions
 	actions        []Actions
 	tag            int
+}
+
+func NewTestBench() *TestBench {
+	return &TestBench{}
 }
 
 func (t *TestBench) WithBuildErrors(buildErrors []error) *TestBench {
@@ -201,7 +208,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return t.namespaces, nil
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _ bool, _ string) error {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) error {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]
@@ -209,7 +216,7 @@ func (t *TestBench) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _
 			return err
 		}
 	}
-
+	t.currentActions.Rendered = findTags(artifacts)
 	return nil
 }
 
@@ -257,6 +264,67 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 	return r
 }
 
+type triggerState struct {
+	build  bool
+	sync   bool
+	deploy bool
+}
+
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latestV2.Artifact, autoTriggers *triggerState) *SkaffoldRunner {
+	tmpDir := t.NewTempDir()
+	tmpDir.Chdir()
+	if autoTriggers == nil {
+		autoTriggers = &triggerState{true, true, true}
+	}
+	cfg := &latestV2.SkaffoldConfig{
+		Pipeline: latestV2.Pipeline{
+			Build: latestV2.BuildConfig{
+				TagPolicy: latestV2.TagPolicy{
+					// Use the fastest tagger
+					ShaTagger: &latestV2.ShaTagger{},
+				},
+				Artifacts: artifacts,
+			},
+			Deploy: latestV2.DeployConfig{StatusCheckDeadlineSeconds: 60},
+		},
+	}
+	_ = defaults.Set(cfg)
+	runCtx := &v2.RunContext{
+		Pipelines: v2.NewPipelines([]latestV2.Pipeline{cfg.Pipeline}),
+		Opts: config.SkaffoldOptions{
+			Trigger:           "polling",
+			WatchPollInterval: 100,
+			AutoBuild:         autoTriggers.build,
+			AutoSync:          autoTriggers.sync,
+			AutoDeploy:        autoTriggers.deploy,
+		},
+		WorkingDir: tmpDir.Root(),
+	}
+	r, err := NewForConfig(runCtx)
+	t.CheckNoError(err)
+
+	r.Builder.Builder = testBench
+	r.Tester = testBench
+	r.renderer = testBench
+	r.deployer = testBench
+	r.listener = testBench
+	r.monitor = monitor
+
+	testBench.devLoop = func(ctx context.Context, out io.Writer, doDev func() error) error {
+		if err := monitor.Run(true); err != nil {
+			return err
+		}
+		return doDev()
+	}
+
+	testBench.firstMonitor = func(bool) error {
+		// default to noop so we don't add extra actions
+		return nil
+	}
+
+	return r
+}
+
 func TestNewForConfig(t *testing.T) {
 	tests := []struct {
 		description      string
@@ -284,6 +352,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -302,6 +371,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -320,6 +390,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -344,6 +415,7 @@ func TestNewForConfig(t *testing.T) {
 			pipeline:         latestV2.Pipeline{},
 			shouldErr:        true,
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -362,6 +434,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{},
 			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
@@ -383,8 +456,10 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedTester:   &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{},
+			expectedTester: &test.FullTester{},
+			expectedRenderer: &renderer.SkaffoldRenderer{
+				Generator: generate.Generator{},
+			},
 			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
@@ -413,27 +488,29 @@ func TestNewForConfig(t *testing.T) {
 			}, false),
 		},
 	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+	for _, tt := range tests {
+		testutil.Run(t, tt.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
 				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
-
+			tmpDir := t.NewTempDir()
+			tmpDir.Chdir()
 			runCtx := &v2.RunContext{
-				Pipelines: v2.NewPipelines([]latestV2.Pipeline{test.pipeline}),
+				Pipelines: v2.NewPipelines([]latestV2.Pipeline{tt.pipeline}),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
+				WorkingDir: tmpDir.Root(),
 			}
 
 			cfg, err := NewForConfig(runCtx)
-			t.CheckError(test.shouldErr, err)
+			t.CheckError(tt.shouldErr, err)
 			if cfg != nil {
-				b, _t, r, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedRenderer,
-					test.expectedDeployer, test.cacheArtifacts)
-				if test.shouldErr {
+				b, _t, r, d := runner.WithTimings(&tt.expectedBuilder, tt.expectedTester, tt.expectedRenderer,
+					tt.expectedDeployer, tt.cacheArtifacts)
+				if tt.shouldErr {
 					t.CheckError(true, err)
 				} else {
 					t.CheckNoError(err)
@@ -495,14 +572,16 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+	for _, tt := range tests {
+		testutil.Run(t, tt.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Chdir()
 			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
-				AutoBuild:         test.autoBuild,
-				AutoSync:          test.autoSync,
-				AutoDeploy:        test.autoDeploy,
+				AutoBuild:         tt.autoBuild,
+				AutoSync:          tt.autoSync,
+				AutoDeploy:        tt.autoDeploy,
 			}
 			pipeline := latestV2.Pipeline{
 				Build: latestV2.BuildConfig{
@@ -518,8 +597,9 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				},
 			}
 			r, _ := NewForConfig(&v2.RunContext{
-				Opts:      opts,
-				Pipelines: v2.NewPipelines([]latestV2.Pipeline{pipeline}),
+				Opts:       opts,
+				Pipelines:  v2.NewPipelines([]latestV2.Pipeline{pipeline}),
+				WorkingDir: tmpDir.Root(),
 			})
 
 			r.intents.ResetBuild()
@@ -527,9 +607,9 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			r.intents.ResetDeploy()
 
 			b, s, d := r.intents.GetIntentsAttrs()
-			t.CheckDeepEqual(test.expectedBuildIntent, b)
-			t.CheckDeepEqual(test.expectedSyncIntent, s)
-			t.CheckDeepEqual(test.expectedDeployIntent, d)
+			t.CheckDeepEqual(tt.expectedBuildIntent, b)
+			t.CheckDeepEqual(tt.expectedSyncIntent, s)
+			t.CheckDeepEqual(tt.expectedDeployIntent, d)
 		})
 	}
 }
