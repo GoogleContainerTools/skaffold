@@ -7,8 +7,8 @@ import (
 
 func main() {
 	for {
-		fmt.Println("Hello Docker!")
+		fmt.Println("Oh hey Ernie.")
 
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Second * 2)
 	}
 }
