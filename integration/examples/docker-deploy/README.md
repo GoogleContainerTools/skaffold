@@ -2,6 +2,6 @@
 
 This is a simple example based on:
 
-* **building** a single Go file app and with a multistage `Dockerfile` using local docker to build
+* **building** a two single Go file apps, each with a multistage `Dockerfile` using local docker to build
 * **tagging** using the default tagPolicy (`gitCommit`)
-* **deploying** to docker by simply running a single container
+* **deploying** to docker by simply running two individual containers
