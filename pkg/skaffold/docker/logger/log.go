@@ -84,6 +84,8 @@ func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
 		if err != nil {
 			// Don't print errors if the user interrupted the logs
 			// or if the logs were interrupted because of a configuration change
+			// TODO(nkubala)[07/23/21]: if container is lost, emit API event and attempt to reattach
+			// https://github.com/GoogleContainerTools/skaffold/issues/6281
 			if ctx.Err() != context.Canceled {
 				logrus.Warn(err)
 			}

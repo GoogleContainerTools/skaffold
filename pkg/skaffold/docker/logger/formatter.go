@@ -74,7 +74,7 @@ func (d *DockerLogFormatter) color() output.Color {
 }
 
 func prefix(containerName string) string {
-	if containerName == "" {
+	if containerName == "" { // should only happen in testing
 		return ""
 	}
 	return fmt.Sprintf("[%s]", containerName)

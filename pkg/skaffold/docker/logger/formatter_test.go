@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -62,6 +63,39 @@ func TestPrintLogLine(t *testing.T) {
 		lines := strings.Split(buf.String(), "\n")
 		for i := 0; i < groups*linesPerGroup; i++ {
 			t.CheckDeepEqual("TEXT", lines[i])
+		}
+	})
+}
+
+func TestPrintLogLineFormatted(t *testing.T) {
+	testutil.Run(t, "verify lines have correct prefix", func(t *testutil.T) {
+		var (
+			buf bytes.Buffer
+			wg  sync.WaitGroup
+
+			linesPerGroup = 100
+			groups        = 5
+		)
+		ct := tracker.NewContainerTracker()
+		ct.Add(graph.Artifact{ImageName: "image", Tag: "image:tag"}, "id")
+
+		f := NewDockerLogFormatter(&mockColorPicker{}, ct, func() bool { return false }, "id")
+
+		for i := 0; i < groups; i++ {
+			wg.Add(1)
+
+			go func() {
+				for i := 0; i < linesPerGroup; i++ {
+					f.PrintLine(&buf, "TEXT\n")
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		lines := strings.Split(buf.String(), "\n")
+		for i := 0; i < groups*linesPerGroup; i++ {
+			t.CheckDeepEqual("[image] TEXT", lines[i])
 		}
 	})
 }
