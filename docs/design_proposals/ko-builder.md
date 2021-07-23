@@ -83,6 +83,135 @@ The ko builder supports and enhances these Skaffold
   installing additional tools or keeping toolchain versions in sync across
   local development and CI/CD.
 
+## Background: ko image names and Go import paths
+
+Ko uses Go import paths to build images. The
+[`ko publish`](https://github.com/google/ko#build-an-image) command takes a
+required positional argument, which can be either a local file path or a Go
+import path. If the argument is a local file path (as per
+[`go/build.IsLocalImport()`](https://pkg.go.dev/go/build#IsLocalImport))
+then, ko resolves the local file path to a Go import path (see
+[`github.com/google/ko/pkg/build`](https://github.com/google/ko/blob/ab4d264103bd4931c6721d52bfc9d1a2e79c81d1/pkg/build/gobuild.go#L261)).
+
+The import path must be of the package than contains the `main()` function.
+For instance, to build Skaffold using ko, from the repository root directory:
+
+```sh
+ko publish ./cmd/skaffold
+```
+
+or
+
+```sh
+ko publish github.com/GoogleContainerTools/skaffold/cmd/skaffold
+```
+
+When the ko CLI is used to
+[populate the image name in templated Kubernetes resource files](https://github.com/google/ko#kubernetes-integration),
+only the Go import path option can be used, and the import path must be
+prefixed by the `ko://` scheme, e.g.,
+`ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold`.
+
+Ko determines the image name from the container image registry (provided by the
+`KO_DOCKER_REPO` environment variable) and the Go import path. The Go import
+path is appended in one of these ways:
+
+- The last path segment (e.g., `skaffold`), followed by a hyphen and a MD5
+  hash. This is the default behavior of the `ko publish` command.
+
+- The last path segment (e.g., `skaffold`) only, if `ko publish` is invoked
+  with the `-B` or `--base-import-paths` flag.
+
+- The full import path, lowercased (e.g.,
+  `github.com/googlecontainertools/skaffold/cmd/skaffold`), if `ko publish` is
+  invoked with the `-P` or `--preserve-import-paths` flag. This is the option
+  used by projects such as Knative (see the
+  [`release.sh` script](https://github.com/knative/serving/blob/v0.24.0/vendor/knative.dev/hack/release.sh#L98))
+  and Tekton
+  (see the pipeline in
+  [publish.yaml](https://github.com/tektoncd/pipeline/blob/v0.25.0/tekton/publish.yaml#L137)).
+
+- No import path (just `KO_DOCKER_REPO`), if `ko publish` is invoked with the
+  `--bare` flag.
+
+## Supporting existing Skaffold users
+
+The Skaffold ko builder follows the existing Skaffold image naming logic. This
+means that the image naming behavior doesn't change for existing Skaffold users
+who migrate from other builders to the ko builder.
+
+The ko builder achieves this by using ko's
+[`Bare`](https://github.com/google/ko/blob/ab4d264103bd4931c6721d52bfc9d1a2e79c81d1/pkg/commands/options/publish.go#L60)
+naming option.
+
+By using this option, the image name is not tied to the Go import path. If the
+Skaffold
+[default repo](https://skaffold.dev/docs/environment/image-registries/) value
+is `gcr.io/k8s-skaffold` and tne value of the `image` field in `skaffold.yaml`
+is `skaffold`, the resulting image name will be `gcr.io/k8s-skaffold/skaffold`.
+
+It is still necessary to resolve the Go import path for the underlying ko
+implementation. To do so, the ko builder determines the import path of the
+current
+[`context`](https://skaffold.dev/docs/references/yaml/#build-artifacts-context)
+(a.k.a.
+[`Workspace`](https://github.com/GoogleContainerTools/skaffold/blob/v1.27.0/pkg/skaffold/schema/latest/v1/config.go#L832))
+directory.
+
+By specifying different `context` directories for each `artifact` in
+`skaffold.yaml`, the ko builder supports building multiple artifacts in the
+same Skaffold config, such as in the
+[microservices example](https://github.com/GoogleContainerTools/skaffold/tree/v1.27.0/examples/microservices).
+
+## Supporting existing ko users
+
+To support existing ko users moving to Skaffold, the ko builder also supports
+`image` names in `skaffold.yaml` that use the Go import path, prefixed by the
+`ko://` scheme. Examples of such image references in Kubernetes manifest files
+can be seen in projects such as
+[Knative](https://github.com/knative/serving/blob/main/config/core/deployments/activator.yaml#L41)
+and
+[Tekton](https://github.com/tektoncd/pipeline/blob/v0.25.0/config/controller.yaml#L66).
+
+In the case of `ko://`-prefixed image names, the Skaffold ko builder
+constructs the image name by:
+
+1.  Removing the `ko://` scheme prefix.
+2.  Transforming the import path to a valid image name using the function
+    [`SanitizeImageName()`](https://github.com/GoogleContainerTools/skaffold/blob/v1.27.0/pkg/skaffold/docker/reference.go#L83)
+    (from the package
+    `github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker`).
+3.  Combining the Skaffold default repo with the transformed import path as per
+    existing Skaffold image naming logic.
+
+This will result in image names that match those produced by the `ko` CLI when
+using the `-P` or `--preserve-import-paths` flag. For example, if the Skaffold
+default repo is `gcr.io/k8s-skaffold` and the `image` name in `skaffold.yaml`
+is `ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold`, the resulting
+image name will be
+`gcr.io/k8s-skaffold/github.com/googlecontainertools/skaffold/cmd/skaffold`.
+
+Real-world examples of image names that follow this naming convention can be
+found in the Tekton and Knative release manifests. For instance, view the
+images in the Knative Serving release YAMLs:
+
+```sh
+curl -sL https://github.com/knative/serving/releases/download/v0.24.0/serving-core.yaml | grep 'image: '
+```
+
+If the `image` field in `skaffold.yaml` starts with the `ko://` scheme prefix,
+the Skaffold ko builder uses the Go import path that follows the prefix. If the
+`image` name in `skaffold.yaml` does _not_ start with `ko://`, then the ko
+builder determines the Go import path from the artifact `context` directory.
+
+Users who want to build an artifact where the `main()` function is _not_ in the
+`context` directory must specify the full import path in the image name. For
+instance, to build Skaffold itself using the Skaffold ko builder, for a
+`context` directory of `.` (the default), the `image` name must be
+`ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold`.
+Image names that start with relative path references such as `./cmd/skaffold`
+are _not_ supported by Skaffold.
+
 ## Design
 
 Adding the ko builder requires making config changes to the Skaffold schema.
@@ -196,11 +325,11 @@ Adding the ko builder requires making config changes to the Skaffold schema.
 Example basic config, this will be sufficient for many users:
 
 ```yaml
-apiVersion: skaffold/v2beta15
+apiVersion: skaffold/v2beta19
 kind: Config
 build:
   artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko
+  - image: skaffold-example-ko
     ko: {}
 ```
 
@@ -210,7 +339,7 @@ The value of the `image` field is the Go import path of the app entry point,
 A more comprehensive example config:
 
 ```yaml
-apiVersion: skaffold/v2beta15
+apiVersion: skaffold/v2beta19
 kind: Config
 build:
   artifacts:
@@ -313,8 +442,6 @@ maps directly to this value.
     <https://github.com/google/ko#why-are-my-images-all-created-in-1970> and
     <https://reproducible-builds.org/docs/source-date-epoch/>.
 
-
-
 ### Open questions
 
 1.  Should we default dependency paths to `{"go.mod", "**.go"}` instead of
@@ -327,10 +454,8 @@ maps directly to this value.
 
 2.  Add a Google Cloud Build (`gcb`) support for the ko builder?
 
-    Other builders that support `gcb` have default public builder images.
-    The image `gcr.io/tekton-releases/ko-ci` is public, but do we want to
-    rely on it? Once ko is embedded in Skaffold, we could use
-    `gcr.io/k8s-skaffold/skaffold` as a default image.`
+    By embedding ko as a module, there is no need for a ko-specific Skaffold
+    builder image.
 
     __Not Yet Resolved__
 
@@ -347,6 +472,7 @@ maps directly to this value.
     file?
 
     Suggest yes, to make Skaffold a compelling choice for Go developers.
+    
     __Not Yet Resolved__
 
 ## Approach
@@ -479,13 +605,13 @@ The steps roughly outlined:
     Example `skaffold.yaml` supported at this stage:
 
     ```yaml
-    apiVersion: skaffold/v2beta18
+    apiVersion: skaffold/v2beta19
     kind: Config
     build:
       artifacts:
       - image: skaffold-ko
         ko:
-          fromImage: gcr.io/distroless/static-debian10:nonroot
+          fromImage: gcr.io/distroless/base:nonroot
           dependencies:
             paths:
             - go.mod
@@ -498,8 +624,8 @@ The steps roughly outlined:
           - linux/arm64
     ```
 
-3.  After [google/ko#340](https://github.com/google/ko/pull/340) is merged,
-    implement Skaffold config support for additional ko config options:
+3.  Implement Skaffold config support for additional ko config options added in
+    [google/ko#340](https://github.com/google/ko/pull/340):
 
     -   `args`, e.g., `-v`, `-trimpath`
     -   `asmflags`
