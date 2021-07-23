@@ -114,30 +114,30 @@ jobs:
       <<: *registry_mirror
       script:
         - env IT_PARTITION=3 make integration-in-kind
-    # - name: "k3d integration partition 0"
-    #   <<: *integration_test
-    #   <<: *upgrade_docker
-    #   <<: *registry_mirror
-    #   script:
-    #     - env IT_PARTITION=0 make integration-in-k3d
-    # - name: "k3d integration partition 1"
-    #   <<: *integration_test
-    #   <<: *upgrade_docker
-    #   <<: *registry_mirror
-    #   script:
-    #     - env IT_PARTITION=1 make integration-in-k3d
-    # - name: "k3d integration partition 2"
-    #   <<: *integration_test
-    #   <<: *upgrade_docker
-    #   <<: *registry_mirror
-    #   script:
-    #     - env IT_PARTITION=2 make integration-in-k3d
-    # - name: "k3d integration partition 3"
-    #   <<: *integration_test
-    #   <<: *upgrade_docker
-    #   <<: *registry_mirror
-    #   script:
-    #     - env IT_PARTITION=3 make integration-in-k3d
+    - name: "k3d integration partition 0"
+      <<: *integration_test
+      <<: *upgrade_docker
+      <<: *registry_mirror
+      script:
+        - env IT_PARTITION=0 make integration-in-k3d
+    - name: "k3d integration partition 1"
+      <<: *integration_test
+      <<: *upgrade_docker
+      <<: *registry_mirror
+      script:
+        - env IT_PARTITION=1 make integration-in-k3d
+    - name: "k3d integration partition 2"
+      <<: *integration_test
+      <<: *upgrade_docker
+      <<: *registry_mirror
+      script:
+        - env IT_PARTITION=2 make integration-in-k3d
+    - name: "k3d integration partition 3"
+      <<: *integration_test
+      <<: *upgrade_docker
+      <<: *registry_mirror
+      script:
+        - env IT_PARTITION=3 make integration-in-k3d
     - os: linux
       name: "diag/Linux unit"
       <<: *registry_mirror
