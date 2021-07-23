@@ -964,6 +964,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 | DEVINIT_UNSUPPORTED_V1_MANIFEST | 705 | Failed to configure watcher for build dependencies for a base image with v1 manifest. |
+| DEVINIT_REGISTER_RENDER_DEPS | 706 | Failed to configure watcher for render dependencies in dev loop |
 | STATUSCHECK_USER_CANCELLED | 800 | User cancelled the skaffold dev run |
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
 | BUILD_CANCELLED | 802 | Build Cancelled |

@@ -78,6 +78,13 @@ func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool
 	return nil
 }
 
+func (m *mockRenderer) ManifestDeps() ([]string, error) {
+	if m.err {
+		return nil, errors.New("Unable to get manifest dependencies")
+	}
+	return nil, nil
+}
+
 type mockDeployer struct {
 	deploy.Deployer
 	err bool

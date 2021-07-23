@@ -276,7 +276,17 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			return fmt.Errorf("watching test files: %w", err)
 		}
 	}
-	// TODO(yuwenma): watch for render resources.
+
+	// Watch render configuration
+	if err := r.monitor.Register(
+		r.renderer.ManifestDeps,
+		func(filemon.Events) { r.changeSet.Redeploy() },
+	); err != nil {
+		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_RENDER_DEPS, err)
+		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
+		return fmt.Errorf("watching files for renderer: %w", err)
+	}
 
 	// Watch deployment configuration
 	if err := r.monitor.Register(
