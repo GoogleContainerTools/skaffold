@@ -47,6 +47,9 @@ type Renderer interface {
 	// This arg is required by the Runner interface for v1 (specially for the withTimings) and shall not be used by this
 	// renderer.
 	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, noop string) error
+	// ManifestDeps returns the user kubenertes manifests to file watcher. In dev mode, a "redeploy" will be triggered
+	// if any of the "Dependencies" manifest is changed.
+	ManifestDeps() ([]string, error)
 }
 
 // NewSkaffoldRenderer creates a new Renderer object from the latestV2 API schema.
