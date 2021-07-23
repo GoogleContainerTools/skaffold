@@ -94,7 +94,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Syncer:   sync.NewSyncProvider(runCtx, kubectlCLI),
 	}
 
-	renderer, err := renderer.NewSkaffoldRenderer(getRenderConfig(runCtx), runCtx.GetWorkingDir())
+	hydrationDir, err := runCtx.GetRenderOutputPath()
+	if err != nil {
+		return nil, fmt.Errorf("getting render output path: %w", err)
+	}
+
+	renderer, err := renderer.NewSkaffoldRenderer(
+		runCtx.GetRenderConfig(), runCtx.GetWorkingDir(), hydrationDir)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating renderer: %w", err)

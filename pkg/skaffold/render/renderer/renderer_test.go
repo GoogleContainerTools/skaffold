@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -164,10 +165,11 @@ pipeline:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDirObj := t.NewTempDir()
 			tmpDirObj.Write("pod.yaml", podYaml).
-				Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
+				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Touch("empty.ignored").
 				Chdir()
-			r, err := NewSkaffoldRenderer(test.renderConfig, tmpDirObj.Root())
+			r, err := NewSkaffoldRenderer(test.renderConfig, tmpDirObj.Root(),
+				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir))
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -176,8 +178,8 @@ pipeline:
 			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true, "")
 			t.CheckNoError(err)
-			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
-			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
 		})
 	}
 }
@@ -227,11 +229,12 @@ inventory:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDirObj := t.NewTempDir()
 			tmpDirObj.Write("pod.yaml", podYaml).
-				Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
+				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Chdir()
 			r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
 				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, tmpDirObj.Root())
+				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, tmpDirObj.Root(),
+				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir))
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -240,7 +243,7 @@ inventory:
 			err = r.Render(context.Background(), &b, []graph.Artifact{},
 				true, "")
 			t.CheckNoError(err)
-			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), DefaultHydrationDir, kptfile.KptFileName),
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName),
 				[]byte(test.updatedKptfile))
 		})
 	}

@@ -284,6 +284,8 @@ enum StatusCode {
     DEVINIT_REGISTER_CONFIG_DEP = 704;
     // Failed to configure watcher for build dependencies for a base image with v1 manifest.
     DEVINIT_UNSUPPORTED_V1_MANIFEST = 705;
+    // Failed to configure watcher for render dependencies in dev loop
+    DEVINIT_REGISTER_RENDER_DEPS = 706;
 
     // Timeout or User Cancellation Errors
 

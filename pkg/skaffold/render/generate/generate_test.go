@@ -199,3 +199,70 @@ func TestGenerate(t *testing.T) {
 		})
 	}
 }
+
+func TestManifestDeps(t *testing.T) {
+	tests := []struct {
+		description     string
+		relManifestDeps []string
+		expected        []string
+	}{
+		{
+			description:     "rawYaml dir",
+			relManifestDeps: []string{"rawYaml-sample"},
+			expected:        []string{"rawYaml-sample/pod.yaml", "rawYaml-sample/pods2.yaml"},
+		},
+		{
+			description:     "rawYaml specific",
+			relManifestDeps: []string{"rawYaml-sample/pod.yaml"},
+			expected:        []string{"rawYaml-sample/pod.yaml"},
+		},
+		{
+			description:     "kustomize dir",
+			relManifestDeps: []string{"kustomize-sample"},
+			expected:        []string{"kustomize-sample/kustomization.yaml", "kustomize-sample/patch.yaml"},
+		},
+		{
+			description:     "kpt dir",
+			relManifestDeps: []string{"kpt-sample"},
+			expected:        []string{"kpt-sample/Kptfile", "kpt-sample/deployment.yaml"},
+		},
+		{
+			description:     "multi manifest, mixed dir and file",
+			relManifestDeps: []string{"rawYaml-sample/pod.yaml", "kpt-sample", "kustomize-sample"},
+			expected: []string{
+				"kpt-sample/Kptfile",
+				"kpt-sample/deployment.yaml",
+				"kustomize-sample/kustomization.yaml",
+				"kustomize-sample/patch.yaml",
+				"rawYaml-sample/pod.yaml",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("rawYaml-sample/pod.yaml", podYaml).
+				Write("rawYaml-sample/pods2.yaml", podsYaml).
+				Write("rawYaml-sample/irrelevant.txt", "").
+				Write("kustomize-sample/kustomization.yaml", kustomizeYaml).
+				Write("kustomize-sample/patch.yaml", patchYaml).
+				Write("kpt-sample/Kptfile", kptfileYaml).
+				Write("kpt-sample/deployment.yaml", kustomizeDeploymentYaml).
+				Touch("empty.ignored").
+				Chdir()
+
+			manifestPaths := []string{}
+			for _, p := range test.relManifestDeps {
+				manifestPaths = append(manifestPaths, filepath.Join(tmpDir.Root(), p))
+			}
+			expectedPaths := []string{}
+			for _, p := range test.expected {
+				expectedPaths = append(expectedPaths, filepath.Join(tmpDir.Root(), p))
+			}
+			g := Generator{dependencyPaths: manifestPaths}
+			actual, err := g.ManifestDeps()
+			t.CheckNoError(err)
+			t.CheckDeepEqual(expectedPaths, actual)
+		})
+	}
+}
