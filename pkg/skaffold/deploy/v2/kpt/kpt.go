@@ -235,6 +235,11 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	return namespaces, nil
 }
 
+// TODO(yuwenma)[07/23/22]: remove Render func from all deployers and deployerMux.
+func (k *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+	return fmt.Errorf("shall not be called")
+}
+
 func (k *Deployer) Dependencies() ([]string, error) {
 	// TODO(yuwenma): This should be the render denpendencies.
 	return []string{}, nil

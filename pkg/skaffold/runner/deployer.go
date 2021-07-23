@@ -21,11 +21,14 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -59,12 +62,13 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, provider, labels)
 	}
-
 	deployerCfg := runCtx.Deployers()
 
 	var deployers []deploy.Deployer
+
 	for _, d := range deployerCfg {
 		dCtx := &deployerCtx{runCtx, d}
+		// TODO: deprecate HelmDeploy
 		if d.HelmDeploy != nil {
 			h, err := helm.NewDeployer(dCtx, labels, provider, d.HelmDeploy)
 			if err != nil {
@@ -72,7 +76,7 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 			}
 			deployers = append(deployers, h)
 		}
-
+		// TODO: deprecate KptDeploy
 		if d.KptDeploy != nil {
 			deployer := kpt.NewDeployer(dCtx, labels, provider, d.KptDeploy)
 			deployers = append(deployers, deployer)
@@ -86,11 +90,26 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 			deployers = append(deployers, deployer)
 		}
 
+		// TODO: deprecate KustomizeDeploy
 		if d.KustomizeDeploy != nil {
 			deployer, err := kustomize.NewDeployer(dCtx, labels, provider, d.KustomizeDeploy)
 			if err != nil {
 				return nil, err
 			}
+			deployers = append(deployers, deployer)
+		}
+
+		if d.KptV2Deploy != nil {
+			if d.KptV2Deploy.Dir == "" {
+				hydrationDir, err := runCtx.GetRenderOutputPath()
+				if err != nil {
+					return nil, err
+				}
+				logrus.Debugf("use default render directory as deployment directory %v\n.", hydrationDir)
+				d.KptV2Deploy.Dir = hydrationDir
+			}
+			logrus.Infof("manifests are deployed from render path %v\n", d.KptV2Deploy.Dir)
+			deployer := kptV2.NewDeployer(dCtx, labels, provider, d.KptV2Deploy)
 			deployers = append(deployers, deployer)
 		}
 	}

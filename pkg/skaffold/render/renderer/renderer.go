@@ -39,25 +39,18 @@ import (
 )
 
 const (
-	DefaultHydrationDir = ".kpt-pipeline"
-	dryFileName         = "manifests.yaml"
+	dryFileName = "manifests.yaml"
 )
 
 type Renderer interface {
-	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, outputPath string) error
+	// The noop field refers to the path where the rendered manifests are stored (e.g. `skaffold render --output=<OUTPUT>` the <OUTPUT> field).
+	// This arg is required by the Runner interface for v1 (specially for the withTimings) and shall not be used by this
+	// renderer.
+	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, noop string) error
 }
 
 // NewSkaffoldRenderer creates a new Renderer object from the latestV2 API schema.
-func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Renderer, error) {
-	// TODO(yuwenma): return instance of kpt-managed mode or skaffold-managed mode defer to the config.Path fields.
-	// The alpha implementation only has skaffold-managed mode.
-	var hydrationDir string
-	if config.Output == "" {
-		hydrationDir = filepath.Join(workingDir, DefaultHydrationDir)
-	} else {
-		hydrationDir = config.Output
-	}
-
+func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir, hydrationDir string) (Renderer, error) {
 	generator := generate.NewGenerator(workingDir, config.Generate, hydrationDir)
 	var validator *validate.Validator
 	if config.Validate != nil {
@@ -80,15 +73,13 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Rend
 	} else {
 		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
 	}
-	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, Transformer: *transformer,
-		workingDir: workingDir, hydrationDir: hydrationDir}, nil
+	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, Transformer: *transformer, hydrationDir: hydrationDir}, nil
 }
 
 type SkaffoldRenderer struct {
 	generate.Generator
 	validate.Validator
 	transform.Transformer
-	workingDir   string
 	hydrationDir string
 	labels       map[string]string
 }
@@ -104,7 +95,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	// Once Kptfile is initialized, its "pipeline" field will be updated in each skaffold render, and its "inventory"
 	// will keep the same to guarantee accurate `kpt live apply`.
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_initKptfile")
-	if _, err := os.Stat(r.hydrationDir); os.IsNotExist(err) {
+	if _, err := os.Stat(kptfilePath); os.IsNotExist(err) {
 		if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
 			endTrace(instrumentation.TraceEndError(fmt.Errorf("create hydration dir %v:%w", r.hydrationDir, err)))
 			return err

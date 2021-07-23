@@ -17,8 +17,10 @@ limitations under the License.
 package v2
 
 import (
+	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -86,6 +88,44 @@ func TestRunContext_UpdateNamespaces(t *testing.T) {
 			runCtx.UpdateNamespaces(test.newNamespaces)
 
 			t.CheckDeepEqual(test.expected, runCtx.Namespaces)
+		})
+	}
+}
+
+func TestGetRenderOutputPath(t *testing.T) {
+	tests := []struct {
+		description string
+		ops         config.SkaffoldOptions
+		workingDir  string
+		expected    string
+	}{
+		{
+			description: "default to <WORKDIR>/.kpt-pipeline",
+			workingDir:  "./test-workdir",
+			expected:    "test-workdir/.kpt-pipeline",
+		},
+		{
+			description: "--output flag is given",
+			ops:         config.SkaffoldOptions{RenderOutput: "./hydrated-output"},
+			workingDir:  "./test-workdir",
+			expected:    "./hydrated-output",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Chdir()
+			if test.ops.RenderOutput != "" {
+				test.ops.RenderOutput = filepath.Join(tmpDir.Root(), test.ops.RenderOutput)
+			}
+			runCtx := &RunContext{
+				Opts:       test.ops,
+				WorkingDir: filepath.Join(tmpDir.Root(), test.workingDir),
+			}
+			actual, err := runCtx.GetRenderOutputPath()
+			t.CheckNoError(err)
+			t.CheckDeepEqual(filepath.Join(tmpDir.Root(), test.expected), actual)
 		})
 	}
 }
