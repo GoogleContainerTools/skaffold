@@ -289,7 +289,6 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 		},
 	}
 	_ = defaults.Set(cfg)
-
 	runCtx := &v2.RunContext{
 		Pipelines: v2.NewPipelines([]latestV2.Pipeline{cfg.Pipeline}),
 		Opts: config.SkaffoldOptions{
