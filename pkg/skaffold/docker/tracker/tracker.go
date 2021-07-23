@@ -17,26 +17,29 @@ limitations under the License.
 package tracker
 
 import (
-	"sort"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
+type Container struct {
+	Name string
+	Id   string
+}
+
 type ContainerTracker struct {
 	sync.RWMutex
-	deployedContainers  map[string]string         // image name -> container id
+	deployedContainers  map[string]Container      // artifact image name -> container
+	containerToArtifact map[string]graph.Artifact // container id -> artifact (for colorpicker)
 	containers          map[string]bool           // set of tracked container ids
-	containerToArtifact map[string]graph.Artifact // container id -> graph.Artifact
 	notifier            chan string
 }
 
 // NewContainerTracker creates a new ContainerTracker.
 func NewContainerTracker() *ContainerTracker {
 	return &ContainerTracker{
-		deployedContainers:  make(map[string]string),
-		containers:          make(map[string]bool),
 		containerToArtifact: make(map[string]graph.Artifact),
+		deployedContainers:  make(map[string]Container),
 		notifier:            make(chan string, 1),
 	}
 }
@@ -48,32 +51,25 @@ func (t *ContainerTracker) Notifier() chan string {
 	return t.notifier
 }
 
-// ImageForContainer maps a container id to the image tag it was created from.
-// Used by the ColorPicker to maintain consistency between images and colors.
 func (t *ContainerTracker) ArtifactForContainer(id string) graph.Artifact {
+	t.Lock()
+	defer t.Unlock()
 	return t.containerToArtifact[id]
 }
 
-// DeployedContainerForImage returns a the ID of a deployed container created from
+// ContainerIdForImage returns the deployed container created from
 // the provided image, if it exists.
-func (t *ContainerTracker) DeployedContainerForImage(image string) string {
+func (t *ContainerTracker) ContainerForImage(image string) (Container, bool) {
 	t.Lock()
 	defer t.Unlock()
-	if id, found := t.deployedContainers[image]; found {
-		return id
-	}
-	return ""
+	c, found := t.deployedContainers[image]
+	return c, found
 }
 
 // DeployedContainers returns the list of all containers deployed
 // during this run.
-func (t *ContainerTracker) DeployedContainers() []string {
-	var containers []string
-	for _, id := range t.deployedContainers {
-		containers = append(containers, id)
-	}
-	sort.Strings(containers)
-	return containers
+func (t *ContainerTracker) DeployedContainers() map[string]Container {
+	return t.deployedContainers
 }
 
 // Reset resets the entire tracker when a new dev cycle starts.
@@ -84,13 +80,12 @@ func (t *ContainerTracker) Reset() {
 }
 
 // Add adds a container to the list.
-func (t *ContainerTracker) Add(artifact graph.Artifact, id string) {
+func (t *ContainerTracker) Add(artifact graph.Artifact, c Container) {
 	t.Lock()
 	defer t.Unlock()
-	t.containers[id] = true
-	t.deployedContainers[artifact.ImageName] = id
-	t.containerToArtifact[id] = artifact
+	t.deployedContainers[artifact.ImageName] = c
+	t.containerToArtifact[c.Id] = artifact
 	go func() {
-		t.notifier <- id
+		t.notifier <- c.Id
 	}()
 }

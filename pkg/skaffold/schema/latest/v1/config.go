@@ -124,14 +124,15 @@ type ResourceType string
 
 // PortForwardResource describes a resource to port forward.
 type PortForwardResource struct {
-	// Type is the Kubernetes type that should be port forwarded.
-	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Type is the resource type that should be port forwarded.
+	// Acceptable resource types include kubernetes types: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Standalone `Container` is also valid for Docker deployments.
 	Type ResourceType `yaml:"resourceType,omitempty"`
 
-	// Name is the name of the Kubernetes resource to port forward.
+	// Name is the name of the Kubernetes resource or local container to port forward.
 	Name string `yaml:"resourceName,omitempty"`
 
-	// Namespace is the namespace of the resource to port forward.
+	// Namespace is the namespace of the resource to port forward. Does not apply to local containers.
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
