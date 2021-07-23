@@ -25,8 +25,13 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -107,4 +112,29 @@ func TestDeployNamespace(t *testing.T) {
 			t.CheckDeepEqual(test.expected, r.runCtx.GetNamespaces())
 		})
 	}
+}
+
+func TestSkaffoldDeployRenderOnly(t *testing.T) {
+	testutil.Run(t, "does not make kubectl calls", func(t *testutil.T) {
+		runCtx := &runcontext.RunContext{
+			Opts: config.SkaffoldOptions{
+				Namespace:  "testNamespace",
+				RenderOnly: true,
+			},
+			KubeContext: "does-not-exist",
+		}
+
+		deployer, err := runner.GetDeployer(runCtx, deploy.NoopComponentProvider, nil)
+		t.RequireNoError(err)
+		r := SkaffoldRunner{
+			runCtx:     runCtx,
+			kubectlCLI: kubectl.NewCLI(runCtx, ""),
+			deployer:   deployer,
+		}
+		var builds []graph.Artifact
+
+		err = r.Deploy(context.Background(), ioutil.Discard, builds)
+
+		t.CheckNoError(err)
+	})
 }

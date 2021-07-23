@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	k8s "k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -185,7 +184,10 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img1:1", "img2:1"},
 					Tested:   []string{"img1:1", "img2:1"},
+<<<<<<< HEAD
 					Rendered: []string{"img1:1", "img2:1"},
+=======
+>>>>>>> 07f5a1782 ([backport] Add original dev, load_images and deploy logics to runner.v2)
 					Deployed: []string{"img1:1", "img2:1"},
 				},
 				{},
