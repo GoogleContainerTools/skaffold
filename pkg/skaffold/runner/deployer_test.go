@@ -23,9 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -37,7 +35,7 @@ func TestGetDeployer(tOuter *testing.T) {
 	testutil.Run(tOuter, "TestGetDeployer", func(t *testutil.T) {
 		tests := []struct {
 			description string
-			cfg         latestV2.DeployType
+			cfg         latestV2.Pipeline
 			helmVersion string
 			expected    deploy.Deployer
 			apply       bool
@@ -49,19 +47,35 @@ func TestGetDeployer(tOuter *testing.T) {
 			},
 			{
 				description: "helm deployer with 3.0.0 version",
-				cfg:         latestV2.DeployType{HelmDeploy: &latestV2.HelmDeploy{}},
+				cfg: latestV2.Pipeline{
+					Render: latestV2.RenderConfig{
+						Generate: latestV2.Generate{
+							Helm: &latestV2.Helm{},
+						},
+					},
+				},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				expected:    deploy.NewDeployerMux([]deploy.Deployer{&helm.Deployer{}}, false),
 			},
 			{
 				description: "helm deployer with less than 3.0.0 version",
-				cfg:         latestV2.DeployType{HelmDeploy: &latestV2.HelmDeploy{}},
+				cfg: latestV2.Pipeline{
+					Render: latestV2.RenderConfig{
+						Generate: latestV2.Generate{
+							Helm: &latestV2.Helm{},
+						},
+					},
+				},
 				helmVersion: "2.0.0",
 				shouldErr:   true,
 			},
 			{
 				description: "kubectl deployer",
-				cfg:         latestV2.DeployType{KubectlDeploy: &latestV2.KubectlDeploy{}},
+				cfg: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{KubectlDeploy: &latestV2.KubectlDeploy{}},
+					},
+				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
 						Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
@@ -71,34 +85,24 @@ func TestGetDeployer(tOuter *testing.T) {
 				}, false),
 			},
 			{
-				description: "kustomize deployer",
-				cfg:         latestV2.DeployType{KustomizeDeploy: &latestV2.KustomizeDeploy{}},
-				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					t.RequireNonNilResult(kustomize.NewDeployer(&v2.RunContext{
-						Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
-					}, nil, deploy.NoopComponentProvider, &latestV2.KustomizeDeploy{
-						Flags: latestV2.KubectlFlags{},
-					})).(deploy.Deployer),
-				}, false),
-			},
-			{
-				description: "kpt deployer",
-				cfg:         latestV2.DeployType{KptDeploy: &latestV2.KptDeploy{}},
-				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					&kpt.Deployer{},
-				}, false),
-			},
-			{
 				description: "kpt V2 deployer",
-				cfg:         latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+				cfg: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+					},
+				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&kptV2.Deployer{},
 				}, false),
 			},
 			{
-				description: "apply forces creation of kubectl deployer with kpt config",
-				cfg:         latestV2.DeployType{KptDeploy: &latestV2.KptDeploy{}},
-				apply:       true,
+				description: "apply forces creation of kubectl deployer with kptV2 config",
+				cfg: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+					},
+				},
+				apply: true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
 				}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
@@ -107,7 +111,13 @@ func TestGetDeployer(tOuter *testing.T) {
 			},
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
-				cfg:         latestV2.DeployType{HelmDeploy: &latestV2.HelmDeploy{}},
+				cfg: latestV2.Pipeline{
+					Render: latestV2.RenderConfig{
+						Generate: latestV2.Generate{
+							Helm: &latestV2.Helm{},
+						},
+					},
+				},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				apply:       true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
@@ -118,14 +128,20 @@ func TestGetDeployer(tOuter *testing.T) {
 			},
 			{
 				description: "multiple deployers",
-				cfg: latestV2.DeployType{
-					HelmDeploy: &latestV2.HelmDeploy{},
-					KptDeploy:  &latestV2.KptDeploy{},
+				cfg: latestV2.Pipeline{
+					Render: latestV2.RenderConfig{
+						Generate: latestV2.Generate{
+							Helm: &latestV2.Helm{},
+						},
+					},
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+					},
 				},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&helm.Deployer{},
-					&kpt.Deployer{},
+					&kptV2.Deployer{},
 				}, false),
 			},
 		}
@@ -142,11 +158,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
-						Deploy: latestV2.DeployConfig{
-							DeployType: test.cfg,
-						},
-					}}),
+					Pipelines: v2.NewPipelines([]latestV2.Pipeline{test.cfg}),
 				}, deploy.NoopComponentProvider, nil)
 
 				t.CheckError(test.shouldErr, err)
