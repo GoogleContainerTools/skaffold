@@ -522,12 +522,15 @@ type RenderConfig struct {
 type Generate struct {
 	RawK8s    []string `yaml:"rawYaml,omitempty"`
 	Kustomize []string `yaml:"kustomize,omitempty"`
-	Helm      Helm     `yaml:"helm,omitempty"`
+	Helm      *Helm    `yaml:"helm,omitempty"`
 	Kpt       []string `yaml:"kpt,omitempty"`
 }
 
 type Helm struct {
-	Releases *[]HelmRelease `yaml:"releases,omitempty"`
+	Releases []HelmRelease `yaml:"releases,omitempty"`
+	// Flags are additional option flags that are passed on the command
+	// line to `helm`.
+	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 }
 
 // Transformer describes the supported kpt transformers.

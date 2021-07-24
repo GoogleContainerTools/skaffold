@@ -25,9 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -62,54 +60,42 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, provider, labels)
 	}
-	deployerCfg := runCtx.Deployers()
-
 	var deployers []deploy.Deployer
 
-	for _, d := range deployerCfg {
-		dCtx := &deployerCtx{runCtx, d}
-		// TODO: deprecate HelmDeploy
-		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(dCtx, labels, provider, d.HelmDeploy)
+	for _, p := range runCtx.GetPipelines() {
+		dCtx := &deployerCtx{runCtx, p.Deploy}
+		// TODO: Dirty workaround due to the missing helm strategy in kpt. This should be moved to
+		// renderer.generate instead.
+		if p.Render.Generate.Helm != nil {
+			h, err := helm.NewDeployer(dCtx, labels, provider, &latestV2.HelmDeploy{
+				Releases: p.Render.Generate.Helm.Releases,
+				Flags:    p.Render.Generate.Helm.Flags,
+			})
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, h)
 		}
-		// TODO: deprecate KptDeploy
-		if d.KptDeploy != nil {
-			deployer := kpt.NewDeployer(dCtx, labels, provider, d.KptDeploy)
-			deployers = append(deployers, deployer)
-		}
 
-		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labels, provider, d.KubectlDeploy)
+		if p.Deploy.KubectlDeploy != nil {
+			deployer, err := kubectl.NewDeployer(dCtx, labels, provider, p.Deploy.KubectlDeploy)
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, deployer)
 		}
 
-		// TODO: deprecate KustomizeDeploy
-		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(dCtx, labels, provider, d.KustomizeDeploy)
-			if err != nil {
-				return nil, err
-			}
-			deployers = append(deployers, deployer)
-		}
-
-		if d.KptV2Deploy != nil {
-			if d.KptV2Deploy.Dir == "" {
+		if p.Deploy.KptV2Deploy != nil {
+			if p.Deploy.KptV2Deploy.Dir == "" {
+				logrus.Debugln("use default render directory as deployment directory.")
 				hydrationDir, err := runCtx.GetRenderOutputPath()
 				if err != nil {
 					return nil, err
 				}
-				logrus.Debugf("use default render directory as deployment directory %v\n.", hydrationDir)
-				d.KptV2Deploy.Dir = hydrationDir
+				logrus.Infof("manifests are deployed from render path %v\n", hydrationDir)
+				p.Deploy.KptV2Deploy.Dir = hydrationDir
 			}
-			logrus.Infof("manifests are deployed from render path %v\n", d.KptV2Deploy.Dir)
-			deployer := kptV2.NewDeployer(dCtx, labels, provider, d.KptV2Deploy)
+			deployer := kptV2.NewDeployer(dCtx, labels, provider, p.Deploy.KptV2Deploy)
 			deployers = append(deployers, deployer)
 		}
 	}
