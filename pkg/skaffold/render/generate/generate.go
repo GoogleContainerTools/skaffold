@@ -48,9 +48,10 @@ func NewGenerator(workingDir string, config latestV2.Generate, hydrationDir stri
 
 // Generator provides the functions for the manifest sources (raw manifests, helm charts, kustomize configs and remote packages).
 type Generator struct {
-	workingDir   string
-	hydrationDir string
-	config       latestV2.Generate
+	workingDir      string
+	hydrationDir    string
+	config          latestV2.Generate
+	dependencyPaths []string
 }
 
 func excludeRemote(paths []string) []string {
@@ -73,6 +74,9 @@ func excludeRemote(paths []string) []string {
 // kustomize manifests, helm charts or kpt function configs. All should be file-watched.
 func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
 	var manifests manifest.ManifestList
+
+	// reset dependency paths
+	g.dependencyPaths = []string{}
 
 	// Generate kustomize Manifests
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
@@ -101,6 +105,7 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		}
 		manifests.Append(out)
 	}
+	g.dependencyPaths = append(g.dependencyPaths, kustomizePaths...)
 
 	// Generate in-place hydrated kpt Manifests
 	kptPaths := excludeRemote(g.config.Kpt)
@@ -132,10 +137,10 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		}
 		kptManifests = append(kptManifests, outputDir)
 	}
+	g.dependencyPaths = append(g.dependencyPaths, kptPaths...)
 
 	// Generate Raw Manifests
 	sourceManifests := excludeRemote(g.config.RawK8s)
-	sourceManifests = append(sourceManifests, kptManifests...)
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobRawManifests")
 	sourceManifests, err = util.ExpandPathsGlob(g.workingDir, sourceManifests)
 	if err != nil {
@@ -143,7 +148,8 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		return nil, err
 	}
 	endTrace()
-	for _, nkPath := range sourceManifests {
+	hydratedManifests := append(sourceManifests, kptManifests...)
+	for _, nkPath := range hydratedManifests {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
 			if !util.StrSliceContains(g.config.RawK8s, nkPath) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
@@ -157,6 +163,7 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		}
 		manifests.Append(manifestFileContent)
 	}
+	g.dependencyPaths = append(g.dependencyPaths, sourceManifests...)
 
 	// TODO(yuwenma): helm resources. `render.generate.helmCharts`
 	return manifests, nil
@@ -204,4 +211,25 @@ func isKptDir(path string) (string, bool) {
 		return "", false
 	}
 	return dir, true
+}
+
+func (g *Generator) ManifestDeps() ([]string, error) {
+	deps := util.NewStringSet()
+	for _, path := range g.dependencyPaths {
+		err := filepath.Walk(path,
+			func(p string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				fname := filepath.Base(p)
+				if strings.HasSuffix(fname, ".yaml") || strings.HasSuffix(fname, ".yml") || fname == kptfile.KptFileName {
+					deps.Insert(p)
+				}
+				return nil
+			})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return deps.ToList(), nil
 }

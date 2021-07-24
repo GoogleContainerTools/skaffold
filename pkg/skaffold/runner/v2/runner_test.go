@@ -220,6 +220,10 @@ func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return nil
 }
 
+func (t *TestBench) ManifestDeps() ([]string, error) {
+	return nil, nil
+}
+
 func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
