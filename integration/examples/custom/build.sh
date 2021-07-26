@@ -3,11 +3,12 @@ set -e
 
 if ! [ -x "$(command -v ko)" ]; then
     pushd $(mktemp -d)
-    go mod init tmp; GOFLAGS= go get github.com/google/ko/cmd/ko@v0.6.0
+    curl -L https://github.com/google/ko/archive/v0.8.3.tar.gz | tar --strip-components 1 -zx
+    go build -o $(go env GOPATH)/bin/ko .
     popd
 fi
 
-output=$(ko publish --local --preserve-import-paths --tags= . | tee)
+output=$($(go env GOPATH)/bin/ko publish --local --preserve-import-paths --tags= . | tee)
 ref=$(echo "$output" | tail -n1)
 
 docker tag "$ref" "$IMAGE"
