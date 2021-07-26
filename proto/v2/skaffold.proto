@@ -365,13 +365,6 @@ service SkaffoldV2Service {
         };
     }
 
-    // Returns all the skaffold output of the current Skaffold execution
-    rpc SkaffoldLogs (google.protobuf.Empty) returns (stream Event) {
-        option (google.api.http) = {
-            get: "/v2/skaffoldLogs"
-        };
-    }
-
     // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
     rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
