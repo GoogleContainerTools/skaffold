@@ -21,8 +21,8 @@ require (
 	github.com/aws/aws-sdk-go v1.36.30 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
-	github.com/buildpacks/imgutil v0.0.0-20210209163614-30601e371ce3
-	github.com/buildpacks/lifecycle v0.10.2
+	github.com/buildpacks/imgutil v0.0.0-20210510154637-009f91f52918
+	github.com/buildpacks/lifecycle v0.11.4
 	github.com/buildpacks/pack v0.18.1
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/docker/cli v20.10.0-beta1.0.20201117192004-5cc239616494+incompatible
