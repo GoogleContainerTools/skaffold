@@ -126,7 +126,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Write
 	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
 		output.Green.Fprintln(
 			out,
-			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> %s:%d",
+			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> http://%s:%d",
 				entry.resource.Type,
 				entry.resource.Name,
 				entry.resource.Namespace,
