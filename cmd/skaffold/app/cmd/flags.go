@@ -560,15 +560,6 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
 	{
-		Name:          "v2",
-		Usage:         "Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.",
-		Value:         &opts.Experimental,
-		DefValue:      false,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"apply", "debug", "deploy", "dev", "run"},
-		IsEnum:        true,
-	},
-	{
 		Name:          "digest-source",
 		Usage:         "Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.",
 		Value:         &opts.DigestSource,
