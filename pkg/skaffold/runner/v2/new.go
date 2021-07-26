@@ -106,7 +106,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating renderer: %w", err)
 	}
 
-	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels())
+	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels(), hydrationDir)
 
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))

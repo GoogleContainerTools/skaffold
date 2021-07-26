@@ -81,7 +81,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
 					}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 						Flags: latestV2.KubectlFlags{},
-					})).(deploy.Deployer),
+					}, "")).(deploy.Deployer),
 				}, false),
 			},
 			{
@@ -107,7 +107,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
 				}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
-				})).(deploy.Deployer),
+				}, "")).(deploy.Deployer),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
@@ -124,7 +124,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
 				}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
-				})).(deploy.Deployer),
+				}, "")).(deploy.Deployer),
 			},
 			{
 				description: "multiple deployers",
@@ -159,7 +159,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						Apply: test.apply,
 					},
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{test.cfg}),
-				}, deploy.NoopComponentProvider, nil)
+				}, deploy.NoopComponentProvider, nil, "")
 
 				t.CheckError(test.shouldErr, err)
 				t.CheckTypeEquality(test.expected, deployer)
@@ -194,7 +194,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
 				}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kubectl deploy, with flags",
@@ -213,7 +213,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						Apply:  []string{"--foo"},
 						Global: []string{"--bar"},
 					},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 			{
 				name: "two kubectl configs with mismatched flags should fail",
@@ -244,7 +244,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
 				}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kustomize deploy",
@@ -255,7 +255,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
 				}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 		}
 
@@ -271,7 +271,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}
 				deployer, err := getDefaultDeployer(&v2.RunContext{
 					Pipelines: v2.NewPipelines(pipelines),
-				}, deploy.NoopComponentProvider, nil)
+				}, deploy.NoopComponentProvider, nil, "")
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)
 

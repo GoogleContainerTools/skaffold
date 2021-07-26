@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/segmentio/textio"
@@ -68,11 +69,12 @@ type Deployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	skipRender         bool
+	hydrationDir       string
 }
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KubectlDeploy, hydrationDir string) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -99,7 +101,10 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
-		hydratedManifests:  cfg.HydratedManifests(),
+		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
+		hydratedManifests: cfg.HydratedManifests(),
+		// hydrationDir refers to the path where the hydrated manifests are stored, this is introduced in v2.
+		hydrationDir: hydrationDir,
 	}, nil
 }
 
@@ -242,16 +247,29 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 
 // readManifests reads the manifests to deploy/delete.
 func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
-	// Get file manifests
-	manifests, err := k.Dependencies()
+	var manifests []string
+	var err error
+
+	// v1 kubectl deployer is used. No manifest hydration.
+	if len(k.KubectlDeploy.Manifests) > 0 {
+		logrus.Warnln("`deploy.kubectl.manfiests` (DEPRECATED) are given, skaffold will skip the `manifests` field. " +
+			"If you expect skaffold to render the resources from the `manifests`, please delete the `deploy.kubectl.manfiests` field.")
+		manifests, err = k.Dependencies()
+		if err != nil {
+			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
+		}
+	} else {
+		// v2 kubectl deployer is used. The manifests are read from the hydrated directory.
+		manifests, err = k.manifestFiles([]string{filepath.Join(k.hydrationDir, "*")})
+		if err != nil {
+			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
+		}
+	}
+
 	// Clean the temporary directory that holds the manifests downloaded from GCS
 	defer os.RemoveAll(k.gcsManifestDir)
 
-	if err != nil {
-		return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
-	}
-
-	// Append URL manifests
+	// Append URL manifests. URL manifests are excluded from `Dependencies`.
 	hasURLManifest := false
 	for _, manifest := range k.KubectlDeploy.Manifests {
 		if util.IsURL(manifest) {
@@ -326,6 +344,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	return manifest.Write(manifests.String(), filepath, out)
 }
 
+// renderManifests transforms the manifests' images with the actual image sha1 built from skaffold build.
 func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		output.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))

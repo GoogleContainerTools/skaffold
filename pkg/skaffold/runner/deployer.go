@@ -56,9 +56,9 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
-func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, labels map[string]string) (deploy.Deployer, error) {
+func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, labels map[string]string, hydrationDir string) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
-		return getDefaultDeployer(runCtx, provider, labels)
+		return getDefaultDeployer(runCtx, provider, labels, hydrationDir)
 	}
 	var deployers []deploy.Deployer
 
@@ -78,7 +78,7 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 		}
 
 		if p.Deploy.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labels, provider, p.Deploy.KubectlDeploy)
+			deployer, err := kubectl.NewDeployer(dCtx, labels, provider, p.Deploy.KubectlDeploy, hydrationDir)
 			if err != nil {
 				return nil, err
 			}
@@ -87,11 +87,6 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 
 		if p.Deploy.KptV2Deploy != nil {
 			if p.Deploy.KptV2Deploy.Dir == "" {
-				logrus.Debugln("use default render directory as deployment directory.")
-				hydrationDir, err := runCtx.GetRenderOutputPath()
-				if err != nil {
-					return nil, err
-				}
 				logrus.Infof("manifests are deployed from render path %v\n", hydrationDir)
 				p.Deploy.KptV2Deploy.Dir = hydrationDir
 			}
@@ -116,7 +111,7 @@ The default deployer will honor a select set of deploy configuration from an exi
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, labels map[string]string) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, labels map[string]string, hydrationDir string) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latestV2.KubectlFlags
@@ -174,7 +169,7 @@ func getDefaultDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
-	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, provider, k)
+	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, provider, k, hydrationDir)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
