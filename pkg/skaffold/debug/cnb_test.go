@@ -381,23 +381,25 @@ func TestUpdateForCNBImage(t *testing.T) {
 		// Test that when a transform modifies the command-line arguments, then
 		// the changes are reflected to the launcher command-line
 		testutil.Run(t, test.description+" (args changed)", func(t *testutil.T) {
-			argsChangedTransform := func(c *v1.Container, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+			argsChangedTransform := func(c *operableContainer, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
 				c.Args = ic.arguments
 				return annotations.ContainerDebugConfiguration{}, "", nil
 			}
-			copy := v1.Container{}
-			c, _, err := updateForCNBImage(&copy, test.input, argsChangedTransform)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, copy)
+			operable := operableContainer{}
+			container := v1.Container{}
+			c, _, err := updateForCNBImage(&operable, test.input, argsChangedTransform)
+			applyFromOperable(&operable, &container)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, container)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.config, c)
 		})
 
 		// Test that when the arguments are left unchanged, that the container is unchanged
 		testutil.Run(t, test.description+" (args unchanged)", func(t *testutil.T) {
-			argsUnchangedTransform := func(c *v1.Container, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+			argsUnchangedTransform := func(c *operableContainer, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
 				return annotations.ContainerDebugConfiguration{WorkingDir: ic.workingDir}, "", nil
 			}
 
-			copy := v1.Container{}
+			copy := operableContainer{}
 			_, _, err := updateForCNBImage(&copy, test.input, argsUnchangedTransform)
 			t.CheckError(test.shouldErr, err)
 			if copy.Args != nil {

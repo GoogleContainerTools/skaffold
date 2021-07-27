@@ -155,7 +155,9 @@ func TestExposePort(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			result := exposePort(test.in, "name", 5555)
+			ports := k8sPortsToContainerPorts(test.in)
+			ports = exposePort(ports, "name", 5555)
+			result := containerPortsToK8sPorts(ports)
 			t.CheckDeepEqual(test.expected, result)
 			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.Name == "name" }))
 			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.ContainerPort == 5555 }))
@@ -185,7 +187,9 @@ func TestSetEnvVar(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			result := setEnvVar(test.in, "name", "new-text")
+			env := k8sEnvToContainerEnv(test.in)
+			env = setEnvVar(env, "name", "new-text")
+			result := containerEnvToK8sEnv(env)
 			t.CheckDeepEqual(test.expected, result)
 		})
 	}
@@ -244,14 +248,14 @@ func TestUpdateForShDashC(t *testing.T) {
 		description string
 		input       imageConfiguration
 		unwrapped   imageConfiguration
-		expected    v1.Container
+		expected    operableContainer
 	}{
 		{description: "empty"},
 		{
 			description: "no unwrapping: entrypoint ['a', 'b']",
 			input:       imageConfiguration{entrypoint: []string{"a", "b"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"a", "b"}},
-			expected:    v1.Container{Command: []string{"b", "a"}},
+			expected:    operableContainer{Command: []string{"b", "a"}},
 		},
 		{
 			description: "no unwrapping: args ['d', 'e', 'f']",
@@ -262,71 +266,71 @@ func TestUpdateForShDashC(t *testing.T) {
 			description: "no unwrapping: entrypoint ['a', 'b'], args [d]",
 			input:       imageConfiguration{entrypoint: []string{"a", "b"}, arguments: []string{"d"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"a", "b"}, arguments: []string{"d"}},
-			expected:    v1.Container{Command: []string{"b", "a"}},
+			expected:    operableContainer{Command: []string{"b", "a"}},
 		},
 		{
 			description: "no unwrapping: entrypoint ['/bin/sh', '-x'] (only `-c`)",
 			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-x"}, arguments: []string{"d"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"/bin/sh", "-x"}, arguments: []string{"d"}},
-			expected:    v1.Container{Command: []string{"-x", "/bin/sh"}},
+			expected:    operableContainer{Command: []string{"-x", "/bin/sh"}},
 		},
 		{
 			description: "no unwrapping: entrypoint ['sh', '-c', 'foo'] (not /bin/sh)",
 			input:       imageConfiguration{entrypoint: []string{"sh", "-c"}, arguments: []string{"d"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"sh", "-c"}, arguments: []string{"d"}},
-			expected:    v1.Container{Command: []string{"-c", "sh"}},
+			expected:    operableContainer{Command: []string{"-c", "sh"}},
 		},
 		{
 			description: "unwwrapped: entrypoint ['/bin/sh', '-c', 'cmd']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    v1.Container{Command: []string{"/bin/sh", "-c", "f e d"}},
+			expected:    operableContainer{Command: []string{"/bin/sh", "-c", "f e d"}},
 		},
 		{
 			description: "unwwrapped: entrypoint ['/bin/sh', '-c'], args ['d e f']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-c"}, arguments: []string{"d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    v1.Container{Args: []string{"f e d"}},
+			expected:    operableContainer{Args: []string{"f e d"}},
 		},
 		{
 			description: "unwwrapped: args ['/bin/sh', '-c', 'd e f']",
 			input:       imageConfiguration{arguments: []string{"/bin/sh", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    v1.Container{Args: []string{"/bin/sh", "-c", "f e d"}},
+			expected:    operableContainer{Args: []string{"/bin/sh", "-c", "f e d"}},
 		},
 		{
 			description: "unwwrapped: entrypoint ['/bin/bash', '-c', 'd e f']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/bash", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    v1.Container{Command: []string{"/bin/bash", "-c", "f e d"}},
+			expected:    operableContainer{Command: []string{"/bin/bash", "-c", "f e d"}},
 		},
 		{
 			description: "entrypoint ['/bin/bash','-c'], args ['d e f']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/bash", "-c"}, arguments: []string{"d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    v1.Container{Args: []string{"f e d"}},
+			expected:    operableContainer{Args: []string{"f e d"}},
 		},
 		{
 			description: "unwwrapped: args ['/bin/bash','-c','d e f']",
 			input:       imageConfiguration{arguments: []string{"/bin/bash", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    v1.Container{Args: []string{"/bin/bash", "-c", "f e d"}},
+			expected:    operableContainer{Args: []string{"/bin/bash", "-c", "f e d"}},
 		},
 		{
 			description: "unwwrapped: entrypoint-launcher and args ['/bin/sh','-c','d e f']",
 			input:       imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"/bin/bash", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    v1.Container{Args: []string{"/bin/bash", "-c", "f e d"}},
+			expected:    operableContainer{Args: []string{"/bin/bash", "-c", "f e d"}},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&entrypointLaunchers, []string{"launcher"})
 
-			container := v1.Container{}
+			container := operableContainer{}
 			// The transformer reverses the unwrapped entrypoint which should be reflected into the container.Entrypoint
 			updateForShDashC(&container, test.input,
-				func(c *v1.Container, result imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+				func(c *operableContainer, result imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
 					t.CheckDeepEqual(test.unwrapped, result, cmp.AllowUnexported(imageConfiguration{}))
 					if len(result.entrypoint) > 0 {
 						c.Command = make([]string, len(result.entrypoint))

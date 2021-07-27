@@ -317,7 +317,9 @@ func TestNodeTransformer_Apply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity, nil)
+			operableContainer := operableContainerFromK8sContainer(&test.containerSpec)
+			config, image, err := nodeTransformer{}.Apply(operableContainer, test.configuration, identity, nil)
+			applyFromOperable(operableContainer, &test.containerSpec)
 
 			// Apply never fails since there's always the option to set NODE_OPTIONS
 			t.CheckNil(err)
@@ -393,9 +395,6 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						}}}}}},
 			true,
 			&appsv1.Deployment{
-				// ObjectMeta: metav1.ObjectMeta{
-				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				// },
 				Spec: appsv1.DeploymentSpec{
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
@@ -470,9 +469,6 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						}}}}}},
 			true,
 			&appsv1.StatefulSet{
-				// ObjectMeta: metav1.ObjectMeta{
-				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				// },
 				Spec: appsv1.StatefulSetSpec{
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
@@ -509,9 +505,6 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						}}}}}},
 			true,
 			&appsv1.DaemonSet{
-				// ObjectMeta: metav1.ObjectMeta{
-				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				// },
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
@@ -548,9 +541,6 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}}}}}},
 			true,
 			&batchv1.Job{
-				// ObjectMeta: metav1.ObjectMeta{
-				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				// },
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
@@ -589,9 +579,6 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						}}}}},
 			true,
 			&v1.ReplicationController{
-				// ObjectMeta: metav1.ObjectMeta{
-				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				// },
 				Spec: v1.ReplicationControllerSpec{
 					Replicas: int32p(1),
 					Template: &v1.PodTemplateSpec{

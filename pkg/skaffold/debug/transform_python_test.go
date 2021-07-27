@@ -250,7 +250,9 @@ func TestPythonTransformer_Apply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity, test.overrideProtocols)
+			operableContainer := operableContainerFromK8sContainer(&test.containerSpec)
+			config, image, err := pythonTransformer{}.Apply(operableContainer, test.configuration, identity, test.overrideProtocols)
+			applyFromOperable(operableContainer, &test.containerSpec)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)

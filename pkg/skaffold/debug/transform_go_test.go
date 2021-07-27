@@ -209,7 +209,9 @@ func TestDlvTransformerApply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := dlvTransformer{}.Apply(&test.containerSpec, test.configuration, identity, nil)
+			operableContainer := operableContainerFromK8sContainer(&test.containerSpec)
+			config, image, err := dlvTransformer{}.Apply(operableContainer, test.configuration, identity, nil)
+			applyFromOperable(operableContainer, &test.containerSpec)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)

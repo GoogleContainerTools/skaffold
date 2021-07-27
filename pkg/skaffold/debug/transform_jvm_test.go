@@ -157,7 +157,9 @@ func TestJdwpTransformerApply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := jdwpTransformer{}.Apply(&test.containerSpec, test.configuration, identity, nil)
+			operableContainer := operableContainerFromK8sContainer(&test.containerSpec)
+			config, image, err := jdwpTransformer{}.Apply(operableContainer, test.configuration, identity, nil)
+			applyFromOperable(operableContainer, &test.containerSpec)
 
 			// Apply never fails since there's always the option to set JAVA_TOOL_OPTIONS
 			t.CheckNil(err)

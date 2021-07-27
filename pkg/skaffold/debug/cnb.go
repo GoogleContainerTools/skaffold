@@ -25,7 +25,6 @@ import (
 	cnb "github.com/buildpacks/lifecycle"
 	cnbl "github.com/buildpacks/lifecycle/launch"
 	shell "github.com/kballard/go-shellquote"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -106,7 +105,7 @@ func hasCNBLauncherEntrypoint(ic imageConfiguration) bool {
 //     the default process type.  `CNB_PROCESS_TYPE` is ignored in this situation.  A different process
 //     can be used by overriding the image entrypoint.  Direct and script launches are supported by
 //     setting the entrypoint to `/cnb/lifecycle/launcher` and providing the appropriate arguments.
-func updateForCNBImage(container *v1.Container, ic imageConfiguration, transformer func(container *v1.Container, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
+func updateForCNBImage(container *operableContainer, ic imageConfiguration, transformer func(container *operableContainer, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
 	// buildpacks/lifecycle 0.6.0 embeds the process definitions into a special image label.
 	// The build metadata isn't absolutely required as the image args could be
 	// a command line (e.g., `python xxx`) but it likely indicates the

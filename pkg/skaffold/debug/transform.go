@@ -58,7 +58,6 @@ import (
 	"strings"
 	"time"
 
-	shell "github.com/kballard/go-shellquote"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -90,25 +89,10 @@ type imageConfiguration struct {
 	workingDir string
 }
 
-// containerTransformer transforms a container definition
-type containerTransformer interface {
-	// IsApplicable determines if this container is suitable to be transformed.
-	IsApplicable(config imageConfiguration) bool
-
-	// Apply configures a container definition for debugging, returning the debug configuration details
-	// and required initContainer (an empty string if not required), or return a non-nil error if
-	// the container could not be transformed.  The initContainer image is intended to install any
-	// required debug support tools.
-	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error)
-}
-
 const (
 	// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files.
 	debuggingSupportFilesVolume = "debugging-support-files"
 )
-
-// containerTransforms are the set of configured transformers
-var containerTransforms []containerTransformer
 
 // entrypointLaunchers is a list of known entrypoints that effectively just launches the container image's CMD
 // as a command-line.  These entrypoints are ignored.
@@ -245,82 +229,6 @@ func rewriteHTTPGetProbe(probe *v1.Probe, minTimeout time.Duration) bool {
 	return true
 }
 
-func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
-	// skip annotated podspecs — allows users to customize their own image
-	if _, found := metadata.Annotations[annotations.DebugConfig]; found {
-		return false
-	}
-
-	portAlloc := func(desiredPort int32) int32 {
-		return allocatePort(podSpec, desiredPort)
-	}
-	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
-	configurations := make(map[string]annotations.ContainerDebugConfiguration)
-	// the container images that require debugging support files
-	var containersRequiringSupport []*v1.Container
-	// the set of image IDs required to provide debugging support files
-	requiredSupportImages := make(map[string]bool)
-	for i := range podSpec.Containers {
-		container := podSpec.Containers[i] // make a copy and only apply changes on successful transform
-
-		// the usual retriever returns an error for non-build artifacts
-		imageConfig, err := retrieveImageConfiguration(container.Image)
-		if err != nil {
-			continue
-		}
-		// requiredImage, if not empty, is the image ID providing the debugging support files
-		// `err != nil` means that the container did not or could not be transformed
-		if configuration, requiredImage, err := transformContainer(&container, imageConfig, portAlloc); err == nil {
-			configuration.Artifact = imageConfig.artifact
-			if configuration.WorkingDir == "" {
-				configuration.WorkingDir = imageConfig.workingDir
-			}
-			configurations[container.Name] = configuration
-			podSpec.Containers[i] = container // apply any configuration changes
-			if len(requiredImage) > 0 {
-				log.Entry(context.TODO()).Infof("%q requires debugging support image %q", container.Name, requiredImage)
-				containersRequiringSupport = append(containersRequiringSupport, &podSpec.Containers[i])
-				requiredSupportImages[requiredImage] = true
-			}
-		} else {
-			log.Entry(context.TODO()).Warnf("Image %q not configured for debugging: %v", container.Name, err)
-		}
-	}
-
-	// check if we have any images requiring additional debugging support files
-	if len(containersRequiringSupport) > 0 {
-		log.Entry(context.TODO()).Info("Configuring installation of debugging support files")
-		// we create the volume that will hold the debugging support files
-		supportVolume := v1.Volume{Name: debuggingSupportFilesVolume, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}
-		podSpec.Volumes = append(podSpec.Volumes, supportVolume)
-
-		// this volume is mounted in the containers at `/dbg`
-		supportVolumeMount := v1.VolumeMount{Name: debuggingSupportFilesVolume, MountPath: "/dbg"}
-		// the initContainers are responsible for populating the contents of `/dbg`
-		for imageID := range requiredSupportImages {
-			supportFilesInitContainer := v1.Container{
-				Name:         fmt.Sprintf("install-%s-debug-support", imageID),
-				Image:        fmt.Sprintf("%s/%s", debugHelpersRegistry, imageID),
-				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
-			}
-			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
-		}
-		// the populated volume is then mounted in the containers at `/dbg` too
-		for _, container := range containersRequiringSupport {
-			container.VolumeMounts = append(container.VolumeMounts, supportVolumeMount)
-		}
-	}
-
-	if len(configurations) > 0 {
-		if metadata.Annotations == nil {
-			metadata.Annotations = make(map[string]string)
-		}
-		metadata.Annotations[annotations.DebugConfig] = encodeConfigurations(configurations)
-		return true
-	}
-	return false
-}
-
 // allocatePort walks the podSpec's containers looking for an available port that is close to desiredPort.
 // We deal with wrapping and avoid allocating ports < 1024
 func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
@@ -355,95 +263,6 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 	return true
 }
 
-// transformContainer rewrites the container definition to enable debugging.
-// Returns a debugging configuration description with associated language runtime support
-// container image, or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
-	// Update the image configuration's environment with those set in the k8s manifest.
-	// (Environment variables in the k8s container's `env` add to the image configuration's `env` settings rather than replace.)
-	for _, envVar := range container.Env {
-		// FIXME handle ValueFrom?
-		if config.env == nil {
-			config.env = make(map[string]string)
-		}
-		config.env[envVar.Name] = envVar.Value
-	}
-
-	if len(container.Command) > 0 {
-		config.entrypoint = container.Command
-	}
-	if len(container.Args) > 0 {
-		config.arguments = container.Args
-	}
-
-	// Apply command-line unwrapping for buildpack images and images using `sh -c`-style command-lines
-	next := func(container *v1.Container, config imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
-		return performContainerTransform(container, config, portAlloc)
-	}
-	if isCNBImage(config) {
-		return updateForCNBImage(container, config, next)
-	}
-	return updateForShDashC(container, config, next)
-}
-
-func updateForShDashC(container *v1.Container, ic imageConfiguration, transformer func(*v1.Container, imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
-	var rewriter func([]string)
-	copy := ic
-	switch {
-	// Case 1: entrypoint = ["/bin/sh", "-c"], arguments = ["<cmd-line>", args ...]
-	case len(ic.entrypoint) == 2 && len(ic.arguments) > 0 && isShDashC(ic.entrypoint[0], ic.entrypoint[1]):
-		if split, err := shell.Split(ic.arguments[0]); err == nil {
-			copy.entrypoint = split
-			copy.arguments = nil
-			rewriter = func(rewrite []string) {
-				container.Command = nil // inherit from container
-				container.Args = append([]string{shJoin(rewrite)}, ic.arguments[1:]...)
-			}
-		}
-
-	// Case 2: entrypoint = ["/bin/sh", "-c", "<cmd-line>", args...], arguments = [args ...]
-	case len(ic.entrypoint) > 2 && isShDashC(ic.entrypoint[0], ic.entrypoint[1]):
-		if split, err := shell.Split(ic.entrypoint[2]); err == nil {
-			copy.entrypoint = split
-			copy.arguments = nil
-			rewriter = func(rewrite []string) {
-				container.Command = append([]string{ic.entrypoint[0], ic.entrypoint[1], shJoin(rewrite)}, ic.entrypoint[3:]...)
-			}
-		}
-
-	// Case 3: entrypoint = [] or an entrypoint launcher (and so ignored), arguments = ["/bin/sh", "-c", "<cmd-line>", args...]
-	case (len(ic.entrypoint) == 0 || isEntrypointLauncher(ic.entrypoint)) && len(ic.arguments) > 2 && isShDashC(ic.arguments[0], ic.arguments[1]):
-		if split, err := shell.Split(ic.arguments[2]); err == nil {
-			copy.entrypoint = split
-			copy.arguments = nil
-			rewriter = func(rewrite []string) {
-				container.Command = nil
-				container.Args = append([]string{ic.arguments[0], ic.arguments[1], shJoin(rewrite)}, ic.arguments[3:]...)
-			}
-		}
-	}
-
-	c, image, err := transformer(container, copy)
-	if err == nil && rewriter != nil && container.Command != nil {
-		rewriter(container.Command)
-	}
-	return c, image, err
-}
-
-func isShDashC(cmd, arg string) bool {
-	return (cmd == "/bin/sh" || cmd == "/bin/bash") && arg == "-c"
-}
-
-func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
-	log.Entry(context.TODO()).Tracef("Examining container %q with config %v", container.Name, config)
-	for _, transform := range containerTransforms {
-		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc, Protocols)
-		}
-	}
-	return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
-}
-
 func encodeConfigurations(configurations map[string]annotations.ContainerDebugConfiguration) string {
 	bytes, err := json.Marshal(configurations)
 	if err != nil {
@@ -474,7 +293,7 @@ func describe(obj runtime.Object) (group, version, kind, description string) {
 }
 
 // exposePort adds a `ContainerPort` instance or amends an existing entry with the same port.
-func exposePort(entries []v1.ContainerPort, portName string, port int32) []v1.ContainerPort {
+func exposePort(entries []containerPort, portName string, port int32) []containerPort {
 	found := false
 	for i := 0; i < len(entries); {
 		switch {
@@ -496,28 +315,19 @@ func exposePort(entries []v1.ContainerPort, portName string, port int32) []v1.Co
 	if found {
 		return entries
 	}
-	entry := v1.ContainerPort{
+	entry := containerPort{
 		Name:          portName,
 		ContainerPort: port,
 	}
 	return append(entries, entry)
 }
 
-// setEnvVar adds a `EnvVar` instance or replaced an existing entry
-func setEnvVar(entries []v1.EnvVar, varName, value string) []v1.EnvVar {
-	for i := range entries {
-		// env variable names must be unique so rewrite an existing entry if found
-		if entries[i].Name == varName {
-			entries[i].Value = value
-			return entries
-		}
+func setEnvVar(entries containerEnv, key, value string) containerEnv {
+	if _, found := entries.Env[key]; !found {
+		entries.Order = append(entries.Order, key)
 	}
-
-	entry := v1.EnvVar{
-		Name:  varName,
-		Value: value,
-	}
-	return append(entries, entry)
+	entries.Env[key] = value
+	return entries
 }
 
 // shJoin joins the arguments into a quoted form suitable to pass to `sh -c`.

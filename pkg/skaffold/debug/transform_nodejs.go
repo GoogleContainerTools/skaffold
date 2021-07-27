@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -77,7 +75,7 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t nodeTransformer) Apply(container *operableContainer, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	log.Entry(context.TODO()).Infof("Configuring %q for node.js debugging", container.Name)
 
 	// try to find existing `--inspect` command
