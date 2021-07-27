@@ -24,7 +24,7 @@ import (
 
 type Container struct {
 	Name string
-	Id   string
+	ID   string
 }
 
 type ContainerTracker struct {
@@ -84,8 +84,8 @@ func (t *ContainerTracker) Add(artifact graph.Artifact, c Container) {
 	t.Lock()
 	defer t.Unlock()
 	t.deployedContainers[artifact.ImageName] = c
-	t.containerToArtifact[c.Id] = artifact
+	t.containerToArtifact[c.ID] = artifact
 	go func() {
-		t.notifier <- c.Id
+		t.notifier <- c.ID
 	}()
 }

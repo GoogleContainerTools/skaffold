@@ -19,7 +19,11 @@ package docker
 import (
 	"fmt"
 	"io"
+	"strings"
 	"sync"
+
+	"github.com/docker/go-connections/nat"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
@@ -27,20 +31,17 @@ import (
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
-
-	"github.com/docker/go-connections/nat"
 )
 
-type portManager struct {
+type PortManager struct {
 	containerPorts map[string][]int // maps containers to the ports they have allocated
 	portSet        util.PortSet
 
 	lock sync.Mutex
 }
 
-func NewPortManager() *portManager {
-	return &portManager{
+func NewPortManager() *PortManager {
+	return &PortManager{
 		containerPorts: make(map[string][]int),
 		portSet:        util.PortSet{},
 	}
@@ -49,7 +50,7 @@ func NewPortManager() *portManager {
 // getPorts converts PortForwardResources into docker.PortSet/PortMap objects.
 // These are passed to ContainerCreate on Deploy to expose container ports on the host.
 // It also returns a list of containerPortForwardEntry, to be passed to the event handler
-func (pm *portManager) getPorts(containerName string, pf []*v1.PortForwardResource) (nat.PortSet, nat.PortMap, []containerPortForwardEntry, error) {
+func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource) (nat.PortSet, nat.PortMap, []containerPortForwardEntry, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	s := make(nat.PortSet)
@@ -57,7 +58,7 @@ func (pm *portManager) getPorts(containerName string, pf []*v1.PortForwardResour
 	var entries []containerPortForwardEntry
 	var ports []int
 	for _, p := range pf {
-		if p.Type != "container" {
+		if strings.ToLower(string(p.Type)) != "container" {
 			logrus.Debugf("skipping non-container port forward resource in Docker deploy: %s\n", p.Name)
 			continue
 		}
@@ -83,7 +84,7 @@ func (pm *portManager) getPorts(containerName string, pf []*v1.PortForwardResour
 	return s, m, entries, nil
 }
 
-func (pm *portManager) relinquishPorts(containerName string) {
+func (pm *PortManager) relinquishPorts(containerName string) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	ports := pm.containerPorts[containerName]

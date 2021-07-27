@@ -49,7 +49,7 @@ type Deployer struct {
 
 	cfg         *v1.DockerDeploy
 	tracker     *tracker.ContainerTracker
-	portManager *portManager
+	portManager *PortManager
 	client      dockerutil.LocalDaemon
 	network     string
 	resources   []*v1.PortForwardResource
@@ -124,9 +124,9 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		return nil
 	}
 	if container, found := d.tracker.ContainerForImage(b.ImageName); found {
-		logrus.Debugf("removing old container %s for image %s", container.Id, b.ImageName)
-		if err := d.client.Delete(ctx, out, container.Id); err != nil {
-			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.Id, b.ImageName, err)
+		logrus.Debugf("removing old container %s for image %s", container.ID, b.ImageName)
+		if err := d.client.Delete(ctx, out, container.ID); err != nil {
+			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, b.ImageName, err)
 		}
 		d.portManager.relinquishPorts(container.Name)
 	}
@@ -153,7 +153,7 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 	if err != nil {
 		return errors.Wrap(err, "creating container in local docker")
 	}
-	d.TrackContainerFromBuild(b, tracker.Container{Name: containerName, Id: id})
+	d.TrackContainerFromBuild(b, tracker.Container{Name: containerName, ID: id})
 	containerPortForwardEvents(out, entries)
 	return nil
 }
@@ -182,7 +182,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 
 func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	for _, container := range d.tracker.DeployedContainers() {
-		if err := d.client.Delete(ctx, out, container.Id); err != nil {
+		if err := d.client.Delete(ctx, out, container.ID); err != nil {
 			// TODO(nkubala): replace with actionable error
 			return errors.Wrap(err, "cleaning up deployed container")
 		}

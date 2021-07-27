@@ -71,7 +71,7 @@ func TestDeployedContainers(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			tracker := NewContainerTracker()
 			for _, pair := range test.containers {
-				tracker.Add(pair.artifact, Container{Id: pair.id})
+				tracker.Add(pair.artifact, Container{ID: pair.id})
 			}
 			deployedContainers := tracker.DeployedContainers()
 
@@ -79,7 +79,7 @@ func TestDeployedContainers(t *testing.T) {
 			for _, c := range test.expectedContainers {
 				found := false
 				for _, container := range deployedContainers {
-					if container.Id == c {
+					if container.ID == c {
 						found = true
 					}
 				}
@@ -144,10 +144,10 @@ func TestDeployedContainerForImage(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			tracker := NewContainerTracker()
 			for _, pair := range test.containers {
-				tracker.Add(pair.artifact, Container{Id: pair.id})
+				tracker.Add(pair.artifact, Container{ID: pair.id})
 			}
 			container, _ := tracker.ContainerForImage(test.target)
-			t.CheckDeepEqual(test.expected, container.Id)
+			t.CheckDeepEqual(test.expected, container.ID)
 		})
 	}
 }
