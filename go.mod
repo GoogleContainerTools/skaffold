@@ -42,7 +42,7 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/ko v0.8.4-0.20210615195035-ee2353837872
 	github.com/google/uuid v1.1.2
-	github.com/grpc-ecosystem/grpc-gateway v1.14.8
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/heroku/color v0.0.6
 	github.com/imdario/mergo v0.3.12
 	github.com/karrick/godirwalk v1.16.1
@@ -81,7 +81,7 @@ require (
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
 	google.golang.org/api v0.48.0
 	google.golang.org/genproto v0.0.0-20210608205507-b6d2f5bf0d7d
-	google.golang.org/grpc v1.38.0
+	google.golang.org/grpc v1.39.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
