@@ -78,7 +78,7 @@ func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.D
 		debugger:    &debug.NoopDebugger{},
 		logger:      l,
 		monitor:     &status.NoopMonitor{},
-		syncer:      &pkgsync.NoopSyncer{},
+		syncer:      pkgsync.NewContainerSyncer(),
 	}, nil
 }
 

@@ -6,6 +6,12 @@ build:
   artifacts:
   - image: react-reload-docker
     context: app
+    sync:
+      manual:
+      - src: 'src/components/*'
+        dest: .
+      - src: 'src/styles/*'
+        dest: .
 deploy:
   docker:
     images: [react-reload-docker]
