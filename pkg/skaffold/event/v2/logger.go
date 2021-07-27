@@ -59,7 +59,7 @@ func (ev *eventHandler) handleSkaffoldLogEvent(e *proto.SkaffoldLogEvent) {
 }
 
 // logHook is an implementation of logrus.Hook used to send SkaffoldLogEvents
-type logHook struct{
+type logHook struct {
 	task    constants.Phase
 	subtask string
 }
