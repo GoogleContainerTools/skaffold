@@ -99,6 +99,7 @@ func (f *PortSet) List() []int {
 //
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
 func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
+	logrus.Tracef("looking for port: %s:%d", address, port)
 	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
 			logrus.Debugf("found open port: %d", port)
