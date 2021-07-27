@@ -48,9 +48,9 @@ func TestHandleSkaffoldLogEvent(t *testing.T) {
 		})
 	}
 	wait(t, func() bool {
-		testHandler.skaffoldLogsLock.Lock()
-		logLen := len(testHandler.skaffoldLogs)
-		testHandler.skaffoldLogsLock.Unlock()
+		testHandler.logLock.Lock()
+		logLen := len(testHandler.eventLog)
+		testHandler.logLock.Unlock()
 		return logLen == len(messages)
 	})
 }
