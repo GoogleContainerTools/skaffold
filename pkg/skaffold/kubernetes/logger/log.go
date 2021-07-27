@@ -131,7 +131,7 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 						continue
 					}
 
-					if !a.trackedContainers.add(c.ContainerID) {
+					if !a.trackedContainers.add(c.ContainerID) && a.config.Tail() {
 						go a.streamContainerLogs(ctx, pod, c)
 					}
 				}
