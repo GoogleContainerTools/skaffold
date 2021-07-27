@@ -2789,8 +2789,8 @@
         },
         "namespace": {
           "type": "string",
-          "description": "namespace of the resource to port forward.",
-          "x-intellij-html-description": "namespace of the resource to port forward."
+          "description": "namespace of the resource to port forward. Does not apply to local containers.",
+          "x-intellij-html-description": "namespace of the resource to port forward. Does not apply to local containers."
         },
         "port": {
           "anyOf": [
@@ -2806,13 +2806,13 @@
         },
         "resourceName": {
           "type": "string",
-          "description": "name of the Kubernetes resource to port forward.",
-          "x-intellij-html-description": "name of the Kubernetes resource to port forward."
+          "description": "name of the Kubernetes resource or local container to port forward.",
+          "x-intellij-html-description": "name of the Kubernetes resource or local container to port forward."
         },
         "resourceType": {
           "type": "string",
-          "description": "Kubernetes type that should be port forwarded. Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.",
-          "x-intellij-html-description": "Kubernetes type that should be port forwarded. Acceptable resource types include: <code>Service</code>, <code>Pod</code> and Controller resource type that has a pod spec: <code>ReplicaSet</code>, <code>ReplicationController</code>, <code>Deployment</code>, <code>StatefulSet</code>, <code>DaemonSet</code>, <code>Job</code>, <code>CronJob</code>."
+          "description": "resource type that should be port forwarded. Acceptable resource types include kubernetes types: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`. Standalone `Container` is also valid for Docker deployments.",
+          "x-intellij-html-description": "resource type that should be port forwarded. Acceptable resource types include kubernetes types: <code>Service</code>, <code>Pod</code> and Controller resource type that has a pod spec: <code>ReplicaSet</code>, <code>ReplicationController</code>, <code>Deployment</code>, <code>StatefulSet</code>, <code>DaemonSet</code>, <code>Job</code>, <code>CronJob</code>. Standalone <code>Container</code> is also valid for Docker deployments."
         }
       },
       "preferredOrder": [
