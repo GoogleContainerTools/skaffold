@@ -52,6 +52,7 @@ var handler = newHandler()
 func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan *proto.Event),
+		task:      constants.DevLoop,
 	}
 	go func() {
 		for {
@@ -73,6 +74,7 @@ type eventHandler struct {
 	cfg                 Config
 
 	iteration               int
+	task                    constants.Phase
 	state                   proto.State
 	stateLock               sync.Mutex
 	eventChan               chan *proto.Event
@@ -303,6 +305,7 @@ func TaskInProgress(task constants.Phase, description string) {
 		handler.applicationLogs = []proto.Event{}
 	}
 
+	handler.task = task
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:          fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:        string(task),
@@ -313,6 +316,7 @@ func TaskInProgress(task constants.Phase, description string) {
 }
 
 func TaskFailed(task constants.Phase, err error) {
+	handler.task = constants.DevLoop
 	ae := sErrors.ActionableErrV2(handler.cfg, task, err)
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:            fmt.Sprintf("%s-%d", task, handler.iteration),
@@ -324,6 +328,7 @@ func TaskFailed(task constants.Phase, err error) {
 }
 
 func TaskSucceeded(task constants.Phase) {
+	handler.task = constants.DevLoop
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:        fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:      string(task),
