@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-if ! [ -x "$(command -v $(go env GOPATH)/bin/ko))" ]; then
+if ! [ -x "$(go env GOPATH)/bin/ko" ]; then
     pushd $(mktemp -d)
     curl -L https://github.com/google/ko/archive/v0.8.3.tar.gz | tar --strip-components 1 -zx
     go build -o $(go env GOPATH)/bin/ko .
@@ -13,5 +13,8 @@ ref=$(echo "$output" | tail -n1)
 
 docker tag "$ref" "$IMAGE"
 if [[ "${PUSH_IMAGE}" == "true" ]]; then
+    echo "Pushing $IMAGE"
     docker push "$IMAGE"
+else
+    echo "Not pushing $IMAGE"
 fi

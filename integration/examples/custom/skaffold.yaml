@@ -9,5 +9,3 @@ build:
         paths:
         - "go.mod"
         - "**.go"
-  tagPolicy:
-    sha256: {}
