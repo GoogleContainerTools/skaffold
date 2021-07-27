@@ -1,7 +1,7 @@
 dist: xenial
 
 language: go
-go: "1.15.x"
+go: "1.16.x"
 go_import_path: /skaffold
 
 # skip release branches and version tags
