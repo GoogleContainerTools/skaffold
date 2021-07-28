@@ -152,7 +152,7 @@ func (k *Deployer) trackNamespaces(namespaces []string) {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact) error {
 	var (
 		manifests manifest.ManifestList
 		err       error
@@ -188,7 +188,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace()
 	default:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
-		manifests, err = k.renderManifests(childCtx, out, builds, false)
+		manifests, err = k.renderManifests(childCtx, out, log, builds, false)
 		endTrace()
 	}
 
@@ -349,13 +349,13 @@ func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte,
 	return manifest.Bytes(), nil
 }
 
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+func (k *Deployer) Render(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact, offline bool, filepath string) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_renderManifests")
-	manifests, err := k.renderManifests(childCtx, out, builds, offline)
+	manifests, err := k.renderManifests(childCtx, out, log, builds, offline)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
@@ -367,7 +367,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	return manifest.Write(manifests.String(), filepath, out)
 }
 
-func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
+func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		output.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 		output.Default.Fprintln(out, err)
@@ -416,7 +416,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 		}
 	}
 
-	manifests, err = manifests.ReplaceImages(ctx, builds)
+	manifests, err = manifests.ReplaceImages(ctx, log, builds)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +429,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, log *logrus.Logger) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
@@ -451,7 +451,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			rm = append(rm, manifest)
 		}
 
-		upd, err := rm.ReplaceImages(ctx, k.originalImages)
+		upd, err := rm.ReplaceImages(ctx, log, k.originalImages)
 		if err != nil {
 			return err
 		}

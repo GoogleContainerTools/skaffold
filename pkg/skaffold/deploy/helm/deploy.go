@@ -209,7 +209,7 @@ func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, _ *logrus.Logger, builds []graph.Artifact) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
@@ -342,7 +342,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, _ *logrus.Logger) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "helm",
 	})
@@ -370,7 +370,7 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+func (h *Deployer) Render(ctx context.Context, out io.Writer, _ *logrus.Logger, builds []graph.Artifact, offline bool, filepath string) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "helm",
 	})

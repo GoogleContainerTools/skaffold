@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -94,7 +95,7 @@ spec:
 		})
 		t.RequireNoError(err)
 		var b bytes.Buffer
-		err = deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
+		err = deployer.Render(context.Background(), &b, logrus.New(), test.builds, false, test.renderPath)
 
 		t.CheckNoError(err)
 		dat, err := ioutil.ReadFile(test.renderPath)
@@ -254,7 +255,7 @@ spec:
 			})
 			t.RequireNoError(err)
 			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, false, "")
+			err = deployer.Render(context.Background(), &b, logrus.New(), test.builds, false, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())
@@ -440,7 +441,7 @@ spec:
 			})
 			t.RequireNoError(err)
 			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, true, "")
+			err = deployer.Render(context.Background(), &b, logrus.New(), test.builds, true, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())

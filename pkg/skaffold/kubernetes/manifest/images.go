@@ -62,7 +62,7 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 }
 
 // ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(ctx context.Context, builds []graph.Artifact) (ManifestList, error) {
+func (l *ManifestList) ReplaceImages(ctx context.Context, log *logrus.Logger, builds []graph.Artifact) (ManifestList, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "ReplaceImages", map[string]string{
 		"manifestEntries":   strconv.Itoa(len(*l)),
 		"numImagesReplaced": strconv.Itoa(len(builds)),
@@ -77,8 +77,8 @@ func (l *ManifestList) ReplaceImages(ctx context.Context, builds []graph.Artifac
 		return nil, replaceImageErr(err)
 	}
 
-	replacer.Check()
-	logrus.Debugln("manifests with tagged images:", updated.String())
+	replacer.Check(log)
+	log.Debugln("manifests with tagged images:", updated.String())
 
 	return updated, nil
 }
@@ -127,10 +127,10 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 	return false
 }
 
-func (r *imageReplacer) Check() {
+func (r *imageReplacer) Check(log *logrus.Logger) {
 	for imageName := range r.tagsByImageName {
 		if !r.found[imageName] {
-			logrus.Debugf("image [%s] is not used by the current deployment", imageName)
+			log.Debugf("image [%s] is not used by the current deployment", imageName)
 		}
 	}
 }

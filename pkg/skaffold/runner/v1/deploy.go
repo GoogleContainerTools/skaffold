@@ -68,9 +68,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
 	defer r.deployer.GetStatusMonitor().Reset()
-
-	out, _ = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
-
+	out, log := output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
 	for _, artifact := range artifacts {
@@ -112,7 +110,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	r.deployer.RegisterLocalImages(localAndBuiltImages)
-	err = r.deployer.Deploy(ctx, deployOut, artifacts)
+	err = r.deployer.Deploy(ctx, deployOut, log, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)

@@ -25,6 +25,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -76,7 +78,7 @@ func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
 
-func (m *MockDeployer) Cleanup(context.Context, io.Writer) error {
+func (m *MockDeployer) Cleanup(context.Context, io.Writer, *logrus.Logger) error {
 	return m.cleanupErr
 }
 
@@ -105,11 +107,11 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) error {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, *logrus.Logger, []graph.Artifact) error {
 	return m.deployErr
 }
 
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []graph.Artifact, _ bool, _ string) error {
+func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ *logrus.Logger, _ []graph.Artifact, _ bool, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
 }
@@ -161,7 +163,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				NewMockDeployer().WithDeployErr(test.err2),
 			}, false)
 
-			err := deployerMux.Deploy(context.Background(), nil, nil)
+			err := deployerMux.Deploy(context.Background(), nil, logrus.New(), nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -259,7 +261,7 @@ func TestDeployerMux_Render(t *testing.T) {
 			}, false)
 
 			buf := &bytes.Buffer{}
-			err := deployerMux.Render(context.Background(), buf, nil, true, "")
+			err := deployerMux.Render(context.Background(), buf, logrus.New(), nil, true, "")
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, buf.String())
 		})
 	}
@@ -275,7 +277,7 @@ func TestDeployerMux_Render(t *testing.T) {
 			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
 		}, false)
 
-		err := deployerMux.Render(context.Background(), nil, nil, true, tmpDir.Path("render"))
+		err := deployerMux.Render(context.Background(), nil, logrus.New(), nil, true, tmpDir.Path("render"))
 		testutil.CheckError(t, false, err)
 
 		file, _ := os.Open(tmpDir.Path("render"))

@@ -21,15 +21,21 @@ import (
 	"io"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
 // Apply sends Kubernetes manifests to the cluster.
 func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
-	if err := r.applyResources(ctx, out, nil, nil); err != nil {
+	out, log := output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
+	if err := r.applyResources(ctx, out, log, nil, nil); err != nil {
 		return err
 	}
 
@@ -42,7 +48,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	return sErr
 }
 
-func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, localImages []graph.Artifact) error {
+func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, log *logrus.Logger, artifacts, localImages []graph.Artifact) error {
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err
@@ -52,7 +58,7 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_Deploying")
 	defer endTrace()
 	r.deployer.RegisterLocalImages(localImages)
-	err = r.deployer.Deploy(ctx, deployOut, artifacts)
+	err = r.deployer.Deploy(ctx, deployOut, log, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)

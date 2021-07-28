@@ -27,6 +27,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -245,7 +247,7 @@ func TestKpt_Deploy(t *testing.T) {
 				t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 			}
 
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err := k.Deploy(context.Background(), ioutil.Discard, logrus.New(), test.builds)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -438,7 +440,7 @@ func TestKpt_Cleanup(t *testing.T) {
 				},
 			})
 
-			err := k.Cleanup(context.Background(), ioutil.Discard)
+			err := k.Cleanup(context.Background(), ioutil.Discard, logrus.New())
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -798,7 +800,7 @@ spec:
 			}
 
 			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, true, "")
+			err := k.Render(context.Background(), &b, logrus.New(), test.builds, true, "")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, b.String())
 		})
@@ -1185,7 +1187,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 		})
 		t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 		defer os.RemoveAll(k.Live.Apply.Dir)
-		err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
+		err := k.Deploy(context.Background(), ioutil.Discard, logrus.New(), []graph.Artifact{})
 		t.CheckNoError(err)
 	})
 }

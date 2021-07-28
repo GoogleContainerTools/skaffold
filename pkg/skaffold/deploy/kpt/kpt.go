@@ -224,7 +224,7 @@ func versionCheck(dir string, stdout io.Writer) error {
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kpt",
 	})
@@ -250,7 +250,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
-	manifests, err := k.renderManifests(childCtx, builds)
+	manifests, err := k.renderManifests(childCtx, log, builds)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
@@ -337,7 +337,7 @@ func (k *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, _ *logrus.Logger) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kpt",
 	})
@@ -358,7 +358,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render hydrates manifests using both kustomization and kpt functions.
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, filepath string) error {
+func (k *Deployer) Render(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact, _ bool, filepath string) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
@@ -371,7 +371,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_renderManifests")
-	manifests, err := k.renderManifests(childCtx, builds)
+	manifests, err := k.renderManifests(childCtx, log, builds)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
@@ -386,7 +386,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 // renderManifests handles a majority of the hydration process for manifests.
 // This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
 // adding image digests, and adding run-id labels.
-func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact) (
+func (k *Deployer) renderManifests(ctx context.Context, log *logrus.Logger, builds []graph.Artifact) (
 	manifest.ManifestList, error) {
 	flags, err := k.getKptFnRunArgs()
 	if err != nil {
@@ -477,7 +477,7 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 			return nil, err
 		}
 	}
-	manifests, err = manifests.ReplaceImages(ctx, builds)
+	manifests, err = manifests.ReplaceImages(ctx, log, builds)
 	if err != nil {
 		return nil, fmt.Errorf("replacing images in manifests: %w", err)
 	}

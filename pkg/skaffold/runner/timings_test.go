@@ -71,14 +71,14 @@ type mockDeployer struct {
 	err bool
 }
 
-func (m *mockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) error {
+func (m *mockDeployer) Deploy(context.Context, io.Writer, *logrus.Logger, []graph.Artifact) error {
 	if m.err {
 		return errors.New("Unable to deploy")
 	}
 	return nil
 }
 
-func (m *mockDeployer) Cleanup(context.Context, io.Writer) error {
+func (m *mockDeployer) Cleanup(context.Context, io.Writer, *logrus.Logger) error {
 	if m.err {
 		return errors.New("Unable to cleanup")
 	}
@@ -220,7 +220,7 @@ func TestTimingsDeploy(t *testing.T) {
 			_, _, deployer := WithTimings(nil, nil, d, false)
 
 			var out bytes.Buffer
-			err := deployer.Deploy(context.Background(), &out, nil)
+			err := deployer.Deploy(context.Background(), &out, logrus.New(), nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
@@ -256,7 +256,7 @@ func TestTimingsCleanup(t *testing.T) {
 			_, _, deployer := WithTimings(nil, nil, d, false)
 
 			var out bytes.Buffer
-			err := deployer.Cleanup(context.Background(), &out)
+			err := deployer.Cleanup(context.Background(), &out, logrus.New())
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())

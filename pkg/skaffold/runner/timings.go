@@ -79,11 +79,11 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting deploy...")
 
-	err := w.Deployer.Deploy(ctx, out, builds)
+	err := w.Deployer.Deploy(ctx, out, log, builds)
 	if err != nil {
 		return err
 	}
@@ -91,11 +91,11 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.A
 	return err
 }
 
-func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
+func (w withTimings) Cleanup(ctx context.Context, out io.Writer, log *logrus.Logger) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Cleaning up...")
 
-	err := w.Deployer.Cleanup(ctx, out)
+	err := w.Deployer.Cleanup(ctx, out, log)
 	if err != nil {
 		return err
 	}

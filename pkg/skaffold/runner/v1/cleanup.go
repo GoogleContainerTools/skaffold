@@ -19,8 +19,12 @@ package v1
 import (
 	"context"
 	"io"
+
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
 func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer) error {
-	return r.deployer.Cleanup(ctx, out)
+	out, log := output.WithEventContext(out, "", eventV2.SubtaskIDNone)
+	return r.deployer.Cleanup(ctx, out, log)
 }

@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -174,7 +176,7 @@ pipeline:
 				Chdir()
 
 			var b bytes.Buffer
-			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}})
+			err = r.Render(context.Background(), &b, logrus.New(), []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}})
 			t.CheckNoError(err)
 			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
 			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
@@ -191,7 +193,7 @@ func TestRender_UserErr(t *testing.T) {
 		fakeCmd := testutil.CmdRunOutErr(fmt.Sprintf("kpt pkg init %v", DefaultHydrationDir), "",
 			errors.New("fake err"))
 		t.Override(&util.DefaultExecCommand, fakeCmd)
-		err = r.Render(context.Background(), &bytes.Buffer{}, []graph.Artifact{{ImageName: "leeroy-web",
+		err = r.Render(context.Background(), &bytes.Buffer{}, logrus.New(), []graph.Artifact{{ImageName: "leeroy-web",
 			Tag: "leeroy-web:v1"}})
 		t.CheckContains("please manually run `kpt pkg init", err.Error())
 	})

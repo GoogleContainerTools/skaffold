@@ -92,7 +92,7 @@ func (d *Deployer) TrackContainerFromBuild(build graph.Artifact, id string) {
 
 // Deploy deploys built artifacts by creating containers in the local docker daemon
 // from each artifact's image.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact) error {
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network)
@@ -147,7 +147,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, _ *logrus.Logger) error {
 	for _, id := range d.tracker.DeployedContainers() {
 		if err := d.client.Delete(ctx, out, id); err != nil {
 			// TODO(nkubala): replace with actionable error
@@ -159,7 +159,7 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return errors.Wrap(err, "cleaning up skaffold created network")
 }
 
-func (d *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+func (d *Deployer) Render(context.Context, io.Writer, *logrus.Logger, []graph.Artifact, bool, string) error {
 	return errors.New("render not implemented for docker deployer")
 }
 

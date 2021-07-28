@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/mitchellh/go-homedir"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -1086,7 +1087,7 @@ func TestHelmDeploy(t *testing.T) {
 			}
 			deployer.pkgTmpDir = tmpDir
 			// Deploy returns nil unless `helm get all <release>` is set up to return actual release info
-			err = deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = deployer.Deploy(context.Background(), ioutil.Discard, logrus.New(), test.builds)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, *deployer.namespaces)
@@ -1158,7 +1159,7 @@ func TestHelmCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.helm)
 			t.RequireNoError(err)
 
-			deployer.Cleanup(context.Background(), ioutil.Discard)
+			deployer.Cleanup(context.Background(), ioutil.Discard, logrus.New())
 
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
@@ -1525,7 +1526,7 @@ func TestHelmRender(t *testing.T) {
 				namespace: test.namespace,
 			}, &label.DefaultLabeller{}, &test.helm)
 			t.RequireNoError(err)
-			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
+			err = deployer.Render(context.Background(), ioutil.Discard, logrus.New(), test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
 
 			if file != "" {

@@ -45,7 +45,7 @@ const (
 )
 
 type Renderer interface {
-	Render(context.Context, io.Writer, []graph.Artifact) error
+	Render(context.Context, io.Writer, *logrus.Logger, []graph.Artifact) error
 }
 
 // NewSkaffoldRenderer creates a new Renderer object from the latestV2 API schema.
@@ -130,7 +130,7 @@ func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 	return nil
 }
 
-func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact) error {
 	if err := r.prepareHydrationDir(ctx); err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	if err != nil {
 		return err
 	}
-	manifests, err = manifests.ReplaceImages(ctx, builds)
+	manifests, err = manifests.ReplaceImages(ctx, log, builds)
 	if err != nil {
 		return err
 	}

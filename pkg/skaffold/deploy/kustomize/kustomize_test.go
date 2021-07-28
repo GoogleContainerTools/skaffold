@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -192,7 +194,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Namespace: skaffoldNamespaceOption,
 				}}}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, logrus.New(), test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -258,7 +260,7 @@ func TestKustomizeCleanup(t *testing.T) {
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			err = k.Cleanup(context.Background(), ioutil.Discard)
+			err = k.Cleanup(context.Background(), ioutil.Discard, logrus.New())
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -710,7 +712,7 @@ spec:
 			t.RequireNoError(err)
 
 			var b bytes.Buffer
-			err = k.Render(context.Background(), &b, test.builds, true, "")
+			err = k.Render(context.Background(), &b, logrus.New(), test.builds, true, "")
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})

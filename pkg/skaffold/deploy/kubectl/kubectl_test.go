@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -248,7 +250,7 @@ func TestKubectlDeploy(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl)
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, logrus.New(), test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -322,7 +324,7 @@ func TestKubectlCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl)
 			t.RequireNoError(err)
 
-			err = k.Cleanup(context.Background(), ioutil.Discard)
+			err = k.Cleanup(context.Background(), ioutil.Discard, logrus.New())
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -369,7 +371,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl)
 			t.RequireNoError(err)
 
-			err = k.Cleanup(context.Background(), ioutil.Discard)
+			err = k.Cleanup(context.Background(), ioutil.Discard, logrus.New())
 
 			t.CheckNoError(err)
 		})
@@ -405,21 +407,21 @@ func TestKubectlRedeploy(t *testing.T) {
 		t.RequireNoError(err)
 
 		// Deploy one manifest
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, logrus.New(), []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
 		})
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, logrus.New(), []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		})
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, logrus.New(), []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		})
@@ -470,7 +472,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
-		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), &out, logrus.New(), []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		})
 
@@ -507,7 +509,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 		}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
 		t.RequireNoError(err)
 
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), ioutil.Discard, logrus.New(), []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		})
 
@@ -686,7 +688,7 @@ spec:
 			})
 			t.RequireNoError(err)
 			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, true, "")
+			err = deployer.Render(context.Background(), &b, logrus.New(), test.builds, true, "")
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
@@ -730,7 +732,7 @@ func TestGCSManifests(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl)
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, nil)
+			err = k.Deploy(context.Background(), ioutil.Discard, logrus.New(), nil)
 
 			t.CheckError(test.shouldErr, err)
 		})

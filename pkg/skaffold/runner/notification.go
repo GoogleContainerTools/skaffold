@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
@@ -41,8 +43,8 @@ type withNotification struct {
 	deploy.Deployer
 }
 
-func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
-	err := w.Deployer.Deploy(ctx, out, builds)
+func (w withNotification) Deploy(ctx context.Context, out io.Writer, log *logrus.Logger, builds []graph.Artifact) error {
+	err := w.Deployer.Deploy(ctx, out, log, builds)
 	if err != nil {
 		fmt.Fprint(out, terminalBell)
 	}

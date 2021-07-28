@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
@@ -99,13 +101,13 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 	}
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) error {
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, log *logrus.Logger, as []graph.Artifact) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
 		w, _ = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 
-		if err := deployer.Deploy(ctx, w, as); err != nil {
+		if err := deployer.Deploy(ctx, w, log, as); err != nil {
 			eventV2.DeployFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return err
@@ -136,10 +138,10 @@ func (m DeployerMux) Dependencies() ([]string, error) {
 	return deps.ToList(), nil
 }
 
-func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
+func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, log *logrus.Logger) error {
 	for _, deployer := range m.deployers {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Cleanup")
-		if err := deployer.Cleanup(ctx, w); err != nil {
+		if err := deployer.Cleanup(ctx, w, log); err != nil {
 			return err
 		}
 		endTrace()
@@ -147,12 +149,12 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
+func (m DeployerMux) Render(ctx context.Context, w io.Writer, log *logrus.Logger, as []graph.Artifact, offline bool, filepath string) error {
 	resources, buf := []string{}, &bytes.Buffer{}
 	for _, deployer := range m.deployers {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
 		buf.Reset()
-		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
+		if err := deployer.Render(ctx, buf, log, as, offline, "" /* never write to files */); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}

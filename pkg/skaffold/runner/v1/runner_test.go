@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
+	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -128,10 +129,10 @@ func (t *TestBench) GetSyncer() sync.Syncer {
 func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
-func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }
-func (t *TestBench) Dependencies() ([]string, error)                       { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error      { return nil }
-func (t *TestBench) Prune(ctx context.Context, out io.Writer) error        { return nil }
+func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error)              { return nil, nil }
+func (t *TestBench) Dependencies() ([]string, error)                                    { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, _ *logrus.Logger) error { return nil }
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error                     { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -187,7 +188,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, _ *logrus.Logger, artifacts []graph.Artifact) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -200,7 +201,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return nil
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+func (t *TestBench) Render(context.Context, io.Writer, *logrus.Logger, []graph.Artifact, bool, string) error {
 	return nil
 }
 
