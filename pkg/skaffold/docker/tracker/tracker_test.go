@@ -71,9 +71,22 @@ func TestDeployedContainers(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			tracker := NewContainerTracker()
 			for _, pair := range test.containers {
-				tracker.Add(pair.artifact, pair.id)
+				tracker.Add(pair.artifact, Container{ID: pair.id})
 			}
-			t.CheckDeepEqual(test.expectedContainers, tracker.DeployedContainers())
+			deployedContainers := tracker.DeployedContainers()
+
+			// ensure each container exists in the returned map
+			for _, c := range test.expectedContainers {
+				found := false
+				for _, container := range deployedContainers {
+					if container.ID == c {
+						found = true
+					}
+				}
+				if !found {
+					t.Fail()
+				}
+			}
 		})
 	}
 }
@@ -131,70 +144,10 @@ func TestDeployedContainerForImage(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			tracker := NewContainerTracker()
 			for _, pair := range test.containers {
-				tracker.Add(pair.artifact, pair.id)
+				tracker.Add(pair.artifact, Container{ID: pair.id})
 			}
-			t.CheckDeepEqual(test.expected, tracker.DeployedContainerForImage(test.target))
-		})
-	}
-}
-
-func TestArtifactForContainer(t *testing.T) {
-	tests := []struct {
-		name       string
-		containers []ArtifactIDPair
-		target     string
-		expected   graph.Artifact
-	}{
-		{
-			name:       "one container",
-			containers: []ArtifactIDPair{{artifact: graph.Artifact{ImageName: "image1"}, id: "deadbeef"}},
-			target:     "deadbeef",
-			expected:   graph.Artifact{ImageName: "image1"},
-		},
-		{
-			name: "two containers, retrieve the second",
-			containers: []ArtifactIDPair{
-				{artifact: graph.Artifact{ImageName: "image1"}, id: "deadbeef"},
-				{artifact: graph.Artifact{ImageName: "image2"}, id: "foobar"},
-			},
-			target:   "foobar",
-			expected: graph.Artifact{ImageName: "image2"},
-		},
-		{
-			name: "adding the same artifact overwrites previous ID",
-			containers: []ArtifactIDPair{
-				{artifact: graph.Artifact{ImageName: "image1"}, id: "this will be ignored"},
-				{artifact: graph.Artifact{ImageName: "image1"}, id: "deadbeef"},
-				{artifact: graph.Artifact{ImageName: "image2"}, id: "foobar"},
-			},
-			target:   "deadbeef",
-			expected: graph.Artifact{ImageName: "image1"},
-		},
-		{
-			name: "tags are updated on artifact",
-			containers: []ArtifactIDPair{
-				{artifact: graph.Artifact{ImageName: "image1", Tag: "image1:tag1"}, id: "deadbeef"},
-				{artifact: graph.Artifact{ImageName: "image1", Tag: "image1:tag2"}, id: "deadbeef"},
-				{artifact: graph.Artifact{ImageName: "image2"}, id: "foobar"},
-			},
-			target:   "deadbeef",
-			expected: graph.Artifact{ImageName: "image1", Tag: "image1:tag2"},
-		},
-		{
-			name:       "untracked id returns empty artifact",
-			containers: []ArtifactIDPair{{artifact: graph.Artifact{ImageName: "image1"}, id: "deadbeef"}},
-			target:     "bogus",
-			expected:   graph.Artifact{},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
-			tracker := NewContainerTracker()
-			for _, pair := range test.containers {
-				tracker.Add(pair.artifact, pair.id)
-			}
-			t.CheckDeepEqual(test.expected, tracker.ArtifactForContainer(test.target))
+			container, _ := tracker.ContainerForImage(test.target)
+			t.CheckDeepEqual(test.expected, container.ID)
 		})
 	}
 }

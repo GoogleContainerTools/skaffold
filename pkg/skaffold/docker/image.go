@@ -37,6 +37,7 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
+	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
 
@@ -66,6 +67,8 @@ type ContainerCreateOpts struct {
 	Network     string
 	VolumesFrom []string
 	Wait        bool
+	Ports       nat.PortSet
+	Bindings    nat.PortMap
 }
 
 // LocalDaemon talks to a local Docker API.
@@ -75,6 +78,7 @@ type LocalDaemon interface {
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error
+	ContainerExists(ctx context.Context, name string) bool
 	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
@@ -166,6 +170,11 @@ func (l *localDaemon) ContainerLogs(ctx context.Context, w *io.PipeWriter, id st
 	}
 }
 
+func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
+	_, err := l.apiClient.ContainerInspect(ctx, name)
+	return err == nil
+}
+
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
 	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
@@ -184,12 +193,14 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 // Run creates a container from a given image reference, and returns then container ID.
 func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error) {
 	cfg := &container.Config{
-		Image: opts.Image,
+		Image:        opts.Image,
+		ExposedPorts: opts.Ports,
 	}
 
 	hCfg := &container.HostConfig{
-		NetworkMode: container.NetworkMode(opts.Network),
-		VolumesFrom: opts.VolumesFrom,
+		NetworkMode:  container.NetworkMode(opts.Network),
+		VolumesFrom:  opts.VolumesFrom,
+		PortBindings: opts.Bindings,
 	}
 	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, opts.Name)
 	if err != nil {
@@ -552,6 +563,7 @@ func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageS
 		Filters: filters.NewArgs(filters.Arg("reference", ref)),
 	})
 }
+
 func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
 	usage, err := l.apiClient.DiskUsage(ctx)
 	if err != nil {

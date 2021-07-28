@@ -41,17 +41,18 @@ import (
 )
 
 type Deployer struct {
-	accessor access.Accessor
 	debugger debug.Debugger
 	logger   log.Logger
 	monitor  status.Monitor
 	syncer   pkgsync.Syncer
 
-	cfg     *v1.DockerDeploy
-	tracker *tracker.ContainerTracker
-	client  dockerutil.LocalDaemon
-	network string
-	once    sync.Once
+	cfg         *v1.DockerDeploy
+	tracker     *tracker.ContainerTracker
+	portManager *PortManager // functions as Accessor
+	client      dockerutil.LocalDaemon
+	network     string
+	resources   []*v1.PortForwardResource
+	once        sync.Once
 }
 
 func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
@@ -67,16 +68,17 @@ func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.D
 	}
 
 	return &Deployer{
-		cfg:     d,
-		client:  client,
-		network: fmt.Sprintf("skaffold-network-%s", uuid.New().String()),
+		cfg:       d,
+		client:    client,
+		network:   fmt.Sprintf("skaffold-network-%s", uuid.New().String()),
+		resources: resources,
 		// TODO(nkubala): implement components
-		tracker:  tracker,
-		accessor: &access.NoopAccessor{},
-		debugger: &debug.NoopDebugger{},
-		logger:   l,
-		monitor:  &status.NoopMonitor{},
-		syncer:   &pkgsync.NoopSyncer{},
+		tracker:     tracker,
+		portManager: NewPortManager(), // fulfills Accessor interface
+		debugger:    &debug.NoopDebugger{},
+		logger:      l,
+		monitor:     &status.NoopMonitor{},
+		syncer:      &pkgsync.NoopSyncer{},
 	}, nil
 }
 
@@ -84,10 +86,10 @@ func (d *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	d.logger.RegisterArtifacts(artifacts)
 }
 
-// TrackContainerFromBuild adds an artifact and its newly-associated container id
+// TrackContainerFromBuild adds an artifact and its newly-associated container
 // to the container tracker.
-func (d *Deployer) TrackContainerFromBuild(build graph.Artifact, id string) {
-	d.tracker.Add(build, id)
+func (d *Deployer) TrackContainerFromBuild(artifact graph.Artifact, container tracker.Container) {
+	d.tracker.Add(artifact, container)
 }
 
 // Deploy deploys built artifacts by creating containers in the local docker daemon
@@ -119,27 +121,55 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		logrus.Warnf("skipping deploy for image %s since it was not built by Skaffold", b.ImageName)
 		return nil
 	}
-	if containerID := d.tracker.DeployedContainerForImage(b.ImageName); containerID != "" {
-		logrus.Debugf("removing old container %s for image %s", containerID, b.ImageName)
-		if err := d.client.Delete(ctx, out, containerID); err != nil {
-			return fmt.Errorf("failed to remove old container %s for image %s: %w", containerID, b.ImageName, err)
+	if container, found := d.tracker.ContainerForImage(b.ImageName); found {
+		logrus.Debugf("removing old container %s for image %s", container.ID, b.ImageName)
+		if err := d.client.Delete(ctx, out, container.ID); err != nil {
+			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, b.ImageName, err)
 		}
+		d.portManager.relinquishPorts(container.Name)
 	}
 	if d.cfg.UseCompose {
 		// TODO(nkubala): implement
 		return fmt.Errorf("docker compose not yet supported by skaffold")
 	}
+
+	ports, bindings, err := d.portManager.getPorts(b.ImageName, d.resources)
+	if err != nil {
+		return err
+	}
+
+	containerName := d.getContainerName(ctx, b.ImageName)
+
 	opts := dockerutil.ContainerCreateOpts{
-		Name:    b.ImageName,
-		Image:   b.Tag,
-		Network: d.network,
+		Name:     containerName,
+		Image:    b.Tag,
+		Network:  d.network,
+		Ports:    ports,
+		Bindings: bindings,
 	}
 	id, err := d.client.Run(ctx, out, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating container in local docker")
 	}
-	d.TrackContainerFromBuild(b, id)
+	d.TrackContainerFromBuild(b, tracker.Container{Name: containerName, ID: id})
 	return nil
+}
+
+func (d *Deployer) getContainerName(ctx context.Context, name string) string {
+	currentName := name
+	counter := 1
+	for {
+		if !d.client.ContainerExists(ctx, currentName) {
+			break
+		}
+		currentName = fmt.Sprintf("%s-%d", name, counter)
+		counter++
+	}
+
+	if currentName != name {
+		logrus.Debugf("container %s already present in local daemon: using %s instead", name, currentName)
+	}
+	return currentName
 }
 
 func (d *Deployer) Dependencies() ([]string, error) {
@@ -148,11 +178,12 @@ func (d *Deployer) Dependencies() ([]string, error) {
 }
 
 func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
-	for _, id := range d.tracker.DeployedContainers() {
-		if err := d.client.Delete(ctx, out, id); err != nil {
+	for _, container := range d.tracker.DeployedContainers() {
+		if err := d.client.Delete(ctx, out, container.ID); err != nil {
 			// TODO(nkubala): replace with actionable error
 			return errors.Wrap(err, "cleaning up deployed container")
 		}
+		d.portManager.relinquishPorts(container.Name)
 	}
 
 	err := d.client.NetworkRemove(ctx, d.network)
@@ -164,7 +195,7 @@ func (d *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, st
 }
 
 func (d *Deployer) GetAccessor() access.Accessor {
-	return d.accessor
+	return d.portManager
 }
 
 func (d *Deployer) GetDebugger() debug.Debugger {

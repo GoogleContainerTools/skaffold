@@ -61,7 +61,7 @@ func folders(root string) ([]string, error) {
 
 	for _, f := range files {
 		// TODO(nkubala): remove once yaml is unhidden
-		if f.Mode().IsDir() && f.Name() != "docker-deploy" {
+		if f.Mode().IsDir() && f.Name() != "docker-deploy" && f.Name() != "react-reload-docker" {
 			folders = append(folders, f.Name())
 		}
 	}
