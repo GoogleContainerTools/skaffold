@@ -85,14 +85,15 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// These are used for command completion and send debug messages on stderr.
 			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
 				instrumentation.SetCommand(cmd.Name())
-				lvl, _ := logrus.ParseLevel(v)
+				lvl, err := logrus.ParseLevel(v)
+				if err != nil {
+					return fmt.Errorf("parsing log level: %w", err)
+				}
 				out := output.GetWriter(out, defaultColor, forceColors, timestamps, lvl)
 				cmd.Root().SetOutput(out)
 
 				// Setup logs
-				if err := setUpLogs(errOut, v, timestamps); err != nil {
-					return err
-				}
+				setUpLogs(errOut, lvl, timestamps)
 			}
 
 			// Setup kubeContext and kubeConfig
@@ -253,18 +254,13 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.ReplaceAll(strings.ToUpper(f.Name), "-", "_"))
 }
 
-func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
+func setUpLogs(stdErr io.Writer, level logrus.Level, timestamp bool) {
 	logrus.SetOutput(stdErr)
-	lvl, err := logrus.ParseLevel(level)
-	if err != nil {
-		return fmt.Errorf("parsing log level: %w", err)
-	}
-	logrus.SetLevel(lvl)
+	logrus.SetLevel(level)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: timestamp,
 	})
 	logrus.AddHook(event.NewLogHook(constants.DevLoop, event.SubtaskIDNone))
-	return nil
 }
 
 // alwaysSucceedWhenCancelled returns nil if the context was cancelled.
