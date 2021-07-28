@@ -377,6 +377,8 @@ enum StatusCode {
     DEPLOY_KPT_SOURCE_ERR = 1025;
     // The Kptfile exists but cannot be opened or parsed.
     DEPLOY_KPTFILE_INVALID_YAML_ERR = 1026;
+    // kpt fails to live apply the manifests to the cluster.
+    DEPLOY_KPT_APPLY_ERR = 1027;
 
     // Test errors
 
@@ -521,8 +523,10 @@ enum SuggestionCode {
     UPGRADE_HELM32 = 206;
     // Set `releases.createNamespace` to false.
     FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE = 207;
-    // Set `releases.createNamespace` to false.
+    // check the Kptfile validation.
     INVALID_KPT_MANIFESTS = 208;
+    // align the inventory info in kpt live apply.
+    ALIGN_KPT_INVENTORY = 209;
 
     // Install kubectl tool
     INSTALL_KUBECTL = 220;

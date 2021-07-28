@@ -73,6 +73,29 @@ func liveInitErr(err error, path string) error {
 		})
 }
 
+// liveApplyErr raises when skaffold fails to live apply the manifests to the cluster. The Action gives the solutions
+// for a very common case for new kpt users.
+func liveApplyErr(err error, path string) error {
+	return sErrors.NewError(err,
+		proto.ActionableErr{
+			Message: fmt.Sprintf("fail to run `kpt live apply %v`: %s", path, err),
+			ErrCode: proto.StatusCode_DEPLOY_KPT_APPLY_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_ALIGN_KPT_INVENTORY,
+					Action: fmt.Sprintln("if you encounter an inventory mismatch (or can't adopt) error, it indicates " +
+						"the manifests have been deployed before and may not be properly cleaned up. We provide two solutions:\n " +
+						"#1: Update your skaffold.yaml by adding the `--inventory-policy=adopt` in the " +
+						"`.deploy.kpt.flags`. This will override the resources' inventory.\n " +
+						"#2: Find the existing inventory from your cluster resource's annotation \"cli-utils.sigs.k8s.io/inventory-id\", " +
+						" then use this inventory-id to look for the inventory name and namespace by running " +
+						"`kubectl get resourcegroups.kpt.dev -oyaml | grep <YOUR_INVENTORY_ID> -C20 | grep \"name: inventory-\" -C1` " +
+						"and update the `.deploy.kpt.name`, `.deploy.kpt.namespace` and `.deploy.kpt.inventoryID` in your skaffold.yaml"),
+				},
+			},
+		})
+}
+
 // liveDestroyErr raises when skaffold fails to run `kpt live destroy`, which is expected to delete the resource on
 // the cluster side.
 func liveDestroyErr(err error, path string) error {

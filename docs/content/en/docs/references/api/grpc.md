@@ -1006,6 +1006,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_KPTFILE_INIT_ERR | 1024 | The Kptfile cannot be created via `kpt live init`. |
 | DEPLOY_KPT_SOURCE_ERR | 1025 | The `kpt fn source` cannot read the given manifests. |
 | DEPLOY_KPTFILE_INVALID_YAML_ERR | 1026 | The Kptfile exists but cannot be opened or parsed. |
+| DEPLOY_KPT_APPLY_ERR | 1027 | kpt fails to live apply the manifests to the cluster. |
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
@@ -1077,7 +1078,8 @@ Enum for Suggestion codes
 | FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES | 205 | Fix helm `releases.artifactOverrides` config to match with `build.artiofacts` |
 | UPGRADE_HELM32 | 206 | Upgrade helm version to v3.2.0 and higher. |
 | FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE | 207 | Set `releases.createNamespace` to false. |
-| INVALID_KPT_MANIFESTS | 208 | Set `releases.createNamespace` to false. |
+| INVALID_KPT_MANIFESTS | 208 | check the Kptfile validation. |
+| ALIGN_KPT_INVENTORY | 209 | align the inventory info in kpt live apply. |
 | INSTALL_KUBECTL | 220 | Install kubectl tool |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |

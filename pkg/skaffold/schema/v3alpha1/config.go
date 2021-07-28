@@ -520,10 +520,10 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	RawK8s    []string `yaml:"rawYaml,omitempty"`
-	Kustomize []string `yaml:"kustomize,omitempty"`
-	Helm      Helm     `yaml:"helm,omitempty"`
-	Kpt       []string `yaml:"kpt,omitempty"`
+	RawK8s    []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
+	Kustomize []string `yaml:"kustomize,omitempty" skaffold:"filepath"`
+	Helm      *Helm    `yaml:"helm,omitempty"`
+	Kpt       []string `yaml:"kpt,omitempty" skaffold:"filepath"`
 }
 
 type Helm struct {
@@ -559,16 +559,12 @@ type KptV2Deploy struct {
 	// Flags are additional flags passed to `kpt live apply`.
 	Flags []string `yaml:"flags,omitempty"`
 
-	// InventoryID *alpha* is the identifier for a group of applied resources.
-	// This value is only needed when the `kpt live` is working on a pre-applied cluster resources.
+	// Name *alpha* is the inventory object name.
+	Name string `yaml:"name,omitempty"`
+	// InventoryID *alpha* is the inventory ID which annotates the resources being lively applied by kpt.
 	InventoryID string `yaml:"inventoryID,omitempty"`
 	// InventoryNamespace *alpha* sets the inventory namespace.
-	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
-
-	// PruneTimeout sets the time threshold to wait for all pruned resources to be deleted.
-	PruneTimeout string `yaml:"pruneTimeout,omitempty"`
-	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
-	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
+	InventoryNamespace string `yaml:"namespace,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`
@@ -599,9 +595,6 @@ type DeployType struct {
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
-	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
-	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
-
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
@@ -610,7 +603,7 @@ type DeployType struct {
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
 
 	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
-	KptV2Deploy *KptV2Deploy `yaml:"kptV2,omitempty"`
+	KptV2Deploy *KptV2Deploy `yaml:"kpt,omitempty"`
 }
 
 type KubectlV2Deploy struct {
