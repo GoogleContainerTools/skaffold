@@ -34,6 +34,7 @@ type skaffoldWriter struct {
 	EventWriter io.Writer
 
 	timestamps bool
+	verbosity  logrus.Level
 }
 
 func (s skaffoldWriter) Write(p []byte) (int, error) {
@@ -62,7 +63,7 @@ func (s skaffoldWriter) Write(p []byte) (int, error) {
 	return written, nil
 }
 
-func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps bool) io.Writer {
+func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps bool, verbosity logrus.Level) io.Writer {
 	if _, isSW := out.(skaffoldWriter); isSW {
 		return out
 	}
@@ -71,7 +72,13 @@ func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps boo
 		MainWriter:  SetupColors(out, defaultColor, forceColors),
 		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1"),
 		timestamps:  timestamps,
+		verbosity:   verbosity,
 	}
+}
+
+func IsSkaffoldWriter(out io.Writer) bool {
+	_, isSW := out.(skaffoldWriter)
+	return isSW
 }
 
 func IsStdout(out io.Writer) bool {
@@ -99,6 +106,22 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 	return out
 }
 
+func GetTimestamps(out io.Writer) bool {
+	sw, isSW := out.(skaffoldWriter)
+	if isSW {
+		return sw.timestamps
+	}
+	return false
+}
+
+func GetVerbosity(out io.Writer) logrus.Level {
+	sw, isSW := out.(skaffoldWriter)
+	if isSW {
+		return sw.verbosity
+	}
+	return constants.DefaultLogLevel
+}
+
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
 func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) (io.Writer, *logrus.Logger) {
@@ -107,8 +130,20 @@ func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) (i
 			MainWriter:  sw.MainWriter,
 			EventWriter: eventV2.NewLogger(phase, subtaskID),
 			timestamps:  sw.timestamps,
-		}, nil
+			verbosity:   sw.verbosity,
+		}, newLogger(sw.timestamps, sw.verbosity, phase, subtaskID)
 	}
 
-	return out, nil
+	return out, newLogger(false, constants.DefaultLogLevel, phase, subtaskID)
+}
+
+func newLogger(timestamps bool, verbosity logrus.Level, phase constants.Phase, subtask string) *logrus.Logger {
+	log := logrus.New()
+	log.SetLevel(verbosity)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: timestamps,
+	})
+	log.AddHook(eventV2.NewLogHook(phase, subtask))
+
+	return log
 }

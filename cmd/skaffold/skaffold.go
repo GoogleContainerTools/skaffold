@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -59,7 +60,7 @@ func main() {
 			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
 			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
 			// before we print an error to get the right coloring.
-			errOut := output.GetWriter(os.Stderr, output.DefaultColorCode, false, false)
+			errOut := output.GetWriter(os.Stderr, output.DefaultColorCode, false, false, constants.DefaultLogLevel)
 			output.Red.Fprintln(errOut, err)
 			code = exitCode(err)
 		}

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
@@ -153,7 +154,7 @@ func TestWithEventContext(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			got, _ := WithEventContext(test.writer, test.phase, test.subtaskID)
-			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false))
+			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false, logrus.WarnLevel))
 		})
 	}
 }
