@@ -30,7 +30,11 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
 )
 
-// Build an artifact using ko
+// Build an artifact using ko, and either push it to an image registry, or
+// sideload it to the local docker daemon.
+// Build prints the image name to the out io.Writer and returns the image
+// identifier. The image identifier is the tag or digest for pushed images, or
+// the docker image ID for sideloaded images.
 func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, ref string) (string, error) {
 	koBuilder, err := b.newKoBuilder(ctx, a)
 	if err != nil {

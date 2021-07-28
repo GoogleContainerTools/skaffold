@@ -33,109 +33,157 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestBuildKoImages(t *testing.T) {
+// TestBuild doesn't actually build (or publish) any container images, because
+// it's a unit test. Instead, it only verifies that the Build() function prints
+// the image name to the out io.Writer and returns the image identifier.
+func TestBuild(t *testing.T) {
 	tests := []struct {
-		description         string
-		ref                 string
-		imageID             string
-		pushImages          bool
-		importpath          string
-		imageNameFromConfig string
-		workspace           string
+		description     string
+		pushImages      bool
+		imageIdentifier string
+		ref             string
+		artifact        *latestV1.Artifact
 	}{
 		{
-			description:         "simple image name and sideload image",
-			ref:                 "gcr.io/project-id/test-app1:testTag",
-			imageID:             "imageID1",
-			pushImages:          false,
-			importpath:          "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko",
-			imageNameFromConfig: "test-app1",
+			description:     "pushed image with tag",
+			pushImages:      true,
+			imageIdentifier: "tag1",
+			ref:             "registry.example.com/repo/image1:tag1",
 		},
 		{
-			description:         "ko import path image name and sideload image",
-			ref:                 "gcr.io/project-id/example.com/myapp:myTag",
-			imageID:             "imageID2",
-			pushImages:          false,
-			importpath:          "ko://example.com/myapp",
-			imageNameFromConfig: "ko://example.com/myapp",
-		},
-		{
-			description:         "simple image name and push image",
-			ref:                 "gcr.io/project-id/test-app2:testTag",
-			imageID:             "testTag",
-			pushImages:          true,
-			importpath:          "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko",
-			imageNameFromConfig: "test-app2",
-		},
-		{
-			description:         "ko import path image name and push image",
-			ref:                 "gcr.io/project-id/example.com/myapp:myTag",
-			imageID:             "myTag",
-			pushImages:          true,
-			importpath:          "ko://example.com/myapp",
-			imageNameFromConfig: "ko://example.com/myapp",
-		},
-		{
-			description:         "workspace is not cwd",
-			ref:                 "gcr.io/project-id/example.com/test-app3:myTag",
-			imageID:             "imageID3",
-			pushImages:          false,
-			importpath:          "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker",
-			imageNameFromConfig: "test-app3",
-			workspace:           "../docker",
-		},
-		{
-			description:         "ko import path image name and workspace is not cwd",
-			ref:                 "gcr.io/project-id/example.com/test-app4:myTag",
-			imageID:             "imageID4",
-			pushImages:          false,
-			importpath:          "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker",
-			imageNameFromConfig: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker",
-			workspace:           "../docker",
-		},
-		{
-			description:         "ko import path image name and workspace is not cwd and import path is subdirectory of cwd",
-			ref:                 "gcr.io/project-id/example.com/test-app5:myTag",
-			imageID:             "imageID5",
-			pushImages:          false,
-			importpath:          "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker",
-			imageNameFromConfig: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker",
-			workspace:           "..",
+			description:     "sideloaded image",
+			pushImages:      false,
+			imageIdentifier: "ab737430e80b",
+			ref:             "registry.example.com/repo/image2:any",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			b := stubKoArtifactBuilder(test.ref, test.imageID, test.pushImages, test.importpath)
+			importPath := "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko" // this package
+			b := stubKoArtifactBuilder(test.ref, test.imageIdentifier, test.pushImages, importPath)
 
 			artifact := &latestV1.Artifact{
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
-				Dependencies: []*latestV1.ArtifactDependency{},
-				ImageName:    test.imageNameFromConfig,
-				Workspace:    test.workspace,
 			}
-
 			var outBuffer bytes.Buffer
-			gotImageID, err := b.Build(context.TODO(), &outBuffer, artifact, test.ref)
+			gotImageIdentifier, err := b.Build(context.Background(), &outBuffer, artifact, test.ref)
 			t.CheckNoError(err)
-			if gotImageID != test.imageID {
-				t.Errorf("got image ID %s, wanted %s", gotImageID, test.imageID)
-			}
+
 			imageNameOut := strings.TrimSuffix(outBuffer.String(), "\n")
-			if imageNameOut != test.ref {
-				t.Errorf("image name output was %q, wanted %q", imageNameOut, test.ref)
-			}
+			t.CheckDeepEqual(test.ref, imageNameOut)
+			t.CheckDeepEqual(test.imageIdentifier, gotImageIdentifier)
 		})
 	}
 }
 
+func Test_getImportPath(t *testing.T) {
+	tests := []struct {
+		description string
+		importPath  string
+		artifact    *latestV1.Artifact
+	}{
+		{
+			description: "image name is ko-prefixed full Go import path",
+			importPath:  "ko://git.example.com/org/foo",
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{},
+				},
+				ImageName: "ko://git.example.com/org/foo",
+			},
+		},
+		{
+			description: "plain image name",
+			importPath:  "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{},
+				},
+				ImageName: "foo",
+			},
+		},
+		{
+			description: "plain image name with workspace directory",
+			importPath:  "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker", // this package + "../docker"
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{},
+				},
+				ImageName: "bar",
+				Workspace: "../docker",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			b := NewArtifactBuilder(nil, false)
+			koBuilder, err := b.newKoBuilder(context.Background(), test.artifact)
+			t.CheckNoError(err)
+
+			gotImportPath, err := getImportPath(test.artifact.ImageName, koBuilder)
+			t.CheckNoError(err)
+
+			t.CheckDeepEqual(test.importPath, gotImportPath)
+		})
+	}
+}
+
+func Test_getImageIdentifier(t *testing.T) {
+	tests := []struct {
+		description         string
+		pushImages          bool
+		imageRefFromPublish name.Reference
+		ref                 string
+		wantImageIdentifier string
+	}{
+		{
+			description:         "returns tag for pushed image with tag",
+			pushImages:          true,
+			imageRefFromPublish: name.MustParseReference("registry.example.com/repo/image:tag"),
+			ref:                 "anything", // not used
+			wantImageIdentifier: "tag",
+		},
+		{
+			description:         "returns digest for pushed image with digest",
+			pushImages:          true,
+			imageRefFromPublish: name.MustParseReference("gcr.io/google-containers/echoserver@sha256:cb5c1bddd1b5665e1867a7fa1b5fa843a47ee433bbb75d4293888b71def53229"),
+			ref:                 "any value", // not used
+			wantImageIdentifier: "sha256:cb5c1bddd1b5665e1867a7fa1b5fa843a47ee433bbb75d4293888b71def53229",
+		},
+		{
+			description:         "returns docker image ID for sideloaded image",
+			pushImages:          false,
+			imageRefFromPublish: nil, // not used
+			ref:                 "any value",
+			wantImageIdentifier: "ab737430e80b",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			b := stubKoArtifactBuilder(test.ref, test.wantImageIdentifier, test.pushImages, "")
+
+			gotImageIdentifier, err := b.getImageIdentifier(context.Background(), test.imageRefFromPublish, test.ref)
+			t.CheckNoError(err)
+
+			t.CheckDeepEqual(test.wantImageIdentifier, gotImageIdentifier)
+		})
+	}
+}
+
+// stubKoArtifactBuilder returns an instance of Builder.
+// Both the localDocker and the publishImages fields of the Builder are fakes.
+// This means that calling Build() on the returned Builder doesn't actually
+// build or publish any images.
 func stubKoArtifactBuilder(ref string, imageID string, pushImages bool, importpath string) *Builder {
 	api := (&testutil.FakeAPIClient{}).Add(ref, imageID)
 	localDocker := fakeLocalDockerDaemon(api)
 	b := NewArtifactBuilder(localDocker, pushImages)
 
 	// Fake implementation of the `publishImages` function.
+	// Returns a map with one entry: importpath -> ref
+	// importpath and ref are arguments to the function creating the stub Builder.
 	b.publishImages = func(_ context.Context, _ []string, _ publish.Interface, _ build.Interface) (map[string]name.Reference, error) {
 		imageRef, err := name.ParseReference(ref)
 		if err != nil {
