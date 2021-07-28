@@ -68,7 +68,7 @@ func TestGetPorts(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			pm := NewPortManager()
-			s, m, _, err := pm.getPorts(test.name, collectResources(test.resources))
+			s, m, err := pm.getPorts(test.name, collectResources(test.resources))
 			for port := range s { // the PortSet contains the local ports, so we grab the bindings keyed off these
 				bindings := m[port]
 				t.CheckDeepEqual(len(bindings), 1) // we always have a 1-1 mapping of resource to binding

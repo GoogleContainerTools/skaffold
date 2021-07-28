@@ -41,7 +41,6 @@ import (
 )
 
 type Deployer struct {
-	accessor access.Accessor
 	debugger debug.Debugger
 	logger   log.Logger
 	monitor  status.Monitor
@@ -49,7 +48,7 @@ type Deployer struct {
 
 	cfg         *v1.DockerDeploy
 	tracker     *tracker.ContainerTracker
-	portManager *PortManager
+	portManager *PortManager // functions as Accessor
 	client      dockerutil.LocalDaemon
 	network     string
 	resources   []*v1.PortForwardResource
@@ -75,8 +74,7 @@ func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.D
 		resources: resources,
 		// TODO(nkubala): implement components
 		tracker:     tracker,
-		portManager: NewPortManager(),
-		accessor:    &access.NoopAccessor{},
+		portManager: NewPortManager(), // fulfills Accessor interface
 		debugger:    &debug.NoopDebugger{},
 		logger:      l,
 		monitor:     &status.NoopMonitor{},
@@ -135,7 +133,7 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		return fmt.Errorf("docker compose not yet supported by skaffold")
 	}
 
-	ports, bindings, entries, err := d.portManager.getPorts(b.ImageName, d.resources)
+	ports, bindings, err := d.portManager.getPorts(b.ImageName, d.resources)
 	if err != nil {
 		return err
 	}
@@ -154,7 +152,6 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		return errors.Wrap(err, "creating container in local docker")
 	}
 	d.TrackContainerFromBuild(b, tracker.Container{Name: containerName, ID: id})
-	containerPortForwardEvents(out, entries)
 	return nil
 }
 
@@ -198,7 +195,7 @@ func (d *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, st
 }
 
 func (d *Deployer) GetAccessor() access.Accessor {
-	return d.accessor
+	return d.portManager
 }
 
 func (d *Deployer) GetDebugger() debug.Debugger {

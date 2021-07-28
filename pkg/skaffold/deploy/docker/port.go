@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -33,11 +34,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type containerPortForwardEntry struct {
+	container       string
+	resourceName    string
+	resourceAddress string
+	localPort       int32
+	remotePort      schemautil.IntOrString
+}
+
 type PortManager struct {
 	containerPorts map[string][]int // maps containers to the ports they have allocated
 	portSet        util.PortSet
-
-	lock sync.Mutex
+	entries        []containerPortForwardEntry // reference shared with DockerForwarder so output is issued in the correct phase of the dev loop
+	lock           sync.Mutex
 }
 
 func NewPortManager() *PortManager {
@@ -47,10 +56,23 @@ func NewPortManager() *PortManager {
 	}
 }
 
+func (pm *PortManager) Start(_ context.Context, out io.Writer) error {
+	pm.lock.Lock()
+	defer pm.lock.Unlock()
+	pm.containerPortForwardEvents(out)
+	return nil
+}
+
+func (pm *PortManager) Stop() {
+	pm.lock.Lock()
+	defer pm.lock.Unlock()
+	pm.entries = nil
+}
+
 // getPorts converts PortForwardResources into docker.PortSet/PortMap objects.
 // These are passed to ContainerCreate on Deploy to expose container ports on the host.
 // It also returns a list of containerPortForwardEntry, to be passed to the event handler
-func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource) (nat.PortSet, nat.PortMap, []containerPortForwardEntry, error) {
+func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource) (nat.PortSet, nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	s := make(nat.PortSet)
@@ -66,7 +88,7 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 		ports = append(ports, localPort)
 		port, err := nat.NewPort("tcp", p.Port.String())
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		s[port] = struct{}{}
 		m[port] = []nat.PortBinding{
@@ -81,7 +103,8 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 		})
 	}
 	pm.containerPorts[containerName] = ports
-	return s, m, entries, nil
+	pm.entries = append(pm.entries, entries...)
+	return s, m, nil
 }
 
 func (pm *PortManager) relinquishPorts(containerName string) {
@@ -94,16 +117,8 @@ func (pm *PortManager) relinquishPorts(containerName string) {
 	pm.containerPorts[containerName] = nil
 }
 
-type containerPortForwardEntry struct {
-	container       string
-	resourceName    string
-	resourceAddress string
-	localPort       int32
-	remotePort      schemautil.IntOrString
-}
-
-func containerPortForwardEvents(out io.Writer, entries []containerPortForwardEntry) {
-	for _, entry := range entries {
+func (pm *PortManager) containerPortForwardEvents(out io.Writer) {
+	for _, entry := range pm.entries {
 		event.PortForwarded(
 			entry.localPort,
 			entry.remotePort,
@@ -129,7 +144,7 @@ func containerPortForwardEvents(out io.Writer, entries []containerPortForwardEnt
 		)
 
 		output.Green.Fprintln(out,
-			fmt.Sprintf("[%s] Forwarding container port %s -> local port %s:%d",
+			fmt.Sprintf("[%s] Forwarding container port %s -> local port http://%s:%d",
 				entry.container,
 				entry.remotePort.String(),
 				entry.resourceAddress,
