@@ -112,7 +112,7 @@ kick off a suite of Selenium tests against the newly deployed service.
 
 {{% tabs %}}
 {{% tab "HTTP API" %}}
-Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` execution on our [getting-started example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started)
+Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` execution on our [getting-started example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/getting-started)
 ```bash
  curl localhost:50052/v1/events
 {"result":{"timestamp":"2019-10-16T18:26:11.385251549Z","event":{"metaEvent":{"entry":"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate:2019-10-03T15:01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"}}}}
@@ -176,7 +176,7 @@ The State API provides a snapshot of the current state of the following componen
 **Examples** 
 {{% tabs %}}
 {{% tab "HTTP API" %}}
-Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` execution on our [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
+Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` execution on our [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/microservices)
 ```bash
  curl localhost:50052/v1/state | jq
  {

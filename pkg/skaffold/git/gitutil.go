@@ -65,7 +65,7 @@ func branchExists(repo, branch string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	out, err := util.RunCmdOut(exec.Command(gitProgram, "ls-remote", repo, branch))
+	out, err := util.RunCmdOut(exec.Command(gitProgram, "ls-remote", "--heads", repo, branch))
 	if err != nil {
 		// stdErr contains the error message for os related errors, git permission errors
 		// and if repo doesn't exist
@@ -88,8 +88,7 @@ func getRepoDir(g latestV1.GitInfo) (string, error) {
 		return "", err
 	}
 
-	// UrlEncoding supports '-' as a 63rd character, which can cause dir name issues
-	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))[:32], nil
+	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))[:32], nil
 }
 
 // GetRepoCacheDir returns the directory for the remote git repo cache
@@ -134,7 +133,7 @@ func syncRepo(g latestV1.GitInfo, opts config.SkaffoldOptions) (string, error) {
 		if opts.SyncRemoteCache.CloneDisabled() {
 			return "", SyncDisabledErr(g, repoCacheDir)
 		}
-		if _, err := r.Run("clone", g.Repo, hash, "--branch", ref, "--depth", "1"); err != nil {
+		if _, err := r.Run("clone", g.Repo, fmt.Sprintf("./%s", hash), "--branch", ref, "--depth", "1"); err != nil {
 			return "", fmt.Errorf("failed to clone repo: %w", err)
 		}
 	} else {

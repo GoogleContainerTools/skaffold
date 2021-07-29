@@ -146,12 +146,12 @@ requires:
     git:
       repo: http://github.com/GoogleContainerTools/skaffold.git
       path: getting-started/skaffold.yaml
-      ref: master
+      ref: main
 ```
 
 The environment variable `SKAFFOLD_REMOTE_CACHE_DIR` or flag `--remote-cache-dir` specifies the download location for all remote repos. If undefined then it defaults to `~/.skaffold/repos`. 
 The repo root directory name is a hash of the repo `uri` and the `branch/ref`.
-Every execution of a remote module resets the cached repo to the referenced ref. The default ref is master. If master is not defined then it defaults to main.
+Every execution of a remote module resets the cached repo to the referenced ref. The default ref is `master`. If `master` is not defined then it defaults to `main`.
 The remote config gets treated like a local config after substituting the path with the actual path in the cache directory.
 
 ### Profile Activation in required configs

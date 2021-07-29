@@ -23,7 +23,7 @@ We also generate the [reference doc for the HTTP layer]({{<relref "/docs/referen
 
 ## v1/skaffold.proto
 
-You can find the source for v1/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/v1/v1/skaffold.proto).
+You can find the source for v1/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/v1/skaffold.proto).
 
 
 
@@ -861,6 +861,7 @@ Enum indicating the log level of a line of output
 | ERROR | 3 | Error Level |
 | FATAL | 4 | Fatal Level |
 | PANIC | 5 | Panic Level |
+| TRACE | 6 | Trace Level |
 
 
 

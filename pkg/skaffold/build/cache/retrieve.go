@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
@@ -61,6 +62,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
 		eventV2.CacheCheckInProgress(artifact.ImageName)
+		out := output.WithEventContext(out, constants.Build, artifact.ImageName)
 		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
 		result := results[i]

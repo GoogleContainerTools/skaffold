@@ -65,7 +65,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	}
 
 	if b.pushImages {
-		// TODO (tejaldesai) Remove https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/errors/err_map.go#L56
+		// TODO (tejaldesai) Remove https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/errors/err_map.go#L56
 		// and instead define a pushErr() method here.
 		return b.localDocker.Push(ctx, out, tag)
 	}

@@ -43,8 +43,15 @@ ifeq "$(strip $(VERSION))" ""
 	override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
+DATE_FMT = +%Y-%m-%dT%H:%M:%SZ
+ifdef SOURCE_DATE_EPOCH
+    BUILD_DATE ?= $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u -r "$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u "$(DATE_FMT)")
+else
+    BUILD_DATE ?= $(shell date "$(DATE_FMT)")
+endif
+
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
-GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
+GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(BUILD_DATE)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -s -w
 

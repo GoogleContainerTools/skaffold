@@ -15,7 +15,7 @@ To learn more about how to set up Skaffold and a Kubernetes cluster, see the [qu
 
 ## Tutorial - Hello World in Go
 
-This tutorial will be based on the [custom example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom) in our repository.
+This tutorial will be based on the [custom example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom) in our repository.
 
 
 ## Adding a Custom Builder to Your Skaffold Project

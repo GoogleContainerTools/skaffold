@@ -423,7 +423,7 @@ Note: This release comes with a new config version, `v2beta14`. To upgrade your 
 
 Highlights:
 * More granular control of `port-forward` options. Checkout the updated [documentation](https://skaffold.dev/docs/pipeline-stages/port-forwarding/) for details. 
-* `InputDigest` image tagging strategy from the [Improve taggers proposal](https://github.com/GoogleContainerTools/skaffold/blob/master/docs/design_proposals/digest-tagger.md) has landed.
+* `InputDigest` image tagging strategy from the [Improve taggers proposal](https://github.com/GoogleContainerTools/skaffold/blob/main/docs/design_proposals/digest-tagger.md) has landed.
 
 New Features:
 * Revise port-forward behaviour [#5554](https://github.com/GoogleContainerTools/skaffold/pull/5554)
@@ -506,7 +506,7 @@ Highlights:
 * New command `skaffold apply` for when you want Skaffold to simply deploy your pre-rendered Kubernetes manifests.
 * Debugging Python application using `skaffold debug` now uses `debugpy` by default.
 * New tutorials for [`artifact dependencies`](https://skaffold.dev/docs/tutorials/artifact-dependencies/) and [`configuration dependencies`](https://skaffold.dev/docs/tutorials/config-dependencies/) features.
-* New example project [`examples/custom-buildx`](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom-buildx) showing how to build multi-arch images using Skaffold.
+* New example project [`examples/custom-buildx`](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom-buildx) showing how to build multi-arch images using Skaffold.
 
 New Features:
 * Add 'skaffold apply' command [#5543](https://github.com/GoogleContainerTools/skaffold/pull/5543)
@@ -948,7 +948,7 @@ Note: This release comes with a new config version, `v2beta9`. To upgrade your s
 Highlights:
 * Artifact Modules Support: Skaffold allow users to specify artifact dependencies for dockerfile artifacts. 
 
-  To use, look at [microservice example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices). *Docs coming soon*
+  To use, look at [microservice example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/microservices). *Docs coming soon*
 * Skaffold init support for polyglot-maven projects [#4871](https://github.com/GoogleContainerTools/skaffold/pull/4871)
 * Skaffold `debug` helper images now moved to gcr.io/k8s-skaffold/skaffold-debug-support [#4961](https://github.com/GoogleContainerTools/skaffold/pull/4961)
 

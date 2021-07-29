@@ -19,9 +19,12 @@ package v2
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestHandleSkaffoldLogEvent(t *testing.T) {
@@ -45,9 +48,60 @@ func TestHandleSkaffoldLogEvent(t *testing.T) {
 		})
 	}
 	wait(t, func() bool {
-		testHandler.skaffoldLogsLock.Lock()
-		logLen := len(testHandler.skaffoldLogs)
-		testHandler.skaffoldLogsLock.Unlock()
+		testHandler.logLock.Lock()
+		logLen := len(testHandler.eventLog)
+		testHandler.logLock.Unlock()
 		return logLen == len(messages)
 	})
+}
+
+func TestLevelFromEntry(t *testing.T) {
+	tests := []struct {
+		name      string
+		logrusLvl logrus.Level
+		enumLvl   enums.LogLevel
+	}{
+		{
+			name:      "panic",
+			logrusLvl: logrus.PanicLevel,
+			enumLvl:   enums.LogLevel_PANIC,
+		},
+		{
+			name:      "fatal",
+			logrusLvl: logrus.FatalLevel,
+			enumLvl:   enums.LogLevel_FATAL,
+		},
+		{
+			name:      "error",
+			logrusLvl: logrus.ErrorLevel,
+			enumLvl:   enums.LogLevel_ERROR,
+		},
+		{
+			name:      "warn",
+			logrusLvl: logrus.WarnLevel,
+			enumLvl:   enums.LogLevel_WARN,
+		},
+		{
+			name:      "info",
+			logrusLvl: logrus.InfoLevel,
+			enumLvl:   enums.LogLevel_INFO,
+		},
+		{
+			name:      "debug",
+			logrusLvl: logrus.DebugLevel,
+			enumLvl:   enums.LogLevel_DEBUG,
+		},
+		{
+			name:      "trace",
+			logrusLvl: logrus.TraceLevel,
+			enumLvl:   enums.LogLevel_TRACE,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			got := levelFromEntry(&logrus.Entry{Level: test.logrusLvl})
+			t.CheckDeepEqual(test.enumLvl, got)
+		})
+	}
 }
