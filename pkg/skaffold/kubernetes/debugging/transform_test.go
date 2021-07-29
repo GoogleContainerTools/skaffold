@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -103,7 +104,10 @@ func TestAllocatePort(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			result := allocatePort(&test.pod, test.desiredPort)
+			portAvailable := func(port int32) bool {
+				return isPortAvailable(&test.pod, port)
+			}
+			result := util.AllocatePort(portAvailable, test.desiredPort)
 
 			t.CheckDeepEqual(test.result, result)
 		})

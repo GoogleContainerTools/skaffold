@@ -32,6 +32,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -63,12 +64,11 @@ type ContainerRun struct {
 
 type ContainerCreateOpts struct {
 	Name        string
-	Image       string
 	Network     string
 	VolumesFrom []string
 	Wait        bool
-	Ports       nat.PortSet
 	Bindings    nat.PortMap
+	Mounts      []mount.Mount
 }
 
 // LocalDaemon talks to a local Docker API.
@@ -79,11 +79,13 @@ type LocalDaemon interface {
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error
 	ContainerExists(ctx context.Context, name string) bool
+	ContainerInspect(ctx context.Context, id string) (types.ContainerJSON, error)
+	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
 	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error)
+	Run(ctx context.Context, out io.Writer, cfg *container.Config, opts ContainerCreateOpts) (string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -97,6 +99,8 @@ type LocalDaemon interface {
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
+	VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error)
+	VolumeRemove(ctx context.Context, id string) error
 }
 
 // BuildOptions provides parameters related to the LocalDaemon build.
@@ -151,6 +155,22 @@ func (l *localDaemon) Close() error {
 	return l.apiClient.Close()
 }
 
+func (l *localDaemon) VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error) {
+	return l.apiClient.VolumeCreate(ctx, opts)
+}
+
+func (l *localDaemon) VolumeRemove(ctx context.Context, id string) error {
+	return l.apiClient.VolumeRemove(ctx, id, false)
+}
+
+func (l *localDaemon) ContainerInspect(ctx context.Context, id string) (types.ContainerJSON, error) {
+	return l.apiClient.ContainerInspect(ctx, id)
+}
+
+func (l *localDaemon) ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error) {
+	return l.apiClient.ContainerList(ctx, options)
+}
+
 // ContainerLogs streams logs line by line from a container in the local daemon to the provided PipeWriter.
 func (l *localDaemon) ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error {
 	r, err := l.apiClient.ContainerLogs(ctx, id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
@@ -191,16 +211,12 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns then container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error) {
-	cfg := &container.Config{
-		Image:        opts.Image,
-		ExposedPorts: opts.Ports,
-	}
-
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, cfg *container.Config, opts ContainerCreateOpts) (string, error) {
 	hCfg := &container.HostConfig{
 		NetworkMode:  container.NetworkMode(opts.Network),
 		VolumesFrom:  opts.VolumesFrom,
 		PortBindings: opts.Bindings,
+		Mounts:       opts.Mounts,
 	}
 	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, opts.Name)
 	if err != nil {

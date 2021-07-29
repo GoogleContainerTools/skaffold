@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	dockerdebug "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/debugger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
@@ -50,6 +51,7 @@ func NewCmdDebug() *cobra.Command {
 
 func runDebug(ctx context.Context, out io.Writer) error {
 	manifest.AddTransform(debugging.ApplyDebuggingTransforms)
+	dockerdebug.EnableTransforms()
 
 	return doDev(ctx, out)
 }

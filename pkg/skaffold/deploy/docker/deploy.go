@@ -22,13 +22,18 @@ import (
 	"io"
 	"sync"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	dockerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/debugger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -41,18 +46,20 @@ import (
 )
 
 type Deployer struct {
-	debugger debug.Debugger
+	debugger *debugger.DebugManager
 	logger   log.Logger
 	monitor  status.Monitor
 	syncer   pkgsync.Syncer
 
-	cfg         *v1.DockerDeploy
-	tracker     *tracker.ContainerTracker
-	portManager *PortManager // functions as Accessor
-	client      dockerutil.LocalDaemon
-	network     string
-	resources   []*v1.PortForwardResource
-	once        sync.Once
+	cfg                *v1.DockerDeploy
+	tracker            *tracker.ContainerTracker
+	portManager        *PortManager // functions as Accessor
+	client             dockerutil.LocalDaemon
+	network            string
+	globalConfig       string
+	insecureRegistries map[string]bool
+	resources          []*v1.PortForwardResource
+	once               sync.Once
 }
 
 func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
@@ -67,18 +74,24 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		return nil, err
 	}
 
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(cfg.GlobalConfig())
+	if err != nil {
+		return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
+	}
+
 	return &Deployer{
-		cfg:       d,
-		client:    client,
-		network:   fmt.Sprintf("skaffold-network-%s", uuid.New().String()),
-		resources: resources,
-		// TODO(nkubala): implement components
-		tracker:     tracker,
-		portManager: NewPortManager(), // fulfills Accessor interface
-		debugger:    &debug.NoopDebugger{},
-		logger:      l,
-		monitor:     &status.NoopMonitor{},
-		syncer:      pkgsync.NewContainerSyncer(),
+		cfg:                d,
+		client:             client,
+		network:            fmt.Sprintf("skaffold-network-%s", uuid.New().String()),
+		resources:          resources,
+		globalConfig:       cfg.GlobalConfig(),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		tracker:            tracker,
+		portManager:        NewPortManager(), // fulfills Accessor interface
+		debugger:           debugger.NewDebugManager(cfg.GetInsecureRegistries(), debugHelpersRegistry),
+		logger:             l,
+		monitor:            &status.NoopMonitor{},
+		syncer:             pkgsync.NewContainerSyncer(),
 	}, nil
 }
 
@@ -138,21 +151,64 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		return err
 	}
 
-	containerName := d.getContainerName(ctx, b.ImageName)
+	containerCfg, err := d.containerConfigFromImage(ctx, b.Tag)
+	if err != nil {
+		return err
+	}
+	containerCfg.ExposedPorts = ports
 
+	initContainers, err := d.debugger.TransformImage(ctx, b, containerCfg)
+	if err != nil {
+		return errors.Wrap(err, "transforming image for debugging")
+	}
+
+	for _, c := range initContainers {
+		if d.debugger.HasMount(c.Image) {
+			// skip duplication of init containers
+			continue
+		}
+		id, err := d.client.Run(ctx, out, c, dockerutil.ContainerCreateOpts{})
+		if err != nil {
+			return errors.Wrap(err, "creating container in local docker")
+		}
+		r, err := d.client.ContainerInspect(ctx, id)
+		if err != nil {
+			return errors.Wrap(err, "inspecting init container")
+		}
+		if len(r.Mounts) != 1 {
+			olog.Entry(ctx).Warnf("unable to retrieve mount from debug init container: debugging may not work correctly!")
+		}
+		d.debugger.AddSupportMount(c.Image, r.Mounts[0].Name)
+	}
+
+	containerName := d.getContainerName(ctx, b.ImageName)
+	var mounts []mount.Mount
+	for _, m := range d.debugger.SupportMounts() {
+		mounts = append(mounts, m)
+	}
 	opts := dockerutil.ContainerCreateOpts{
 		Name:     containerName,
-		Image:    b.Tag,
 		Network:  d.network,
-		Ports:    ports,
 		Bindings: bindings,
+		Mounts:   mounts,
 	}
-	id, err := d.client.Run(ctx, out, opts)
+
+	// TODO(nkubala)[08/16/21]: events for debugging, port forwarding
+	id, err := d.client.Run(ctx, out, containerCfg, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating container in local docker")
 	}
 	d.TrackContainerFromBuild(b, tracker.Container{Name: containerName, ID: id})
 	return nil
+}
+
+func (d *Deployer) containerConfigFromImage(ctx context.Context, image string) (*container.Config, error) {
+	config, _, err := d.client.ImageInspectWithRaw(ctx, image)
+	if err != nil {
+		return nil, err
+	}
+	config.Config.Image = image // the client replaces this with an image ID. put back the originally provided tag
+	return config.Config, err
 }
 
 func (d *Deployer) getContainerName(ctx context.Context, name string) string {
@@ -184,6 +240,12 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return errors.Wrap(err, "cleaning up deployed container")
 		}
 		d.portManager.relinquishPorts(container.Name)
+	}
+
+	for _, m := range d.debugger.SupportMounts() {
+		if err := d.client.VolumeRemove(ctx, m.Source); err != nil {
+			return errors.Wrap(err, "cleaning up debug support volume")
+		}
 	}
 
 	err := d.client.NetworkRemove(ctx, d.network)

@@ -53,10 +53,20 @@ var (
 
 type Config interface {
 	Prune() bool
+	GlobalConfig() string
 	GetKubeContext() string
 	MinikubeProfile() string
 	GetInsecureRegistries() map[string]bool
 	Mode() config.RunMode
+}
+
+func DefaultAPIClient() (LocalDaemon, error) {
+	env, apiClient, err := newEnvAPIClient()
+	if err != nil {
+		return nil, err
+	}
+	cli := NewLocalDaemon(apiClient, env, false, nil)
+	return cli, nil
 }
 
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.

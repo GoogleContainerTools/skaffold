@@ -206,6 +206,10 @@ func (m mockConfig) GetKubeContext() string {
 	return ""
 }
 
+func (m mockConfig) GlobalConfig() string {
+	return ""
+}
+
 func (m mockConfig) MinikubeProfile() string {
 	return ""
 }
