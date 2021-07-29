@@ -148,13 +148,14 @@ func IsPortFree(address string, p int) bool {
 	// Ensure the port is available across all interfaces
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
 	if err != nil {
-		logrus.Tracef("port IN_ADDR_ANY:%d already bound: %v", p, err)
+		logrus.Tracef("port INADDR_ANY:%d already bound: %v", p, err)
 		return false
 	} else if l == nil {
-		logrus.Tracef("port IN_ADDR_ANY:%d nil listener: %v", p)
+		logrus.Tracef("port INADDR_ANY:%d nil listener", p)
 		return false
 	}
 	l.Close()
+	logrus.Tracef("was able to obtain INADDR_ANY:%d", p)
 
 	if address != Any {
 		// Ensure the port is available on the specific interface too
@@ -167,6 +168,7 @@ func IsPortFree(address string, p int) bool {
 			return false
 		}
 		l.Close()
+		logrus.Tracef("was able to obtain %s:%d", address, p)
 	}
 	return true
 }
