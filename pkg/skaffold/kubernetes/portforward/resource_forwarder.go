@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -126,11 +127,15 @@ func (p *ResourceForwarder) Stop() {
 
 // Port forward each resource individually in a goroutine
 func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latestV1.PortForwardResource) {
-	go func() {
-		for _, r := range resources {
-			p.portForwardResource(ctx, *r)
-		}
-	}()
+	var wg sync.WaitGroup
+	for _, r := range resources {
+		wg.Add(1)
+		go func(r latestV1.PortForwardResource) {
+			defer wg.Done()
+			p.portForwardResource(ctx, r)
+		}(*r)
+	}
+	wg.Wait()
 }
 
 func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latestV1.PortForwardResource) {
