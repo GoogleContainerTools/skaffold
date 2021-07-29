@@ -26,6 +26,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -381,29 +383,31 @@ func TestUpdateForCNBImage(t *testing.T) {
 		// Test that when a transform modifies the command-line arguments, then
 		// the changes are reflected to the launcher command-line
 		testutil.Run(t, test.description+" (args changed)", func(t *testutil.T) {
-			argsChangedTransform := func(c *operableContainer, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
-				c.Args = ic.arguments
+			argsChangedTransform := func(a types.ContainerAdapter, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+				a.GetContainer().Args = ic.arguments
 				return annotations.ContainerDebugConfiguration{}, "", nil
 			}
-			operable := operableContainer{}
 			container := v1.Container{}
-			c, _, err := updateForCNBImage(&operable, test.input, argsChangedTransform)
-			applyFromOperable(&operable, &container)
+			a := adapter.NewAdapter(&container)
+			c, _, err := updateForCNBImage(a, test.input, argsChangedTransform)
+			a.Apply()
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, container)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.config, c)
 		})
 
 		// Test that when the arguments are left unchanged, that the container is unchanged
 		testutil.Run(t, test.description+" (args unchanged)", func(t *testutil.T) {
-			argsUnchangedTransform := func(c *operableContainer, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+			argsUnchangedTransform := func(_ types.ContainerAdapter, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
 				return annotations.ContainerDebugConfiguration{WorkingDir: ic.workingDir}, "", nil
 			}
 
-			copy := operableContainer{}
-			_, _, err := updateForCNBImage(&copy, test.input, argsUnchangedTransform)
+			container := v1.Container{}
+			a := adapter.NewAdapter(&container)
+			// copy := operableContainer{}
+			_, _, err := updateForCNBImage(a, test.input, argsUnchangedTransform)
 			t.CheckError(test.shouldErr, err)
-			if copy.Args != nil {
-				t.Errorf("args not nil: %v", copy.Args)
+			if container.Args != nil {
+				t.Errorf("args not nil: %v", container.Args)
 			}
 		})
 	}

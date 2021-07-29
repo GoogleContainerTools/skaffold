@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -142,31 +143,31 @@ func TestDescribe(t *testing.T) {
 func TestExposePort(t *testing.T) {
 	tests := []struct {
 		description string
-		in          []v1.ContainerPort
-		expected    []v1.ContainerPort
+		in          []types.ContainerPort
+		expected    []types.ContainerPort
 	}{
-		{"no ports", []v1.ContainerPort{}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
-		{"existing port", []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
-		{"add new port", []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}, {Name: "name", ContainerPort: 5555}}},
-		{"clashing port name", []v1.ContainerPort{{Name: "name", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
-		{"clashing port value", []v1.ContainerPort{{Name: "foo", ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
-		{"clashing port name and value", []v1.ContainerPort{{ContainerPort: 5555}, {Name: "name", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
-		{"clashing port name and value", []v1.ContainerPort{{Name: "name", ContainerPort: 4444}, {ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"no ports", []types.ContainerPort{}, []types.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"existing port", []types.ContainerPort{{Name: "name", ContainerPort: 5555}}, []types.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"add new port", []types.ContainerPort{{Name: "foo", ContainerPort: 4444}}, []types.ContainerPort{{Name: "foo", ContainerPort: 4444}, {Name: "name", ContainerPort: 5555}}},
+		{"clashing port name", []types.ContainerPort{{Name: "name", ContainerPort: 4444}}, []types.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port value", []types.ContainerPort{{Name: "foo", ContainerPort: 5555}}, []types.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port name and value", []types.ContainerPort{{ContainerPort: 5555}, {Name: "name", ContainerPort: 4444}}, []types.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port name and value", []types.ContainerPort{{Name: "name", ContainerPort: 4444}, {ContainerPort: 5555}}, []types.ContainerPort{{Name: "name", ContainerPort: 5555}}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			ports := k8sPortsToContainerPorts(test.in)
-			ports = exposePort(ports, "name", 5555)
-			result := containerPortsToK8sPorts(ports)
+			// ports := k8sPortsToContainerPorts(test.in)
+			result := exposePort(test.in, "name", 5555)
+			// result := containerPortsToK8sPorts(ports)
 			t.CheckDeepEqual(test.expected, result)
-			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.Name == "name" }))
-			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.ContainerPort == 5555 }))
+			t.CheckDeepEqual([]types.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p types.ContainerPort) bool { return p.Name == "name" }))
+			t.CheckDeepEqual([]types.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p types.ContainerPort) bool { return p.ContainerPort == 5555 }))
 		})
 	}
 }
 
-func filter(ports []v1.ContainerPort, predicate func(v1.ContainerPort) bool) []v1.ContainerPort {
-	var selected []v1.ContainerPort
+func filter(ports []types.ContainerPort, predicate func(types.ContainerPort) bool) []types.ContainerPort {
+	var selected []types.ContainerPort
 	for _, p := range ports {
 		if predicate(p) {
 			selected = append(selected, p)
@@ -178,18 +179,28 @@ func filter(ports []v1.ContainerPort, predicate func(v1.ContainerPort) bool) []v
 func TestSetEnvVar(t *testing.T) {
 	tests := []struct {
 		description string
-		in          []v1.EnvVar
-		expected    []v1.EnvVar
+		in          types.ContainerEnv
+		expected    types.ContainerEnv
 	}{
-		{"no entry", []v1.EnvVar{}, []v1.EnvVar{{Name: "name", Value: "new-text"}}},
-		{"add new entry", []v1.EnvVar{{Name: "foo", Value: "bar"}}, []v1.EnvVar{{Name: "foo", Value: "bar"}, {Name: "name", Value: "new-text"}}},
-		{"replace existing entry", []v1.EnvVar{{Name: "name", Value: "value"}}, []v1.EnvVar{{Name: "name", Value: "new-text"}}},
+		{
+			description: "no entry",
+			in:          types.ContainerEnv{Env: map[string]string{}},
+			expected:    types.ContainerEnv{Order: []string{"name"}, Env: map[string]string{"name": "new-text"}},
+		},
+		{
+			description: "add new entry",
+			in:          types.ContainerEnv{Order: []string{"foo"}, Env: map[string]string{"foo": "bar"}},
+			expected:    types.ContainerEnv{Order: []string{"foo", "name"}, Env: map[string]string{"foo": "bar", "name": "new-text"}},
+		},
+		{
+			description: "add new entry",
+			in:          types.ContainerEnv{Order: []string{"name"}, Env: map[string]string{"name": "value"}},
+			expected:    types.ContainerEnv{Order: []string{"name"}, Env: map[string]string{"name": "new-text"}},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			env := k8sEnvToContainerEnv(test.in)
-			env = setEnvVar(env, "name", "new-text")
-			result := containerEnvToK8sEnv(env)
+			result := setEnvVar(test.in, "name", "new-text")
 			t.CheckDeepEqual(test.expected, result)
 		})
 	}
@@ -248,14 +259,14 @@ func TestUpdateForShDashC(t *testing.T) {
 		description string
 		input       imageConfiguration
 		unwrapped   imageConfiguration
-		expected    operableContainer
+		expected    types.ExecutableContainer
 	}{
 		{description: "empty"},
 		{
 			description: "no unwrapping: entrypoint ['a', 'b']",
 			input:       imageConfiguration{entrypoint: []string{"a", "b"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"a", "b"}},
-			expected:    operableContainer{Command: []string{"b", "a"}},
+			expected:    types.ExecutableContainer{Command: []string{"b", "a"}},
 		},
 		{
 			description: "no unwrapping: args ['d', 'e', 'f']",
@@ -266,73 +277,77 @@ func TestUpdateForShDashC(t *testing.T) {
 			description: "no unwrapping: entrypoint ['a', 'b'], args [d]",
 			input:       imageConfiguration{entrypoint: []string{"a", "b"}, arguments: []string{"d"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"a", "b"}, arguments: []string{"d"}},
-			expected:    operableContainer{Command: []string{"b", "a"}},
+			expected:    types.ExecutableContainer{Command: []string{"b", "a"}},
 		},
 		{
 			description: "no unwrapping: entrypoint ['/bin/sh', '-x'] (only `-c`)",
 			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-x"}, arguments: []string{"d"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"/bin/sh", "-x"}, arguments: []string{"d"}},
-			expected:    operableContainer{Command: []string{"-x", "/bin/sh"}},
+			expected:    types.ExecutableContainer{Command: []string{"-x", "/bin/sh"}},
 		},
 		{
 			description: "no unwrapping: entrypoint ['sh', '-c', 'foo'] (not /bin/sh)",
 			input:       imageConfiguration{entrypoint: []string{"sh", "-c"}, arguments: []string{"d"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"sh", "-c"}, arguments: []string{"d"}},
-			expected:    operableContainer{Command: []string{"-c", "sh"}},
+			expected:    types.ExecutableContainer{Command: []string{"-c", "sh"}},
 		},
 		{
 			description: "unwwrapped: entrypoint ['/bin/sh', '-c', 'cmd']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    operableContainer{Command: []string{"/bin/sh", "-c", "f e d"}},
+			expected:    types.ExecutableContainer{Command: []string{"/bin/sh", "-c", "f e d"}},
 		},
 		{
 			description: "unwwrapped: entrypoint ['/bin/sh', '-c'], args ['d e f']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-c"}, arguments: []string{"d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    operableContainer{Args: []string{"f e d"}},
+			expected:    types.ExecutableContainer{Args: []string{"f e d"}},
 		},
 		{
 			description: "unwwrapped: args ['/bin/sh', '-c', 'd e f']",
 			input:       imageConfiguration{arguments: []string{"/bin/sh", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    operableContainer{Args: []string{"/bin/sh", "-c", "f e d"}},
+			expected:    types.ExecutableContainer{Args: []string{"/bin/sh", "-c", "f e d"}},
 		},
 		{
 			description: "unwwrapped: entrypoint ['/bin/bash', '-c', 'd e f']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/bash", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    operableContainer{Command: []string{"/bin/bash", "-c", "f e d"}},
+			expected:    types.ExecutableContainer{Command: []string{"/bin/bash", "-c", "f e d"}},
 		},
 		{
 			description: "entrypoint ['/bin/bash','-c'], args ['d e f']",
 			input:       imageConfiguration{entrypoint: []string{"/bin/bash", "-c"}, arguments: []string{"d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    operableContainer{Args: []string{"f e d"}},
+			expected:    types.ExecutableContainer{Args: []string{"f e d"}},
 		},
 		{
 			description: "unwwrapped: args ['/bin/bash','-c','d e f']",
 			input:       imageConfiguration{arguments: []string{"/bin/bash", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    operableContainer{Args: []string{"/bin/bash", "-c", "f e d"}},
+			expected:    types.ExecutableContainer{Args: []string{"/bin/bash", "-c", "f e d"}},
 		},
 		{
 			description: "unwwrapped: entrypoint-launcher and args ['/bin/sh','-c','d e f']",
 			input:       imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"/bin/bash", "-c", "d e f"}},
 			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
-			expected:    operableContainer{Args: []string{"/bin/bash", "-c", "f e d"}},
+			expected:    types.ExecutableContainer{Args: []string{"/bin/bash", "-c", "f e d"}},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&entrypointLaunchers, []string{"launcher"})
 
-			container := operableContainer{}
+			container := types.ExecutableContainer{}
+			adapter := &testAdapter{
+				executable: &container,
+			}
 			// The transformer reverses the unwrapped entrypoint which should be reflected into the container.Entrypoint
-			updateForShDashC(&container, test.input,
-				func(c *operableContainer, result imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+			updateForShDashC(adapter, test.input,
+				func(a types.ContainerAdapter, result imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
 					t.CheckDeepEqual(test.unwrapped, result, cmp.AllowUnexported(imageConfiguration{}))
 					if len(result.entrypoint) > 0 {
+						c := adapter.GetContainer()
 						c.Command = make([]string, len(result.entrypoint))
 						for i, s := range result.entrypoint {
 							c.Command[len(result.entrypoint)-i-1] = s

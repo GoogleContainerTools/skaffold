@@ -1,37 +1,34 @@
+/*
+Copyright 2021 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package debug
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	shell "github.com/kballard/go-shellquote"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
-
-type operableContainer struct {
-	Name    string
-	Command []string
-	Args    []string
-	Env     containerEnv
-	Ports   []containerPort
-}
-
-// adapted from github.com/kubernetes/api/core/v1/types.go
-type containerPort struct {
-	Name          string
-	HostPort      int32
-	ContainerPort int32
-	Protocol      string
-	HostIP        string
-}
-
-type containerEnv struct {
-	Order []string
-	Env   map[string]string
-}
 
 // containerTransforms are the set of configured transformers
 var containerTransforms []containerTransformer
@@ -45,15 +42,17 @@ type containerTransformer interface {
 	// and required initContainer (an empty string if not required), or return a non-nil error if
 	// the container could not be transformed.  The initContainer image is intended to install any
 	// required debug support tools.
-	Apply(container *operableContainer, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error)
+	Apply(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error)
 }
 
 // transformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
-func transformContainer(container *operableContainer, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
+func transformContainer(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
 	// Update the image configuration's environment with those set in the k8s manifest.
 	// (Environment variables in the k8s container's `env` add to the image configuration's `env` settings rather than replace.)
+	container := adapter.GetContainer()
+	defer adapter.Apply()
 	for _, key := range container.Env.Order {
 		// FIXME handle ValueFrom?
 		if config.env == nil {
@@ -70,13 +69,13 @@ func transformContainer(container *operableContainer, config imageConfiguration,
 	}
 
 	// Apply command-line unwrapping for buildpack images and images using `sh -c`-style command-lines
-	next := func(container *operableContainer, config imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
-		return performContainerTransform(container, config, portAlloc)
+	next := func(adapter types.ContainerAdapter, config imageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+		return performContainerTransform(adapter, config, portAlloc)
 	}
 	if isCNBImage(config) {
-		return updateForCNBImage(container, config, next)
+		return updateForCNBImage(adapter, config, next)
 	}
-	return updateForShDashC(container, config, next)
+	return updateForShDashC(adapter, config, next)
 }
 
 func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
@@ -102,16 +101,15 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		if err != nil {
 			continue
 		}
-		operable := operableContainerFromK8sContainer(&container)
+		a := adapter.NewAdapter(&container)
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		// `err != nil` means that the container did not or could not be transformed
-		if configuration, requiredImage, err := transformContainer(operable, imageConfig, portAlloc); err == nil {
+		if configuration, requiredImage, err := transformContainer(a, imageConfig, portAlloc); err == nil {
 			configuration.Artifact = imageConfig.artifact
 			if configuration.WorkingDir == "" {
 				configuration.WorkingDir = imageConfig.workingDir
 			}
 			configurations[container.Name] = configuration
-			applyFromOperable(operable, &container)
 			podSpec.Containers[i] = container // apply any configuration changes
 			if len(requiredImage) > 0 {
 				log.Entry(context.Background()).Infof("%q requires debugging support image %q", container.Name, requiredImage)
@@ -157,7 +155,7 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 	return false
 }
 
-func updateForShDashC(container *operableContainer, ic imageConfiguration, transformer func(*operableContainer, imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
+func updateForShDashC(adapter types.ContainerAdapter, ic imageConfiguration, transformer func(types.ContainerAdapter, imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
 	var rewriter func([]string)
 	copy := ic
 	switch {
@@ -167,6 +165,7 @@ func updateForShDashC(container *operableContainer, ic imageConfiguration, trans
 			copy.entrypoint = split
 			copy.arguments = nil
 			rewriter = func(rewrite []string) {
+				container := adapter.GetContainer()
 				container.Command = nil // inherit from container
 				container.Args = append([]string{shJoin(rewrite)}, ic.arguments[1:]...)
 			}
@@ -178,6 +177,7 @@ func updateForShDashC(container *operableContainer, ic imageConfiguration, trans
 			copy.entrypoint = split
 			copy.arguments = nil
 			rewriter = func(rewrite []string) {
+				container := adapter.GetContainer()
 				container.Command = append([]string{ic.entrypoint[0], ic.entrypoint[1], shJoin(rewrite)}, ic.entrypoint[3:]...)
 			}
 		}
@@ -188,13 +188,15 @@ func updateForShDashC(container *operableContainer, ic imageConfiguration, trans
 			copy.entrypoint = split
 			copy.arguments = nil
 			rewriter = func(rewrite []string) {
+				container := adapter.GetContainer()
 				container.Command = nil
 				container.Args = append([]string{ic.arguments[0], ic.arguments[1], shJoin(rewrite)}, ic.arguments[3:]...)
 			}
 		}
 	}
 
-	c, image, err := transformer(container, copy)
+	c, image, err := transformer(adapter, copy)
+	container := adapter.GetContainer()
 	if err == nil && rewriter != nil && container.Command != nil {
 		rewriter(container.Command)
 	}
@@ -205,87 +207,12 @@ func isShDashC(cmd, arg string) bool {
 	return (cmd == "/bin/sh" || cmd == "/bin/bash") && arg == "-c"
 }
 
-func performContainerTransform(container *operableContainer, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
-	log.Entry(context.Background()).Tracef("Examining container %q with config %v", container.Name, config)
+func performContainerTransform(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
+	log.Entry(context.Background()).Tracef("Examining container %q with config %v", adapter.GetContainer().Name, config)
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc, Protocols)
+			return transform.Apply(adapter, config, portAlloc, Protocols)
 		}
 	}
-	return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
-}
-
-// operableContainerFromK8sContainer creates an instance of an operableContainer
-// from a v1.Container reference. This object will be passed around to accept
-// transforms, and will eventually overwrite fields from the creating v1.Container
-// in the manifest-under-transformation's pod spec.
-func operableContainerFromK8sContainer(c *v1.Container) *operableContainer {
-	return &operableContainer{
-		Command: c.Command,
-		Args:    c.Args,
-		Env:     k8sEnvToContainerEnv(c.Env),
-		Ports:   k8sPortsToContainerPorts(c.Ports),
-	}
-}
-
-func k8sEnvToContainerEnv(k8sEnv []v1.EnvVar) containerEnv {
-	// TODO(nkubala): ValueFrom is ignored. Do we care?
-	env := make(map[string]string, len(k8sEnv))
-	var order []string
-	for _, entry := range k8sEnv {
-		order = append(order, entry.Name)
-		env[entry.Name] = entry.Value
-	}
-	return containerEnv{
-		Order: order,
-		Env:   env,
-	}
-}
-
-func containerEnvToK8sEnv(env containerEnv) []v1.EnvVar {
-	var k8sEnv []v1.EnvVar
-	for _, k := range env.Order {
-		k8sEnv = append(k8sEnv, v1.EnvVar{
-			Name:  k,
-			Value: env.Env[k],
-		})
-	}
-	return k8sEnv
-}
-
-func k8sPortsToContainerPorts(k8sPorts []v1.ContainerPort) []containerPort {
-	var containerPorts []containerPort
-	for _, port := range k8sPorts {
-		containerPorts = append(containerPorts, containerPort{
-			Name:          port.Name,
-			HostPort:      port.HostPort,
-			ContainerPort: port.ContainerPort,
-			Protocol:      string(port.Protocol),
-			HostIP:        port.HostIP,
-		})
-	}
-	return containerPorts
-}
-
-func containerPortsToK8sPorts(containerPorts []containerPort) []v1.ContainerPort {
-	var k8sPorts []v1.ContainerPort
-	for _, port := range containerPorts {
-		k8sPorts = append(k8sPorts, v1.ContainerPort{
-			Name:          port.Name,
-			HostPort:      port.HostPort,
-			ContainerPort: port.ContainerPort,
-			Protocol:      v1.Protocol(port.Protocol),
-			HostIP:        port.HostIP,
-		})
-	}
-	return k8sPorts
-}
-
-// applyFromOperable takes the relevant fields from the operable container
-// and applies them to the referenced v1.Container from the manifest's pod spec
-func applyFromOperable(o *operableContainer, c *v1.Container) {
-	c.Args = o.Args
-	c.Command = o.Command
-	c.Env = containerEnvToK8sEnv(o.Env)
-	c.Ports = containerPortsToK8sPorts(o.Ports)
+	return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", adapter.GetContainer().Name)
 }

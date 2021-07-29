@@ -27,6 +27,7 @@ import (
 	shell "github.com/kballard/go-shellquote"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
@@ -105,7 +106,7 @@ func hasCNBLauncherEntrypoint(ic imageConfiguration) bool {
 //     the default process type.  `CNB_PROCESS_TYPE` is ignored in this situation.  A different process
 //     can be used by overriding the image entrypoint.  Direct and script launches are supported by
 //     setting the entrypoint to `/cnb/lifecycle/launcher` and providing the appropriate arguments.
-func updateForCNBImage(container *operableContainer, ic imageConfiguration, transformer func(container *operableContainer, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
+func updateForCNBImage(adapter types.ContainerAdapter, ic imageConfiguration, transformer func(adapter types.ContainerAdapter, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
 	// buildpacks/lifecycle 0.6.0 embeds the process definitions into a special image label.
 	// The build metadata isn't absolutely required as the image args could be
 	// a command line (e.g., `python xxx`) but it likely indicates the
@@ -133,7 +134,7 @@ func updateForCNBImage(container *operableContainer, ic imageConfiguration, tran
 		ic.workingDir = "/workspace"
 	}
 
-	c, img, err := transformer(container, ic)
+	c, img, err := transformer(adapter, ic)
 	if err != nil {
 		return c, img, err
 	}
@@ -142,6 +143,7 @@ func updateForCNBImage(container *operableContainer, ic imageConfiguration, tran
 		c.WorkingDir = ic.workingDir
 	}
 
+	container := adapter.GetContainer()
 	if container.Args != nil && rewriter != nil {
 		// Only rewrite the container if the arguments were changed: some transforms only alter
 		// env vars, and the image's arguments are not changed.

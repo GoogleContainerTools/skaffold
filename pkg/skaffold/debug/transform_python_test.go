@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -250,9 +251,9 @@ func TestPythonTransformer_Apply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			operableContainer := operableContainerFromK8sContainer(&test.containerSpec)
-			config, image, err := pythonTransformer{}.Apply(operableContainer, test.configuration, identity, test.overrideProtocols)
-			applyFromOperable(operableContainer, &test.containerSpec)
+			adapter := adapter.NewAdapter(&test.containerSpec)
+			config, image, err := pythonTransformer{}.Apply(adapter, test.configuration, identity, test.overrideProtocols)
+			adapter.Apply()
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)

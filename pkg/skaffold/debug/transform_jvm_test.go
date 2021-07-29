@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -157,9 +158,9 @@ func TestJdwpTransformerApply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			operableContainer := operableContainerFromK8sContainer(&test.containerSpec)
-			config, image, err := jdwpTransformer{}.Apply(operableContainer, test.configuration, identity, nil)
-			applyFromOperable(operableContainer, &test.containerSpec)
+			adapter := adapter.NewAdapter(&test.containerSpec)
+			config, image, err := jdwpTransformer{}.Apply(adapter, test.configuration, identity, nil)
+			adapter.Apply()
 
 			// Apply never fails since there's always the option to set JAVA_TOOL_OPTIONS
 			t.CheckNil(err)

@@ -66,11 +66,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // portAllocator is a function that takes a desired port and returns an available port
-// Ports are normally uint16 but Kubernetes ContainerPort.containerPort is an integer
+// Ports are normally uint16 but Kubernetes types.ContainerPort.types.ContainerPort is an integer
 type portAllocator func(int32) int32
 
 // configurationRetriever retrieves an container image configuration
@@ -292,8 +293,8 @@ func describe(obj runtime.Object) (group, version, kind, description string) {
 	return
 }
 
-// exposePort adds a `ContainerPort` instance or amends an existing entry with the same port.
-func exposePort(entries []containerPort, portName string, port int32) []containerPort {
+// exposePort adds a `types.ContainerPort` instance or amends an existing entry with the same port.
+func exposePort(entries []types.ContainerPort, portName string, port int32) []types.ContainerPort {
 	found := false
 	for i := 0; i < len(entries); {
 		switch {
@@ -315,14 +316,14 @@ func exposePort(entries []containerPort, portName string, port int32) []containe
 	if found {
 		return entries
 	}
-	entry := containerPort{
+	entry := types.ContainerPort{
 		Name:          portName,
 		ContainerPort: port,
 	}
 	return append(entries, entry)
 }
 
-func setEnvVar(entries containerEnv, key, value string) containerEnv {
+func setEnvVar(entries types.ContainerEnv, key, value string) types.ContainerEnv {
 	if _, found := entries.Env[key]; !found {
 		entries.Order = append(entries.Order, key)
 	}

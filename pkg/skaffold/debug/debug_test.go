@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -113,11 +114,12 @@ func (t testTransformer) IsApplicable(config imageConfiguration) bool {
 	return true
 }
 
-func (t testTransformer) Apply(container *operableContainer, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t testTransformer) Apply(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	port := portAlloc(9999)
-	container.Ports = append(container.Ports, containerPort{Name: "test", ContainerPort: port})
+	container := adapter.GetContainer()
+	container.Ports = append(container.Ports, types.ContainerPort{Name: "test", ContainerPort: port})
 
-	testEnv := containerEnv{Order: []string{"KEY"}, Env: map[string]string{"KEY": "value"}}
+	testEnv := types.ContainerEnv{Order: []string{"KEY"}, Env: map[string]string{"KEY": "value"}}
 	container.Env = testEnv
 
 	return annotations.ContainerDebugConfiguration{Runtime: "test"}, "", nil
@@ -660,3 +662,13 @@ func TestSkipAnnotatedPodSpec(t *testing.T) {
 	testutil.CheckDeepEqual(t, false, result)
 	testutil.CheckDeepEqual(t, copy, pod) // should be unchanged
 }
+
+type testAdapter struct {
+	executable *types.ExecutableContainer
+}
+
+func (t *testAdapter) GetContainer() *types.ExecutableContainer {
+	return t.executable
+}
+
+func (t *testAdapter) Apply() {}

@@ -22,6 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -121,9 +122,9 @@ func TestNetcoreTransformerApply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			operableContainer := operableContainerFromK8sContainer(&test.containerSpec)
-			config, image, err := netcoreTransformer{}.Apply(operableContainer, test.configuration, identity, nil)
-			applyFromOperable(operableContainer, &test.containerSpec)
+			adapter := adapter.NewAdapter(&test.containerSpec)
+			config, image, err := netcoreTransformer{}.Apply(adapter, test.configuration, identity, nil)
+			adapter.Apply()
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)
