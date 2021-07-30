@@ -237,6 +237,17 @@
     "description": "Target registries for built images which are not secure",
     "url": "/docs/environment/image-registries/#insecure-image-registries"
   },
+  "hooks": {
+    "dev": "x",
+    "build": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Lifecycle Hooks",
+    "maturity": "alpha",
+    "description": "Run code triggered by different events during the skaffold process lifecycle.",
+    "url": "/docs/pipeline-stages/lifecycle-hooks/"
+  },
   "logging": {
     "dev": "x",
     "deploy": "x",
