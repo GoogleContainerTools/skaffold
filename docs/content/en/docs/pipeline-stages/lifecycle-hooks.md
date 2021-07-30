@@ -88,9 +88,6 @@ $SKAFFOLD_NAMESPACES | Comma separated list of Kubernetes namespaces | Sync, Dep
 $SKAFFOLD_WORK_DIR | The workspace root directory | All
 Local environment variables | The current state of the local environment (e.g. $HOST, $PATH). Determined by the golang os.Environ function. | All
 
-</div><br /></b>
-
-
 ## Container hooks
 Container hooks are executed on a target container and can be defined on the following phases:
 
