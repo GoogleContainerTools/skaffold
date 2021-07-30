@@ -240,8 +240,8 @@ func (k *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, st
 	return fmt.Errorf("shall not be called")
 }
 
+// Dependencies is the v1 function required by "deployer" interface. It shall be no-op for v2 deployers.
 func (k *Deployer) Dependencies() ([]string, error) {
-	// TODO(yuwenma): This should be the render denpendencies.
 	return []string{}, nil
 }
 

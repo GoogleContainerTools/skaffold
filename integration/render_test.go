@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"testing"
@@ -75,23 +76,20 @@ spec:
 `}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
-		t.NewTempDir().
-			Write("deployment.yaml", test.input).
-			Chdir()
+		tmpDir := t.NewTempDir()
+		tmpDir.Write("deployment.yaml", test.input).Chdir()
+
 		deployer, err := kubectl.NewDeployer(&v2.RunContext{
 			WorkingDir: ".",
 			Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{
-							Manifests: []string{"deployment.yaml"},
-						},
-					},
+				Render: latestV2.RenderConfig{
+					Generate: latestV2.Generate{
+						RawK8s: []string{"deployment.yaml"}},
 				},
 			}}),
 		}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
-		})
+		}, filepath.Join(tmpDir.Root(), test.renderPath))
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		err = deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
@@ -238,12 +236,9 @@ spec:
 			deployer, err := kubectl.NewDeployer(&v2.RunContext{
 				WorkingDir: ".",
 				Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
-					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{
-							KubectlDeploy: &latestV2.KubectlDeploy{
-								Manifests: []string{"deployment.yaml"},
-							},
-						},
+					Render: latestV2.RenderConfig{
+						Generate: latestV2.Generate{
+							RawK8s: []string{"deployment.yaml"}},
 					},
 				}}),
 				Opts: config.SkaffoldOptions{
@@ -251,7 +246,7 @@ spec:
 				},
 			}, nil, deploy.NoopComponentProvider, &latestV2.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
-			})
+			}, "")
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			err = deployer.Render(context.Background(), &b, test.builds, false, "")
