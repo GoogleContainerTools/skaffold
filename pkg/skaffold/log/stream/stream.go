@@ -38,14 +38,15 @@ func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, 
 		default:
 			// Read up to newline
 			line, err := r.ReadString('\n')
+			if line != "" {
+				formatter.PrintLine(out, line)
+			}
 			if err == io.EOF {
 				return nil
 			}
 			if err != nil {
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
-
-			formatter.PrintLine(out, line)
 		}
 	}
 }
