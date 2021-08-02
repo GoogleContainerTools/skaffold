@@ -21,10 +21,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
@@ -187,11 +189,46 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	// If "Inventory" already exist, running `kpt live init` raises error.
 	if kfConfig.Inventory == nil {
 		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_InitKptfileInventory")
-		cmd := exec.CommandContext(ctx, "kpt", k.kptArgs("live", "init", k.applyDir)...)
+		args := k.kptArgs("live", "init", k.applyDir)
+		if k.Name != "" {
+			args = append(args, "--name", k.Name)
+		}
+		if k.InventoryID != "" {
+			args = append(args, "--inventory-id", k.InventoryID)
+		}
+		if k.namespace != "" {
+			args = append(args, "--namespace", k.namespace)
+		} else if k.InventoryNamespace != "" {
+			args = append(args, "--namespace", k.InventoryNamespace)
+		}
+		cmd := exec.CommandContext(ctx, "kpt", args...)
 		cmd.Stdout = out
 		cmd.Stderr = out
 		if err := util.RunCmd(cmd); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
+			return liveInitErr(err, k.applyDir)
+		}
+	} else {
+		if kfConfig.Inventory.InventoryID != k.InventoryID {
+			logrus.Warnf("Updating Kptfile inventory from %v to %v", kfConfig.Inventory.InventoryID, k.InventoryID)
+			kfConfig.Inventory.InventoryID = k.InventoryID
+		}
+		if kfConfig.Inventory.Name != k.Name {
+			logrus.Warnf("Updating Kptfile name from %v to %v", kfConfig.Inventory.Name, k.Name)
+			kfConfig.Inventory.Name = k.Name
+		}
+		if k.namespace != "" && k.namespace != kfConfig.Inventory.Namespace {
+			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.namespace)
+			kfConfig.Inventory.Namespace = k.namespace
+		} else if k.InventoryNamespace != "" && k.InventoryNamespace != kfConfig.Inventory.Namespace {
+			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.InventoryNamespace)
+			kfConfig.Inventory.Namespace = k.InventoryNamespace
+		}
+		configByte, err := yaml.Marshal(kfConfig)
+		if err != nil {
+			return err
+		}
+		if err = ioutil.WriteFile(kptFilePath, configByte, 0644); err != nil {
 			return err
 		}
 	}
@@ -227,9 +264,8 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, liveInitErr(err, k.applyDir)
+		return nil, liveApplyErr(err, k.applyDir)
 	}
-
 	k.TrackBuildArtifacts(builds)
 	endTrace()
 	return namespaces, nil

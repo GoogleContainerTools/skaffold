@@ -42,18 +42,19 @@ func TestSetAbsFilePaths(t *testing.T) {
 							{ImageName: "foo2", Workspace: "/a/foo"},
 						},
 					},
-					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{
-							KptDeploy:     &latestV2.KptDeploy{Dir: "."},
-							KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"foo/*", "/a/foo/*"}},
-							HelmDeploy: &latestV2.HelmDeploy{Releases: []latestV2.HelmRelease{
+					Render: latestV2.RenderConfig{
+						Generate: latestV2.Generate{
+							RawK8s: []string{"foo/*", "/a/foo/*"},
+							Kpt:    []string{"."},
+							Helm: &latestV2.Helm{Releases: []latestV2.HelmRelease{
 								{ChartPath: "../charts", ValuesFiles: []string{"./values1.yaml", "./values2.yaml"}, SetFiles: map[string]string{"envFile": "./values3.yaml", "configFile": "./values4.yaml", "anotherFile": "/c/values5.yaml"}},
-								{RemoteChart: "foo/bar", ValuesFiles: []string{"./values1.yaml", "./values2.yaml"}, SetFiles: map[string]string{"envFile": "./values3.yaml", "configFile": "./values4.yaml", "anotherFile": "/c/values5.yaml"}},
-							}},
+								{RemoteChart: "foo/bar", ValuesFiles: []string{"./values1.yaml", "./values2.yaml"}, SetFiles: map[string]string{"envFile": "./values3.yaml", "configFile": "./values4.yaml", "anotherFile": "/c/values5.yaml"}}},
+							},
 						},
 					},
 				},
 			},
+
 			base: "/a/b",
 			expected: &latestV2.SkaffoldConfig{
 				Pipeline: latestV2.Pipeline{
@@ -63,11 +64,11 @@ func TestSetAbsFilePaths(t *testing.T) {
 							{ImageName: "foo2", Workspace: "/a/foo"},
 						},
 					},
-					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{
-							KptDeploy:     &latestV2.KptDeploy{Dir: "/a/b"},
-							KubectlDeploy: &latestV2.KubectlDeploy{Manifests: []string{"/a/b/foo/*", "/a/foo/*"}},
-							HelmDeploy: &latestV2.HelmDeploy{Releases: []latestV2.HelmRelease{
+					Render: latestV2.RenderConfig{
+						Generate: latestV2.Generate{
+							RawK8s: []string{"/a/b/foo/*", "/a/foo/*"},
+							Kpt:    []string{"/a/b"},
+							Helm: &latestV2.Helm{Releases: []latestV2.HelmRelease{
 								{ChartPath: "/a/charts", ValuesFiles: []string{"/a/b/values1.yaml", "/a/b/values2.yaml"}, SetFiles: map[string]string{"envFile": "/a/b/values3.yaml", "configFile": "/a/b/values4.yaml", "anotherFile": "/c/values5.yaml"}},
 								{RemoteChart: "foo/bar", ValuesFiles: []string{"/a/b/values1.yaml", "/a/b/values2.yaml"}, SetFiles: map[string]string{"envFile": "/a/b/values3.yaml", "configFile": "/a/b/values4.yaml", "anotherFile": "/c/values5.yaml"}},
 							}},
