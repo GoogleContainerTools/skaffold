@@ -1293,6 +1293,15 @@
             "[\"golang:1.10.1-alpine3.7\", \"alpine:3.7\"]"
           ]
         },
+        "cliFlags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "any additional flags to pass to the local daemon during a build. These flags are only used during a build through the Docker CLI.",
+          "x-intellij-html-description": "any additional flags to pass to the local daemon during a build. These flags are only used during a build through the Docker CLI.",
+          "default": "[]"
+        },
         "dockerfile": {
           "type": "string",
           "description": "locates the Dockerfile relative to workspace.",
@@ -1345,6 +1354,7 @@
         "network",
         "addHost",
         "cacheFrom",
+        "cliFlags",
         "noCache",
         "squash",
         "secret",
