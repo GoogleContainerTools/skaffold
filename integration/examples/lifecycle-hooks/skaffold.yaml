@@ -28,7 +28,7 @@ build:
               os: [windows]
         after:
           - container:
-              command: ["sh", "-c", "echo Running command 'kill -HUP 1'; kill -HUP 1"]
+              command: ["sh", "-c", "set -x; kill -HUP 1"]
 deploy:
   kubectl:
     manifests:
