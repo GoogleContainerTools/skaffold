@@ -202,39 +202,52 @@ func TestGenerate(t *testing.T) {
 
 func TestManifestDeps(t *testing.T) {
 	tests := []struct {
-		description     string
-		relManifestDeps []string
-		expected        []string
+		description    string
+		generateConfig latestV2.Generate
+		expected       []string
 	}{
 		{
-			description:     "rawYaml dir",
-			relManifestDeps: []string{"rawYaml-sample"},
-			expected:        []string{"rawYaml-sample/pod.yaml", "rawYaml-sample/pods2.yaml"},
+			description: "rawYaml dir",
+			generateConfig: latestV2.Generate{
+				RawK8s: []string{"rawYaml-sample"},
+			},
+			expected: []string{"rawYaml-sample/pod.yaml", "rawYaml-sample/pods2.yaml"},
 		},
 		{
-			description:     "rawYaml specific",
-			relManifestDeps: []string{"rawYaml-sample/pod.yaml"},
-			expected:        []string{"rawYaml-sample/pod.yaml"},
+			description: "rawYaml specific",
+			generateConfig: latestV2.Generate{
+				RawK8s: []string{"rawYaml-sample/pod.yaml"},
+			},
+			expected: []string{"rawYaml-sample/pod.yaml"},
 		},
 		{
-			description:     "kustomize dir",
-			relManifestDeps: []string{"kustomize-sample"},
-			expected:        []string{"kustomize-sample/kustomization.yaml", "kustomize-sample/patch.yaml"},
+			description: "kustomize dir",
+			generateConfig: latestV2.Generate{
+				Kustomize: []string{"kustomize-sample"},
+			},
+			expected: []string{"kustomize-sample/kustomization.yaml", "kustomize-sample/patch.yaml"},
 		},
 		{
-			description:     "kpt dir",
-			relManifestDeps: []string{"kpt-sample"},
-			expected:        []string{"kpt-sample/Kptfile", "kpt-sample/deployment.yaml"},
+			description: "kpt dir",
+			generateConfig: latestV2.Generate{
+				Kpt: []string{"kpt-sample"},
+			},
+			expected: []string{"kpt-sample/Kptfile", "kpt-sample/deployment.yaml"},
 		},
 		{
-			description:     "multi manifest, mixed dir and file",
-			relManifestDeps: []string{"rawYaml-sample/pod.yaml", "kpt-sample", "kustomize-sample"},
+			description: "multi manifest, mixed dir and file",
+			generateConfig: latestV2.Generate{
+				RawK8s:    []string{"rawYaml-sample"},
+				Kustomize: []string{"kustomize-sample"},
+				Kpt:       []string{"kpt-sample"},
+			},
 			expected: []string{
 				"kpt-sample/Kptfile",
 				"kpt-sample/deployment.yaml",
 				"kustomize-sample/kustomization.yaml",
 				"kustomize-sample/patch.yaml",
 				"rawYaml-sample/pod.yaml",
+				"rawYaml-sample/pods2.yaml",
 			},
 		},
 	}
@@ -250,16 +263,11 @@ func TestManifestDeps(t *testing.T) {
 				Write("kpt-sample/deployment.yaml", kustomizeDeploymentYaml).
 				Touch("empty.ignored").
 				Chdir()
-
-			manifestPaths := []string{}
-			for _, p := range test.relManifestDeps {
-				manifestPaths = append(manifestPaths, filepath.Join(tmpDir.Root(), p))
-			}
 			expectedPaths := []string{}
 			for _, p := range test.expected {
 				expectedPaths = append(expectedPaths, filepath.Join(tmpDir.Root(), p))
 			}
-			g := Generator{dependencyPaths: manifestPaths}
+			g := Generator{config: test.generateConfig, workingDir: tmpDir.Root()}
 			actual, err := g.ManifestDeps()
 			t.CheckNoError(err)
 			t.CheckDeepEqual(expectedPaths, actual)
