@@ -30,6 +30,8 @@ import (
 	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
+type Formatter func(pod v1.Pod, containerStatus v1.ContainerStatus, isMuted func() bool) log.Formatter
+
 type kubernetesLogFormatter struct {
 	colorPicker output.ColorPicker
 	prefix      string

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -31,6 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -96,7 +98,8 @@ func TestSyncHooks(t *testing.T) {
 		kubeContext := "context1"
 		opts, err := NewSyncEnvOpts(artifact, image, []string{"foo1", "bar1"}, []string{"foo2", "bar2"}, namespaces, kubeContext)
 		t.CheckNoError(err)
-		runner := NewSyncRunner(&kubectl.CLI{KubeContext: kubeContext}, artifact.ImageName, image, namespaces, artifact.Sync.LifecycleHooks, opts)
+		formatter := func(corev1.Pod, corev1.ContainerStatus, func() bool) log.Formatter { return mockLogFormatter{} }
+		runner := NewSyncRunner(&kubectl.CLI{KubeContext: kubeContext}, artifact.ImageName, image, namespaces, formatter, artifact.Sync.LifecycleHooks, opts)
 
 		t.Override(&util.DefaultExecCommand,
 			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).
@@ -136,3 +139,9 @@ func fakeKubernetesClient() (kubernetes.Interface, error) {
 	}
 	return fakeclient.NewSimpleClientset(pod), nil
 }
+
+type mockLogFormatter struct{}
+
+func (mockLogFormatter) Name() string { return "" }
+
+func (mockLogFormatter) PrintLine(w io.Writer, s string) { fmt.Fprint(w, s) }

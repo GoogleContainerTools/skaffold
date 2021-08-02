@@ -27,6 +27,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -56,6 +58,7 @@ type containerHook struct {
 	cli        *kubectl.CLI
 	selector   containerSelector
 	namespaces []string
+	formatter  logger.Formatter
 }
 
 // run executes the lifecycle hook inside the target container
@@ -83,16 +86,28 @@ func (h containerHook) run(ctx context.Context, out io.Writer) error {
 				args := []string{p.Name, "--namespace", p.Namespace, "-c", c.Name, "--"}
 				args = append(args, h.cfg.Command...)
 				cmd := h.cli.Command(ctx, "exec", args...)
-				cmd.Stderr = out
-				cmd.Stdout = out
+				tr, tw := io.Pipe()
+				cmd.Stderr = tw
+				cmd.Stdout = tw
 				podName := p.Name
 				containerName := c.Name
 				errs.Go(func() error {
+					defer tw.Close()
 					err := util.RunCmd(cmd)
 					if err != nil {
 						return fmt.Errorf("hook execution failed for pod %q container %q: %w", podName, containerName, err)
 					}
 					return nil
+				})
+				pod := p
+				var containerStatus v1.ContainerStatus
+				for _, status := range pod.Status.ContainerStatuses {
+					if status.Name == c.Name {
+						containerStatus = status
+					}
+				}
+				errs.Go(func() error {
+					return stream.StreamRequest(ctx, out, h.formatter(pod, containerStatus, func() bool { return false }), tr)
 				})
 			}
 		}
