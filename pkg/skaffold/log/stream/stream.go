@@ -38,9 +38,7 @@ func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, 
 		default:
 			// Read up to newline
 			line, err := r.ReadString('\n')
-			if line != "" {
-				formatter.PrintLine(out, line)
-			}
+			formatter.PrintLine(out, line)
 			if err == io.EOF {
 				return nil
 			}
