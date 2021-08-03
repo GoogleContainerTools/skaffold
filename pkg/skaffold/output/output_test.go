@@ -152,8 +152,8 @@ func TestWithEventContext(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			got, _ := WithEventContext(test.writer, test.phase, test.subtaskID)
-			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false))
+			got := WithEventContext(test.writer, test.phase, test.subtaskID)
+			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false, "", constants.DevLoop))
 		})
 	}
 }
@@ -214,6 +214,39 @@ func TestWriteWithTimeStamps(t *testing.T) {
 			out := test.writer(&buf)
 			Default.Fprintf(out, "testing!")
 			testutil.CheckDeepEqual(t, test.expectedLen, len(buf.String()))
+		})
+	}
+}
+
+func TestLog(t *testing.T) {
+	tests := []struct {
+		name            string
+		writer          io.Writer
+		expectedTask    constants.Phase
+		expectedSubtask string
+	}{
+		{
+			name: "arbitrary task and subtask from writer",
+			writer: skaffoldWriter{
+				task:    constants.Build,
+				subtask: "test",
+			},
+			expectedTask:    constants.Build,
+			expectedSubtask: "test",
+		},
+		{
+			name:            "non skaffoldWriter",
+			writer:          ioutil.Discard,
+			expectedTask:    constants.DevLoop,
+			expectedSubtask: eventV2.SubtaskIDNone,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := Log(test.writer)
+			testutil.CheckDeepEqual(t, test.expectedTask, got.Data["task"])
+			testutil.CheckDeepEqual(t, test.expectedSubtask, got.Data["subtask"])
 		})
 	}
 }
