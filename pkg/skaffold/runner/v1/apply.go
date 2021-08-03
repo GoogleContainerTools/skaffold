@@ -53,13 +53,13 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	defer endTrace()
 	r.deployer.RegisterLocalImages(localImages)
 	err = r.deployer.Deploy(ctx, deployOut, artifacts)
+	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-	r.hasDeployed = true
 	event.DeployComplete()
 	return nil
 }
