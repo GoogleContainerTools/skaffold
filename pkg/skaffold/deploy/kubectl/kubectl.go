@@ -378,8 +378,8 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 	if err != nil {
 		return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
 	}
-
-	manifests, err := k.readManifests(ctx, offline)
+	var localManifests, remoteManifests manifest.ManifestList
+	localManifests, err = k.readManifests(ctx, offline)
 	if err != nil {
 		return nil, err
 	}
@@ -390,17 +390,19 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 			return nil, err
 		}
 
-		manifests = append(manifests, manifest)
+		remoteManifests = append(remoteManifests, manifest)
 	}
 
+	originalManifests := append(localManifests, remoteManifests...)
+
 	if len(k.originalImages) == 0 {
-		k.originalImages, err = manifests.GetImages()
+		k.originalImages, err = originalManifests.GetImages()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if len(manifests) == 0 {
+	if len(originalManifests) == 0 {
 		return nil, nil
 	}
 
@@ -416,17 +418,26 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 			})
 		}
 	}
+	if len(remoteManifests) > 0 {
+		remoteManifests, err = remoteManifests.ReplaceRemoteManifestImages(ctx, builds)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(localManifests) > 0 {
+		localManifests, err = localManifests.ReplaceImages(ctx, builds)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	manifests, err = manifests.ReplaceImages(ctx, builds)
-	if err != nil {
+	modifiedManifests := append(localManifests, remoteManifests...)
+
+	if modifiedManifests, err = manifest.ApplyTransforms(modifiedManifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
 		return nil, err
 	}
 
-	if manifests, err = manifest.ApplyTransforms(manifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
-		return nil, err
-	}
-
-	return manifests.SetLabels(k.labeller.Labels())
+	return modifiedManifests.SetLabels(k.labeller.Labels())
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -452,7 +463,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			rm = append(rm, manifest)
 		}
 
-		upd, err := rm.ReplaceImages(ctx, k.originalImages)
+		upd, err := rm.ReplaceRemoteManifestImages(ctx, k.originalImages)
 		if err != nil {
 			return err
 		}
