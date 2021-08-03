@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta19
+apiVersion: skaffold/v2beta20
 kind: Config
 metadata:
   name: app-config

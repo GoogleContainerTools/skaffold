@@ -15,7 +15,7 @@ limitations under the License.
 */
 package renderer
 
-import .github/workflows/draft-release.yml(
+import (
 	"context"
 	"fmt"
 	"io"
@@ -201,5 +201,5 @@ func (r *SkaffoldRenderer) writeManifestsToFile(ctx context.Context, out io.Writ
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-	return os.WriteFile(output, buf, os.ModePerm)
+	return ioutil.WriteFile(output, buf, os.ModePerm)
 }
