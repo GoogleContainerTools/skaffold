@@ -122,7 +122,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if isQuietMode() && !isHouseKeepingMessagesAllowed(cmd) {
+			if isQuietMode() || !isHouseKeepingMessagesAllowed(cmd) {
 				return
 			}
 			select {
