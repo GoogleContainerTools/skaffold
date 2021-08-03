@@ -32,7 +32,6 @@ import (
 
 var (
 	showBuild                 bool
-	renderOutputPath          string
 	renderFromBuildOutputFile flags.BuildOutputFileFlag
 	offline                   bool
 )
@@ -47,7 +46,8 @@ func NewCmdRender() *cobra.Command {
 			{Value: &showBuild, Name: "loud", DefValue: false, Usage: "Show the build logs and output", IsEnum: true},
 			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
 			{Value: &offline, Name: "offline", DefValue: false, Usage: `Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.`, IsEnum: true},
-			{Value: &renderOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "file to write rendered manifests to"},
+			// This "--output" flag is equivalent to the "--render-output" flag defined in SkaffoldOpts due to user convenience.
+			{Value: &opts.RenderOutput, Name: "output", Shorthand: "o", DefValue: "", Usage: "file to write the rendered manifests to"},
 		}).
 		NoArgs(doRender)
 }
@@ -73,7 +73,7 @@ func doRender(ctx context.Context, out io.Writer) error {
 			}
 		}
 
-		if err := r.Render(ctx, out, bRes, offline, renderOutputPath); err != nil {
+		if err := r.Render(ctx, out, bRes, offline, opts.RenderOutput); err != nil {
 			return fmt.Errorf("rendering manifests: %w", err)
 		}
 		return nil

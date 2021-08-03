@@ -94,7 +94,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Syncer:   sync.NewSyncProvider(runCtx, kubectlCLI),
 	}
 
-	hydrationDir, err := runCtx.GetRenderOutputPath()
+	hydrationDir, err := runCtx.GetHydrationDir()
 	if err != nil {
 		return nil, fmt.Errorf("getting render output path: %w", err)
 	}
