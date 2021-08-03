@@ -59,6 +59,75 @@ spec:
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedImages, actual)
 }
 
+func TestReplaceRemoteManifestImages(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: not-tagged
+  - image: gcr.io/k8s-skaffold/example:latest
+    name: latest
+  - image: gcr.io/different-repo/example:latest
+    name: different-repo
+  - image: gcr.io/k8s-skaffold/example:v1
+    name: ignored-tag
+  - image: skaffold/other
+    name: other
+  - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
+    name: digest
+  - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
+  - image: unknown
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "example",
+		Tag:       "gcr.io/k8s-skaffold/example:TAG",
+	}, {
+		ImageName: "skaffold/other",
+		Tag:       "skaffold/other:OTHER_TAG",
+	}, {
+		ImageName: "github.com/GoogleContainerTools/skaffold/cmd/skaffold",
+		Tag:       "gcr.io/k8s-skaffold/github.com/googlecontainertools/skaffold/cmd/skaffold:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: not-tagged
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: latest
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: different-repo
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: ignored-tag
+  - image: skaffold/other:OTHER_TAG
+    name: other
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: digest
+  - image: gcr.io/k8s-skaffold/github.com/googlecontainertools/skaffold/cmd/skaffold:TAG
+  - image: unknown
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		resultManifest, err := manifests.ReplaceRemoteManifestImages(context.TODO(), builds)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected.String(), resultManifest.String())
+	})
+}
+
 func TestReplaceImages(t *testing.T) {
 	manifests := ManifestList{[]byte(`
 apiVersion: v1
