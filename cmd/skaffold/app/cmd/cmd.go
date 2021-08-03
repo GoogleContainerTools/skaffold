@@ -262,7 +262,7 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: timestamp,
 	})
-	logrus.AddHook(event.NewLogHook())
+	logrus.AddHook(event.NewLogHook(constants.DevLoop, event.SubtaskIDNone))
 	return nil
 }
 

@@ -66,10 +66,8 @@ type SkaffoldOptions struct {
 	// `CustomLabels` are still applied if this is false. Must only be used in
 	// commands which don't deploy (e.g. `skaffold render`) since the runID
 	// label isn't available.
-	AddSkaffoldLabels bool
-	DetectMinikube    bool
-	// Experimental is the entrypoint to run skaffold v3 before it's fully implemented.
-	Experimental         bool
+	AddSkaffoldLabels    bool
+	DetectMinikube       bool
 	IterativeStatusCheck bool
 	StatusCheck          BoolOrUndefined
 

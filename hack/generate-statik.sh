@@ -35,7 +35,8 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
     # from a dependency.
     echo "Installing go-licenses"
     pushd $(mktemp -d ${TMPDIR:-/tmp}/generate-statik.XXXXXX)
-    go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses
+    #TODO(marlongamez): unpin this version once we're able to build using go 1.16.x
+    go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses@9376cf9847a05cae04f4589fe4898b9bce37e684
     popd
 fi
 

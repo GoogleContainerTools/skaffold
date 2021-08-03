@@ -140,7 +140,7 @@ func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 
 	d.UpdateStatus(ae)
 	if err := d.fetchPods(ctx); err != nil {
-		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
+		logrus.Debugf("pod statuses could not be fetched this time due to %s", err)
 	}
 }
 

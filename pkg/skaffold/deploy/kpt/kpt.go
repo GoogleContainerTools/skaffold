@@ -116,7 +116,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDep
 	if err != nil {
 		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
 	}
-
+	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
 	return &Deployer{
 		KptDeploy:          d,
 		podSelector:        podSelector,
@@ -124,9 +124,9 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDep
 		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
 		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
 		imageLoader:        component.NewImageLoader(cfg, kubectl),
-		logger:             component.NewLogger(cfg, kubectl, podSelector, &namespaces),
+		logger:             logger,
 		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:             component.NewSyncer(kubectl, &namespaces),
+		syncer:             component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labeller.Labels(),
 		globalConfig:       cfg.GlobalConfig(),
