@@ -27,16 +27,11 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 )
 
-const (
-	timestampFormat = "2006-01-02 15:04:05"
-	nonTaskId       = "-1"
-)
+const timestampFormat = "2006-01-02 15:04:05"
 
 type skaffoldWriter struct {
 	MainWriter  io.Writer
 	EventWriter io.Writer
-	Phase       string
-	SubTaskID   string
 
 	timestamps bool
 }
@@ -74,7 +69,7 @@ func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps boo
 
 	return skaffoldWriter{
 		MainWriter:  SetupColors(out, defaultColor, forceColors),
-		EventWriter: eventV2.NewLogger(constants.DevLoop, nonTaskId),
+		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1"),
 		timestamps:  timestamps,
 	}
 }
@@ -104,25 +99,16 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 	return out
 }
 
-func GetTaskId(out io.Writer) string {
-	sw, isSW := out.(skaffoldWriter)
-	if isSW {
-		return sw.SubTaskID
-	}
-	return nonTaskId
-}
-
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
 func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) (io.Writer, *logrus.Logger) {
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{
 			MainWriter:  sw.MainWriter,
-			Phase:       string(phase),
-			SubTaskID:   subtaskID,
 			EventWriter: eventV2.NewLogger(phase, subtaskID),
 			timestamps:  sw.timestamps,
 		}, nil
 	}
+
 	return out, nil
 }

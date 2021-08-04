@@ -30,7 +30,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventUpdated("ns:pod/foo", proto.ActionableErr{
+	ResourceStatusCheckEventUpdated("ns:pod/foo", "", proto.ActionableErr{
 		ErrCode: 509,
 		Message: "image pull error",
 	})

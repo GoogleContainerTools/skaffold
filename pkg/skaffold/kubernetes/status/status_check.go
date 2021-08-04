@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -148,7 +147,7 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			if s.seenResources.Contains(d) {
 				continue
 			}
-			deployments = append(deployments, d.WithTaskId(output.GetTaskId(out)))
+			deployments = append(deployments, d)
 			s.seenResources.Add(d)
 		}
 	}
@@ -286,8 +285,9 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 		return
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
-	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
-	out, _ = output.WithEventContext(out, constants.Deploy, r.String())
+	depMsg := fmt.Sprintf("%s %s: %s", tabHeader, r, r.StatusMessage())
+	eventV2.ResourceStatusCheckEventCompleted(r.String(), depMsg, sErrors.V2fromV1(ae))
+	//out, _ = output.WithEventContext(out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -332,8 +332,9 @@ func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer)
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
-			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
-			out, _ := output.WithEventContext(out, constants.Deploy, r.String())
+			depMsg := fmt.Sprintf("%s %s: %s", tabHeader, r, r.StatusMessage())
+			eventV2.ResourceStatusCheckEventUpdated(r.String(), depMsg, sErrors.V2fromV1(ae))
+			//out, _ := output.WithEventContext(out, constants.Deploy, r.String())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}
