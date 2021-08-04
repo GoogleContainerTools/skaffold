@@ -43,3 +43,19 @@ fi
 
 ${BIN}/golangci-lint run ${FLAGS} --exclude=SA1019 -c ${DIR}/golangci.yml \
     | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'
+
+if [[ "${CUSTOM_LINTER}" == "true" ]]; then
+  # Install and run custom linter to detect usage for logrus package.
+  # Currently, we can't run private custom linter in golangcl-lint due to abandoned issue
+  # https://github.com/golangci/golangci-lint/issues/1276
+  if ! [ -x "$(command -v ${BIN}/logrus-analyzer)" ] ; then
+    echo >&2 'Installing custom logrus linter'
+    cd "${DIR}/tools"
+    GO111MODULE=on go build -o ${BIN}/logrus-analyzer logrus_analyzer.go
+    cd -
+  fi
+
+  ${BIN}/logrus-analyzer ${FLAGS} github.com/GoogleContainerTools/skaffold... \
+    | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'
+fi
+
