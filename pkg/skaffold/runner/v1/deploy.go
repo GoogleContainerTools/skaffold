@@ -69,7 +69,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 	defer r.deployer.GetStatusMonitor().Reset()
 
-	out, _ = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
+	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
 
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
