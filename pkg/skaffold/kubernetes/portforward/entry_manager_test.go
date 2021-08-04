@@ -18,7 +18,9 @@ package portforward
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
+	"strings"
 	"sync"
 	"testing"
 
@@ -48,21 +50,38 @@ func TestStop(t *testing.T) {
 	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe1)
 	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe2)
 
-	testutil.CheckDeepEqual(t, 2, length(fakeForwarder.forwardedResources))
+	testutil.CheckDeepEqual(t, 2, length(&fakeForwarder.forwardedResources))
 	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedPorts.Length())
 
 	em.Stop()
 
-	testutil.CheckDeepEqual(t, 0, length(fakeForwarder.forwardedResources))
+	testutil.CheckDeepEqual(t, 0, length(&fakeForwarder.forwardedResources))
 	testutil.CheckDeepEqual(t, 0, fakeForwarder.forwardedPorts.Length())
 }
 
 // length returns the number of elements in a sync.Map
-func length(m sync.Map) int {
+func length(m *sync.Map) int {
 	n := 0
 	m.Range(func(_, _ interface{}) bool {
 		n++
 		return true
 	})
 	return n
+}
+
+// print is a String() function for a sync.Map
+func print(m *sync.Map) string {
+	var b strings.Builder
+	b.WriteString("map[")
+	n := 0
+	m.Range(func(k, v interface{}) bool {
+		if n > 0 {
+			b.WriteRune(' ')
+		}
+		b.WriteString(fmt.Sprintf("%v:%v", k, v))
+		n++
+		return true
+	})
+	b.WriteRune(']')
+	return b.String()
 }

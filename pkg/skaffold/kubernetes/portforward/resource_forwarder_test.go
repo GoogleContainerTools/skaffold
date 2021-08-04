@@ -140,10 +140,10 @@ func TestStart(t *testing.T) {
 
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-				return len(test.expected) == length(fakeForwarder.forwardedResources), nil
+				return len(test.expected) == length(&fakeForwarder.forwardedResources), nil
 			})
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources)
+				t.Fatalf("expected entries didn't match actual entries.\nExpected: %v\n  Actual: %v", test.expected, print(&fakeForwarder.forwardedResources))
 			}
 		})
 	}
@@ -330,7 +330,7 @@ func TestUserDefinedResources(t *testing.T) {
 
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-				return len(test.expectedResources) == length(fakeForwarder.forwardedResources), nil
+				return len(test.expectedResources) == length(&fakeForwarder.forwardedResources), nil
 			})
 			for _, key := range test.expectedResources {
 				pfe, found := fakeForwarder.forwardedResources.Load(key)
@@ -338,7 +338,7 @@ func TestUserDefinedResources(t *testing.T) {
 				t.CheckNotNil(pfe)
 			}
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expectedResources, fakeForwarder.forwardedResources)
+				t.Fatalf("expected entries didn't match actual entries.\nExpected: %v\n  Actual: %v", test.expectedResources, print(&fakeForwarder.forwardedResources))
 			}
 		})
 	}
