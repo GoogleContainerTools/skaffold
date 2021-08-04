@@ -173,7 +173,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 					timestamps:  true,
 				}
 			},
-			expectedLen: len(TimestampFormat) + len(" \u001B[32mtesting!\u001B[0m"),
+			expectedLen: len(timestampFormat) + len(" \u001B[32mtesting!\u001B[0m"),
 		},
 		{
 			name: "skaffold writer with color and no timestamps",
@@ -194,7 +194,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 					timestamps:  true,
 				}
 			},
-			expectedLen: len(TimestampFormat) + len(" testing!"),
+			expectedLen: len(timestampFormat) + len(" testing!"),
 		},
 		{
 			name: "skaffold writer with no color and no timestamps",

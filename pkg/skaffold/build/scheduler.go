@@ -22,6 +22,7 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -141,6 +142,8 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 
 func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latestV1.Artifact, build ArtifactBuilder) (string, error) {
 	output.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
+	logrus.Infoln("Building using %s", artifact.ArtifactType)
+	panic("forced.....")
 	tag, present := tags[artifact.ImageName]
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)

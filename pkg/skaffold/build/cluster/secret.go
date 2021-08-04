@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedV1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -37,6 +36,7 @@ const (
 )
 
 func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), error) {
+	logrus := output.GetLogger(out)
 	if b.PullSecretPath == "" && b.PullSecretName == "" {
 		return func() {}, nil
 	}
@@ -53,7 +53,7 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 		if b.PullSecretPath == "" {
 			return nil, fmt.Errorf("secret %s does not exist. No path specified to create it", b.PullSecretName)
 		}
-		return b.createSecretFromFile(ctx, secrets)
+		return b.createSecretFromFile(ctx, out, secrets)
 	}
 	if b.PullSecretPath == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
@@ -64,7 +64,7 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 	return func() {}, nil
 }
 
-func (b *Builder) createSecretFromFile(ctx context.Context, secrets typedV1.SecretInterface) (func(), error) {
+func (b *Builder) createSecretFromFile(ctx context.Context, out io.Writer, secrets typedV1.SecretInterface) (func(), error) {
 	secretData, err := ioutil.ReadFile(b.PullSecretPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create secret %s from path %s. reading pull secret: %w", b.PullSecretName, b.PullSecretPath, err)
@@ -85,12 +85,14 @@ func (b *Builder) createSecretFromFile(ctx context.Context, secrets typedV1.Secr
 
 	return func() {
 		if err := secrets.Delete(ctx, b.PullSecretName, metav1.DeleteOptions{}); err != nil {
+			logrus := output.GetLogger(out)
 			logrus.Warnf("deleting pull secret")
 		}
 	}, nil
 }
 
 func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (func(), error) {
+	logrus := output.GetLogger(out)
 	if b.DockerConfig == nil {
 		return func() {}, nil
 	}
@@ -135,6 +137,7 @@ func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (f
 
 	return func() {
 		if err := secrets.Delete(ctx, b.DockerConfig.SecretName, metav1.DeleteOptions{}); err != nil {
+			logrus := output.GetLogger(out)
 			logrus.Warnf("deleting docker config secret")
 		}
 	}, nil
