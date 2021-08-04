@@ -5,6 +5,7 @@ build:
   - image: skaffold-buildpacks
     buildpacks:
       builder: "gcr.io/buildpacks/builder:v1"
+      trustBuilder: true
       env:
       - GOOGLE_RUNTIME_VERSION=8
 profiles:
