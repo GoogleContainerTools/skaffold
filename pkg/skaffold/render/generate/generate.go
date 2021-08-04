@@ -48,10 +48,9 @@ func NewGenerator(workingDir string, config latestV2.Generate, hydrationDir stri
 
 // Generator provides the functions for the manifest sources (raw manifests, helm charts, kustomize configs and remote packages).
 type Generator struct {
-	workingDir      string
-	hydrationDir    string
-	config          latestV2.Generate
-	dependencyPaths []string
+	workingDir   string
+	hydrationDir string
+	config       latestV2.Generate
 }
 
 func excludeRemote(paths []string) []string {
@@ -74,9 +73,6 @@ func excludeRemote(paths []string) []string {
 // kustomize manifests, helm charts or kpt function configs. All should be file-watched.
 func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
 	var manifests manifest.ManifestList
-
-	// reset dependency paths
-	g.dependencyPaths = []string{}
 
 	// Generate kustomize Manifests
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
@@ -105,7 +101,6 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		}
 		manifests.Append(out)
 	}
-	g.dependencyPaths = append(g.dependencyPaths, kustomizePaths...)
 
 	// Generate in-place hydrated kpt Manifests
 	kptPaths := excludeRemote(g.config.Kpt)
@@ -137,7 +132,6 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		}
 		kptManifests = append(kptManifests, outputDir)
 	}
-	g.dependencyPaths = append(g.dependencyPaths, kptPaths...)
 
 	// Generate Raw Manifests
 	sourceManifests := excludeRemote(g.config.RawK8s)
@@ -163,7 +157,6 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		}
 		manifests.Append(manifestFileContent)
 	}
-	g.dependencyPaths = append(g.dependencyPaths, sourceManifests...)
 
 	// TODO(yuwenma): helm resources. `render.generate.helmCharts`
 	return manifests, nil
@@ -213,9 +206,48 @@ func isKptDir(path string) (string, bool) {
 	return dir, true
 }
 
+// walkManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
+// Note: the logic about manifest dependencies shall separate from the "Generate" function, which requires "context" and
+// only be called when a renderig action is needed (normally happens after the file watcher registration).
+func (g *Generator) walkManifests() ([]string, error) {
+	var dependencyPaths []string
+	// Generate kustomize Manifests
+	kustomizePaths := excludeRemote(g.config.Kustomize)
+	kustomizePaths, err := util.ExpandPathsGlob(g.workingDir, kustomizePaths)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
+		return nil, err
+	}
+	dependencyPaths = append(dependencyPaths, kustomizePaths...)
+
+	// Generate in-place hydrated kpt Manifests
+	kptPaths := excludeRemote(g.config.Kpt)
+	kptPaths, err = util.ExpandPathsGlob(g.workingDir, kptPaths)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
+		return nil, err
+	}
+	dependencyPaths = append(dependencyPaths, kptPaths...)
+
+	// Generate Raw Manifests
+	sourceManifests := excludeRemote(g.config.RawK8s)
+	sourceManifests, err = util.ExpandPathsGlob(g.workingDir, sourceManifests)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
+		return nil, err
+	}
+	dependencyPaths = append(dependencyPaths, sourceManifests...)
+	return dependencyPaths, nil
+}
+
 func (g *Generator) ManifestDeps() ([]string, error) {
 	deps := util.NewStringSet()
-	for _, path := range g.dependencyPaths {
+
+	dependencyPaths, err := g.walkManifests()
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range dependencyPaths {
 		err := filepath.Walk(path,
 			func(p string, info os.FileInfo, err error) error {
 				if err != nil {
