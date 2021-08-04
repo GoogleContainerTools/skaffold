@@ -101,7 +101,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	renderer, err := renderer.NewSkaffoldRenderer(
-		runCtx.GetRenderConfig(), runCtx.GetWorkingDir(), hydrationDir)
+		runCtx.GetRenderConfig(), runCtx.GetWorkingDir(), hydrationDir, labeller.Labels())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating renderer: %w", err)

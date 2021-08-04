@@ -50,7 +50,8 @@ type Renderer interface {
 }
 
 // NewSkaffoldRenderer creates a new Renderer object from the latestV2 API schema.
-func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir, hydrationDir string) (Renderer, error) {
+func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir, hydrationDir string,
+	labels map[string]string) (Renderer, error) {
 	generator := generate.NewGenerator(workingDir, config.Generate, hydrationDir)
 	var validator *validate.Validator
 	if config.Validate != nil {
@@ -73,7 +74,8 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir, hydrationDir
 	} else {
 		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
 	}
-	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, Transformer: *transformer, hydrationDir: hydrationDir}, nil
+	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, Transformer: *transformer,
+		hydrationDir: hydrationDir, labels: labels}, nil
 }
 
 type SkaffoldRenderer struct {
