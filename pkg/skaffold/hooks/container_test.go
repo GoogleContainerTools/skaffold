@@ -30,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -105,6 +106,7 @@ func TestContainerRun(t *testing.T) {
 				cli:        &kubectl.CLI{KubeContext: test.kubeContext},
 				selector:   test.selector,
 				namespaces: test.namespaces,
+				formatter:  func(corev1.Pod, corev1.ContainerStatus, func() bool) log.Formatter { return mockLogFormatter{} },
 			}
 			var output bytes.Buffer
 

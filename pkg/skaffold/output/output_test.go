@@ -152,7 +152,7 @@ func TestWithEventContext(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			got := WithEventContext(test.writer, test.phase, test.subtaskID)
+			got, _ := WithEventContext(test.writer, test.phase, test.subtaskID)
 			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false))
 		})
 	}

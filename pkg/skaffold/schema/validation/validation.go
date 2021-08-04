@@ -27,9 +27,11 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
@@ -480,6 +482,7 @@ func validateSyncRules(artifacts []*latestV1.Artifact) []error {
 func validatePortForwardResources(pfrs []*latestV1.PortForwardResource) []error {
 	var errs []error
 	validResourceTypes := map[string]struct{}{
+		"container":             {},
 		"pod":                   {},
 		"deployment":            {},
 		"service":               {},
@@ -612,6 +615,11 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 		if c.Deploy.KubectlDeploy == nil {
 			continue
 		}
+		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
+			logrus.Debugln("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
+			continue
+		}
+
 		// validate that manifest files referenced in config exist
 		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
 			if util.IsURL(pattern) {
@@ -623,7 +631,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 				errs = append(errs, err)
 			}
 			if len(expanded) == 0 {
-				msg := fmt.Sprintf("skaffold config named %q referenced file %q that could not be found", c.SourceFile, pattern)
+				msg := fmt.Sprintf("skaffold config file %q referenced file %q that could not be found", c.SourceFile, pattern)
 				errs = append(errs, sErrors.NewError(fmt.Errorf(msg),
 					proto.ActionableErr{
 						Message: msg,

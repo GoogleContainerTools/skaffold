@@ -41,7 +41,8 @@ type deployerCtx struct {
 }
 
 func (d *deployerCtx) GetKubeContext() string {
-	if d.deploy.KubeContext != "" {
+	// if the kubeContext is not overridden by CLI flag or env. variable then use the value provided in config.
+	if d.RunContext.IsDefaultKubeContext() && d.deploy.KubeContext != "" {
 		return d.deploy.KubeContext
 	}
 	return d.RunContext.GetKubeContext()

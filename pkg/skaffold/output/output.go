@@ -21,6 +21,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 )
@@ -99,14 +101,14 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
-func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) io.Writer {
+func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) (io.Writer, *logrus.Logger) {
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{
 			MainWriter:  sw.MainWriter,
 			EventWriter: eventV2.NewLogger(phase, subtaskID),
 			timestamps:  sw.timestamps,
-		}
+		}, nil
 	}
 
-	return out
+	return out, nil
 }

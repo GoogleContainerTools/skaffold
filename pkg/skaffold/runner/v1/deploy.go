@@ -69,7 +69,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 	defer r.deployer.GetStatusMonitor().Reset()
 
-	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
+	out, _ = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
 
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
@@ -113,6 +113,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	r.deployer.RegisterLocalImages(localAndBuiltImages)
 	err = r.deployer.Deploy(ctx, deployOut, artifacts)
+	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
@@ -120,8 +121,6 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-
-	r.hasDeployed = true
 
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	defer postStatusCheckFn()

@@ -77,7 +77,7 @@ func TestPrintLogLineFormatted(t *testing.T) {
 			groups        = 5
 		)
 		ct := tracker.NewContainerTracker()
-		ct.Add(graph.Artifact{ImageName: "image", Tag: "image:tag"}, "id")
+		ct.Add(graph.Artifact{ImageName: "image", Tag: "image:tag"}, tracker.Container{ID: "id"})
 
 		f := NewDockerLogFormatter(&mockColorPicker{}, ct, func() bool { return false }, "id")
 

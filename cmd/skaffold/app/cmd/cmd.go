@@ -122,7 +122,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if isQuietMode() && !isHouseKeepingMessagesAllowed(cmd) {
+			if isQuietMode() || !isHouseKeepingMessagesAllowed(cmd) {
 				return
 			}
 			select {
@@ -262,7 +262,7 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: timestamp,
 	})
-	logrus.AddHook(event.NewLogHook())
+	logrus.AddHook(event.NewLogHook(constants.DevLoop, event.SubtaskIDNone))
 	return nil
 }
 

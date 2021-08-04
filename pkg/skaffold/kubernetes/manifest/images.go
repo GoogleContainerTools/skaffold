@@ -62,14 +62,25 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 }
 
 // ReplaceImages replaces image names in a list of manifests.
+// It doesn't replace images that are referenced by digest.
 func (l *ManifestList) ReplaceImages(ctx context.Context, builds []graph.Artifact) (ManifestList, error) {
+	return l.replaceImages(ctx, builds, selectLocalManifestImages)
+}
+
+// ReplaceRemoteManifestImages replaces all image names in a list containing remote manifests.
+// This will even override images referenced by digest or with a different repository
+func (l *ManifestList) ReplaceRemoteManifestImages(ctx context.Context, builds []graph.Artifact) (ManifestList, error) {
+	return l.replaceImages(ctx, builds, selectRemoteManifestImages)
+}
+
+func (l *ManifestList) replaceImages(ctx context.Context, builds []graph.Artifact, selector imageSelector) (ManifestList, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "ReplaceImages", map[string]string{
 		"manifestEntries":   strconv.Itoa(len(*l)),
 		"numImagesReplaced": strconv.Itoa(len(builds)),
 	})
 	defer endTrace()
 
-	replacer := newImageReplacer(builds)
+	replacer := newImageReplacer(builds, selector)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
@@ -86,9 +97,10 @@ func (l *ManifestList) ReplaceImages(ctx context.Context, builds []graph.Artifac
 type imageReplacer struct {
 	tagsByImageName map[string]string
 	found           map[string]bool
+	selector        imageSelector
 }
 
-func newImageReplacer(builds []graph.Artifact) *imageReplacer {
+func newImageReplacer(builds []graph.Artifact, selector imageSelector) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
 		imageName := docker.SanitizeImageName(build.ImageName)
@@ -98,6 +110,7 @@ func newImageReplacer(builds []graph.Artifact) *imageReplacer {
 	return &imageReplacer{
 		tagsByImageName: tagsByImageName,
 		found:           make(map[string]bool),
+		selector:        selector,
 	}
 }
 
@@ -115,13 +128,8 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
-	// Leave images referenced by digest as they are
-	if parsed.Digest != "" {
-		return false
-	}
-	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
-		// Apply new image tag
-		r.found[parsed.BaseName] = true
+	if imageName, tag, selected := r.selector(r.tagsByImageName, parsed); selected {
+		r.found[imageName] = true
 		o[k] = tag
 	}
 	return false
@@ -133,4 +141,27 @@ func (r *imageReplacer) Check() {
 			logrus.Debugf("image [%s] is not used by the current deployment", imageName)
 		}
 	}
+}
+
+// imageSelector represents a strategy for matching the container `image` defined in a kubernetes manifest with the correct skaffold artifact.
+type imageSelector func(tagsByImageName map[string]string, image *docker.ImageReference) (imageName, tag string, valid bool)
+
+func selectLocalManifestImages(tagsByImageName map[string]string, image *docker.ImageReference) (string, string, bool) {
+	// Leave images referenced by digest as they are
+	if image.Digest != "" {
+		return "", "", false
+	}
+	// local manifest mentions artifact `imageName` directly, so `imageName` is parsed into `image.BaseName`
+	tag, present := tagsByImageName[image.BaseName]
+	return image.BaseName, tag, present
+}
+
+func selectRemoteManifestImages(tagsByImageName map[string]string, image *docker.ImageReference) (string, string, bool) {
+	// if manifest mentions `imageName` directly then `imageName` is parsed into `image.BaseName`
+	if tag, present := tagsByImageName[image.BaseName]; present {
+		return image.BaseName, tag, present
+	}
+	// if manifest mentions image with repository then `imageName` is parsed into `image.Name`
+	tag, present := tagsByImageName[image.Name]
+	return image.Name, tag, present
 }
