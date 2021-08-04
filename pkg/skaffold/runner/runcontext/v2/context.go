@@ -40,7 +40,7 @@ const (
 )
 
 var (
-	ackUser = prompt.ConfirmHydrationDirOverride
+	confirmHydrationDirOverride = prompt.ConfirmHydrationDirOverride
 )
 
 type RunContext struct {
@@ -208,14 +208,15 @@ func (rc *RunContext) IsMultiConfig() bool                           { return rc
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
 
 // GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
-func (rc *RunContext) GetHydrationDir() (string, error) {
+func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
 	var hydratedDir string
 	var err error
 
-	if rc.Opts.HydrationDir == constants.DefaultHydrationDir {
-		hydratedDir = filepath.Join(rc.WorkingDir, constants.DefaultHydrationDir)
+	if ops.HydrationDir == constants.DefaultHydrationDir {
+		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
+		promptIfNeeded = false
 	} else {
-		hydratedDir = rc.Opts.HydrationDir
+		hydratedDir = ops.HydrationDir
 	}
 	if hydratedDir, err = filepath.Abs(hydratedDir); err != nil {
 		return "", err
@@ -227,8 +228,9 @@ func (rc *RunContext) GetHydrationDir() (string, error) {
 			return "", err
 		}
 	} else if !isDirEmpty(hydratedDir) {
-		if !rc.Opts.AssumeYes {
-			if ok := ackUser(os.Stdin); !ok {
+		if promptIfNeeded && !ops.AssumeYes {
+			fmt.Println("you can skip this promp message with flag \"--assume-yes=true\"")
+			if ok := confirmHydrationDirOverride(os.Stdin); !ok {
 				cmd.Exit(nil)
 			}
 		}

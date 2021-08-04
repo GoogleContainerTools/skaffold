@@ -120,6 +120,7 @@ Examples:
   skaffold apply rendered-pod.yaml
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -143,6 +144,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -184,6 +186,7 @@ Examples:
   skaffold build -q --dry-run
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
@@ -223,6 +226,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
@@ -516,6 +520,7 @@ Delete the deployed application
 
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -538,6 +543,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -572,6 +578,7 @@ Examples:
   skaffold deploy --skip-render
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
@@ -614,6 +621,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
@@ -771,6 +779,7 @@ Examples:
   skaffold diagnose --yaml-only --profile PROFILE
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
@@ -789,6 +798,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
@@ -813,6 +823,7 @@ Examples:
   skaffold fix --version skaffold/v1
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
@@ -828,6 +839,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
@@ -845,6 +857,7 @@ Options:
       --analyze=false: Print all discoverable Dockerfiles and images in JSON format to stdout
   -a, --artifact=[]: '='-delimited Dockerfile/image pair, or JSON string, to generate build artifact
 (example: --artifact='{"builder":"Docker","payload":{"path":"/web/Dockerfile.web"},"image":"gcr.io/web-project/image"}')
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --compose-file='': Initialize from a docker-compose file
       --default-kustomization='': Default Kustomization overlay path (others will be added as profiles)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -866,6 +879,7 @@ Env vars:
 
 * `SKAFFOLD_ANALYZE` (same as `--analyze`)
 * `SKAFFOLD_ARTIFACT` (same as `--artifact`)
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_COMPOSE_FILE` (same as `--compose-file`)
 * `SKAFFOLD_DEFAULT_KUSTOMIZATION` (same as `--default-kustomization`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -1150,6 +1164,7 @@ Examples:
   skaffold test --build-artifacts=tags.json
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
@@ -1171,6 +1186,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)

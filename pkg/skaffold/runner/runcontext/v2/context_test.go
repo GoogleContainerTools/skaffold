@@ -98,11 +98,9 @@ func TestGetHydrationDir_Default(t *testing.T) {
 	testutil.Run(t, "default to <WORKDIR>/.kpt-pipeline", func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
 		tmpDir.Chdir()
-		runCtx := &RunContext{
-			Opts:       config.SkaffoldOptions{HydrationDir: constants.DefaultHydrationDir, AssumeYes: true},
-			WorkingDir: tmpDir.Root(),
-		}
-		actual, err := runCtx.GetHydrationDir()
+		actual, err := GetHydrationDir(
+			config.SkaffoldOptions{HydrationDir: constants.DefaultHydrationDir, AssumeYes: true},
+			tmpDir.Root(), false)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(filepath.Join(tmpDir.Root(), ".kpt-pipeline"), actual)
 	})
@@ -113,10 +111,8 @@ func TestGetHydrationDir_CustomHydrationDir(t *testing.T) {
 		tmpDir := t.NewTempDir()
 		tmpDir.Chdir()
 		expected := filepath.Join(tmpDir.Root(), "test-hydration")
-		runCtx := &RunContext{
-			Opts: config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true},
-		}
-		actual, err := runCtx.GetHydrationDir()
+		actual, err := GetHydrationDir(
+			config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true}, "", false)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, actual)
 		_, err = os.Stat(actual)
