@@ -128,6 +128,8 @@ func Log(out io.Writer) *logrus.Entry {
 		})
 	}
 
+	// Use constants.DevLoop as the default task, as it's the highest level task we
+	// can default to if one isn't specified.
 	return logrus.WithFields(logrus.Fields{
 		"task":    constants.DevLoop,
 		"subtask": eventV2.SubtaskIDNone,
