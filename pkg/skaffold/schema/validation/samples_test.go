@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	ignoredExamples = []string{"docker-deploy"}
+	ignoredExamples = []string{"docker-deploy", "react-reload-docker"}
 	ignoredSamples  = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
 )
 

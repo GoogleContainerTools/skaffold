@@ -1,3 +1,53 @@
+# v1.29.0 Release - 07/30/2021
+Note: This release comes with a new config version, `v2beta20`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Introducing Skaffold lifecycle hooks [#6330](https://github.com/GoogleContainerTools/skaffold/pull/6330)
+* Rename Skaffold's `master` branch to `main` [#6263](https://github.com/GoogleContainerTools/skaffold/pull/6263)
+* Add state to event handler to track `logrus` output events [#6272](https://github.com/GoogleContainerTools/skaffold/pull/6272)
+* fix: kubeContext override via flag [#6331](https://github.com/GoogleContainerTools/skaffold/pull/6331)
+* Added developer journey tutorial [#6201](https://github.com/GoogleContainerTools/skaffold/pull/6201)
+
+Fixes:
+* Fix tail false but still log issue [#6299](https://github.com/GoogleContainerTools/skaffold/pull/6299)
+* skip manifest validation for default `kubectl deployer` [#6294](https://github.com/GoogleContainerTools/skaffold/pull/6294)
+* Fix switched container/pod names in app log event [#6215](https://github.com/GoogleContainerTools/skaffold/pull/6215)
+* fix remote branch lookup [#6269](https://github.com/GoogleContainerTools/skaffold/pull/6269)
+* [cherry-pick] Fix Workdir error when --filename flag is used.  [#6247](https://github.com/GoogleContainerTools/skaffold/pull/6247)
+* Make skaffold reproducible [#6238](https://github.com/GoogleContainerTools/skaffold/pull/6238)
+
+Updates and Refactors:
+* Give `logrus.Hook` implementation information about task and subtask [#6313](https://github.com/GoogleContainerTools/skaffold/pull/6313)
+* Add `logrus.Logger` return type on `WithEventContext()` [#6309](https://github.com/GoogleContainerTools/skaffold/pull/6309)
+* Add `logrus` hook for sending `SkaffoldLogEvent`s [#6250](https://github.com/GoogleContainerTools/skaffold/pull/6250)
+
+* Prefix port forward links with `http://` [#6295](https://github.com/GoogleContainerTools/skaffold/pull/6295)
+* Set output event context in cache check, tag generation, status check, port forward [#6234](https://github.com/GoogleContainerTools/skaffold/pull/6234)
+
+
+Docs, Test, and Release Updates:
+* Update deps and restore k3d tests [#6280](https://github.com/GoogleContainerTools/skaffold/pull/6280)
+* Remove log tail test for nodejs example [#6275](https://github.com/GoogleContainerTools/skaffold/pull/6275)
+* `git fetch` origin/main before `make checks` [#6274](https://github.com/GoogleContainerTools/skaffold/pull/6274)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Benjamin P. Jung
+- Brian de Alwis
+- Chris Willis
+- dependabot[bot]
+- elnoro
+- Gaurav
+- jelle van der Waa
+- Marlon Gamez
+- Nick Kubala
+- Tejal Desai
+- Yanshu
+- Yuwen Ma
+
+
 # v1.28.0 Release - 07/14/2021
 Note: This release comes with a new config version, `v2beta19`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
 

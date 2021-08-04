@@ -134,7 +134,6 @@ Options:
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --tail=false: Stream logs from deployed objects
-      --v2=false: Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.
 
 Usage:
   skaffold apply [options]
@@ -159,7 +158,6 @@ Env vars:
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
-* `SKAFFOLD_V2` (same as `--v2`)
 
 ### skaffold build
 
@@ -453,7 +451,6 @@ Options:
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --v2=false: Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -509,7 +506,6 @@ Env vars:
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
-* `SKAFFOLD_V2` (same as `--v2`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
@@ -611,7 +607,6 @@ Options:
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
-      --v2=false: Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -654,7 +649,6 @@ Env vars:
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
-* `SKAFFOLD_V2` (same as `--v2`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
@@ -707,7 +701,6 @@ Options:
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --v2=false: Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -763,7 +756,6 @@ Env vars:
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
-* `SKAFFOLD_V2` (same as `--v2`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
@@ -834,7 +826,7 @@ Options:
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --version='skaffold/v2beta20': Target schema version to upgrade to
+      --version='skaffold/v2beta21': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -1021,7 +1013,6 @@ Options:
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
-      --v2=false: Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -1072,7 +1063,6 @@ Env vars:
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
-* `SKAFFOLD_V2` (same as `--v2`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)

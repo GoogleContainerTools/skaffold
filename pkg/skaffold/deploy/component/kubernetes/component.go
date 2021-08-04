@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
@@ -88,7 +87,7 @@ func newImageLoader(cfg k8sloader.Config, cli *kubectl.CLI) loader.ImageLoader {
 	return &loader.NoopImageLoader{}
 }
 
-func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces *[]string) log.Logger {
+func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces *[]string) k8slogger.Logger {
 	return k8slogger.NewLogAggregator(cli, podSelector, namespaces, config)
 }
 
@@ -109,6 +108,6 @@ func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.Defaul
 	return k8sMonitor[kubeContext]
 }
 
-func newSyncer(cli *kubectl.CLI, namespaces *[]string) sync.Syncer {
-	return sync.NewPodSyncer(cli, namespaces)
+func newSyncer(cli *kubectl.CLI, namespaces *[]string, formatter k8slogger.Formatter) sync.Syncer {
+	return sync.NewPodSyncer(cli, namespaces, formatter)
 }

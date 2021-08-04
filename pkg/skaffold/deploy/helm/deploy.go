@@ -151,7 +151,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 	if err != nil {
 		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
 	}
-
+	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
@@ -159,9 +159,9 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
 		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
 		imageLoader:    component.NewImageLoader(cfg, kubectl),
-		logger:         component.NewLogger(cfg, kubectl, podSelector, &namespaces),
+		logger:         logger,
 		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:         component.NewSyncer(kubectl, &namespaces),
+		syncer:         component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),

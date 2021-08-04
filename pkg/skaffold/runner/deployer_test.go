@@ -37,7 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -185,11 +184,11 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 		t.Override(&component.NewImageLoader, func(k8sloader.Config, *pkgkubectl.CLI) loader.ImageLoader {
 			return &loader.NoopImageLoader{}
 		})
-		t.Override(&component.NewSyncer, func(*pkgkubectl.CLI, *[]string) sync.Syncer {
+		t.Override(&component.NewSyncer, func(*pkgkubectl.CLI, *[]string, k8slogger.Formatter) sync.Syncer {
 			return &sync.NoopSyncer{}
 		})
-		t.Override(&component.NewLogger, func(k8slogger.Config, *pkgkubectl.CLI, kubernetes.PodSelector, *[]string) log.Logger {
-			return &log.NoopLogger{}
+		t.Override(&component.NewLogger, func(k8slogger.Config, *pkgkubectl.CLI, kubernetes.PodSelector, *[]string) k8slogger.Logger {
+			return &k8slogger.NoopLogger{}
 		})
 		tests := []struct {
 			name      string

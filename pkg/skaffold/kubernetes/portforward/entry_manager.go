@@ -115,7 +115,7 @@ func NewEntryManager(entryForwarder EntryForwarder) *EntryManager {
 }
 
 func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Writer, entry *portForwardEntry) {
-	out = output.WithEventContext(out, constants.PortForward, fmt.Sprintf("%s/%s", entry.resource.Type, entry.resource.Name))
+	out, _ = output.WithEventContext(out, constants.PortForward, fmt.Sprintf("%s/%s", entry.resource.Type, entry.resource.Name))
 
 	// Check if this resource has already been forwarded
 	if _, ok := b.forwardedResources.Load(entry.key()); ok {
@@ -126,7 +126,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Write
 	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
 		output.Green.Fprintln(
 			out,
-			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> %s:%d",
+			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> http://%s:%d",
 				entry.resource.Type,
 				entry.resource.Name,
 				entry.resource.Namespace,
