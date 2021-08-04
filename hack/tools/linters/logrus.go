@@ -33,12 +33,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
 			if importSpec, ok := n.(*ast.ImportSpec); ok {
-				if importSpec.Path != nil && strings.Contains(importSpec.Path.Value, "github.com/sirupsen/logrus")	{
+				if importSpec.Path != nil && strings.Contains(importSpec.Path.Value, "github.com/sirupsen/logrus") {
 					pass.Report(analysis.Diagnostic{
-						Pos:            importSpec.Pos(),
-						End:            0,
-						Category:       "logrus-analyzer",
-						Message:        "Dont use github.com/sirupsen/logrus package, use output.Log instead.",
+						Pos:      importSpec.Pos(),
+						End:      0,
+						Category: "logrus-analyzer",
+						Message:  "Dont use github.com/sirupsen/logrus package, use output.Log instead.",
 					})
 				}
 			}
