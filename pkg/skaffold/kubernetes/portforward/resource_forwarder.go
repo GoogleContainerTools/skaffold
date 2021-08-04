@@ -150,8 +150,9 @@ func (p *ResourceForwarder) getCurrentEntry(resource latestV1.PortForwardResourc
 	entry := newPortForwardEntry(0, resource, "", "", "", "", 0, false)
 
 	// If we have, return the current entry
-	oldEntry, ok := p.entryManager.forwardedResources.Load(entry.key())
+	oe, ok := p.entryManager.forwardedResources.Load(entry.key())
 	if ok {
+		oldEntry := oe.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry
 	}

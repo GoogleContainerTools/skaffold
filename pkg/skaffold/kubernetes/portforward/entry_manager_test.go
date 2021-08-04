@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"io/ioutil"
+	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -47,28 +48,21 @@ func TestStop(t *testing.T) {
 	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe1)
 	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe2)
 
-	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedResources.Length())
+	testutil.CheckDeepEqual(t, 2, length(fakeForwarder.forwardedResources))
 	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedPorts.Length())
 
 	em.Stop()
 
-	testutil.CheckDeepEqual(t, 0, fakeForwarder.forwardedResources.Length())
+	testutil.CheckDeepEqual(t, 0, length(fakeForwarder.forwardedResources))
 	testutil.CheckDeepEqual(t, 0, fakeForwarder.forwardedPorts.Length())
 }
 
-func TestForwardedResources(t *testing.T) {
-	pf := &forwardedResources{}
-
-	// Try to store a resource
-	pf.Store("resource", &portForwardEntry{})
-
-	// Try to load the resource
-	if _, ok := pf.Load("resource"); !ok {
-		t.Fatal("didn't load resource correctly correctly")
-	}
-
-	// Try to load a resource that doesn't exist
-	if actual, ok := pf.Load("dne"); ok || actual != nil {
-		t.Fatal("loaded resource that doesn't exist")
-	}
+// length returns the number of elements in a sync.Map
+func length(m sync.Map) int {
+	n := 0
+	m.Range(func(_, _ interface{}) bool {
+		n++
+		return true
+	})
+	return n
 }
