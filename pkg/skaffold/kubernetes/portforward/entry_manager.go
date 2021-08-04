@@ -80,10 +80,9 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Write
 	out, _ = output.WithEventContext(out, constants.PortForward, fmt.Sprintf("%s/%s", entry.resource.Type, entry.resource.Name))
 
 	// Check if this resource has already been forwarded
-	if _, ok := b.forwardedResources.Load(entry.key()); ok {
+	if _, found := b.forwardedResources.LoadOrStore(entry.key(), entry); found {
 		return
 	}
-	b.forwardedResources.Store(entry.key(), entry)
 
 	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
 		output.Green.Fprintln(
