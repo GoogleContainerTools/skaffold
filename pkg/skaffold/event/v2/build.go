@@ -53,6 +53,10 @@ func BuildSucceeded(artifact string) {
 	buildSubtaskEvent(artifact, Build, Succeeded, nil)
 }
 
+func BuildCanceled(artifact string, err error) {
+	buildSubtaskEvent(artifact, Build, Canceled, err)
+}
+
 func buildSubtaskEvent(artifact, step, status string, err error) {
 	var aErr *proto.ActionableErr
 	if err != nil {
