@@ -44,7 +44,7 @@ import (
 )
 
 type testForwarder struct {
-	forwardedResources forwardedResources
+	forwardedResources sync.Map
 	forwardedPorts     util.PortSet
 }
 
@@ -140,10 +140,10 @@ func TestStart(t *testing.T) {
 
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-				return len(test.expected) == fakeForwarder.forwardedResources.Length(), nil
+				return len(test.expected) == length(&fakeForwarder.forwardedResources), nil
 			})
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources.resources)
+				t.Fatalf("expected entries didn't match actual entries.\nExpected: %v\n  Actual: %v", test.expected, print(&fakeForwarder.forwardedResources))
 			}
 		})
 	}
@@ -210,8 +210,9 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			})
 
 			entryManager := NewEntryManager(newTestForwarder())
-			entryManager.forwardedResources = forwardedResources{
-				resources: test.forwardedResources,
+			entryManager.forwardedResources = sync.Map{}
+			for k, v := range test.forwardedResources {
+				entryManager.forwardedResources.Store(k, v)
 			}
 			rf := NewServicesForwarder(entryManager, "")
 			actualEntry := rf.getCurrentEntry(test.resource)
@@ -329,13 +330,15 @@ func TestUserDefinedResources(t *testing.T) {
 
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-				return len(test.expectedResources) == fakeForwarder.forwardedResources.Length(), nil
+				return len(test.expectedResources) == length(&fakeForwarder.forwardedResources), nil
 			})
 			for _, key := range test.expectedResources {
-				t.CheckNotNil(fakeForwarder.forwardedResources.resources[key])
+				pfe, found := fakeForwarder.forwardedResources.Load(key)
+				t.CheckTrue(found)
+				t.CheckNotNil(pfe)
 			}
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expectedResources, fakeForwarder.forwardedResources.resources)
+				t.Fatalf("expected entries didn't match actual entries.\nExpected: %v\n  Actual: %v", test.expectedResources, print(&fakeForwarder.forwardedResources))
 			}
 		})
 	}

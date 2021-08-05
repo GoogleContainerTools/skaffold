@@ -74,7 +74,7 @@ func (k *KubectlForwarder) Start(out io.Writer) {
 	k.out = out
 }
 
-// Forward port-forwards a pod using kubectl port-forward in the background
+// Forward port-forwards a pod using kubectl port-forward in the background.
 // It kills the command on errors in the kubectl port-forward log
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken

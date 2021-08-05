@@ -423,9 +423,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			t.CheckDeepEqual(test.expectedPorts, test.forwarder.forwardedPorts.List())
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			actualForwardedResources := test.forwarder.forwardedResources.resources
-			if !reflect.DeepEqual(test.expectedEntries, actualForwardedResources) {
-				t.Errorf("Forwarded entries differs from expected entries. Expected: %v, Actual: %v", test.expectedEntries, actualForwardedResources)
+			for k, v := range test.expectedEntries {
+				if frv, found := test.forwarder.forwardedResources.Load(k); !found {
+					t.Errorf("Forwarded entries missing key %v, value %v", k, v)
+				} else if !reflect.DeepEqual(v, frv) {
+					t.Errorf("Forwarded entries mismatch for key %v: Expected %v, Actual  %v", k, v, frv)
+				}
 			}
 		})
 	}
