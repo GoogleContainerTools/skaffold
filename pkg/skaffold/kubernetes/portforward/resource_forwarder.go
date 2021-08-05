@@ -37,6 +37,7 @@ type ResourceForwarder struct {
 	output               io.Writer
 	entryManager         *EntryManager
 	label                string
+	kubeContext          string
 	userDefinedResources []*latestV1.PortForwardResource
 	services             bool
 }
@@ -48,18 +49,20 @@ var (
 )
 
 // NewServicesForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewServicesForwarder(entryManager *EntryManager, label string) *ResourceForwarder {
+func NewServicesForwarder(entryManager *EntryManager, kubeContext string, label string) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager: entryManager,
 		label:        label,
 		services:     true,
+		kubeContext:  kubeContext,
 	}
 }
 
 // NewUserDefinedForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewUserDefinedForwarder(entryManager *EntryManager, userDefinedResources []*latestV1.PortForwardResource) *ResourceForwarder {
+func NewUserDefinedForwarder(entryManager *EntryManager, kubeContext string, userDefinedResources []*latestV1.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager:         entryManager,
+		kubeContext:          kubeContext,
 		userDefinedResources: userDefinedResources,
 	}
 }
@@ -94,7 +97,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces
 
 	var serviceResources []*latestV1.PortForwardResource
 	if p.services {
-		found, err := retrieveServices(ctx, p.label, namespaces)
+		found, err := retrieveServices(ctx, p.label, namespaces, p.kubeContext)
 		if err != nil {
 			return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
 		}
@@ -163,8 +166,8 @@ func (p *ResourceForwarder) getCurrentEntry(resource latestV1.PortForwardResourc
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(ctx context.Context, label string, namespaces []string) ([]*latestV1.PortForwardResource, error) {
-	client, err := kubernetesclient.Client()
+func retrieveServiceResources(ctx context.Context, label string, namespaces []string, kubeContext string) ([]*latestV1.PortForwardResource, error) {
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

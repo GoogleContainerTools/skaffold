@@ -65,7 +65,7 @@ type containerHook struct {
 func (h containerHook) run(ctx context.Context, out io.Writer) error {
 	errs, ctx := errgroup.WithContext(ctx)
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(h.cli.KubeContext)
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}

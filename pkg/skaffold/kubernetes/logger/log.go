@@ -118,7 +118,7 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 	a.output = out
 
 	a.podWatcher.Register(a.events)
-	stopWatcher, err := a.podWatcher.Start(*a.namespaces)
+	stopWatcher, err := a.podWatcher.Start(a.kubectlcli.KubeContext, *a.namespaces)
 	a.stopWatcher = stopWatcher
 	if err != nil {
 		return err

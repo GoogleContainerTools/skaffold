@@ -54,7 +54,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 	artifact.BuildArgs = buildArgs
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		return "", fmt.Errorf("getting Kubernetes client: %w", err)
 	}

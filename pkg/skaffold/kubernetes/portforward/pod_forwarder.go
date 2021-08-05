@@ -46,6 +46,7 @@ type WatchingPodForwarder struct {
 	entryManager *EntryManager
 	podWatcher   kubernetes.PodWatcher
 	events       chan kubernetes.PodEvent
+	kubeContext  string
 
 	// portSelector returns a possibly-filtered and possibly-generated set of ports for a pod.
 	containerPorts portSelector
@@ -55,11 +56,12 @@ type WatchingPodForwarder struct {
 type portSelector func(*v1.Pod, v1.Container) []v1.ContainerPort
 
 // NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.PodSelector, containerPorts portSelector) *WatchingPodForwarder {
+func NewWatchingPodForwarder(entryManager *EntryManager, kubeContext string, podSelector kubernetes.PodSelector, containerPorts portSelector) *WatchingPodForwarder {
 	return &WatchingPodForwarder{
 		entryManager:   entryManager,
 		podWatcher:     newPodWatcher(podSelector),
 		events:         make(chan kubernetes.PodEvent),
+		kubeContext:    kubeContext,
 		containerPorts: containerPorts,
 	}
 }
@@ -67,7 +69,7 @@ func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.
 func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	p.podWatcher.Register(p.events)
 	p.output = out
-	stopWatcher, err := p.podWatcher.Start(namespaces)
+	stopWatcher, err := p.podWatcher.Start(p.kubeContext, namespaces)
 	if err != nil {
 		return err
 	}
@@ -104,7 +106,7 @@ func (p *WatchingPodForwarder) Stop() {
 }
 
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
-	ownerReference := topLevelOwnerKey(ctx, pod, pod.Kind)
+	ownerReference := topLevelOwnerKey(ctx, pod, p.kubeContext, pod.Kind)
 	for _, c := range pod.Spec.Containers {
 		for _, port := range p.containerPorts(pod, c) {
 			// get current entry for this container

@@ -157,7 +157,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 		podSelector:    podSelector,
 		namespaces:     &namespaces,
 		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
-		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
+		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:    component.NewImageLoader(cfg, kubectl),
 		logger:         logger,
 		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
@@ -218,7 +218,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// Check that the cluster is reachable.
 	// This gives a better error message when the cluster can't
 	// be reached.
-	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+	if err := kubernetes.FailIfClusterIsNotReachable(h.kubeContext); err != nil {
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
@@ -267,7 +267,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		warnAboutUnusedImages(builds, valuesSet)
 	}
 
-	if err := label.Apply(ctx, h.labels, dRes); err != nil {
+	if err := label.Apply(ctx, h.labels, dRes, h.kubeContext); err != nil {
 		return helmLabelErr(fmt.Errorf("adding labels: %w", err))
 	}
 

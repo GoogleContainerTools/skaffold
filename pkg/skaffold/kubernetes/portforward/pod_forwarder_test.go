@@ -405,7 +405,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 			taken := map[int]struct{}{}
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, taken, test.availablePorts))
-			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
+			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string, string) string { return "owner" })
 
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder()
@@ -413,7 +413,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			entryManager := NewEntryManager(nil)
 			entryManager.entryForwarder = test.forwarder
 
-			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), allPorts)
+			p := NewWatchingPodForwarder(entryManager, "", kubernetes.NewImageList(), allPorts)
 			p.Start(context.Background(), ioutil.Discard, nil)
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
@@ -477,7 +477,7 @@ func TestStartPodForwarder(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
-			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
+			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string, string) string { return "owner" })
 			t.Override(&newPodWatcher, func(kubernetes.PodSelector) kubernetes.PodWatcher {
 				return &fakePodWatcher{
 					events: []kubernetes.PodEvent{test.event},
@@ -490,7 +490,7 @@ func TestStartPodForwarder(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(fakeForwarder)
 
-			p := NewWatchingPodForwarder(entryManager, imageList, allPorts)
+			p := NewWatchingPodForwarder(entryManager, "", imageList, allPorts)
 			p.Start(context.Background(), ioutil.Discard, nil)
 
 			// wait for the pod resource to be forwarded
@@ -516,7 +516,7 @@ func (f *fakePodWatcher) Register(receiver chan<- kubernetes.PodEvent) {
 
 func (f *fakePodWatcher) Deregister(_ chan<- kubernetes.PodEvent) {} // noop
 
-func (f *fakePodWatcher) Start(namespaces []string) (func(), error) {
+func (f *fakePodWatcher) Start(kubeContext string, namespaces []string) (func(), error) {
 	go func() {
 		for _, event := range f.events {
 			f.receiver <- event

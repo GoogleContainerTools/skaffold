@@ -126,14 +126,14 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, map[int]struct{}{}, test.availablePorts))
-			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latestV1.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latestV1.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(fakeForwarder)
 
-			rf := NewServicesForwarder(entryManager, "")
+			rf := NewServicesForwarder(entryManager, "", "")
 			if err := rf.Start(context.Background(), ioutil.Discard, []string{"test"}); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
@@ -213,7 +213,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			entryManager.forwardedResources = forwardedResources{
 				resources: test.forwardedResources,
 			}
-			rf := NewServicesForwarder(entryManager, "")
+			rf := NewServicesForwarder(entryManager, "", "")
 			actualEntry := rf.getCurrentEntry(test.resource)
 
 			expectedEntry := test.expected
@@ -311,7 +311,7 @@ func TestUserDefinedResources(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, map[int]struct{}{}, []int{8080, 9000}))
-			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latestV1.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latestV1.PortForwardResource, error) {
 				return []*latestV1.PortForwardResource{svc}, nil
 			})
 
@@ -322,7 +322,7 @@ func TestUserDefinedResources(t *testing.T) {
 				return []string{"FOO=bar"}
 			}
 
-			rf := NewUserDefinedForwarder(entryManager, test.userResources)
+			rf := NewUserDefinedForwarder(entryManager, "", test.userResources)
 			if err := rf.Start(context.Background(), ioutil.Discard, test.namespaces); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
@@ -341,8 +341,8 @@ func TestUserDefinedResources(t *testing.T) {
 	}
 }
 
-func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
-	return func() (kubernetes.Interface, error) {
+func mockClient(m kubernetes.Interface) func(string) (kubernetes.Interface, error) {
+	return func(string) (kubernetes.Interface, error) {
 		return m, nil
 	}
 }
@@ -434,7 +434,7 @@ func TestRetrieveServices(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := retrieveServiceResources(context.Background(), fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces)
+			actual, err := retrieveServiceResources(context.Background(), fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

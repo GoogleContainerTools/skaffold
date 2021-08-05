@@ -34,14 +34,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
-	return func() (kubernetes.Interface, error) {
+func mockClient(m kubernetes.Interface) func(string) (kubernetes.Interface, error) {
+	return func(string) (kubernetes.Interface, error) {
 		return m, nil
 	}
 }
 
-func mockDynamicClient(m dynamic.Interface) func() (dynamic.Interface, error) {
-	return func() (dynamic.Interface, error) {
+func mockDynamicClient(m dynamic.Interface) func(string) (dynamic.Interface, error) {
+	return func(string) (dynamic.Interface, error) {
 		return m, nil
 	}
 }
@@ -108,7 +108,7 @@ func TestApplyLabels(t *testing.T) {
 			t.Override(&kubernetesclient.DynamicClient, mockDynamicClient(dynClient))
 
 			// Patch labels
-			Apply(context.Background(), test.appliedLabels, []types.Artifact{{Obj: dep}})
+			Apply(context.Background(), test.appliedLabels, []types.Artifact{{Obj: dep}}, "")
 
 			// Check modified value
 			modified, err := dynClient.Resource(schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}).Get(context.Background(), "foo", metav1.GetOptions{})

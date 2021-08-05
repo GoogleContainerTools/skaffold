@@ -43,18 +43,18 @@ const (
 )
 
 // Apply applies all provided labels to the created Kubernetes resources
-func Apply(ctx context.Context, labels map[string]string, results []deploy.Artifact) error {
+func Apply(ctx context.Context, labels map[string]string, results []deploy.Artifact, kubeContext string) error {
 	if len(labels) == 0 {
 		return nil
 	}
 
 	// use the kubectl client to update all k8s objects with a skaffold watermark
-	dynClient, err := kubernetesclient.DynamicClient()
+	dynClient, err := kubernetesclient.DynamicClient(kubeContext)
 	if err != nil {
 		return fmt.Errorf("error getting Kubernetes dynamic client: %w", err)
 	}
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return fmt.Errorf("error getting Kubernetes client: %w", err)
 	}
