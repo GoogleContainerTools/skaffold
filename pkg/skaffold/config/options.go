@@ -30,16 +30,8 @@ type WaitForDeletions struct {
 	Enabled bool
 }
 
-// SkaffoldOptions are options that are set by command line arguments not included
-// in the config file itself
+// SkaffoldOptions are options that are set by command line arguments not included in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile     string
-	ConfigurationFilter   []string
-	HydratedManifests     []string
-	GlobalConfig          string
-	EventLogFile          string
-	RenderOutput          string
-	User                  string
 	Apply                 bool
 	Cleanup               bool
 	Notification          bool
@@ -61,45 +53,49 @@ type SkaffoldOptions struct {
 	SkipRender            bool
 	SkipConfigDefaults    bool
 	PropagateProfiles     bool
-
 	// Add Skaffold-specific labels including runID, deployer labels, etc.
 	// `CustomLabels` are still applied if this is false. Must only be used in
 	// commands which don't deploy (e.g. `skaffold render`) since the runID
 	// label isn't available.
-	AddSkaffoldLabels bool
-	DetectMinikube    bool
-	// Experimental is the entrypoint to run skaffold v3 before it's fully implemented.
-	Experimental         bool
-	StatusCheck          BoolOrUndefined
+	AddSkaffoldLabels    bool
+	DetectMinikube       bool
 	IterativeStatusCheck bool
-
-	PortForward        PortForwardOptions
-	CustomTag          string
-	Namespace          string
-	CacheFile          string
-	Trigger            string
-	KubeContext        string
-	KubeConfig         string
-	DigestSource       string
-	WatchPollInterval  int
-	DefaultRepo        StringOrUndefined
-	PushImages         BoolOrUndefined
+	RPCPort              int
+	RPCHTTPPort          int
+	BuildConcurrency     int
+	WatchPollInterval    int
+	ConfigurationFile    string
+	ConfigurationFilter  []string
+	HydratedManifests    []string
+	HydrationDir         string
+	GlobalConfig         string
+	EventLogFile         string
+	RenderOutput         string
+	User                 string
+	CustomTag            string
+	Namespace            string
+	CacheFile            string
+	Trigger              string
+	KubeContext          string
+	KubeConfig           string
+	DigestSource         string
+	Command              string
+	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
+	// remove minikubeProfile from here and instead detect it by matching the
+	// kubecontext API Server to minikube profiles
+	MinikubeProfile    string
+	RepoCacheDir       string
 	CustomLabels       []string
 	TargetImages       []string
 	Profiles           []string
 	InsecureRegistries []string
-	Muted              Muted
-	Command            string
-	RPCPort            int
-	RPCHTTPPort        int
-	BuildConcurrency   int
 	MakePathsAbsolute  *bool
-	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
-	// remove minikubeProfile from here and instead detect it by matching the
-	// kubecontext API Server to minikube profiles
-	MinikubeProfile  string
-	RepoCacheDir     string
-	WaitForDeletions WaitForDeletions
+	PortForward        PortForwardOptions
+	DefaultRepo        StringOrUndefined
+	PushImages         BoolOrUndefined
+	StatusCheck        BoolOrUndefined
+	Muted              Muted
+	WaitForDeletions   WaitForDeletions
 }
 
 type RunMode string

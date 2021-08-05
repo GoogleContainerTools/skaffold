@@ -205,7 +205,7 @@ transformations could be applied on-the-fly too.
 ## Implementation plan
 
 The idea here is that `skaffold debug` internally configures a watcher that looks for and notifies
-of pods with debuggable containers, similar to how the [port-forwarding manager](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/kubernetes/portforward/pod_forwarder.go) 
+of pods with debuggable containers, similar to how the [port-forwarding manager](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/kubernetes/portforward/pod_forwarder.go) 
 listens for pods or services.
 
 1. `skaffold debug` will set a `DebugMode` option to `true`. This value will be used in

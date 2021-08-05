@@ -53,7 +53,7 @@ You can define dependency on other artifacts using the `requires` keyword. This 
 
 **Example**
 
-See the [Skaffold-Jib demo project](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/jib/)
+See the [Skaffold-Jib demo project](https://github.com/GoogleContainerTools/skaffold/blob/main/examples/jib/)
 for an example.
 
 ### Multi-Module Projects

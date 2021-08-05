@@ -17,10 +17,12 @@ limitations under the License.
 package v2
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -92,40 +94,28 @@ func TestRunContext_UpdateNamespaces(t *testing.T) {
 	}
 }
 
-func TestGetRenderOutputPath(t *testing.T) {
-	tests := []struct {
-		description string
-		ops         config.SkaffoldOptions
-		workingDir  string
-		expected    string
-	}{
-		{
-			description: "default to <WORKDIR>/.kpt-pipeline",
-			workingDir:  "./test-workdir",
-			expected:    "test-workdir/.kpt-pipeline",
-		},
-		{
-			description: "--output flag is given",
-			ops:         config.SkaffoldOptions{RenderOutput: "./hydrated-output"},
-			workingDir:  "./test-workdir",
-			expected:    "./hydrated-output",
-		},
-	}
+func TestGetHydrationDir_Default(t *testing.T) {
+	testutil.Run(t, "default to <WORKDIR>/.kpt-pipeline", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		tmpDir.Chdir()
+		actual, err := GetHydrationDir(
+			config.SkaffoldOptions{HydrationDir: constants.DefaultHydrationDir, AssumeYes: true},
+			tmpDir.Root(), false)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(filepath.Join(tmpDir.Root(), ".kpt-pipeline"), actual)
+	})
+}
 
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			tmpDir.Chdir()
-			if test.ops.RenderOutput != "" {
-				test.ops.RenderOutput = filepath.Join(tmpDir.Root(), test.ops.RenderOutput)
-			}
-			runCtx := &RunContext{
-				Opts:       test.ops,
-				WorkingDir: filepath.Join(tmpDir.Root(), test.workingDir),
-			}
-			actual, err := runCtx.GetRenderOutputPath()
-			t.CheckNoError(err)
-			t.CheckDeepEqual(filepath.Join(tmpDir.Root(), test.expected), actual)
-		})
-	}
+func TestGetHydrationDir_CustomHydrationDir(t *testing.T) {
+	testutil.Run(t, "--hydration-dir flag is given", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		tmpDir.Chdir()
+		expected := filepath.Join(tmpDir.Root(), "test-hydration")
+		actual, err := GetHydrationDir(
+			config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true}, "", false)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, actual)
+		_, err = os.Stat(actual)
+		t.CheckFalse(os.IsNotExist(err))
+	})
 }

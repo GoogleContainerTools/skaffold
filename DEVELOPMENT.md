@@ -69,7 +69,7 @@ Visual Studio Code with [Go plugin](https://github.com/Microsoft/vscode-go):
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Open the latest Config at [pkg/skaffold/schema/latest/v1/config.go](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/v1/config.go) and inspect the comment at [L28](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/v1/config.go#L28)
+* Open the latest Config at [pkg/skaffold/schema/latest/v1/config.go](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/v1/config.go) and inspect the comment at [L28](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/v1/config.go#L28)
 * If the line mentions the config version is not released, proceed making your changes.
   ```
   // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
@@ -101,14 +101,14 @@ For more details behind the logic of config changes see [the Skaffold config man
 
 ## Making changes to the Skaffold API
 
-We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. When adding new message types, make changes to [proto/v1/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/v1/skaffold.proto), and when adding new enum types, make changes to [proto/enums/enums.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/enums/enums.proto). When changing either of these files, you can run `./hack/generate-proto.sh` to generate the equivalent Go code.
+We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. When adding new message types, make changes to [proto/v1/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/skaffold.proto), and when adding new enum types, make changes to [proto/enums/enums.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/enums/enums.proto). When changing either of these files, you can run `./hack/generate-proto.sh` to generate the equivalent Go code.
 
 ## Adding actionable error messages to code.
 Skaffold has a built-in framework to provide actionable error messages for user to help bootstrap skaffold errors.
 
 Also, [v1.19.0](https://github.com/GoogleContainerTools/skaffold/releases/tag/v1.19.0) onwards, skaffold is collecting failure error codes to help the team get more insights into common failure scenarios.
 
-To take advantage of this framework, contributors can simply use the [`ErrDef`](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/errors/err_def.go#L32) struct to throw meaningful actionable error messages and 
+To take advantage of this framework, contributors can simply use the [`ErrDef`](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/errors/err_def.go#L32) struct to throw meaningful actionable error messages and
 improve user experience.
 
 e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5953), 
@@ -280,7 +280,7 @@ Skaffold release process works with Google Cloud Build within our own project `k
 
 In order to be able to iterate/fix the release process you can pass in your own project and bucket as parameters to the build.
 
-We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to master.
+We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to `main`.
 
 To run a build on your own project:
 

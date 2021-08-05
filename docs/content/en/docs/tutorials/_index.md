@@ -4,7 +4,7 @@ linkTitle: "Tutorials"
 weight: 90
 ---
 
-See the [Github Examples page](https://github.com/GoogleContainerTools/skaffold/tree/master/examples) for examples.
+See the [Github Examples page](https://github.com/GoogleContainerTools/skaffold/tree/main/examples) for examples.
 
 ### Deploying examples to a remote cluster
 

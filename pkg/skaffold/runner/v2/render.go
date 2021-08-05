@@ -23,9 +23,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 )
 
-func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, _ string) error {
+func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, output string) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-	if err := r.renderer.Render(ctx, out, builds, offline, ""); err != nil {
+	if err := r.renderer.Render(ctx, out, builds, offline, output); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}

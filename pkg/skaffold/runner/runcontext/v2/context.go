@@ -18,14 +18,17 @@ package v2
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
+	"github.com/buildpacks/lifecycle/cmd"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -34,6 +37,10 @@ import (
 
 const (
 	emptyNamespace = ""
+)
+
+var (
+	confirmHydrationDirOverride = prompt.ConfirmHydrationDirOverride
 )
 
 type RunContext struct {
@@ -200,23 +207,43 @@ func (rc *RunContext) BuildConcurrency() int                         { return rc
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
 
-// GetRenderOutputPath points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
-func (rc *RunContext) GetRenderOutputPath() (string, error) {
+// GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
+func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
 	var hydratedDir string
 	var err error
-	if rc.Opts.RenderOutput == "" {
-		// Workdir is set to pwd and shall always exist.
-		hydratedDir = filepath.Join(rc.WorkingDir, constants.DefaultHydrationDir)
-	} else if hydratedDir, err = filepath.Abs(rc.Opts.RenderOutput); err != nil {
+
+	if ops.HydrationDir == constants.DefaultHydrationDir {
+		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
+		promptIfNeeded = false
+	} else {
+		hydratedDir = ops.HydrationDir
+	}
+	if hydratedDir, err = filepath.Abs(hydratedDir); err != nil {
 		return "", err
 	}
+
 	if _, err := os.Stat(hydratedDir); os.IsNotExist(err) {
-		logrus.Infof("render output path does not exist, creating %v\n", hydratedDir)
+		logrus.Infof("hydrated-dir does not exist, creating %v\n", hydratedDir)
 		if err := os.MkdirAll(hydratedDir, os.ModePerm); err != nil {
 			return "", err
 		}
+	} else if !isDirEmpty(hydratedDir) {
+		if promptIfNeeded && !ops.AssumeYes {
+			fmt.Println("you can skip this promp message with flag \"--assume-yes=true\"")
+			if ok := confirmHydrationDirOverride(os.Stdin); !ok {
+				cmd.Exit(nil)
+			}
+		}
 	}
+	logrus.Infof("manifests hydration will take place in %v\n", hydratedDir)
 	return hydratedDir, nil
+}
+
+func isDirEmpty(dir string) bool {
+	f, _ := os.Open(dir)
+	defer f.Close()
+	_, err := f.Readdirnames(1)
+	return err == io.EOF
 }
 
 // GetRenderConfig returns the top tier RenderConfig.

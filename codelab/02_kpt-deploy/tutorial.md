@@ -15,7 +15,7 @@ Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes
 *   How to enable kpt to deploy your configurations in their live state.
 *   How to use kpt with kustomize.
 
-This codelab is the second session. Check out the [01_kpt-validate](https://github.com/GoogleContainerTools/skaffold/tree/master/codelab/01_kpt-validate) about how to use kpt to validate your configuration before deploying to the cluster.
+This codelab is the second session. Check out the [01_kpt-validate](https://github.com/GoogleContainerTools/skaffold/tree/main/codelab/01_kpt-validate) about how to use kpt to validate your configuration before deploying to the cluster.
 
 ## Prerequisites
 
@@ -87,7 +87,7 @@ Time to complete: **About 3 minutes**
 
 <walkthrough-pin-section-icon></walkthrough-pin-section-icon>
 **Tips**
->  If you haven't used `skaffold dev`, you can go through this [codelab](https://github.com/GoogleContainerTools/skaffold/tree/master/codelab/01_kpt-validate).
+>  If you haven't used `skaffold dev`, you can go through this [codelab](https://github.com/GoogleContainerTools/skaffold/tree/main/codelab/01_kpt-validate).
 
 ## Deploy
 Time to complete: **About 2 minutes**
@@ -226,4 +226,4 @@ from the skaffold.yaml[ reference doc](https://skaffold.dev/docs/references/yaml
 
 You can also try out other kpt features like `kpt pkg` and `kpt cfg` from 
 [the user guide](https://googlecontainertools.github.io/kpt/reference/). They will be supported 
-in the skaffold soon. Stay tuned!  
+in the skaffold soon. Stay tuned!

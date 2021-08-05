@@ -133,7 +133,7 @@ may require configuring both the _local_ and _remote_ source path prefixes via t
 The `cwd` property should point to the top-level container of your source files and should generally match
 the artifact's `context` directory in the `skaffold.yaml`.  The `remotePath` path property should be set to the
 remote source location _during compilation_.  For example, the `golang` images, which are
-[often used in multi-stage builds](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started/Dockerfile),
+[often used in multi-stage builds](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/getting-started/Dockerfile),
 copy the source code to `/go`.  The following
 [remote launch configuration](https://github.com/Microsoft/vscode-go/wiki/Debugging-Go-code-using-VS-Code#remote-debugging)
 works in this case:

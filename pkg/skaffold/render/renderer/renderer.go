@@ -43,10 +43,7 @@ const (
 )
 
 type Renderer interface {
-	// The noop field refers to the path where the rendered manifests are stored (e.g. `skaffold render --output=<OUTPUT>` the <OUTPUT> field).
-	// This arg is required by the Runner interface for v1 (specially for the withTimings) and shall not be used by this
-	// renderer.
-	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, noop string) error
+	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, output string) error
 	// ManifestDeps returns the user kubenertes manifests to file watcher. In dev mode, a "redeploy" will be triggered
 	// if any of the "Dependencies" manifest is changed.
 	ManifestDeps() ([]string, error)
@@ -87,7 +84,7 @@ type SkaffoldRenderer struct {
 	labels       map[string]string
 }
 
-func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, _ string) error {
+func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, output string) error {
 	kptfilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	kfConfig := &kptfile.KptFile{}
 
@@ -186,5 +183,23 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 		// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
 		return err
 	}
+
+	if output != "" {
+		r.writeManifestsToFile(ctx, out, output)
+	}
 	return nil
+}
+
+// writeManifestsToFile converts the structured manifest to a flatten format and store them in the given `output` file.
+func (r *SkaffoldRenderer) writeManifestsToFile(ctx context.Context, out io.Writer, output string) error {
+	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_outputManifests")
+	cmd := exec.CommandContext(rCtx, "kpt", "fn", "source", r.hydrationDir, "-o", "unwrap")
+	var buf []byte
+	cmd.Stderr = out
+	buf, err := util.RunCmdOut(cmd)
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	return ioutil.WriteFile(output, buf, os.ModePerm)
 }

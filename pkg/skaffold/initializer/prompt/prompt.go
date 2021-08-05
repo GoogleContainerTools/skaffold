@@ -17,6 +17,7 @@ limitations under the License.
 package prompt
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -143,4 +144,28 @@ func ConfirmInitOptions(out io.Writer, config *latestV2.SkaffoldConfig) (bool, e
 
 	// invert response because "no" == done and "yes" == !done
 	return !response, nil
+}
+
+// ConfirmHydrationDirOverride acknowledges users that the render may change the hydrated-dir.
+func ConfirmHydrationDirOverride(stdin io.Reader) bool {
+	msg := "The hydration directory (flag `--hydrated-dir`) is not empty. " +
+		"Some files may be overridden or deleted during the manifest hydration."
+	return promptUntilYesOrNo(stdin, msg)
+}
+
+func promptUntilYesOrNo(stdin io.Reader, userMsg string) bool {
+	fmt.Printf("%v. Do you want to proceed (Y/n): ", userMsg)
+	for {
+		reader := bufio.NewReader(stdin)
+		input, _ := reader.ReadString('\n')
+		answer := strings.ToLower(strings.TrimSpace(input))
+		switch answer {
+		case "", "y", "yes":
+			return true
+		case "n", "no":
+			return false
+		default:
+			fmt.Println("Please enter 'Y' or 'n':")
+		}
+	}
 }

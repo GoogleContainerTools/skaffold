@@ -540,7 +540,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.AssumeYes,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"debug", "dev", "run"},
+		DefinedOn:     []string{"all"},
 		IsEnum:        true,
 	},
 	{
@@ -550,15 +550,6 @@ var flagRegistry = []Flag{
 		DefValue:      -1,
 		FlagAddMethod: "IntVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
-	},
-	{
-		Name:          "v2",
-		Usage:         "Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.",
-		Value:         &opts.Experimental,
-		DefValue:      false,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"apply", "debug", "deploy", "dev", "run"},
-		IsEnum:        true,
 	},
 	{
 		Name:          "digest-source",
@@ -572,6 +563,15 @@ var flagRegistry = []Flag{
 			"run": true,
 		},
 		IsEnum: true,
+	},
+	{
+		Name: "hydration-dir",
+		Usage: fmt.Sprintf("the directory to where the (kpt) hydration takes place. "+
+			"Default to a hidden directory %s.", constants.DefaultHydrationDir),
+		Value:         &opts.HydrationDir,
+		DefValue:      constants.DefaultHydrationDir,
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
 	},
 }
 
