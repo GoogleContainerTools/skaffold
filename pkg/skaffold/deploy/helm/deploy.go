@@ -67,7 +67,7 @@ import (
 
 var (
 	// versionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
-	versionRegex = regexp.MustCompile(`v(\d[\w.\-]+)`)
+	versionRegex = regexp.MustCompile(`v?(\d[\w.\-]+)`)
 
 	// helm3Version represents the version cut-off for helm3 behavior
 	helm3Version  = semver.MustParse("3.0.0-beta.0")
