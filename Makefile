@@ -65,11 +65,14 @@ ifneq "$(strip $(LOCAL))" "true"
 endif
 
 # when build for local development (`LOCAL=true make install` can skip license check)
-$(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT): addKpt $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(GOOS))))
 	$(eval tags = $(GO_BUILD_TAGS_$(GOOS)) $(GO_BUILD_TAGS_$(GOOS)_$(GOARCH)))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 \
 	    go build -gcflags="all=-N -l" -tags "$(tags)" -ldflags "$(ldflags)" -o $@ $(BUILD_PACKAGE)
+
+addKpt:
+	cp kpt-v1.0.0-beta.3/$(GOOS)/$(GOARCH)/kpt pkg/skaffold/render/embed/kpt
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)

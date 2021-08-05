@@ -42,6 +42,7 @@ func NewCmdFilter() *cobra.Command {
 	var renderFromBuildOutputFile flags.BuildOutputFileFlag
 
 	return NewCmd("filter").
+		WithKpt().
 		Hidden(). // internal command
 		WithDescription("[alpha] Filter and transform a set of Kubernetes manifests from stdin").
 		WithLongDescription("Unlike `render`, this command does not build artifacts.").

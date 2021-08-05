@@ -33,6 +33,7 @@ import (
 // NewCmdApply describes the CLI command to apply manifests to a cluster.
 func NewCmdApply() *cobra.Command {
 	return NewCmd("apply").
+		WithKpt().
 		WithDescription("Apply hydrated manifests to a cluster").
 		WithExample("Hydrate Kubernetes pod manifest first", "render --output rendered-pod.yaml").
 		WithExample("Then create resources on your cluster from that hydrated manifest", "apply rendered-pod.yaml").

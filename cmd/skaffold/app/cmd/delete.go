@@ -29,6 +29,7 @@ import (
 // NewCmdDelete describes the CLI command to delete deployed resources.
 func NewCmdDelete() *cobra.Command {
 	return NewCmd("delete").
+		WithKpt().
 		WithDescription("Delete the deployed application").
 		WithCommonFlags().
 		NoArgs(doDelete)

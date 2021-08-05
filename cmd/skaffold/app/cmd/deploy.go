@@ -36,6 +36,7 @@ var (
 // NewCmdDeploy describes the CLI command to deploy artifacts.
 func NewCmdDeploy() *cobra.Command {
 	return NewCmd("deploy").
+		WithKpt().
 		WithDescription("Deploy pre-built artifacts").
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Deploy those tags", "deploy --build-artifacts=tags.json").

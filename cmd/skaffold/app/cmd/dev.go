@@ -34,6 +34,7 @@ var doDev = runDev
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev() *cobra.Command {
 	return NewCmd("dev").
+		WithKpt().
 		WithDescription("Run a pipeline in development mode").
 		WithCommonFlags().
 		WithHouseKeepingMessages().

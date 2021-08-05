@@ -31,6 +31,7 @@ import (
 // NewCmdRun describes the CLI command to run a pipeline.
 func NewCmdRun() *cobra.Command {
 	return NewCmd("run").
+		WithKpt().
 		WithDescription("Run a pipeline").
 		WithLongDescription("Run a pipeline: build and test artifacts, tag them, update Kubernetes manifests and deploy to a cluster.").
 		WithExample("Build, test, deploy and tail the logs", "run --tail").

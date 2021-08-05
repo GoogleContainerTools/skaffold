@@ -20,9 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/embed"
 )
 
 // Builder is used to build cobra commands.
@@ -40,6 +43,7 @@ type Builder interface {
 	NoArgs(action func(context.Context, io.Writer) error) *cobra.Command
 	WithCommands(cmds ...*cobra.Command) *cobra.Command
 	WithPersistentFlagAdder(adder func(*pflag.FlagSet)) Builder
+	WithKpt() Builder
 }
 
 type builder struct {
@@ -53,6 +57,20 @@ func NewCmd(use string) Builder {
 			Use: use,
 		},
 	}
+}
+
+// WithKpt makes sure the `kpt` is executable, otherwise it installs a builtin `kpt`.
+func (b *builder) WithKpt() Builder {
+	_, err := exec.LookPath("kpt")
+	if err != nil {
+		e := embed.UseBuiltinKpt()
+		if e != nil {
+			b.cmd.RunE = func(_ *cobra.Command, args []string) error {
+				return e
+			}
+		}
+	}
+	return b
 }
 
 func (b *builder) WithDescription(description string) Builder {
