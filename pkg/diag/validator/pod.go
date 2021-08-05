@@ -71,14 +71,19 @@ var (
 
 // PodValidator implements the Validator interface for Pods
 type PodValidator struct {
-	k     kubernetes.Interface
-	recos []Recommender
+	k      kubernetes.Interface
+	recos  []Recommender
+	ignore map[string]struct{}
 }
 
-// NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface) *PodValidator {
+// NewPodValidator initializes a PodValidator ignoring pods mentioned.
+func NewPodValidator(k kubernetes.Interface, ignore []string) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs}
+	ignoreMap := map[string]struct{}{}
+	for _, s := range ignore {
+		ignoreMap[s] = struct{}{}
+	}
+	return &PodValidator{k: k, recos: rs, ignore: ignoreMap}
 }
 
 // Validate implements the Validate method for Validator interface
@@ -90,6 +95,9 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
+		if _, found := p.ignore[po.Name]; found {
+			continue
+		}
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
 		processPodEvents(eventsClient, po, ps)

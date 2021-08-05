@@ -84,6 +84,7 @@ type Monitor struct {
 	deadlineSeconds int
 	muteLogs        bool
 	seenResources   resource.Group
+	prevResources   resource.Group
 	singleRun       singleflight.Group
 	namespaces      *[]string
 	kubeContext     string
@@ -97,6 +98,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		labeller:        labeller,
 		deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
 		seenResources:   make(resource.Group),
+		prevResources:   make(resource.Group),
 		singleRun:       singleflight.Group{},
 		namespaces:      namespaces,
 		kubeContext:     cfg.GetKubeContext(),
@@ -130,6 +132,12 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 }
 
 func (s *Monitor) Reset() {
+	s.prevResources.Reset()
+	for k := range s.seenResources {
+		if parts := strings.Split(k, ":"); len(parts) > 0 {
+			s.prevResources.AddID(parts[0])
+		}
+	}
 	s.seenResources.Reset()
 }
 
@@ -142,7 +150,7 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	deployments := make([]*resource.Deployment, 0)
 	for _, n := range *s.namespaces {
 		newDeployments, err := getDeployments(ctx, client, n, s.labeller,
-			getDeadline(s.deadlineSeconds))
+			getDeadline(s.deadlineSeconds), s.prevResources)
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
@@ -185,15 +193,22 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
 	cancel()
+	// update seen all pods retrieved.
+	s.updateSeenResources(deployments)
 	return getSkaffoldDeployStatus(c, deployments)
 }
 
-func getDeployments(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
+func getDeployments(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration, prevPods resource.Group) ([]*resource.Deployment, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: l.RunIDSelector(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch deployments: %w", err)
+	}
+
+	var ignore []string
+	for k := range prevPods {
+		ignore = append(ignore, k)
 	}
 
 	deployments := make([]*resource.Deployment, len(deps.Items))
@@ -206,7 +221,7 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		}
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, ignore)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)
@@ -256,6 +271,12 @@ func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.D
 				return
 			}
 		}
+	}
+}
+
+func (s *Monitor) updateSeenResources(deployments []*resource.Deployment) {
+	for _, d := range deployments {
+		s.seenResources.AddPods(d)
 	}
 }
 

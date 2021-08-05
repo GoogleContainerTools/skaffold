@@ -221,7 +221,7 @@ func TestGetDeployments(t *testing.T) {
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(context.Background(), client, "test", labeller, 200*time.Second)
+			actual, err := getDeployments(context.Background(), client, "test", labeller, 200*time.Second, resource.Group{})
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
 				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}),
 				cmpopts.IgnoreInterfaces(struct{ diag.Diagnose }{}))
@@ -619,6 +619,48 @@ func TestPollDeployment(t *testing.T) {
 			pollDeploymentStatus(context.Background(), &statusConfig{}, dep)
 
 			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
+		})
+	}
+}
+
+func TestMonitorReset(t *testing.T) {
+	labeller := label.NewLabeller(true, nil, "run-id")
+	tests := []struct {
+		description  string
+		seen         resource.Group
+		prev         resource.Group
+		expectedPrev resource.Group
+	}{
+		{
+			description:  "1st dev iteration",
+			seen:         resource.Group{},
+			prev:         resource.Group{},
+			expectedPrev: resource.Group{},
+		},
+		{
+			description: "nth dev iteration",
+			prev: resource.Group{
+				"pod1": {},
+				"dep":  {},
+			},
+			seen: resource.Group{
+				"pod2:ns:pod":       {},
+				"dep:ns:deployment": {},
+			},
+			expectedPrev: resource.Group{
+				"pod2": {},
+				"dep":  {},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			m := NewStatusMonitor(&statusConfig{}, labeller, &[]string{"test"})
+			m.seenResources = test.seen
+			m.prevResources = test.prev
+			m.Reset()
+			t.CheckDeepEqual(test.expectedPrev, m.prevResources)
+			t.CheckDeepEqual(resource.Group{}, m.seenResources)
 		})
 	}
 }

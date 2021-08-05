@@ -56,10 +56,21 @@ var (
 	}
 )
 
-type Group map[string]*Deployment
+type Group map[string]struct{}
 
 func (r Group) Add(d *Deployment) {
-	r[d.ID()] = d
+	r[d.ID()] = struct{}{}
+}
+
+func (r Group) AddPods(d *Deployment) {
+	for _, p := range d.pods {
+		id := fmt.Sprintf("%s:%s:%s", p.Name(), p.Namespace(), p.Kind())
+		r[id] = struct{}{}
+	}
+}
+
+func (r Group) AddID(id string) {
+	r[id] = struct{}{}
 }
 
 func (r Group) Contains(d *Deployment) bool {
