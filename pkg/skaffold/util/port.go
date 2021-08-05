@@ -99,8 +99,10 @@ func (f *PortSet) List() []int {
 //
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
 func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
+	logrus.Tracef("looking for port: %s:%d", address, port)
 	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
+			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 
@@ -135,6 +137,7 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 
 func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
 	if alreadySet := usedPorts.LoadOrSet(p); alreadySet {
+		logrus.Tracef("port %d already allocated", p)
 		return false
 	}
 
@@ -144,18 +147,28 @@ func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
 func IsPortFree(address string, p int) bool {
 	// Ensure the port is available across all interfaces
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
-	if err != nil || l == nil {
+	if err != nil {
+		logrus.Tracef("port INADDR_ANY:%d already bound: %v", p, err)
+		return false
+	} else if l == nil {
+		logrus.Tracef("port INADDR_ANY:%d nil listener", p)
 		return false
 	}
 	l.Close()
+	logrus.Tracef("was able to obtain INADDR_ANY:%d", p)
 
 	if address != Any {
 		// Ensure the port is available on the specific interface too
 		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p))
-		if err != nil || l == nil {
+		if err != nil {
+			logrus.Tracef("port %s:%d already bound: %v", address, p, err)
+			return false
+		} else if l == nil {
+			logrus.Tracef("port %s:%d nil listener", address, p)
 			return false
 		}
 		l.Close()
+		logrus.Tracef("was able to obtain %s:%d", address, p)
 	}
 	return true
 }
