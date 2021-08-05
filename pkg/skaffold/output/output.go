@@ -27,7 +27,7 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 )
 
-const TimestampFormat = "2006-01-02 15:04:05"
+const timestampFormat = "2006-01-02 15:04:05"
 
 type skaffoldWriter struct {
 	MainWriter  io.Writer
@@ -41,7 +41,7 @@ type skaffoldWriter struct {
 func (s skaffoldWriter) Write(p []byte) (int, error) {
 	written := 0
 	if s.timestamps {
-		t, err := s.MainWriter.Write([]byte(time.Now().Format(TimestampFormat) + " "))
+		t, err := s.MainWriter.Write([]byte(time.Now().Format(timestampFormat) + " "))
 		if err != nil {
 			return t, err
 		}
