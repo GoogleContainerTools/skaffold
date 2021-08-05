@@ -86,7 +86,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	if err != nil {
 		// `waitForDependencies` only returns `context.Canceled` error
 		event.BuildCanceled(a.ImageName)
-		eventV2.BuildCanceled(a.ImageName, fmt.Errorf("one or more artifact builds failed"))
+		eventV2.BuildCanceled(a.ImageName, err)
 		return err
 	}
 	release := s.concurrencySem.acquire()
@@ -113,7 +113,11 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
-		eventV2.BuildFailed(a.ImageName, err)
+		if ctx.Err() == context.Canceled {
+			eventV2.BuildCanceled(a.ImageName, err)
+		} else {
+			eventV2.BuildFailed(a.ImageName, err)
+		}
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
