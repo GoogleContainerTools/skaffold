@@ -147,7 +147,7 @@ naming option.
 By using this option, the image name is not tied to the Go import path. If the
 Skaffold
 [default repo](https://skaffold.dev/docs/environment/image-registries/) value
-is `gcr.io/k8s-skaffold` and tne value of the `image` field in `skaffold.yaml`
+is `gcr.io/k8s-skaffold` and the value of the `image` field in `skaffold.yaml`
 is `skaffold`, the resulting image name will be `gcr.io/k8s-skaffold/skaffold`.
 
 It is still necessary to resolve the Go import path for the underlying ko
@@ -472,7 +472,7 @@ maps directly to this value.
     file?
 
     Suggest yes, to make Skaffold a compelling choice for Go developers.
-    
+
     __Not Yet Resolved__
 
 ## Approach

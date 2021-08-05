@@ -38,29 +38,28 @@ import (
 // the image name to the out io.Writer and returns the image identifier.
 func TestBuild(t *testing.T) {
 	tests := []struct {
-		description     string
-		pushImages      bool
-		imageIdentifier string
-		ref             string
-		artifact        *latestV1.Artifact
+		description             string
+		pushImages              bool
+		expectedRef             string
+		expectedImageIdentifier string
 	}{
 		{
-			description:     "pushed image with tag",
-			pushImages:      true,
-			imageIdentifier: "tag1",
-			ref:             "registry.example.com/repo/image1:tag1",
+			description:             "pushed image with tag",
+			pushImages:              true,
+			expectedRef:             "registry.example.com/repo/image1:tag1",
+			expectedImageIdentifier: "tag1",
 		},
 		{
-			description:     "sideloaded image",
-			pushImages:      false,
-			imageIdentifier: "ab737430e80b",
-			ref:             "registry.example.com/repo/image2:any",
+			description:             "sideloaded image",
+			pushImages:              false,
+			expectedRef:             "registry.example.com/repo/image2:any",
+			expectedImageIdentifier: "ab737430e80b",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			importPath := "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko" // this package
-			b := stubKoArtifactBuilder(test.ref, test.imageIdentifier, test.pushImages, importPath)
+			b := stubKoArtifactBuilder(test.expectedRef, test.expectedImageIdentifier, test.pushImages, importPath)
 
 			artifact := &latestV1.Artifact{
 				ArtifactType: latestV1.ArtifactType{
@@ -68,45 +67,44 @@ func TestBuild(t *testing.T) {
 				},
 			}
 			var outBuffer bytes.Buffer
-			gotImageIdentifier, err := b.Build(context.Background(), &outBuffer, artifact, test.ref)
+			gotImageIdentifier, err := b.Build(context.Background(), &outBuffer, artifact, test.expectedRef)
 			t.CheckNoError(err)
 
 			imageNameOut := strings.TrimSuffix(outBuffer.String(), "\n")
-			t.CheckDeepEqual(test.ref, imageNameOut)
-			t.CheckDeepEqual(test.imageIdentifier, gotImageIdentifier)
+			t.CheckDeepEqual(test.expectedRef, imageNameOut)
+			t.CheckDeepEqual(test.expectedImageIdentifier, gotImageIdentifier)
 		})
 	}
 }
 
 func Test_getImportPath(t *testing.T) {
 	tests := []struct {
-		description string
-		importPath  string
-		artifact    *latestV1.Artifact
+		description        string
+		artifact           *latestV1.Artifact
+		expectedImportPath string
 	}{
 		{
 			description: "image name is ko-prefixed full Go import path",
-			importPath:  "ko://git.example.com/org/foo",
 			artifact: &latestV1.Artifact{
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
 				ImageName: "ko://git.example.com/org/foo",
 			},
+			expectedImportPath: "ko://git.example.com/org/foo",
 		},
 		{
 			description: "plain image name",
-			importPath:  "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
 			artifact: &latestV1.Artifact{
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
 				ImageName: "foo",
 			},
+			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
 		},
 		{
 			description: "plain image name with workspace directory",
-			importPath:  "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker", // this package + "../docker"
 			artifact: &latestV1.Artifact{
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
@@ -114,6 +112,7 @@ func Test_getImportPath(t *testing.T) {
 				ImageName: "bar",
 				Workspace: "../docker",
 			},
+			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker", // this package + "../docker"
 		},
 	}
 	for _, test := range tests {
@@ -125,7 +124,7 @@ func Test_getImportPath(t *testing.T) {
 			gotImportPath, err := getImportPath(test.artifact.ImageName, koBuilder)
 			t.CheckNoError(err)
 
-			t.CheckDeepEqual(test.importPath, gotImportPath)
+			t.CheckDeepEqual(test.expectedImportPath, gotImportPath)
 		})
 	}
 }
