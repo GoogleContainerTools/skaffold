@@ -265,6 +265,7 @@ func TestNewBuilder(t *testing.T) {
 		shouldErr     bool
 		expectedPush  bool
 		cluster       config.Cluster
+		pushFlag      config.BoolOrUndefined
 		localBuild    latestV1.LocalBuild
 		localDockerFn func(docker.Config) (docker.LocalDaemon, error)
 	}{
@@ -276,7 +277,7 @@ func TestNewBuilder(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "pushImages becomes cluster.PushImages when local:push is not defined",
+			description: "pushImages becomes cluster.PushImages when local:push and --push is not defined",
 			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
@@ -284,13 +285,35 @@ func TestNewBuilder(t *testing.T) {
 			expectedPush: true,
 		},
 		{
-			description: "pushImages defined in config (local:push)",
+			description: "pushImages becomes config (local:push) when --push is not defined",
 			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			cluster: config.Cluster{PushImages: true},
 			localBuild: latestV1.LocalBuild{
 				Push: util.BoolPtr(false),
+			},
+			shouldErr:    false,
+			expectedPush: false,
+		},
+		{
+			description: "pushImages defined in flags (--push=false), ignores cluster.PushImages",
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
+			},
+			cluster:      config.Cluster{PushImages: true},
+			pushFlag:     config.NewBoolOrUndefined(util.BoolPtr(false)),
+			shouldErr:    false,
+			expectedPush: false,
+		},
+		{
+			description: "pushImages defined in flags (--push=false), ignores config (local:push)",
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
+			},
+			pushFlag: config.NewBoolOrUndefined(util.BoolPtr(false)),
+			localBuild: latestV1.LocalBuild{
+				Push: util.BoolPtr(true),
 			},
 			shouldErr:    false,
 			expectedPush: false,
@@ -303,8 +326,9 @@ func TestNewBuilder(t *testing.T) {
 			}
 
 			builder, err := NewBuilder(&mockBuilderContext{
-				local:   test.localBuild,
-				cluster: test.cluster,
+				local:    test.localBuild,
+				cluster:  test.cluster,
+				pushFlag: test.pushFlag,
 			}, &test.localBuild)
 
 			t.CheckError(test.shouldErr, err)
@@ -413,6 +437,7 @@ type mockBuilderContext struct {
 	local                 latestV1.LocalBuild
 	mode                  config.RunMode
 	cluster               config.Cluster
+	pushFlag              config.BoolOrUndefined
 	artifactStore         build.ArtifactStore
 	sourceDepsResolver    func() graph.SourceDependenciesCache
 }
@@ -423,6 +448,10 @@ func (c *mockBuilderContext) Mode() config.RunMode {
 
 func (c *mockBuilderContext) GetCluster() config.Cluster {
 	return c.cluster
+}
+
+func (c *mockBuilderContext) PushImages() config.BoolOrUndefined {
+	return c.pushFlag
 }
 
 func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore {
