@@ -91,8 +91,8 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, e
 	var pushImages bool
 	switch {
 	case pushFlag.Value() != nil:
-		logrus.Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
 		pushImages = *pushFlag.Value()
+		logrus.Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
 	case buildCfg.Push == nil:
 		pushImages = cluster.PushImages
 		logrus.Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
