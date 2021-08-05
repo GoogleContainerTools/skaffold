@@ -114,6 +114,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		if ctx.Err() == context.Canceled {
+			output.Yellow.Fprintf(w, "Canceled build for %s\n", a.ImageName)
 			eventV2.BuildCanceled(a.ImageName, err)
 		} else {
 			eventV2.BuildFailed(a.ImageName, err)
