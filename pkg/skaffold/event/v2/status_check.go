@@ -23,15 +23,15 @@ import (
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
-//func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
-//	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
-//		resourceStatusCheckEventFailed(r, ae)
-//		return
-//	}
-//	resourceStatusCheckEventSucceeded(r)
-//}
+func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
+	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+		resourceStatusCheckEventFailed(r, ae)
+		return
+	}
+	resourceStatusCheckEventSucceeded(r)
+}
 
-func ResourceStatusCheckEventCompleted(r string, message string, ae proto.ActionableErr) {
+func ResourceStatusCheckEventCompletedMessage(r string, message string, ae proto.ActionableErr) {
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		resourceStatusCheckEventFailed(r, ae)
 		return
@@ -41,6 +41,7 @@ func ResourceStatusCheckEventCompleted(r string, message string, ae proto.Action
 		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		SubtaskId: r,
 		Message:   message,
+		Level:     -1,
 	})
 }
 
@@ -66,19 +67,19 @@ func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
 	})
 }
 
-//func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
-//	handler.handleStatusCheckSubtaskEvent(&proto.StatusCheckSubtaskEvent{
-//		Id:            r,
-//		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
-//		Resource:      r,
-//		Status:        InProgress,
-//		Message:       ae.Message,
-//		StatusCode:    ae.ErrCode,
-//		ActionableErr: &ae,
-//	})
-//}
+func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
+	handler.handleStatusCheckSubtaskEvent(&proto.StatusCheckSubtaskEvent{
+		Id:            r,
+		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
+		Resource:      r,
+		Status:        InProgress,
+		Message:       ae.Message,
+		StatusCode:    ae.ErrCode,
+		ActionableErr: &ae,
+	})
+}
 
-func ResourceStatusCheckEventUpdated(r string, message string, ae proto.ActionableErr) {
+func ResourceStatusCheckEventUpdatedMessage(r string, message string, ae proto.ActionableErr) {
 	handler.handleStatusCheckSubtaskEvent(&proto.StatusCheckSubtaskEvent{
 		Id:            r,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
@@ -92,6 +93,7 @@ func ResourceStatusCheckEventUpdated(r string, message string, ae proto.Actionab
 		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		SubtaskId: r,
 		Message:   fmt.Sprintf("%s %s", message, ae.Message),
+		Level:     -1,
 	})
 }
 

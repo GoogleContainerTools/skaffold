@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -285,9 +286,8 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 		return
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
-	depMsg := fmt.Sprintf("%s %s: %s", tabHeader, r, r.StatusMessage())
-	eventV2.ResourceStatusCheckEventCompleted(r.String(), depMsg, sErrors.V2fromV1(ae))
-	//out, _ = output.WithEventContext(out, constants.Deploy, r.String())
+	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
+	out, _ = output.WithEventContext(out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -332,9 +332,8 @@ func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer)
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
-			depMsg := fmt.Sprintf("%s %s: %s", tabHeader, r, r.StatusMessage())
-			eventV2.ResourceStatusCheckEventUpdated(r.String(), depMsg, sErrors.V2fromV1(ae))
-			//out, _ := output.WithEventContext(out, constants.Deploy, r.String())
+			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
+			out, _ := output.WithEventContext(out, constants.Deploy, r.String())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}
