@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -113,7 +114,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
-		if ctx.Err() == context.Canceled {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			output.Yellow.Fprintf(w, "Canceled build for %s\n", a.ImageName)
 			eventV2.BuildCanceled(a.ImageName, err)
 		} else {
