@@ -595,9 +595,9 @@ func validateCustomTest(tcs []*latestV1.TestCase) (errs []error) {
 func wrapWithContext(config *parser.SkaffoldConfigEntry, errs ...error) []error {
 	var id string
 	if config.Metadata.Name != "" {
-		id = fmt.Sprintf("module %q", config.Metadata.Name)
+		id = fmt.Sprintf("in module %q", config.Metadata.Name)
 	} else {
-		id = fmt.Sprintf("unnamed config at index %d", config.SourceIndex)
+		id = fmt.Sprintf("in unnamed config at index %d", config.SourceIndex)
 	}
 	for i := range errs {
 		errs[i] = errors.Wrapf(errs[i], "source: %s, %s", config.SourceFile, id)
