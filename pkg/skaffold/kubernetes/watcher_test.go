@@ -61,18 +61,18 @@ func (h *hasName) Select(pod *v1.Pod) bool {
 func TestPodWatcher(t *testing.T) {
 	testutil.Run(t, "need to register first", func(t *testutil.T) {
 		watcher := NewPodWatcher(&anyPod{})
-		cleanup, err := watcher.Start([]string{"ns"})
+		cleanup, err := watcher.Start("", []string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("no receiver was registered", err)
 	})
 
 	testutil.Run(t, "fail to get client", func(t *testutil.T) {
-		t.Override(&client.Client, func() (kubernetes.Interface, error) { return nil, errors.New("unable to get client") })
+		t.Override(&client.Client, func(string) (kubernetes.Interface, error) { return nil, errors.New("unable to get client") })
 
 		watcher := NewPodWatcher(&anyPod{})
 		watcher.Register(make(chan PodEvent))
-		cleanup, err := watcher.Start([]string{"ns"})
+		cleanup, err := watcher.Start("", []string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("unable to get client", err)
@@ -80,7 +80,7 @@ func TestPodWatcher(t *testing.T) {
 
 	testutil.Run(t, "fail to watch pods", func(t *testutil.T) {
 		clientset := fake.NewSimpleClientset()
-		t.Override(&client.Client, func() (kubernetes.Interface, error) { return clientset, nil })
+		t.Override(&client.Client, func(string) (kubernetes.Interface, error) { return clientset, nil })
 
 		clientset.Fake.PrependWatchReactor("pods", func(action k8stesting.Action) (handled bool, ret watch.Interface, err error) {
 			return true, nil, errors.New("unable to watch")
@@ -88,7 +88,7 @@ func TestPodWatcher(t *testing.T) {
 
 		watcher := NewPodWatcher(&anyPod{})
 		watcher.Register(make(chan PodEvent))
-		cleanup, err := watcher.Start([]string{"ns"})
+		cleanup, err := watcher.Start("", []string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("unable to watch", err)
@@ -96,7 +96,7 @@ func TestPodWatcher(t *testing.T) {
 
 	testutil.Run(t, "filter 3 events", func(t *testutil.T) {
 		clientset := fake.NewSimpleClientset()
-		t.Override(&client.Client, func() (kubernetes.Interface, error) { return clientset, nil })
+		t.Override(&client.Client, func(string) (kubernetes.Interface, error) { return clientset, nil })
 
 		podSelector := &hasName{
 			validNames: []string{"pod1", "pod2", "pod3"},
@@ -104,7 +104,7 @@ func TestPodWatcher(t *testing.T) {
 		events := make(chan PodEvent)
 		watcher := NewPodWatcher(podSelector)
 		watcher.Register(events)
-		cleanup, err := watcher.Start([]string{"ns1", "ns2"})
+		cleanup, err := watcher.Start("", []string{"ns1", "ns2"})
 		defer cleanup()
 		t.CheckNoError(err)
 

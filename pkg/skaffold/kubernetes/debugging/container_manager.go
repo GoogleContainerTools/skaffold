@@ -43,9 +43,10 @@ type ContainerManager struct {
 	events      chan kubernetes.PodEvent
 	stopWatcher func()
 	namespaces  *[]string
+	kubeContext string
 }
 
-func NewContainerManager(podSelector kubernetes.PodSelector, namespaces *[]string) *ContainerManager {
+func NewContainerManager(podSelector kubernetes.PodSelector, namespaces *[]string, kubeContext string) *ContainerManager {
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
 	return &ContainerManager{
@@ -54,6 +55,7 @@ func NewContainerManager(podSelector kubernetes.PodSelector, namespaces *[]strin
 		events:      make(chan kubernetes.PodEvent),
 		stopWatcher: func() {},
 		namespaces:  namespaces,
+		kubeContext: kubeContext,
 	}
 }
 
@@ -64,7 +66,7 @@ func (d *ContainerManager) Start(ctx context.Context) error {
 	}
 
 	d.podWatcher.Register(d.events)
-	stopWatcher, err := d.podWatcher.Start(*d.namespaces)
+	stopWatcher, err := d.podWatcher.Start(d.kubeContext, *d.namespaces)
 	if err != nil {
 		return err
 	}

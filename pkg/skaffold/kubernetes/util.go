@@ -155,8 +155,8 @@ func parseImagesFromYaml(obj interface{}) []string {
 
 // FailIfClusterIsNotReachable checks that Kubernetes is reachable.
 // This gives a clear early error when the cluster can't be reached.
-func FailIfClusterIsNotReachable() error {
-	c, err := client.Client()
+func FailIfClusterIsNotReachable(kubeContext string) error {
+	c, err := client.Client(kubeContext)
 	if err != nil {
 		return err
 	}

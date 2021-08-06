@@ -117,7 +117,7 @@ func TestSyncHooks(t *testing.T) {
 	})
 }
 
-func fakeKubernetesClient() (kubernetes.Interface, error) {
+func fakeKubernetesClient(string) (kubernetes.Interface, error) {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod1",

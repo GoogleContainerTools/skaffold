@@ -124,7 +124,7 @@ func TestGetRestClientConfig(t *testing.T) {
 	testutil.Run(t, "valid context", func(t *testutil.T) {
 		resetKubeConfig(t, validKubeConfig)
 
-		cfg, err := GetRestClientConfig()
+		cfg, err := GetRestClientConfig("")
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://foo.com", cfg.Host)
@@ -134,7 +134,7 @@ func TestGetRestClientConfig(t *testing.T) {
 		resetKubeConfig(t, validKubeConfig)
 
 		kubeContext = clusterBarContext
-		cfg, err := GetRestClientConfig()
+		cfg, err := GetRestClientConfig("")
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)
@@ -143,7 +143,7 @@ func TestGetRestClientConfig(t *testing.T) {
 	testutil.Run(t, "invalid context", func(t *testutil.T) {
 		resetKubeConfig(t, "invalid")
 
-		_, err := GetRestClientConfig()
+		_, err := GetRestClientConfig("")
 
 		t.CheckError(true, err)
 	})
@@ -155,7 +155,7 @@ func TestGetRestClientConfig(t *testing.T) {
 		t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
 		resetConfig()
 
-		cfg, err := GetRestClientConfig()
+		cfg, err := GetRestClientConfig("")
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)
@@ -164,7 +164,7 @@ func TestGetRestClientConfig(t *testing.T) {
 			t.Error(err)
 		}
 
-		cfg, err = GetRestClientConfig()
+		cfg, err = GetRestClientConfig("")
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)
@@ -173,10 +173,10 @@ func TestGetRestClientConfig(t *testing.T) {
 	testutil.Run(t, "change context after first execution", func(t *testutil.T) {
 		resetKubeConfig(t, validKubeConfig)
 
-		_, err := GetRestClientConfig()
+		_, err := GetRestClientConfig("")
 		t.CheckNoError(err)
 		kubeContext = clusterBarContext
-		cfg, err := GetRestClientConfig()
+		cfg, err := GetRestClientConfig("")
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)

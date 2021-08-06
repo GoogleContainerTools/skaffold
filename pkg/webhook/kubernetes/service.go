@@ -34,7 +34,7 @@ import (
 // CreateService creates a service for the deployment to bind to
 // and returns the external IP of the service
 func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -83,7 +83,7 @@ func serviceName(prNumber int) string {
 }
 
 func getService(svc *v1.Service) (*v1.Service, error) {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

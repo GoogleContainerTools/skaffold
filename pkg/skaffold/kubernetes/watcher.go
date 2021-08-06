@@ -33,7 +33,7 @@ import (
 type PodWatcher interface {
 	Register(receiver chan<- PodEvent)
 	Deregister(receiver chan<- PodEvent)
-	Start(ns []string) (func(), error)
+	Start(kubeContext string, ns []string) (func(), error)
 }
 
 // podWatcher is a pod watcher for multiple namespaces.
@@ -67,7 +67,7 @@ func (w *podWatcher) Deregister(receiver chan<- PodEvent) {
 	w.receiverLock.Unlock()
 }
 
-func (w *podWatcher) Start(namespaces []string) (func(), error) {
+func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), error) {
 	if len(w.receivers) == 0 {
 		return func() {}, errors.New("no receiver was registered")
 	}
@@ -79,7 +79,7 @@ func (w *podWatcher) Start(namespaces []string) (func(), error) {
 		}
 	}
 
-	kubeclient, err := client.Client()
+	kubeclient, err := client.Client(kubeContext)
 	if err != nil {
 		return func() {}, fmt.Errorf("getting k8s client: %w", err)
 	}
