@@ -35,6 +35,7 @@ type run struct {
 	input      []byte
 	output     []byte
 	env        []string
+	dir        *string
 	err        error
 	pipeOutput bool
 }
@@ -78,6 +79,10 @@ func CmdRunErr(command string, err error) *FakeCmd {
 
 func CmdRunOut(command string, output string) *FakeCmd {
 	return newFakeCmd().AndRunOut(command, output)
+}
+
+func CmdRunDirOut(command string, dir string, output string) *FakeCmd {
+	return newFakeCmd().AndRunDirOut(command, dir, output)
 }
 
 func CmdRunOutErr(command string, output string, err error) *FakeCmd {
@@ -139,6 +144,14 @@ func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
 	})
 }
 
+func (c *FakeCmd) AndRunDirOut(command string, dir string, output string) *FakeCmd {
+	return c.addRun(run{
+		command: command,
+		dir:     &dir,
+		output:  []byte(output),
+	})
+}
+
 func (c *FakeCmd) AndRunOutErr(command string, output string, err error) *FakeCmd {
 	return c.addRun(run{
 		command: command,
@@ -168,6 +181,7 @@ func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	}
 
 	c.assertCmdEnv(r.env, cmd.Env)
+	c.assertCmdDir(r.dir, cmd.Dir)
 
 	if err := c.assertInput(cmd, r, command); err != nil {
 		return nil, err
@@ -250,6 +264,18 @@ func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
 		if _, ok := envs[e]; !ok {
 			c.t.Errorf("expected env variable with value %q", e)
 		}
+	}
+}
+
+// assertCmdDir ensures that actualDir contains matches requiredDir
+func (c *FakeCmd) assertCmdDir(requiredDir *string, actualDir string) {
+	if requiredDir == nil {
+		return
+	}
+	c.t.Helper()
+
+	if *requiredDir != actualDir {
+		c.t.Errorf("expected: %s. Got: %s", *requiredDir, actualDir)
 	}
 }
 
