@@ -71,19 +71,15 @@ var (
 
 // PodValidator implements the Validator interface for Pods
 type PodValidator struct {
-	k      kubernetes.Interface
-	recos  []Recommender
-	ignore map[string]struct{}
+	k        kubernetes.Interface
+	ownerRef metav1.OwnerReference
+	recos    []Recommender
 }
 
-// NewPodValidator initializes a PodValidator ignoring pods mentioned.
-func NewPodValidator(k kubernetes.Interface, ignore []string) *PodValidator {
+// NewPodValidator initializes a PodValidator
+func NewPodValidator(k kubernetes.Interface, ownerRef metav1.OwnerReference) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	ignoreMap := map[string]struct{}{}
-	for _, s := range ignore {
-		ignoreMap[s] = struct{}{}
-	}
-	return &PodValidator{k: k, recos: rs, ignore: ignoreMap}
+	return &PodValidator{k: k, recos: rs, ownerRef: ownerRef}
 }
 
 // Validate implements the Validate method for Validator interface
@@ -95,7 +91,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
-		if _, found := p.ignore[po.Name]; found {
+		if !isPodOwnedBy(po, p.ownerRef) {
 			continue
 		}
 		ps := p.getPodStatus(&po)
@@ -421,4 +417,16 @@ func getPodLogs(po *v1.Pod, c string, sc proto.StatusCode) (proto.StatusCode, []
 func executeCLI(cmdName string, args []string) ([]byte, error) {
 	cmd := exec.Command(cmdName, args...)
 	return cmd.CombinedOutput()
+}
+
+func isPodOwnedBy(po v1.Pod, ownerRef metav1.OwnerReference) bool {
+	if ownerRef.UID == "" {
+		return true
+	}
+	for _, ref := range po.OwnerReferences {
+		if ref.UID == ownerRef.UID {
+			return true
+		}
+	}
+	return false
 }

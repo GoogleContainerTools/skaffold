@@ -44,8 +44,8 @@ func TestRun(t *testing.T) {
 	after := before.Add(3 * time.Second)
 	tests := []struct {
 		description string
+		ownerRef    metav1.OwnerReference
 		pods        []*v1.Pod
-		ignore      map[string]struct{}
 		logOutput   mockLogOutput
 		events      []v1.Event
 		expected    []Resource
@@ -726,13 +726,16 @@ func TestRun(t *testing.T) {
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_EXEC_ERROR,
 				}, []string{"[foo foo-container] standard_init_linux.go:219: exec user process caused: exec format error"})},
 		},
-		// ignore pods
+
+		// Check to diagnose pods with owner references
 		{
-			description: "ignore pods returns no resources.",
+			description: "pods owned by a uuid",
+			ownerRef:    metav1.OwnerReference{UID: "foo"},
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "test",
+					Name:            "foo",
+					Namespace:       "test",
+					OwnerReferences: []metav1.OwnerReference{{UID: "none"}},
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
@@ -748,13 +751,6 @@ func TestRun(t *testing.T) {
 						},
 					}},
 			}},
-			ignore: map[string]struct{}{
-				"foo": {},
-			},
-			logOutput: mockLogOutput{
-				output: []byte("standard_init_linux.go:219: exec user process caused: exec format error"),
-			},
-			expected: nil,
 		},
 	}
 
@@ -775,7 +771,7 @@ func TestRun(t *testing.T) {
 			rs = append(rs, &v1.EventList{Items: test.events})
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 
-			actual, err := testPodValidator(f, test.ignore).Validate(context.Background(), "test", metav1.ListOptions{})
+			actual, err := testPodValidator(f, test.ownerRef).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
@@ -790,9 +786,9 @@ func TestRun(t *testing.T) {
 }
 
 // testPodValidator initializes a PodValidator like NewPodValidator except for loading custom rules
-func testPodValidator(k kubernetes.Interface, m map[string]struct{}) *PodValidator {
+func testPodValidator(k kubernetes.Interface, ownerRef metav1.OwnerReference) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs, ignore: m}
+	return &PodValidator{k: k, recos: rs, ownerRef: ownerRef}
 }
 
 func TestPodConditionChecks(t *testing.T) {
