@@ -33,8 +33,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
-	return func() (kubernetes.Interface, error) {
+func mockClient(m kubernetes.Interface) func(string) (kubernetes.Interface, error) {
+	return func(string) (kubernetes.Interface, error) {
 		return m, nil
 	}
 }
@@ -105,7 +105,7 @@ func TestTopLevelOwnerKey(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(test.objects...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual := TopLevelOwnerKey(context.Background(), test.initialObject, test.kind)
+			actual := TopLevelOwnerKey(context.Background(), test.initialObject, "", test.kind)
 
 			t.CheckDeepEqual(test.expected, actual)
 		})
@@ -281,7 +281,7 @@ func TestOwnerMetaObject(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(test.objects...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := ownerMetaObject(context.Background(), "ns", test.or)
+			actual, err := ownerMetaObject(context.Background(), "ns", "", test.or)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

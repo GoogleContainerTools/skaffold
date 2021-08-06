@@ -98,7 +98,7 @@ func TestContainerRun(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.cmd)
-			t.Override(&kubernetesclient.Client, func() (kubernetes.Interface, error) {
+			t.Override(&kubernetesclient.Client, func(string) (kubernetes.Interface, error) {
 				return fakeclient.NewSimpleClientset(test.objects...), nil
 			})
 			h := containerHook{

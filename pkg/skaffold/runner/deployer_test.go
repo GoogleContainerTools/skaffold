@@ -175,7 +175,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 		t.Override(&component.NewAccessor, func(portforward.Config, string, *pkgkubectl.CLI, kubernetes.PodSelector, label.Config, *[]string) access.Accessor {
 			return &access.NoopAccessor{}
 		})
-		t.Override(&component.NewDebugger, func(config.RunMode, kubernetes.PodSelector, *[]string) debug.Debugger {
+		t.Override(&component.NewDebugger, func(config.RunMode, kubernetes.PodSelector, *[]string, string) debug.Debugger {
 			return &debug.NoopDebugger{}
 		})
 		t.Override(&component.NewMonitor, func(k8sstatus.Config, string, *label.DefaultLabeller, *[]string) status.Monitor {

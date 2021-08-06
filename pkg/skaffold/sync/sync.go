@@ -288,7 +288,7 @@ func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
 	if len(item.Copy) > 0 {
 		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
 
-		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, *s.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, *s.namespaces, s.kubectl.KubeContext); err != nil {
 			return fmt.Errorf("copying files: %w", err)
 		}
 	}
@@ -296,7 +296,7 @@ func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
 	if len(item.Delete) > 0 {
 		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
 
-		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, *s.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, *s.namespaces, s.kubectl.KubeContext); err != nil {
 			return fmt.Errorf("deleting files: %w", err)
 		}
 	}
@@ -304,14 +304,14 @@ func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
 	return nil
 }
 
-func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd, namespaces []string, kubeContext string) error {
 	if len(files) == 0 {
 		return nil
 	}
 
 	errs, ctx := errgroup.WithContext(ctx)
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}

@@ -235,11 +235,11 @@ func TestPortForwardArgs(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			t.Override(&findNewestPodForSvc, func(ctx context.Context, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
+			t.Override(&findNewestPodForSvc, func(ctx context.Context, kCtx, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
 				return test.servicePod, test.servicePort, test.serviceErr
 			})
 
-			args := portForwardArgs(ctx, test.input)
+			args := portForwardArgs(ctx, "", test.input)
 			t.CheckDeepEqual(test.result, args)
 		})
 	}
@@ -416,11 +416,11 @@ func TestFindNewestPodForService(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			t.Override(&client.Client, func() (kubernetes.Interface, error) {
+			t.Override(&client.Client, func(string) (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(test.clientResources...), test.clientErr
 			})
 
-			pod, port, err := findNewestPodForService(ctx, "", test.serviceName, schemautil.FromInt(test.servicePort))
+			pod, port, err := findNewestPodForService(ctx, "", "", test.serviceName, schemautil.FromInt(test.servicePort))
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPod, pod)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPort, port)
 		})
