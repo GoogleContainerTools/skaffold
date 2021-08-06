@@ -956,6 +956,29 @@
       "description": "describes a dependency on another skaffold configuration.",
       "x-intellij-html-description": "describes a dependency on another skaffold configuration."
     },
+    "ContainerHook": {
+      "required": [
+        "command"
+      ],
+      "properties": {
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "command to execute.",
+          "x-intellij-html-description": "command to execute.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "command"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes a lifecycle hook definition to execute on a container. The container name is inferred from the scope in which this hook is defined.",
+      "x-intellij-html-description": "describes a lifecycle hook definition to execute on a container. The container name is inferred from the scope in which this hook is defined."
+    },
     "CustomArtifact": {
       "properties": {
         "buildCommand": {

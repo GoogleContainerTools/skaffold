@@ -286,7 +286,9 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": deployerName,
 	})
-
+	if err := kptInitFunc(ctx, out, k); err != nil {
+		return err
+	}
 	cmd := exec.CommandContext(ctx, "kpt", k.kptArgs("live", "destroy", k.applyDir)...)
 	cmd.Stdout = out
 	cmd.Stderr = out

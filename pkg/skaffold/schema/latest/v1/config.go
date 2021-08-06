@@ -566,7 +566,7 @@ type KubectlDeploy struct {
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -1397,7 +1397,7 @@ type ContainerHook struct {
 // NamedContainerHook describes a lifecycle hook definition to execute on a named container.
 type NamedContainerHook struct {
 	// ContainerHook describes a lifecycle hook definition to execute on a container.
-	ContainerHook `yaml:",inline"`
+	ContainerHook `yaml:",inline" yamlTags:"skipTrim"`
 	// PodName is the name of the pod to execute the command in.
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.
