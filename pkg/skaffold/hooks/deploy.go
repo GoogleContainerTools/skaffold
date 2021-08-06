@@ -23,11 +23,12 @@ import (
 	"strings"
 	"sync"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func NewDeployRunner(cli *kubectl.CLI, d v1.DeployHooks, namespaces []string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
