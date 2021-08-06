@@ -38,6 +38,7 @@ func GetDependencies(ctx context.Context, workspace string, artifactName string,
 	case a.Dependencies.Command != "":
 		split := strings.Split(a.Dependencies.Command, " ")
 		cmd := exec.CommandContext(ctx, split[0], split[1:]...)
+		cmd.Dir = workspace
 		output, err := util.RunCmdOut(cmd)
 		if err != nil {
 			return nil, fmt.Errorf("getting dependencies from command: %q: %w", a.Dependencies.Command, err)
