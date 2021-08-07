@@ -1197,6 +1197,9 @@ type KanikoArtifact struct {
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
+	// ImageFSExtractRetry is the number of retries that should happen for extracting an image filesystem.
+	ImageFSExtractRetry string `yaml:"imageFSExtractRetry,omitempty"`
+
 	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
