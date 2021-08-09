@@ -151,10 +151,6 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 		return false, fmt.Errorf("unable to generate schema for version %q: %w", version.APIVersion, err)
 	}
 
-	if err := generator.Validate(buf); err != nil {
-		return false, fmt.Errorf("invalid schema for input %v: %v", input, err.Error())
-	}
-
 	var current []byte
 	if _, err := os.Stat(output); err == nil {
 		var err error
@@ -480,11 +476,17 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		Definitions: definitions,
 	}
 
-	return toJSON(schema)
+	buf, err := toJSON(schema)
+
+	if err := validate(buf); err != nil {
+		return nil, fmt.Errorf("invalid schema generated: %v", err.Error())
+	}
+
+	return buf, err
 }
 
 // Validate generated schema
-func (g *schemaGenerator) Validate(data []byte) error {
+func validate(data []byte) error {
 	schemaLoader := gojsonschema.NewBytesLoader(data)
 	_, err := gojsonschema.NewSchema(schemaLoader)
 	return err
