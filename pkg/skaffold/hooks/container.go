@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
 
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
@@ -52,6 +53,32 @@ func runningImageSelector(image string) containerSelector {
 	}
 }
 
+// namePatternSelector chooses containers that match the glob patterns for pod and container names
+func namePatternSelector(podName, containerName string) containerSelector {
+	return func(p v1.Pod, c v1.Container) (bool, error) {
+		if p.Status.Phase != v1.PodRunning {
+			return false, nil
+		}
+		for _, status := range p.Status.ContainerStatuses {
+			if status.Name == c.Name && status.State.Running == nil {
+				return false, nil
+			}
+		}
+		if matched, err := path.Match(podName, p.Name); err != nil {
+			return false, fmt.Errorf("failed to evaluate pod name pattern %q due to error %w", podName, err)
+		} else if podName != "" && !matched {
+			return false, nil
+		}
+
+		if matched, err := path.Match(containerName, c.Name); err != nil {
+			return false, fmt.Errorf("failed to evaluate container name pattern %q due to error %w", containerName, err)
+		} else if containerName != "" && !matched {
+			return false, nil
+		}
+		return true, nil
+	}
+}
+
 // containerHook represents a lifecycle hook to be executed inside a running container
 type containerHook struct {
 	cfg        latestV1.ContainerHook
@@ -65,7 +92,7 @@ type containerHook struct {
 func (h containerHook) run(ctx context.Context, out io.Writer) error {
 	errs, ctx := errgroup.WithContext(ctx)
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(h.cli.KubeContext)
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}

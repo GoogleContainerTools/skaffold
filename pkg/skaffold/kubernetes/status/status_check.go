@@ -86,6 +86,7 @@ type Monitor struct {
 	seenResources   resource.Group
 	singleRun       singleflight.Group
 	namespaces      *[]string
+	kubeContext     string
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on deployments and pods.
@@ -98,6 +99,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		seenResources:   make(resource.Group),
 		singleRun:       singleflight.Group{},
 		namespaces:      namespaces,
+		kubeContext:     cfg.GetKubeContext(),
 	}
 }
 
@@ -132,7 +134,7 @@ func (s *Monitor) Reset() {
 }
 
 func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(s.kubeContext)
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

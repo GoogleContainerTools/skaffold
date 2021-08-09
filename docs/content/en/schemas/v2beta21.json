@@ -2560,6 +2560,11 @@
           "description": "additional flags passed to `kubectl`.",
           "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
         },
+        "hooks": {
+          "$ref": "#/definitions/DeployHooks",
+          "description": "describes a set of lifecycle hooks that are executed before and after every deploy.",
+          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after every deploy."
+        },
         "manifests": {
           "items": {
             "type": "string"
@@ -2583,7 +2588,8 @@
         "manifests",
         "remoteManifests",
         "flags",
-        "defaultNamespace"
+        "defaultNamespace",
+        "hooks"
       ],
       "additionalProperties": false,
       "type": "object",

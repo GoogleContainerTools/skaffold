@@ -72,12 +72,12 @@ func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, p
 	return k8sAccessor[kubeContext]
 }
 
-func newDebugger(mode config.RunMode, podSelector kubernetes.PodSelector, namespaces *[]string) debug.Debugger {
+func newDebugger(mode config.RunMode, podSelector kubernetes.PodSelector, namespaces *[]string, kubeContext string) debug.Debugger {
 	if mode != config.RunModes.Debug {
 		return &debug.NoopDebugger{}
 	}
 
-	return debugging.NewContainerManager(podSelector, namespaces)
+	return debugging.NewContainerManager(podSelector, namespaces, kubeContext)
 }
 
 func newImageLoader(cfg k8sloader.Config, cli *kubectl.CLI) loader.ImageLoader {
