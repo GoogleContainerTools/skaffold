@@ -31,9 +31,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/xeipuuv/gojsonschema"
-
 	blackfriday "github.com/russross/blackfriday/v2"
+	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
