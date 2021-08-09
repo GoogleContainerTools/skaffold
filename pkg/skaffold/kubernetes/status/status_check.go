@@ -27,6 +27,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
@@ -208,15 +209,13 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
-		var ownerRef metav1.OwnerReference
-		if _, _, newRef, errRef := getReplicaSet(&d, client.AppsV1()); errRef == nil {
-			ownerRef = metav1.OwnerReference{
-				UID: newRef.GetUID(),
-			}
+		var controller *appsv1.ReplicaSet
+		if _, _, newRef, errRef := getReplicaSet(&d, client.AppsV1()); errRef == nil && newRef != nil {
+			controller = newRef
 		}
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client, ownerRef)})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, controller)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)

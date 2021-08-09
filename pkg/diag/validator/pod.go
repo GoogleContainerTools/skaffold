@@ -71,15 +71,15 @@ var (
 
 // PodValidator implements the Validator interface for Pods
 type PodValidator struct {
-	k        kubernetes.Interface
-	ownerRef metav1.OwnerReference
-	recos    []Recommender
+	k          kubernetes.Interface
+	controller metav1.Object
+	recos      []Recommender
 }
 
 // NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface, ownerRef metav1.OwnerReference) *PodValidator {
+func NewPodValidator(k kubernetes.Interface, controller metav1.Object) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs, ownerRef: ownerRef}
+	return &PodValidator{k: k, recos: rs, controller: controller}
 }
 
 // Validate implements the Validate method for Validator interface
@@ -91,7 +91,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
-		if !isPodOwnedBy(po, p.ownerRef) {
+		if !isPodOwnedBy(po, p.controller) {
 			continue
 		}
 		ps := p.getPodStatus(&po)
@@ -419,14 +419,9 @@ func executeCLI(cmdName string, args []string) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-func isPodOwnedBy(po v1.Pod, ownerRef metav1.OwnerReference) bool {
-	if ownerRef.UID == "" {
+func isPodOwnedBy(po v1.Pod, controller metav1.Object) bool {
+	if controller == nil {
 		return true
 	}
-	for _, ref := range po.OwnerReferences {
-		if ref.UID == ownerRef.UID {
-			return true
-		}
-	}
-	return false
+	return metav1.IsControlledBy(&po, controller)
 }

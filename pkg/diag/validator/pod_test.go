@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,7 +45,7 @@ func TestRun(t *testing.T) {
 	after := before.Add(3 * time.Second)
 	tests := []struct {
 		description string
-		ownerRef    metav1.OwnerReference
+		ownerRef    metav1.Object
 		pods        []*v1.Pod
 		logOutput   mockLogOutput
 		events      []v1.Event
@@ -730,7 +731,7 @@ func TestRun(t *testing.T) {
 		// Check to diagnose pods with owner references
 		{
 			description: "pods owned by a uuid",
-			ownerRef:    metav1.OwnerReference{UID: "foo"},
+			ownerRef:    &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{UID: "foo"}},
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "foo",
@@ -786,9 +787,9 @@ func TestRun(t *testing.T) {
 }
 
 // testPodValidator initializes a PodValidator like NewPodValidator except for loading custom rules
-func testPodValidator(k kubernetes.Interface, ownerRef metav1.OwnerReference) *PodValidator {
+func testPodValidator(k kubernetes.Interface, ownerRef metav1.Object) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs, ownerRef: ownerRef}
+	return &PodValidator{k: k, recos: rs, controller: ownerRef}
 }
 
 func TestPodConditionChecks(t *testing.T) {
