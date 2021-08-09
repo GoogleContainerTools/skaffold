@@ -195,6 +195,10 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch deployments: %w", err)
 	}
+	deploymentToRs, err := mapDeploymentsToReplicaSets(ctx, client, ns, l)
+	if err != nil {
+		return nil, fmt.Errorf("mapping deployments to replicasets: %w", err)
+	}
 
 	deployments := make([]*resource.Deployment, len(deps.Items))
 	for i, d := range deps.Items {
@@ -206,7 +210,7 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		}
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, deploymentToRs[d.Name])})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)
@@ -215,6 +219,23 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithValidator(pd)
 	}
 	return deployments, nil
+}
+
+func mapDeploymentsToReplicaSets(ctx context.Context, client kubernetes.Interface, ns string, l label.Config) (map[string]string, error) {
+	replicaSets, err := client.AppsV1().ReplicaSets(ns).List(ctx, metav1.ListOptions{
+		LabelSelector: l.RunIDSelector(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch replicasets: %w", err)
+	}
+	deploymentToRs := make(map[string]string)
+	for _, rs := range replicaSets.Items {
+		for _, owner := range rs.GetOwnerReferences() {
+			deploymentToRs[owner.Name] = rs.Name
+		}
+	}
+
+	return deploymentToRs, nil
 }
 
 func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.Deployment) {

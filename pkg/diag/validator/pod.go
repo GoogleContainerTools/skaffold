@@ -73,12 +73,13 @@ var (
 type PodValidator struct {
 	k     kubernetes.Interface
 	recos []Recommender
+	owner string
 }
 
 // NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface) *PodValidator {
+func NewPodValidator(k kubernetes.Interface, owner string) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs}
+	return &PodValidator{k: k, recos: rs, owner: owner}
 }
 
 // Validate implements the Validate method for Validator interface
@@ -90,6 +91,15 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
+		matches := false
+		for _, owner := range po.GetOwnerReferences() {
+			if owner.Name == p.owner {
+				matches = true
+			}
+		}
+		if !matches {
+			continue
+		}
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
 		processPodEvents(eventsClient, po, ps)

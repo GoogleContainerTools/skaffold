@@ -44,6 +44,7 @@ func TestRun(t *testing.T) {
 	after := before.Add(3 * time.Second)
 	tests := []struct {
 		description string
+		vOwner      string
 		pods        []*v1.Pod
 		logOutput   mockLogOutput
 		events      []v1.Event
@@ -725,6 +726,38 @@ func TestRun(t *testing.T) {
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_EXEC_ERROR,
 				}, []string{"[foo foo-container] standard_init_linux.go:219: exec user process caused: exec format error"})},
 		},
+		{
+			description: "ignore pods not from same replicaset",
+			vOwner:      "test-replicaset",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Name: "different-replicaset",
+						},
+					},
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
+							},
+						},
+					}},
+			}},
+			logOutput: mockLogOutput{
+				output: []byte("standard_init_linux.go:219: exec user process caused: exec format error"),
+			},
+			expected: nil,
+		},
 	}
 
 	for _, test := range tests {
@@ -744,7 +777,7 @@ func TestRun(t *testing.T) {
 			rs = append(rs, &v1.EventList{Items: test.events})
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 
-			actual, err := testPodValidator(f, map[string]string{}).Validate(context.Background(), "test", metav1.ListOptions{})
+			actual, err := testPodValidator(f, map[string]string{}, test.vOwner).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
@@ -759,9 +792,9 @@ func TestRun(t *testing.T) {
 }
 
 // testPodValidator initializes a PodValidator like NewPodValidator except for loading custom rules
-func testPodValidator(k kubernetes.Interface, _ map[string]string) *PodValidator {
+func testPodValidator(k kubernetes.Interface, _ map[string]string, owner string) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs}
+	return &PodValidator{k: k, recos: rs, owner: owner}
 }
 
 func TestPodConditionChecks(t *testing.T) {
