@@ -169,7 +169,7 @@ pipeline:
 				Touch("empty.ignored").
 				Chdir()
 			r, err := NewSkaffoldRenderer(test.renderConfig, tmpDirObj.Root(),
-				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir))
+				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -234,7 +234,7 @@ inventory:
 			r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
 				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, tmpDirObj.Root(),
-				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir))
+				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
