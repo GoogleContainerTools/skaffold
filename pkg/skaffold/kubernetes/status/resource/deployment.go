@@ -294,17 +294,20 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 		originalPod, found := d.pods[p.String()]
 		if !found || originalPod.StatusUpdated(p) {
 			d.status.changed = true
-			prefix := fmt.Sprintf("%s %s: ", tabHeader, p.String())
+			prefix := fmt.Sprintf("%s %s:", tabHeader, p.String())
 			switch p.ActionableError().ErrCode {
 			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING,
 				proto.StatusCode_STATUSCHECK_POD_INITIALIZING:
 				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
-				eventV2.ResourceStatusCheckEventUpdatedMessage(p.String(), prefix, sErrors.V2fromV1(p.ActionableError()))
+				eventV2.ResourceStatusCheckEventUpdatedMessage(
+					p.String(),
+					prefix,
+					sErrors.V2fromV1(p.ActionableError()))
 			default:
 				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())
 				eventV2.ResourceStatusCheckEventCompletedMessage(
 					p.String(),
-					fmt.Sprintf("%s%s created.", prefix, p.String()),
+					fmt.Sprintf("%s running.\n", prefix),
 					sErrors.V2fromV1(p.ActionableError()))
 			}
 		}
