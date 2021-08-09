@@ -477,12 +477,15 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 	}
 
 	buf, err := toJSON(schema)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := validate(buf); err != nil {
 		return nil, fmt.Errorf("invalid schema generated: %v", err.Error())
 	}
 
-	return buf, err
+	return buf, nil
 }
 
 // Validate generated schema
