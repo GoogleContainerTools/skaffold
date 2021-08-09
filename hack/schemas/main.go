@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -30,6 +31,8 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/xeipuuv/gojsonschema"
 
 	blackfriday "github.com/russross/blackfriday/v2"
 
@@ -474,6 +477,10 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		Definitions: definitions,
 	}
 
+	if err := validate(schema); err != nil {
+		return nil, errors.New(fmt.Sprintf("invalid schema: %v", err.Error()))
+	}
+
 	return toJSON(schema)
 }
 
@@ -489,4 +496,11 @@ func toJSON(v interface{}) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// Validate generated schema
+func validate(schema Schema) error {
+	schemaLoader := gojsonschema.NewGoLoader(schema)
+	_, err := gojsonschema.NewSchema(schemaLoader)
+	return err
 }

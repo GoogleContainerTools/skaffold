@@ -1,0 +1,79 @@
+{
+  "type": "object",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/TestStruct"
+    }
+  ],
+  "$schema": "http://json-schema-org/draft-07/schema#",
+  "definitions": {
+    "AnotherTestStruct": {
+      "properties": {
+        "f1": {
+          "type": "string",
+          "description": "should be the first choice",
+          "x-intellij-html-description": "should be the first choice"
+        },
+        "f2": {
+          "type": "string",
+          "description": "should be the second choice",
+          "x-intellij-html-description": "should be the second choice"
+        }
+      },
+      "preferredOrder": [
+        "f1",
+        "f2"
+      ],
+      "type": "object",
+      "description": "for testing the schema s generator.",
+      "x-intellij-html-description": "for testing the schema s generator."
+    },
+    "InlineStruct": {
+      "properties": {
+        "f1": {
+          "type": "string",
+          "description": "should be the first choice",
+          "x-intellij-html-description": "should be the first choice"
+        },
+        "f2": {
+          "type": "string",
+          "description": "should be the second choice",
+          "x-intellij-html-description": "should be the second choice"
+        }
+      },
+      "preferredOrder": [
+        "f1",
+        "f2"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "embedded inline into TestStruct",
+      "x-intellij-html-description": "embedded inline into TestStruct"
+    },
+    "TestStruct": {
+      "required": [
+        "reqField"
+      ],
+      "properties": {
+        "anotherField": {
+          "$ref": "#/definitions/InlineStruct",
+          "description": "has reference to InlineStruct",
+          "x-intellij-html-description": "has reference to InlineStruct"
+        },
+        "reqField": {
+          "type": "string",
+          "description": "should be required",
+          "x-intellij-html-description": "should be required"
+        }
+      },
+      "preferredOrder": [
+        "reqField",
+        "anotherField"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "for testing the schema generator.",
+      "x-intellij-html-description": "for testing the schema generator."
+    }
+  }
+}
