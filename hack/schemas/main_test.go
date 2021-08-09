@@ -84,7 +84,7 @@ func TestGeneratorErrors(t *testing.T) {
 		shouldErr     bool
 		expectedError string
 	}{
-		{name: "invalid-schema", shouldErr: true, expectedError: "invalid schema: Object has no key 'InlineStruct'"},
+		{name: "invalid-schema", shouldErr: true, expectedError: "Object has no key 'InlineStruct'"},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
@@ -94,7 +94,10 @@ func TestGeneratorErrors(t *testing.T) {
 				strict: false,
 			}
 
-			_, err := generator.Apply(input)
+			buf, err := generator.Apply(input)
+			t.CheckNoError(err)
+
+			err = generator.Validate(buf)
 			t.CheckError(test.shouldErr, err)
 			if test.expectedError != "" {
 				t.CheckErrorContains(test.expectedError, err)

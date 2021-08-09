@@ -19,7 +19,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -150,6 +149,10 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 	buf, err := generator.Apply(input)
 	if err != nil {
 		return false, fmt.Errorf("unable to generate schema for version %q: %w", version.APIVersion, err)
+	}
+
+	if err := generator.Validate(buf); err != nil {
+		return false, fmt.Errorf("invalid schema for input %v: %v", input, err.Error())
 	}
 
 	var current []byte
@@ -477,11 +480,14 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		Definitions: definitions,
 	}
 
-	if err := validate(schema); err != nil {
-		return nil, errors.New(fmt.Sprintf("invalid schema: %v", err.Error()))
-	}
-
 	return toJSON(schema)
+}
+
+// Validate generated schema
+func (g *schemaGenerator) Validate(data []byte) error {
+	schemaLoader := gojsonschema.NewBytesLoader(data)
+	_, err := gojsonschema.NewSchema(schemaLoader)
+	return err
 }
 
 // Make sure HTML description are not encoded
@@ -496,11 +502,4 @@ func toJSON(v interface{}) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
-}
-
-// Validate generated schema
-func validate(schema Schema) error {
-	schemaLoader := gojsonschema.NewGoLoader(schema)
-	_, err := gojsonschema.NewSchema(schemaLoader)
-	return err
 }
