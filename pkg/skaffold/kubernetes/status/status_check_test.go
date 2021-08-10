@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 	utilpointer "k8s.io/utils/pointer"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
@@ -216,6 +217,9 @@ func TestGetDeployments(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&getReplicaSet, func(_ *appsv1.Deployment, _ appsclient.AppsV1Interface) ([]*appsv1.ReplicaSet, []*appsv1.ReplicaSet, *appsv1.ReplicaSet, error) {
+				return nil, nil, &appsv1.ReplicaSet{}, nil
+			})
 			objs := make([]runtime.Object, len(test.deps))
 			for i, dep := range test.deps {
 				objs[i] = dep
