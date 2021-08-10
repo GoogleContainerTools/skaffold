@@ -354,9 +354,7 @@ func TestStripImageTags(t *testing.T) {
 			expectedImages: []string{
 				"gcr.io/testproject/testimage",
 			},
-			expectedWarnings: []string{
-				"Couldn't parse image [{{ REPOSITORY }}/{{IMAGE}}]: invalid reference format",
-			},
+			expectedWarnings: nil,
 		},
 		{
 			description: "images with digest are ignored",
