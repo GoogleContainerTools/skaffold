@@ -2156,6 +2156,11 @@
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
           "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
         },
+        "imageFSExtractRetry": {
+          "type": "string",
+          "description": "number of retries that should happen for extracting an image filesystem.",
+          "x-intellij-html-description": "number of retries that should happen for extracting an image filesystem."
+        },
         "imageNameWithDigestFile": {
           "type": "string",
           "description": "specify a file to save the image name with digest of the built image to.",
@@ -2335,6 +2340,7 @@
         "initImage",
         "image",
         "digestFile",
+        "imageFSExtractRetry",
         "imageNameWithDigestFile",
         "logFormat",
         "ociLayoutPath",
