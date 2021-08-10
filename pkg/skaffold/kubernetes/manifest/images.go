@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // GetImages gathers a map of base image names to the image with its tag
@@ -50,7 +49,7 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+		logrus.Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
 
@@ -125,7 +124,7 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+		logrus.Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
 	if imageName, tag, selected := r.selector(r.tagsByImageName, parsed); selected {
