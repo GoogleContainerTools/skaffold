@@ -224,7 +224,6 @@ func (a *LogAggregator) Unmute() {
 		// Logs are not activated.
 		return
 	}
-	
 	atomic.StoreInt32(&a.muted, 0)
 }
 

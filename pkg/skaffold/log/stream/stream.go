@@ -41,7 +41,8 @@ func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, 
 			line, err := r.ReadString('\n')
 			// As per https://github.com/kubernetes/kubernetes/blob/017b359770e333eacd3efcb4174f1d464c208400/test/e2e/storage/podlogs/podlogs.go#L214
 			// Filter out the expected "end of stream" error message and
-			// attempts to read logs from a container that isn't ready (yet?!).
+			// attempts to read logs from a container that was deleted due to re-deploy or
+			// attempts to read logs from a container that is not ready yet.
 			if err == io.EOF {
 				if !isEmptyOrContainerNotReady(line) {
 					formatter.PrintLine(out, line)
