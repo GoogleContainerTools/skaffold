@@ -25,6 +25,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -179,8 +180,18 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	sharedLabels := []attribute.KeyValue{
 		randLabel,
 	}
-	if _, ok := constants.AllowedUsers[meter.User]; ok {
-		sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
+
+	// check each allowed user key for exact match or pattern match
+	for allowedUser := range constants.AllowedUsers {
+		matched, err := regexp.MatchString(fmt.Sprintf(constants.AllowedUserPattern, allowedUser), meter.User)
+		if err != nil {
+			panic(fmt.Sprintf("error matching allowed user: %v", err))
+		}
+
+		if matched || allowedUser == meter.User {
+			sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
+			break
+		}
 	}
 	labels = append(labels, sharedLabels...)
 
