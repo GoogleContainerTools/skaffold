@@ -90,7 +90,7 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 				logrus.Infof("manifests are deployed from render path %v\n", hydrationDir)
 				p.Deploy.KptV2Deploy.Dir = hydrationDir
 			}
-			deployer := kptV2.NewDeployer(dCtx, labels, provider, p.Deploy.KptV2Deploy)
+			deployer := kptV2.NewDeployer(dCtx, labels, provider, p.Deploy.KptV2Deploy, runCtx.Opts)
 			deployers = append(deployers, deployer)
 		}
 	}
