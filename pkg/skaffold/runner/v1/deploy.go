@@ -103,15 +103,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy_Deploying")
 	defer endTrace()
 
-	// we only want to register images that are local AND were built by this runner
-	var localAndBuiltImages []graph.Artifact
-	for _, image := range localImages {
-		if r.wasBuilt(image.Tag) {
-			localAndBuiltImages = append(localAndBuiltImages, image)
-		}
-	}
-
-	r.deployer.RegisterLocalImages(localAndBuiltImages)
+	r.deployer.RegisterLocalImages(localImages)
 	err = r.deployer.Deploy(ctx, deployOut, artifacts)
 	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
 	postDeployFn()
