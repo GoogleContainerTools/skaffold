@@ -18,14 +18,13 @@ package version
 
 import (
 	"fmt"
-	"regexp"
 	"runtime"
 	"strings"
 
 	"github.com/blang/semver"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/user"
 )
 
 var version, gitCommit, buildDate, client string
@@ -58,18 +57,9 @@ var Get = func() *Info {
 	}
 }
 
-var SetClient = func(user string) {
-	// check each allowed user key for pattern match
-	for allowedUser := range constants.AllowedUsers {
-		matched, err := regexp.MatchString(fmt.Sprintf(constants.AllowedUserPattern, allowedUser), user)
-		if err != nil {
-			panic(fmt.Sprintf("error matching allowed user: %v", err))
-		}
-
-		if matched || allowedUser == user {
-			client = user
-			break
-		}
+var SetClient = func(userAgent string) {
+	if allowedUser := user.IsAllowedUser(userAgent); allowedUser {
+		client = userAgent
 	}
 }
 

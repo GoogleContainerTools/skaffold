@@ -25,7 +25,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -49,6 +48,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/user"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -181,17 +181,8 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		randLabel,
 	}
 
-	// check each allowed user key for pattern match
-	for allowedUser := range constants.AllowedUsers {
-		matched, err := regexp.MatchString(fmt.Sprintf(constants.AllowedUserPattern, allowedUser), meter.User)
-		if err != nil {
-			panic(fmt.Sprintf("error matching allowed user: %v", err))
-		}
-
-		if matched || allowedUser == meter.User {
-			sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
-			break
-		}
+	if allowedUser := user.IsAllowedUser(meter.User); allowedUser {
+		sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
 	}
 	labels = append(labels, sharedLabels...)
 
