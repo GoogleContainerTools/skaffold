@@ -80,7 +80,7 @@ func ResourceStatusCheckEventUpdatedMessage(r string, message string, ae proto.A
 	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		SubtaskId: r,
-		Message:   fmt.Sprintf("%s %s", message, ae.Message),
+		Message:   fmt.Sprintf("%s %s\n", message, ae.Message),
 		Level:     -1,
 	})
 }
