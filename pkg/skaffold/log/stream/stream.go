@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -38,8 +39,11 @@ func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, 
 		default:
 			// Read up to newline
 			line, err := r.ReadString('\n')
+			// As per https://github.com/kubernetes/kubernetes/blob/017b359770e333eacd3efcb4174f1d464c208400/test/e2e/storage/podlogs/podlogs.go#L214
+			// Filter out the expected "end of stream" error message and
+			// attempts to read logs from a container that isn't ready (yet?!).
 			if err == io.EOF {
-				if line != "" {
+				if !isEmptyOrContainerNotReady(line) {
 					formatter.PrintLine(out, line)
 				}
 				return nil
@@ -50,4 +54,11 @@ func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, 
 			formatter.PrintLine(out, line)
 		}
 	}
+}
+
+func isEmptyOrContainerNotReady(line string) bool {
+	return line == "" ||
+		strings.HasPrefix(line, "rpc error: code = Unknown desc = Error: No such container:") ||
+		strings.HasPrefix(line, "unable to retrieve container logs for ") ||
+		strings.HasPrefix(line, "Unable to retrieve container logs for ")
 }
