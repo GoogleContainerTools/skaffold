@@ -555,7 +555,10 @@ type KptV2Deploy struct {
 	// hydrated path `<WORKDIR>/.kpt-pipeline`.
 	Dir string `yaml:"dir,omitempty"`
 
-	// Flags are additional flags passed to `kpt live apply`.
+	// ApplyFlags are additional flags passed to `kpt live apply`.
+	ApplyFlags []string `yaml:"applyFlags,omitempty"`
+
+	// Flags are kpt global flags.
 	Flags []string `yaml:"flags,omitempty"`
 
 	// Name *alpha* is the inventory object name.
@@ -564,6 +567,9 @@ type KptV2Deploy struct {
 	InventoryID string `yaml:"inventoryID,omitempty"`
 	// InventoryNamespace *alpha* sets the inventory namespace.
 	InventoryNamespace string `yaml:"namespace,omitempty"`
+
+	// Forces is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
+	Force bool `yaml:"false,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`
