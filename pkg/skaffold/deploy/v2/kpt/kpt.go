@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -87,8 +88,18 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KptV2Deploy) *Deployer {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KptV2Deploy,
+	opts config.SkaffoldOptions) *Deployer {
 	podSelector := kubernetes.NewImageList()
+	if opts.InventoryNamespace != "" {
+		d.InventoryNamespace = opts.InventoryNamespace
+	}
+	if opts.InventoryID != "" {
+		d.InventoryID = opts.InventoryID
+	}
+	if opts.InventoryName != "" {
+		d.Name = opts.InventoryName
+	}
 	return &Deployer{
 		KptV2Deploy: d,
 		applyDir:    d.Dir,

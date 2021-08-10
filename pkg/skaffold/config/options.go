@@ -68,6 +68,9 @@ type SkaffoldOptions struct {
 	ConfigurationFilter  []string
 	HydratedManifests    []string
 	HydrationDir         string
+	InventoryNamespace   string
+	InventoryID          string
+	InventoryName        string
 	GlobalConfig         string
 	EventLogFile         string
 	RenderOutput         string
