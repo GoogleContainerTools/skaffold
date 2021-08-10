@@ -48,6 +48,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/user"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -179,7 +180,8 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	sharedLabels := []attribute.KeyValue{
 		randLabel,
 	}
-	if _, ok := constants.AllowedUsers[meter.User]; ok {
+
+	if allowedUser := user.IsAllowedUser(meter.User); allowedUser {
 		sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
 	}
 	labels = append(labels, sharedLabels...)
