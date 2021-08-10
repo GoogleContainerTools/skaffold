@@ -551,12 +551,14 @@ type Validator struct {
 
 // KptV2Deploy contains all the configuration needed by the deploy steps.
 type KptV2Deploy struct {
-
-	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold renders the raw manifests
-	// and store them to a a hidden directory `.kpt-pipeline`, and deploys the hidden directory.
+	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold deploys from the default
+	// hydrated path `<WORKDIR>/.kpt-pipeline`.
 	Dir string `yaml:"dir,omitempty"`
 
-	// Flags are additional flags passed to `kpt live apply`.
+	// ApplyFlags are additional flags passed to `kpt live apply`.
+	ApplyFlags []string `yaml:"applyFlags,omitempty"`
+
+	// Flags are kpt global flags.
 	Flags []string `yaml:"flags,omitempty"`
 
 	// Name *alpha* is the inventory object name.
@@ -565,6 +567,9 @@ type KptV2Deploy struct {
 	InventoryID string `yaml:"inventoryID,omitempty"`
 	// InventoryNamespace *alpha* sets the inventory namespace.
 	InventoryNamespace string `yaml:"namespace,omitempty"`
+
+	// Forces is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
+	Force bool `yaml:"false,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`

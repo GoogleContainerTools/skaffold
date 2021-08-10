@@ -86,7 +86,7 @@ func liveApplyErr(err error, path string) error {
 					Action: fmt.Sprintln("if you encounter an inventory mismatch (or can't adopt) error, it indicates " +
 						"the manifests have been deployed before and may not be properly cleaned up. We provide two solutions:\n " +
 						"#1: Update your skaffold.yaml by adding the `--inventory-policy=adopt` in the " +
-						"`.deploy.kpt.flags`. This will override the resources' inventory.\n " +
+						"`.deploy.kpt.applyFlags`. This will override the resources' inventory.\n " +
 						"#2: Find the existing inventory from your cluster resource's annotation \"cli-utils.sigs.k8s.io/inventory-id\", " +
 						" then use this inventory-id to look for the inventory name and namespace by running " +
 						"`kubectl get resourcegroups.kpt.dev -oyaml | grep <YOUR_INVENTORY_ID> -C20 | grep \"name: inventory-\" -C1` " +

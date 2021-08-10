@@ -49,7 +49,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const deployerName = "kptV2"
+const (
+	deployerName = "kptV2"
+	defaultNs    = "default"
+)
 
 var (
 	openFile    = os.Open
@@ -167,7 +170,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	kptFilePath := filepath.Join(k.applyDir, kptfile.KptFileName)
 	if _, err := os.Stat(kptFilePath); os.IsNotExist(err) {
 		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_InitKptfile")
-		cmd := exec.CommandContext(ctx, "kpt", k.kptArgs("pkg", "init", k.applyDir)...)
+		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", k.applyDir)
 		cmd.Stdout = out
 		cmd.Stderr = out
 		if err := util.RunCmd(cmd); err != nil {
@@ -189,7 +192,8 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	// If "Inventory" already exist, running `kpt live init` raises error.
 	if kfConfig.Inventory == nil {
 		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_InitKptfileInventory")
-		args := k.kptArgs("live", "init", k.applyDir)
+		args := []string{"live", "init", k.applyDir}
+		args = append(args, k.KptV2Deploy.Flags...)
 		if k.Name != "" {
 			args = append(args, "--name", k.Name)
 		}
@@ -201,6 +205,9 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		} else if k.InventoryNamespace != "" {
 			args = append(args, "--namespace", k.InventoryNamespace)
 		}
+		if k.Force {
+			args = append(args, "--force", "true")
+		}
 		cmd := exec.CommandContext(ctx, "kpt", args...)
 		cmd.Stdout = out
 		cmd.Stderr = out
@@ -209,18 +216,25 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 			return liveInitErr(err, k.applyDir)
 		}
 	} else {
-		if kfConfig.Inventory.InventoryID != k.InventoryID {
+		if k.InventoryID != "" && k.InventoryID != kfConfig.Inventory.InventoryID {
 			logrus.Warnf("Updating Kptfile inventory from %v to %v", kfConfig.Inventory.InventoryID, k.InventoryID)
 			kfConfig.Inventory.InventoryID = k.InventoryID
 		}
-		if kfConfig.Inventory.Name != k.Name {
+		if k.Name != "" && k.Name != kfConfig.Inventory.Name {
 			logrus.Warnf("Updating Kptfile name from %v to %v", kfConfig.Inventory.Name, k.Name)
 			kfConfig.Inventory.Name = k.Name
 		}
-		if k.namespace != "" && k.namespace != kfConfig.Inventory.Namespace {
+		// Set the namespace to be a valid kubernetes namespace value. If not specified, the value shall be "default".
+		if k.namespace == "" {
+			k.namespace = defaultNs
+		}
+		if k.InventoryNamespace == "" {
+			k.InventoryNamespace = defaultNs
+		}
+		if k.namespace != kfConfig.Inventory.Namespace {
 			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.namespace)
 			kfConfig.Inventory.Namespace = k.namespace
-		} else if k.InventoryNamespace != "" && k.InventoryNamespace != kfConfig.Inventory.Namespace {
+		} else if k.InventoryNamespace != kfConfig.Inventory.Namespace {
 			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.InventoryNamespace)
 			kfConfig.Inventory.Namespace = k.InventoryNamespace
 		}
@@ -259,7 +273,11 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	endTrace()
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_execKptCommand")
-	cmd := exec.CommandContext(childCtx, "kpt", k.kptArgs("live", "apply", k.applyDir)...)
+	args := []string{"live", "apply", k.applyDir}
+
+	args = append(args, k.Flags...)
+	args = append(args, k.ApplyFlags...)
+	cmd := exec.CommandContext(childCtx, "kpt", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
@@ -289,7 +307,10 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err := kptInitFunc(ctx, out, k); err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(ctx, "kpt", k.kptArgs("live", "destroy", k.applyDir)...)
+
+	args := []string{"live", "destroy", k.applyDir}
+	args = append(args, k.Flags...)
+	cmd := exec.CommandContext(ctx, "kpt", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
@@ -297,10 +318,4 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	}
 
 	return nil
-}
-
-// kptArgs returns the `kpt` args and global flags.
-func (k *Deployer) kptArgs(args ...string) []string {
-	args = append(args, k.KptV2Deploy.Flags...)
-	return args
 }
