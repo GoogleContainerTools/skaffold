@@ -17,9 +17,10 @@ limitations under the License.
 package tag
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/sirupsen/logrus"
 )
 
 func StripTags(taggedImages []string, ignoreDigest bool) []string {
