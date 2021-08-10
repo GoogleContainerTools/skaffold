@@ -181,7 +181,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		randLabel,
 	}
 
-	// check each allowed user key for exact match or pattern match
+	// check each allowed user key for pattern match
 	for allowedUser := range constants.AllowedUsers {
 		matched, err := regexp.MatchString(fmt.Sprintf(constants.AllowedUserPattern, allowedUser), meter.User)
 		if err != nil {

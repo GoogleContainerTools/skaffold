@@ -59,11 +59,7 @@ var Get = func() *Info {
 }
 
 var SetClient = func(user string) {
-	if _, ok := constants.AllowedUsers[user]; ok {
-		client = user
-	}
-
-	// check each allowed user key for exact match or pattern match
+	// check each allowed user key for pattern match
 	for allowedUser := range constants.AllowedUsers {
 		matched, err := regexp.MatchString(fmt.Sprintf(constants.AllowedUserPattern, allowedUser), user)
 		if err != nil {
