@@ -136,6 +136,11 @@ func (t *T) CheckErrorAndDeepEqual(shouldErr bool, err error, expected, actual i
 	CheckErrorAndDeepEqual(t.T, shouldErr, err, expected, actual, opts...)
 }
 
+func (t *T) CheckErrorAndExitCode(expectedCode int, err error) {
+	t.Helper()
+	CheckErrorAndExitCode(t.T, expectedCode, err)
+}
+
 func (t *T) CheckError(shouldErr bool, err error) {
 	t.Helper()
 	CheckError(t.T, shouldErr, err)
@@ -318,6 +323,20 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
+	}
+}
+
+func CheckErrorAndExitCode(t *testing.T, expectedCode int, err error) {
+	t.Helper()
+	CheckErrorAndFailNow(t, true, err)
+	type exitCoder interface {
+		ExitCode() int
+	}
+	var ec exitCoder
+	if ok := errors.As(err, &ec); !ok {
+		t.Errorf("error %q did not contain an exit code", err)
+	} else if ec.ExitCode() != expectedCode {
+		t.Errorf("expected exit code %d from err, but was %d", expectedCode, ec.ExitCode())
 	}
 }
 
