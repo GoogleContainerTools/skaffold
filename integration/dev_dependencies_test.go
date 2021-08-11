@@ -17,14 +17,13 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func TestDev_WithDependencies(t *testing.T) {

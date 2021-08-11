@@ -17,15 +17,14 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func TestBuildDependenciesOrder(t *testing.T) {

@@ -17,13 +17,10 @@ limitations under the License.
 package binpack
 
 import (
-	"context"
 	"fmt"
 	"sort"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type timing struct {
