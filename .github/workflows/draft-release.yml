@@ -11,7 +11,7 @@ jobs:
   check:
     name: Check if release commit
     runs-on: ubuntu-latest
-    if: "startsWith(github.event.head_commit.message, 'release: ')"
+    if: "startsWith(github.event.commits[0].message, 'release: ')"
     steps:
     - name: Apply release-matching regexp to commit message
       id: regex-match
