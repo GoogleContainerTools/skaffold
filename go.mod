@@ -15,7 +15,7 @@ require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go v0.88.0
 	cloud.google.com/go/storage v1.16.0
-	github.com/AlecAivazis/survey/v2 v2.2.15
+	github.com/AlecAivazis/survey/v2 v2.2.16
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
 	github.com/aws/aws-sdk-go v1.36.30 // indirect

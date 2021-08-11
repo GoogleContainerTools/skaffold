@@ -79,6 +79,8 @@ github.com/AlecAivazis/survey/v2 v2.2.14 h1:aTYTaCh1KLd+YWilkeJ65Ph78g48NVQ3ay9x
 github.com/AlecAivazis/survey/v2 v2.2.14/go.mod h1:TH2kPCDU3Kqq7pLbnCWwZXDBjnhZtmsCle5EiYDJ2fg=
 github.com/AlecAivazis/survey/v2 v2.2.15 h1:6UNMnk+YGegYFiPfdTOyZDIN+m08x2nGnqOn15BWcEQ=
 github.com/AlecAivazis/survey/v2 v2.2.15/go.mod h1:TH2kPCDU3Kqq7pLbnCWwZXDBjnhZtmsCle5EiYDJ2fg=
+github.com/AlecAivazis/survey/v2 v2.2.16 h1:KJ4fLFqY/NfR5OaFLcf4pThxrlV2YCHGCnCHAKLsJ+U=
+github.com/AlecAivazis/survey/v2 v2.2.16/go.mod h1:TH2kPCDU3Kqq7pLbnCWwZXDBjnhZtmsCle5EiYDJ2fg=
 github.com/Azure/azure-amqp-common-go/v2 v2.1.0/go.mod h1:R8rea+gJRuJR6QxTir/XuEd+YuKoUiazDC/N96FiDEU=
 github.com/Azure/azure-pipeline-go v0.2.1/go.mod h1:UGSo8XybXnIGZ3epmeBw7Jdz+HiUVpqIlpz/HKHylF4=
 github.com/Azure/azure-pipeline-go v0.2.2/go.mod h1:4rQ/NZncSvGqNkkOsNpOU1tgoNuIlp9AfUH5G1tvCHc=
