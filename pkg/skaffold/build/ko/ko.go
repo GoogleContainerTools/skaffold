@@ -17,9 +17,30 @@ limitations under the License.
 package ko
 
 import (
-	kobuild "github.com/google/ko/pkg/build"
+	"context"
+
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/ko/pkg/build"
+	"github.com/google/ko/pkg/commands"
+	"github.com/google/ko/pkg/publish"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
-// KoScheme is the prefix used to disambiguate image references and Go import paths.
-// Adding the const here to force import of a ko package.
-const KoScheme = kobuild.StrictScheme
+// Builder is an artifact builder that uses ko
+type Builder struct {
+	localDocker docker.LocalDaemon
+	pushImages  bool
+
+	// publishImages can be overridden for unit testing purposes.
+	publishImages func(context.Context, []string, publish.Interface, build.Interface) (map[string]name.Reference, error)
+}
+
+// NewArtifactBuilder returns a new ko artifact builder
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool) *Builder {
+	return &Builder{
+		localDocker:   localDocker,
+		pushImages:    pushImages,
+		publishImages: commands.PublishImages,
+	}
+}
