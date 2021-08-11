@@ -1,3 +1,56 @@
+# v1.30.0 Release - 08/11/2021
+Note: This release comes with a new config version, `v2beta21`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Support deploy hooks for Skaffold lifecycle hooks. Read more [here](https://skaffold.dev/docs/pipeline-stages/lifecycle-hooks/#before-deploy-and-after-deploy-only-for-kubectl-deployer-1) [#6376](https://github.com/GoogleContainerTools/skaffold/pull/6376)
+* Add support for Kaniko flag --image-fs-extract-retry [#6380](https://github.com/GoogleContainerTools/skaffold/pull/6380)
+* Support passing additional CLI flags to docker build [#6343](https://github.com/GoogleContainerTools/skaffold/pull/6343)
+
+
+Fixes:
+* remove single `kubeContext` validation [#6394](https://github.com/GoogleContainerTools/skaffold/pull/6394)
+* Set exit code 127 for Skaffold CLI validation errors [#6401](https://github.com/GoogleContainerTools/skaffold/pull/6401)
+* Fix status check showing unhealthy pods from previous dev iteration [#6370](https://github.com/GoogleContainerTools/skaffold/pull/6370)
+* Ignore leading 'v' when parsing helm versions [#6362](https://github.com/GoogleContainerTools/skaffold/pull/6362)
+* fix: make `client.Client` kubernetesContext aware [#6368](https://github.com/GoogleContainerTools/skaffold/pull/6368)
+* ResourceForwarder should wait for its forwards [#6332](https://github.com/GoogleContainerTools/skaffold/pull/6332)
+* hooks: prepend pod/container name to container hooks log lines [#6337](https://github.com/GoogleContainerTools/skaffold/pull/6337)
+* Fix issue with displaying survey prompts when we shouldn't [#6354](https://github.com/GoogleContainerTools/skaffold/pull/6354)
+* fix: remote manifest image substitution [#6342](https://github.com/GoogleContainerTools/skaffold/pull/6342)
+* fix build --push=false for missing kubeconfig [#6366](https://github.com/GoogleContainerTools/skaffold/pull/6366)
+* Ensure Cleanup is called if Deploy creates resources but fails [#6345](https://github.com/GoogleContainerTools/skaffold/pull/6345)
+
+Updates and Refactors:
+* Add functionality to support patterns in `--user` flag [#6402](https://github.com/GoogleContainerTools/skaffold/pull/6402)
+* Improvements to upcoming Event Api v2 [#6399](https://github.com/GoogleContainerTools/skaffold/pull/6399), [#6407](https://github.com/GoogleContainerTools/skaffold/pull/6407), [#6395](https://github.com/GoogleContainerTools/skaffold/pull/6395)
+* Change parsing templated image warning to debug info [#6398](https://github.com/GoogleContainerTools/skaffold/pull/6398)
+
+Docs, Test, and Release Updates:
+* hooks: update deploy docs [#6386](https://github.com/GoogleContainerTools/skaffold/pull/6386)
+* [design proposal] Add config option 'deploy.config.transformableAllowList' [#6236](https://github.com/GoogleContainerTools/skaffold/pull/6236)
+* GitLab (with capital 'L') [#6384](https://github.com/GoogleContainerTools/skaffold/pull/6384)
+* Validate generated schemas in generator script [#6385](https://github.com/GoogleContainerTools/skaffold/pull/6385)
+* fix: schema gen for `ContainerHook` [#6372](https://github.com/GoogleContainerTools/skaffold/pull/6372)
+* Add trace-level port-allocation logs [#6293](https://github.com/GoogleContainerTools/skaffold/pull/6293)
+* Bump cloud.google.com/go/storage from 1.10.0 to 1.16.0 [#6324](https://github.com/GoogleContainerTools/skaffold/pull/6324)
+* Mark GCP Buildpacks builder as trusted in the examples [#6284](https://github.com/GoogleContainerTools/skaffold/pull/6284)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Ahmet Alp Balkan
+- Brian de Alwis
+- David Zumbrunnen
+- Gaurav
+- Ke Zhu
+- Marlon Gamez
+- Mike Verbanic
+- Nick Kubala
+- Pradeep Kumar
+- Tejal Desai
+- Yanshu
+- dependabot[bot]
+
 # v1.29.0 Release - 07/30/2021
 Note: This release comes with a new config version, `v2beta20`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
 
