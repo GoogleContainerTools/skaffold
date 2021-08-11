@@ -27,6 +27,9 @@ import (
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/publish"
 
+	// TODO(halvards)[08/11/2021]: Replace the latestV1 import path with the
+	// real schema import path once the contents of ./schema has been added to
+	// the real schema in pkg/skaffold/schema/latest/v1.
 	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
