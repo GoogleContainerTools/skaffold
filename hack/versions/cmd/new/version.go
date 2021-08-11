@@ -18,7 +18,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -31,7 +30,6 @@ import (
 
 	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
@@ -42,16 +40,16 @@ import (
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-2].APIVersion, "skaffold/")
-	log.Entry(context.Background()).Infof("Previous Skaffold version: %s", prev)
+	logrus.Infof("Previous Skaffold version: %s", prev)
 
 	current, latestIsReleased := hackschema.GetLatestVersion()
 
 	if !latestIsReleased {
-		log.Entry(context.Background()).Fatalf("There is no need to create a new version, %s is still not released", current)
+		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)
 	}
 
 	next := readNextVersion(current)
-	log.Entry(context.Background()).Infof("Next Skaffold version: %s", next)
+	logrus.Infof("Next Skaffold version: %s", next)
 
 	makeSchemaDir(current)
 
@@ -118,7 +116,7 @@ func makeSchemaDir(new string) {
 	latestDir, _ := os.Stat(path("latest"))
 	newDirPath := path(new)
 	if err := os.Mkdir(newDirPath, latestDir.Mode()); err != nil {
-		log.Entry(context.Background()).Fatalf("creating dir %s: %s", newDirPath, err)
+		logrus.Fatalf("creating dir %s: %s", newDirPath, err)
 	}
 }
 
@@ -129,7 +127,7 @@ func readNextVersion(current string) string {
 		output.Red.Fprintf(os.Stdout, "Please enter new version (default: %s): ", new)
 		reader := bufio.NewReader(os.Stdin)
 		if line, err := reader.ReadString('\n'); err != nil {
-			log.Entry(context.Background()).Fatalf("error reading input: %s", err)
+			logrus.Fatalf("error reading input: %s", err)
 		} else if strings.TrimSpace(line) != "" {
 			new = line
 		}
@@ -151,7 +149,7 @@ func bumpVersion(version string) string {
 		i, _ := strconv.Atoi(m[2])
 		return fmt.Sprintf("%s%d", m[1], i+1)
 	}
-	log.Entry(context.Background()).Warnf("Unrecognized version string: %s", version)
+	logrus.Warnf("Unrecognized version string: %s", version)
 	return version
 }
 

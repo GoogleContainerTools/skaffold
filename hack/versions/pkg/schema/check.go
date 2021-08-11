@@ -17,7 +17,6 @@ limitations under the License.
 package schema
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -25,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/sirupsen/logrus"
 )
 
 const baseRef = "origin/main"
@@ -71,7 +70,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		content, err = git.getFileFromBaseline(configFile)
 		if err != nil {
 			if strings.Contains(err.Error(), fmt.Sprintf("config.go' exists on disk, but not in '%s'", baseRef)) {
-				log.Entry(context.Background()).Warnf("Can't find %s in %s. Assuming this PR is for a new version creation, skipping...", configFile, baseRef)
+				logrus.Warnf("Can't find %s in %s. Assuming this PR is for a new version creation, skipping...", configFile, baseRef)
 				continue
 			}
 			return err
@@ -95,14 +94,14 @@ func RunSchemaCheckOnChangedFiles() error {
 			continue
 		}
 
-		log.Entry(context.Background()).Warn("Detected changes to the latest config. Checking on Github if it's released...")
+		logrus.Warn("Detected changes to the latest config. Checking on Github if it's released...")
 		latestVersion, isReleased := GetLatestVersion()
 		if !isReleased {
-			log.Entry(context.Background()).Infof("Schema %q is not yet released. Changes are ok.", latestVersion)
+			logrus.Infof("Schema %q is not yet released. Changes are ok.", latestVersion)
 			continue
 		}
 
-		log.Entry(context.Background()).Errorf("Schema %q is already released. Changing it is not allowed.", latestVersion)
+		logrus.Errorf("Schema %q is already released. Changing it is not allowed.", latestVersion)
 
 		fmt.Printf("\nWhat should I do?\n-----------------\n")
 		fmt.Printf(" + If this retroactive change is required and is harmless to users, indicate on your PR.\n")
@@ -119,7 +118,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		for _, file := range filesInError {
 			changes, err := git.diffWithBaseline(file)
 			if err != nil {
-				log.Entry(context.Background()).Errorf("failed to get diff: %s", err)
+				logrus.Errorf("failed to get diff: %s", err)
 			}
 			fmt.Print(string(changes))
 		}

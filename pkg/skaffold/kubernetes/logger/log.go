@@ -25,6 +25,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -138,6 +139,10 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				pod := evt.Pod
+				if evt.Type == watch.Deleted {
+					continue
+				}
+
 				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.ContainerID == "" {
 						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
@@ -219,7 +224,6 @@ func (a *LogAggregator) Unmute() {
 		// Logs are not activated.
 		return
 	}
-
 	atomic.StoreInt32(&a.muted, 0)
 }
 

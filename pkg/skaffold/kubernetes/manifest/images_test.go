@@ -200,9 +200,6 @@ spec:
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
-		t.CheckDeepEqual([]string{
-			"Couldn't parse image [not valid]: invalid reference format",
-		}, fakeWarner.Warnings)
 	})
 }
 

@@ -204,9 +204,10 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
+
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, d)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)

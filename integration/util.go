@@ -112,7 +112,7 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 		t.Fatalf("creating namespace: %s", err)
 	}
 
-	log.Entry(context.Background()).Info("Namespace:", ns.Name)
+	logrus.Info("Namespace:", ns.Name)
 
 	nsClient := &NSKubernetesClient{
 		t:      t,
@@ -194,7 +194,7 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 		return false
 	}
 	result := k.waitForPods(f, podNames...)
-	log.Entry(context.Background()).Infof("Pods marked as ready: %v", result)
+	logrus.Infof("Pods marked as ready: %v", result)
 }
 
 // WaitForPodsInPhase waits for a list of pods to reach the given phase.
@@ -203,7 +203,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 		return pod.Status.Phase == expectedPhase
 	}
 	result := k.waitForPods(f, podNames...)
-	log.Entry(context.Background()).Infof("Pods in phase %q: %v", expectedPhase, result)
+	logrus.Infof("Pods in phase %q: %v", expectedPhase, result)
 }
 
 // waitForPods waits for a list of pods to become ready.
@@ -220,9 +220,9 @@ func (k *NSKubernetesClient) waitForPods(podReady func(*v1.Pod) bool, podNames .
 
 	waitForAllPods := len(podNames) == 0
 	if waitForAllPods {
-		log.Entry(ctx).Infof("Waiting for all pods in namespace %q to be ready", k.ns)
+		logrus.Infof("Waiting for all pods in namespace %q to be ready", k.ns)
 	} else {
-		log.Entry(ctx).Info("Waiting for pods", podNames, "to be ready")
+		logrus.Info("Waiting for pods", podNames, "to be ready")
 	}
 
 	podsReady = map[string]bool{}
@@ -261,11 +261,11 @@ func (k *NSKubernetesClient) waitForPods(podReady func(*v1.Pod) bool, podNames .
 				}
 			}
 			if len(waiting) > 0 {
-				log.Entry(ctx).Infof("Still waiting for pods %v", waiting)
+				logrus.Infof("Still waiting for pods %v", waiting)
 				break waitLoop
 			} else if l := len(w.ResultChan()); l > 0 {
 				// carry on when there are pending messages in case a new pod has been created
-				log.Entry(ctx).Infof("%d pending pod update messages", l)
+				logrus.Infof("%d pending pod update messages", l)
 				break waitLoop
 			}
 			return
@@ -309,7 +309,7 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 		return
 	}
 
-	log.Entry(context.Background()).Info("Waiting for deployments", depNames, "to stabilize")
+	logrus.Info("Waiting for deployments", depNames, "to stabilize")
 
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), timeout)
 	defer cancelTimeout()
@@ -335,7 +335,7 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 		case event := <-w.ResultChan():
 			dp := event.Object.(*appsv1.Deployment)
 			desiredReplicas := *(dp.Spec.Replicas)
-			log.Entry(ctx).Infof("Deployment %s: Generation %d/%d, Replicas %d/%d, Available %d/%d",
+			logrus.Infof("Deployment %s: Generation %d/%d, Replicas %d/%d, Available %d/%d",
 				dp.Name,
 				dp.Status.ObservedGeneration, dp.Generation,
 				dp.Status.Replicas, desiredReplicas,
@@ -349,7 +349,7 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 				}
 			}
 
-			log.Entry(ctx).Info("Deployments", depNames, "are stable")
+			logrus.Info("Deployments", depNames, "are stable")
 			return
 		}
 	}
@@ -358,14 +358,14 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 // debug is used to print all the details about pods or deployments
 func (k *NSKubernetesClient) debug(entities string) {
 	cmd := exec.Command("kubectl", "-n", k.ns, "get", entities, "-oyaml")
-	log.Entry(context.Background()).Warn(cmd.Args)
+	logrus.Warn(cmd.Args)
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out)) // Use fmt.Println, not logrus, for prettier output
 }
 
 func (k *NSKubernetesClient) printDiskFreeSpace() {
 	cmd := exec.Command("df", "-h")
-	log.Entry(context.Background()).Warn(cmd.Args)
+	logrus.Warn(cmd.Args)
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
 }
@@ -374,7 +374,7 @@ func (k *NSKubernetesClient) printDiskFreeSpace() {
 func (k *NSKubernetesClient) logs(entity string, names []string) {
 	for _, n := range names {
 		cmd := exec.Command("kubectl", "-n", k.ns, "logs", entity+"/"+n)
-		log.Entry(context.Background()).Warn(cmd.Args)
+		logrus.Warn(cmd.Args)
 		out, _ := cmd.CombinedOutput()
 		fmt.Println(string(out)) // Use fmt.Println, not logrus, for prettier output
 	}

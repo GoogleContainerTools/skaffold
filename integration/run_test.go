@@ -113,7 +113,7 @@ var tests = []struct {
 	{
 		description: "custom builder",
 		dir:         "examples/custom",
-		pods:        []string{"getting-started"},
+		pods:        []string{"getting-started-custom"},
 	},
 	{
 		description: "buildpacks Go",

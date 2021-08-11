@@ -324,6 +324,15 @@ func isQuietMode() bool {
 	}
 }
 
+func apiServerShutdownHook(err error) error {
+	// clean up server at end of the execution since cobra post run hooks
+	// are only executed if RunE is successful.
+	if shutdownAPIServer != nil {
+		shutdownAPIServer()
+	}
+	return err
+}
+
 func updateCheckForReleasedVersionsIfNotDisabled(s string) string {
 	if preReleaseVersion(s) {
 		log.Entry(context.Background()).Debug("Skipping update check for pre-release version")

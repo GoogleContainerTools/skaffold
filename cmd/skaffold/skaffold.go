@@ -30,10 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-type ExitCoder interface {
-	ExitCode() int
-}
-
 func main() {
 	if _, ok := os.LookupEnv("SKAFFOLD_PROFILER"); ok {
 		err := profiler.Start(profiler.Config{
@@ -60,18 +56,9 @@ func main() {
 			// before we print an error to get the right coloring.
 			errOut := output.GetWriter(os.Stderr, output.DefaultColorCode, false, false)
 			output.Red.Fprintln(errOut, err)
-			code = exitCode(err)
+			code = app.ExitCode(err)
 		}
 	}
 	instrumentation.ShutdownAndFlush(context.Background(), code)
 	os.Exit(code)
-}
-
-func exitCode(err error) int {
-	var exitCoder ExitCoder
-	if errors.As(err, &exitCoder) {
-		return exitCoder.ExitCode()
-	}
-
-	return 1
 }

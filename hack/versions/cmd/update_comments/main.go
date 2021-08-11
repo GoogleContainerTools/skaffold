@@ -17,13 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"path"
 	"strings"
 
 	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -36,6 +35,6 @@ func main() {
 
 	schemaDir := path.Join("pkg", "skaffold", "schema")
 	if err := walk.From(schemaDir).WhenHasName("config.go").Do(updateVersionComment); err != nil {
-		log.Entry(context.Background()).Fatalf("%s", err)
+		logrus.Fatalf("%s", err)
 	}
 }

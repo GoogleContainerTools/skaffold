@@ -128,9 +128,9 @@ func Partitions() (map[string]int, int) {
 		}
 	}
 	if logrus.GetLevel() == logrus.TraceLevel {
-		log.Entry(context.Background()).Trace("Partitions: ")
+		logrus.Trace("Partitions: ")
 		for i, b := range bins {
-			log.Entry(context.Background()).Tracef("P%d %s\n", i, b.String())
+			logrus.Tracef("P%d %s\n", i, b.String())
 		}
 	}
 	return result, len(bins) - 1

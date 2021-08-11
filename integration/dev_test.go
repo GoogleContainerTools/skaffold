@@ -76,7 +76,7 @@ func TestDevNotification(t *testing.T) {
 			// Make sure the old Deployment and the new Deployment are different
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				newDep := client.GetDeployment("test-dev")
-				log.Entry(context.Background()).Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
+				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
 			failNowIfError(t, err)
@@ -248,7 +248,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 	// Make sure the old Deployment and the new Deployment are different
 	err = wait.Poll(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		newDep := client.GetDeployment("test-dev")
-		log.Entry(context.Background()).Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
+		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
 	failNowIfError(t, err)

@@ -86,7 +86,7 @@ func TestBuildDependenciesOrder(t *testing.T) {
 				if out, err := skaffold.Build(test.args...).InDir("testdata/build-dependencies").RunWithCombinedOutput(t); err == nil {
 					t.Fatal("expected build to fail")
 				} else if !strings.Contains(string(out), test.failure) {
-					log.Entry(context.Background()).Info("build output: ", string(out))
+					logrus.Info("build output: ", string(out))
 					t.Fatalf("build failed but for wrong reason")
 				}
 			}
@@ -153,12 +153,12 @@ func TestBuildDependenciesCache(t *testing.T) {
 
 			for i := 1; i <= 4; i++ {
 				if !contains(test.rebuilt, i) && !strings.Contains(stringOut, fmt.Sprintf("image%d: Found Locally", i)) {
-					log.Entry(context.Background()).Info("build output: ", string(out))
+					logrus.Info("build output: ", string(out))
 					t.Fatalf("expected image%d to be cached", i)
 				}
 
 				if contains(test.rebuilt, i) && !strings.Contains(stringOut, fmt.Sprintf("image%d: Not found. Building", i)) {
-					log.Entry(context.Background()).Info("build output: ", string(out))
+					logrus.Info("build output: ", string(out))
 					t.Fatalf("expected image%d to be rebuilt", i)
 				}
 			}

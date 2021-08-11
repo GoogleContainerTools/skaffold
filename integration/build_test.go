@@ -136,7 +136,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 			if out, err := skaffold.Build(test.args...).InDir(test.dir).RunWithCombinedOutput(t); err == nil {
 				t.Fatal("expected build to fail")
 			} else if !strings.Contains(string(out), test.expected) {
-				log.Entry(context.Background()).Info("build output: ", string(out))
+				logrus.Info("build output: ", string(out))
 				t.Fatalf("build failed but for wrong reason")
 			}
 		})

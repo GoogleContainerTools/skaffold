@@ -44,5 +44,6 @@ func Run(out, stderr io.Writer) error {
 		log.Entry(ctx).Debugf("Retrieving command line from SKAFFOLD_CMDLINE: %q", parsed)
 		c.SetArgs(parsed)
 	}
-	return c.ExecuteContext(ctx)
+	err := c.ExecuteContext(ctx)
+	return extractInvalidUsageError(err)
 }

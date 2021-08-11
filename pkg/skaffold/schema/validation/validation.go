@@ -80,7 +80,6 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 		errs = append(errs, wrapWithContext(config, cfgErrs...)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
-	errs = append(errs, validateSingleKubeContext(configs)...)
 	if validateConfig.CheckDeploySource {
 		// TODO(6050) validate for other deploy types - helm, kpt, etc.
 		errs = append(errs, validateKubectlManifests(configs)...)
@@ -551,19 +550,6 @@ func validateLogPrefix(lc latestV1.LogsConfig) []error {
 		return []error{fmt.Errorf("invalid log prefix '%s'. Valid values are 'auto', 'container', 'podAndContainer' or 'none'", lc.Prefix)}
 	}
 
-	return nil
-}
-
-func validateSingleKubeContext(configs parser.SkaffoldConfigSet) []error {
-	if len(configs) < 2 {
-		return nil
-	}
-	k := configs[0].Deploy.KubeContext
-	for _, c := range configs {
-		if c.Deploy.KubeContext != k {
-			return []error{errors.New("all configs should have the same value for `deploy.kubeContext`")}
-		}
-	}
 	return nil
 }
 
