@@ -29,6 +29,12 @@ import (
 
 type jdwpTransformer struct{}
 
+// For testing
+//nolint:golint
+func NewJDWPTransformer() containerTransformer {
+	return jdwpTransformer{}
+}
+
 func init() {
 	containerTransforms = append(containerTransforms, jdwpTransformer{})
 }
@@ -38,18 +44,18 @@ const (
 	defaultJdwpPort = 5005
 )
 
-func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
-	if _, found := config.env["JAVA_TOOL_OPTIONS"]; found {
+func (t jdwpTransformer) IsApplicable(config ImageConfiguration) bool {
+	if _, found := config.Env["JAVA_TOOL_OPTIONS"]; found {
 		return true
 	}
-	if _, found := config.env["JAVA_VERSION"]; found {
+	if _, found := config.Env["JAVA_VERSION"]; found {
 		return true
 	}
-	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
-		return config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java")
+	if len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint) {
+		return config.Entrypoint[0] == "java" || strings.HasSuffix(config.Entrypoint[0], "/java")
 	}
-	return len(config.arguments) > 0 &&
-		(config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java"))
+	return len(config.Arguments) > 0 &&
+		(config.Arguments[0] == "java" || strings.HasSuffix(config.Arguments[0], "/java"))
 }
 
 // captures the useful jdwp options (see `java -agentlib:jdwp=help`)
@@ -65,7 +71,7 @@ type jdwpSpec struct {
 
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
@@ -77,7 +83,7 @@ func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config imageConfi
 	} else {
 		port = portAlloc(defaultJdwpPort)
 		jto := fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=n,quiet=y", port)
-		if existing, found := config.env["JAVA_TOOL_OPTIONS"]; found {
+		if existing, found := config.Env["JAVA_TOOL_OPTIONS"]; found {
 			jto = existing + " " + jto
 		}
 		container.Env = setEnvVar(container.Env, "JAVA_TOOL_OPTIONS", jto)
@@ -91,19 +97,19 @@ func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config imageConfi
 	}, "", nil
 }
 
-func retrieveJdwpSpec(config imageConfiguration) *jdwpSpec {
-	for _, arg := range config.entrypoint {
+func retrieveJdwpSpec(config ImageConfiguration) *jdwpSpec {
+	for _, arg := range config.Entrypoint {
 		if spec := extractJdwpArg(arg); spec != nil {
 			return spec
 		}
 	}
-	for _, arg := range config.arguments {
+	for _, arg := range config.Arguments {
 		if spec := extractJdwpArg(arg); spec != nil {
 			return spec
 		}
 	}
 	// Nobody should be setting JDWP options via _JAVA_OPTIONS and IBM_JAVA_OPTIONS
-	if value, found := config.env["JAVA_TOOL_OPTIONS"]; found {
+	if value, found := config.Env["JAVA_TOOL_OPTIONS"]; found {
 		for _, arg := range strings.Split(value, " ") {
 			if spec := extractJdwpArg(arg); spec != nil {
 				return spec

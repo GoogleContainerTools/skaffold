@@ -22,7 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
@@ -38,7 +39,7 @@ func NewCmdDebug() *cobra.Command {
 			"Auto-build and sync is disabled by default to prevent accidentally tearing down debug sessions.").
 		WithCommonFlags().
 		WithFlags([]*Flag{
-			{Value: &debugging.Protocols, Name: "protocols", DefValue: []string{}, Usage: "Priority sorted order of debugger protocols to support."},
+			{Value: &debug.Protocols, Name: "protocols", DefValue: []string{}, Usage: "Priority sorted order of debugger protocols to support."},
 		}).
 		WithExample("Launch with port-forwarding", "debug --port-forward").
 		WithHouseKeepingMessages().

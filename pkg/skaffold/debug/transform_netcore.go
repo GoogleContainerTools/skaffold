@@ -27,6 +27,12 @@ import (
 
 type netcoreTransformer struct{}
 
+// For testing
+//nolint:golint
+func NewNetcoreTransformer() containerTransformer {
+	return netcoreTransformer{}
+}
+
 func init() {
 	containerTransforms = append(containerTransforms, netcoreTransformer{})
 }
@@ -48,20 +54,20 @@ func isLaunchingNetcore(args []string) bool {
 	return false
 }
 
-func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
+func (t netcoreTransformer) IsApplicable(config ImageConfiguration) bool {
 	// Some official base images (eg: dotnet/core/runtime-deps) contain the following env vars
 	for _, v := range []string{"ASPNETCORE_URLS", "DOTNET_RUNNING_IN_CONTAINER", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"} {
-		if _, found := config.env[v]; found {
+		if _, found := config.Env[v]; found {
 			return true
 		}
 	}
 
-	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
-		return isLaunchingNetcore(config.entrypoint)
+	if len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint) {
+		return isLaunchingNetcore(config.Entrypoint)
 	}
 
-	if len(config.arguments) > 0 {
-		return isLaunchingNetcore(config.arguments)
+	if len(config.Arguments) > 0 {
+		return isLaunchingNetcore(config.Arguments)
 	}
 
 	return false
@@ -69,7 +75,7 @@ func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
 
 // Apply configures a container definition for vsdbg.
 // Returns a simple map describing the debug configuration details.
-func (t netcoreTransformer) Apply(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t netcoreTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for netcore debugging", container.Name)
 

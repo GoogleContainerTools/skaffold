@@ -30,6 +30,12 @@ import (
 
 type dlvTransformer struct{}
 
+// For testing
+//nolint:golint
+func NewDlvTransformer() containerTransformer {
+	return dlvTransformer{}
+}
+
 func init() {
 	containerTransforms = append(containerTransforms, dlvTransformer{})
 }
@@ -59,10 +65,10 @@ func isLaunchingDlv(args []string) bool {
 	return len(args) > 0 && (args[0] == "dlv" || strings.HasSuffix(args[0], "/dlv"))
 }
 
-func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
+func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
 	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK"} {
-		if _, found := config.env[name]; found {
-			log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has env %q", config.artifact, name)
+		if _, found := config.Env[name]; found {
+			log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has env %q", config.Artifact, name)
 			return true
 		}
 	}
@@ -75,25 +81,25 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 		"paketo-buildpacks/go-dist", // Paketo
 		"heroku/go",                 // Heroku
 	}
-	cnbBuildMetadata := config.labels["io.buildpacks.build.metadata"]
+	cnbBuildMetadata := config.Labels["io.buildpacks.build.metadata"]
 	for _, id := range knownGoBuildpackIds {
 		if strings.Contains(cnbBuildMetadata, id) {
-			log.Entry(context.TODO()).Infof("Artifact %q has Go buildpacks %q", config.artifact, id)
+			log.Entry(context.TODO()).Infof("Artifact %q has Go buildpacks %q", config.Artifact, id)
 			return true
 		}
 	}
-	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
-		return isLaunchingDlv(config.entrypoint)
+	if len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint) {
+		return isLaunchingDlv(config.Entrypoint)
 	}
-	if len(config.arguments) > 0 {
-		return isLaunchingDlv(config.arguments)
+	if len(config.Arguments) > 0 {
+		return isLaunchingDlv(config.Arguments)
 	}
 	return false
 }
 
 // Apply configures a container definition for Go with Delve.
 // Returns the debug configuration details, with the "go" support image
-func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for Go/Delve debugging", container.Name)
 
@@ -104,11 +110,11 @@ func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config imageConfig
 		newSpec := newDlvSpec(uint16(portAlloc(defaultDlvPort)))
 		spec = &newSpec
 		switch {
-		case len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint):
-			container.Command = rewriteDlvCommandLine(config.entrypoint, *spec, container.Args)
+		case len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint):
+			container.Command = rewriteDlvCommandLine(config.Entrypoint, *spec, container.Args)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0:
-			container.Args = rewriteDlvCommandLine(config.arguments, *spec, container.Args)
+		case (len(config.Entrypoint) == 0 || isEntrypointLauncher(config.Entrypoint)) && len(config.Arguments) > 0:
+			container.Args = rewriteDlvCommandLine(config.Arguments, *spec, container.Args)
 
 		default:
 			return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("container %q has no command-line", container.Name)
@@ -123,11 +129,11 @@ func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config imageConfig
 	}, "go", nil
 }
 
-func retrieveDlvSpec(config imageConfiguration) *dlvSpec {
-	if spec := extractDlvSpec(config.entrypoint); spec != nil {
+func retrieveDlvSpec(config ImageConfiguration) *dlvSpec {
+	if spec := extractDlvSpec(config.Entrypoint); spec != nil {
 		return spec
 	}
-	if spec := extractDlvSpec(config.arguments); spec != nil {
+	if spec := extractDlvSpec(config.Arguments); spec != nil {
 		return spec
 	}
 	return nil

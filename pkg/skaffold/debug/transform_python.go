@@ -30,6 +30,12 @@ import (
 
 type pythonTransformer struct{}
 
+// For testing
+//nolint:golint
+func NewPythonTransformer() containerTransformer {
+	return pythonTransformer{}
+}
+
 func init() {
 	containerTransforms = append(containerTransforms, pythonTransformer{})
 }
@@ -94,20 +100,20 @@ func hasCommonPythonEnvVars(env map[string]string) bool {
 	return false
 }
 
-func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
-	if hasCommonPythonEnvVars(config.env) {
+func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
+	if hasCommonPythonEnvVars(config.Env) {
 		return true
 	}
 
-	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
-		return isLaunchingPython(config.entrypoint)
+	if len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint) {
+		return isLaunchingPython(config.Entrypoint)
 	}
-	return isLaunchingPython(config.arguments)
+	return isLaunchingPython(config.Arguments)
 }
 
 // Apply configures a container definition for Python with ptvsd/debugpy/pydevd.
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for python debugging", container.Name)
 
@@ -124,14 +130,14 @@ func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config imageCon
 	spec := createPythonDebugSpec(overrideProtocols, portAlloc)
 
 	switch {
-	case isLaunchingPython(config.entrypoint):
-		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
+	case isLaunchingPython(config.Entrypoint):
+		container.Command = rewritePythonCommandLine(config.Entrypoint, *spec)
 
-	case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingPython(config.arguments):
-		container.Args = rewritePythonCommandLine(config.arguments, *spec)
+	case (len(config.Entrypoint) == 0 || isEntrypointLauncher(config.Entrypoint)) && isLaunchingPython(config.Arguments):
+		container.Args = rewritePythonCommandLine(config.Arguments, *spec)
 
-	case hasCommonPythonEnvVars(config.env):
-		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
+	case hasCommonPythonEnvVars(config.Env):
+		container.Command = rewritePythonCommandLine(config.Entrypoint, *spec)
 
 	default:
 		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
@@ -146,11 +152,11 @@ func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config imageCon
 	}, "python", nil
 }
 
-func retrievePythonDebugSpec(config imageConfiguration) *pythonSpec {
-	if spec := extractPythonDebugSpec(config.entrypoint); spec != nil {
+func retrievePythonDebugSpec(config ImageConfiguration) *pythonSpec {
+	if spec := extractPythonDebugSpec(config.Entrypoint); spec != nil {
 		return spec
 	}
-	if spec := extractPythonDebugSpec(config.arguments); spec != nil {
+	if spec := extractPythonDebugSpec(config.Arguments); spec != nil {
 		return spec
 	}
 	return nil
@@ -166,7 +172,7 @@ func extractPythonDebugSpec(args []string) *pythonSpec {
 	return nil
 }
 
-func createPythonDebugSpec(overrideProtocols []string, portAlloc portAllocator) *pythonSpec {
+func createPythonDebugSpec(overrideProtocols []string, portAlloc PortAllocator) *pythonSpec {
 	for _, p := range overrideProtocols {
 		switch p {
 		case pydevdProtocol:

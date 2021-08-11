@@ -29,6 +29,12 @@ import (
 
 type nodeTransformer struct{}
 
+// For testing
+//nolint:golint
+func NewNodeTransformer() containerTransformer {
+	return nodeTransformer{}
+}
+
 func init() {
 	containerTransforms = append(containerTransforms, nodeTransformer{})
 
@@ -59,24 +65,24 @@ func isLaunchingNpm(args []string) bool {
 	return len(args) > 0 && (args[0] == "npm" || strings.HasSuffix(args[0], "/npm"))
 }
 
-func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
+func (t nodeTransformer) IsApplicable(config ImageConfiguration) bool {
 	// NODE_VERSION defined in Official Docker `node` image
 	// NODEJS_VERSION defined in RedHat's node base image
 	// NODE_ENV is a common var found to toggle debug and production
 	for _, v := range []string{"NODE_VERSION", "NODEJS_VERSION", "NODE_ENV"} {
-		if _, found := config.env[v]; found {
+		if _, found := config.Env[v]; found {
 			return true
 		}
 	}
-	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
-		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)
+	if len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint) {
+		return isLaunchingNode(config.Entrypoint) || isLaunchingNpm(config.Entrypoint)
 	}
-	return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
+	return isLaunchingNode(config.Arguments) || isLaunchingNpm(config.Arguments)
 }
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for node.js debugging", container.Name)
 
@@ -85,20 +91,20 @@ func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config imageConfi
 	if spec == nil {
 		spec = &inspectSpec{host: "0.0.0.0", port: portAlloc(defaultDevtoolsPort)}
 		switch {
-		case isLaunchingNode(config.entrypoint):
-			container.Command = rewriteNodeCommandLine(config.entrypoint, *spec)
+		case isLaunchingNode(config.Entrypoint):
+			container.Command = rewriteNodeCommandLine(config.Entrypoint, *spec)
 
-		case isLaunchingNpm(config.entrypoint):
-			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
+		case isLaunchingNpm(config.Entrypoint):
+			container.Command = rewriteNpmCommandLine(config.Entrypoint, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNode(config.arguments):
-			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
+		case (len(config.Entrypoint) == 0 || isEntrypointLauncher(config.Entrypoint)) && isLaunchingNode(config.Arguments):
+			container.Args = rewriteNodeCommandLine(config.Arguments, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNpm(config.arguments):
-			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
+		case (len(config.Entrypoint) == 0 || isEntrypointLauncher(config.Entrypoint)) && isLaunchingNpm(config.Arguments):
+			container.Args = rewriteNpmCommandLine(config.Arguments, *spec)
 
 		default:
-			if v, found := config.env["NODE_OPTIONS"]; found {
+			if v, found := config.Env["NODE_OPTIONS"]; found {
 				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", v+" "+spec.String())
 			} else {
 				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", spec.String())
@@ -107,7 +113,7 @@ func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config imageConfi
 	}
 
 	// Add our debug-helper path to resolve to our node wrapper
-	if v, found := config.env["PATH"]; found {
+	if v, found := config.Env["PATH"]; found {
 		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin:"+v)
 	} else {
 		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin")
@@ -121,18 +127,18 @@ func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config imageConfi
 	}, "nodejs", nil
 }
 
-func retrieveNodeInspectSpec(config imageConfiguration) *inspectSpec {
-	for _, arg := range config.entrypoint {
+func retrieveNodeInspectSpec(config ImageConfiguration) *inspectSpec {
+	for _, arg := range config.Entrypoint {
 		if spec := extractInspectArg(arg); spec != nil {
 			return spec
 		}
 	}
-	for _, arg := range config.arguments {
+	for _, arg := range config.Arguments {
 		if spec := extractInspectArg(arg); spec != nil {
 			return spec
 		}
 	}
-	if value, found := config.env["NODE_OPTIONS"]; found {
+	if value, found := config.Env["NODE_OPTIONS"]; found {
 		if spec := extractInspectArg(value); spec != nil {
 			return spec
 		}
