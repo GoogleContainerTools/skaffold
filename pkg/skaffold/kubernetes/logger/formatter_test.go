@@ -222,3 +222,32 @@ func TestPrefix(t *testing.T) {
 		})
 	}
 }
+
+func TestPrintline(t *testing.T) {
+	tests := []struct {
+		description string
+		isMuted     bool
+		expected    string
+	}{
+		{
+			description: "muted",
+			isMuted:     true,
+		},
+		{
+			description: "unmuted",
+			expected:    "[hello container]test line",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			pod := podWithName("hello")
+			f := newKubernetesLogFormatter(&mockConfig{log: latestV1.LogsConfig{
+				Prefix: "auto",
+			}}, &mockColorPicker{}, func() bool { return test.isMuted }, &pod,
+				containerWithName("container"))
+			var out bytes.Buffer
+			f.PrintLine(&out, "test line")
+			t.CheckDeepEqual(test.expected, out.String())
+		})
+	}
+}
