@@ -17,13 +17,13 @@ limitations under the License.
 package yamltags
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
 	"unicode"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -33,7 +33,7 @@ type fieldSet map[string]struct{}
 func ValidateStruct(s interface{}) error {
 	parentStruct := reflect.Indirect(reflect.ValueOf(s))
 	t := parentStruct.Type()
-	logrus.Tracef("validating yamltags of struct %s", t.Name())
+	log.Entry(context.Background()).Tracef("validating yamltags of struct %s", t.Name())
 
 	// Loop through the fields on the struct, looking for tags.
 	for i := 0; i < t.NumField(); i++ {
@@ -64,7 +64,7 @@ func YamlName(field reflect.StructField) string {
 func GetYamlTag(value interface{}) string {
 	buf, err := yaml.Marshal(value)
 	if err != nil {
-		logrus.Warnf("error marshaling %-v", value)
+		log.Entry(context.Background()).Warnf("error marshaling %-v", value)
 		return ""
 	}
 	rawStr := string(buf)
@@ -145,7 +145,7 @@ func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 				Field: field,
 			}
 		default:
-			logrus.Panicf("unknown yaml tag in %s", yamltags)
+			log.Entry(context.Background()).Panicf("unknown yaml tag in %s", yamltags)
 		}
 		if err := yt.Load(tagParts); err != nil {
 			return err

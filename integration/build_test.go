@@ -25,12 +25,12 @@ import (
 	"time"
 
 	"4d63.com/tz"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -136,7 +136,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 			if out, err := skaffold.Build(test.args...).InDir(test.dir).RunWithCombinedOutput(t); err == nil {
 				t.Fatal("expected build to fail")
 			} else if !strings.Contains(string(out), test.expected) {
-				logrus.Info("build output: ", string(out))
+				log.Entry(context.Background()).Info("build output: ", string(out))
 				t.Fatalf("build failed but for wrong reason")
 			}
 		})

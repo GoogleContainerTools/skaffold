@@ -17,15 +17,16 @@ limitations under the License.
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -254,7 +255,7 @@ func kanikoArgs(artifact *latestV1.KanikoArtifact, tag string, insecureRegistrie
 		return nil, fmt.Errorf("unable build kaniko args: %w", err)
 	}
 
-	logrus.Trace("kaniko arguments are ", strings.Join(args, " "))
+	log.Entry(context.Background()).Trace("kaniko arguments are ", strings.Join(args, " "))
 
 	return args, nil
 }

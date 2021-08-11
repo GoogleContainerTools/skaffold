@@ -22,8 +22,7 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -35,14 +34,14 @@ func NewContainerSyncer() *ContainerSyncer {
 
 func (s *ContainerSyncer) Sync(ctx context.Context, _ io.Writer, item *Item) error {
 	if len(item.Copy) > 0 {
-		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
+		log.Entry(ctx).Info("Copying files:", item.Copy, "to", item.Image)
 		if _, err := util.RunCmdOut(s.copyFileFn(ctx, item.Artifact.ImageName, item.Copy)); err != nil {
 			return fmt.Errorf("copying files: %w", err)
 		}
 	}
 
 	if len(item.Delete) > 0 {
-		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
+		log.Entry(ctx).Info("Deleting files:", item.Delete, "from", item.Image)
 		if _, err := util.RunCmdOut(s.deleteFileFn(ctx, item.Artifact.ImageName, item.Delete)); err != nil {
 			return fmt.Errorf("deleting files: %w", err)
 		}

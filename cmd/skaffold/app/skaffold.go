@@ -23,9 +23,9 @@ import (
 	"os"
 
 	shell "github.com/kballard/go-shellquote"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func Run(out, stderr io.Writer) error {
@@ -41,7 +41,7 @@ func Run(out, stderr io.Writer) error {
 			return fmt.Errorf("SKAFFOLD_CMDLINE is invalid: %w", err)
 		}
 		// XXX logged before logrus.SetLevel is called in NewSkaffoldCommand's PersistentPreRunE
-		logrus.Debugf("Retrieving command line from SKAFFOLD_CMDLINE: %q", parsed)
+		log.Entry(ctx).Debugf("Retrieving command line from SKAFFOLD_CMDLINE: %q", parsed)
 		c.SetArgs(parsed)
 	}
 	return c.ExecuteContext(ctx)

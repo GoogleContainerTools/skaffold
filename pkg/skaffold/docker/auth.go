@@ -30,9 +30,9 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const (
@@ -165,9 +165,9 @@ func (l *localDaemon) officialRegistry(ctx context.Context) string {
 	info, err := l.apiClient.Info(ctx)
 	switch {
 	case err != nil:
-		logrus.Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
+		log.Entry(ctx).Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
 	case info.IndexServerAddress == "":
-		logrus.Warnf("empty registry endpoint from daemon. Using system default: %s\n", serverAddress)
+		log.Entry(ctx).Warnf("empty registry endpoint from daemon. Using system default: %s\n", serverAddress)
 	default:
 		serverAddress = info.IndexServerAddress
 	}

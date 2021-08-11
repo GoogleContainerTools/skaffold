@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/rjeczalik/notify"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -121,7 +121,7 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 				if !t.isActive() && t.Ignore(e) {
 					continue
 				}
-				logrus.Debugln("Change detected", e)
+				log.Entry(ctx).Debug("Change detected", e)
 
 				// Wait t.Ienterval before triggering.
 				// This way, rapid stream of events will be grouped.

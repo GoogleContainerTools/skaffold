@@ -32,7 +32,6 @@ import (
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rakyll/statik/fs"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout"
@@ -48,6 +47,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -67,7 +67,7 @@ func ExportMetrics(exitCode int) error {
 }
 
 func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) error {
-	logrus.Debug("exporting metrics")
+	log.Entry(ctx).Debug("exporting metrics")
 	p, err := initExporter()
 	if p == nil {
 		return err
@@ -95,12 +95,12 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		createMetrics(ctx, m)
 	}
 	if err := p.Stop(ctx); err != nil {
-		logrus.Debugf("error uploading metrics: %s", err)
-		logrus.Debugf("writing to file %s instead", filename)
+		log.Entry(ctx).Debugf("error uploading metrics: %s", err)
+		log.Entry(ctx).Debugf("writing to file %s instead", filename)
 		b, _ = json.Marshal(meters)
 		return ioutil.WriteFile(filename, b, 0666)
 	}
-	logrus.Debugf("metrics uploading complete in %s", time.Since(start).String())
+	log.Entry(ctx).Debugf("metrics uploading complete in %s", time.Since(start).String())
 
 	if fileExists {
 		return os.Remove(filename)
@@ -139,7 +139,7 @@ func initCloudMonitoringExporterMetrics() (*basic.Controller, error) {
 			mexporter.WithMetricDescriptorTypeFormatter(formatter),
 			mexporter.WithMonitoringClientOptions(option.WithCredentialsJSON(b)),
 			mexporter.WithOnError(func(err error) {
-				logrus.Debugf("Error with metrics: %v", err)
+				log.Entry(context.Background()).Debugf("Error with metrics: %v", err)
 			}),
 		},
 	)
@@ -319,20 +319,20 @@ func initTraceExporter(opts ...TraceExporterOption) (trace.TracerProvider, func(
 
 	switch os.Getenv("SKAFFOLD_TRACE") {
 	case "stdout":
-		logrus.Debugf("using stdout trace exporter")
+		log.Entry(context.Background()).Debug("using stdout trace exporter")
 		return initIOWriterTracer(teconf.writer)
 	case "gcp-adc":
-		logrus.Debugf("using cloud trace exporter w/ application default creds")
+		log.Entry(context.Background()).Debug("using cloud trace exporter w/ application default creds")
 		tp, shutdown, err := initCloudTraceExporterApplicationDefaultCreds()
 		return tp, func(context.Context) error { shutdown(); return nil }, err
 	case "jaeger":
-		logrus.Debugf("using jaeger trace exporter")
+		log.Entry(context.Background()).Debug("using jaeger trace exporter")
 		tp, shutdown, err := initJaegerTraceExporter()
 		return tp, func(context.Context) error { shutdown(); return nil }, err
 	}
 
 	if otelTraceExporterVal, ok := os.LookupEnv("OTEL_TRACES_EXPORTER"); ok {
-		logrus.Debugf("using otel default exporter - OTEL_TRACES_EXPORTER=%s", otelTraceExporterVal)
+		log.Entry(context.Background()).Debugf("using otel default exporter - OTEL_TRACES_EXPORTER=%s", otelTraceExporterVal)
 		return nil, func(context.Context) error { return nil }, nil
 	}
 
@@ -362,7 +362,7 @@ func initCloudTraceExporterApplicationDefaultCreds() (trace.TracerProvider, func
 		[]texporter.Option{
 			texporter.WithProjectID(os.Getenv("GOOGLE_CLOUD_PROJECT")),
 			texporter.WithOnError(func(err error) {
-				logrus.Debugf("Error with metrics: %v", err)
+				log.Entry(context.Background()).Debugf("Error with metrics: %v", err)
 			}),
 		},
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),

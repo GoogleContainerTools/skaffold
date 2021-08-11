@@ -17,11 +17,11 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"os/exec"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -54,7 +54,7 @@ func resolveJVM() bool {
 	cmd := exec.Command("java", "-version")
 	err := util.RunCmd(cmd)
 	if err != nil {
-		logrus.Warnf("Skipping Jib: no JVM: %v failed: %v", cmd.Args, err)
+		log.Entry(context.Background()).Warnf("Skipping Jib: no JVM: %v failed: %v", cmd.Args, err)
 	}
 	return err == nil
 }

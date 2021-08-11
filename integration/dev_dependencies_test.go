@@ -17,13 +17,14 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func TestDev_WithDependencies(t *testing.T) {
@@ -51,10 +52,10 @@ func TestDev_WithDependencies(t *testing.T) {
 			newDep2 := client.GetDeployment("app2")
 			newDep3 := client.GetDeployment("app3")
 			newDep4 := client.GetDeployment("app4")
-			logrus.Infof("app1 - old gen: %d, new gen: %d", dep1.GetGeneration(), newDep1.GetGeneration())
-			logrus.Infof("app2 - old gen: %d, new gen: %d", dep2.GetGeneration(), newDep2.GetGeneration())
-			logrus.Infof("app3 - old gen: %d, new gen: %d", dep3.GetGeneration(), newDep3.GetGeneration())
-			logrus.Infof("app4 - old gen: %d, new gen: %d", dep4.GetGeneration(), newDep4.GetGeneration())
+			log.Entry(context.Background()).Infof("app1 - old gen: %d, new gen: %d", dep1.GetGeneration(), newDep1.GetGeneration())
+			log.Entry(context.Background()).Infof("app2 - old gen: %d, new gen: %d", dep2.GetGeneration(), newDep2.GetGeneration())
+			log.Entry(context.Background()).Infof("app3 - old gen: %d, new gen: %d", dep3.GetGeneration(), newDep3.GetGeneration())
+			log.Entry(context.Background()).Infof("app4 - old gen: %d, new gen: %d", dep4.GetGeneration(), newDep4.GetGeneration())
 			return dep1.GetGeneration() != newDep1.GetGeneration() &&
 				dep2.GetGeneration() != newDep2.GetGeneration() &&
 				dep3.GetGeneration() != newDep3.GetGeneration() &&

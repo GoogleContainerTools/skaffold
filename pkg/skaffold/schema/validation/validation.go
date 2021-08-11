@@ -27,13 +27,13 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -616,7 +616,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 			continue
 		}
 		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
-			logrus.Debugln("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
+			log.Entry(context.Background()).Debug("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
 			continue
 		}
 

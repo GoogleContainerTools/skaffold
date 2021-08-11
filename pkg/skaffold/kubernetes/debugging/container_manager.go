@@ -20,13 +20,13 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var (
@@ -111,7 +111,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 	}
 	var configurations map[string]annotations.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(debugConfigString), &configurations); err != nil {
-		logrus.Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
+		log.Entry(context.Background()).Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
 		return
 	}
 	for _, c := range pod.Status.ContainerStatuses {

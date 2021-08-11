@@ -29,11 +29,11 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -180,7 +180,7 @@ func envVarForImage(imageName string, digest string) map[string]string {
 		customMap[constants.ImageRef.Tag] = ref.Tag
 		customMap[constants.ImageRef.Digest] = ref.Digest
 	} else {
-		logrus.Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
+		log.Entry(context.Background()).Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
 	}
 
 	if digest == "" {

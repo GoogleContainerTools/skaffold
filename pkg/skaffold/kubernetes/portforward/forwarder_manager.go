@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
 	v1 "k8s.io/api/core/v1"
 
@@ -32,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -105,18 +105,18 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 	}
 	var configurations map[string]annotations.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annot), &configurations); err != nil {
-		logrus.Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
+		log.Entry(context.Background()).Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
 		return nil
 	}
 	dc, found := configurations[c.Name]
 	if !found {
-		logrus.Debugf("no debug configuration found on pod/%s/%s", pod.Name, c.Name)
+		log.Entry(context.Background()).Debugf("no debug configuration found on pod/%s/%s", pod.Name, c.Name)
 		return nil
 	}
 	for _, port := range c.Ports {
 		for _, exposed := range dc.Ports {
 			if uint32(port.ContainerPort) == exposed {
-				logrus.Debugf("selecting debug port for pod/%s/%s: %v", pod.Name, c.Name, port)
+				log.Entry(context.Background()).Debugf("selecting debug port for pod/%s/%s: %v", pod.Name, c.Name, port)
 				ports = append(ports, port)
 			}
 		}

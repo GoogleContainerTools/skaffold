@@ -28,7 +28,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syaml "sigs.k8s.io/yaml"
@@ -53,6 +52,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -114,7 +114,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDep
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
 	if err != nil {
-		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
+		olog.Entry(context.Background()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
 	return &Deployer{

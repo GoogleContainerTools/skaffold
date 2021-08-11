@@ -17,15 +17,16 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/sirupsen/logrus"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // for testing
@@ -36,7 +37,7 @@ var (
 )
 
 func AddRemoteTag(src, target string, cfg Config) error {
-	logrus.Debugf("attempting to add tag %s to src %s", target, src)
+	log.Entry(context.Background()).Debugf("attempting to add tag %s to src %s", target, src)
 	img, err := getRemoteImage(src, cfg)
 	if err != nil {
 		return fmt.Errorf("getting image: %w", err)
@@ -125,7 +126,7 @@ func parseReference(s string, cfg Config, opts ...name.Option) (name.Reference, 
 	if IsInsecure(ref, cfg.GetInsecureRegistries()) {
 		ref, err = name.ParseReference(s, name.Insecure)
 		if err != nil {
-			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
+			log.Entry(context.Background()).Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
 		}
 	}
 

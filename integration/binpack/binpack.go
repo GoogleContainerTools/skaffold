@@ -17,10 +17,13 @@ limitations under the License.
 package binpack
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type timing struct {
@@ -125,9 +128,9 @@ func Partitions() (map[string]int, int) {
 		}
 	}
 	if logrus.GetLevel() == logrus.TraceLevel {
-		logrus.Trace("Partitions: ")
+		log.Entry(context.Background()).Trace("Partitions: ")
 		for i, b := range bins {
-			logrus.Tracef("P%d %s\n", i, b.String())
+			log.Entry(context.Background()).Tracef("P%d %s\n", i, b.String())
 		}
 	}
 	return result, len(bins) - 1

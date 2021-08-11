@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const timestampFormat = "2006-01-02 15:04:05"
@@ -103,8 +104,10 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
 func WithEventContext(ctx context.Context, out io.Writer, phase constants.Phase, subtaskID string) (io.Writer, context.Context) {
-	context.WithValue(ctx, "task", phase)
-	context.WithValue(ctx, "subtask", subtaskID)
+	ctx = context.WithValue(ctx, log.ContextKey, log.EventContext{
+		Task:    phase,
+		Subtask: subtaskID,
+	})
 
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{

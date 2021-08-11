@@ -25,7 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -43,6 +42,7 @@ import (
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -223,7 +223,7 @@ func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.D
 	defer ticker.Stop()
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
-	logrus.Debugf("checking status %s", r)
+	log.Entry(ctx).Debugf("checking status %s", r)
 	defer cancel()
 	for {
 		select {

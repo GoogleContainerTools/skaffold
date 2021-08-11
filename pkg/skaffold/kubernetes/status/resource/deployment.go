@@ -22,14 +22,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -140,7 +139,7 @@ func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 
 	d.UpdateStatus(ae)
 	if err := d.fetchPods(ctx); err != nil {
-		logrus.Debugf("pod statuses could not be fetched this time due to %s", err)
+		log.Entry(ctx).Debugf("pod statuses could not be fetched this time due to %s", err)
 	}
 }
 
@@ -202,7 +201,7 @@ func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
 			// result.
 			out, writeTrimLines, err := withLogFile(p.Name(), &result, p.Logs(), isMuted)
 			if err != nil {
-				logrus.Debugf("could not create log file %v", err)
+				log.Entry(context.Background()).Debugf("could not create log file %v", err)
 			}
 			trimLines := []string{}
 			for i, l := range p.Logs() {

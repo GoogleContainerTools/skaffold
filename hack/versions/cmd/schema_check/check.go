@@ -17,13 +17,14 @@ limitations under the License.
 package main
 
 import (
-	"github.com/sirupsen/logrus"
+	"context"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func main() {
 	if err := schema.RunSchemaCheckOnChangedFiles(); err != nil {
-		logrus.Fatal(err)
+		log.Entry(context.Background()).Fatal(err)
 	}
 }

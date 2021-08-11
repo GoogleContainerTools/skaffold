@@ -22,9 +22,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 //nolint:golint
@@ -33,7 +32,7 @@ func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, 
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Infof("%s interrupted", formatter.Name())
+			olog.Entry(ctx).Infof("%s interrupted", formatter.Name())
 			return nil
 		default:
 			// Read up to newline

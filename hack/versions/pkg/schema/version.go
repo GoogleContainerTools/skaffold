@@ -17,34 +17,34 @@ limitations under the License.
 package schema
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 )
 
 func GetLatestVersion() (string, bool) {
 	current := strings.TrimPrefix(latestV1.Version, "skaffold/")
-	logrus.Debugf("Current Skaffold version: %s", current)
+	log.Entry(context.Background()).Debugf("Current Skaffold version: %s", current)
 
 	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/v1/config.go")
 	if err != nil {
-		logrus.Fatalf("failed to read latest config: %s", err)
+		log.Entry(context.Background()).Fatalf("failed to read latest config: %s", err)
 	}
 
 	if strings.Contains(string(config), "This config version is already released") {
 		return current, true
 	}
 
-	logrus.Infof("Checking for released status of %s...", current)
+	log.Entry(context.Background()).Infof("Checking for released status of %s...", current)
 	lastReleased := getLastReleasedConfigVersion()
-	logrus.Infof("Last released version: %s", lastReleased)
+	log.Entry(context.Background()).Infof("Last released version: %s", lastReleased)
 
 	latestIsReleased := lastReleased == current
 	return current, latestIsReleased
@@ -53,9 +53,9 @@ func GetLatestVersion() (string, bool) {
 func getLastReleasedConfigVersion() string {
 	lastTag, err := update.DownloadLatestVersion()
 	if err != nil {
-		logrus.Fatalf("error getting latest version: %s", err)
+		log.Entry(context.Background()).Fatalf("error getting latest version: %s", err)
 	}
-	logrus.Infof("last release tag: %s", lastTag)
+	log.Entry(context.Background()).Infof("last release tag: %s", lastTag)
 	// we split the config in v1.25.0
 	for _, url := range []string{
 		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/v1/config.go", lastTag),
@@ -66,13 +66,13 @@ func getLastReleasedConfigVersion() string {
 			defer resp.Body.Close()
 			config, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				logrus.Fatalf("failed to fetch config for %s, err: %s", lastTag, err)
+				log.Entry(context.Background()).Fatalf("failed to fetch config for %s, err: %s", lastTag, err)
 			}
 			versionPattern := regexp.MustCompile("const Version string = \"skaffold/(.*)\"")
 			lastReleased := versionPattern.FindStringSubmatch(string(config))[1]
 			return lastReleased
 		}
 	}
-	logrus.Fatalf("can't determine latest released config version, failed to download %s: %s", lastTag, err)
+	log.Entry(context.Background()).Fatalf("can't determine latest released config version, failed to download %s: %s", lastTag, err)
 	return ""
 }

@@ -218,36 +218,3 @@ func TestWriteWithTimeStamps(t *testing.T) {
 		})
 	}
 }
-
-func TestLog(t *testing.T) {
-	tests := []struct {
-		name            string
-		writer          io.Writer
-		expectedTask    constants.Phase
-		expectedSubtask string
-	}{
-		{
-			name: "arbitrary task and subtask from writer",
-			writer: skaffoldWriter{
-				task:    constants.Build,
-				subtask: "test",
-			},
-			expectedTask:    constants.Build,
-			expectedSubtask: "test",
-		},
-		{
-			name:            "non skaffoldWriter",
-			writer:          ioutil.Discard,
-			expectedTask:    constants.DevLoop,
-			expectedSubtask: eventV2.SubtaskIDNone,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := Log(test.writer)
-			testutil.CheckDeepEqual(t, test.expectedTask, got.Data["task"])
-			testutil.CheckDeepEqual(t, test.expectedSubtask, got.Data["subtask"])
-		})
-	}
-}

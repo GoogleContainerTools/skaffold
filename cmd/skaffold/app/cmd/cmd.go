@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation/prompt"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
@@ -107,9 +108,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// Print version
 			versionInfo := version.Get()
 			version.SetClient(opts.User)
-			logrus.Infof("Skaffold %+v", versionInfo)
+			log.Entry(context.Background()).Infof("Skaffold %+v", versionInfo)
 			if !isHouseKeepingMessagesAllowed(cmd) {
-				logrus.Debugf("Disable housekeeping messages for command explicitly")
+				log.Entry(context.Background()).Debug("Disable housekeeping messages for command explicitly")
 				return nil
 			}
 			s = survey.New(opts.GlobalConfig, opts.ConfigurationFile, opts.Command)
@@ -128,7 +129,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			select {
 			case msg := <-updateMsg:
 				if err := config.UpdateMsgDisplayed(opts.GlobalConfig); err != nil {
-					logrus.Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
+					log.Entry(context.Background()).Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
 				}
 				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
 			default:
@@ -235,7 +236,7 @@ func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
 			// special case for backward compatibility.
 			if f.Name == "namespace" {
 				if val, present := os.LookupEnv("SKAFFOLD_DEPLOY_NAMESPACE"); present {
-					logrus.Warnln("Using SKAFFOLD_DEPLOY_NAMESPACE env variable is deprecated. Please use SKAFFOLD_NAMESPACE instead.")
+					log.Entry(context.Background()).Warn("Using SKAFFOLD_DEPLOY_NAMESPACE env variable is deprecated. Please use SKAFFOLD_NAMESPACE instead.")
 					cmd.Flags().Set(f.Name, val)
 				}
 			}
@@ -262,7 +263,7 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: timestamp,
 	})
-	logrus.AddHook(event.NewLogHook(constants.DevLoop, event.SubtaskIDNone))
+	logrus.AddHook(event.NewLogHook(constants.DevLoop, constants.SubtaskIDNone))
 	return nil
 }
 
@@ -310,13 +311,13 @@ func preReleaseVersion(s string) bool {
 func isQuietMode() bool {
 	switch {
 	case !interactive:
-		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
+		log.Entry(context.Background()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
 		return true
 	case quietFlag:
-		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
+		log.Entry(context.Background()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
 		return true
 	case analyze:
-		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
+		log.Entry(context.Background()).Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
 		return true
 	default:
 		return false
@@ -325,16 +326,16 @@ func isQuietMode() bool {
 
 func updateCheckForReleasedVersionsIfNotDisabled(s string) string {
 	if preReleaseVersion(s) {
-		logrus.Debug("Skipping update check for pre-release version")
+		log.Entry(context.Background()).Debug("Skipping update check for pre-release version")
 		return ""
 	}
 	if !update.EnableCheck {
-		logrus.Debug("Skipping update check for flag `--update-check` set to false")
+		log.Entry(context.Background()).Debug("Skipping update check for flag `--update-check` set to false")
 		return ""
 	}
 	msg, err := updateCheck(opts.GlobalConfig)
 	if err != nil {
-		logrus.Infof("update check failed: %s", err)
+		log.Entry(context.Background()).Infof("update check failed: %s", err)
 	}
 	return msg
 }

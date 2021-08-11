@@ -27,10 +27,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -215,7 +215,7 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 
 	cmd := b.cmd(ctx)
 	cmd.Stdout = out
-	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
+	log.Entry(ctx).Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	start := time.Now()
 	if err := cmd.Start(); err != nil {
@@ -224,7 +224,7 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 
 	go func() {
 		cmd.Wait()
-		logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
+		log.Entry(ctx).Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	}()
 
 	t.Cleanup(func() {
@@ -244,7 +244,7 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	t.Helper()
 
 	cmd := b.cmd(context.Background())
-	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
+	log.Entry(context.Background()).Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("skaffold %q: %w", b.command, err)
@@ -257,7 +257,7 @@ func (b *RunBuilder) StartWithProcess(t *testing.T) (*os.Process, error) {
 	t.Helper()
 
 	cmd := b.cmd(context.Background())
-	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
+	log.Entry(context.Background()).Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("skaffold %q: %w", b.command, err)
@@ -271,14 +271,14 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 
 	cmd := b.cmd(context.Background())
 	cmd.Stdout, cmd.Stderr = nil, nil
-	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
+	log.Entry(context.Background()).Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	start := time.Now()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(context.Background()).Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	return out, nil
 }
 
@@ -290,7 +290,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 
 	cmd := b.cmd(context.Background())
 	cmd.Stdout, cmd.Stderr = nil, nil
-	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
+	log.Entry(context.Background()).Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	start := time.Now()
 	out, err := cmd.Output()
@@ -300,7 +300,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
-	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(context.Background()).Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	return out
 }
 

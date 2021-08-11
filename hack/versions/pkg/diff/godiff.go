@@ -17,6 +17,7 @@ limitations under the License.
 package diff
 
 import (
+	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -25,7 +26,8 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // CompareGoStructs returns an empty string iff aFile and bFile are valid go files
@@ -63,7 +65,7 @@ func structsMap(astB *ast.File) map[string]string {
 		}
 		bStructs[typeSec.Name.Name] = fieldListString(structType)
 	}
-	logrus.Debugf("%+v", bStructs)
+	log.Entry(context.Background()).Debugf("%+v", bStructs)
 	return bStructs
 }
 

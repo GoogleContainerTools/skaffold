@@ -24,9 +24,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -40,12 +39,12 @@ type hostHook struct {
 // run executes the lifecycle hook on the host machine
 func (h hostHook) run(ctx context.Context, out io.Writer) error {
 	if len(h.cfg.OS) > 0 && !util.StrSliceContains(h.cfg.OS, runtime.GOOS) {
-		logrus.Infof("host hook execution skipped due to OS criteria %q not matched for commands:\n%q\n", strings.Join(h.cfg.OS, ","), strings.Join(h.cfg.Command, " "))
+		log.Entry(ctx).Infof("host hook execution skipped due to OS criteria %q not matched for commands:\n%q\n", strings.Join(h.cfg.OS, ","), strings.Join(h.cfg.Command, " "))
 		return nil
 	}
 	cmd := h.retrieveCmd(ctx, out)
 
-	logrus.Debugf("Running command: %s", cmd.Args)
+	log.Entry(ctx).Debugf("Running command: %s", cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("starting cmd: %w", err)
 	}

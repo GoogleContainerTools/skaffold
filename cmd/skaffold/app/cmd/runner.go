@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -32,6 +30,7 @@ import (
 	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -153,10 +152,10 @@ func setDefaultDeployer(configs parser.SkaffoldConfigSet) {
 func warnIfUpdateIsAvailable() {
 	warning, err := update.CheckVersionOnError(opts.GlobalConfig)
 	if err != nil {
-		logrus.Infof("update check failed: %s", err)
+		log.Entry(context.Background()).Infof("update check failed: %s", err)
 		return
 	}
 	if warning != "" {
-		logrus.Warn(warning)
+		log.Entry(context.Background()).Warn(warning)
 	}
 }

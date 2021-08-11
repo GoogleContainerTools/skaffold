@@ -34,10 +34,10 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -199,7 +199,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 		}
 	}
 
-	logrus.Debugf("Found dependencies for dockerfile: %v", fts)
+	log.Entry(context.Background()).Debugf("Found dependencies for dockerfile: %v", fts)
 	return fts, nil
 }
 
@@ -295,7 +295,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	var srcs []string
 	for _, src := range paths[0 : len(paths)-1] {
 		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			logrus.Debugln("Skipping watch on remote dependency", src)
+			log.Entry(context.Background()).Debugln("Skipping watch on remote dependency", src)
 			continue
 		}
 
@@ -338,7 +338,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 				onbuildNodes = ons
 			} else if warnMsg, ok, _ := isOldImageManifestProblem(cfg, err); ok && warnMsg != "" {
-				logrus.Warn(warnMsg)
+				log.Entry(context.Background()).Warn(warnMsg)
 			} else if !ok {
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
@@ -356,7 +356,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 }
 
 func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
-	logrus.Tracef("Checking base image %s for ONBUILD triggers.", image)
+	log.Entry(context.Background()).Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, cfg)
@@ -368,7 +368,7 @@ func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
 		return []*parser.Node{}, nil
 	}
 
-	logrus.Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
+	log.Entry(context.Background()).Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
 
 	obRes, err := parser.Parse(strings.NewReader(strings.Join(img.Config.OnBuild, "\n")))
 	if err != nil {

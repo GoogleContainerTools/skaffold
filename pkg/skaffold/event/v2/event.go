@@ -43,8 +43,6 @@ const (
 	Succeeded  = "Succeeded"
 	Terminated = "Terminated"
 	Canceled   = "Canceled"
-
-	SubtaskIDNone = "-1"
 )
 
 var handler = newHandler()
