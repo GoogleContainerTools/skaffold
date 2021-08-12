@@ -29,11 +29,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Add reaction
-        uses: peter-evans/create-or-update-comment@a35cf36e5301d70b76f316e867e7788a55a31dae
-        with:
-          comment-id: ${{ github.event.comment.id }}
-          reactions: rocket
+    - name: Add reaction
+      uses: peter-evans/create-or-update-comment@a35cf36e5301d70b76f316e867e7788a55a31dae
+      with:
+        comment-id: ${{ github.event.comment.id }}
+        reactions: rocket
 
     - name: Set up Go
       uses: actions/setup-go@v2

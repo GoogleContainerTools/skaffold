@@ -4,5 +4,5 @@ exampleAppName: helm-deployment # helm-deployment, microservices, etc.
 exampleSrcFile: main.go # main.go, leeroy-app/app.go, etc.
 commentText: //per-dev-iteration-comment # go/js: //comment, python: #comment, etc.
 devIterations: 2 # number of dev iterations to run per binary
-# firstSkaffoldFlags: "--build-concurrency=0" # NOTE: only supports one flag
-# secondSkaffoldFlags: "--build-concurrency=1" # NOTE: only supports one flag
+\#firstSkaffoldFlags: "--build-concurrency=0" # NOTE: only supports one flag
+\#secondSkaffoldFlags: "--build-concurrency=1" # NOTE: only supports one flag
