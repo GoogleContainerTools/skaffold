@@ -34,34 +34,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Config struct {
-	DevIterations       int64  `yaml:"devIterations"`
-	FirstSkaffoldFlags  string `yaml:"firstSkaffoldFlags"`
-	SecondSkaffoldFlags string `yaml:"secondSkaffoldFlags"`
-	ExampleAppName      string `yaml:"exampleAppName"`
-	ExampleSrcFile      string `yaml:"exampleSrcFile"`
-	CommentText         string `yaml:"commentText"`
-}
-
-var (
-	conf              = &Config{}
-	yamlInputFile     string // TODO(aaron-prindle) FIX default used was yaml-input-file.yaml, make sure gh action doesn't depend on that
-	summaryOutputPath string
-)
+// comparisonstats usage example:
+// $ comparisonstats --first-skaffold-flags="--build-concurrency=0" \
+//   --second-skaffold-flags="--build-concurrency=1" \
+//   /path/skaffold-1 /path/skaffold-2 helm-deployment main.go "//per-dev-iteration-comment"
 
 func init() {
 	flag.Int64Var(&conf.DevIterations, "dev-iterations", 2, "number of dev iterations to run for skaffold.  For one initial loop and one 'inner loop', --dev-iterations=2")
 	flag.StringVar(&summaryOutputPath, "summary-output-path", "", "path to file to write summary output to")
-	flag.StringVar(&conf.CommentText, "comment-text", "// test comment", "text to append to the specified 'ExampleSrcFile' during each skaffold dev loop")
+	flag.StringVar(&conf.CommentText, "comment-text", "//per-dev-iteration-comment", "text to append to the specified 'ExampleSrcFile' during each skaffold dev loop")
 	flag.StringVar(&conf.FirstSkaffoldFlags, "first-skaffold-flags", "", "flag opts to pass to first skaffold binary invocations")
 	flag.StringVar(&conf.SecondSkaffoldFlags, "second-skaffold-flags", "", "flag opts to pass to second skaffold binary invocations")
 	flag.StringVar(&yamlInputFile, "yaml-input-file", "", "path to yaml file with input args")
 }
 
-// time comparison usage example:
-// $ comparisonstats --first-skaffold-flags="--build-concurrency=true" \
-//   --second-skaffold-flags="--build-concurrency=false" \
-//   /path/skaffold-1 /path/skaffold-2 helm-deployment out.txt
+var (
+	conf              = &types.Config{}
+	yamlInputFile     string
+	summaryOutputPath string
+)
 
 func main() {
 	ctx := context.Background()

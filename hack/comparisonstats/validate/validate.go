@@ -10,8 +10,8 @@ import (
 const NumBinaries = 2
 
 func ValidateArgs(args []string) error {
-	if len(args) < NumBinaries+1 {
-		logrus.Fatalf("comparisonstats expects input of the form: $ comparisonstats /usr/bin/bin1 /usr/bin/bin2 helm-deployment main.go")
+	if len(args) < NumBinaries+2 {
+		logrus.Fatalf("comparisonstats expects input of the form: $ comparisonstats /usr/bin/bin1 /usr/bin/bin2 helm-deployment main.go \"//per-dev-iteration-comment\"")
 	}
 
 	if err := validateBinaries(args[1:NumBinaries]); err != nil {

@@ -13,6 +13,7 @@ type ComparisonStatsCmdArgs struct {
 	SkaffoldBinaries []string
 	ExampleAppName   string
 	ExampleSrcFile   string
+	CommentText      string
 }
 
 func ParseComparisonStatsCmdArgs(args []string) ComparisonStatsCmdArgs {
@@ -20,7 +21,17 @@ func ParseComparisonStatsCmdArgs(args []string) ComparisonStatsCmdArgs {
 		SkaffoldBinaries: []string{args[0], args[1]},
 		ExampleAppName:   args[2],
 		ExampleSrcFile:   args[3],
+		CommentText:      args[4],
 	}
+}
+
+type Config struct {
+	DevIterations       int64  `yaml:"devIterations"`
+	FirstSkaffoldFlags  string `yaml:"firstSkaffoldFlags"`
+	SecondSkaffoldFlags string `yaml:"secondSkaffoldFlags"`
+	ExampleAppName      string `yaml:"exampleAppName"`
+	ExampleSrcFile      string `yaml:"exampleSrcFile"`
+	CommentText         string `yaml:"commentText"`
 }
 
 type ComparisonStatsSummary struct {
