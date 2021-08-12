@@ -1,3 +1,4 @@
+** Copy paste the msg below into a new comment and 'Comment' to trigger a run-performance-comparison run:**
 /run-performance-comparison
 exampleAppName: helm-deployment
 exampleSrcFile: main.go
