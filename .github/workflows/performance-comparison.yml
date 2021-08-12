@@ -119,7 +119,7 @@ jobs:
       if: ${{ startsWith(github.event.comment.body, '/run-performance-comparison') }}
       run: |
         skaffold config set --global collect-metrics false
-        make COMPARISONSTATS_ARGS="--summary-output-path=gh-comment.txt --yaml-input-file=yaml-input-file.yaml /usr/local/bin/skaffold-from-main-branch /usr/local/bin/skaffold helm-deployment main.go" comparisonstats
+        make COMPARISONSTATS_ARGS='--summary-output-path=gh-comment.txt --yaml-input-file=yaml-input-file.yaml /usr/local/bin/skaffold-from-main-branch /usr/local/bin/skaffold helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats
         body=$(cat gh-comment.txt)
         body="${body//'%'/'%25'}"
         body="${body//$'\n'/'%0A'}"

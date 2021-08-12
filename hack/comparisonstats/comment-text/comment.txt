@@ -1,4 +1,4 @@
-** Copy paste the msg below into a new comment and 'Comment' to trigger a run-performance-comparison run:**
+**Copy paste the msg below into a new comment and 'Comment' to trigger a run-performance-comparison run:**
 /run-performance-comparison
 exampleAppName: helm-deployment # helm-deployment, microservices, etc.
 exampleSrcFile: main.go # main.go, leeroy-app/app.go, etc.
@@ -6,3 +6,6 @@ commentText: //per-dev-iteration-comment # go/js: //comment, python: #comment, e
 devIterations: 2 # number of dev iterations to run per binary
 \#firstSkaffoldFlags: "--build-concurrency=0" # NOTE: only supports one flag
 \#secondSkaffoldFlags: "--build-concurrency=1" # NOTE: only supports one flag
+
+# the run-performance-comparison will add a rocket emoji to your comment in ~30 seconds if it kicked off successfully
+# baz-v5
