@@ -39,6 +39,13 @@ import (
 //   --second-skaffold-flags="--build-concurrency=1" \
 //   /path/skaffold-1 /path/skaffold-2 helm-deployment main.go "//per-dev-iteration-comment"
 
+var (
+	warmupRuns        int
+	summaryOutputPath string
+	yamlInputFile     string
+	conf              = &types.Config{}
+)
+
 func init() {
 	flag.Int64Var(&conf.DevIterations, "dev-iterations", 2, "number of dev iterations to run for skaffold.  For one initial loop and one 'inner loop', --dev-iterations=2")
 	flag.StringVar(&summaryOutputPath, "summary-output-path", "", "path to file to write summary output to")
@@ -46,13 +53,8 @@ func init() {
 	flag.StringVar(&conf.FirstSkaffoldFlags, "first-skaffold-flags", "", "flag opts to pass to first skaffold binary invocations")
 	flag.StringVar(&conf.SecondSkaffoldFlags, "second-skaffold-flags", "", "flag opts to pass to second skaffold binary invocations")
 	flag.StringVar(&yamlInputFile, "yaml-input-file", "", "path to yaml file with input args")
+	flag.IntVar(&warmupRuns, "warmup-runs", 0, "Number of warmup runs to perform (defaults to 0)")
 }
-
-var (
-	conf              = &types.Config{}
-	yamlInputFile     string
-	summaryOutputPath string
-)
 
 func main() {
 	ctx := context.Background()
@@ -63,6 +65,10 @@ func main() {
 	}
 	cmdArgs := types.ParseComparisonStatsCmdArgs(flag.Args())
 	skaffoldFlags := []string{conf.FirstSkaffoldFlags, conf.SecondSkaffoldFlags}
+	for i := 0; i < warmupRuns; i++ {
+		cmdArgs.SkaffoldBinaries = append([]string{cmdArgs.SkaffoldBinaries[0]}, cmdArgs.SkaffoldBinaries...)
+		skaffoldFlags = append([]string{skaffoldFlags[0]}, skaffoldFlags...)
+	}
 	conf.ExampleAppName = cmdArgs.ExampleAppName
 	conf.ExampleSrcFile = cmdArgs.ExampleSrcFile
 
@@ -80,16 +86,20 @@ func main() {
 	}
 
 	var b bytes.Buffer
-	for i := 0; i < validate.NumBinaries; i++ {
+	for i := 0; i < len(cmdArgs.SkaffoldBinaries); i++ {
 		uid, _ := uuid.NewUUID()
 		random := uid.String()
 		eventsFileAbsPath := filepath.Join(os.TempDir(), fmt.Sprintf("events-%d-%s", i, random))
 		skaffoldBinaryPath := cmdArgs.SkaffoldBinaries[i]
+		devIterations := conf.DevIterations
+		if i < warmupRuns {
+			devIterations = 2
+		}
 		app := types.Application{
 			Name:          conf.ExampleAppName,
 			Context:       fmt.Sprintf("examples/%s", conf.ExampleAppName),
 			Dev:           types.Dev{Command: fmt.Sprintf("printf \"%s\\n\" >> %s", conf.CommentText, conf.ExampleSrcFile)},
-			DevIterations: conf.DevIterations,
+			DevIterations: devIterations,
 		}
 		devInfo, err := devrunner.Dev(ctx, app, skaffoldBinaryPath, eventsFileAbsPath, skaffoldFlags[i])
 		if err != nil {
@@ -97,6 +107,10 @@ func main() {
 		}
 		defer events.Cleanup(eventsFileAbsPath)
 
+		if i < warmupRuns {
+			continue
+
+		}
 		eventDurations, err := events.ParseEventDuration(ctx, eventsFileAbsPath)
 		if err != nil {
 			logrus.Fatal(err)
