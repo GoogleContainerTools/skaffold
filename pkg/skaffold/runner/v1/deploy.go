@@ -111,6 +111,11 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		}
 	}
 
+	// if --load-images=true, load all images into cluster
+	if r.runCtx.ForceLoadImages() {
+		localAndBuiltImages = artifacts
+	}
+
 	r.deployer.RegisterLocalImages(localAndBuiltImages)
 	err = r.deployer.Deploy(ctx, deployOut, artifacts)
 	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
