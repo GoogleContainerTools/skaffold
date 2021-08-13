@@ -24,11 +24,13 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -58,7 +60,8 @@ var (
 	runContainerRe = regexp.MustCompile(errorPrefix)
 	taintsRe       = regexp.MustCompile(taintsExp)
 	// for testing
-	runCli = executeCLI
+	runCli        = executeCLI
+	getReplicaSet = deploymentutil.GetAllReplicaSets
 
 	unknownConditionsOrSuccess = map[proto.StatusCode]struct{}{
 		proto.StatusCode_STATUSCHECK_UNKNOWN:                   {},
@@ -71,19 +74,28 @@ var (
 
 // PodValidator implements the Validator interface for Pods
 type PodValidator struct {
-	k          kubernetes.Interface
-	controller metav1.Object
-	recos      []Recommender
+	k      kubernetes.Interface
+	depObj appsv1.Deployment
+	recos  []Recommender
 }
 
 // NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface, controller metav1.Object) *PodValidator {
+func NewPodValidator(k kubernetes.Interface, d appsv1.Deployment) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs, controller: controller}
+	return &PodValidator{k: k, recos: rs, depObj: d}
 }
 
 // Validate implements the Validate method for Validator interface
 func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error) {
+	_, _, controller, err := getReplicaSet(&p.depObj, p.k.AppsV1())
+	if err != nil {
+		logrus.Debugf("could not fetch deployment replica set %s", err)
+		return []Resource{}, err
+	} else if controller == nil {
+		logrus.Debugf("deployment replica set not created yet.")
+		return []Resource{}, nil
+	}
+
 	pods, err := p.k.CoreV1().Pods(ns).List(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -91,7 +103,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
-		if !isPodOwnedBy(po, p.controller) {
+		if !isPodOwnedBy(po, controller) {
 			continue
 		}
 		ps := p.getPodStatus(&po)

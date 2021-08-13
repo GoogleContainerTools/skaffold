@@ -28,8 +28,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -45,7 +47,7 @@ func TestRun(t *testing.T) {
 	after := before.Add(3 * time.Second)
 	tests := []struct {
 		description string
-		ownerRef    metav1.Object
+		uid         string
 		pods        []*v1.Pod
 		logOutput   mockLogOutput
 		events      []v1.Event
@@ -731,12 +733,11 @@ func TestRun(t *testing.T) {
 		// Check to diagnose pods with owner references
 		{
 			description: "pods owned by a uuid",
-			ownerRef:    &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{UID: "foo"}},
+			uid:         "foo",
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:            "foo",
-					Namespace:       "test",
-					OwnerReferences: []metav1.OwnerReference{{UID: "none"}},
+					Name:      "foo",
+					Namespace: "test",
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
@@ -766,13 +767,21 @@ func TestRun(t *testing.T) {
 				return test.logOutput.output, test.logOutput.err
 			}
 			t.Override(&runCli, mRun)
+			t.Override(&getReplicaSet, func(_ *appsv1.Deployment, _ appsclient.AppsV1Interface) ([]*appsv1.ReplicaSet, []*appsv1.ReplicaSet, *appsv1.ReplicaSet, error) {
+				return nil, nil, &appsv1.ReplicaSet{
+					ObjectMeta: metav1.ObjectMeta{
+						UID: types.UID(test.uid),
+					},
+				}, nil
+			})
 			for i, p := range test.pods {
+				p.OwnerReferences = []metav1.OwnerReference{{UID: "", Controller: truePtr()}}
 				rs[i] = p
 			}
 			rs = append(rs, &v1.EventList{Items: test.events})
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 
-			actual, err := testPodValidator(f, test.ownerRef).Validate(context.Background(), "test", metav1.ListOptions{})
+			actual, err := testPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
@@ -787,9 +796,9 @@ func TestRun(t *testing.T) {
 }
 
 // testPodValidator initializes a PodValidator like NewPodValidator except for loading custom rules
-func testPodValidator(k kubernetes.Interface, ownerRef metav1.Object) *PodValidator {
+func testPodValidator(k kubernetes.Interface) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs, controller: ownerRef}
+	return &PodValidator{k: k, recos: rs}
 }
 
 func TestPodConditionChecks(t *testing.T) {
@@ -860,4 +869,9 @@ type result struct {
 	isNotScheduled     bool
 	iScheduledNotReady bool
 	isUnknown          bool
+}
+
+func truePtr() *bool {
+	t := true
+	return &t
 }
