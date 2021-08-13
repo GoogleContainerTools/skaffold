@@ -16,7 +16,7 @@ require (
 	cloud.google.com/go v0.88.0
 	cloud.google.com/go/storage v1.16.0
 	github.com/AlecAivazis/survey/v2 v2.2.15
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.22.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
 	github.com/aws/aws-sdk-go v1.36.30 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -34,7 +34,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-containerregistry v0.5.1
@@ -67,20 +67,20 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	github.com/xeipuuv/gojsonschema v1.2.0
-	go.opentelemetry.io/otel v0.20.0
+	go.opentelemetry.io/otel v1.0.0-RC2
 	go.opentelemetry.io/otel/exporters/stdout v0.20.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
-	go.opentelemetry.io/otel/metric v0.20.0
-	go.opentelemetry.io/otel/sdk v0.20.0
-	go.opentelemetry.io/otel/sdk/metric v0.20.0
-	go.opentelemetry.io/otel/trace v0.20.0
+	go.opentelemetry.io/otel/metric v0.22.0
+	go.opentelemetry.io/otel/sdk v1.0.0-RC2
+	go.opentelemetry.io/otel/sdk/metric v0.22.0
+	go.opentelemetry.io/otel/trace v1.0.0-RC2
 	golang.org/x/mod v0.4.2
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
 	google.golang.org/api v0.51.0
-	google.golang.org/genproto v0.0.0-20210721163202-f1cecdd8b78a
+	google.golang.org/genproto v0.0.0-20210722135532-667f2b7c528f
 	google.golang.org/grpc v1.39.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
