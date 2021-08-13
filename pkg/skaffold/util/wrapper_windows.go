@@ -33,7 +33,7 @@ func (cw CommandWrapper) CreateCommand(ctx context.Context, workingDir string, a
 		for _, extension := range []string{".cmd", ".bat"} {
 			wrapper := cw.Wrapper + extension
 			if wrapperExecutable, err := AbsFile(workingDir, wrapper); err == nil {
-				log.Entry(ctx).Debugf("Using wrapper %s for %s", wrapper, cw.Executable)
+				logrus.Debugf("Using wrapper %s for %s", wrapper, cw.Executable)
 				executable = "cmd"
 				args = append([]string{"/c", wrapperExecutable}, args...)
 				break
