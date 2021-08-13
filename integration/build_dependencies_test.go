@@ -148,15 +148,15 @@ func TestBuildDependenciesCache(t *testing.T) {
 			if err != nil {
 				t.Fatal("expected build to succeed")
 			}
-			stringOut := string(out)
+			log := string(out)
 
 			for i := 1; i <= 4; i++ {
-				if !contains(test.rebuilt, i) && !strings.Contains(stringOut, fmt.Sprintf("image%d: Found Locally", i)) {
+				if !contains(test.rebuilt, i) && !strings.Contains(log, fmt.Sprintf("image%d: Found Locally", i)) {
 					logrus.Info("build output: ", string(out))
 					t.Fatalf("expected image%d to be cached", i)
 				}
 
-				if contains(test.rebuilt, i) && !strings.Contains(stringOut, fmt.Sprintf("image%d: Not found. Building", i)) {
+				if contains(test.rebuilt, i) && !strings.Contains(log, fmt.Sprintf("image%d: Not found. Building", i)) {
 					logrus.Info("build output: ", string(out))
 					t.Fatalf("expected image%d to be rebuilt", i)
 				}

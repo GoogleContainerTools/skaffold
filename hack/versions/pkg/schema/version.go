@@ -23,9 +23,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
-	"github.com/sirupsen/logrus"
 )
 
 func GetLatestVersion() (string, bool) {

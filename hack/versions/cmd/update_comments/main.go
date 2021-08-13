@@ -20,9 +20,10 @@ import (
 	"path"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {

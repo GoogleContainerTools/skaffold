@@ -17,8 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 )
 
 func main() {

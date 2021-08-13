@@ -23,8 +23,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
 )
 
 const baseRef = "origin/main"
