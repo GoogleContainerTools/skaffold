@@ -108,7 +108,7 @@ jobs:
     - name: Run performance comparison benchmarks
       id: run-performance-comparison-benchmarks
       run: |
-        skaffold config set --global collect-metrics false
+        /usr/local/bin/skaffold-${{ github.event.pull_request.head.sha }} config set --global collect-metrics false
         make COMPARISONSTATS_ARGS='--summary-output-path=gh-comment.txt --yaml-input-file=yaml-input-file.yaml --warmup-runs=1 /usr/local/bin/skaffold-from-main-branch /usr/local/bin/skaffold-${{ github.event.pull_request.head.sha }} helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats
         body=$(cat gh-comment.txt)
         body="${body//'%'/'%25'}"
