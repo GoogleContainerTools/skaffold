@@ -294,7 +294,8 @@ Adding the ko builder requires making config changes to the Skaffold schema.
 
       // Target is the location of the main package.
       // If target is specified as a relative path, it is relative to the `context` directory.
-      // If target is empty, the ko builder looks for the main package in the `context` directory.
+      // If target is empty, the ko builder looks for the main package in the `context` directory only, but not in any subdirectories.
+      // If target is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
       // Target is ignored if the `ImageName` starts with `ko://`.
       // Example: `./cmd/foo`
       Target string `yaml:"target,omitempty"`
