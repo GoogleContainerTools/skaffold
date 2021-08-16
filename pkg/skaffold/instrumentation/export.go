@@ -167,6 +167,8 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	m := global.Meter("skaffold")
 
 	// cloud monitoring only supports string type labels
+	// cloud monitoring only supports 10 labels per metric descriptor
+	// be careful when appending new values to this `labels` slice
 	labels := []attribute.KeyValue{
 		attribute.String("version", meter.Version),
 		attribute.String("os", meter.OS),
@@ -193,6 +195,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	if meter.Command != "" {
 		commandMetrics(ctx, meter, m, sharedLabels...)
 		flagMetrics(ctx, meter, m, randLabel)
+		hooksMetrics(ctx, meter, m, labels...)
 		if doesBuild.Contains(meter.Command) {
 			builderMetrics(ctx, meter, m, sharedLabels...)
 		}
@@ -271,6 +274,15 @@ func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, la
 		builderCounter.Record(ctx, 1, append(labels, bLabel)...)
 		artifactCounter.Record(ctx, int64(count), append(labels, bLabel)...)
 		dependenciesCounter.Record(ctx, int64(meter.BuildDependencies[builder]), append(labels, bLabel)...)
+	}
+}
+
+func hooksMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
+	hooksCounter := metric.Must(m).NewInt64ValueRecorder("hooks", metric.WithDescription("Lifecycle hooks configured"))
+
+	for hook, count := range meter.Hooks {
+		hLabel := attribute.String("hookPhase", string(hook))
+		hooksCounter.Record(ctx, int64(count), append(labels, hLabel)...)
 	}
 }
 

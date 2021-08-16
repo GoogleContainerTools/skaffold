@@ -73,6 +73,9 @@ type skaffoldMeter struct {
 	// SyncType Sync type used in the build configuration: infer, auto, and/or manual.
 	SyncType map[string]bool
 
+	// Hooks Enum values for all the configured lifecycle hooks.
+	Hooks map[HookPhase]int
+
 	// DevIterations Error results of the various dev iterations and the
 	// reasons they were triggered. The triggers can be one of sync, build, or deploy.
 	DevIterations []devIteration
@@ -108,4 +111,22 @@ type errHandler struct{}
 
 func (h errHandler) Handle(err error) {
 	logrus.Debugf("Error with metrics: %v", err)
+}
+
+type HookPhase string
+
+var HookPhases = struct {
+	PreBuild   HookPhase
+	PostBuild  HookPhase
+	PreSync    HookPhase
+	PostSync   HookPhase
+	PreDeploy  HookPhase
+	PostDeploy HookPhase
+}{
+	PreBuild:   "pre-build",
+	PostBuild:  "post-build",
+	PreSync:    "pre-sync",
+	PostSync:   "post-sync",
+	PreDeploy:  "pre-deploy",
+	PostDeploy: "post-deploy",
 }
