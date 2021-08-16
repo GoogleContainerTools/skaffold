@@ -151,17 +151,40 @@ is `gcr.io/k8s-skaffold` and the value of the `image` field in `skaffold.yaml`
 is `skaffold`, the resulting image name will be `gcr.io/k8s-skaffold/skaffold`.
 
 It is still necessary to resolve the Go import path for the underlying ko
-implementation. To do so, the ko builder determines the import path of the
-current
+implementation. To do so, the ko builder determines the import path based on
+the value of the `target` config field. The `target` config field refers to the
+location of a main package and corresponds to a `go build` target, e.g.,
+`go build ./cmd/skaffold`. Using the `target` field results in deterministic
+behavior even in cases where there are multiple main packages in different
+directories.
+
+If `target` is a relative path (and it will be most of the time), it is
+relative to the current
 [`context`](https://skaffold.dev/docs/references/yaml/#build-artifacts-context)
 (a.k.a.
 [`Workspace`](https://github.com/GoogleContainerTools/skaffold/blob/v1.27.0/pkg/skaffold/schema/latest/v1/config.go#L832))
 directory.
 
-By specifying different `context` directories for each `artifact` in
-`skaffold.yaml`, the ko builder supports building multiple artifacts in the
-same Skaffold config, such as in the
-[microservices example](https://github.com/GoogleContainerTools/skaffold/tree/v1.27.0/examples/microservices).
+For example, to build Skaffold itself, with `package main` in the
+`./cmd/skaffold/` subdirectory, the config would be as follows:
+
+```yaml
+apiVersion: skaffold/v2beta19
+kind: Config
+build:
+  artifacts:
+  - image: skaffold
+    context: .
+    ko:
+      target: ./cmd/skaffold
+```
+
+Users can specify `./...` as a target to make ko locate the main package. If
+there are multiple main packages,
+[ko fails](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/build/gobuild.go#L270).
+
+Implementation note: The value of `target` will be the input when invoking
+[`QualifyImport()`](https://github.com/GoogleContainerTools/skaffold/blob/953594000be68fa8fad0ec4636ab03f8153a1c08/pkg/skaffold/build/ko/build.go#L93).
 
 ## Supporting existing ko users
 
@@ -200,17 +223,22 @@ curl -sL https://github.com/knative/serving/releases/download/v0.24.0/serving-co
 ```
 
 If the `image` field in `skaffold.yaml` starts with the `ko://` scheme prefix,
-the Skaffold ko builder uses the Go import path that follows the prefix. If the
-`image` name in `skaffold.yaml` does _not_ start with `ko://`, then the ko
-builder determines the Go import path from the artifact `context` directory.
+the Skaffold ko builder uses the Go import path that follows the prefix. For
+example, to build Skaffold itself, with `package main` in the `./cmd/skaffold/`
+subdirectory, the config would be as follows:
 
-Users who want to build an artifact where the `main()` function is _not_ in the
-`context` directory must specify the full import path in the image name. For
-instance, to build Skaffold itself using the Skaffold ko builder, for a
-`context` directory of `.` (the default), the `image` name must be
-`ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold`.
-Image names that start with relative path references such as `./cmd/skaffold`
-are _not_ supported by Skaffold.
+```yaml
+apiVersion: skaffold/v2beta19
+kind: Config
+build:
+  artifacts:
+  - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
+    context: .
+    ko: {}
+```
+
+The `target` field is ignored if the `image` field starts with the `ko://`
+scheme prefix.
 
 ## Design
 
@@ -263,6 +291,13 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     	// You can override this value by setting the `SOURCE_DATE_EPOCH`
     	// environment variable.
     	SourceDateEpoch uint64 `yaml:"sourceDateEpoch,omitempty"`
+
+      // Target is the location of the main package.
+      // If target is specified as a relative path, it is relative to the `context` directory.
+      // If target is empty, the ko builder looks for the main package in the `context` directory.
+      // Target is ignored if the `ImageName` starts with `ko://`.
+      // Example: `./cmd/foo`
+      Target string `yaml:"target,omitempty"`
     }
     ```
 
@@ -367,6 +402,7 @@ build:
       platforms:
       - linux/amd64
       - linux/arm64
+      target: ./cmd/foo
 ```
 
 ko requires setting a
