@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +32,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // WatchUntil reads items from the watch until the provided condition succeeds or the context is cancelled.
@@ -58,7 +59,7 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 
 // WaitForPodSucceeded waits until the Pod status is Succeeded.
 func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
-	logrus.Infof("Waiting for %s to be complete", podName)
+	log.Entry(ctx).Infof("Waiting for %s to be complete", podName)
 
 	w, err := pods.Watch(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -95,7 +96,7 @@ func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 
 // WaitForPodInitialized waits until init containers have started running
 func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podName string) error {
-	logrus.Infof("Waiting for %s to be initialized", podName)
+	log.Entry(ctx).Infof("Waiting for %s to be initialized", podName)
 
 	w, err := pods.Watch(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -120,7 +121,7 @@ func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podNam
 
 // WaitForDeploymentToStabilize waits until the Deployment has a matching generation/replica count between spec and status.
 func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	logrus.Infof("Waiting for %s to stabilize", name)
+	log.Entry(ctx).Infof("Waiting for %s to stabilize", name)
 
 	fields := fields.Set{
 		"metadata.name":      name,

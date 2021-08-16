@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
@@ -67,14 +68,14 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever configurationRe
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
-			logrus.Debugf("Unable to interpret manifest for debugging: %v\n", err)
+			log.Entry(context.Background()).Debugf("Unable to interpret manifest for debugging: %v\n", err)
 		} else if transformManifest(obj, retriever, debugHelpersRegistry) {
 			manifest, err = encodeAsYaml(obj)
 			if err != nil {
 				return nil, fmt.Errorf("marshalling yaml: %w", err)
 			}
 			if logrus.IsLevelEnabled(logrus.DebugLevel) {
-				logrus.Debugln("Applied debugging transform:\n", string(manifest))
+				log.Entry(context.Background()).Debugln("Applied debugging transform:\n", string(manifest))
 			}
 		}
 		updated = append(updated, manifest)
@@ -87,12 +88,12 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever configurationRe
 // If `builds` is empty, then treat all `image` images as a build artifact.
 func findArtifact(image string, builds []graph.Artifact) *graph.Artifact {
 	if len(builds) == 0 {
-		logrus.Debugf("No build artifacts specified: using image as-is %q", image)
+		log.Entry(context.Background()).Debugf("No build artifacts specified: using image as-is %q", image)
 		return &graph.Artifact{ImageName: image, Tag: image}
 	}
 	for _, artifact := range builds {
 		if image == artifact.ImageName || image == artifact.Tag {
-			logrus.Debugf("Found artifact for image %q", image)
+			log.Entry(context.Background()).Debugf("Found artifact for image %q", image)
 			return &artifact
 		}
 	}
@@ -113,12 +114,12 @@ func retrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, i
 	// the apiClient will go to the remote registry if local docker daemon is not available
 	manifest, err := apiClient.ConfigFile(ctx, artifact.Tag)
 	if err != nil {
-		logrus.Debugf("Error retrieving image manifest for %v: %v", artifact.Tag, err)
+		log.Entry(ctx).Debugf("Error retrieving image manifest for %v: %v", artifact.Tag, err)
 		return imageConfiguration{}, fmt.Errorf("retrieving image config for %q: %w", artifact.Tag, err)
 	}
 
 	config := manifest.Config
-	logrus.Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
+	log.Entry(ctx).Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
 	// need to duplicate slices as apiClient caches requests
 	return imageConfiguration{
 		artifact:   artifact.ImageName,

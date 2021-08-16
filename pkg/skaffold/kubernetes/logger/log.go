@@ -24,7 +24,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -34,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -184,7 +184,7 @@ func sinceSeconds(d time.Duration) int64 {
 }
 
 func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, container v1.ContainerStatus) {
-	logrus.Infof("Streaming logs from pod: %s container: %s", pod.Name, container.Name)
+	olog.Entry(ctx).Infof("Streaming logs from pod: %s container: %s", pod.Name, container.Name)
 
 	// In theory, it's more precise to use --since-time='' but there can be a time
 	// difference between the user's machine and the server.
@@ -197,14 +197,14 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 			// Don't print errors if the user interrupted the logs
 			// or if the logs were interrupted because of a configuration change
 			if ctx.Err() != context.Canceled {
-				logrus.Warn(err)
+				olog.Entry(ctx).Warn(err)
 			}
 		}
 		_ = tw.Close()
 	}()
 
 	if err := stream.StreamRequest(ctx, a.output, a.formatter(*pod, container, a.IsMuted), tr); err != nil {
-		logrus.Errorf("streaming request %s", err)
+		olog.Entry(ctx).Errorf("streaming request %s", err)
 	}
 }
 

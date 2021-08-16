@@ -17,12 +17,13 @@ limitations under the License.
 package tags
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // MakeFilePathsAbsolute recursively sets all fields marked with the tag `filepath` to absolute paths
@@ -62,7 +63,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 						continue
 					}
 					v.SetString(filepath.Join(base, path))
-					logrus.Tracef("setting absolute path %q for config field %q", filepath.Join(base, path), f.Name)
+					log.Entry(context.Background()).Tracef("setting absolute path %q for config field %q", filepath.Join(base, path), f.Name)
 				case []string:
 					for j := 0; j < v.Len(); j++ {
 						elem := v.Index(j)
@@ -71,7 +72,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 							continue
 						}
 						elem.SetString(filepath.Join(base, path))
-						logrus.Tracef("setting absolute paths for config field %q index %d", f.Name, j)
+						log.Entry(context.Background()).Tracef("setting absolute paths for config field %q index %d", f.Name, j)
 					}
 				case map[string]string:
 					for _, key := range v.MapKeys() {
@@ -80,7 +81,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 							continue
 						}
 						v.SetMapIndex(key, reflect.ValueOf(filepath.Join(base, path)))
-						logrus.Tracef("setting absolute paths for config field %q key %q", f.Name, key.String())
+						log.Entry(context.Background()).Tracef("setting absolute paths for config field %q key %q", f.Name, key.String())
 					}
 				default:
 					return []error{fmt.Errorf("yaml tag `filepath` needs struct field %q to be string or string slice", f.Name)}

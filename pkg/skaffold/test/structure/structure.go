@@ -23,10 +23,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -82,7 +81,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 		return err
 	}
 
-	logrus.Infof("Running structure tests for files %v", files)
+	log.Entry(ctx).Infof("Running structure tests for files %v", files)
 
 	args := []string{"test", "-v", "warn", "--image", imageTag}
 	for _, f := range files {

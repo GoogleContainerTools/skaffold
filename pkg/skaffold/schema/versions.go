@@ -18,17 +18,18 @@ package schema
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -372,7 +373,7 @@ func UpgradeTo(configs []util.VersionedConfig, toVersion string) ([]util.Version
 	if !upgradeNeeded {
 		return configs, nil
 	}
-	logrus.Debugf("config version out of date: upgrading to latest %q", toVersion)
+	log.Entry(context.Background()).Debugf("config version out of date: upgrading to latest %q", toVersion)
 	var err error
 	var upgraded []util.VersionedConfig
 	for _, cfg := range configs {

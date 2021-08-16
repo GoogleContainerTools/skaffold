@@ -17,15 +17,16 @@ limitations under the License.
 package defaults
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -122,7 +123,7 @@ func defaultToLocalBuild(c *latestV1.SkaffoldConfig) {
 		return
 	}
 
-	logrus.Debugf("Defaulting build type to local build")
+	log.Entry(context.Background()).Debug("Defaulting build type to local build")
 	c.Build.BuildType.LocalBuild = &latestV1.LocalBuild{}
 }
 
@@ -131,7 +132,7 @@ func defaultToKubectlDeploy(c *latestV1.SkaffoldConfig) {
 		return
 	}
 
-	logrus.Debugf("Defaulting deploy type to kubectl")
+	log.Entry(context.Background()).Debug("Defaulting deploy type to kubectl")
 	c.Deploy.DeployType.KubectlDeploy = &latestV1.KubectlDeploy{}
 }
 

@@ -17,14 +17,15 @@ limitations under the License.
 package debug
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -62,7 +63,7 @@ func isLaunchingDlv(args []string) bool {
 func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK"} {
 		if _, found := config.env[name]; found {
-			logrus.Infof("Artifact %q has Go runtime: has env %q", config.artifact, name)
+			log.Entry(context.Background()).Infof("Artifact %q has Go runtime: has env %q", config.artifact, name)
 			return true
 		}
 	}
@@ -78,7 +79,7 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 	cnbBuildMetadata := config.labels["io.buildpacks.build.metadata"]
 	for _, id := range knownGoBuildpackIds {
 		if strings.Contains(cnbBuildMetadata, id) {
-			logrus.Infof("Artifact %q has Go buildpacks %q", config.artifact, id)
+			log.Entry(context.Background()).Infof("Artifact %q has Go buildpacks %q", config.artifact, id)
 			return true
 		}
 	}
@@ -94,7 +95,7 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 // Apply configures a container definition for Go with Delve.
 // Returns the debug configuration details, with the "go" support image
 func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
-	logrus.Infof("Configuring %q for Go/Delve debugging", container.Name)
+	log.Entry(context.Background()).Infof("Configuring %q for Go/Delve debugging", container.Name)
 
 	// try to find existing `dlv` command
 	spec := retrieveDlvSpec(config)

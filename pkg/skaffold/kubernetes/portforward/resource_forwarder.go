@@ -22,11 +22,11 @@ import (
 	"io"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -90,7 +90,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces
 				}
 				validResources = append(validResources, pf)
 			} else {
-				logrus.Warnf("Skipping the port forwarding resource %s/%s because namespace is not specified", pf.Type, pf.Name)
+				log.Entry(ctx).Warnf("Skipping the port forwarding resource %s/%s because namespace is not specified", pf.Type, pf.Name)
 			}
 		}
 		p.userDefinedResources = validResources

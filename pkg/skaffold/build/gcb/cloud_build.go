@@ -28,7 +28,6 @@ import (
 
 	cstorage "cloud.google.com/go/storage"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
@@ -40,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 )
@@ -148,7 +148,7 @@ watch:
 	for {
 		var cb *cloudbuild.Build
 		var err error
-		logrus.Debugf("current offset %d", offset)
+		log.Entry(ctx).Debugf("current offset %d", offset)
 		backoff := NewStatusBackoff()
 		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
 			time.Sleep(backoff.Step())
@@ -201,9 +201,9 @@ watch:
 	}
 
 	if err := c.Bucket(cbBucket).Object(buildObject).Delete(ctx); err != nil {
-		logrus.Warnf("Unable to deleting source archive after build: %q: %v", buildObject, err)
+		log.Entry(ctx).Warnf("Unable to deleting source archive after build: %q: %v", buildObject, err)
 	} else {
-		logrus.Infof("Deleted source archive %s", buildObject)
+		log.Entry(ctx).Infof("Deleted source archive %s", buildObject)
 	}
 
 	return build.TagWithDigest(tag, digest), nil
@@ -241,12 +241,12 @@ func (b *Builder) getLogs(ctx context.Context, c *cstorage.Client, offset int64,
 			switch gerr.Code {
 			// case http.
 			case 404, 416, 429, 503:
-				logrus.Debugf("Status Code: %d, %s", gerr.Code, gerr.Body)
+				log.Entry(ctx).Debugf("Status Code: %d, %s", gerr.Code, gerr.Body)
 				return nil, nil
 			}
 		}
 		if err == cstorage.ErrObjectNotExist {
-			logrus.Debugf("Logs for %s %s not uploaded yet...", bucket, objectName)
+			log.Entry(ctx).Debugf("Logs for %s %s not uploaded yet...", bucket, objectName)
 			return nil, nil
 		}
 		return nil, fmt.Errorf("unknown error: %w", err)
@@ -294,7 +294,7 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 	if e, ok := err.(*googleapi.Error); ok {
 		if e.Code == http.StatusConflict {
 			// 409 errors are ok, there could have been a race condition or eventual consistency.
-			logrus.Debugf("Not creating bucket, got a 409 error indicating it already exists.")
+			log.Entry(ctx).Debug("Not creating bucket, got a 409 error indicating it already exists.")
 			return nil
 		}
 	}
@@ -302,6 +302,6 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Created bucket %s in %s", bucket, projectID)
+	log.Entry(ctx).Debugf("Created bucket %s in %s", bucket, projectID)
 	return nil
 }

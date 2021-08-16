@@ -24,12 +24,12 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/transform"
@@ -105,7 +105,7 @@ type SkaffoldRenderer struct {
 // hydrated in place.
 func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 	if _, err := os.Stat(r.hydrationDir); os.IsNotExist(err) {
-		logrus.Debugf("creating render directory: %v", r.hydrationDir)
+		log.Entry(ctx).Debugf("creating render directory: %v", r.hydrationDir)
 		if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
 			return fmt.Errorf("creating render directory for hydration: %w", err)
 		}

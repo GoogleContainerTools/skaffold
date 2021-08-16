@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,6 +33,7 @@ import (
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // retry 3 times to give the object time to propagate to the API server
@@ -68,7 +68,7 @@ func Apply(ctx context.Context, labels map[string]string, results []deploy.Artif
 			time.Sleep(sleeptime)
 		}
 		if err != nil {
-			logrus.Warnf("error adding label to runtime object: %s", err.Error())
+			log.Entry(ctx).Warnf("error adding label to runtime object: %s", err.Error())
 		}
 	}
 
@@ -116,12 +116,12 @@ func updateRuntimeObject(ctx context.Context, client dynamic.Interface, disco di
 			return fmt.Errorf("resolving namespace: %w", err)
 		}
 
-		logrus.Debugln("Patching", name, "in namespace", ns)
+		log.Entry(ctx).Debug("Patching", name, "in namespace", ns)
 		if _, err := client.Resource(gvr).Namespace(ns).Patch(ctx, name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
 			return fmt.Errorf("patching resource %s/%q: %w", ns, name, err)
 		}
 	} else {
-		logrus.Debugln("Patching", name)
+		log.Entry(ctx).Debug("Patching", name)
 		if _, err := client.Resource(gvr).Patch(ctx, name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
 			return fmt.Errorf("patching resource %q: %w", name, err)
 		}

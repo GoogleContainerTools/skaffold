@@ -39,10 +39,10 @@ import (
 	"github.com/docker/docker/pkg/streamformatter"
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -178,7 +178,7 @@ func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
 	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
-		logrus.Warnf("unable to stop running container: %s", err.Error())
+		log.Entry(ctx).Warnf("unable to stop running container: %s", err.Error())
 	}
 	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
 		return fmt.Errorf("removing stopped container: %w", err)
@@ -231,7 +231,7 @@ func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
 		return err
 	}
 	if r.Warning != "" {
-		logrus.Warnln(r.Warning)
+		log.Entry(ctx).Warn(r.Warning)
 	}
 	return nil
 }
@@ -283,7 +283,7 @@ func (l *localDaemon) CheckCompatible(a *latestV1.DockerArtifact) error {
 
 // Build performs a docker build and returns the imageID.
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error) {
-	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
+	log.Entry(ctx).Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	if err := l.CheckCompatible(a); err != nil {
 		return "", err
@@ -336,7 +336,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 		var result BuildResult
 		if err := json.Unmarshal(*msg.Aux, &result); err != nil {
-			logrus.Debugln("Unable to parse build output:", err)
+			log.Entry(ctx).Debug("Unable to parse build output:", err)
 			return
 		}
 		imageID = result.ID
@@ -392,7 +392,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 
 		var result PushResult
 		if err := json.Unmarshal(*msg.Aux, &result); err != nil {
-			logrus.Debugln("Unable to parse push output:", err)
+			log.Entry(ctx).Debug("Unable to parse push output:", err)
 			return
 		}
 		digest = result.Digest
@@ -649,10 +649,10 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 
 		for _, r := range resp {
 			if r.Deleted != "" {
-				logrus.Debugf("deleted image %s\n", r.Deleted)
+				log.Entry(ctx).Debugf("deleted image %s\n", r.Deleted)
 			}
 			if r.Untagged != "" {
-				logrus.Debugf("untagged image %s\n", r.Untagged)
+				log.Entry(ctx).Debugf("untagged image %s\n", r.Untagged)
 			}
 		}
 	}

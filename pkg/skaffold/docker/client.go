@@ -28,10 +28,10 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -113,7 +113,7 @@ func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPICli
 		var exitError ExitCoder
 		if errors.As(err, &exitError) && (exitError.ExitCode() == minikubeDriverConfictExitCode || exitError.ExitCode() == oldMinikubeBadUsageExitCode) {
 			// Let's ignore the error and fall back to local docker daemon.
-			logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
+			log.Entry(context.Background()).Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
 			return newEnvAPIClient()
 		}
 
@@ -159,7 +159,7 @@ func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPICli
 	}
 
 	if host != client.DefaultDockerHost {
-		logrus.Infof("Using minikube docker daemon at %s", host)
+		log.Entry(context.Background()).Infof("Using minikube docker daemon at %s", host)
 	}
 
 	// Keep the minikube environment variables
@@ -174,7 +174,7 @@ func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPICli
 
 func getUserAgentHeader() map[string]string {
 	userAgent := fmt.Sprintf("skaffold-%s", version.Get().Version)
-	logrus.Debugf("setting Docker user agent to %s", userAgent)
+	log.Entry(context.Background()).Debugf("setting Docker user agent to %s", userAgent)
 	return map[string]string{
 		"User-Agent": userAgent,
 	}

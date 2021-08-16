@@ -25,7 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -43,6 +42,7 @@ import (
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -224,7 +224,7 @@ func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.D
 	defer ticker.Stop()
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
-	logrus.Debugf("checking status %s", r)
+	log.Entry(ctx).Debugf("checking status %s", r)
 	defer cancel()
 	for {
 		select {
@@ -290,7 +290,7 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
-	out = output.WithEventContext(out, constants.Deploy, r.String())
+	out, _ = output.WithEventContext(context.Background(), out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -336,7 +336,7 @@ func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer)
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
 			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
-			out := output.WithEventContext(out, constants.Deploy, r.String())
+			out, _ := output.WithEventContext(context.Background(), out, constants.Deploy, r.String())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}

@@ -23,10 +23,9 @@ import (
 	"io"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -158,7 +157,7 @@ func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, bool) {
 	}
 	t, ok := v.(string)
 	if !ok {
-		logrus.Fatalf("invalid build output recorded for image %s", imageName)
+		log.Entry(context.Background()).Fatalf("invalid build output recorded for image %s", imageName)
 	}
 	return t, true
 }

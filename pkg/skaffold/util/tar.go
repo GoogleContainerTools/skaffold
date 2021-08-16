@@ -19,6 +19,7 @@ package util
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -26,9 +27,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type headerModifier func(*tar.Header)
@@ -120,7 +120,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm header
 		}
 
 		if filepath.IsAbs(target) {
-			logrus.Warnf("Skipping %s. Only relative symlinks are supported.", src)
+			log.Entry(context.Background()).Warnf("Skipping %s. Only relative symlinks are supported.", src)
 			return nil
 		}
 

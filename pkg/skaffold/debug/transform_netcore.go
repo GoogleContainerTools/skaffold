@@ -17,12 +17,13 @@ limitations under the License.
 package debug
 
 import (
+	"context"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type netcoreTransformer struct{}
@@ -70,7 +71,7 @@ func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
 // Apply configures a container definition for vsdbg.
 // Returns a simple map describing the debug configuration details.
 func (t netcoreTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
-	logrus.Infof("Configuring %q for netcore debugging", container.Name)
+	log.Entry(context.Background()).Infof("Configuring %q for netcore debugging", container.Name)
 
 	return annotations.ContainerDebugConfiguration{
 		Runtime: "netcore",

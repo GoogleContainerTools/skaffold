@@ -21,9 +21,9 @@ import (
 	"errors"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -73,7 +73,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 				if r.HasDeployed() {
 					cleanup = func() {
 						if err := r.Cleanup(context.Background(), out); err != nil {
-							logrus.Warnln("deployer cleanup:", err)
+							log.Entry(ctx).Warn("deployer cleanup:", err)
 						}
 					}
 				}
@@ -81,7 +81,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 				if r.HasBuilt() {
 					prune = func() {
 						if err := r.Prune(context.Background(), out); err != nil {
-							logrus.Warnln("builder cleanup:", err)
+							log.Entry(ctx).Warn("builder cleanup:", err)
 						}
 					}
 				}

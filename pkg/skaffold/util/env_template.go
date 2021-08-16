@@ -18,6 +18,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -25,7 +26,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // For testing
@@ -73,7 +74,7 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 	}
 
 	var buf bytes.Buffer
-	logrus.Debugf("Executing template %v with environment %v", envTemplate, envMap)
+	log.Entry(context.Background()).Debugf("Executing template %v with environment %v", envTemplate, envMap)
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
 		return "", err
 	}

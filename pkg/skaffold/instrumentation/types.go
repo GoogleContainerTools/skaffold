@@ -17,10 +17,10 @@ limitations under the License.
 package instrumentation
 
 import (
+	"context"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -107,5 +107,5 @@ type creds struct {
 type errHandler struct{}
 
 func (h errHandler) Handle(err error) {
-	logrus.Debugf("Error with metrics: %v", err)
+	log.Entry(context.Background()).Debugf("Error with metrics: %v", err)
 }

@@ -110,7 +110,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	}
 	defer closeFn()
 
-	w = output.WithEventContext(w, constants.Build, a.ImageName)
+	w, ctx = output.WithEventContext(ctx, w, constants.Build, a.ImageName)
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)

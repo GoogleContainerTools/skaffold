@@ -17,6 +17,7 @@ limitations under the License.
 package debug
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -24,10 +25,10 @@ import (
 	cnb "github.com/buildpacks/lifecycle"
 	cnbl "github.com/buildpacks/lifecycle/launch"
 	shell "github.com/kballard/go-shellquote"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const (
@@ -202,7 +203,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 	}
 
 	if len(ic.arguments) == 0 {
-		logrus.Warnf("no CNB launch found for %s", ic.artifact)
+		log.Entry(context.Background()).Warnf("no CNB launch found for %s", ic.artifact)
 		return ic, nil
 	}
 

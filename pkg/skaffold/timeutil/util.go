@@ -17,15 +17,16 @@ limitations under the License.
 package timeutil
 
 import (
+	"context"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func LessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		logrus.Debugf("could not parse date %q", date)
+		log.Entry(context.Background()).Debugf("could not parse date %q", date)
 		return false
 	}
 	return time.Since(t) < duration

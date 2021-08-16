@@ -76,6 +76,10 @@ const (
 
 	// HaTS is the HaTS Survey ID
 	HaTS = "hats"
+
+	// SubtaskIDNone is the value used for Event API messages when there is no
+	// corresponding subtask
+	SubtaskIDNone = "-1"
 )
 
 type Phase string

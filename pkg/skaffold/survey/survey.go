@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/pkg/browser"
-	"github.com/sirupsen/logrus"
 
 	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 )
@@ -129,7 +129,7 @@ func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer, id string) err
 		return err
 	}
 	if err := open(sc.URL); err != nil {
-		logrus.Debugf("could not open url %s", sc.URL)
+		log.Entry(context.Background()).Debugf("could not open url %s", sc.URL)
 		return err
 	}
 
@@ -168,7 +168,7 @@ func (s *Runner) selectSurvey(takenSurveys map[string]struct{}) string {
 	sortSurveys(candidates)
 	cfgs, err := parseConfig(s.skaffoldConfig)
 	if err != nil {
-		logrus.Debugf("error parsing skaffold.yaml %s", err)
+		log.Entry(context.Background()).Debugf("error parsing skaffold.yaml %s", err)
 		return ""
 	}
 	for _, sc := range candidates {

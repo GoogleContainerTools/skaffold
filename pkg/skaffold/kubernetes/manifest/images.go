@@ -20,11 +20,10 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // GetImages gathers a map of base image names to the image with its tag
@@ -49,7 +48,7 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		logrus.Debugf("Couldn't parse image [%s]: %s", image, err.Error())
+		log.Entry(context.Background()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
 
@@ -88,7 +87,7 @@ func (l *ManifestList) replaceImages(ctx context.Context, builds []graph.Artifac
 	}
 
 	replacer.Check()
-	logrus.Debugln("manifests with tagged images:", updated.String())
+	log.Entry(ctx).Debug("manifests with tagged images:", updated.String())
 
 	return updated, nil
 }
@@ -124,7 +123,7 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		logrus.Debugf("Couldn't parse image [%s]: %s", image, err.Error())
+		log.Entry(context.Background()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
 	if imageName, tag, selected := r.selector(r.tagsByImageName, parsed); selected {
@@ -137,7 +136,7 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 func (r *imageReplacer) Check() {
 	for imageName := range r.tagsByImageName {
 		if !r.found[imageName] {
-			logrus.Debugf("image [%s] is not used by the current deployment", imageName)
+			log.Entry(context.Background()).Debugf("image [%s] is not used by the current deployment", imageName)
 		}
 	}
 }

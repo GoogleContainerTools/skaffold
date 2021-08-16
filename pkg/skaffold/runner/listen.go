@@ -22,10 +22,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 )
 
@@ -92,7 +91,7 @@ func (l *SkaffoldListener) do(devLoop func() error) error {
 	// reset the dependencies resolver cache at the start of every dev loop.
 	l.sourceDependenciesCache.Reset()
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
-		logrus.Warnf("Ignoring changes: %s", err.Error())
+		log.Entry(context.Background()).Warnf("Ignoring changes: %s", err.Error())
 		return nil
 	}
 
@@ -102,7 +101,7 @@ func (l *SkaffoldListener) do(devLoop func() error) error {
 		if errors.Is(err, ErrorConfigurationChanged) {
 			return err
 		}
-		logrus.Errorf("error running dev loop: %s", err.Error())
+		log.Entry(context.Background()).Errorf("error running dev loop: %s", err.Error())
 	}
 
 	return nil

@@ -28,10 +28,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -62,7 +61,7 @@ func (t *inputDigestTagger) GenerateTag(image latestV1.Artifact) (string, error)
 		h, err := fileHasher(d)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logrus.Tracef("skipping dependency %q for artifact cache calculation: %v", d, err)
+				log.Entry(ctx).Tracef("skipping dependency %q for artifact cache calculation: %v", d, err)
 				continue // Ignore files that don't exist
 			}
 
