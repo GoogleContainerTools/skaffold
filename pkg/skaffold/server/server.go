@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -96,18 +97,16 @@ func SetAutoSyncCallback(callback func(bool)) {
 // It returns a shutdown callback for tearing down the grpc server,
 // which the runner is responsible for calling.
 func Initialize(opts config.SkaffoldOptions) (func() error, error) {
-	if !opts.EnableRPC || opts.RPCPort == -1 {
+	if !opts.EnableRPC {
 		return func() error { return nil }, nil
 	}
 
-	var usedPorts util.PortSet
-
-	grpcCallback, rpcPort, err := newGRPCServer(opts.RPCPort, &usedPorts)
+	grpcCallback, grpcPort, err := newGRPCServer(opts.RPCPort)
 	if err != nil {
 		return grpcCallback, fmt.Errorf("starting gRPC server: %w", err)
 	}
 
-	httpCallback, err := newHTTPServer(opts.RPCHTTPPort, rpcPort, &usedPorts)
+	httpCallback, err := newHTTPServer(opts.RPCHTTPPort, grpcPort)
 	callback := func() error {
 		httpErr := httpCallback()
 		grpcErr := grpcCallback()
@@ -133,17 +132,13 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	return callback, nil
 }
 
-func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, int, error) {
-	l, port, err := listenOnAvailablePort(preferredPort, usedPorts)
+func newGRPCServer(preferredPort int) (func() error, int, error) {
+	l, port, err := listenPort(preferredPort)
 	if err != nil {
-		return func() error { return nil }, 0, fmt.Errorf("creating listener: %w", err)
+		return func() error { return nil },0, fmt.Errorf("creating listener: %w", err)
 	}
 
-	if port != preferredPort {
-		logrus.Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
-	} else {
-		logrus.Infof("starting gRPC server on port %d", port)
-	}
+	logrus.Infof("starting gRPC server on port %d", port)
 
 	s := grpc.NewServer()
 	srv = &server{
@@ -189,28 +184,24 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 	}, port, nil
 }
 
-func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func() error, error) {
+func newHTTPServer(preferredPort, proxyPort int) (func() error, error) {
 	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler), runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, net.JoinHostPort(util.Loopback, strconv.Itoa(proxyPort)), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
-	err = protoV2.RegisterSkaffoldV2ServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	err = protoV2.RegisterSkaffoldV2ServiceHandlerFromEndpoint(context.Background(), mux, net.JoinHostPort(util.Loopback, strconv.Itoa(proxyPort)), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
 
-	l, port, err := listenOnAvailablePort(preferredPort, usedPorts)
+	l, port, err := listenPort(preferredPort)
 	if err != nil {
 		return func() error { return nil }, fmt.Errorf("creating listener: %w", err)
 	}
 
-	if port != preferredPort {
-		logrus.Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
-	} else {
-		logrus.Infof("starting gRPC HTTP server on port %d", port)
-	}
+	logrus.Infof("starting gRPC HTTP server on port %d", port)
 
 	server := &http.Server{
 		Handler: mux,
@@ -240,20 +231,10 @@ func errorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Ma
 	}
 }
 
-func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.Listener, int, error) {
-	for try := 1; ; try++ {
-		port := util.GetAvailablePort(util.Loopback, preferredPort, usedPorts)
-
-		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
-		if err != nil {
-			if try >= maxTryListen {
-				return nil, 0, err
-			}
-
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		return l, port, nil
+func listenPort(port int) (net.Listener, int, error) {
+	l, err := net.Listen("tcp", net.JoinHostPort(util.Loopback, strconv.Itoa(port)))
+	if err !=nil{
+		return nil,0,err
 	}
+	return l,l.Addr().(*net.TCPAddr).Port,nil
 }

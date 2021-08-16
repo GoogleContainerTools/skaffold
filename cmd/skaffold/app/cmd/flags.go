@@ -187,7 +187,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "rpc-port",
-		Usage:         "tcp port to expose event API",
+		Usage:         "tcp port to expose event API (0: chosen randomly at runtime)",
 		Value:         &opts.RPCPort,
 		DefValue:      constants.DefaultRPCPort,
 		FlagAddMethod: "IntVar",
@@ -195,7 +195,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "rpc-http-port",
-		Usage:         "tcp port to expose event REST API over HTTP",
+		Usage:         "tcp port to expose event REST API over HTTP (0: chosen randomly at runtime)",
 		Value:         &opts.RPCHTTPPort,
 		DefValue:      constants.DefaultRPCHTTPPort,
 		FlagAddMethod: "IntVar",

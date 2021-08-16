@@ -61,8 +61,8 @@ const (
 	DefaultCacheFile   = "cache"
 	DefaultMetricFile  = "metrics"
 
-	DefaultRPCPort     = 50051
-	DefaultRPCHTTPPort = 50052
+	DefaultRPCPort     = 0 // choose an available port at runtime
+	DefaultRPCHTTPPort = 0 // choose an available port at runtime
 
 	DefaultPortForwardAddress = "127.0.0.1"
 

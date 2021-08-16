@@ -24,27 +24,20 @@ over the individual phases of the pipeline (build, deploy, and sync).
 
 ## Connecting to the Skaffold API
 The Skaffold API is `gRPC` based, and it is also exposed via the gRPC gateway as a JSON over HTTP service.
-The server is hosted locally on the same host where the skaffold process is running, and will serve by default on ports 50051 and 50052.
-These ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
+
+The server is hosted locally on the same host where the skaffold process is running, and by default will serve
+on randomly chosen available ports (logged at INFO level). However, these ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
 
 For reference, we generate the server's [gRPC service definitions and message protos]({{< relref "/docs/references/api/grpc" >}}) as well as the [Swagger based HTTP API Spec]({{< relref "/docs/references/api/swagger" >}}).
 
-
 ### HTTP server
-The HTTP API is exposed on port `50052` by default. The default HTTP port can be overridden with the `--rpc-http-port` flag. 
-If the HTTP API port is taken, Skaffold will find the next available port.
-The final port can be found from Skaffold's startup logs.
-
-```code
-$ skaffold dev
-WARN[0000] port 50052 for gRPC HTTP server already in use: using 50055 instead
-```
+The HTTP API starts on a random available port by default (logged in INFO level) and can be overridden with the `--rpc-http-port` flag. 
+If the specified custom port is not available, Skaffold will exit with failure.
 
 ### gRPC Server
 
-The gRPC API is exposed on port `50051` by default and can be overridden with the `--rpc-port` flag.
-As with the HTTP API, if this port is taken, Skaffold will find the next available port.
-You can find this port from Skaffold's logs on startup.
+The gRPC API starts on a random available port by default (logged in INFO level) and can be overridden with the `--rpc-port` flag.
+If the specified custom port is not available, Skaffold will exit with failure.
 
 ```code
 $ skaffold dev
@@ -52,7 +45,8 @@ WARN[0000] port 50051 for gRPC server already in use: using 50053 instead
 ```
 
 #### Creating a gRPC Client
-To connect to the `gRPC` server at default port `50051`, create a client using the following code snippet.
+
+To connect to the `gRPC` server at the specified port, create a client using the following code snippet.
 
 {{< alert title="Note" >}}
 The skaffold gRPC server is not compatible with HTTPS, so connections need to be marked as insecure with `grpc.WithInsecure()`
