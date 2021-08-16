@@ -210,8 +210,8 @@ Options:
       --push=: Push the built images to the specified image repository.
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=0: tcp port to expose event REST API over HTTP (0: chosen randomly at runtime)
+      --rpc-port=0: tcp port to expose event API (0: chosen randomly at runtime)
       --skip-tests=false: Whether to skip the tests after building
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
@@ -442,8 +442,8 @@ Options:
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --protocols=[]: Priority sorted order of debugger protocols to support.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=0: tcp port to expose event REST API over HTTP (0: chosen randomly at runtime)
+      --rpc-port=0: tcp port to expose event API (0: chosen randomly at runtime)
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -599,8 +599,8 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=0: tcp port to expose event REST API over HTTP (0: chosen randomly at runtime)
+      --rpc-port=0: tcp port to expose event API (0: chosen randomly at runtime)
       --skip-render=false: Don't render the manifests, just deploy them
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -692,8 +692,8 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=0: tcp port to expose event REST API over HTTP (0: chosen randomly at runtime)
+      --rpc-port=0: tcp port to expose event API (0: chosen randomly at runtime)
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -1005,8 +1005,8 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=0: tcp port to expose event REST API over HTTP (0: chosen randomly at runtime)
+      --rpc-port=0: tcp port to expose event API (0: chosen randomly at runtime)
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -1175,8 +1175,8 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=0: tcp port to expose event REST API over HTTP (0: chosen randomly at runtime)
+      --rpc-port=0: tcp port to expose event API (0: chosen randomly at runtime)
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
