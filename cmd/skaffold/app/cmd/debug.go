@@ -33,7 +33,7 @@ var doDebug = runDebug
 // Unlike `dev`, `debug` defaults `auto-build` and `auto-deploy` to `false`.
 func NewCmdDebug() *cobra.Command {
 	return NewCmd("debug").
-		WithDescription("[beta] Run a pipeline in debug mode").
+		WithDescription("Run a pipeline in debug mode").
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging. "+
 			"Auto-build and sync is disabled by default to prevent accidentally tearing down debug sessions.").
 		WithCommonFlags().

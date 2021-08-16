@@ -37,8 +37,8 @@ func TestMainHelp(t *testing.T) {
 		err := Run(&output, &errOutput)
 
 		t.CheckNoError(err)
-		t.CheckContains("End-to-end pipelines", output.String())
-		t.CheckContains("Getting started with a new project", output.String())
+		t.CheckContains("End-to-end Pipelines", output.String())
+		t.CheckContains("Getting Started With a New Project", output.String())
 		t.CheckEmpty(errOutput.String())
 	})
 }
@@ -67,8 +67,8 @@ func TestSkaffoldCmdline_MainHelp(t *testing.T) {
 		err := Run(&output, &errOutput)
 
 		t.CheckNoError(err)
-		t.CheckContains("End-to-end pipelines", output.String())
-		t.CheckContains("Getting started with a new project", output.String())
+		t.CheckContains("End-to-end Pipelines", output.String())
+		t.CheckContains("Getting Started With a New Project", output.String())
 		t.CheckEmpty(errOutput.String())
 	})
 }

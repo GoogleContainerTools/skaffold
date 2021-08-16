@@ -29,7 +29,7 @@ import (
 // NewCmdDelete describes the CLI command to delete deployed resources.
 func NewCmdDelete() *cobra.Command {
 	return NewCmd("delete").
-		WithDescription("Delete the deployed application").
+		WithDescription("Delete any resources deployed by Skaffold").
 		WithCommonFlags().
 		NoArgs(doDelete)
 }

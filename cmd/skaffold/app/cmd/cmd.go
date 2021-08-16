@@ -154,7 +154,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 	groups := templates.CommandGroups{
 		{
-			Message: "End-to-end pipelines:",
+			Message: "End-to-end Pipelines:",
 			Commands: []*cobra.Command{
 				NewCmdRun(),
 				NewCmdDev(),
@@ -162,7 +162,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			},
 		},
 		{
-			Message: "Pipeline building blocks for CI/CD:",
+			Message: "Pipeline Building Blocks:",
 			Commands: []*cobra.Command{
 				NewCmdBuild(),
 				NewCmdTest(),
@@ -173,10 +173,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			},
 		},
 		{
-			Message: "Getting started with a new project:",
+			Message: "Getting Started With a New Project:",
 			Commands: []*cobra.Command{
 				NewCmdInit(),
-				NewCmdFix(),
 			},
 		},
 	}
@@ -184,6 +183,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 	// other commands
 	rootCmd.AddCommand(NewCmdVersion())
+	rootCmd.AddCommand(NewCmdFix())
 	rootCmd.AddCommand(NewCmdCompletion())
 	rootCmd.AddCommand(NewCmdConfig())
 	rootCmd.AddCommand(NewCmdFindConfigs())
@@ -198,12 +198,12 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdInspect())
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), fmt.Sprintf("Log level: one of %v", logrus.AllLevels))
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(output.DefaultColorCode), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().BoolVar(&interactive, "interactive", true, "Allow user prompts for more information")
 	rootCmd.PersistentFlags().BoolVar(&update.EnableCheck, "update-check", true, "Check for a more recent version of Skaffold")
-	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamps in logs.")
+	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamps in logs")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
 
 	setFlagsFromEnvVariables(rootCmd)
