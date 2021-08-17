@@ -517,6 +517,9 @@ type DeployConfig struct {
 
 	// Logs configures how container logs are printed as a result of a deployment.
 	Logs LogsConfig `yaml:"logs,omitempty"`
+
+	// TransformableAllowList configures an allowlist for transforming manifests.
+	TransformableAllowList []ResourceFilter `yaml:"transformableAllowList,omitempty"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -1409,6 +1412,16 @@ type NamedContainerHook struct {
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.
 	ContainerName string `yaml:"containerName,omitempty"`
+}
+
+// ResourceFilter contains definition to filter which resource to transform.
+type ResourceFilter struct {
+	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
+	Image []string `yaml:"image,omitempty"`
+	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
+	Labels []string `yaml:"labels,omitempty"`
+	// Type is the compact format of a resource type.
+	Type string `yaml:"type" yamltags:"required"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with
