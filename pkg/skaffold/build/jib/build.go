@@ -32,7 +32,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.A
 		"Destination": instrumentation.PII(tag),
 	})
 
-	t, err := DeterminePluginType(artifact.Workspace, artifact.JibArtifact)
+	t, err := DeterminePluginType(ctx, artifact.Workspace, artifact.JibArtifact)
 	if err != nil {
 		return "", err
 	}

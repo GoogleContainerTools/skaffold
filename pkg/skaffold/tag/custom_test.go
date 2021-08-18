@@ -47,7 +47,7 @@ func TestCustomTag_GenerateTag(t *testing.T) {
 		image := latestV1.Artifact{
 			ImageName: "test",
 		}
-		tag, err := test.c.GenerateTag(image)
+		tag, err := test.c.GenerateTag(ctx, image)
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, tag)
 	}
 }

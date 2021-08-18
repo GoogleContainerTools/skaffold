@@ -84,8 +84,8 @@ type jibJSON struct {
 }
 
 // validate checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
-func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
-	if !JVMFound() {
+func validate(ctx context.Context, path string, enableGradleAnalysis bool) []ArtifactConfig {
+	if !JVMFound(ctx) {
 		log.Entry(context.Background()).Debugf("Skipping Jib for init for %q: no functioning Java VM", path)
 		return nil
 	}
@@ -123,7 +123,7 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 	}
 	cmd := exec.Command(executable, taskName, "-q", consoleFlag)
 	cmd.Dir = filepath.Dir(path)
-	stdout, err := util.RunCmdOut(cmd)
+	stdout, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return nil
 	}

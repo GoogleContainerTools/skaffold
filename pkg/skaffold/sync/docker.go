@@ -35,14 +35,14 @@ func NewContainerSyncer() *ContainerSyncer {
 func (s *ContainerSyncer) Sync(ctx context.Context, _ io.Writer, item *Item) error {
 	if len(item.Copy) > 0 {
 		log.Entry(ctx).Info("Copying files:", item.Copy, "to", item.Image)
-		if _, err := util.RunCmdOut(s.copyFileFn(ctx, item.Artifact.ImageName, item.Copy)); err != nil {
+		if _, err := util.RunCmdOut(ctx, s.copyFileFn(ctx, item.Artifact.ImageName, item.Copy)); err != nil {
 			return fmt.Errorf("copying files: %w", err)
 		}
 	}
 
 	if len(item.Delete) > 0 {
 		log.Entry(ctx).Info("Deleting files:", item.Delete, "from", item.Image)
-		if _, err := util.RunCmdOut(s.deleteFileFn(ctx, item.Artifact.ImageName, item.Delete)); err != nil {
+		if _, err := util.RunCmdOut(ctx, s.deleteFileFn(ctx, item.Artifact.ImageName, item.Delete)); err != nil {
 			return fmt.Errorf("deleting files: %w", err)
 		}
 	}

@@ -47,7 +47,7 @@ import (
 var createRunner = createNewRunner
 
 func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []util.VersionedConfig) error) error {
-	runner, config, runCtx, err := createRunner(out, opts)
+	runner, config, runCtx, err := createRunner(ctx, out, opts)
 	if err != nil {
 		return err
 	}
@@ -58,8 +58,8 @@ func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, [
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-	runCtx, configs, err := runContext(out, opts)
+func createNewRunner(ctx context.Context, out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
+	runCtx, configs, err := runContext(ctx, out, opts)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -70,7 +70,7 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	}
 	instrumentation.Init(v1Configs, opts.User)
 	hooks.SetupStaticEnvOptions(runCtx)
-	runner, err := v1.NewForConfig(runCtx)
+	runner, err := v1.NewForConfig(ctx, runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
 		return nil, nil, nil, fmt.Errorf("creating runner: %w", err)
@@ -78,8 +78,8 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	return runner, configs, runCtx, nil
 }
 
-func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []util.VersionedConfig, error) {
-	cfgSet, err := withFallbackConfig(out, opts, parser.GetConfigSet)
+func runContext(ctx context.Context, out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []util.VersionedConfig, error) {
+	cfgSet, err := withFallbackConfig(ctx, out, opts, parser.GetConfigSet)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,12 +93,12 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 		configs = append(configs, cfg.SkaffoldConfig)
 	}
 
-	runCtx, err := runcontext.GetRunContext(opts, configs)
+	runCtx, err := runcontext.GetRunContext(ctx, opts, configs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
 
-	if err := validation.ProcessWithRunContext(runCtx); err != nil {
+	if err := validation.ProcessWithRunContext(ctx, runCtx); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 
@@ -106,8 +106,8 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 }
 
 // withFallbackConfig will try to automatically generate a config if root `skaffold.yaml` file does not exist.
-func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error)) (parser.SkaffoldConfigSet, error) {
-	configs, err := getCfgs(opts)
+func withFallbackConfig(ctx context.Context, out io.Writer, opts config.SkaffoldOptions, getCfgs func(context.Context, config.SkaffoldOptions) (parser.SkaffoldConfigSet, error)) (parser.SkaffoldConfigSet, error) {
+	configs, err := getCfgs(ctx, opts)
 	if err == nil {
 		return configs, nil
 	}

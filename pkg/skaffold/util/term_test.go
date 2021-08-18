@@ -77,7 +77,7 @@ func TestSupportsColor(t *testing.T) {
 				test.shouldErr = false
 			}
 
-			supportsColors, err := SupportsColor()
+			supportsColors, err := SupportsColor(ctx)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, supportsColors)
 		})
 	}

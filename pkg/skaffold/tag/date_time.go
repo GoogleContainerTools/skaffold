@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -45,7 +46,7 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 }
 
 // GenerateTag generates a tag using the current timestamp.
-func (t *dateTimeTagger) GenerateTag(_ latestV1.Artifact) (string, error) {
+func (t *dateTimeTagger) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
 	format := tagTime
 	if len(t.Format) > 0 {
 		format = t.Format

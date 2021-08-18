@@ -73,7 +73,7 @@ func TestDateTime_GenerateTag(t *testing.T) {
 				ImageName: "test",
 			}
 
-			tag, err := c.GenerateTag(image)
+			tag, err := c.GenerateTag(ctx, image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, tag)
 		})

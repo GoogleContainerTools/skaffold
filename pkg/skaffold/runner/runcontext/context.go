@@ -198,7 +198,7 @@ func (rc *RunContext) RPCPort() int                                  { return rc
 func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
 func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
 
-func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
+func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
@@ -238,7 +238,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	cluster, err := config.GetCluster(opts.GlobalConfig, opts.MinikubeProfile, opts.DetectMinikube)
+	cluster, err := config.GetCluster(ctx, opts.GlobalConfig, opts.MinikubeProfile, opts.DetectMinikube)
 	if err != nil {
 		return nil, fmt.Errorf("getting cluster: %w", err)
 	}

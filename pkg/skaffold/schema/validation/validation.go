@@ -97,9 +97,9 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 
 // ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
 // It returns all encountered errors as a concatenated string.
-func ProcessWithRunContext(runCtx *runcontext.RunContext) error {
+func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) error {
 	var errs []error
-	errs = append(errs, validateDockerNetworkContainerExists(runCtx.Artifacts(), runCtx)...)
+	errs = append(errs, validateDockerNetworkContainerExists(ctx, runCtx.Artifacts(), runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -329,16 +329,16 @@ func validateDockerNetworkMode(artifacts []*latestV1.Artifact) (errs []error) {
 }
 
 // Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
-func validateDockerNetworkContainerExists(artifacts []*latestV1.Artifact, runCtx docker.Config) []error {
+func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*latestV1.Artifact, runCtx docker.Config) []error {
 	var errs []error
-	apiClient, err := docker.NewAPIClient(runCtx)
+	apiClient, err := docker.NewAPIClient(ctx, runCtx)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
 	}
 
 	client := apiClient.RawClient()
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(5*time.Second))
 	defer cancel()
 
 	for _, a := range artifacts {

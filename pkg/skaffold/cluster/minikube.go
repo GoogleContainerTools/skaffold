@@ -58,9 +58,9 @@ var (
 
 type Client interface {
 	// IsMinikube returns true if the given kubeContext maps to a minikube cluster
-	IsMinikube(kubeContext string) bool
+	IsMinikube(ctx context.Context, kubeContext string) bool
 	// MinikubeExec returns the Cmd struct to execute minikube with given arguments
-	MinikubeExec(arg ...string) (*exec.Cmd, error)
+	MinikubeExec(ctx context.Context, arg ...string) (*exec.Cmd, error)
 }
 
 type clientImpl struct{}
@@ -69,8 +69,8 @@ func getClient() Client {
 	return clientImpl{}
 }
 
-func (clientImpl) IsMinikube(kubeContext string) bool {
-	if _, _, err := FindMinikubeBinary(); err != nil {
+func (clientImpl) IsMinikube(ctx context.Context, kubeContext string) bool {
+	if _, _, err := FindMinikubeBinary(ctx); err != nil {
 		log.Entry(context.Background()).Tracef("Minikube cluster not detected: %v", err)
 		return false
 	}
@@ -89,7 +89,7 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 		return true
 	}
 
-	if ok, err := matchServerURL(cluster.Server); err != nil {
+	if ok, err := matchServerURL(ctx, cluster.Server); err != nil {
 		log.Entry(context.Background()).Tracef("failed to match server url: %v", err)
 	} else if ok {
 		log.Entry(context.Background()).Debugf("Minikube cluster detected: server url for context %q matches minikube node ip", kubeContext)
@@ -99,12 +99,12 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 	return false
 }
 
-func (clientImpl) MinikubeExec(arg ...string) (*exec.Cmd, error) {
-	return minikubeExec(arg...)
+func (clientImpl) MinikubeExec(ctx context.Context, arg ...string) (*exec.Cmd, error) {
+	return minikubeExec(ctx, arg...)
 }
 
-func minikubeExec(arg ...string) (*exec.Cmd, error) {
-	b, v, err := FindMinikubeBinary()
+func minikubeExec(ctx context.Context, arg ...string) (*exec.Cmd, error) {
+	b, v, err := FindMinikubeBinary(ctx)
 	if err != nil && !errors.As(err, &versionErr{}) {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
 	} else if err == nil && supportsUserFlag(v) {
@@ -118,9 +118,9 @@ func supportsUserFlag(ver semver.Version) bool {
 }
 
 // Retrieves minikube version
-func getCurrentVersion() (semver.Version, error) {
+func getCurrentVersion(ctx context.Context) (semver.Version, error) {
 	cmd := exec.Command("minikube", "version", "--output=json")
-	out, err := util.RunCmdOut(cmd)
+	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return semver.Version{}, err
 	}
@@ -136,7 +136,7 @@ func getCurrentVersion() (semver.Version, error) {
 	return semver.Version{}, err
 }
 
-func minikubeBinary() (string, semver.Version, error) {
+func minikubeBinary(ctx context.Context) (string, semver.Version, error) {
 	findOnce.Do(func() {
 		filename, err := exec.LookPath("minikube")
 		if err != nil {
@@ -146,7 +146,7 @@ func minikubeBinary() (string, semver.Version, error) {
 			mk.err = fmt.Errorf("unable to find minikube executable. File not found %s", filename)
 		}
 		mk.path = filename
-		if v, err := GetCurrentVersionFunc(); err != nil {
+		if v, err := GetCurrentVersionFunc(ctx); err != nil {
 			mk.err = versionErr{err: err}
 		} else {
 			mk.version = v
@@ -170,9 +170,9 @@ func matchClusterCertPath(certPath string) bool {
 }
 
 // matchServerURL checks if the k8s server url is same as any of the minikube nodes IPs
-func matchServerURL(server string) (bool, error) {
-	cmd, _ := minikubeExec("profile", "list", "-o", "json")
-	out, err := util.RunCmdOut(cmd)
+func matchServerURL(ctx context.Context, server string) (bool, error) {
+	cmd, _ := minikubeExec(ctx, "profile", "list", "-o", "json")
+	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return false, fmt.Errorf("getting minikube profiles: %w", err)
 	}

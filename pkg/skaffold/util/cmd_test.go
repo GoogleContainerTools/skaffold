@@ -90,7 +90,7 @@ func TestCmd_RunCmdOut(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			got, err := RunCmdOut(test.cmd)
+			got, err := RunCmdOut(ctx, test.cmd)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, string(got))
 		})

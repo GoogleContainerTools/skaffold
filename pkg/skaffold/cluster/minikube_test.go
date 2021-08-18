@@ -121,7 +121,7 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 				}, nil
 			})
 
-			ok := GetClient().IsMinikube(test.kubeContext)
+			ok := GetClient().IsMinikube(ctx, test.kubeContext)
 			t.CheckDeepEqual(test.expected, ok)
 		})
 	}
@@ -154,7 +154,7 @@ func TestGetVersion(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut("minikube version --output=json",
 				test.versionBlob),
 			)
-			actual, err := getCurrentVersion()
+			actual, err := getCurrentVersion(ctx)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, actual, test.expected)
 		})
 	}
@@ -192,7 +192,7 @@ func TestMinikubeExec(t *testing.T) {
 			t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
 				return "", test.version, test.err
 			})
-			actual, err := minikubeExec("test")
+			actual, err := minikubeExec(ctx, "test")
 			expected := []string{"", "test"}
 			if test.hasUserArg {
 				expected = append(expected, "--user=skaffold")

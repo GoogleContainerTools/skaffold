@@ -836,7 +836,7 @@ type TestCmdRecorder struct {
 	err  error
 }
 
-func (t *TestCmdRecorder) RunCmd(cmd *exec.Cmd) error {
+func (t *TestCmdRecorder) RunCmd(ctx context.Context, cmd *exec.Cmd) error {
 	if t.err != nil {
 		return t.err
 	}
@@ -844,8 +844,8 @@ func (t *TestCmdRecorder) RunCmd(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
-	return nil, t.RunCmd(cmd)
+func (t *TestCmdRecorder) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	return nil, t.RunCmd(ctx, cmd)
 }
 
 func fakeCmd(ctx context.Context, _ v1.Pod, _ v1.Container, files syncMap) *exec.Cmd {

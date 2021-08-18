@@ -181,7 +181,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 		expected := []string{"file1", "file2", "file3"}
 		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 		t.CheckNoError(err)
-		deps, err := testRunner.TestDependencies()
+		deps, err := testRunner.TestDependencies(ctx)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, deps)
@@ -252,7 +252,7 @@ func TestTestDependenciesPaths(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
-			deps, err := testRunner.TestDependencies()
+			deps, err := testRunner.TestDependencies(ctx)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
@@ -320,7 +320,7 @@ func TestGetEnv(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
-			actual, err := testRunner.getEnv(test.tag)
+			actual, err := testRunner.getEnv(ctx, test.tag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

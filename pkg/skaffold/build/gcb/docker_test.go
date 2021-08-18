@@ -156,7 +156,7 @@ func TestDockerBuildSpec(t *testing.T) {
 				Timeout:     "10m",
 			})
 
-			desc, err := builder.buildSpec(test.artifact, "nginx", "bucket", "object")
+			desc, err := builder.buildSpec(ctx, test.artifact, "nginx", "bucket", "object")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, desc)
 		})
 	}

@@ -101,7 +101,7 @@ func TestCreateNewRunner(t *testing.T) {
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latestV1.Version, test.config)).
 				Chdir()
 
-			_, _, _, err := createNewRunner(ioutil.Discard, test.options)
+			_, _, _, err := createNewRunner(ctx, ioutil.Discard, test.options)
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedError != "" {

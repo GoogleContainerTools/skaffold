@@ -126,8 +126,8 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy) (*Deployer, error) {
-	hv, err := binVer()
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy) (*Deployer, error) {
+	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
 	}

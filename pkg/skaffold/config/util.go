@@ -199,7 +199,7 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) (Cluster, error) {
+func GetCluster(ctx context.Context, configFile string, minikubeProfile string, detectMinikube bool) (Cluster, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
 		return Cluster{}, err
@@ -224,7 +224,7 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 		local = true
 
 	case detectMinikube:
-		local = cluster.GetClient().IsMinikube(kubeContext)
+		local = cluster.GetClient().IsMinikube(ctx, kubeContext)
 
 	default:
 		local = false

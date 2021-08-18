@@ -77,9 +77,9 @@ func sortKeys(m map[string]string) []string {
 }
 
 // binVer returns the version of the helm binary found in PATH.
-func binVer() (semver.Version, error) {
+func binVer(ctx context.Context) (semver.Version, error) {
 	cmd := exec.Command("helm", "version", "--client")
-	b, err := util.RunCmdOut(cmd)
+	b, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", string(b), err)
 	}
@@ -218,5 +218,5 @@ func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	return util.RunCmd(cmd)
+	return util.RunCmd(ctx, cmd)
 }

@@ -160,7 +160,7 @@ func getSyncMap(ctx context.Context, workspace string, artifact *latestV1.JibArt
 		return nil, fmt.Errorf("failed to get sync command: %w", err)
 	}
 
-	sm, err := getSyncMapFromSystem(cmd)
+	sm, err := getSyncMapFromSystem(ctx, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain sync map from jib builder: %w", err)
 	}
@@ -168,7 +168,7 @@ func getSyncMap(ctx context.Context, workspace string, artifact *latestV1.JibArt
 }
 
 func getSyncMapCommand(ctx context.Context, workspace string, artifact *latestV1.JibArtifact) (*exec.Cmd, error) {
-	t, err := DeterminePluginType(workspace, artifact)
+	t, err := DeterminePluginType(ctx, workspace, artifact)
 	if err != nil {
 		return nil, err
 	}
@@ -183,9 +183,9 @@ func getSyncMapCommand(ctx context.Context, workspace string, artifact *latestV1
 	}
 }
 
-func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
+func getSyncMapFromSystem(ctx context.Context, cmd *exec.Cmd) (*SyncMap, error) {
 	jsm := JSONSyncMap{}
-	stdout, err := util.RunCmdOut(cmd)
+	stdout, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Jib sync map: %w", err)
 	}

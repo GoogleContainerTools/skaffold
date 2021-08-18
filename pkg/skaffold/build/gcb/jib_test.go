@@ -85,7 +85,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			})
 			builder.skipTests = test.skipTests
 
-			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(ctx, artifact, "img", "bucket", "object")
 			t.CheckNoError(err)
 
 			expected := []*cloudbuild.BuildStep{{
@@ -130,7 +130,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 			})
 			builder.skipTests = test.skipTests
 
-			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(ctx, artifact, "img", "bucket", "object")
 			t.CheckNoError(err)
 
 			expected := []*cloudbuild.BuildStep{{

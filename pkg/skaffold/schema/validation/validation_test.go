@@ -702,7 +702,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 				return docker.NewLocalDaemon(fakeClient, nil, false, nil), nil
 			})
 
-			err := ProcessWithRunContext(&runcontext.RunContext{
+			err := ProcessWithRunContext(ctx, &runcontext.RunContext{
 				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{
 					{
 						Build: latestV1.BuildConfig{

@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -267,8 +268,8 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 
 type fakeClient struct{}
 
-func (fakeClient) IsMinikube(kubeContext string) bool        { return kubeContext == "minikube" }
-func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
+func (fakeClient) IsMinikube(ctx context.Context, kubeContext string) bool { return kubeContext == "minikube" }
+func (fakeClient) MinikubeExec(context.Context, ...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestGetCluster(t *testing.T) {
 	tests := []struct {
@@ -364,10 +365,10 @@ func TestGetCluster(t *testing.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
-			cluster, _ := GetCluster("dummyname", test.profile, true)
+			cluster, _ := GetCluster(ctx, "dummyname", test.profile, true)
 			t.CheckDeepEqual(test.expected, cluster)
 
-			cluster, _ = GetCluster("dummyname", test.profile, false)
+			cluster, _ = GetCluster(ctx, "dummyname", test.profile, false)
 			t.CheckDeepEqual(test.expected, cluster)
 		})
 	}

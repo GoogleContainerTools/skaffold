@@ -74,7 +74,7 @@ func TestConfigAnalyzer(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			err := test.analyzer.analyzeFile(test.inputFile)
+			err := test.analyzer.analyzeFile(ctx, test.inputFile)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

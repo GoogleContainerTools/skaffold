@@ -42,9 +42,9 @@ func TestNoTestDependencies(t *testing.T) {
 		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) { return nil, nil })
 
 		cfg := &mockConfig{}
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
-		deps, err := tester.TestDependencies(&latestV1.Artifact{ImageName: "foo"})
+		deps, err := tester.TestDependencies(ctx, &latestV1.Artifact{ImageName: "foo"})
 		t.CheckNoError(err)
 		t.CheckEmpty(deps)
 	})
@@ -62,9 +62,9 @@ func TestTestDependencies(t *testing.T) {
 			},
 		}
 
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
-		deps, err := tester.TestDependencies(&latestV1.Artifact{ImageName: "foo"})
+		deps, err := tester.TestDependencies(ctx, &latestV1.Artifact{ImageName: "foo"})
 
 		expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 		t.CheckNoError(err)
@@ -81,10 +81,10 @@ func TestWrongPattern(t *testing.T) {
 			}},
 		}
 
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
-		_, err = tester.TestDependencies(&latestV1.Artifact{ImageName: "image"})
+		_, err = tester.TestDependencies(ctx, &latestV1.Artifact{ImageName: "image"})
 		t.CheckError(true, err)
 		testEvent.InitializeState([]latestV1.Pipeline{{}})
 
@@ -100,7 +100,7 @@ func TestNoTest(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfg := &mockConfig{}
 
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
 		err = tester.Test(context.Background(), ioutil.Discard, nil)
@@ -139,7 +139,7 @@ func TestTestSuccess(t *testing.T) {
 		}
 
 		imagesAreLocal := true
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
 		t.CheckNoError(err)
 		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "image",
@@ -165,7 +165,7 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 		}
 
 		imagesAreLocal := false
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
 		t.CheckNoError(err)
 
 		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
@@ -193,7 +193,7 @@ func TestTestFailureRemoteImage(t *testing.T) {
 		}
 
 		imagesAreLocal := false
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
 		t.CheckNoError(err)
 
 		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
@@ -223,7 +223,7 @@ func TestTestFailure(t *testing.T) {
 			},
 		}
 
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
 		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
@@ -251,7 +251,7 @@ func TestTestMuted(t *testing.T) {
 		}
 
 		var buf bytes.Buffer
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		tester, err := NewTester(ctx, cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
 		err = tester.Test(context.Background(), &buf, []graph.Artifact{{

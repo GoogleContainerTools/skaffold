@@ -73,7 +73,7 @@ func (g *git) diffWithBaseline(path string) ([]byte, error) {
 
 func (g *git) run(args ...string) ([]byte, error) {
 	cmd := exec.Command(g.path, args...)
-	out, err := util.RunCmdOut(cmd)
+	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed running %v: %s\n%s", cmd.Args, err, string(out))
 	}

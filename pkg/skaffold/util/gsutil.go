@@ -36,7 +36,7 @@ func (g *Gsutil) Copy(ctx context.Context, src, dst string, recursive bool) erro
 	}
 	args = append(args, src, dst)
 	cmd := exec.CommandContext(ctx, GsutilExec, args...)
-	out, err := RunCmdOut(cmd)
+	out, err := RunCmdOut(ctx, cmd)
 	if err != nil {
 		return fmt.Errorf("copy file(s) with %s failed: %w", GsutilExec, err)
 	}

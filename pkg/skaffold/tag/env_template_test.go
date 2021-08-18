@@ -104,7 +104,7 @@ func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 				ImageName: test.imageName,
 			}
 
-			got, err := c.GenerateTag(image)
+			got, err := c.GenerateTag(ctx, image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)

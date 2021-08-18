@@ -54,7 +54,7 @@ func main() {
 			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
 			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
 			// before we print an error to get the right coloring.
-			errOut := output.GetWriter(os.Stderr, output.DefaultColorCode, false, false)
+			errOut := output.GetWriter(context.Background(), os.Stderr, output.DefaultColorCode, false, false)
 			output.Red.Fprintln(errOut, err)
 			code = app.ExitCode(err)
 		}

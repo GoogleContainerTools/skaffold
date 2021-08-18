@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
-func RetrieveConfigFile(tagged string, cfg Config) (*v1.ConfigFile, error) {
+func RetrieveConfigFile(ctx context.Context, tagged string, cfg Config) (*v1.ConfigFile, error) {
 	if strings.ToLower(tagged) == "scratch" {
 		return nil, nil
 	}
@@ -34,7 +34,7 @@ func RetrieveConfigFile(tagged string, cfg Config) (*v1.ConfigFile, error) {
 	var cf *v1.ConfigFile
 	var err error
 
-	localDocker, err := NewAPIClient(cfg)
+	localDocker, err := NewAPIClient(ctx, cfg)
 	if err == nil {
 		cf, err = localDocker.ConfigFile(context.Background(), tagged)
 	}
@@ -49,8 +49,8 @@ func RetrieveConfigFile(tagged string, cfg Config) (*v1.ConfigFile, error) {
 	return cf, err
 }
 
-func RetrieveWorkingDir(tagged string, cfg Config) (string, error) {
-	cf, err := RetrieveConfigFile(tagged, cfg)
+func RetrieveWorkingDir(ctx context.Context, tagged string, cfg Config) (string, error) {
+	cf, err := RetrieveConfigFile(ctx, tagged, cfg)
 	switch {
 	case err != nil:
 		return "", err
@@ -64,8 +64,8 @@ func RetrieveWorkingDir(tagged string, cfg Config) (string, error) {
 	}
 }
 
-func RetrieveLabels(tagged string, cfg Config) (map[string]string, error) {
-	cf, err := RetrieveConfigFile(tagged, cfg)
+func RetrieveLabels(ctx context.Context, tagged string, cfg Config) (map[string]string, error) {
+	cf, err := RetrieveConfigFile(ctx, tagged, cfg)
 	switch {
 	case err != nil:
 		return nil, err

@@ -153,7 +153,7 @@ func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts [
 		}
 
 		cmd := createCmd(artifact.Tag)
-		if cmdOut, err := util.RunCmdOut(cmd); err != nil {
+		if cmdOut, err := util.RunCmdOut(ctx, cmd); err != nil {
 			output.Red.Fprintln(out, "Failed")
 			return fmt.Errorf("unable to load image %q into cluster: %w, %s", artifact.Tag, err, cmdOut)
 		}

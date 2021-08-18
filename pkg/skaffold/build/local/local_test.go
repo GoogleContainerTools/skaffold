@@ -238,11 +238,10 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}})
 
-			builder, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()},
-				&latestV1.LocalBuild{
-					Push:        util.BoolPtr(test.pushImages),
-					Concurrency: &constants.DefaultLocalConcurrency,
-				})
+			builder, err := NewBuilder(ctx, &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV1.LocalBuild{
+				Push:        util.BoolPtr(test.pushImages),
+				Concurrency: &constants.DefaultLocalConcurrency,
+			})
 			t.CheckNoError(err)
 			ab := builder.Build(context.Background(), ioutil.Discard, test.artifact)
 			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag)
@@ -325,7 +324,7 @@ func TestNewBuilder(t *testing.T) {
 				t.Override(&docker.NewAPIClient, test.localDockerFn)
 			}
 
-			builder, err := NewBuilder(&mockBuilderContext{
+			builder, err := NewBuilder(ctx, &mockBuilderContext{
 				local:    test.localBuild,
 				cluster:  test.cluster,
 				pushFlag: test.pushFlag,
@@ -406,7 +405,7 @@ func TestGetArtifactBuilder(t *testing.T) {
 				return args, nil
 			})
 
-			b, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV1.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
+			b, err := NewBuilder(ctx, &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV1.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
 			t.CheckNoError(err)
 
 			builder, err := newPerArtifactBuilder(b, test.artifact)

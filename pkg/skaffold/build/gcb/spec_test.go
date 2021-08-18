@@ -48,7 +48,7 @@ func TestBuildSpecFail(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			builder := NewBuilder(&mockBuilderContext{}, &latestV1.GoogleCloudBuild{})
 
-			_, err := builder.buildSpec(test.artifact, "tag", "bucket", "object")
+			_, err := builder.buildSpec(ctx, test.artifact, "tag", "bucket", "object")
 
 			t.CheckError(true, err)
 		})

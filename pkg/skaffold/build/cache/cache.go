@@ -74,7 +74,7 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
+func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
@@ -91,7 +91,7 @@ func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dep
 		return &noCache{}, nil
 	}
 
-	client, err := docker.NewAPIClient(cfg)
+	client, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		// error only if any pipeline is local.
 		for _, p := range cfg.GetPipelines() {

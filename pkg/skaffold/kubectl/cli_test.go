@@ -110,7 +110,7 @@ func TestCLI(t *testing.T) {
 				namespace:   test.namespace,
 			}, "")
 			cmd := cli.CommandWithStrictCancellation(context.Background(), "exec", "arg1", "arg2")
-			out, err := util.RunCmdOut(cmd.Cmd)
+			out, err := util.RunCmdOut(ctx, cmd.Cmd)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(string(out), output)

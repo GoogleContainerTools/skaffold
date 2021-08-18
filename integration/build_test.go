@@ -183,7 +183,7 @@ func setupGitRepo(t *testing.T, dir string) {
 	for _, args := range gitArgs {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
-		if buf, err := util.RunCmdOut(cmd); err != nil {
+		if buf, err := util.RunCmdOut(ctx, cmd); err != nil {
 			t.Logf(string(buf))
 			t.Fatal(err)
 		}

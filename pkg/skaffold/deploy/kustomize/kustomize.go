@@ -409,7 +409,7 @@ func (k *Deployer) readManifests(ctx context.Context) (manifest.ManifestList, er
 			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, kustomizePath))
 		} else {
 			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, kustomizePath)...)...)
-			out, err = util.RunCmdOut(cmd)
+			out, err = util.RunCmdOut(ctx, cmd)
 		}
 
 		if err != nil {

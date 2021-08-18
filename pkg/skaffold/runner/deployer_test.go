@@ -143,7 +143,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					))
 				}
 
-				deployer, err := GetDeployer(&runcontext.RunContext{
+				deployer, err := GetDeployer(ctx, &runcontext.RunContext{
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},

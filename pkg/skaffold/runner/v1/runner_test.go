@@ -128,7 +128,7 @@ func (t *TestBench) GetSyncer() sync.Syncer {
 func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
-func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }
+func (t *TestBench) TestDependencies(context.Context, *latestV1.Artifact) ([]string, error) { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                       { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error      { return nil }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error        { return nil }
@@ -282,7 +282,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			AutoDeploy:        autoTriggers.deploy,
 		},
 	}
-	runner, err := NewForConfig(runCtx)
+	runner, err := NewForConfig(ctx, runCtx)
 	t.CheckNoError(err)
 
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
@@ -454,7 +454,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			}
 
-			cfg, err := NewForConfig(runCtx)
+			cfg, err := NewForConfig(ctx, runCtx)
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
@@ -541,7 +541,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 			}
-			r, _ := NewForConfig(&runcontext.RunContext{
+			r, _ := NewForConfig(ctx, &runcontext.RunContext{
 				Opts:      opts,
 				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{pipeline}),
 			})

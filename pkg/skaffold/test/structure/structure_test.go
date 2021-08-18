@@ -50,7 +50,7 @@ func TestNewRunner(t *testing.T) {
 
 		testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-		testRunner, err := New(cfg, testCase, true)
+		testRunner, err := New(ctx, cfg, testCase, true)
 		t.CheckNoError(err)
 		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 		t.CheckNoError(err)
@@ -71,7 +71,7 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 		}
 		cfg := &mockConfig{tests: []*latestV1.TestCase{testCase}}
 
-		testRunner, err := New(cfg, testCase, true)
+		testRunner, err := New(ctx, cfg, testCase, true)
 		t.CheckError(true, err)
 		t.CheckNil(testRunner)
 	})
@@ -117,7 +117,7 @@ func TestCustomParams(t *testing.T) {
 
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-			testRunner, err := New(cfg, testCase, true)
+			testRunner, err := New(ctx, cfg, testCase, true)
 			t.CheckNoError(err)
 			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 			t.CheckNoError(err)

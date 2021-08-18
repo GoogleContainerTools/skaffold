@@ -1155,7 +1155,7 @@ func TestVersionCheck(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
 			tmpDir.WriteFiles(test.kustomizations)
-			err := versionCheck("", io.Writer(&buf))
+			err := versionCheck(ctx, "", io.Writer(&buf))
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				testutil.CheckDeepEqual(t.T, test.error.Error(), err.Error())

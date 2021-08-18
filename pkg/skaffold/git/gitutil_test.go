@@ -66,7 +66,7 @@ func TestDefaultRef(t *testing.T) {
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
-			ref, err := defaultRef("https://github.com/foo.git")
+			ref, err := defaultRef(ctx, "https://github.com/foo.git")
 			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, ref)
 		})
 	}
@@ -247,7 +247,7 @@ func TestSyncRepo(t *testing.T) {
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
-			path, err := syncRepo(test.g, opts)
+			path, err := syncRepo(ctx, test.g, opts)
 			var expected string
 			if !test.shouldErr {
 				expected = filepath.Join(td.Root(), test.expected)

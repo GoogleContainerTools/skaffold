@@ -78,8 +78,8 @@ type BuilderContext interface {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(bCtx)
+func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(ctx, bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}

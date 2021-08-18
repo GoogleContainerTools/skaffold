@@ -44,7 +44,7 @@ func TestResolveJVM(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.cmd)
 
-			result := resolveJVM()
+			result := resolveJVM(ctx)
 			t.CheckDeepEqual(test.expected, result)
 		})
 	}
