@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+echo "SKIP_TEST:" ${SKIP_TEST}
+
 if ! [ -x "$(command -v ko)" ]; then
     pushd $(mktemp -d)
     go mod init tmp; GOFLAGS= go get github.com/google/ko/cmd/ko@v0.6.0
