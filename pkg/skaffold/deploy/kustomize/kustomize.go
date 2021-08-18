@@ -37,6 +37,7 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -111,6 +112,7 @@ type Deployer struct {
 	debugger      debug.Debugger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
+	hookRunner    hooks.Runner
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
@@ -151,6 +153,7 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV
 		namespaces:          &namespaces,
 		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
 		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		hookRunner:          hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
 		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
 		logger:              logger,
 		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
@@ -201,6 +204,26 @@ func kustomizeBinaryExists() bool {
 	_, err := exec.LookPath("kustomize")
 
 	return err == nil
+}
+
+func (k *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
+	if err := k.hookRunner.RunPreHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
+}
+
+func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PostHooks")
+	if err := k.hookRunner.RunPostHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
 }
 
 // Check that kubectl version is valid to use kubectl kustomize
