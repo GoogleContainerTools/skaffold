@@ -22,7 +22,6 @@ import (
 
 	shell "github.com/kballard/go-shellquote"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
@@ -51,13 +50,13 @@ type containerTransformer interface {
 	// and required initContainer (an empty string if not required), or return a non-nil error if
 	// the container could not be transformed.  The initContainer image is intended to install any
 	// required debug support tools.
-	Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error)
+	Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error)
 }
 
 // TransformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
-func TransformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (annotations.ContainerDebugConfiguration, string, error) {
+func TransformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
 	configuration, requiredImage, err := transformContainer(adapter, config, portAlloc)
 	if err == nil {
 		configuration.Artifact = config.Artifact
@@ -68,7 +67,7 @@ func TransformContainer(adapter types.ContainerAdapter, config ImageConfiguratio
 	return configuration, requiredImage, err
 }
 
-func transformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (annotations.ContainerDebugConfiguration, string, error) {
+func transformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
 	// Update the image configuration's environment with those set in the k8s manifest.
 	// (Environment variables in the k8s container's `env` add to the image configuration's `env` settings rather than replace.)
 	container := adapter.GetContainer()
@@ -89,7 +88,7 @@ func transformContainer(adapter types.ContainerAdapter, config ImageConfiguratio
 	}
 
 	// Apply command-line unwrapping for buildpack images and images using `sh -c`-style command-lines
-	next := func(adapter types.ContainerAdapter, config ImageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+	next := func(adapter types.ContainerAdapter, config ImageConfiguration) (types.ContainerDebugConfiguration, string, error) {
 		return performContainerTransform(adapter, config, portAlloc)
 	}
 	if isCNBImage(config) {
@@ -98,7 +97,7 @@ func transformContainer(adapter types.ContainerAdapter, config ImageConfiguratio
 	return updateForShDashC(adapter, config, next)
 }
 
-func updateForShDashC(adapter types.ContainerAdapter, ic ImageConfiguration, transformer func(types.ContainerAdapter, ImageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
+func updateForShDashC(adapter types.ContainerAdapter, ic ImageConfiguration, transformer func(types.ContainerAdapter, ImageConfiguration) (types.ContainerDebugConfiguration, string, error)) (types.ContainerDebugConfiguration, string, error) {
 	var rewriter func([]string)
 	copy := ic
 	switch {
@@ -150,12 +149,12 @@ func isShDashC(cmd, arg string) bool {
 	return (cmd == "/bin/sh" || cmd == "/bin/bash") && arg == "-c"
 }
 
-func performContainerTransform(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (annotations.ContainerDebugConfiguration, string, error) {
+func performContainerTransform(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
 	log.Entry(context.Background()).Tracef("Examining container %q with config %v", adapter.GetContainer().Name, config)
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(adapter, config, portAlloc, Protocols)
 		}
 	}
-	return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", adapter.GetContainer().Name)
+	return types.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", adapter.GetContainer().Name)
 }

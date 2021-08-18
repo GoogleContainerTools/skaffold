@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -231,7 +230,7 @@ func TestUpdateForShDashC(t *testing.T) {
 			}
 			// The transformer reverses the unwrapped entrypoint which should be reflected into the container.Entrypoint
 			updateForShDashC(adapter, test.input,
-				func(a types.ContainerAdapter, result ImageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+				func(a types.ContainerAdapter, result ImageConfiguration) (types.ContainerDebugConfiguration, string, error) {
 					t.CheckDeepEqual(test.unwrapped, result, cmp.AllowUnexported(ImageConfiguration{}))
 					if len(result.Entrypoint) > 0 {
 						c := adapter.GetContainer()
@@ -240,7 +239,7 @@ func TestUpdateForShDashC(t *testing.T) {
 							c.Command[len(result.Entrypoint)-i-1] = s
 						}
 					}
-					return annotations.ContainerDebugConfiguration{}, "image", nil
+					return types.ContainerDebugConfiguration{}, "image", nil
 				})
 			t.CheckDeepEqual(test.expected, container)
 		})

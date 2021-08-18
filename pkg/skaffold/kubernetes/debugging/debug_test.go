@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -38,7 +37,7 @@ func (t testTransformer) IsApplicable(config debug.ImageConfiguration) bool {
 	return true
 }
 
-func (t testTransformer) Apply(adapter types.ContainerAdapter, config debug.ImageConfiguration, portAlloc debug.PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t testTransformer) Apply(adapter types.ContainerAdapter, config debug.ImageConfiguration, portAlloc debug.PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
 	port := portAlloc(9999)
 	container := adapter.GetContainer()
 	container.Ports = append(container.Ports, types.ContainerPort{Name: "test", ContainerPort: port})
@@ -46,7 +45,7 @@ func (t testTransformer) Apply(adapter types.ContainerAdapter, config debug.Imag
 	testEnv := types.ContainerEnv{Order: []string{"KEY"}, Env: map[string]string{"KEY": "value"}}
 	container.Env = testEnv
 
-	return annotations.ContainerDebugConfiguration{Runtime: "test"}, "", nil
+	return types.ContainerDebugConfiguration{Runtime: "test"}, "", nil
 }
 
 func TestPodEncodeDecode(t *testing.T) {

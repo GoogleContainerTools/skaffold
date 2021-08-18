@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -38,7 +38,7 @@ func TestDlvTransformerApply(t *testing.T) {
 		configuration debug.ImageConfiguration
 		shouldErr     bool
 		result        v1.Container
-		debugConfig   annotations.ContainerDebugConfiguration
+		debugConfig   types.ContainerDebugConfiguration
 		image         string
 	}{
 		{
@@ -55,7 +55,7 @@ func TestDlvTransformerApply(t *testing.T) {
 				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
 			image:       "go",
 		},
 		{
@@ -68,7 +68,7 @@ func TestDlvTransformerApply(t *testing.T) {
 				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dlv", ContainerPort: 56268}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
 			image:       "go",
 		},
 		{
@@ -81,7 +81,7 @@ func TestDlvTransformerApply(t *testing.T) {
 				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
 			image:       "go",
 		},
 		{
@@ -92,7 +92,7 @@ func TestDlvTransformerApply(t *testing.T) {
 				Args:  []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=:56268", "--api-version=2", "app", "--", "arg"},
 				Ports: []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
 			image:       "go",
 		},
 		{
@@ -106,7 +106,7 @@ func TestDlvTransformerApply(t *testing.T) {
 				Args:    []string{"arg1", "arg2"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
 			image:       "go",
 		},
 	}

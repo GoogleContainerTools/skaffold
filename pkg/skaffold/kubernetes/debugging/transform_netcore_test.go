@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -34,7 +34,7 @@ func TestNetcoreTransformerApply(t *testing.T) {
 		configuration debug.ImageConfiguration
 		shouldErr     bool
 		result        v1.Container
-		debugConfig   annotations.ContainerDebugConfiguration
+		debugConfig   types.ContainerDebugConfiguration
 		image         string
 	}{
 		{
@@ -42,7 +42,7 @@ func TestNetcoreTransformerApply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: debug.ImageConfiguration{},
 
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "netcore"},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "netcore"},
 			image:       "netcore",
 			shouldErr:   false,
 		},
@@ -52,7 +52,7 @@ func TestNetcoreTransformerApply(t *testing.T) {
 			configuration: debug.ImageConfiguration{Entrypoint: []string{"dotnet", "myapp.dll"}},
 
 			result:      v1.Container{},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "netcore"},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "netcore"},
 			image:       "netcore",
 			shouldErr:   false,
 		},

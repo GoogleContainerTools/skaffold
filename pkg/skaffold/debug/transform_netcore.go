@@ -20,21 +20,19 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type netcoreTransformer struct{}
 
-// For testing
 //nolint:golint
 func NewNetcoreTransformer() containerTransformer {
 	return netcoreTransformer{}
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, netcoreTransformer{})
+	containerTransforms = append(containerTransforms, NewNetcoreTransformer())
 }
 
 // isLaunchingNetcore determines if the arguments seems to be invoking dotnet
@@ -75,11 +73,11 @@ func (t netcoreTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for vsdbg.
 // Returns a simple map describing the debug configuration details.
-func (t netcoreTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t netcoreTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for netcore debugging", container.Name)
 
-	return annotations.ContainerDebugConfiguration{
+	return types.ContainerDebugConfiguration{
 		Runtime: "netcore",
 	}, "netcore", nil
 }

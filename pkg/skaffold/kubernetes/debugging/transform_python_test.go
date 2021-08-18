@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -39,7 +39,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 		overrideProtocols []string
 		shouldErr         bool
 		result            v1.Container
-		debugConfig       annotations.ContainerDebugConfiguration
+		debugConfig       types.ContainerDebugConfiguration
 		image             string
 	}{
 		{
@@ -57,7 +57,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "python"},
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
 		},
 		{
@@ -69,7 +69,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Command: []string{"/dbg/python/launcher", "--mode", "pydevd", "--port", "5678", "--", "python"},
 				Ports:   []v1.ContainerPort{{Name: "pydevd", ContainerPort: 5678}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"pydevd": 5678}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"pydevd": 5678}},
 			image:       "python",
 		},
 		{
@@ -81,7 +81,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "python"},
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
 		},
 		{
@@ -94,7 +94,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "python"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dap", ContainerPort: 5678}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
 		},
 		{
@@ -105,7 +105,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Args:  []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "python"},
 				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
 		},
 		{
@@ -116,7 +116,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "foo"},
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
 		},
 		{
@@ -127,7 +127,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--"},
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
 		},
 	}

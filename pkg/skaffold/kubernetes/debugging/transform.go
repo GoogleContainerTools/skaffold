@@ -36,7 +36,7 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -148,7 +148,7 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 // rewriteProbes rewrites k8s probes to expand timeouts to 10 minutes to allow debugging local probes.
 func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 	var minTimeout time.Duration = 10 * time.Minute // make it configurable?
-	if annotation, found := metadata.Annotations[annotations.DebugProbeTimeouts]; found {
+	if annotation, found := metadata.Annotations[types.DebugProbeTimeouts]; found {
 		if annotation == "skip" {
 			log.Entry(context.Background()).Debugf("skipping probe rewrite on %q by request", metadata.Name)
 			return false
@@ -159,12 +159,12 @@ func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 			minTimeout = d
 		}
 	}
-	annotation, found := metadata.Annotations[annotations.DebugConfig]
+	annotation, found := metadata.Annotations[types.DebugConfig]
 	if !found {
 		log.Entry(context.Background()).Debugf("skipping probe rewrite on %q: not configured for debugging", metadata.Name)
 		return false
 	}
-	var config map[string]annotations.ContainerDebugConfiguration
+	var config map[string]types.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annotation), &config); err != nil {
 		log.Entry(context.Background()).Warnf("error unmarshalling debugging configuration for %q: %v", metadata.Name, err)
 		return false
@@ -262,7 +262,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 
 func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration debug.ConfigurationRetriever, debugHelpersRegistry string) bool {
 	// skip annotated podspecs — allows users to customize their own image
-	if _, found := metadata.Annotations[annotations.DebugConfig]; found {
+	if _, found := metadata.Annotations[types.DebugConfig]; found {
 		return false
 	}
 
@@ -270,7 +270,7 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		return allocatePort(podSpec, desiredPort)
 	}
 	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
-	configurations := make(map[string]annotations.ContainerDebugConfiguration)
+	configurations := make(map[string]types.ContainerDebugConfiguration)
 	// the container images that require debugging support files
 	var containersRequiringSupport []*v1.Container
 	// the set of image IDs required to provide debugging support files
@@ -327,7 +327,7 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		if metadata.Annotations == nil {
 			metadata.Annotations = make(map[string]string)
 		}
-		metadata.Annotations[annotations.DebugConfig] = debug.EncodeConfigurations(configurations)
+		metadata.Annotations[types.DebugConfig] = debug.EncodeConfigurations(configurations)
 		return true
 	}
 	return false

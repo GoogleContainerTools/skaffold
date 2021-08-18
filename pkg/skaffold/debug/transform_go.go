@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -30,14 +29,13 @@ import (
 
 type dlvTransformer struct{}
 
-// For testing
 //nolint:golint
 func NewDlvTransformer() containerTransformer {
 	return dlvTransformer{}
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, dlvTransformer{})
+	containerTransforms = append(containerTransforms, NewDlvTransformer())
 }
 
 const (
@@ -99,7 +97,7 @@ func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for Go with Delve.
 // Returns the debug configuration details, with the "go" support image
-func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for Go/Delve debugging", container.Name)
 
@@ -117,13 +115,13 @@ func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config ImageConfig
 			container.Args = rewriteDlvCommandLine(config.Arguments, *spec, container.Args)
 
 		default:
-			return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("container %q has no command-line", container.Name)
+			return types.ContainerDebugConfiguration{}, "", fmt.Errorf("container %q has no command-line", container.Name)
 		}
 	}
 
 	container.Ports = exposePort(container.Ports, "dlv", int32(spec.port))
 
-	return annotations.ContainerDebugConfiguration{
+	return types.ContainerDebugConfiguration{
 		Runtime: "go",
 		Ports:   map[string]uint32{"dlv": uint32(spec.port)},
 	}, "go", nil

@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -29,14 +28,13 @@ import (
 
 type nodeTransformer struct{}
 
-// For testing
 //nolint:golint
 func NewNodeTransformer() containerTransformer {
 	return nodeTransformer{}
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, nodeTransformer{})
+	containerTransforms = append(containerTransforms, NewNodeTransformer())
 
 	// the `node` image's "docker-entrypoint.sh" launches the command
 	entrypointLaunchers = append(entrypointLaunchers, "docker-entrypoint.sh")
@@ -82,7 +80,7 @@ func (t nodeTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for node.js debugging", container.Name)
 
@@ -121,7 +119,7 @@ func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfi
 
 	container.Ports = exposePort(container.Ports, "devtools", spec.port)
 
-	return annotations.ContainerDebugConfiguration{
+	return types.ContainerDebugConfiguration{
 		Runtime: "nodejs",
 		Ports:   map[string]uint32{"devtools": uint32(spec.port)},
 	}, "nodejs", nil

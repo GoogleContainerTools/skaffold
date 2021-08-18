@@ -22,21 +22,19 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type jdwpTransformer struct{}
 
-// For testing
 //nolint:golint
 func NewJDWPTransformer() containerTransformer {
 	return jdwpTransformer{}
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, jdwpTransformer{})
+	containerTransforms = append(containerTransforms, NewJDWPTransformer())
 }
 
 const (
@@ -71,7 +69,7 @@ type jdwpSpec struct {
 
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
@@ -91,7 +89,7 @@ func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config ImageConfi
 
 	container.Ports = exposePort(container.Ports, "jdwp", port)
 
-	return annotations.ContainerDebugConfiguration{
+	return types.ContainerDebugConfiguration{
 		Runtime: "jvm",
 		Ports:   map[string]uint32{"jdwp": uint32(port)},
 	}, "", nil

@@ -26,7 +26,6 @@ import (
 	cnbl "github.com/buildpacks/lifecycle/launch"
 	shell "github.com/kballard/go-shellquote"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
@@ -106,21 +105,21 @@ func hasCNBLauncherEntrypoint(ic ImageConfiguration) bool {
 //     the default process type.  `CNB_PROCESS_TYPE` is ignored in this situation.  A different process
 //     can be used by overriding the image entrypoint.  Direct and script launches are supported by
 //     setting the entrypoint to `/cnb/lifecycle/launcher` and providing the appropriate arguments.
-func updateForCNBImage(adapter types.ContainerAdapter, ic ImageConfiguration, transformer func(adapter types.ContainerAdapter, ic ImageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
+func updateForCNBImage(adapter types.ContainerAdapter, ic ImageConfiguration, transformer func(adapter types.ContainerAdapter, ic ImageConfiguration) (types.ContainerDebugConfiguration, string, error)) (types.ContainerDebugConfiguration, string, error) {
 	// buildpacks/lifecycle 0.6.0 embeds the process definitions into a special image label.
 	// The build metadata isn't absolutely required as the image args could be
 	// a command line (e.g., `python xxx`) but it likely indicates the
 	// image was built with an older lifecycle.
 	metadataJSON, found := ic.Labels["io.buildpacks.build.metadata"]
 	if !found {
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
 	}
 	m := cnb.BuildMetadata{}
 	if err := json.Unmarshal([]byte(metadataJSON), &m); err != nil {
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")
 	}
 	if len(m.Processes) == 0 {
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
 	}
 
 	needsCnbLauncher := ic.Entrypoint[0] != cnbLauncher

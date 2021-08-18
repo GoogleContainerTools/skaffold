@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -30,14 +29,13 @@ import (
 
 type pythonTransformer struct{}
 
-// For testing
 //nolint:golint
 func NewPythonTransformer() containerTransformer {
 	return pythonTransformer{}
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, pythonTransformer{})
+	containerTransforms = append(containerTransforms, NewPythonTransformer())
 }
 
 const (
@@ -113,7 +111,7 @@ func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for Python with ptvsd/debugpy/pydevd.
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
+func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for python debugging", container.Name)
 
@@ -121,7 +119,7 @@ func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageCon
 	if spec := retrievePythonDebugSpec(config); spec != nil {
 		protocol := spec.protocol()
 		container.Ports = exposePort(container.Ports, protocol, spec.port)
-		return annotations.ContainerDebugConfiguration{
+		return types.ContainerDebugConfiguration{
 			Runtime: "python",
 			Ports:   map[string]uint32{protocol: uint32(spec.port)},
 		}, "", nil
@@ -140,13 +138,13 @@ func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageCon
 		container.Command = rewritePythonCommandLine(config.Entrypoint, *spec)
 
 	default:
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
 	}
 
 	protocol := spec.protocol()
 	container.Ports = exposePort(container.Ports, protocol, spec.port)
 
-	return annotations.ContainerDebugConfiguration{
+	return types.ContainerDebugConfiguration{
 		Runtime: "python",
 		Ports:   map[string]uint32{protocol: uint32(spec.port)},
 	}, "python", nil

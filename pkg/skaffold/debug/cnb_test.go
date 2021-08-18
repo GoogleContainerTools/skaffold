@@ -24,7 +24,6 @@ import (
 	"github.com/buildpacks/lifecycle/launch"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -228,7 +227,7 @@ func TestUpdateForCNBImage(t *testing.T) {
 		input       ImageConfiguration
 		shouldErr   bool
 		expected    types.ExecutableContainer
-		config      annotations.ContainerDebugConfiguration
+		config      types.ContainerDebugConfiguration
 	}{
 		{
 			description: "error when missing build.metadata",
@@ -245,84 +244,84 @@ func TestUpdateForCNBImage(t *testing.T) {
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Arguments: []string{"--", "web", "arg1", "arg2"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"--", "web", "arg1", "arg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "defaults to web process when no process type",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"webProcess arg1 arg2", "posArg1", "posArg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "resolves to default 'web' process",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Arguments: []string{"web"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"webProcess arg1 arg2", "posArg1", "posArg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=web",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PROCESS_TYPE": "web"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"webProcess arg1 arg2", "posArg1", "posArg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=diag",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PROCESS_TYPE": "diag"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"diagProcess"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=direct",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PROCESS_TYPE": "direct"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"--", "command", "cmdArg1"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "script command-line",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Arguments: []string{"python main.py"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"python main.py"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "no process and no args",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "launcher ignores image's working dir",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}, WorkingDir: "/workdir"},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_APP_DIR used if set",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}, Env: map[string]string{"CNB_APP_DIR": "/appDir"}, WorkingDir: "/workdir"},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/appDir"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/appDir"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=sh-c (Procfile-style)",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PROCESS_TYPE": "sh-c"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"command arg1 arg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=bash-c (Procfile-style)",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PROCESS_TYPE": "sh-c"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"command arg1 arg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 
 		// Platform API 0.4
@@ -332,58 +331,58 @@ func TestUpdateForCNBImage(t *testing.T) {
 			input:     ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PLATFORM_API": "0.4"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr: false,
 			expected:  types.ExecutableContainer{},
-			config:    annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:    types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "Platform API 0.4: direct command-lines are kept as direct command-lines",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Arguments: []string{"--", "web", "arg1", "arg2"}, Env: map[string]string{"CNB_PLATFORM_API": "0.4"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"--", "web", "arg1", "arg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "Platform API 0.4: script command-line",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Arguments: []string{"python main.py"}, Env: map[string]string{"CNB_PLATFORM_API": "0.4"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Args: []string{"python main.py"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "Platform API 0.4: launcher ignores image's working dir",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PLATFORM_API": "0.4"}, WorkingDir: "/workdir", Labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "Platform API 0.4: CNB_APP_DIR used if set",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/lifecycle/launcher"}, Env: map[string]string{"CNB_PLATFORM_API": "0.4", "CNB_APP_DIR": "/appDir"}, WorkingDir: "/workdir", Labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/appDir"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/appDir"},
 		},
 		{
 			description: "Platform API 0.4: /cnb/process/web",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/process/web"}, Env: map[string]string{"CNB_PLATFORM_API": "0.4"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Command: []string{"/cnb/lifecycle/launcher"}, Args: []string{"webProcess arg1 arg2", "posArg1", "posArg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "Platform API 0.4: /cnb/process/web with arguments are appended",
 			input:       ImageConfiguration{Entrypoint: []string{"/cnb/process/web"}, Arguments: []string{"altArg1", "altArg2"}, Env: map[string]string{"CNB_PLATFORM_API": "0.4"}, Labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    types.ExecutableContainer{Command: []string{"/cnb/lifecycle/launcher"}, Args: []string{"webProcess arg1 arg2", "posArg1", "posArg2", "altArg1", "altArg2"}},
-			config:      annotations.ContainerDebugConfiguration{WorkingDir: "/workspace"},
+			config:      types.ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 	}
 	for _, test := range tests {
 		// Test that when a transform modifies the command-line arguments, then
 		// the changes are reflected to the launcher command-line
 		testutil.Run(t, test.description+" (args changed)", func(t *testutil.T) {
-			argsChangedTransform := func(a types.ContainerAdapter, ic ImageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
+			argsChangedTransform := func(a types.ContainerAdapter, ic ImageConfiguration) (types.ContainerDebugConfiguration, string, error) {
 				a.GetContainer().Args = ic.Arguments
-				return annotations.ContainerDebugConfiguration{}, "", nil
+				return types.ContainerDebugConfiguration{}, "", nil
 			}
 			container := types.ExecutableContainer{}
 			a := &testAdapter{&container}
@@ -395,8 +394,8 @@ func TestUpdateForCNBImage(t *testing.T) {
 
 		// Test that when the arguments are left unchanged, that the container is unchanged
 		testutil.Run(t, test.description+" (args unchanged)", func(t *testutil.T) {
-			argsUnchangedTransform := func(_ types.ContainerAdapter, ic ImageConfiguration) (annotations.ContainerDebugConfiguration, string, error) {
-				return annotations.ContainerDebugConfiguration{WorkingDir: ic.WorkingDir}, "", nil
+			argsUnchangedTransform := func(_ types.ContainerAdapter, ic ImageConfiguration) (types.ContainerDebugConfiguration, string, error) {
+				return types.ContainerDebugConfiguration{WorkingDir: ic.WorkingDir}, "", nil
 			}
 
 			container := types.ExecutableContainer{}

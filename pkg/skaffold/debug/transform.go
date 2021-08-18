@@ -44,7 +44,7 @@ For example, a pod with two containers named `microservice` and `adapter` may be
     "adapter":{"artifact":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
   }'
 
-Each configuration is itself a JSON object of type `annotations.ContainerDebugConfiguration`, with an
+Each configuration is itself a JSON object of type `types.ContainerDebugConfiguration`, with an
 `artifact` recording the corresponding artifact's `image` in the skaffold.yaml,
 a `runtime` field identifying the language runtime, the working directory of the remote image (if known),
 and a set of debugging ports.
@@ -56,7 +56,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
@@ -106,7 +105,7 @@ func isEntrypointLauncher(entrypoint []string) bool {
 	return false
 }
 
-func EncodeConfigurations(configurations map[string]annotations.ContainerDebugConfiguration) string {
+func EncodeConfigurations(configurations map[string]types.ContainerDebugConfiguration) string {
 	bytes, err := json.Marshal(configurations)
 	if err != nil {
 		return ""

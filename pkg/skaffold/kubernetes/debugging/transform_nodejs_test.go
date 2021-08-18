@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -38,7 +38,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 		containerSpec v1.Container
 		configuration debug.ImageConfiguration
 		result        v1.Container
-		debugConfig   annotations.ContainerDebugConfiguration
+		debugConfig   types.ContainerDebugConfiguration
 	}{
 		{
 			description:   "empty",
@@ -48,7 +48,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description:   "entrypoint",
@@ -59,7 +59,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description:   "entrypoint with PATH",
@@ -70,7 +70,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin:/usr/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description: "existing port",
@@ -83,7 +83,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description: "existing devtools port",
@@ -96,7 +96,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description:   "command not entrypoint",
@@ -107,7 +107,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:   []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description:   "docker-entrypoint (#3821)",
@@ -120,7 +120,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description:   "image environment not copied",
@@ -131,7 +131,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Env:     []v1.EnvVar{{Name: "OTHER", Value: "VALUE"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 	}
 	var identity debug.PortAllocator = func(port int32) int32 {

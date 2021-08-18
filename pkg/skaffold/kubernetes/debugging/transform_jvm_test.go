@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -37,7 +37,7 @@ func TestJdwpTransformerApply(t *testing.T) {
 		containerSpec v1.Container
 		configuration debug.ImageConfiguration
 		result        v1.Container
-		debugConfig   annotations.ContainerDebugConfiguration
+		debugConfig   types.ContainerDebugConfiguration
 		image         string
 	}{
 		{
@@ -48,7 +48,7 @@ func TestJdwpTransformerApply(t *testing.T) {
 				Env:   []v1.EnvVar{{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 				Ports: []v1.ContainerPort{{Name: "jdwp", ContainerPort: 5005}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
 		},
 		{
 			description: "existing port",
@@ -60,7 +60,7 @@ func TestJdwpTransformerApply(t *testing.T) {
 				Env:   []v1.EnvVar{{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 				Ports: []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "jdwp", ContainerPort: 5005}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
 		},
 		{
 			description: "existing jdwp spec",
@@ -73,7 +73,7 @@ func TestJdwpTransformerApply(t *testing.T) {
 				Env:   []v1.EnvVar{{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=n,quiet=y"}},
 				Ports: []v1.ContainerPort{{ContainerPort: 5005}, {Name: "jdwp", ContainerPort: 8000}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 8000}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 8000}},
 		},
 		{
 			description: "existing jdwp port and JAVA_TOOL_OPTIONS",
@@ -86,7 +86,7 @@ func TestJdwpTransformerApply(t *testing.T) {
 				Env:   []v1.EnvVar{{Name: "FOO", Value: "BAR"}, {Name: "JAVA_TOOL_OPTIONS", Value: "-Xms1g -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 				Ports: []v1.ContainerPort{{Name: "jdwp", ContainerPort: 5005}},
 			},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
 		},
 	}
 	var identity debug.PortAllocator = func(port int32) int32 {
