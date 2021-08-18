@@ -18,6 +18,7 @@ package jib
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -26,8 +27,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -86,7 +86,7 @@ type jibJSON struct {
 // validate checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 	if !JVMFound() {
-		logrus.Debugf("Skipping Jib for init for %q: no functioning Java VM", path)
+		log.Entry(context.Background()).Debugf("Skipping Jib for init for %q: no functioning Java VM", path)
 		return nil
 	}
 	// Determine whether maven or gradle
@@ -140,7 +140,7 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 		line := bytes.ReplaceAll(match[1], []byte(`\`), []byte(`\\`))
 		parsedJSON := jibJSON{}
 		if err := json.Unmarshal(line, &parsedJSON); err != nil {
-			logrus.Warnf("failed to parse jib json: %s", err.Error())
+			log.Entry(context.Background()).Warnf("failed to parse jib json: %s", err.Error())
 			return nil
 		}
 

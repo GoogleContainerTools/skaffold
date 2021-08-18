@@ -288,6 +288,50 @@ func TestUserMetricReported(t *testing.T) {
 			expectedUser: "gcloud",
 		},
 		{
+			name: "test meter with user cloud-deploy",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "cloud-deploy",
+			},
+			expectedUser: "cloud-deploy",
+		},
+		{
+			name: "test meter with valid user pattern cloud-deploy/staging",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "cloud-deploy/staging",
+			},
+			expectedUser: "cloud-deploy/staging",
+		},
+		{
+			name: "test meter with invalid user pattern cloud-deploy/",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "cloud-deploy/",
+			},
+			expectedUser: "",
+		},
+		{
+			name: "test meter with invalid user pattern cloud-deploy|staging",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "cloud-deploy|staging",
+			},
+			expectedUser: "",
+		},
+		{
 			name: "test meter with no user set",
 			meter: skaffoldMeter{
 				Command: "build",

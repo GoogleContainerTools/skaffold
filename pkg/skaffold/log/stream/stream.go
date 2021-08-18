@@ -21,10 +21,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-
-	"github.com/sirupsen/logrus"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 //nolint:golint
@@ -33,18 +33,32 @@ func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, 
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Infof("%s interrupted", formatter.Name())
+			olog.Entry(ctx).Infof("%s interrupted", formatter.Name())
 			return nil
 		default:
 			// Read up to newline
 			line, err := r.ReadString('\n')
-			formatter.PrintLine(out, line)
+			// As per https://github.com/kubernetes/kubernetes/blob/017b359770e333eacd3efcb4174f1d464c208400/test/e2e/storage/podlogs/podlogs.go#L214
+			// Filter out the expected "end of stream" error message and
+			// attempts to read logs from a container that was deleted due to re-deploy or
+			// attempts to read logs from a container that is not ready yet.
 			if err == io.EOF {
+				if !isEmptyOrContainerNotReady(line) {
+					formatter.PrintLine(out, line)
+				}
 				return nil
 			}
 			if err != nil {
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
+			formatter.PrintLine(out, line)
 		}
 	}
+}
+
+func isEmptyOrContainerNotReady(line string) bool {
+	return line == "" ||
+		strings.HasPrefix(line, "rpc error: code = Unknown desc = Error: No such container:") ||
+		strings.HasPrefix(line, "unable to retrieve container logs for ") ||
+		strings.HasPrefix(line, "Unable to retrieve container logs for ")
 }

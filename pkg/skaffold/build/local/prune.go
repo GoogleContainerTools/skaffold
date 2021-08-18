@@ -24,9 +24,9 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/dustin/go-humanize"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const (
@@ -76,13 +76,13 @@ func (p *pruner) cleanup(ctx context.Context, sync bool, artifacts []string) {
 	if sync {
 		err := p.runPrune(ctx, toPrune)
 		if err != nil {
-			logrus.Debugf("Failed to prune: %v", err)
+			log.Entry(ctx).Debugf("Failed to prune: %v", err)
 		}
 	} else {
 		go func() {
 			err := p.runPrune(ctx, toPrune)
 			if err != nil {
-				logrus.Debugf("Failed to prune: %v", err)
+				log.Entry(ctx).Debugf("Failed to prune: %v", err)
 			}
 		}()
 	}
@@ -104,12 +104,12 @@ func (p *pruner) isPruned(id string) bool {
 }
 
 func (p *pruner) runPrune(ctx context.Context, ids []string) error {
-	logrus.Debugf("Going to prune: %v", ids)
+	log.Entry(ctx).Debugf("Going to prune: %v", ids)
 	// docker API does not support concurrent prune/utilization info request
 	// so let's serialize the access to it
 	t0 := time.Now()
 	p.pruneMutex.Lock()
-	logrus.Tracef("Prune mutex wait time: %v", time.Since(t0))
+	log.Entry(ctx).Tracef("Prune mutex wait time: %v", time.Since(t0))
 	defer p.pruneMutex.Unlock()
 
 	beforeDu, err := p.diskUsage(ctx)
@@ -117,7 +117,7 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		logrus.Debugf("Failed to get docker usage info: %v", err)
+		log.Entry(ctx).Debugf("Failed to get docker usage info: %v", err)
 	}
 
 	pruned, err := p.localDocker.Prune(ctx, ids, p.pruneChildren)
@@ -134,14 +134,14 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			logrus.Debugf("Failed to get docker usage info: %v", err)
+			log.Entry(ctx).Debugf("Failed to get docker usage info: %v", err)
 			return nil
 		}
 		if beforeDu >= afterDu {
-			logrus.Infof("%d image(s) pruned. Reclaimed disk space: %s",
+			log.Entry(ctx).Infof("%d image(s) pruned. Reclaimed disk space: %s",
 				len(ids), humanize.Bytes(beforeDu-afterDu))
 		} else {
-			logrus.Infof("%d image(s) pruned", len(ids))
+			log.Entry(ctx).Infof("%d image(s) pruned", len(ids))
 		}
 	}
 	return nil
@@ -167,7 +167,7 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []string) [
 			case context.Canceled, context.DeadlineExceeded:
 				return []string{}
 			}
-			logrus.Warnf("failed to list images: %v", err)
+			log.Entry(ctx).Warnf("failed to list images: %v", err)
 			continue
 		}
 		for i := imgNameCount[a]; i < len(imgs); i++ {
@@ -187,7 +187,7 @@ func (p *pruner) diskUsage(ctx context.Context) (uint64, error) {
 			return 0, ctx.Err()
 		}
 		// DiskUsage(..) may return "operation in progress" error.
-		logrus.Debugf("[%d of %d] failed to get disk usage: %v. Will retry in %v",
+		log.Entry(ctx).Debugf("[%d of %d] failed to get disk usage: %v. Will retry in %v",
 			retry, usageRetries, err, usageRetryInterval)
 		time.Sleep(usageRetryInterval)
 	}
@@ -196,6 +196,6 @@ func (p *pruner) diskUsage(ctx context.Context) (uint64, error) {
 	if err == nil {
 		return usage, nil
 	}
-	logrus.Debugf("Failed to get usage after: %v. giving up", err)
+	log.Entry(ctx).Debugf("Failed to get usage after: %v. giving up", err)
 	return 0, err
 }

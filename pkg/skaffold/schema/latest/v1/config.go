@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta21"
+const Version string = "skaffold/v2beta22"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -566,7 +566,7 @@ type KubectlDeploy struct {
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -1197,6 +1197,9 @@ type KanikoArtifact struct {
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
+	// ImageFSExtractRetry is the number of retries that should happen for extracting an image filesystem.
+	ImageFSExtractRetry string `yaml:"imageFSExtractRetry,omitempty"`
+
 	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
@@ -1285,6 +1288,10 @@ type DockerArtifact struct {
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
+
+	// CliFlags are any additional flags to pass to the local daemon during a build.
+	// These flags are only used during a build through the Docker CLI.
+	CliFlags []string `yaml:"cliFlags,omitempty"`
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
@@ -1397,7 +1404,7 @@ type ContainerHook struct {
 // NamedContainerHook describes a lifecycle hook definition to execute on a named container.
 type NamedContainerHook struct {
 	// ContainerHook describes a lifecycle hook definition to execute on a container.
-	ContainerHook `yaml:",inline"`
+	ContainerHook `yaml:",inline" yamlTags:"skipTrim"`
 	// PodName is the name of the pod to execute the command in.
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.

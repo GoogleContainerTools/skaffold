@@ -17,14 +17,15 @@ limitations under the License.
 package runcontext
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -209,7 +210,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
-	logrus.Infof("Using kubectl context: %s", kubeContext)
+	log.Entry(context.Background()).Infof("Using kubectl context: %s", kubeContext)
 
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
@@ -220,7 +221,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
-		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
+		log.Entry(context.Background()).Warn("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
 	var regList []string
 	regList = append(regList, opts.InsecureRegistries...)

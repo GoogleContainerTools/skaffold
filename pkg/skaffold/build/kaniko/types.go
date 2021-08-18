@@ -35,6 +35,8 @@ const (
 	DigestFileFlag = "--digest-file"
 	// ForceFlag additional flag
 	ForceFlag = "--force"
+	// ImageFSExtractRetry additional flag
+	ImageFSExtractRetryFlag = "--image-fs-extract-retry"
 	// ImageNameWithDigestFileFlag  additional flag
 	ImageNameWithDigestFileFlag = "--image-name-with-digest-file"
 	// InsecureFlag additional flag

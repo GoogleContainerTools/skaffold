@@ -23,8 +23,8 @@ import (
 
 	"github.com/blang/semver"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/user"
 )
 
 var version, gitCommit, buildDate, client string
@@ -57,9 +57,9 @@ var Get = func() *Info {
 	}
 }
 
-var SetClient = func(user string) {
-	if _, ok := constants.AllowedUsers[user]; ok {
-		client = user
+var SetClient = func(userAgent string) {
+	if allowedUser := user.IsAllowedUser(userAgent); allowedUser {
+		client = userAgent
 	}
 }
 

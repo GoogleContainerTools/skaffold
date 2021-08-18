@@ -18,14 +18,14 @@ package tag
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -99,7 +99,7 @@ func sanitizeTag(tag string) string {
 	}
 
 	if tag != sanitized {
-		logrus.Warnf("Using %q instead of %q as an image tag", sanitized, tag)
+		log.Entry(context.Background()).Warnf("Using %q instead of %q as an image tag", sanitized, tag)
 	}
 
 	return sanitized

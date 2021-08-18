@@ -27,8 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -49,7 +48,7 @@ func GetDependencies(ctx context.Context, dir string, a *latestV1.BazelArtifact)
 
 	go func() {
 		<-timer.C
-		once.Do(func() { logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time") })
+		once.Do(func() { log.Entry(ctx).Warn("Retrieving Bazel dependencies can take a long time the first time") })
 	}()
 
 	topLevelFolder, err := findWorkspace(dir)
@@ -95,7 +94,7 @@ func GetDependencies(ctx context.Context, dir string, a *latestV1.BazelArtifact)
 	}
 	deps = append(deps, rel)
 
-	logrus.Debugf("Found dependencies for bazel artifact: %v", deps)
+	log.Entry(ctx).Debugf("Found dependencies for bazel artifact: %v", deps)
 
 	return deps, nil
 }

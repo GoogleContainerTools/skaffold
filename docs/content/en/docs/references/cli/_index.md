@@ -66,29 +66,28 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 ```
 
 
-End-to-end pipelines:
+End-to-end Pipelines:
   run               Run a pipeline
   dev               Run a pipeline in development mode
-  debug             [beta] Run a pipeline in debug mode
+  debug             Run a pipeline in debug mode
 
-Pipeline building blocks for CI/CD:
+Pipeline Building Blocks:
   build             Build the artifacts
   test              Run tests against your built application images
   deploy            Deploy pre-built artifacts
-  delete            Delete the deployed application
-  render            [alpha] Perform all image builds, and output rendered Kubernetes manifests
+  delete            Delete any resources deployed by Skaffold
+  render            Perform all image builds, and output rendered Kubernetes manifests
   apply             Apply hydrated manifests to a cluster
 
-Getting started with a new project:
-  init              [alpha] Generate configuration for deploying an application
-  fix               Update old configuration to a newer schema version
+Getting Started With a New Project:
+  init              Generate configuration for deploying an application
 
 Other Commands:
   completion        Output shell completion for the given shell (bash or zsh)
-  config            Interact with the global skaffold config file (defaults to `$HOME/.skaffold/config`)
-  credits           Export third party notices to given path (./skaffold-credits by default)
+  config            Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/config`)
   diagnose          Run a diagnostic on Skaffold
-  schema            List and print json schemas used to validate skaffold.yaml configuration
+  fix               Update old configuration to a newer schema version
+  schema            List JSON schemas used to validate skaffold.yaml configuration
   survey            Opens a web browser to fill out the Skaffold survey
   version           Print the version information
 
@@ -274,7 +273,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 ### skaffold config
 
-Interact with the global skaffold config file (defaults to `$HOME/.skaffold/config`)
+Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/config`)
 
 ```
 
@@ -374,34 +373,9 @@ Env vars:
 * `SKAFFOLD_GLOBAL` (same as `--global`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 
-### skaffold credits
-
-Export third party notices to given path (./skaffold-credits by default)
-
-```
-
-
-Examples:
-  # export third party licenses to ~/skaffold-credits
-  skaffold credits -d ~/skaffold-credits
-
-Options:
-  -d, --dir='./skaffold-credits': destination directory to place third party licenses
-
-Usage:
-  skaffold credits [options]
-
-Use "skaffold options" for a list of global command-line options (applies to all commands).
-
-
-```
-Env vars:
-
-* `SKAFFOLD_DIR` (same as `--dir`)
-
 ### skaffold debug
 
-[beta] Run a pipeline in debug mode
+Run a pipeline in debug mode
 
 ```
 
@@ -514,7 +488,7 @@ Env vars:
 
 ### skaffold delete
 
-Delete the deployed application
+Delete any resources deployed by Skaffold
 
 ```
 
@@ -826,7 +800,7 @@ Options:
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --version='skaffold/v2beta21': Target schema version to upgrade to
+      --version='skaffold/v2beta22': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -846,7 +820,7 @@ Env vars:
 
 ### skaffold init
 
-[alpha] Generate configuration for deploying an application
+Generate configuration for deploying an application
 
 ```
 
@@ -897,16 +871,16 @@ The following options can be passed to any command:
 
       --color=34: Specify the default output color in ANSI escape codes
       --interactive=true: Allow user prompts for more information
-      --timestamps=false: Print timestamps in logs.
+      --timestamps=false: Print timestamps in logs
       --update-check=true: Check for a more recent version of Skaffold
-  -v, --verbosity='warning': Log level (debug, info, warn, error, fatal, panic)
+  -v, --verbosity='warning': Log level: one of [panic fatal error warning info debug trace]
 
 
 ```
 
 ### skaffold render
 
-[alpha] Perform all image builds, and output rendered Kubernetes manifests
+Perform all image builds, and output rendered Kubernetes manifests
 
 ```
 
@@ -927,7 +901,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -n, --namespace='': Run deployments in the specified namespace
       --offline=false: Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.
-  -o, --output='': file to write rendered manifests to
+  -o, --output='': File to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
@@ -1069,14 +1043,13 @@ Env vars:
 
 ### skaffold schema
 
-List and print json schemas used to validate skaffold.yaml configuration
+List JSON schemas used to validate skaffold.yaml configuration
 
 ```
 
 
 Available Commands:
   get         Print a given skaffold.yaml's json schema
-  list        List skaffold.yaml's json schema versions
 
 Use "skaffold <command> --help" for more information about a given command.
 
@@ -1101,34 +1074,6 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
-
-### skaffold schema list
-
-List skaffold.yaml's json schema versions
-
-```
-
-
-Examples:
-  # List all the versions
-  skaffold schema list
-
-  # List all the versions, in json format
-  skaffold schema list -o json
-
-Options:
-  -o, --output='plain': Type of output: `plain` or `json`.
-
-Usage:
-  skaffold schema list [options]
-
-Use "skaffold options" for a list of global command-line options (applies to all commands).
-
-
-```
-Env vars:
-
-* `SKAFFOLD_OUTPUT` (same as `--output`)
 
 ### skaffold survey
 

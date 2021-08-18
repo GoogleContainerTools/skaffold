@@ -17,14 +17,14 @@ limitations under the License.
 package output
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const timestampFormat = "2006-01-02 15:04:05"
@@ -103,7 +103,12 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
-func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) io.Writer {
+func WithEventContext(ctx context.Context, out io.Writer, phase constants.Phase, subtaskID string) (io.Writer, context.Context) {
+	ctx = context.WithValue(ctx, log.ContextKey, log.EventContext{
+		Task:    phase,
+		Subtask: subtaskID,
+	})
+
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{
 			MainWriter:  sw.MainWriter,
@@ -111,27 +116,8 @@ func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) io
 			task:        phase,
 			subtask:     subtaskID,
 			timestamps:  sw.timestamps,
-		}
+		}, ctx
 	}
 
-	return out
-}
-
-// Log takes an io.Writer (ideally of type output.skaffoldWriter) and constructs
-// a logrus.Entry from it, adding fields for task and subtask information
-func Log(out io.Writer) *logrus.Entry {
-	sw, isSW := out.(skaffoldWriter)
-	if isSW {
-		return logrus.WithFields(logrus.Fields{
-			"task":    sw.task,
-			"subtask": sw.subtask,
-		})
-	}
-
-	// Use constants.DevLoop as the default task, as it's the highest level task we
-	// can default to if one isn't specified.
-	return logrus.WithFields(logrus.Fields{
-		"task":    constants.DevLoop,
-		"subtask": eventV2.SubtaskIDNone,
-	})
+	return out, ctx
 }

@@ -22,13 +22,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	logstream "github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type Logger struct {
@@ -87,7 +86,7 @@ func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
 			// TODO(nkubala)[07/23/21]: if container is lost, emit API event and attempt to reattach
 			// https://github.com/GoogleContainerTools/skaffold/issues/6281
 			if ctx.Err() != context.Canceled {
-				logrus.Warn(err)
+				log.Entry(ctx).Warn(err)
 			}
 		}
 		_ = tw.Close()
@@ -95,7 +94,7 @@ func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
 
 	formatter := NewDockerLogFormatter(l.colorPicker, l.tracker, l.IsMuted, id)
 	if err := logstream.StreamRequest(ctx, l.out, formatter, tr); err != nil {
-		logrus.Errorf("streaming request: %s", err)
+		log.Entry(ctx).Errorf("streaming request: %s", err)
 	}
 }
 

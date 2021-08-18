@@ -17,13 +17,14 @@ limitations under the License.
 package debug
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -77,7 +78,7 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
 func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
-	logrus.Infof("Configuring %q for node.js debugging", container.Name)
+	log.Entry(context.Background()).Infof("Configuring %q for node.js debugging", container.Name)
 
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
@@ -164,7 +165,7 @@ func extractInspectArg(arg string) *inspectSpec {
 		if split := strings.SplitN(address, ":", 2); len(split) == 1 {
 			port, err := strconv.ParseInt(split[0], 10, 32)
 			if err != nil {
-				logrus.Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
+				log.Entry(context.Background()).Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -172,7 +173,7 @@ func extractInspectArg(arg string) *inspectSpec {
 			spec.host = split[0]
 			port, err := strconv.ParseInt(split[1], 10, 32)
 			if err != nil {
-				logrus.Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
+				log.Entry(context.Background()).Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
 				return nil
 			}
 			spec.port = int32(port)

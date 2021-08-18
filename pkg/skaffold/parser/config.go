@@ -17,6 +17,7 @@ limitations under the License.
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -24,10 +25,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
@@ -115,7 +115,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 	if len(parsed) == 0 {
 		return nil, sErrors.ZeroConfigsParsedErr(cfgOpts.file)
 	}
-	logrus.Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
+	log.Entry(context.Background()).Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
 	// validate that config names are unique if specified
 	seen := make(map[string]bool)
@@ -295,7 +295,7 @@ func cacheRepo(g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (stri
 		case error:
 			return "", v
 		default:
-			logrus.Fatalf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
+			log.Entry(context.Background()).Fatalf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
 			return "", nil
 		}
 	} else {
@@ -362,10 +362,10 @@ func isMakePathsAbsoluteSet(opts config.SkaffoldOptions) bool {
 
 func getBase(cfgOpts configOpts) (string, error) {
 	if cfgOpts.isDependency {
-		logrus.Tracef("found %s base dir for absolute path substitution within skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
+		log.Entry(context.Background()).Tracef("found %s base dir for absolute path substitution within skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
 		return filepath.Dir(cfgOpts.file), nil
 	}
-	logrus.Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
+	log.Entry(context.Background()).Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
 	return util.RealWorkDir()
 }
 

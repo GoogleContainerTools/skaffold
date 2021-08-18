@@ -44,7 +44,7 @@ func NewCmdFilter() *cobra.Command {
 
 	return NewCmd("filter").
 		Hidden(). // internal command
-		WithDescription("[alpha] Filter and transform a set of Kubernetes manifests from stdin").
+		WithDescription("Filter and transform a set of Kubernetes manifests from stdin").
 		WithLongDescription("Unlike `render`, this command does not build artifacts.").
 		WithCommonFlags().
 		WithFlags([]*Flag{

@@ -17,14 +17,15 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
-	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -84,7 +85,7 @@ func (c ArtifactConfig) Path() string {
 func validate(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
-		logrus.Warnf("opening file %s: %s", path, err.Error())
+		log.Entry(context.Background()).Warnf("opening file %s: %s", path, err.Error())
 		return false
 	}
 	defer f.Close()

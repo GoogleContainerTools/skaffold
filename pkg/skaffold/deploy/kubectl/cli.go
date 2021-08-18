@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
@@ -35,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -91,7 +90,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
-	logrus.Debugln(len(manifests), "manifests to deploy.", len(updated), "are updated or new")
+	log.Entry(ctx).Debug(len(manifests), "manifests to deploy.", len(updated), "are updated or new")
 	c.previousApply = manifests
 	if len(updated) == 0 {
 		return nil
@@ -173,7 +172,7 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests man
 			}
 
 			list := `"` + strings.Join(marked, `", "`) + `"`
-			logrus.Debugln("Resources are marked for deletion:", list)
+			log.Entry(ctx).Debug("Resources are marked for deletion:", list)
 			if list != previousList {
 				if len(marked) == 1 {
 					fmt.Fprintf(out, "%s is marked for deletion, waiting for completion\n", list)

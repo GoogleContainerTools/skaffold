@@ -17,17 +17,18 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var (
@@ -660,7 +661,7 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	} else if val, ok := v.(pflag.Value); ok {
 		val.Set(fmt.Sprintf("%v", d))
 	} else {
-		logrus.Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
+		log.Entry(context.Background()).Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
 	}
 }
 

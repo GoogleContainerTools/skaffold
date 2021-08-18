@@ -22,13 +22,13 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -91,7 +91,7 @@ func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespa
 				pod := evt.Pod
 				if evt.Type != watch.Deleted && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
 					if err := p.portForwardPod(ctx, pod); err != nil {
-						logrus.Warnf("port forwarding pod failed: %s", err)
+						log.Entry(ctx).Warnf("port forwarding pod failed: %s", err)
 					}
 				}
 			}

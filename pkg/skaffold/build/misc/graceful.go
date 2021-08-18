@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // For testing
@@ -49,7 +49,7 @@ func HandleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 				return
 			}
 
-			logrus.Debugln("Sending SIGINT to process", cmd.Process.Pid)
+			log.Entry(ctx).Debug("Sending SIGINT to process", cmd.Process.Pid)
 			if err := cmd.Process.Signal(os.Interrupt); err != nil {
 				// kill process on error
 				cmd.Process.Kill()
@@ -59,7 +59,7 @@ func HandleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 			// wait 2 seconds or wait for the process to complete
 			select {
 			case <-time.After(gracePeriod):
-				logrus.Debugln("Killing process", cmd.Process.Pid)
+				log.Entry(ctx).Debug("Killing process", cmd.Process.Pid)
 				// forcefully kill process after grace period
 				cmd.Process.Kill()
 			case <-done:

@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -31,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -155,7 +154,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 	// give the server a callback to set the intent value when a user request is received
 	singleTriggerCallback(func() {
 		if !getAutoTrigger() { // if auto trigger is disabled, we're in manual mode
-			logrus.Debugf("%s intent received, calling back to runner", triggerName)
+			log.Entry(context.Background()).Debugf("%s intent received, calling back to runner", triggerName)
 			c <- true
 			setIntent(true)
 		}
@@ -163,7 +162,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 
 	// give the server a callback to update auto trigger value when a user request is received
 	autoTriggerCallback(func(val bool) {
-		logrus.Debugf("%s auto trigger update to %t received, calling back to runner", triggerName, val)
+		log.Entry(context.Background()).Debugf("%s auto trigger update to %t received, calling back to runner", triggerName, val)
 		// signal chan only when auto trigger is set to true
 		if val {
 			c <- true
@@ -187,11 +186,11 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 
 	switch {
 	case runCtx.Opts.PushImages.Value() != nil:
-		logrus.Debugf("push value set via skaffold build --push flag, --push=%t", *runCtx.Opts.PushImages.Value())
+		log.Entry(context.Background()).Debugf("push value set via skaffold build --push flag, --push=%t", *runCtx.Opts.PushImages.Value())
 		pushImages = *runCtx.Opts.PushImages.Value()
 	case pipeline.Build.LocalBuild.Push == nil:
 		pushImages = cl.PushImages
-		logrus.Debugf("push value not present in isImageLocal(), defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
+		log.Entry(context.Background()).Debugf("push value not present in isImageLocal(), defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
 	default:
 		pushImages = *pipeline.Build.LocalBuild.Push
 	}

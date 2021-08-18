@@ -27,13 +27,13 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -80,7 +80,6 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 		errs = append(errs, wrapWithContext(config, cfgErrs...)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
-	errs = append(errs, validateSingleKubeContext(configs)...)
 	if validateConfig.CheckDeploySource {
 		// TODO(6050) validate for other deploy types - helm, kpt, etc.
 		errs = append(errs, validateKubectlManifests(configs)...)
@@ -554,19 +553,6 @@ func validateLogPrefix(lc latestV1.LogsConfig) []error {
 	return nil
 }
 
-func validateSingleKubeContext(configs parser.SkaffoldConfigSet) []error {
-	if len(configs) < 2 {
-		return nil
-	}
-	k := configs[0].Deploy.KubeContext
-	for _, c := range configs {
-		if c.Deploy.KubeContext != k {
-			return []error{errors.New("all configs should have the same value for `deploy.kubeContext`")}
-		}
-	}
-	return nil
-}
-
 // validateCustomTest
 // - makes sure that command is not empty
 // - makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
@@ -616,7 +602,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 			continue
 		}
 		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
-			logrus.Debugln("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
+			log.Entry(context.Background()).Debug("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
 			continue
 		}
 
