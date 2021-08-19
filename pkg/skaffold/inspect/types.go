@@ -38,6 +38,15 @@ type Options struct {
 	ProfilesOptions
 	BuildEnvOptions
 	TestsOptions
+	LintOptions
+}
+
+// LintOptions holds flag values for various `skaffold inspect tests` commands
+type LintOptions struct {
+	// Profiles is the slice of profile names to activate.
+	LintProfiles []string
+	// Profile is a target profile to create or edit
+	LintProfile string
 }
 
 // TestsOptions holds flag values for various `skaffold inspect tests` commands

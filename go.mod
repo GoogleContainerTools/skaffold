@@ -99,6 +99,6 @@ require (
 	k8s.io/kubectl v0.21.3
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 	knative.dev/pkg v0.0.0-20201119170152-e5e30edc364a // indirect
-	sigs.k8s.io/kustomize/kyaml v0.10.17
+	sigs.k8s.io/kustomize/kyaml v0.11.1
 	sigs.k8s.io/yaml v1.2.0
 )
