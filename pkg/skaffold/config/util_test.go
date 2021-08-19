@@ -268,7 +268,9 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 
 type fakeClient struct{}
 
-func (fakeClient) IsMinikube(ctx context.Context, kubeContext string) bool { return kubeContext == "minikube" }
+func (fakeClient) IsMinikube(ctx context.Context, kubeContext string) bool {
+	return kubeContext == "minikube"
+}
 func (fakeClient) MinikubeExec(context.Context, ...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestGetCluster(t *testing.T) {

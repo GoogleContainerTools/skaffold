@@ -1325,7 +1325,9 @@ requires:
 				wd, _ := util.RealWorkDir()
 				expected = test.expected(wd)
 			}
-			t.Override(&git.SyncRepo, func(ctx context.Context, g latestV1.GitInfo, _ config.SkaffoldOptions) (string, error) { return g.Repo, nil })
+			t.Override(&git.SyncRepo, func(ctx context.Context, g latestV1.GitInfo, _ config.SkaffoldOptions) (string, error) {
+				return g.Repo, nil
+			})
 			cfgs, err := GetAllConfigs(context.Background(), config.SkaffoldOptions{
 				Command:             "dev",
 				ConfigurationFile:   test.documents[0].path,

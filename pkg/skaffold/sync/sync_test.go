@@ -751,7 +751,9 @@ func TestNewSyncItem(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&WorkingDir, func(context.Context, string, docker.Config) (string, error) { return test.workingDir, nil })
-			t.Override(&SyncMap, func(context.Context, *latestV1.Artifact, docker.Config) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&SyncMap, func(context.Context, *latestV1.Artifact, docker.Config) (map[string][]string, error) {
+				return test.dependencies, nil
+			})
 			t.Override(&Labels, func(context.Context, string, docker.Config) (map[string]string, error) { return test.labels, nil })
 			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latestV1.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
 				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil

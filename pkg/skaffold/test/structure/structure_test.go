@@ -37,7 +37,9 @@ import (
 func TestNewRunner(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
-		t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+		t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
+			return "", semver.Version{}, errors.New("not found")
+		})
 
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
 
@@ -99,7 +101,9 @@ func TestCustomParams(t *testing.T) {
 	for _, tc := range testCases {
 		testutil.Run(t, "", func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Touch("test.yaml")
-			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
+				return "", semver.Version{}, errors.New("not found")
+			})
 
 			expected := "container-structure-test test -v warn --image image:tag --config " + tmpDir.Path("test.yaml")
 			if len(tc.expectedExtras) > 0 {
