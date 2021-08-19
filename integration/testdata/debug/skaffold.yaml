@@ -59,6 +59,8 @@ profiles:
       context: go
       buildpacks:
         builder: "gcr.io/buildpacks/builder:v1"
+        env:
+        - GOOGLE_RUNTIME_VERSION=1.16 # temporarily pin due to issue#6450
     #- image: skaffold-debug-netcore
     #  context: netcore
     #  buildpacks:
