@@ -41,5 +41,5 @@ if [[ "${CI}" == "true" ]]; then
     FLAGS="-v --print-resources-usage"
 fi
 
-${BIN}/golangci-lint run ${FLAGS} -c ${DIR}/golangci.yml \
+${BIN}/golangci-lint run ${FLAGS} --exclude=SA1019 -c ${DIR}/golangci.yml \
     | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'
