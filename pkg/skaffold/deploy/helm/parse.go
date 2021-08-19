@@ -41,22 +41,22 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []types.Artifact {
 			break
 		}
 		if err != nil {
-			log.Entry(context.Background()).Infof("error parsing object from string: %s", err.Error())
+			log.Entry(context.TODO()).Infof("error parsing object from string: %s", err.Error())
 			continue
 		}
 		objNamespace, err := getObjectNamespaceIfDefined(doc, namespace)
 		if err != nil {
-			log.Entry(context.Background()).Infof("error parsing object from string: %s", err.Error())
+			log.Entry(context.TODO()).Infof("error parsing object from string: %s", err.Error())
 			continue
 		}
 		obj, err := parseRuntimeObject(objNamespace, doc)
 		if err != nil {
 			if i > 0 {
-				log.Entry(context.Background()).Info(err.Error())
+				log.Entry(context.TODO()).Info(err.Error())
 			}
 		} else {
 			results = append(results, *obj)
-			log.Entry(context.Background()).Debugf("found deployed object: %+v", obj.Obj)
+			log.Entry(context.TODO()).Debugf("found deployed object: %+v", obj.Obj)
 		}
 	}
 

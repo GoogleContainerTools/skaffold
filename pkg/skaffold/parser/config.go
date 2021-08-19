@@ -115,7 +115,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 	if len(parsed) == 0 {
 		return nil, sErrors.ZeroConfigsParsedErr(cfgOpts.file)
 	}
-	log.Entry(context.Background()).Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
+	log.Entry(context.TODO()).Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
 	// validate that config names are unique if specified
 	seen := make(map[string]bool)
@@ -295,7 +295,7 @@ func cacheRepo(g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (stri
 		case error:
 			return "", v
 		default:
-			log.Entry(context.Background()).Fatalf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
+			log.Entry(context.TODO()).Fatalf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
 			return "", nil
 		}
 	} else {
@@ -362,10 +362,10 @@ func isMakePathsAbsoluteSet(opts config.SkaffoldOptions) bool {
 
 func getBase(cfgOpts configOpts) (string, error) {
 	if cfgOpts.isDependency {
-		log.Entry(context.Background()).Tracef("found %s base dir for absolute path substitution within skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
+		log.Entry(context.TODO()).Tracef("found %s base dir for absolute path substitution within skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
 		return filepath.Dir(cfgOpts.file), nil
 	}
-	log.Entry(context.Background()).Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
+	log.Entry(context.TODO()).Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
 	return util.RealWorkDir()
 }
 

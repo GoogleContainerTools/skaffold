@@ -50,7 +50,7 @@ func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceD
 	bCtx := &builderCtx{artifactStore: s, sourceDependenciesCache: d, RunContext: r}
 	switch {
 	case p.Build.LocalBuild != nil:
-		log.Entry(context.Background()).Debug("Using builder: local")
+		log.Entry(context.TODO()).Debug("Using builder: local")
 		builder, err := local.NewBuilder(bCtx, p.Build.LocalBuild)
 		if err != nil {
 			return nil, err
@@ -58,12 +58,12 @@ func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceD
 		return builder, nil
 
 	case p.Build.GoogleCloudBuild != nil:
-		log.Entry(context.Background()).Debug("Using builder: google cloud")
+		log.Entry(context.TODO()).Debug("Using builder: google cloud")
 		builder := gcb.NewBuilder(bCtx, p.Build.GoogleCloudBuild)
 		return builder, nil
 
 	case p.Build.Cluster != nil:
-		log.Entry(context.Background()).Debug("Using builder: cluster")
+		log.Entry(context.TODO()).Debug("Using builder: cluster")
 		builder, err := cluster.NewBuilder(bCtx, p.Build.Cluster)
 		if err != nil {
 			return nil, err

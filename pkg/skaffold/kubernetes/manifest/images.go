@@ -48,7 +48,7 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		log.Entry(context.Background()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
+		log.Entry(context.TODO()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
 
@@ -123,7 +123,7 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		log.Entry(context.Background()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
+		log.Entry(context.TODO()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
 	if imageName, tag, selected := r.selector(r.tagsByImageName, parsed); selected {
@@ -136,7 +136,7 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 func (r *imageReplacer) Check() {
 	for imageName := range r.tagsByImageName {
 		if !r.found[imageName] {
-			log.Entry(context.Background()).Debugf("image [%s] is not used by the current deployment", imageName)
+			log.Entry(context.TODO()).Debugf("image [%s] is not used by the current deployment", imageName)
 		}
 	}
 }

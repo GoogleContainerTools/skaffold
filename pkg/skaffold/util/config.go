@@ -41,8 +41,8 @@ func ReadConfiguration(filename string) ([]byte, error) {
 			// If the config file is the default `skaffold.yaml`,
 			// then we also try to read `skaffold.yml`.
 			if filename == "skaffold.yaml" {
-				log.Entry(context.Background()).Infof("Could not open skaffold.yaml: \"%s\"", err)
-				log.Entry(context.Background()).Info("Trying to read from skaffold.yml instead")
+				log.Entry(context.TODO()).Infof("Could not open skaffold.yaml: \"%s\"", err)
+				log.Entry(context.TODO()).Info("Trying to read from skaffold.yml instead")
 				contents, errIgnored := ioutil.ReadFile("skaffold.yml")
 				if errIgnored != nil {
 					// Return original error because it's the one that matters

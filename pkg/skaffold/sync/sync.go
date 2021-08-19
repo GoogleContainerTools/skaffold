@@ -134,14 +134,14 @@ func inferredSyncItem(a *latestV1.Artifact, tag string, e filemon.Events, cfg do
 			}
 		}
 		if !matches {
-			log.Entry(context.Background()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(context.TODO()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
 		if dsts, ok := syncMap[relPath]; ok {
 			toCopy[f] = dsts
 		} else {
-			log.Entry(context.Background()).Infof("Changed file %s is not syncable. Skipping sync", relPath)
+			log.Entry(context.TODO()).Infof("Changed file %s is not syncable. Skipping sync", relPath)
 			return nil, nil
 		}
 	}
@@ -220,7 +220,7 @@ func intersect(contextWd, containerWd string, syncRules []*latestV1.SyncRule, fi
 		}
 
 		if len(dsts) == 0 {
-			log.Entry(context.Background()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(context.TODO()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 

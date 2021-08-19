@@ -130,7 +130,7 @@ func (p *PortForwardOptions) Replace(options []string) error {
 	p.reset()
 	for _, o := range options {
 		if err := p.Append(o); err != nil {
-			log.Entry(context.Background()).Fatal(err) // should never happen since we validated the options
+			log.Entry(context.TODO()).Fatal(err) // should never happen since we validated the options
 		}
 	}
 	return nil
