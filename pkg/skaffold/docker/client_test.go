@@ -150,7 +150,7 @@ DOCKER_HOST`),
 			t.Override(&util.DefaultExecCommand, test.command)
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 
-			env, _, err := newMinikubeAPIClient(ctx, "minikube")
+			env, _, err := newMinikubeAPIClient(context.Background(), "minikube")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedEnv, env)
 		})

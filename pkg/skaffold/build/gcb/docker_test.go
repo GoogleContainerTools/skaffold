@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"testing"
 
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -156,7 +157,7 @@ func TestDockerBuildSpec(t *testing.T) {
 				Timeout:     "10m",
 			})
 
-			desc, err := builder.buildSpec(ctx, test.artifact, "nginx", "bucket", "object")
+			desc, err := builder.buildSpec(context.Background(), test.artifact, "nginx", "bucket", "object")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, desc)
 		})
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -143,7 +144,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					))
 				}
 
-				deployer, err := GetDeployer(ctx, &runcontext.RunContext{
+				deployer, err := GetDeployer(context.Background(), &runcontext.RunContext{
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},

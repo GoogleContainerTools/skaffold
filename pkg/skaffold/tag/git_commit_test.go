@@ -19,6 +19,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -399,7 +400,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 				tagger, err := NewGitCommit("", variant, test.ignoreChanges)
 				t.CheckNoError(err)
 
-				tag, err := tagger.GenerateTag(ctx, image)
+				tag, err := tagger.GenerateTag(context.Background(), image)
 
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
@@ -461,7 +462,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				tagger, err := NewGitCommit("", variant, false)
 				t.CheckNoError(err)
 
-				tag, err := GenerateFullyQualifiedImageName(ctx, tagger, image)
+				tag, err := GenerateFullyQualifiedImageName(context.Background(), tagger, image)
 
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
@@ -517,7 +518,7 @@ func TestGitCommit_CustomTemplate(t *testing.T) {
 
 			t.CheckNoError(err)
 
-			tag, err := c.GenerateTag(ctx, image)
+			tag, err := c.GenerateTag(context.Background(), image)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, tag)
@@ -536,30 +537,30 @@ func TestGitCommitSubDirectory(t *testing.T) {
 
 		tagger, err := NewGitCommit("", "Tags", false)
 		t.CheckNoError(err)
-		tag, err := tagger.GenerateTag(ctx, image)
+		tag, err := tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "CommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(ctx, image)
+		tag, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 
 		tagger, err = NewGitCommit("", "AbbrevCommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(ctx, image)
+		tag, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "TreeSha", false)
 		t.CheckNoError(err)
-		_, err = tagger.GenerateTag(ctx, image)
+		_, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "AbbrevTreeSha", false)
 		t.CheckNoError(err)
-		_, err = tagger.GenerateTag(ctx, image)
+		_, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
 	})
 }
@@ -575,13 +576,13 @@ func TestPrefix(t *testing.T) {
 
 		tagger, err := NewGitCommit("tag-", "Tags", false)
 		t.CheckNoError(err)
-		tag, err := tagger.GenerateTag(ctx, image)
+		tag, err := tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("tag-a7b32a6", tag)
 
 		tagger, err = NewGitCommit("commit-", "CommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(ctx, image)
+		tag, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("commit-a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 	})

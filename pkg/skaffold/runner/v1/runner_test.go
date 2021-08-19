@@ -282,7 +282,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			AutoDeploy:        autoTriggers.deploy,
 		},
 	}
-	runner, err := NewForConfig(ctx, runCtx)
+	runner, err := NewForConfig(context.Background(), runCtx)
 	t.CheckNoError(err)
 
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
@@ -442,7 +442,7 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
 				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
@@ -454,7 +454,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			}
 
-			cfg, err := NewForConfig(ctx, runCtx)
+			cfg, err := NewForConfig(context.Background(), runCtx)
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
@@ -541,7 +541,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 			}
-			r, _ := NewForConfig(ctx, &runcontext.RunContext{
+			r, _ := NewForConfig(context.Background(), &runcontext.RunContext{
 				Opts:      opts,
 				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{pipeline}),
 			})

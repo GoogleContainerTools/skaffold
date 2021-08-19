@@ -17,6 +17,7 @@ limitations under the License.
 package git
 
 import (
+	"context"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -66,7 +67,7 @@ func TestDefaultRef(t *testing.T) {
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
-			ref, err := defaultRef(ctx, "https://github.com/foo.git")
+			ref, err := defaultRef(context.Background(), "https://github.com/foo.git")
 			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, ref)
 		})
 	}
@@ -247,7 +248,7 @@ func TestSyncRepo(t *testing.T) {
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
-			path, err := syncRepo(ctx, test.g, opts)
+			path, err := syncRepo(context.Background(), test.g, opts)
 			var expected string
 			if !test.shouldErr {
 				expected = filepath.Join(td.Root(), test.expected)

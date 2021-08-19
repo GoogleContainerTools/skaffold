@@ -127,7 +127,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		// Mock Docker
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
-		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 
@@ -142,7 +142,7 @@ func TestCacheBuildLocal(t *testing.T) {
 			cacheFile: tmpDir.Path("cache"),
 		}
 		store := make(mockArtifactStore)
-		artifactCache, err := NewCache(ctx, cfg, func(imageName string) (bool, error) { return true, nil }, deps, graph.ToArtifactGraph(artifacts), store)
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil }, deps, graph.ToArtifactGraph(artifacts), store)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -213,7 +213,7 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// Mock Docker
 		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
-		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
@@ -238,7 +238,7 @@ func TestCacheBuildRemote(t *testing.T) {
 			pipeline:  latestV1.Pipeline{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{TryImportMissing: false}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(ctx, cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -298,7 +298,7 @@ func TestCacheFindMissing(t *testing.T) {
 
 		// Mock Docker
 		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
-		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
@@ -323,7 +323,7 @@ func TestCacheFindMissing(t *testing.T) {
 			pipeline:  latestV1.Pipeline{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{TryImportMissing: true}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(ctx, cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// Because the artifacts are in the docker registry, we expect them to be imported correctly.

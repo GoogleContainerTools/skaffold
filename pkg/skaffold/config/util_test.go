@@ -365,10 +365,10 @@ func TestGetCluster(t *testing.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
-			cluster, _ := GetCluster(ctx, "dummyname", test.profile, true)
+			cluster, _ := GetCluster(context.Background(), "dummyname", test.profile, true)
 			t.CheckDeepEqual(test.expected, cluster)
 
-			cluster, _ = GetCluster(ctx, "dummyname", test.profile, false)
+			cluster, _ = GetCluster(context.Background(), "dummyname", test.profile, false)
 			t.CheckDeepEqual(test.expected, cluster)
 		})
 	}

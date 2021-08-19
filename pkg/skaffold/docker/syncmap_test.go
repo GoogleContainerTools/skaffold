@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -408,7 +409,7 @@ func TestSyncMap(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := SyncMap(ctx, workspace, "Dockerfile", test.buildArgs, nil)
+			deps, err := SyncMap(context.Background(), workspace, "Dockerfile", test.buildArgs, nil)
 
 			// destinations are not sorted, but for the test assertion they must be
 			for _, dsts := range deps {
@@ -505,7 +506,7 @@ ADD * .
 				Write("Dockerfile", test.dockerfile)
 
 			for i := 0; i < repeat; i++ {
-				deps, err := SyncMap(ctx, tmpDir.Root(), "Dockerfile", nil, nil)
+				deps, err := SyncMap(context.Background(), tmpDir.Root(), "Dockerfile", nil, nil)
 
 				// destinations are not sorted, but for the test assertion they must be
 				for _, dsts := range deps {

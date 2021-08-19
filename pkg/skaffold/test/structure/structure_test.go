@@ -37,7 +37,7 @@ import (
 func TestNewRunner(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
-		t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+		t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
 
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
 
@@ -50,7 +50,7 @@ func TestNewRunner(t *testing.T) {
 
 		testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-		testRunner, err := New(ctx, cfg, testCase, true)
+		testRunner, err := New(context.Background(), cfg, testCase, true)
 		t.CheckNoError(err)
 		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 		t.CheckNoError(err)
@@ -60,7 +60,7 @@ func TestNewRunner(t *testing.T) {
 func TestIgnoreDockerNotFound(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
-		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return nil, errors.New("not found")
 		})
 
@@ -71,7 +71,7 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 		}
 		cfg := &mockConfig{tests: []*latestV1.TestCase{testCase}}
 
-		testRunner, err := New(ctx, cfg, testCase, true)
+		testRunner, err := New(context.Background(), cfg, testCase, true)
 		t.CheckError(true, err)
 		t.CheckNil(testRunner)
 	})
@@ -99,7 +99,7 @@ func TestCustomParams(t *testing.T) {
 	for _, tc := range testCases {
 		testutil.Run(t, "", func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Touch("test.yaml")
-			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
 
 			expected := "container-structure-test test -v warn --image image:tag --config " + tmpDir.Path("test.yaml")
 			if len(tc.expectedExtras) > 0 {
@@ -117,7 +117,7 @@ func TestCustomParams(t *testing.T) {
 
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-			testRunner, err := New(ctx, cfg, testCase, true)
+			testRunner, err := New(context.Background(), cfg, testCase, true)
 			t.CheckNoError(err)
 			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 			t.CheckNoError(err)

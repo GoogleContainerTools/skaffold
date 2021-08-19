@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -108,7 +109,7 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 				ImageName: test.imageName,
 			}
 
-			tag, err := GenerateFullyQualifiedImageName(ctx, test.tagger, image)
+			tag, err := GenerateFullyQualifiedImageName(context.Background(), test.tagger, image)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

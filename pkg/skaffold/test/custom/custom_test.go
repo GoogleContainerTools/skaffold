@@ -43,7 +43,7 @@ func TestNewCustomTestRunner(t *testing.T) {
 		} else {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRun("sh -c echo Running Custom Test command."))
 		}
-		t.Override(&docker.NewAPIClient, func(cfg docker.Config) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return fakeLocalDaemonWithExtraEnv([]string{}), nil
 		})
 
@@ -116,7 +116,7 @@ func TestCustomCommandError(t *testing.T) {
 				command = test.expectedWindowsCmd
 			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, fmt.Errorf(test.expectedError)))
-			t.Override(&docker.NewAPIClient, func(cfg docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemonWithExtraEnv([]string{}), nil
 			})
 
@@ -181,7 +181,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 		expected := []string{"file1", "file2", "file3"}
 		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 		t.CheckNoError(err)
-		deps, err := testRunner.TestDependencies(ctx)
+		deps, err := testRunner.TestDependencies(context.Background())
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, deps)
@@ -252,7 +252,7 @@ func TestTestDependenciesPaths(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
-			deps, err := testRunner.TestDependencies(ctx)
+			deps, err := testRunner.TestDependencies(context.Background())
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
@@ -298,7 +298,7 @@ func TestGetEnv(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.environ })
 			t.Override(&testContext, func(string) (string, error) { return test.testContext, nil })
-			t.Override(&docker.NewAPIClient, func(cfg docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemonWithExtraEnv(test.extraEnv), nil
 			})
 			tmpDir := t.NewTempDir().Touch("test.yaml")
@@ -320,7 +320,7 @@ func TestGetEnv(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
-			actual, err := testRunner.getEnv(ctx, test.tag)
+			actual, err := testRunner.getEnv(context.Background(), test.tag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

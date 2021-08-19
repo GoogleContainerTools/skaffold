@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -90,7 +91,7 @@ func TestCmd_RunCmdOut(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			got, err := RunCmdOut(ctx, test.cmd)
+			got, err := RunCmdOut(context.Background(), test.cmd)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, string(got))
 		})

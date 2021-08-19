@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -107,7 +108,7 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 			image := latestV1.Artifact{
 				ImageName: "test",
 			}
-			tag, err := c.GenerateTag(ctx, image)
+			tag, err := c.GenerateTag(context.Background(), image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 		})
