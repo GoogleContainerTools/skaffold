@@ -21,6 +21,7 @@ import (
 	"io"
 
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -38,19 +39,17 @@ type Syncer interface {
 }
 
 type PodSyncer struct {
-	kubectl *pkgkubectl.CLI
-	config  Config
+	kubectl    *pkgkubectl.CLI
+	namespaces *[]string
+	formatter  logger.Formatter
 }
 
-func NewPodSyncer(cli *pkgkubectl.CLI, config Config) *PodSyncer {
+func NewPodSyncer(cli *pkgkubectl.CLI, namespaces *[]string, formatter logger.Formatter) *PodSyncer {
 	return &PodSyncer{
-		kubectl: cli,
-		config:  config,
+		kubectl:    cli,
+		namespaces: namespaces,
+		formatter:  formatter,
 	}
-}
-
-type Config interface {
-	GetNamespaces() []string
 }
 
 type NoopSyncer struct{}

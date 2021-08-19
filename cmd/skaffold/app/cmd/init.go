@@ -51,7 +51,7 @@ var initEntrypoint = initializer.DoInit
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit() *cobra.Command {
 	return NewCmd("init").
-		WithDescription("[alpha] Generate configuration for deploying an application").
+		WithDescription("Generate configuration for deploying an application").
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &skipBuild, Name: "skip-build", DefValue: false, Usage: "Skip generating build artifacts in Skaffold config", IsEnum: true},

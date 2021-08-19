@@ -23,14 +23,16 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -58,7 +60,8 @@ var (
 	runContainerRe = regexp.MustCompile(errorPrefix)
 	taintsRe       = regexp.MustCompile(taintsExp)
 	// for testing
-	runCli = executeCLI
+	runCli        = executeCLI
+	getReplicaSet = deploymentutil.GetAllReplicaSets
 
 	unknownConditionsOrSuccess = map[proto.StatusCode]struct{}{
 		proto.StatusCode_STATUSCHECK_UNKNOWN:                   {},
@@ -71,18 +74,28 @@ var (
 
 // PodValidator implements the Validator interface for Pods
 type PodValidator struct {
-	k     kubernetes.Interface
-	recos []Recommender
+	k      kubernetes.Interface
+	depObj appsv1.Deployment
+	recos  []Recommender
 }
 
 // NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface) *PodValidator {
+func NewPodValidator(k kubernetes.Interface, d appsv1.Deployment) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs}
+	return &PodValidator{k: k, recos: rs, depObj: d}
 }
 
 // Validate implements the Validate method for Validator interface
 func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error) {
+	_, _, controller, err := getReplicaSet(&p.depObj, p.k.AppsV1())
+	if err != nil {
+		log.Entry(ctx).Debugf("could not fetch deployment replica set %s", err)
+		return []Resource{}, err
+	} else if controller == nil {
+		log.Entry(ctx).Debugf("deployment replica set not created yet.")
+		return []Resource{}, nil
+	}
+
 	pods, err := p.k.CoreV1().Pods(ns).List(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -90,6 +103,9 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
+		if !isPodOwnedBy(po, controller) {
+			continue
+		}
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
 		processPodEvents(eventsClient, po, ps)
@@ -128,14 +144,14 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	}
 	// If the event type PodScheduled with status False is found then we check if it is due to taints and tolerations.
 	if c, ok := isPodNotScheduled(pod); ok {
-		logrus.Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
+		log.Entry(context.Background()).Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
 		sc, err := getUntoleratedTaints(c.Reason, c.Message)
 		return sc, nil, err
 	}
 	// we can check the container status if the pod has been scheduled successfully. This can be determined by having the event
 	// PodScheduled with status True, or a ContainerReady or PodReady event with status False.
 	if isPodScheduledButNotReady(pod) {
-		logrus.Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
+		log.Entry(context.Background()).Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
 		// TODO(dgageot): Add EphemeralContainerStatuses
 		cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 		// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
@@ -155,11 +171,11 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	}
 
 	if c, ok := isPodStatusUnknown(pod); ok {
-		logrus.Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
+		log.Entry(context.Background()).Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
 		return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 	}
 
-	logrus.Debugf("Unable to determine current service state of pod %q", pod.Name)
+	log.Entry(context.Background()).Debugf("Unable to determine current service state of pod %q", pod.Name)
 	return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf("unable to determine current service state of pod %q", pod.Name)
 }
 
@@ -272,13 +288,13 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
 		return
 	}
-	logrus.Debugf("Fetching events for pod %q", pod.Name)
+	log.Entry(context.Background()).Debugf("Fetching events for pod %q", pod.Name)
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
 	events, err := e.Search(scheme, &pod)
 	if err != nil {
-		logrus.Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
+		log.Entry(context.Background()).Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
 		return
 	}
 	// find the latest failed event.
@@ -369,7 +385,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	logrus.Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
+	log.Entry(context.Background()).Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
 	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %v", c.Name, c.State.Waiting)
 }
 
@@ -389,7 +405,7 @@ func trimSpace(msg string) string {
 }
 
 func getPodLogs(po *v1.Pod, c string, sc proto.StatusCode) (proto.StatusCode, []string) {
-	logrus.Debugf("Fetching logs for container %s/%s", po.Name, c)
+	log.Entry(context.Background()).Debugf("Fetching logs for container %s/%s", po.Name, c)
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {
@@ -413,4 +429,11 @@ func getPodLogs(po *v1.Pod, c string, sc proto.StatusCode) (proto.StatusCode, []
 func executeCLI(cmdName string, args []string) ([]byte, error) {
 	cmd := exec.Command(cmdName, args...)
 	return cmd.CombinedOutput()
+}
+
+func isPodOwnedBy(po v1.Pod, controller metav1.Object) bool {
+	if controller == nil {
+		return true
+	}
+	return metav1.IsControlledBy(&po, controller)
 }

@@ -128,6 +128,26 @@ func TestNewCmdHidden(t *testing.T) {
 	testutil.CheckDeepEqual(t, true, cmd.Hidden)
 }
 
+func TestNewCmdWithPostRunHooks(t *testing.T) {
+	var callOrder []int
+	cmd := NewCmd("").
+		WithPostRunHook(func(err error) error {
+			callOrder = append(callOrder, 1)
+			return err
+		}).
+		WithPostRunHook(func(err error) error {
+			callOrder = append(callOrder, 2)
+			return err
+		}).
+		NoArgs(func(c context.Context, w io.Writer) error {
+			return fmt.Errorf("some err")
+		})
+	err := cmd.RunE(nil, nil)
+	testutil.CheckErrorAndFailNow(t, true, err)
+	testutil.CheckDeepEqual(t, err.Error(), "some err")
+	testutil.CheckDeepEqual(t, []int{1, 2}, callOrder)
+}
+
 func listFlags(set *pflag.FlagSet) map[string]*pflag.Flag {
 	flagsByName := make(map[string]*pflag.Flag)
 

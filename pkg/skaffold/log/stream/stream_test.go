@@ -17,41 +17,45 @@ limitations under the License.
 package stream
 
 import (
-	"bytes"
-	"strings"
-	"sync"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestPrintLogLine(t *testing.T) {
-	testutil.Run(t, "verify lines are not intermixed", func(t *testutil.T) {
-		var (
-			buf  bytes.Buffer
-			wg   sync.WaitGroup
-			lock sync.Mutex
-
-			linesPerGroup = 100
-			groups        = 5
-		)
-
-		for i := 0; i < groups; i++ {
-			wg.Add(1)
-
-			go func() {
-				for i := 0; i < linesPerGroup; i++ {
-					printLogLine(output.Default, &buf, func() bool { return false }, &lock, "PREFIX", "TEXT\n")
-				}
-				wg.Done()
-			}()
-		}
-		wg.Wait()
-
-		lines := strings.Split(buf.String(), "\n")
-		for i := 0; i < groups*linesPerGroup; i++ {
-			t.CheckDeepEqual("PREFIX TEXT", lines[i])
-		}
-	})
+func TestIsEmptyOrContainerNotReady(t *testing.T) {
+	tests := []struct {
+		description string
+		line        string
+		expected    bool
+	}{
+		{
+			description: "empty line",
+			line:        "",
+			expected:    true,
+		},
+		{
+			description: "container not ready",
+			line:        "rpc error: code = Unknown desc = Error: No such container: fa7802b2206f84f4f1e166a7a640523a281031c4c95d1709d38d62680391b97c",
+			expected:    true,
+		},
+		{
+			description: "logs could not be retrieved",
+			line:        "unable to retrieve container logs for fa7802b2206f84f4f1e166a7a640523a281031c4c95d1709d38d62680391b97c",
+			expected:    true,
+		},
+		{
+			description: "logs could not be retrieved",
+			line:        "Unable to retrieve container logs for fa7802b2206f84f4f1e166a7a640523a281031c4c95d1709d38d62680391b97c",
+			expected:    true,
+		},
+		{
+			description: "actual log",
+			line:        "log line",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, isEmptyOrContainerNotReady(test.line))
+		})
+	}
 }

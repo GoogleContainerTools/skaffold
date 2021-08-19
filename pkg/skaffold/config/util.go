@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -26,11 +27,11 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -58,6 +59,7 @@ var (
 
 	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
+	updateUserTaken = "skaffold config set --survey --global --id %s taken true"
 	// update global config with the time the survey was last prompted
 	updateLastPrompted = "skaffold config set --survey --global last-prompted %s"
 )
@@ -70,12 +72,12 @@ func readConfigFileCached(filename string) (*GlobalConfig, error) {
 		filenameOrDefault, err := ResolveConfigFile(filename)
 		if err != nil {
 			configFileErr = err
-			logrus.Warnf("Could not load global Skaffold defaults. Error resolving config file %q", filenameOrDefault)
+			log.Entry(context.Background()).Warnf("Could not load global Skaffold defaults. Error resolving config file %q", filenameOrDefault)
 			return
 		}
 		configFile, configFileErr = ReadConfigFileNoCache(filenameOrDefault)
 		if configFileErr == nil {
-			logrus.Infof("Loaded Skaffold defaults from %q", filenameOrDefault)
+			log.Entry(context.Background()).Infof("Loaded Skaffold defaults from %q", filenameOrDefault)
 		}
 	})
 	return configFile, configFileErr
@@ -98,12 +100,12 @@ func ResolveConfigFile(configFile string) (string, error) {
 func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		logrus.Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
+		log.Entry(context.Background()).Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
 		return nil, fmt.Errorf("reading global config: %w", err)
 	}
 	config := GlobalConfig{}
 	if err := yaml.Unmarshal(contents, &config); err != nil {
-		logrus.Warnf("Could not load global Skaffold defaults. Error encounter while unmarshalling the contents of file %q", configFile)
+		log.Entry(context.Background()).Warnf("Could not load global Skaffold defaults. Error encounter while unmarshalling the contents of file %q", configFile)
 		return nil, fmt.Errorf("unmarshalling global skaffold config: %w", err)
 	}
 	return &config, nil
@@ -141,7 +143,7 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 	var mergedConfig ContextConfig
 	for _, contextCfg := range cfg.ContextConfigs {
 		if util.RegexEqual(contextCfg.Kubecontext, kubeContext) {
-			logrus.Debugf("found config for context %q", kubeContext)
+			log.Entry(context.Background()).Debugf("found config for context %q", kubeContext)
 			mergedConfig = *contextCfg
 		}
 	}
@@ -168,7 +170,7 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 		return "", err
 	}
 	if cfg.DefaultRepo != "" {
-		logrus.Infof("Using default-repo=%s from config", cfg.DefaultRepo)
+		log.Entry(context.Background()).Infof("Using default-repo=%s from config", cfg.DefaultRepo)
 	}
 	return cfg.DefaultRepo, nil
 }
@@ -179,7 +181,7 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 		return nil, err
 	}
 	if len(cfg.InsecureRegistries) > 0 {
-		logrus.Infof("Using insecure-registries=%v from config", cfg.InsecureRegistries)
+		log.Entry(context.Background()).Infof("Using insecure-registries=%v from config", cfg.InsecureRegistries)
 	}
 	return cfg.InsecureRegistries, nil
 }
@@ -191,7 +193,7 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	}
 
 	if cfg.DebugHelpersRegistry != "" {
-		logrus.Infof("Using debug-helpers-registry=%s from config", cfg.DebugHelpersRegistry)
+		log.Entry(context.Background()).Infof("Using debug-helpers-registry=%s from config", cfg.DebugHelpersRegistry)
 		return cfg.DebugHelpersRegistry, nil
 	}
 	return constants.DefaultDebugHelpersRegistry, nil
@@ -212,7 +214,7 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 		local = true
 
 	case cfg.LocalCluster != nil:
-		logrus.Infof("Using local-cluster=%t from config", *cfg.LocalCluster)
+		log.Entry(context.Background()).Infof("Using local-cluster=%t from config", *cfg.LocalCluster)
 		local = *cfg.LocalCluster
 
 	case kubeContext == constants.DefaultMinikubeContext ||
@@ -433,4 +435,39 @@ func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 	return nil
+}
+
+func UpdateUserSurveyTaken(configFile string, id string) error {
+	ai := fmt.Sprintf(updateUserTaken, id)
+	aiErr := fmt.Errorf("could not automatically update the survey prompted timestamp - please run `%s`", ai)
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.Survey == nil {
+		fullConfig.Global.Survey = &SurveyConfig{}
+	}
+	fullConfig.Global.Survey.UserSurveys = updatedUserSurveys(fullConfig.Global.Survey.UserSurveys, id)
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return aiErr
+	}
+	return nil
+}
+
+func updatedUserSurveys(us []*UserSurvey, id string) []*UserSurvey {
+	for _, s := range us {
+		if s.ID == id {
+			s.Taken = util.BoolPtr(true)
+			return us
+		}
+	}
+	return append(us, &UserSurvey{ID: id, Taken: util.BoolPtr(true)})
 }

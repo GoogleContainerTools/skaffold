@@ -38,7 +38,8 @@ const (
 )
 
 var (
-	ignoredSamples = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
+	ignoredExamples = []string{"docker-deploy", "react-reload-docker"}
+	ignoredSamples  = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
 )
 
 // Test that every example can be parsed and produces a valid
@@ -103,6 +104,9 @@ func parseConfigFiles(t *testing.T, root string) {
 	}
 	for base, paths := range groupedPaths {
 		name := filepath.Base(base)
+		if util.StrSliceContains(ignoredExamples, name) {
+			continue
+		}
 		testutil.Run(t, name, func(t *testutil.T) {
 			var data []string
 			for _, path := range paths {

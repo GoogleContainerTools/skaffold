@@ -25,7 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -35,14 +34,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -72,7 +72,6 @@ type counter struct {
 type Config interface {
 	kubectl.Config
 
-	GetNamespaces() []string
 	StatusCheckDeadlineSeconds() int
 	Muted() config.Muted
 	StatusCheck() *bool
@@ -86,10 +85,12 @@ type Monitor struct {
 	muteLogs        bool
 	seenResources   resource.Group
 	singleRun       singleflight.Group
+	namespaces      *[]string
+	kubeContext     string
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on deployments and pods.
-func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller) *Monitor {
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) *Monitor {
 	return &Monitor{
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,
@@ -97,6 +98,8 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller) *Monitor {
 		deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
 		seenResources:   make(resource.Group),
 		singleRun:       singleflight.Group{},
+		namespaces:      namespaces,
+		kubeContext:     cfg.GetKubeContext(),
 	}
 }
 
@@ -110,7 +113,6 @@ func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
 
 func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	eventV2.TaskInProgress(constants.StatusCheck, "Verify service availability")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
 
@@ -120,12 +122,10 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	errCode, err := s.statusCheck(ctx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	if err != nil {
-		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err
 	}
 
 	output.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
-	eventV2.TaskSucceeded(constants.StatusCheck)
 	return nil
 }
 
@@ -134,13 +134,13 @@ func (s *Monitor) Reset() {
 }
 
 func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(s.kubeContext)
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range s.cfg.GetNamespaces() {
+	for _, n := range *s.namespaces {
 		newDeployments, err := getDeployments(ctx, client, n, s.labeller,
 			getDeadline(s.deadlineSeconds))
 		if err != nil {
@@ -204,9 +204,10 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
+
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, d)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)
@@ -223,7 +224,7 @@ func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.D
 	defer ticker.Stop()
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
-	logrus.Debugf("checking status %s", r)
+	log.Entry(ctx).Debugf("checking status %s", r)
 	defer cancel()
 	for {
 		select {
@@ -289,6 +290,7 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
+	out, _ = output.WithEventContext(context.Background(), out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -334,6 +336,7 @@ func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer)
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
 			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
+			out, _ := output.WithEventContext(context.Background(), out, constants.Deploy, r.String())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}

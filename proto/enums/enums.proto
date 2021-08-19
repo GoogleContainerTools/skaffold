@@ -97,6 +97,8 @@ enum LogLevel {
     FATAL = 4;
     // Panic Level
     PANIC = 5;
+    // Trace Level
+    TRACE = 6;
 }
 
 // Enum for Status codes<br>
@@ -443,6 +445,8 @@ enum StatusCode {
     CONFIG_UNKNOWN_TRANSFORMER = 1215;
     // Manifest file not found
     CONFIG_MISSING_MANIFEST_FILE_ERR = 1216;
+    // Remote config repository cache not found and sync disabled
+    CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR = 1217;
 
     // Inspect command errors
 
@@ -599,6 +603,8 @@ enum SuggestionCode {
     CONFIG_ALLOWLIST_transformers = 709;
     // Check mising manifest file section of config and fix as needed.
     CONFIG_FIX_MISSING_MANIFEST_FILE = 710;
+    // Enable remote repo sync, or clone manually
+    CONFIG_ENABLE_REMOTE_REPO_SYNC = 711;
 
     // `skaffold inspect` command error suggestion codes
 

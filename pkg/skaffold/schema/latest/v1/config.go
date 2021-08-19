@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta19"
+const Version string = "skaffold/v2beta22"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -124,14 +124,15 @@ type ResourceType string
 
 // PortForwardResource describes a resource to port forward.
 type PortForwardResource struct {
-	// Type is the Kubernetes type that should be port forwarded.
-	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Type is the resource type that should be port forwarded.
+	// Acceptable resource types include kubernetes types: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Standalone `Container` is also valid for Docker deployments.
 	Type ResourceType `yaml:"resourceType,omitempty"`
 
-	// Name is the name of the Kubernetes resource to port forward.
+	// Name is the name of the Kubernetes resource or local container to port forward.
 	Name string `yaml:"resourceName,omitempty"`
 
-	// Namespace is the namespace of the resource to port forward.
+	// Namespace is the namespace of the resource to port forward. Does not apply to local containers.
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
@@ -522,6 +523,9 @@ type DeployConfig struct {
 // for the deploy step. All three deployer types can be used at the same
 // time for hybrid workflows.
 type DeployType struct {
+	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
+	DockerDeploy *DockerDeploy `yaml:"-,omitempty"`
+
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
@@ -534,6 +538,15 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+}
+
+// DockerDeploy uses the `docker` CLI to create application containers in Docker.
+type DockerDeploy struct {
+	// UseCompose tells skaffold whether or not to deploy using `docker-compose`.
+	UseCompose bool `yaml:"useCompose,omitempty"`
+
+	// Images are the container images to run in Docker.
+	Images []string `yaml:"images" yamltags:"required"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -553,7 +566,7 @@ type KubectlDeploy struct {
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -858,7 +871,7 @@ type Artifact struct {
 	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
-	LifecycleHooks BuildHooks `yaml:"-"`
+	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -881,7 +894,7 @@ type Sync struct {
 	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers.
-	LifecycleHooks SyncHooks `yaml:"-"`
+	LifecycleHooks SyncHooks `yaml:"hooks,omitempty"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -1184,6 +1197,9 @@ type KanikoArtifact struct {
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
+	// ImageFSExtractRetry is the number of retries that should happen for extracting an image filesystem.
+	ImageFSExtractRetry string `yaml:"imageFSExtractRetry,omitempty"`
+
 	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
@@ -1199,6 +1215,9 @@ type KanikoArtifact struct {
 
 	// SnapshotMode is how Kaniko will snapshot the filesystem.
 	SnapshotMode string `yaml:"snapshotMode,omitempty"`
+
+	// PushRetry Set this flag to the number of retries that should happen for the push of an image to a remote destination.
+	PushRetry string `yaml:"pushRetry,omitempty"`
 
 	// TarPath is path to save the image as a tarball at path instead of pushing the image.
 	TarPath string `yaml:"tarPath,omitempty"`
@@ -1269,6 +1288,10 @@ type DockerArtifact struct {
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
+
+	// CliFlags are any additional flags to pass to the local daemon during a build.
+	// These flags are only used during a build through the Docker CLI.
+	CliFlags []string `yaml:"cliFlags,omitempty"`
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
@@ -1381,7 +1404,7 @@ type ContainerHook struct {
 // NamedContainerHook describes a lifecycle hook definition to execute on a named container.
 type NamedContainerHook struct {
 	// ContainerHook describes a lifecycle hook definition to execute on a container.
-	ContainerHook `yaml:",inline"`
+	ContainerHook `yaml:",inline" yamlTags:"skipTrim"`
 	// PodName is the name of the pod to execute the command in.
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.

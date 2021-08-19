@@ -245,7 +245,7 @@ func TestKpt_Deploy(t *testing.T) {
 				t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 			}
 
-			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -1185,7 +1185,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 		})
 		t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 		defer os.RemoveAll(k.Live.Apply.Dir)
-		_, err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
+		err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
 		t.CheckNoError(err)
 	})
 }

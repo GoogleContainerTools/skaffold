@@ -95,7 +95,7 @@ func (t *TestMonitor) Run(bool) error {
 
 func (t *TestMonitor) Reset() {}
 
-func mockK8sClient() (k8s.Interface, error) {
+func mockK8sClient(string) (k8s.Interface, error) {
 	return fakekubeclientset.NewSimpleClientset(), nil
 }
 

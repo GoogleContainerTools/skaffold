@@ -22,7 +22,8 @@ import (
 	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func RetrieveConfigFile(tagged string, cfg Config) (*v1.ConfigFile, error) {
@@ -56,7 +57,7 @@ func RetrieveWorkingDir(tagged string, cfg Config) (string, error) {
 	case cf == nil:
 		return "/", nil
 	case cf.Config.WorkingDir == "":
-		logrus.Debugf("Using default workdir '/' for %s", tagged)
+		log.Entry(context.Background()).Debugf("Using default workdir '/' for %s", tagged)
 		return "/", nil
 	default:
 		return cf.Config.WorkingDir, nil

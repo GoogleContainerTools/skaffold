@@ -22,18 +22,18 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type PodWatcher interface {
 	Register(receiver chan<- PodEvent)
 	Deregister(receiver chan<- PodEvent)
-	Start(ns []string) (func(), error)
+	Start(kubeContext string, ns []string) (func(), error)
 }
 
 // podWatcher is a pod watcher for multiple namespaces.
@@ -67,7 +67,7 @@ func (w *podWatcher) Deregister(receiver chan<- PodEvent) {
 	w.receiverLock.Unlock()
 }
 
-func (w *podWatcher) Start(namespaces []string) (func(), error) {
+func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), error) {
 	if len(w.receivers) == 0 {
 		return func() {}, errors.New("no receiver was registered")
 	}
@@ -79,7 +79,7 @@ func (w *podWatcher) Start(namespaces []string) (func(), error) {
 		}
 	}
 
-	kubeclient, err := client.Client()
+	kubeclient, err := client.Client(kubeContext)
 	if err != nil {
 		return func() {}, fmt.Errorf("getting k8s client: %w", err)
 	}
@@ -100,7 +100,7 @@ func (w *podWatcher) Start(namespaces []string) (func(), error) {
 			for evt := range watcher.ResultChan() {
 				// If the event's type is "ERROR", warn and continue.
 				if evt.Type == watch.Error {
-					logrus.Warnf("got unexpected event of type %s", evt.Type)
+					log.Entry(context.Background()).Warnf("got unexpected event of type %s", evt.Type)
 					continue
 				}
 

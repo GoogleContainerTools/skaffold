@@ -30,7 +30,7 @@ type Config interface {
 // that attaches to and helps debug deployed resources from Skaffold.
 type Debugger interface {
 	// Start starts the debugger.
-	Start(context.Context, []string) error
+	Start(context.Context) error
 
 	// Stop stops the debugger.
 	Stop()
@@ -41,7 +41,7 @@ type Debugger interface {
 
 type NoopDebugger struct{}
 
-func (n *NoopDebugger) Start(context.Context, []string) error { return nil }
+func (n *NoopDebugger) Start(context.Context) error { return nil }
 
 func (n *NoopDebugger) Stop() {}
 

@@ -17,16 +17,17 @@ limitations under the License.
 package analyze
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/karrick/godirwalk"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -147,7 +148,7 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 				continue
 			}
 			if stat.Size() > a.maxFileSize {
-				logrus.Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
+				log.Entry(context.Background()).Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
 				continue
 			}
 		}

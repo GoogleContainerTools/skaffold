@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
@@ -33,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -69,6 +68,7 @@ type Config interface {
 	Mode() config.RunMode
 	NoPruneChildren() bool
 	Muted() config.Muted
+	PushImages() config.BoolOrUndefined
 }
 
 type BuilderContext interface {
@@ -85,12 +85,17 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, e
 	}
 
 	cluster := bCtx.GetCluster()
+	pushFlag := bCtx.PushImages()
 
 	var pushImages bool
-	if buildCfg.Push == nil {
+	switch {
+	case pushFlag.Value() != nil:
+		pushImages = *pushFlag.Value()
+		log.Entry(context.Background()).Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
+	case buildCfg.Push == nil:
 		pushImages = cluster.PushImages
-		logrus.Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
-	} else {
+		log.Entry(context.Background()).Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
+	default:
 		pushImages = *buildCfg.Push
 	}
 

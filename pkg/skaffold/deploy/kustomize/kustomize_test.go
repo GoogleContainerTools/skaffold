@@ -192,7 +192,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Namespace: skaffoldNamespaceOption,
 				}}}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -215,7 +215,7 @@ func TestKustomizeCleanup(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), kubectl.DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
 			description: "cleanup success with multiple kustomizations",
@@ -225,7 +225,7 @@ func TestKustomizeCleanup(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Path("a"), kubectl.DeploymentWebYAML).
 				AndRunOut("kustomize build "+tmpDir.Path("b"), kubectl.DeploymentAppYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
 			description: "cleanup error",
@@ -234,7 +234,7 @@ func TestKustomizeCleanup(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), kubectl.DeploymentWebYAML).
-				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
+				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{

@@ -710,3 +710,77 @@ func TestShouldDisplayUpdateMsg(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateUserSurveyTaken(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         string
+		id          string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when user survey is empty",
+			id:          "foo",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{UserSurveys: []*UserSurvey{
+						{ID: "foo", Taken: util.BoolPtr(true)},
+					}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "append user survey when not nil",
+			cfg: `
+global:
+  survey:
+    user-surveys:
+      - id: "foo1"
+        taken: true
+kubeContexts: []`,
+			id: "foo2",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{
+						UserSurveys: []*UserSurvey{
+							{ID: "foo1", Taken: util.BoolPtr(true)},
+							{ID: "foo2", Taken: util.BoolPtr(true)},
+						}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update entry for a key in user survey",
+			cfg: `
+global:
+  survey:
+    user-surveys:
+      - id: "foo" 
+        taken: false
+kubeContexts: []`,
+			id: "foo",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{
+						UserSurveys: []*UserSurvey{
+							{ID: "foo", Taken: util.BoolPtr(true)},
+						}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := t.TempFile("config", []byte(test.cfg))
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+
+			// update the time
+			err := UpdateUserSurveyTaken(cfg, test.id)
+			t.CheckNoError(err)
+
+			actualConfig, cfgErr := ReadConfigFile(cfg)
+			t.CheckNoError(cfgErr)
+			t.CheckDeepEqual(test.expectedCfg, actualConfig)
+		})
+	}
+}

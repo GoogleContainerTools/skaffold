@@ -1,0 +1,52 @@
+apiVersion: skaffold/v2beta22
+kind: Config
+build:
+  artifacts:
+  - image: hooks-example
+    hooks:
+      before:
+        - command: ["sh", "-c", "./hook.sh"]
+          os: [darwin, linux]
+        - command: ["cmd.exe", "/C", "hook.bat"]
+          os: [windows]
+      after:
+        - command: ["sh", "-c", "docker images $SKAFFOLD_IMAGE --digests"]
+          os: [darwin, linux]
+        - command: ["cmd.exe", "/C", "docker images %SKAFFOLD_IMAGE% --digests"]
+          os: [windows]
+    sync: 
+      manual:
+        - src: 'hello.txt'
+          dest: .
+      hooks:
+        before:
+          - host:
+              command: ["sh", "-c", "echo file changes detected: $SKAFFOLD_FILES_ADDED_OR_MODIFIED"]
+              os: [darwin, linux]
+          - host:
+              command: ["cmd.exe", "/C", "echo file changes detected: %SKAFFOLD_FILES_ADDED_OR_MODIFIED%"]
+              os: [windows]
+        after:
+          - container:
+              command: ["sh", "-c", "set -x; kill -HUP 1"]
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo pre-deploy host hook running on $(hostname)!"]
+            os: [darwin, linux]
+        - container:
+            # this will only run when there's a matching container from a previous deploy iteration like in `skaffold dev` 
+            command: ["sh", "-c", "echo pre-deploy container hook running on $(hostname)!"]
+            containerName: hooks-example*
+            podName: hooks-example-deployment*
+      after:
+        - host:
+            command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"]
+        - container:
+            command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
+            containerName: hooks-example* # use a glob pattern to prefix-match the container name and pod name for deployments, stateful-sets, etc.
+            podName: hooks-example-deployment*

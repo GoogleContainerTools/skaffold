@@ -37,8 +37,8 @@ func TestMainHelp(t *testing.T) {
 		err := Run(&output, &errOutput)
 
 		t.CheckNoError(err)
-		t.CheckContains("End-to-end pipelines", output.String())
-		t.CheckContains("Getting started with a new project", output.String())
+		t.CheckContains("End-to-end Pipelines", output.String())
+		t.CheckContains("Getting Started With a New Project", output.String())
 		t.CheckEmpty(errOutput.String())
 	})
 }
@@ -67,8 +67,8 @@ func TestSkaffoldCmdline_MainHelp(t *testing.T) {
 		err := Run(&output, &errOutput)
 
 		t.CheckNoError(err)
-		t.CheckContains("End-to-end pipelines", output.String())
-		t.CheckContains("Getting started with a new project", output.String())
+		t.CheckContains("End-to-end Pipelines", output.String())
+		t.CheckContains("Getting Started With a New Project", output.String())
 		t.CheckEmpty(errOutput.String())
 	})
 }
@@ -81,5 +81,26 @@ func TestSkaffoldCmdline_MainUnknownCommand(t *testing.T) {
 		err := Run(ioutil.Discard, ioutil.Discard)
 
 		t.CheckError(true, err)
+	})
+}
+
+func TestMain_InvalidUsageExitCode(t *testing.T) {
+	testutil.Run(t, "unknown command", func(t *testutil.T) {
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "unknown", "--interactive=false"})
+		err := Run(ioutil.Discard, ioutil.Discard)
+		t.CheckErrorAndExitCode(127, err)
+	})
+	testutil.Run(t, "unknown flag", func(t *testutil.T) {
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "--help2", "--interactive=false"})
+		err := Run(ioutil.Discard, ioutil.Discard)
+		t.CheckErrorAndExitCode(127, err)
+	})
+	testutil.Run(t, "exactargs error", func(t *testutil.T) {
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "config", "set", "a", "b", "c"})
+		err := Run(ioutil.Discard, ioutil.Discard)
+		t.CheckErrorAndExitCode(127, err)
 	})
 }

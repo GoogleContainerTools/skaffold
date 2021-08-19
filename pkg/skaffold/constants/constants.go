@@ -76,6 +76,10 @@ const (
 
 	// HaTS is the HaTS Survey ID
 	HaTS = "hats"
+
+	// SubtaskIDNone is the value used for Event API messages when there is no
+	// corresponding subtask
+	SubtaskIDNone = "-1"
 )
 
 type Phase string
@@ -113,10 +117,13 @@ var (
 	Timeout = "TIMEOUT"
 
 	AllowedUsers = map[string]struct{}{
-		"vsc":      {},
-		"intellij": {},
-		"gcloud":   {},
+		"vsc":          {},
+		"intellij":     {},
+		"gcloud":       {},
+		"cloud-deploy": {},
 	}
+
+	AllowedUserPattern = `^%v(\/.+)?$`
 )
 
 var ImageRef = struct {

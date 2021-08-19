@@ -19,6 +19,7 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -29,8 +30,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -114,7 +114,7 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 			return nil, fmt.Errorf("glob: %w", err)
 		}
 		if len(files) == 0 {
-			logrus.Warnf("%s did not match any file", p)
+			log.Entry(context.Background()).Warnf("%s did not match any file", p)
 		}
 
 		for _, f := range files {

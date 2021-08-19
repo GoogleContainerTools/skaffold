@@ -44,7 +44,7 @@ func TestSurveyPrompt(t *testing.T) {
 				promptText: "Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey",
 				expiresAt:  time.Date(2021, time.August, 14, 00, 00, 00, 0, time.UTC),
 			},
-			expected: `Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey: run 'skaffold survey -id foo'
+			expected: `Looks like you are using foo feature. Help improve Skaffold foo feature and take this survey: run 'skaffold survey --id foo'
 `,
 		},
 	}
@@ -248,6 +248,48 @@ func TestIsValid(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.CheckDeepEqual(test.s.isValid(), test.expected)
+		})
+	}
+}
+
+func TestSortSurveys(t *testing.T) {
+	expected := []config{
+		{id: "10Day", expiresAt: time.Now().AddDate(0, 0, 10)},
+		{id: "started", startsAt: time.Now().AddDate(0, 0, -10), expiresAt: time.Now().AddDate(0, 0, 20)},
+		{id: "2Months", expiresAt: time.Now().AddDate(0, 2, 0)},
+		hats,
+	}
+	tests := []struct {
+		description string
+		input       []config
+	}{
+		{
+			description: "no expiry set at 0th position",
+			input: []config{
+				hats,
+				{id: "2Months", expiresAt: time.Now().AddDate(0, 2, 0)},
+				{id: "10Day", expiresAt: time.Now().AddDate(0, 0, 10)},
+				{id: "started", startsAt: time.Now().AddDate(0, 0, -10), expiresAt: time.Now().AddDate(0, 0, 20)},
+			},
+		},
+		{
+			description: "no expiry set in middle position",
+			input: []config{
+				{id: "started", startsAt: time.Now().AddDate(0, 0, -10), expiresAt: time.Now().AddDate(0, 0, 20)},
+				{id: "2Months", expiresAt: time.Now().AddDate(0, 2, 0)},
+				hats,
+				{id: "10Day", expiresAt: time.Now().AddDate(0, 0, 10)},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			for i, a := range sortSurveys(test.input) {
+				if expected[i].id != a.id {
+					t.Errorf("expected to see %s, found %s at position %d",
+						expected[i].id, a.id, i)
+				}
+			}
 		})
 	}
 }

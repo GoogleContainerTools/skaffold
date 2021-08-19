@@ -17,19 +17,23 @@ limitations under the License.
 package output
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
-const TimestampFormat = "2006-01-02 15:04:05"
+const timestampFormat = "2006-01-02 15:04:05"
 
 type skaffoldWriter struct {
 	MainWriter  io.Writer
 	EventWriter io.Writer
+	task        constants.Phase
+	subtask     string
 
 	timestamps bool
 }
@@ -37,7 +41,7 @@ type skaffoldWriter struct {
 func (s skaffoldWriter) Write(p []byte) (int, error) {
 	written := 0
 	if s.timestamps {
-		t, err := s.MainWriter.Write([]byte(time.Now().Format(TimestampFormat) + " "))
+		t, err := s.MainWriter.Write([]byte(time.Now().Format(timestampFormat) + " "))
 		if err != nil {
 			return t, err
 		}
@@ -67,7 +71,7 @@ func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps boo
 
 	return skaffoldWriter{
 		MainWriter:  SetupColors(out, defaultColor, forceColors),
-		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1", "skaffold"),
+		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1"),
 		timestamps:  timestamps,
 	}
 }
@@ -99,14 +103,21 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
-func WithEventContext(out io.Writer, phase constants.Phase, subtaskID, origin string) io.Writer {
+func WithEventContext(ctx context.Context, out io.Writer, phase constants.Phase, subtaskID string) (io.Writer, context.Context) {
+	ctx = context.WithValue(ctx, log.ContextKey, log.EventContext{
+		Task:    phase,
+		Subtask: subtaskID,
+	})
+
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{
 			MainWriter:  sw.MainWriter,
-			EventWriter: eventV2.NewLogger(phase, subtaskID, origin),
+			EventWriter: eventV2.NewLogger(phase, subtaskID),
+			task:        phase,
+			subtask:     subtaskID,
 			timestamps:  sw.timestamps,
-		}
+		}, ctx
 	}
 
-	return out
+	return out, ctx
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -28,6 +29,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -35,11 +37,12 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
+	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -58,16 +61,30 @@ type ContainerRun struct {
 	BeforeStart func(context.Context, string) error
 }
 
+type ContainerCreateOpts struct {
+	Name        string
+	Image       string
+	Network     string
+	VolumesFrom []string
+	Wait        bool
+	Ports       nat.PortSet
+	Bindings    nat.PortMap
+}
+
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
 	Close() error
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
+	ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error
+	ContainerExists(ctx context.Context, name string) bool
 	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
+	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error)
+	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
 	ImageID(ctx context.Context, ref string) (string, error)
@@ -75,6 +92,8 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
+	NetworkCreate(ctx context.Context, name string) error
+	NetworkRemove(ctx context.Context, name string) error
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
@@ -132,6 +151,95 @@ func (l *localDaemon) Close() error {
 	return l.apiClient.Close()
 }
 
+// ContainerLogs streams logs line by line from a container in the local daemon to the provided PipeWriter.
+func (l *localDaemon) ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error {
+	r, err := l.apiClient.ContainerLogs(ctx, id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
+	if err != nil {
+		return err
+	}
+	rd := bufio.NewReader(r)
+	for {
+		s, err := rd.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			return nil
+		}
+		w.Write([]byte(s))
+	}
+}
+
+func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
+	_, err := l.apiClient.ContainerInspect(ctx, name)
+	return err == nil
+}
+
+// Delete stops, removes, and prunes a running container
+func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
+	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
+		log.Entry(ctx).Warnf("unable to stop running container: %s", err.Error())
+	}
+	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+		return fmt.Errorf("removing stopped container: %w", err)
+	}
+	_, err := l.apiClient.ContainersPrune(ctx, filters.Args{})
+	if err != nil {
+		return fmt.Errorf("pruning removed container: %w", err)
+	}
+	return nil
+}
+
+// Run creates a container from a given image reference, and returns then container ID.
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error) {
+	cfg := &container.Config{
+		Image:        opts.Image,
+		ExposedPorts: opts.Ports,
+	}
+
+	hCfg := &container.HostConfig{
+		NetworkMode:  container.NetworkMode(opts.Network),
+		VolumesFrom:  opts.VolumesFrom,
+		PortBindings: opts.Bindings,
+	}
+	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, opts.Name)
+	if err != nil {
+		return "", err
+	}
+	if err := l.apiClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+		return "", err
+	}
+	if opts.Wait {
+		l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+	}
+	return c.ID, nil
+}
+
+func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
+	nr, err := l.apiClient.NetworkList(ctx, types.NetworkListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, network := range nr {
+		if network.Name == name {
+			return nil
+		}
+	}
+
+	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{})
+	if err != nil {
+		return err
+	}
+	if r.Warning != "" {
+		log.Entry(ctx).Warn(r.Warning)
+	}
+	return nil
+}
+
+func (l *localDaemon) NetworkRemove(ctx context.Context, name string) error {
+	return l.apiClient.NetworkRemove(ctx, name)
+}
+
 // ServerVersion retrieves the version information from the server.
 func (l *localDaemon) ServerVersion(ctx context.Context) (types.Version, error) {
 	return l.apiClient.ServerVersion(ctx)
@@ -175,7 +283,7 @@ func (l *localDaemon) CheckCompatible(a *latestV1.DockerArtifact) error {
 
 // Build performs a docker build and returns the imageID.
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error) {
-	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
+	log.Entry(ctx).Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	if err := l.CheckCompatible(a); err != nil {
 		return "", err
@@ -228,7 +336,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 		var result BuildResult
 		if err := json.Unmarshal(*msg.Aux, &result); err != nil {
-			logrus.Debugln("Unable to parse build output:", err)
+			log.Entry(ctx).Debug("Unable to parse build output:", err)
 			return
 		}
 		imageID = result.ID
@@ -284,7 +392,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 
 		var result PushResult
 		if err := json.Unmarshal(*msg.Aux, &result); err != nil {
-			logrus.Debugln("Unable to parse push output:", err)
+			log.Entry(ctx).Debug("Unable to parse push output:", err)
 			return
 		}
 		digest = result.Digest
@@ -455,6 +563,7 @@ func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageS
 		Filters: filters.NewArgs(filters.Arg("reference", ref)),
 	})
 }
+
 func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
 	usage, err := l.apiClient.DiskUsage(ctx)
 	if err != nil {
@@ -489,6 +598,8 @@ func ToCLIBuildArgs(a *latestV1.DockerArtifact, evaluatedArgs map[string]*string
 	for _, from := range a.CacheFrom {
 		args = append(args, "--cache-from", from)
 	}
+
+	args = append(args, a.CliFlags...)
 
 	if a.Target != "" {
 		args = append(args, "--target", a.Target)
@@ -538,10 +649,10 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 
 		for _, r := range resp {
 			if r.Deleted != "" {
-				logrus.Debugf("deleted image %s\n", r.Deleted)
+				log.Entry(ctx).Debugf("deleted image %s\n", r.Deleted)
 			}
 			if r.Untagged != "" {
-				logrus.Debugf("untagged image %s\n", r.Untagged)
+				log.Entry(ctx).Debugf("untagged image %s\n", r.Untagged)
 			}
 		}
 	}

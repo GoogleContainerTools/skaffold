@@ -17,29 +17,23 @@ limitations under the License.
 package runcontext
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-)
-
-const (
-	emptyNamespace = ""
 )
 
 type RunContext struct {
 	Opts               config.SkaffoldOptions
 	Pipelines          Pipelines
 	KubeContext        string
-	Namespaces         []string
 	WorkingDir         string
 	InsecureRegistries map[string]bool
 	Cluster            config.Cluster
@@ -155,11 +149,11 @@ func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 
 func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
-func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }
 func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
+func (rc *RunContext) GetNamespace() string                          { return rc.Opts.Namespace }
 func (rc *RunContext) AddSkaffoldLabels() bool                       { return rc.Opts.AddSkaffoldLabels }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
@@ -198,9 +192,11 @@ func (rc *RunContext) WaitForDeletions() config.WaitForDeletions     { return rc
 func (rc *RunContext) WatchPollInterval() int                        { return rc.Opts.WatchPollInterval }
 func (rc *RunContext) BuildConcurrency() int                         { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
+func (rc *RunContext) IsDefaultKubeContext() bool                    { return rc.Opts.KubeContext == "" }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
 func (rc *RunContext) RPCPort() int                                  { return rc.Opts.RPCPort }
 func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
+func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
 
 func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline
@@ -214,7 +210,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
-	logrus.Infof("Using kubectl context: %s", kubeContext)
+	log.Entry(context.Background()).Infof("Using kubectl context: %s", kubeContext)
 
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
@@ -222,15 +218,10 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, pipelines)
-	if err != nil {
-		return nil, fmt.Errorf("getting namespace list: %w", err)
-	}
-
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
-		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
+		log.Entry(context.Background()).Warn("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
 	var regList []string
 	regList = append(regList, opts.InsecureRegistries...)
@@ -259,19 +250,8 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		Pipelines:          ps,
 		WorkingDir:         cwd,
 		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 		Cluster:            cluster,
 		RunID:              runID,
 	}, nil
-}
-
-func (rc *RunContext) UpdateNamespaces(ns []string) {
-	if len(ns) == 0 {
-		return
-	}
-	namespaces := util.NewStringSet()
-	namespaces.Insert(append(rc.Namespaces, ns...)...)
-	namespaces.Delete(emptyNamespace)
-	rc.Namespaces = namespaces.ToList()
 }

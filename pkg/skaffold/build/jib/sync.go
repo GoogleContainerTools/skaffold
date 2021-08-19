@@ -27,9 +27,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -72,7 +71,7 @@ func getSyncDiff(ctx context.Context, workspace string, a *latestV1.JibArtifact,
 	// no deletions allowed
 	if len(e.Deleted) != 0 {
 		// change into logging
-		logrus.Debug("Deletions are not supported by jib auto sync at the moment")
+		log.Entry(ctx).Debug("Deletions are not supported by jib auto sync at the moment")
 		return nil, nil, nil
 	}
 

@@ -26,12 +26,12 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -140,9 +140,9 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 	}
 
 	if port != preferredPort {
-		logrus.Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
+		log.Entry(context.Background()).Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
 	} else {
-		logrus.Infof("starting gRPC server on port %d", port)
+		log.Entry(context.Background()).Infof("starting gRPC server on port %d", port)
 	}
 
 	s := grpc.NewServer()
@@ -167,7 +167,7 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 
 	go func() {
 		if err := s.Serve(l); err != nil {
-			logrus.Errorf("failed to start grpc server: %s", err)
+			log.Entry(context.Background()).Errorf("failed to start grpc server: %s", err)
 		}
 	}()
 	return func() error {
@@ -207,9 +207,9 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 	}
 
 	if port != preferredPort {
-		logrus.Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
+		log.Entry(context.Background()).Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
 	} else {
-		logrus.Infof("starting gRPC HTTP server on port %d", port)
+		log.Entry(context.Background()).Infof("starting gRPC HTTP server on port %d", port)
 	}
 
 	server := &http.Server{

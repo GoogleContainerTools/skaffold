@@ -30,10 +30,15 @@ func TestContainerManager(t *testing.T) {
 	testutil.Run(t, "simulation", func(t *testutil.T) {
 		startCount := 0
 		terminatedCount := 0
+		// Override event v1 funcs to do nothing to avoid additional overhead
 		t.Override(&notifyDebuggingContainerStarted, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
-			startCount++
 		})
 		t.Override(&notifyDebuggingContainerTerminated, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
+		})
+		t.Override(&debuggingContainerStartedV2, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
+			startCount++
+		})
+		t.Override(&debuggingContainerTerminatedV2, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
 			terminatedCount++
 		})
 		pod := v1.Pod{
@@ -88,6 +93,6 @@ func TestContainerManagerZeroValue(t *testing.T) {
 	var m *ContainerManager
 
 	// Should not raise a nil dereference
-	m.Start(context.Background(), nil)
+	m.Start(context.Background())
 	m.Stop()
 }

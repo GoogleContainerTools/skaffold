@@ -20,15 +20,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // TopLevelOwnerKey returns a key associated with the top level
 // owner of a Kubernetes resource in the form Kind-Name
-func TopLevelOwnerKey(ctx context.Context, obj metav1.Object, kind string) string {
+func TopLevelOwnerKey(ctx context.Context, obj metav1.Object, kubeContext string, kind string) string {
 	for {
 		or := obj.GetOwnerReferences()
 		if or == nil {
@@ -36,16 +36,16 @@ func TopLevelOwnerKey(ctx context.Context, obj metav1.Object, kind string) strin
 		}
 		var err error
 		kind = or[0].Kind
-		obj, err = ownerMetaObject(ctx, obj.GetNamespace(), or[0])
+		obj, err = ownerMetaObject(ctx, obj.GetNamespace(), kubeContext, or[0])
 		if err != nil {
-			logrus.Warnf("unable to get owner from reference: %v", or[0])
+			log.Entry(ctx).Warnf("unable to get owner from reference: %v", or[0])
 			return ""
 		}
 	}
 }
 
-func ownerMetaObject(ctx context.Context, ns string, owner metav1.OwnerReference) (metav1.Object, error) {
-	client, err := kubernetesclient.Client()
+func ownerMetaObject(ctx context.Context, ns string, kubeContext string, owner metav1.OwnerReference) (metav1.Object, error) {
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return nil, err
 	}

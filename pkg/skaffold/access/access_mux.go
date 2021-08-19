@@ -23,9 +23,9 @@ import (
 
 type AccessorMux []Accessor
 
-func (a AccessorMux) Start(ctx context.Context, out io.Writer, namespaces []string) error {
+func (a AccessorMux) Start(ctx context.Context, out io.Writer) error {
 	for _, accessor := range a {
-		if err := accessor.Start(ctx, out, namespaces); err != nil {
+		if err := accessor.Start(ctx, out); err != nil {
 			return err
 		}
 	}

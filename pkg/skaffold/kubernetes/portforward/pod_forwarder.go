@@ -22,13 +22,13 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -46,6 +46,7 @@ type WatchingPodForwarder struct {
 	entryManager *EntryManager
 	podWatcher   kubernetes.PodWatcher
 	events       chan kubernetes.PodEvent
+	kubeContext  string
 
 	// portSelector returns a possibly-filtered and possibly-generated set of ports for a pod.
 	containerPorts portSelector
@@ -55,11 +56,12 @@ type WatchingPodForwarder struct {
 type portSelector func(*v1.Pod, v1.Container) []v1.ContainerPort
 
 // NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.PodSelector, containerPorts portSelector) *WatchingPodForwarder {
+func NewWatchingPodForwarder(entryManager *EntryManager, kubeContext string, podSelector kubernetes.PodSelector, containerPorts portSelector) *WatchingPodForwarder {
 	return &WatchingPodForwarder{
 		entryManager:   entryManager,
 		podWatcher:     newPodWatcher(podSelector),
 		events:         make(chan kubernetes.PodEvent),
+		kubeContext:    kubeContext,
 		containerPorts: containerPorts,
 	}
 }
@@ -67,7 +69,7 @@ func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.
 func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	p.podWatcher.Register(p.events)
 	p.output = out
-	stopWatcher, err := p.podWatcher.Start(namespaces)
+	stopWatcher, err := p.podWatcher.Start(p.kubeContext, namespaces)
 	if err != nil {
 		return err
 	}
@@ -89,7 +91,7 @@ func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespa
 				pod := evt.Pod
 				if evt.Type != watch.Deleted && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
 					if err := p.portForwardPod(ctx, pod); err != nil {
-						logrus.Warnf("port forwarding pod failed: %s", err)
+						log.Entry(ctx).Warnf("port forwarding pod failed: %s", err)
 					}
 				}
 			}
@@ -104,7 +106,7 @@ func (p *WatchingPodForwarder) Stop() {
 }
 
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
-	ownerReference := topLevelOwnerKey(ctx, pod, pod.Kind)
+	ownerReference := topLevelOwnerKey(ctx, pod, p.kubeContext, pod.Kind)
 	for _, c := range pod.Spec.Containers {
 		for _, port := range p.containerPorts(pod, c) {
 			// get current entry for this container
@@ -123,7 +125,8 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 			if entry.resource.Port.IntVal != entry.localPort {
 				output.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
-			if prevEntry, ok := p.entryManager.forwardedResources.Load(entry.key()); ok {
+			if pe, ok := p.entryManager.forwardedResources.Load(entry.key()); ok {
+				prevEntry := pe.(*portForwardEntry)
 				// Check if this is a new generation of pod
 				if entry.resourceVersion > prevEntry.resourceVersion {
 					p.entryManager.Terminate(prevEntry)
@@ -143,9 +146,10 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	entry := newPortForwardEntry(rv, resource, resource.Name, containerName, portName, ownerReference, 0, true)
 
 	// If we have, return the current entry
-	oldEntry, ok := p.entryManager.forwardedResources.Load(entry.key())
+	oe, ok := p.entryManager.forwardedResources.Load(entry.key())
 
 	if ok {
+		oldEntry := oe.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry, nil
 	}

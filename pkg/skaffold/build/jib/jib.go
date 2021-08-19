@@ -31,9 +31,9 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -233,7 +233,7 @@ func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, c
 		info, err := os.Stat(dep)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logrus.Debugf("could not stat dependency: %s", err)
+				log.Entry(context.Background()).Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
 			return fmt.Errorf("unable to stat file %q: %w", dep, err)
@@ -341,7 +341,7 @@ func baseImageArg(a *latestV1.JibArtifact, r ArtifactResolver, deps []*latestV1.
 		}
 		img, found := r.GetImageTag(d.ImageName)
 		if !found {
-			logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+			log.Entry(context.Background()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 		}
 		if pushImages {
 			// pull image from the registry (prefix `registry://` is optional)

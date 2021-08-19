@@ -66,12 +66,10 @@ type SkaffoldOptions struct {
 	// `CustomLabels` are still applied if this is false. Must only be used in
 	// commands which don't deploy (e.g. `skaffold render`) since the runID
 	// label isn't available.
-	AddSkaffoldLabels bool
-	DetectMinikube    bool
-	// Experimental is the entrypoint to run skaffold v3 before it's fully implemented.
-	Experimental         bool
-	StatusCheck          BoolOrUndefined
+	AddSkaffoldLabels    bool
+	DetectMinikube       bool
 	IterativeStatusCheck bool
+	StatusCheck          BoolOrUndefined
 
 	PortForward        PortForwardOptions
 	CustomTag          string
@@ -99,6 +97,7 @@ type SkaffoldOptions struct {
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile  string
 	RepoCacheDir     string
+	SyncRemoteCache  SyncRemoteCacheOption
 	WaitForDeletions WaitForDeletions
 }
 

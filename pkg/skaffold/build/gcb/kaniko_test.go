@@ -108,6 +108,16 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 		},
 		{
+			description: "with ImageFSExtractRetry",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath:      "Dockerfile",
+				ImageFSExtractRetry: "5",
+			},
+			expectedArgs: []string{
+				"--image-fs-extract-retry", "5",
+			},
+		},
+		{
 			description: "with ImageNameWithDigestFile",
 			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath:          "Dockerfile",
@@ -298,6 +308,16 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 			expectedArgs: []string{
 				"--snapshotMode", "redo",
+			},
+		},
+		{
+			description: "with PushRetry",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				PushRetry:      "9",
+			},
+			expectedArgs: []string{
+				"--push-retry", "9",
 			},
 		},
 		{

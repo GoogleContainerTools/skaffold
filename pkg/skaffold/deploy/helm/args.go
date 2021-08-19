@@ -17,16 +17,17 @@ limitations under the License.
 package helm
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"strconv"
 
 	"github.com/blang/semver"
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -74,7 +75,7 @@ func constructOverrideArgs(r *latestV1.HelmRelease, builds []graph.Artifact, arg
 			envMap[k+suffix] = v
 		}
 	}
-	logrus.Debugf("EnvVarMap: %+v\n", envMap)
+	log.Entry(context.Background()).Debugf("EnvVarMap: %+v\n", envMap)
 
 	for _, k := range sortKeys(r.SetValueTemplates) {
 		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)

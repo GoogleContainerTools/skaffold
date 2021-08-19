@@ -22,15 +22,15 @@ import (
 	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -61,6 +61,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
 		eventV2.CacheCheckInProgress(artifact.ImageName)
+		out, ctx := output.WithEventContext(ctx, out, constants.Build, artifact.ImageName)
 		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
 		result := results[i]
@@ -137,7 +138,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		})
 	}
 
-	logrus.Infoln("Cache check completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Info("Cache check completed in", util.ShowHumanizeTime(time.Since(start)))
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {
@@ -146,12 +147,12 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	}
 
 	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {
-		logrus.Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
+		log.Entry(ctx).Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
 		return append(bRes, alreadyBuilt...), nil
 	}
 
 	if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
-		logrus.Warnf("error saving cache file; caching may not work as expected: %v", err)
+		log.Entry(ctx).Warnf("error saving cache file; caching may not work as expected: %v", err)
 		return append(bRes, alreadyBuilt...), nil
 	}
 

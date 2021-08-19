@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
 // DefaultRepoFn takes an image tag and returns either a new tag with the default repo prefixed, or the original tag if

@@ -17,15 +17,15 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -50,7 +50,7 @@ func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceD
 	bCtx := &builderCtx{artifactStore: s, sourceDependenciesCache: d, RunContext: r}
 	switch {
 	case p.Build.LocalBuild != nil:
-		logrus.Debugln("Using builder: local")
+		log.Entry(context.Background()).Debug("Using builder: local")
 		builder, err := local.NewBuilder(bCtx, p.Build.LocalBuild)
 		if err != nil {
 			return nil, err
@@ -58,12 +58,12 @@ func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceD
 		return builder, nil
 
 	case p.Build.GoogleCloudBuild != nil:
-		logrus.Debugln("Using builder: google cloud")
+		log.Entry(context.Background()).Debug("Using builder: google cloud")
 		builder := gcb.NewBuilder(bCtx, p.Build.GoogleCloudBuild)
 		return builder, nil
 
 	case p.Build.Cluster != nil:
-		logrus.Debugln("Using builder: cluster")
+		log.Entry(context.Background()).Debug("Using builder: cluster")
 		builder, err := cluster.NewBuilder(bCtx, p.Build.Cluster)
 		if err != nil {
 			return nil, err

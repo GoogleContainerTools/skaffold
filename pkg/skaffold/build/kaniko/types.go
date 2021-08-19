@@ -35,6 +35,8 @@ const (
 	DigestFileFlag = "--digest-file"
 	// ForceFlag additional flag
 	ForceFlag = "--force"
+	// ImageFSExtractRetry additional flag
+	ImageFSExtractRetryFlag = "--image-fs-extract-retry"
 	// ImageNameWithDigestFileFlag  additional flag
 	ImageNameWithDigestFileFlag = "--image-name-with-digest-file"
 	// InsecureFlag additional flag
@@ -71,6 +73,8 @@ const (
 	SkipUnusedStagesFlag = "--skip-unused-stages"
 	// SnapshotModeFlag additional flag
 	SnapshotModeFlag = "--snapshotMode"
+	// PushRetryFlag additional flag
+	PushRetryFlag = "--push-retry"
 	// TarPathFlag additional flag
 	TarPathFlag = "--tarPath"
 	// UseNewRunFlag additional flag

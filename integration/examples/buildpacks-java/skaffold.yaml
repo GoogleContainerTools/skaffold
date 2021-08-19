@@ -1,10 +1,11 @@
-apiVersion: skaffold/v2beta19
+apiVersion: skaffold/v2beta22
 kind: Config
 build:
   artifacts:
   - image: skaffold-buildpacks
     buildpacks:
       builder: "gcr.io/buildpacks/builder:v1"
+      trustBuilder: true
       env:
       - GOOGLE_RUNTIME_VERSION=8
 profiles:

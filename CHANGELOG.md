@@ -1,3 +1,174 @@
+# v1.30.0 Release - 08/11/2021
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.30.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.30.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.30.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.30.0`
+
+Note: This release comes with a new config version, `v2beta21`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Support deploy hooks for Skaffold lifecycle hooks. Read more [here](https://skaffold.dev/docs/pipeline-stages/lifecycle-hooks/#before-deploy-and-after-deploy-only-for-kubectl-deployer-1) [#6376](https://github.com/GoogleContainerTools/skaffold/pull/6376)
+* Add support for Kaniko flag --image-fs-extract-retry [#6380](https://github.com/GoogleContainerTools/skaffold/pull/6380)
+* Support passing additional CLI flags to docker build [#6343](https://github.com/GoogleContainerTools/skaffold/pull/6343)
+
+
+Fixes:
+* remove single `kubeContext` validation [#6394](https://github.com/GoogleContainerTools/skaffold/pull/6394)
+* Set exit code 127 for Skaffold CLI validation errors [#6401](https://github.com/GoogleContainerTools/skaffold/pull/6401)
+* Fix status check showing unhealthy pods from previous dev iteration [#6370](https://github.com/GoogleContainerTools/skaffold/pull/6370)
+* Ignore leading 'v' when parsing helm versions [#6362](https://github.com/GoogleContainerTools/skaffold/pull/6362)
+* fix: make `client.Client` kubernetesContext aware [#6368](https://github.com/GoogleContainerTools/skaffold/pull/6368)
+* ResourceForwarder should wait for its forwards [#6332](https://github.com/GoogleContainerTools/skaffold/pull/6332)
+* hooks: prepend pod/container name to container hooks log lines [#6337](https://github.com/GoogleContainerTools/skaffold/pull/6337)
+* Fix issue with displaying survey prompts when we shouldn't [#6354](https://github.com/GoogleContainerTools/skaffold/pull/6354)
+* fix: remote manifest image substitution [#6342](https://github.com/GoogleContainerTools/skaffold/pull/6342)
+* fix build --push=false for missing kubeconfig [#6366](https://github.com/GoogleContainerTools/skaffold/pull/6366)
+* Ensure Cleanup is called if Deploy creates resources but fails [#6345](https://github.com/GoogleContainerTools/skaffold/pull/6345)
+
+Updates and Refactors:
+* Add functionality to support patterns in `--user` flag [#6402](https://github.com/GoogleContainerTools/skaffold/pull/6402)
+* Improvements to upcoming Event Api v2 [#6399](https://github.com/GoogleContainerTools/skaffold/pull/6399), [#6407](https://github.com/GoogleContainerTools/skaffold/pull/6407), [#6395](https://github.com/GoogleContainerTools/skaffold/pull/6395)
+* Change parsing templated image warning to debug info [#6398](https://github.com/GoogleContainerTools/skaffold/pull/6398)
+
+Docs, Test, and Release Updates:
+* hooks: update deploy docs [#6386](https://github.com/GoogleContainerTools/skaffold/pull/6386)
+* [design proposal] Add config option 'deploy.config.transformableAllowList' [#6236](https://github.com/GoogleContainerTools/skaffold/pull/6236)
+* GitLab (with capital 'L') [#6384](https://github.com/GoogleContainerTools/skaffold/pull/6384)
+* Validate generated schemas in generator script [#6385](https://github.com/GoogleContainerTools/skaffold/pull/6385)
+* fix: schema gen for `ContainerHook` [#6372](https://github.com/GoogleContainerTools/skaffold/pull/6372)
+* Add trace-level port-allocation logs [#6293](https://github.com/GoogleContainerTools/skaffold/pull/6293)
+* Bump cloud.google.com/go/storage from 1.10.0 to 1.16.0 [#6324](https://github.com/GoogleContainerTools/skaffold/pull/6324)
+* Mark GCP Buildpacks builder as trusted in the examples [#6284](https://github.com/GoogleContainerTools/skaffold/pull/6284)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Ahmet Alp Balkan
+- Brian de Alwis
+- David Zumbrunnen
+- Gaurav
+- Ke Zhu
+- Marlon Gamez
+- Mike Verbanic
+- Nick Kubala
+- Pradeep Kumar
+- Tejal Desai
+- Yanshu
+- dependabot[bot]
+
+# v1.29.0 Release - 07/30/2021
+Note: This release comes with a new config version, `v2beta20`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Introducing Skaffold lifecycle hooks [#6330](https://github.com/GoogleContainerTools/skaffold/pull/6330)
+* Rename Skaffold's `master` branch to `main` [#6263](https://github.com/GoogleContainerTools/skaffold/pull/6263)
+* Add state to event handler to track `logrus` output events [#6272](https://github.com/GoogleContainerTools/skaffold/pull/6272)
+* fix: kubeContext override via flag [#6331](https://github.com/GoogleContainerTools/skaffold/pull/6331)
+* Added developer journey tutorial [#6201](https://github.com/GoogleContainerTools/skaffold/pull/6201)
+
+Fixes:
+* Fix tail false but still log issue [#6299](https://github.com/GoogleContainerTools/skaffold/pull/6299)
+* skip manifest validation for default `kubectl deployer` [#6294](https://github.com/GoogleContainerTools/skaffold/pull/6294)
+* Fix switched container/pod names in app log event [#6215](https://github.com/GoogleContainerTools/skaffold/pull/6215)
+* fix remote branch lookup [#6269](https://github.com/GoogleContainerTools/skaffold/pull/6269)
+* [cherry-pick] Fix Workdir error when --filename flag is used.  [#6247](https://github.com/GoogleContainerTools/skaffold/pull/6247)
+* Make skaffold reproducible [#6238](https://github.com/GoogleContainerTools/skaffold/pull/6238)
+
+Updates and Refactors:
+* Give `logrus.Hook` implementation information about task and subtask [#6313](https://github.com/GoogleContainerTools/skaffold/pull/6313)
+* Add `logrus.Logger` return type on `WithEventContext()` [#6309](https://github.com/GoogleContainerTools/skaffold/pull/6309)
+* Add `logrus` hook for sending `SkaffoldLogEvent`s [#6250](https://github.com/GoogleContainerTools/skaffold/pull/6250)
+
+* Prefix port forward links with `http://` [#6295](https://github.com/GoogleContainerTools/skaffold/pull/6295)
+* Set output event context in cache check, tag generation, status check, port forward [#6234](https://github.com/GoogleContainerTools/skaffold/pull/6234)
+
+
+Docs, Test, and Release Updates:
+* Update deps and restore k3d tests [#6280](https://github.com/GoogleContainerTools/skaffold/pull/6280)
+* Remove log tail test for nodejs example [#6275](https://github.com/GoogleContainerTools/skaffold/pull/6275)
+* `git fetch` origin/main before `make checks` [#6274](https://github.com/GoogleContainerTools/skaffold/pull/6274)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Benjamin P. Jung
+- Brian de Alwis
+- Chris Willis
+- dependabot[bot]
+- elnoro
+- Gaurav
+- jelle van der Waa
+- Marlon Gamez
+- Nick Kubala
+- Tejal Desai
+- Yanshu
+- Yuwen Ma
+
+
+# v1.28.0 Release - 07/14/2021
+Note: This release comes with a new config version, `v2beta19`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Skaffold healthchecks can now be run per deployer using the `--iterative-status-check=true` flag (fixes [5774](https://github.com/GoogleContainerTools/skaffold/issues/5774)). See docs [here](https://skaffold.dev/docs/workflows/ci-cd/#waiting-for-skaffold-deployments-using-healthcheck).
+* If you use `helm` with `skaffold` you might see a new survey asking for feedback on an upcoming redesign of that integration. 
+
+New Features:
+* Allow iterative status checks [#6115](https://github.com/GoogleContainerTools/skaffold/pull/6115)
+* Add survey config and framework to show feature surveys to skaffold users. [#6185](https://github.com/GoogleContainerTools/skaffold/pull/6185)
+
+Fixes:
+* Make completion work again [#6138](https://github.com/GoogleContainerTools/skaffold/pull/6138)
+* Propagate kaniko environment to GCB [#6181](https://github.com/GoogleContainerTools/skaffold/pull/6181)
+* Fix couldn't start notify trigger in multi-config projects [#6114](https://github.com/GoogleContainerTools/skaffold/pull/6114)
+* Fetch namespaces at time of sync [#6135](https://github.com/GoogleContainerTools/skaffold/pull/6135)
+* Replace missing template values with empty string [#6136](https://github.com/GoogleContainerTools/skaffold/pull/6136)
+* Fix survey active logic [#6194](https://github.com/GoogleContainerTools/skaffold/pull/6194)
+* Don't update survey prompt if survey prompt is not shown to stdout [#6192](https://github.com/GoogleContainerTools/skaffold/pull/6192)
+* change ptypes call to timestamppb to fix linters [#6164](https://github.com/GoogleContainerTools/skaffold/pull/6164)
+
+Updates and Refactors:
+* Update Skaffold dependencies [#6155](https://github.com/GoogleContainerTools/skaffold/pull/6155)
+* Simplify `--timestamps` output [#6146](https://github.com/GoogleContainerTools/skaffold/pull/6146)
+* Update Jib build plugin versions after 3.1.2 release [#6168](https://github.com/GoogleContainerTools/skaffold/pull/6168)
+* Update feature maturities [#6202](https://github.com/GoogleContainerTools/skaffold/pull/6202)
+* Add logic to show user survey in DisplaySurveyPrompt flow. [#6196](https://github.com/GoogleContainerTools/skaffold/pull/6196)
+* refactor: Read globalConfig instead of kubecontext config for survey config [#6191](https://github.com/GoogleContainerTools/skaffold/pull/6191)
+* Add information about workspace and dockerfile to artifact metadata [#6111](https://github.com/GoogleContainerTools/skaffold/pull/6111)
+* Added template expansion for helm chart version (#5709) [#6157](https://github.com/GoogleContainerTools/skaffold/pull/6157)
+* add set command for survey ids [#6197](https://github.com/GoogleContainerTools/skaffold/pull/6197)
+* Bump schema version to v2beta19 [#6116](https://github.com/GoogleContainerTools/skaffold/pull/6116)
+
+Docs, Test, and Release Updates:
+* Create SECURITY.md [#6140](https://github.com/GoogleContainerTools/skaffold/pull/6140)
+* Update Jib docs with some advanced usage examples [#6169](https://github.com/GoogleContainerTools/skaffold/pull/6169)
+* Disable k3d integration tests [#6171](https://github.com/GoogleContainerTools/skaffold/pull/6171)
+* Check release workflow [#6188](https://github.com/GoogleContainerTools/skaffold/pull/6188)
+* design proposal to show user survey other than Hats [#6186](https://github.com/GoogleContainerTools/skaffold/pull/6186)
+* Doc tweaks [#6176](https://github.com/GoogleContainerTools/skaffold/pull/6176)
+* working cloud profiler export for skaffold [#6066](https://github.com/GoogleContainerTools/skaffold/pull/6066)
+* Set specific permissions for workflows [#6139](https://github.com/GoogleContainerTools/skaffold/pull/6139)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Brian de Alwis
+- Chanseok Oh
+- Gaurav
+- Hidenori Sugiyama
+- Marlon Gamez
+- Nick Kubala
+- Pablo Caderno
+- Tejal Desai
+- Yuwen Ma
+
 # v1.27.0 Release - 06/29/2021
 Note: This release comes with a new config version, `v2beta18`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
 
@@ -367,7 +538,7 @@ Note: This release comes with a new config version, `v2beta14`. To upgrade your 
 
 Highlights:
 * More granular control of `port-forward` options. Checkout the updated [documentation](https://skaffold.dev/docs/pipeline-stages/port-forwarding/) for details. 
-* `InputDigest` image tagging strategy from the [Improve taggers proposal](https://github.com/GoogleContainerTools/skaffold/blob/master/docs/design_proposals/digest-tagger.md) has landed.
+* `InputDigest` image tagging strategy from the [Improve taggers proposal](https://github.com/GoogleContainerTools/skaffold/blob/main/docs/design_proposals/digest-tagger.md) has landed.
 
 New Features:
 * Revise port-forward behaviour [#5554](https://github.com/GoogleContainerTools/skaffold/pull/5554)
@@ -450,7 +621,7 @@ Highlights:
 * New command `skaffold apply` for when you want Skaffold to simply deploy your pre-rendered Kubernetes manifests.
 * Debugging Python application using `skaffold debug` now uses `debugpy` by default.
 * New tutorials for [`artifact dependencies`](https://skaffold.dev/docs/tutorials/artifact-dependencies/) and [`configuration dependencies`](https://skaffold.dev/docs/tutorials/config-dependencies/) features.
-* New example project [`examples/custom-buildx`](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom-buildx) showing how to build multi-arch images using Skaffold.
+* New example project [`examples/custom-buildx`](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom-buildx) showing how to build multi-arch images using Skaffold.
 
 New Features:
 * Add 'skaffold apply' command [#5543](https://github.com/GoogleContainerTools/skaffold/pull/5543)
@@ -892,7 +1063,7 @@ Note: This release comes with a new config version, `v2beta9`. To upgrade your s
 Highlights:
 * Artifact Modules Support: Skaffold allow users to specify artifact dependencies for dockerfile artifacts. 
 
-  To use, look at [microservice example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices). *Docs coming soon*
+  To use, look at [microservice example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/microservices). *Docs coming soon*
 * Skaffold init support for polyglot-maven projects [#4871](https://github.com/GoogleContainerTools/skaffold/pull/4871)
 * Skaffold `debug` helper images now moved to gcr.io/k8s-skaffold/skaffold-debug-support [#4961](https://github.com/GoogleContainerTools/skaffold/pull/4961)
 

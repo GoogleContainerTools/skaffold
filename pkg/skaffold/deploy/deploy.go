@@ -32,8 +32,8 @@ import (
 // the build results to a Kubernetes cluster
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
-	// cluster. Returns the list of impacted namespaces.
-	Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error)
+	// cluster.
+	Deploy(context.Context, io.Writer, []graph.Artifact) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered

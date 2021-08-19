@@ -24,33 +24,39 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
+
+type Logger interface {
+	log.Logger
+	GetFormatter() Formatter
+}
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
-	output      io.Writer
-	kubectlcli  *kubectl.CLI
-	config      Config
-	podSelector kubernetes.PodSelector
-	podWatcher  kubernetes.PodWatcher
-	colorPicker kubernetes.ColorPicker
-
+	output            io.Writer
+	kubectlcli        *kubectl.CLI
+	config            Config
+	podSelector       kubernetes.PodSelector
+	podWatcher        kubernetes.PodWatcher
+	colorPicker       output.ColorPicker
+	formatter         Formatter
 	muted             int32
 	stopWatcher       func()
 	sinceTime         time.Time
 	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
-	outputLock        sync.Mutex
+	namespaces        *[]string
 }
 
 type Config interface {
@@ -60,22 +66,34 @@ type Config interface {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, config Config) *LogAggregator {
-	return &LogAggregator{
+func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces *[]string, config Config) *LogAggregator {
+	a := &LogAggregator{
 		kubectlcli:  cli,
 		config:      config,
 		podSelector: podSelector,
 		podWatcher:  kubernetes.NewPodWatcher(podSelector),
-		colorPicker: kubernetes.NewColorPicker(),
+		colorPicker: output.NewColorPicker(),
 		stopWatcher: func() {},
 		events:      make(chan kubernetes.PodEvent),
+		namespaces:  namespaces,
 	}
+	a.formatter = func(p v1.Pod, c v1.ContainerStatus, isMuted func() bool) log.Formatter {
+		pod := p
+		return newKubernetesLogFormatter(config, a.colorPicker, isMuted, &pod, c)
+	}
+	return a
+}
+
+func (a *LogAggregator) GetFormatter() Formatter {
+	return a.formatter
 }
 
 // RegisterArtifacts tracks the provided build artifacts in the colorpicker
 func (a *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
 	// image tags are added to the podSelector by the deployer, which are picked up by the podWatcher
-	// we just need to make sure the colorPicker knows about them.
+	// we just need to make sure the colorPicker knows about the base images.
+	// artifact.ImageName does not have a default repo substitution applied to it, so we use artifact.Tag.
+	// TODO(nkubala) [07/15/22]: can we apply default repo to artifact.Image and avoid stripping tags?
 	for _, artifact := range artifacts {
 		a.colorPicker.AddImage(artifact.Tag)
 	}
@@ -92,7 +110,7 @@ func (a *LogAggregator) SetSince(t time.Time) {
 
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
-func (a *LogAggregator) Start(ctx context.Context, out io.Writer, namespaces []string) error {
+func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 	if a == nil {
 		// Logs are not activated.
 		return nil
@@ -101,7 +119,7 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer, namespaces []s
 	a.output = out
 
 	a.podWatcher.Register(a.events)
-	stopWatcher, err := a.podWatcher.Start(namespaces)
+	stopWatcher, err := a.podWatcher.Start(a.kubectlcli.KubeContext, *a.namespaces)
 	a.stopWatcher = stopWatcher
 	if err != nil {
 		return err
@@ -121,6 +139,10 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer, namespaces []s
 
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				pod := evt.Pod
+				if evt.Type == watch.Deleted {
+					continue
+				}
+
 				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.ContainerID == "" {
 						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
@@ -129,7 +151,7 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer, namespaces []s
 						continue
 					}
 
-					if !a.trackedContainers.add(c.ContainerID) {
+					if !a.trackedContainers.add(c.ContainerID) && a.config.Tail() {
 						go a.streamContainerLogs(ctx, pod, c)
 					}
 				}
@@ -162,7 +184,7 @@ func sinceSeconds(d time.Duration) int64 {
 }
 
 func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, container v1.ContainerStatus) {
-	logrus.Infof("Streaming logs from pod: %s container: %s", pod.Name, container.Name)
+	olog.Entry(ctx).Infof("Streaming logs from pod: %s container: %s", pod.Name, container.Name)
 
 	// In theory, it's more precise to use --since-time='' but there can be a time
 	// difference between the user's machine and the server.
@@ -175,60 +197,15 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 			// Don't print errors if the user interrupted the logs
 			// or if the logs were interrupted because of a configuration change
 			if ctx.Err() != context.Canceled {
-				logrus.Warn(err)
+				olog.Entry(ctx).Warn(err)
 			}
 		}
 		_ = tw.Close()
 	}()
 
-	headerColor := a.colorPicker.Pick(pod)
-	prefix := a.prefix(pod, container)
-	if err := stream.StreamRequest(ctx, a.output, headerColor, prefix, pod.Name, container.Name, make(chan bool), &a.outputLock, a.IsMuted, tr); err != nil {
-		logrus.Errorf("streaming request %s", err)
+	if err := stream.StreamRequest(ctx, a.output, a.formatter(*pod, container, a.IsMuted), tr); err != nil {
+		olog.Entry(ctx).Errorf("streaming request %s", err)
 	}
-}
-
-func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	var c latestV1.Pipeline
-	var present bool
-	for _, container := range pod.Spec.Containers {
-		if c, present = a.config.PipelineForImage(tag.StripTag(container.Image, false)); present {
-			break
-		}
-	}
-	if !present {
-		c = a.config.DefaultPipeline()
-	}
-	switch c.Deploy.Logs.Prefix {
-	case "auto":
-		if pod.Name != container.Name {
-			return podAndContainerPrefix(pod, container)
-		}
-		return autoPrefix(pod, container)
-	case "container":
-		return containerPrefix(container)
-	case "podAndContainer":
-		return podAndContainerPrefix(pod, container)
-	case "none":
-		return ""
-	default:
-		panic("unsupported prefix: " + c.Deploy.Logs.Prefix)
-	}
-}
-
-func autoPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	if pod.Name != container.Name {
-		return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
-	}
-	return fmt.Sprintf("[%s]", container.Name)
-}
-
-func containerPrefix(container v1.ContainerStatus) string {
-	return fmt.Sprintf("[%s]", container.Name)
-}
-
-func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 }
 
 // Mute mutes the logs.
@@ -247,7 +224,6 @@ func (a *LogAggregator) Unmute() {
 		// Logs are not activated.
 		return
 	}
-
 	atomic.StoreInt32(&a.muted, 0)
 }
 
@@ -265,12 +241,19 @@ type trackedContainers struct {
 // was already tracked.
 func (t *trackedContainers) add(id string) bool {
 	t.Lock()
+	defer t.Unlock()
 	alreadyTracked := t.ids[id]
 	if t.ids == nil {
 		t.ids = map[string]bool{}
 	}
 	t.ids[id] = true
-	t.Unlock()
 
 	return alreadyTracked
 }
+
+// NoopLogger is used in tests. It will never retrieve any logs from any resources.
+type NoopLogger struct {
+	*log.NoopLogger
+}
+
+func (*NoopLogger) GetFormatter() Formatter { return nil }

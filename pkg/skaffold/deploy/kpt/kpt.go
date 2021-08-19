@@ -52,6 +52,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -96,6 +97,8 @@ type Deployer struct {
 	kubeContext        string
 	kubeConfig         string
 	namespace          string
+
+	namespaces *[]string
 }
 
 type Config interface {
@@ -109,16 +112,21 @@ type Config interface {
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
-
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		olog.Entry(context.Background()).Warn("unable to parse namespaces - deploy might not work correctly!")
+	}
+	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
 	return &Deployer{
 		KptDeploy:          d,
 		podSelector:        podSelector,
-		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller),
-		debugger:           component.NewDebugger(cfg.Mode(), podSelector),
+		namespaces:         &namespaces,
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:        component.NewImageLoader(cfg, kubectl),
-		logger:             component.NewLogger(cfg, kubectl, podSelector),
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
-		syncer:             component.NewSyncer(cfg, kubectl),
+		logger:             logger,
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:             component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labeller.Labels(),
 		globalConfig:       cfg.GlobalConfig(),
@@ -127,6 +135,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDep
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
 	}
+}
+
+func (k *Deployer) trackNamespaces(namespaces []string) {
+	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -212,7 +224,7 @@ func versionCheck(dir string, stdout io.Writer) error {
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kpt",
 	})
@@ -220,33 +232,33 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// Check that the cluster is reachable.
 	// This gives a better error message when the cluster can't
 	// be reached.
-	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
-		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	if err := kubernetes.FailIfClusterIsNotReachable(k.kubeContext); err != nil {
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
 	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_sanityCheck")
 	if err := sanityCheck(k.Dir, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_loadImages")
 	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 	manifests, err := k.renderManifests(childCtx, builds)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	if len(manifests) == 0 {
 		endTrace()
-		return nil, nil
+		return nil
 	}
 	endTrace()
 
@@ -261,13 +273,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_getApplyDir")
 	applyDir, err := k.getApplyDir(childCtx)
 	if err != nil {
-		return nil, fmt.Errorf("getting applyDir: %w", err)
+		return fmt.Errorf("getting applyDir: %w", err)
 	}
 	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_manifest.Write")
 	if err = sink(ctx, []byte(manifests.String()), applyDir); err != nil {
-		return nil, err
+		return err
 	}
 	endTrace()
 
@@ -277,12 +289,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	k.TrackBuildArtifacts(builds)
 	endTrace()
-	return namespaces, nil
+	k.trackNamespaces(namespaces)
+	return nil
 }
 
 // Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.

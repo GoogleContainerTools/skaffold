@@ -19,15 +19,16 @@ package helm
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 func parseReleaseInfo(namespace string, b *bufio.Reader) []types.Artifact {
@@ -40,22 +41,22 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []types.Artifact {
 			break
 		}
 		if err != nil {
-			logrus.Infof("error parsing object from string: %s", err.Error())
+			log.Entry(context.Background()).Infof("error parsing object from string: %s", err.Error())
 			continue
 		}
 		objNamespace, err := getObjectNamespaceIfDefined(doc, namespace)
 		if err != nil {
-			logrus.Infof("error parsing object from string: %s", err.Error())
+			log.Entry(context.Background()).Infof("error parsing object from string: %s", err.Error())
 			continue
 		}
 		obj, err := parseRuntimeObject(objNamespace, doc)
 		if err != nil {
 			if i > 0 {
-				logrus.Infof(err.Error())
+				log.Entry(context.Background()).Info(err.Error())
 			}
 		} else {
 			results = append(results, *obj)
-			logrus.Debugf("found deployed object: %+v", obj.Obj)
+			log.Entry(context.Background()).Debugf("found deployed object: %+v", obj.Obj)
 		}
 	}
 

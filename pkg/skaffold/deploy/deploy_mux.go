@@ -45,6 +45,11 @@ type DeployerMux struct {
 	deployers            []Deployer
 }
 
+type deployerWithHooks interface {
+	PreDeployHooks(context.Context, io.Writer) error
+	PostDeployHooks(context.Context, io.Writer) error
+}
+
 func NewDeployerMux(deployers []Deployer, iterativeStatusCheck bool) Deployer {
 	return DeployerMux{deployers: deployers, iterativeStatusCheck: iterativeStatusCheck}
 }
@@ -99,33 +104,41 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 	}
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {
-	seenNamespaces := util.NewStringSet()
-
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
-		w = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i), "skaffold")
+		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
-
-		namespaces, err := deployer.Deploy(ctx, w, as)
-		if err != nil {
+		deployHooks, ok := deployer.(deployerWithHooks)
+		if ok {
+			if err := deployHooks.PreDeployHooks(ctx, w); err != nil {
+				return err
+			}
+		}
+		if err := deployer.Deploy(ctx, w, as); err != nil {
 			eventV2.DeployFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
+			return err
 		}
-		seenNamespaces.Insert(namespaces...)
-		if m.iterativeStatusCheck {
-			if err = deployer.GetStatusMonitor().Check(ctx, w); err != nil {
+		// Always run iterative status check if there are deploy hooks.
+		// This is required otherwise the deploy hooks can get erreneously executed on older pods from a previous deployment.
+		if ok || m.iterativeStatusCheck {
+			if err := deployer.GetStatusMonitor().Check(ctx, w); err != nil {
 				eventV2.DeployFailed(i, err)
 				endTrace(instrumentation.TraceEndError(err))
-				return nil, err
+				return err
+			}
+		}
+		if ok {
+			if err := deployHooks.PostDeployHooks(ctx, w); err != nil {
+				return err
 			}
 		}
 		eventV2.DeploySucceeded(i)
 		endTrace()
 	}
 
-	return seenNamespaces.ToList(), nil
+	return nil
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {

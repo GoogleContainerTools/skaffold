@@ -33,7 +33,6 @@ import (
 	"github.com/blang/semver"
 	backoff "github.com/cenkalti/backoff/v4"
 	shell "github.com/kballard/go-shellquote"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -56,6 +55,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -67,7 +67,7 @@ import (
 
 var (
 	// versionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
-	versionRegex = regexp.MustCompile(`v(\d[\w.\-]+)`)
+	versionRegex = regexp.MustCompile(`v?(\d[\w.\-]+)`)
 
 	// helm3Version represents the version cut-off for helm3 behavior
 	helm3Version  = semver.MustParse("3.0.0-beta.0")
@@ -102,6 +102,8 @@ type Deployer struct {
 	kubeConfig  string
 	namespace   string
 	configFile  string
+
+	namespaces *[]string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -145,16 +147,21 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 
 	podSelector := kubernetes.NewImageList()
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
-
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		olog.Entry(context.Background()).Warn("unable to parse namespaces - deploy might not work correctly!")
+	}
+	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
-		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller),
-		debugger:       component.NewDebugger(cfg.Mode(), podSelector),
+		namespaces:     &namespaces,
+		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:    component.NewImageLoader(cfg, kubectl),
-		logger:         component.NewLogger(cfg, kubectl, podSelector),
-		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller),
-		syncer:         component.NewSyncer(cfg, kubectl),
+		logger:         logger,
+		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:         component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -166,6 +173,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 		enableDebug:    cfg.Mode() == config.RunModes.Debug,
 		isMultiConfig:  cfg.IsMultiConfig(),
 	}, nil
+}
+
+func (h *Deployer) trackNamespaces(namespaces []string) {
+	*h.namespaces = deployutil.ConsolidateNamespaces(*h.namespaces, namespaces)
 }
 
 func (h *Deployer) GetAccessor() access.Accessor {
@@ -198,7 +209,7 @@ func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
@@ -207,18 +218,18 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// Check that the cluster is reachable.
 	// This gives a better error message when the cluster can't
 	// be reached.
-	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
-		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	if err := kubernetes.FailIfClusterIsNotReachable(h.kubeContext); err != nil {
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
-	logrus.Infof("Deploying with helm v%s ...", h.bV)
+	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.bV)
 
 	var dRes []types.Artifact
 	nsMap := map[string]struct{}{}
@@ -228,15 +239,15 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
 		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
+			return userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
 		}
 		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV, chartVersion)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("deploying %q", releaseName), err)
+			return userErr(fmt.Sprintf("deploying %q", releaseName), err)
 		}
 
 		// collect namespaces
@@ -256,8 +267,8 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		warnAboutUnusedImages(builds, valuesSet)
 	}
 
-	if err := label.Apply(ctx, h.labels, dRes); err != nil {
-		return nil, helmLabelErr(fmt.Errorf("adding labels: %w", err))
+	if err := label.Apply(ctx, h.labels, dRes, h.kubeContext); err != nil {
+		return helmLabelErr(fmt.Errorf("adding labels: %w", err))
 	}
 
 	// Collect namespaces in a string
@@ -267,7 +278,8 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	h.TrackBuildArtifacts(builds)
-	return namespaces, nil
+	h.trackNamespaces(namespaces)
+	return nil
 }
 
 // Dependencies returns a list of files that the deployer depends on.
@@ -477,17 +489,17 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		opts.flags = h.Flags.Install
 	} else {
 		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
-			logrus.Infof("Release %s already installed...", releaseName)
+			olog.Entry(ctx).Infof("Release %s already installed...", releaseName)
 			return []types.Artifact{}, nil
 		} else if r.UpgradeOnChange == nil && r.RemoteChart != "" {
-			logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
+			olog.Entry(ctx).Infof("Release %s not upgraded as it is remote...", releaseName)
 			return []types.Artifact{}, nil
 		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
 	if !r.SkipBuildDependencies && r.ChartPath != "" {
-		logrus.Infof("Building helm dependencies...")
+		olog.Entry(ctx).Info("Building helm dependencies...")
 
 		if err := h.exec(ctx, out, false, nil, "dep", "build", r.ChartPath); err != nil {
 			return nil, userErr("building helm dependencies", err)
@@ -551,13 +563,13 @@ func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, n
 			args := getArgs(releaseName, namespace)
 			args = append(args, "--template", "{{.Release.Manifest}}")
 			if err := h.exec(ctx, &b, false, nil, args...); err != nil {
-				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
+				olog.Entry(ctx).Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
 				return err
 			}
 			return nil
 		}, opts)
 
-	logrus.Debug(b.String())
+	olog.Entry(ctx).Debug(b.String())
 
 	return b, err
 }

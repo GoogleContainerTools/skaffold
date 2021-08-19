@@ -17,13 +17,15 @@ limitations under the License.
 package context
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // For testing
@@ -49,17 +51,22 @@ func ConfigureKubeConfig(cliKubeConfig, cliKubeContext string) {
 		kubeContext = cliKubeContext
 		kubeConfigFile = cliKubeConfig
 		if kubeContext != "" {
-			logrus.Infof("Activated kube-context %q", kubeContext)
+			log.Entry(context.Background()).Infof("Activated kube-context %q", kubeContext)
 		}
 	})
 }
 
-// GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.
+// GetDefaultRestClientConfig returns a REST client config for API calls against the Kubernetes API.
 // If ConfigureKubeConfig was called before, the CurrentContext will be overridden.
 // The kubeconfig used will be cached for the life of the skaffold process after the first call.
 // If the CurrentContext is empty and the resulting config is empty, this method attempts to
 // create a RESTClient with an in-cluster config.
-func GetRestClientConfig() (*restclient.Config, error) {
+func GetDefaultRestClientConfig() (*restclient.Config, error) {
+	return getRestClientConfig(kubeContext, kubeConfigFile)
+}
+
+// GetRestClientConfig returns a REST client config for API calls against the Kubernetes API for the given context.
+func GetRestClientConfig(kubeContext string) (*restclient.Config, error) {
 	return getRestClientConfig(kubeContext, kubeConfigFile)
 }
 
@@ -77,7 +84,7 @@ func GetClusterInfo(kctx string) (*clientcmdapi.Cluster, error) {
 }
 
 func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
-	logrus.Debugf("getting client config for kubeContext: `%s`", kctx)
+	log.Entry(context.Background()).Debugf("getting client config for kubeContext: `%s`", kctx)
 
 	rawConfig, err := getCurrentConfig()
 	if err != nil {
@@ -87,7 +94,7 @@ func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, clientcmd.NewDefaultClientConfigLoadingRules())
 	restConfig, err := clientConfig.ClientConfig()
 	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
-		logrus.Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
+		log.Entry(context.Background()).Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
 		restConfig, err := restclient.InClusterConfig()
 		if err != nil {
 			return restConfig, fmt.Errorf("error creating REST client config in-cluster: %w", err)

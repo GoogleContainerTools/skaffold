@@ -18,12 +18,11 @@ package ko
 
 import (
 	"testing"
-
-	kobuild "github.com/google/ko/pkg/build"
 )
 
-func TestStub(t *testing.T) {
-	if KoScheme != kobuild.StrictScheme {
-		t.Fatal()
+func TestNewArtifactBuilderCanPublishImages(t *testing.T) {
+	b := NewArtifactBuilder(nil, true)
+	if b.publishImages == nil {
+		t.Errorf("constructor function should populate publishImages func")
 	}
 }

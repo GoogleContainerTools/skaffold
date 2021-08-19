@@ -1,5 +1,5 @@
 ---
-title: "Using Skaffold for CI/CD with Gitlab"
+title: "Using Skaffold for CI/CD with GitLab"
 linkTitle: "Skaffold in CI/CD"
 weight: 100
 ---
@@ -9,7 +9,7 @@ Skaffold is a tool which is non-opinionated about the CI/CD tool you should use 
 
 To facilitate building and deploying images in CI/CD, skaffold offers docker images which you can build on top of. If that doesn’t work for your use-case, you can make your own Dockerfile and pull in skaffold and its dependencies using curl.
 
-Let us have a look at how we can use Skaffold with Gitlab CI.
+Let us have a look at how we can use Skaffold with GitLab CI.
 
 ## Step 1: Getting the project and Dockerfile ready
 
@@ -143,7 +143,7 @@ Enabling file synchronization would avoid the need to rebuild the images repeate
 
 ## Step 7: Setting up authentication with the registry
 
-As you may already know, there are a lot of places where you can host images namely [Docker Hub](https://hub.docker.com/), [GCR](https://cloud.google.com/container-registry), [Gitlab Registry](https://docs.gitlab.com/ee/user/packages/container_registry/), [Quay](https://quay.io/) and so on.
+As you may already know, there are a lot of places where you can host images namely [Docker Hub](https://hub.docker.com/), [GCR](https://cloud.google.com/container-registry), [GitLab Registry](https://docs.gitlab.com/ee/user/packages/container_registry/), [Quay](https://quay.io/) and so on.
 
 The way you authenticate is specific to the registry provider of your choice. For eg. you may choose to do a `username-password` authentication with DockerHub or authenticate using service accounts in `GCR` and so on.
 
@@ -256,9 +256,9 @@ And we would need to pass the URL to the DIND service when we do builds in the p
 
 Now that we have Skaffold ready and working locally, we look at the CI pipeline.
 
-Here is a sample pipeline using Gitlab CI and if you are new to it, you can refer the docs [here](https://docs.gitlab.com/ee/ci/quick_start/). Also, you might want to look at how to define Gitlab CI/CD environment variables [here](https://docs.gitlab.com/ee/ci/variables/)
+Here is a sample pipeline using GitLab CI and if you are new to it, you can refer the docs [here](https://docs.gitlab.com/ee/ci/quick_start/). Also, you might want to look at how to define GitLab CI/CD environment variables [here](https://docs.gitlab.com/ee/ci/variables/)
 
-This pipeline might look complicated at first glance, but most of it related to configuring access for deploying to GCP and configure Gitlab's Docker-in-Docker support to cache artifacts between builds. What is important to note is that we use Skaffold to do all the builds and deployments.
+This pipeline might look complicated at first glance, but most of it related to configuring access for deploying to GCP and configure GitLab's Docker-in-Docker support to cache artifacts between builds. What is important to note is that we use Skaffold to do all the builds and deployments.
 
 
 ```yml
@@ -271,7 +271,7 @@ my-job:
     # The image to be used as the base for this job
     image:
         name: gcr.io/k8s-skaffold/skaffold:v1.15.0
-    # Pipeline tags (if you have specified tags to your Gitlab Runner)
+    # Pipeline tags (if you have specified tags to your GitLab Runner)
     tags:
         - development
     stage: my-stage
@@ -288,16 +288,16 @@ my-job:
           # Pass in all the environment variables to be passed to skaffold during build and deployment with all the args as documented in https://skaffold.dev/docs/references/cli/ (in our case our cluster context, env vars, namespace and some labels)
         - DOCKER_HOST="$DIND_DEV" NPM_REGISTRY="$NPM_REGISTRY_DEV" NPM_TOKEN="$NPM_TOKEN_DEV" skaffold run --kube-context $CLUSTER_DEV_CONTEXT -n default -l skaffold.dev/run-id=deploydep -p dev-svc --status-check
     only:
-        # Run this only for changes in the master branch
+        # Run this only for changes in the main branch
         refs:
-            - master
+            - main
 ```
 
-So, ultimately our Gitlab CI pipeline does not know anything about the helm charts or build strategy or any deployment methods and relies completely on skaffold to do the job for us.
+So, ultimately our GitLab CI pipeline does not know anything about the helm charts or build strategy or any deployment methods and relies completely on skaffold to do the job for us.
 
 This works equally well irrespective of whether you choose the [Docker Executor](https://docs.gitlab.com/runner/executors/docker.html) or the [Kubernetes Executor](https://docs.gitlab.com/runner/executors/kubernetes.html) and would require very little changes between the two.
 
-While Gitlab supports many executors (including Docker, Kubernetes, etc.) as documented [here](https://docs.gitlab.com/runner/executors/), we are working with Kubernetes executor here since it is vendor-agnostic, has the ability to auto-scale up/down, private (if you deploy the Runner in your Kubernetes cluster) and also is well supported for the forseeable future.
+While GitLab supports many executors (including Docker, Kubernetes, etc.) as documented [here](https://docs.gitlab.com/runner/executors/), we are working with Kubernetes executor here since it is vendor-agnostic, has the ability to auto-scale up/down, private (if you deploy the Runner in your Kubernetes cluster) and also is well supported for the forseeable future.
 
 **NOTE:** If you are running Skaffold using the Kubernetes executor, make sure that you are running the runner with appropriate permissions or pod security policies. If you are running using DIND, it requires access to the Docker socket and being in privileged mode which might actually tend to be insecure. An alternative can be to use [kaniko](https://github.com/GoogleContainerTools/kaniko), [buildkit](https://github.com/moby/buildkit) or other custom builders like [Buildah](https://github.com/containers/buildah) for building the image.
 

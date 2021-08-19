@@ -37,6 +37,6 @@ func NewCmdSurvey() *cobra.Command {
 }
 
 func showSurvey(ctx context.Context, out io.Writer) error {
-	s := survey.New(opts.GlobalConfig)
+	s := survey.New(opts.GlobalConfig, opts.ConfigurationFile, opts.Command)
 	return s.OpenSurveyForm(ctx, out, surveyID)
 }

@@ -30,8 +30,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -78,7 +80,6 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 		errs = append(errs, wrapWithContext(config, cfgErrs...)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
-	errs = append(errs, validateSingleKubeContext(configs)...)
 	if validateConfig.CheckDeploySource {
 		// TODO(6050) validate for other deploy types - helm, kpt, etc.
 		errs = append(errs, validateKubectlManifests(configs)...)
@@ -480,6 +481,7 @@ func validateSyncRules(artifacts []*latestV1.Artifact) []error {
 func validatePortForwardResources(pfrs []*latestV1.PortForwardResource) []error {
 	var errs []error
 	validResourceTypes := map[string]struct{}{
+		"container":             {},
 		"pod":                   {},
 		"deployment":            {},
 		"service":               {},
@@ -551,19 +553,6 @@ func validateLogPrefix(lc latestV1.LogsConfig) []error {
 	return nil
 }
 
-func validateSingleKubeContext(configs parser.SkaffoldConfigSet) []error {
-	if len(configs) < 2 {
-		return nil
-	}
-	k := configs[0].Deploy.KubeContext
-	for _, c := range configs {
-		if c.Deploy.KubeContext != k {
-			return []error{errors.New("all configs should have the same value for `deploy.kubeContext`")}
-		}
-	}
-	return nil
-}
-
 // validateCustomTest
 // - makes sure that command is not empty
 // - makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
@@ -592,9 +581,9 @@ func validateCustomTest(tcs []*latestV1.TestCase) (errs []error) {
 func wrapWithContext(config *parser.SkaffoldConfigEntry, errs ...error) []error {
 	var id string
 	if config.Metadata.Name != "" {
-		id = fmt.Sprintf("module %q", config.Metadata.Name)
+		id = fmt.Sprintf("in module %q", config.Metadata.Name)
 	} else {
-		id = fmt.Sprintf("unnamed config at index %d", config.SourceIndex)
+		id = fmt.Sprintf("in unnamed config at index %d", config.SourceIndex)
 	}
 	for i := range errs {
 		errs[i] = errors.Wrapf(errs[i], "source: %s, %s", config.SourceFile, id)
@@ -612,6 +601,11 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 		if c.Deploy.KubectlDeploy == nil {
 			continue
 		}
+		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
+			log.Entry(context.Background()).Debug("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
+			continue
+		}
+
 		// validate that manifest files referenced in config exist
 		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
 			if util.IsURL(pattern) {
@@ -623,7 +617,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 				errs = append(errs, err)
 			}
 			if len(expanded) == 0 {
-				msg := fmt.Sprintf("skaffold config named %q referenced file %q that could not be found", c.SourceFile, pattern)
+				msg := fmt.Sprintf("skaffold config file %q referenced file %q that could not be found", c.SourceFile, pattern)
 				errs = append(errs, sErrors.NewError(fmt.Errorf(msg),
 					proto.ActionableErr{
 						Message: msg,

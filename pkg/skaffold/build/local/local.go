@@ -20,11 +20,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -80,7 +79,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.
 		if a.DockerArtifact != nil {
 			imageID, err := b.getImageIDForTag(ctx, tag)
 			if err != nil {
-				logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
+				log.Entry(ctx).Warn("unable to inspect image: built images may not be cleaned up correctly by skaffold")
 			}
 			if imageID != "" {
 				b.builtImages = append(b.builtImages, imageID)

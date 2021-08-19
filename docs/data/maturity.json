@@ -11,14 +11,14 @@
     "deploy": "x",
     "area": "Deploy",
     "feature": "Apply",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Use hydrated Kubernetes manifests to create resources on the cluster"
   },
   "build.buildpacks": {
     "build": "x",
     "area": "Build",
     "feature": "Cloud Native Buildpacks support",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "Skaffold natively support for artifacts built with Cloud Native Buildpacks"
   },
   "build.custom": {
@@ -38,7 +38,7 @@
     "debug": "x",
     "area": "Build",
     "feature": "Build Artifact Dependencies",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Define build artifact dependencies"
   },
   "build": {
@@ -59,7 +59,7 @@
   "debug": {
     "debug": "x",
     "area": "Debug",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "Language-aware reconfiguration of containers on the fly to become debuggable ",
     "url": "/docs/workflows/debug"
   },
@@ -67,22 +67,29 @@
     "debug": "x",
     "area": "Debug",
     "feature": "debug go apps",
-    "maturity": "alpha",
+    "maturity": "GA",
     "description": "debug go apps"
   },
   "debug.java": {
     "debug": "x",
     "area": "Debug",
     "feature": "debug java apps",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "debug java apps"
   },
   "debug.node": {
     "debug": "x",
     "area": "Debug",
     "feature": "debug node apps",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "debug node apps"
+  },
+  "debug.NET": {
+    "debug": "x",
+    "area": "Debug",
+    "feature": "debug .NET apps",
+    "maturity": "beta",
+    "description": "debug .NET apps"
   },
   "debug.python": {
     "debug": "x",
@@ -99,7 +106,7 @@
     "debug": "x",
     "render": "x",
     "area": "Default-repo",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "specify a default image repository & rewrite image names to default repo",
     "url": "/docs/environment/image-registries/"
   },
@@ -111,7 +118,7 @@
     "debug": "x",
     "area": "Default-repo",
     "feature": "preconcatentation strategy",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "collision free rewriting strategy"
   },
   "default_repo.simple_prefix": {
@@ -122,7 +129,7 @@
     "debug": "x",
     "area": "Default-repo",
     "feature": "simple prefix replace strategy",
-    "maturity": "alpha",
+    "maturity": "GA",
     "description": "more intuitive prefix replacement strategy"
   },
   "cleanup": {
@@ -152,7 +159,7 @@
     "debug": "x",
     "area": "Deploy",
     "feature": "Status check",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "User can wait for deployments to stabilize "
   },
   "dev": {
@@ -181,44 +188,44 @@
     "debug": "x",
     "render": "x",
     "area": "Global config",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "store user preferences in a separate preferences file",
     "url": "/docs/design/global-config/"
   },
   "init": {
     "area": "Init",
-    "maturity": "alpha",
+    "maturity": "GA",
     "description": "Initialize a skaffold.yaml file based on the contents of the current directory",
     "url": "/docs/pipeline-stages/init"
   },
   "init.dockerfiles": {
     "area": "Init",
     "feature": "init for Dockerfiles ",
-    "maturity": "alpha",
+    "maturity": "GA",
     "description": "skaffold init recognizes Dockerfiles"
   },
   "init.interactive": {
     "area": "Init",
     "feature": "interactive",
-    "maturity": "alpha",
+    "maturity": "GA",
     "description": "skaffold init interactive for CLI users"
   },
   "init.json_api": {
     "area": "Init",
-    "feature": "json based ",
-    "maturity": "alpha",
+    "feature": "JSON based",
+    "maturity": "beta",
     "description": "skaffold init JSON based API for IDE integrations"
   },
   "init.k8s_manifests": {
     "area": "Init",
-    "feature": "init for k8s manifests",
-    "maturity": "alpha",
-    "description": "skaffold init recognizes k8s manifest and the image names in them"
+    "feature": "init for Kubernetes manifests",
+    "maturity": "GA",
+    "description": "skaffold init parses images from Kubernetes manifests"
   },
   "init.generate_manifests": {
     "area": "Init",
     "feature": "generate manifests",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "skaffold init will try to generate kubernetes manifests for your project"
   },
   "insecure_registry": {
@@ -229,6 +236,17 @@
     "maturity": "GA",
     "description": "Target registries for built images which are not secure",
     "url": "/docs/environment/image-registries/#insecure-image-registries"
+  },
+  "hooks": {
+    "dev": "x",
+    "build": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Lifecycle Hooks",
+    "maturity": "alpha",
+    "description": "Run code triggered by different events during the skaffold process lifecycle.",
+    "url": "/docs/pipeline-stages/lifecycle-hooks/"
   },
   "logging": {
     "dev": "x",
@@ -263,7 +281,7 @@
   "render": {
     "deploy": "x",
     "area": "Render",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "Produce hydrated Kubernetes manifests that reference the built resources"
   },
   "run.cmd": {
@@ -277,13 +295,13 @@
     "dev": "x",
     "area": "Filesync",
     "feature": "sync.infer",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "mark files as \"syncable\" - infer the destinations based on the Dockerfile"
   },
   "sync": {
     "dev": "x",
     "area": "Filesync",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "Instead of rebuilding, copy the changed files in the running container",
     "url": "/docs/pipeline-stages/filesync"
   },
@@ -294,7 +312,7 @@
     "debug": "x",
     "area": "Tagpolicy",
     "feature": "sha256 (== \"latest\") tagger",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "tag with latest, use image digest / image ID for deployment"
   },
   "tagpolicy": {
@@ -310,7 +328,7 @@
   "templating": {
     "deploy": "x",
     "area": "Templating",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "certain fields of skaffold.yaml can be parametrized with environment and built-in variables",
     "url": "/docs/environment/templating/"
   },
@@ -351,7 +369,7 @@
   },
   "version": {
     "area": "version",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "get the version string of the current skaffold binary"
   }
 }

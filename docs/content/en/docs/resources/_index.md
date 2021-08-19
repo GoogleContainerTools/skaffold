@@ -23,15 +23,15 @@ a calendar invite will be sent to your Google Calendar.
 
 ## Contributing
 
-See [Contributing Guide](https://github.com/GoogleContainerTools/skaffold/blob/master/CONTRIBUTING.md),
-[Developing Guide](https://github.com/GoogleContainerTools/skaffold/blob/master/DEVELOPMENT.md),
-and our [Code of Conduct](https://github.com/GoogleContainerTools/skaffold/blob/master/code-of-conduct.md)
+See [Contributing Guide](https://github.com/GoogleContainerTools/skaffold/blob/main/CONTRIBUTING.md),
+[Developing Guide](https://github.com/GoogleContainerTools/skaffold/blob/main/DEVELOPMENT.md),
+and our [Code of Conduct](https://github.com/GoogleContainerTools/skaffold/blob/main/code-of-conduct.md)
 on GitHub.
 
 ## Release Notes
 
-See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/master/CHANGELOG.md) on Github.
+See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/main/CHANGELOG.md) on Github.
 
 ## Roadmap
 
-See our roadmap [in GitHub](https://github.com/GoogleContainerTools/skaffold/blob/master/ROADMAP.md).
+See our roadmap [in GitHub](https://github.com/GoogleContainerTools/skaffold/blob/main/ROADMAP.md).

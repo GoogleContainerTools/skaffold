@@ -21,48 +21,44 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
+	"strings"
 
-	"github.com/sirupsen/logrus"
-
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 //nolint:golint
-func StreamRequest(ctx context.Context, out io.Writer, headerColor output.Color, prefix, podName, containerName string, stopper chan bool, lock sync.Locker, isMuted func() bool, rc io.Reader) error {
+func StreamRequest(ctx context.Context, out io.Writer, formatter log.Formatter, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Infof("%s interrupted", prefix)
-			return nil
-		case <-stopper:
+			olog.Entry(ctx).Infof("%s interrupted", formatter.Name())
 			return nil
 		default:
 			// Read up to newline
 			line, err := r.ReadString('\n')
+			// As per https://github.com/kubernetes/kubernetes/blob/017b359770e333eacd3efcb4174f1d464c208400/test/e2e/storage/podlogs/podlogs.go#L214
+			// Filter out the expected "end of stream" error message and
+			// attempts to read logs from a container that was deleted due to re-deploy or
+			// attempts to read logs from a container that is not ready yet.
 			if err == io.EOF {
+				if !isEmptyOrContainerNotReady(line) {
+					formatter.PrintLine(out, line)
+				}
 				return nil
 			}
 			if err != nil {
 				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
-
-			formattedLine := headerColor.Sprintf("%s ", prefix) + line
-			printLogLine(headerColor, out, isMuted, lock, prefix, line)
-			eventV2.ApplicationLog(podName, containerName, line, formattedLine)
+			formatter.PrintLine(out, line)
 		}
 	}
 }
 
-func printLogLine(headerColor output.Color, out io.Writer, isMuted func() bool, lock sync.Locker, prefix, text string) {
-	if !isMuted() {
-		lock.Lock()
-
-		headerColor.Fprintf(out, "%s ", prefix)
-		fmt.Fprint(out, text)
-
-		lock.Unlock()
-	}
+func isEmptyOrContainerNotReady(line string) bool {
+	return line == "" ||
+		strings.HasPrefix(line, "rpc error: code = Unknown desc = Error: No such container:") ||
+		strings.HasPrefix(line, "unable to retrieve container logs for ") ||
+		strings.HasPrefix(line, "Unable to retrieve container logs for ")
 }

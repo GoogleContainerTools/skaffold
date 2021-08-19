@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +37,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -56,7 +57,7 @@ func NewItem(ctx context.Context, a *latestV1.Artifact, e filemon.Events, builds
 	}
 
 	if dependentArtifactsCount > 0 {
-		logrus.Warnf("Ignoring sync rules for image %q as it is being used as a required artifact for other images.", a.ImageName)
+		log.Entry(ctx).Warnf("Ignoring sync rules for image %q as it is being used as a required artifact for other images.", a.ImageName)
 		return nil, nil
 	}
 
@@ -133,14 +134,14 @@ func inferredSyncItem(a *latestV1.Artifact, tag string, e filemon.Events, cfg do
 			}
 		}
 		if !matches {
-			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(context.Background()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
 		if dsts, ok := syncMap[relPath]; ok {
 			toCopy[f] = dsts
 		} else {
-			logrus.Infof("Changed file %s is not syncable. Skipping sync", relPath)
+			log.Entry(context.Background()).Infof("Changed file %s is not syncable. Skipping sync", relPath)
 			return nil, nil
 		}
 	}
@@ -219,7 +220,7 @@ func intersect(contextWd, containerWd string, syncRules []*latestV1.SyncRule, fi
 		}
 
 		if len(dsts) == 0 {
-			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(context.Background()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
@@ -254,18 +255,48 @@ func matchSyncRules(syncRules []*latestV1.SyncRule, relPath, containerWd string)
 }
 
 func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
-	if len(item.Copy) > 0 {
-		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
+	if !item.HasChanges() {
+		return nil
+	}
 
-		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, s.config.GetNamespaces()); err != nil {
+	var copy, delete []string
+	for k := range item.Copy {
+		copy = append(copy, k)
+	}
+	for k := range item.Delete {
+		delete = append(delete, k)
+	}
+
+	opts, err := hooks.NewSyncEnvOpts(item.Artifact, item.Image, copy, delete, *s.namespaces, s.kubectl.KubeContext)
+	if err != nil {
+		return err
+	}
+	hooksRunner := hooks.NewSyncRunner(s.kubectl, item.Artifact.ImageName, item.Image, *s.namespaces, s.formatter, item.Artifact.Sync.LifecycleHooks, opts)
+	if err := hooksRunner.RunPreHooks(ctx, out); err != nil {
+		return fmt.Errorf("pre-sync hooks failed for artifact %q: %w", item.Artifact.ImageName, err)
+	}
+	if err := s.sync(ctx, item); err != nil {
+		return err
+	}
+	if err := hooksRunner.RunPostHooks(ctx, out); err != nil {
+		return fmt.Errorf("post-sync hooks failed for artifact %q: %w", item.Artifact.ImageName, err)
+	}
+	return nil
+}
+
+func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
+	if len(item.Copy) > 0 {
+		log.Entry(ctx).Info("Copying files:", item.Copy, "to", item.Image)
+
+		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, *s.namespaces, s.kubectl.KubeContext); err != nil {
 			return fmt.Errorf("copying files: %w", err)
 		}
 	}
 
 	if len(item.Delete) > 0 {
-		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
+		log.Entry(ctx).Info("Deleting files:", item.Delete, "from", item.Image)
 
-		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, s.config.GetNamespaces()); err != nil {
+		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, *s.namespaces, s.kubectl.KubeContext); err != nil {
 			return fmt.Errorf("deleting files: %w", err)
 		}
 	}
@@ -273,14 +304,14 @@ func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 	return nil
 }
 
-func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd, namespaces []string, kubeContext string) error {
 	if len(files) == 0 {
 		return nil
 	}
 
 	errs, ctx := errgroup.WithContext(ctx)
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}

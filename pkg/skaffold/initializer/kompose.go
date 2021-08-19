@@ -21,8 +21,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -32,7 +31,7 @@ func runKompose(ctx context.Context, composeFile string) error {
 		return err
 	}
 
-	logrus.Infof("running 'kompose convert' for file %s", composeFile)
+	log.Entry(ctx).Infof("running 'kompose convert' for file %s", composeFile)
 	komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", composeFile)
 	_, err := util.RunCmdOut(komposeCmd)
 	return err

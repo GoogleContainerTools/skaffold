@@ -24,11 +24,14 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -44,6 +47,7 @@ func TestRun(t *testing.T) {
 	after := before.Add(3 * time.Second)
 	tests := []struct {
 		description string
+		uid         string
 		pods        []*v1.Pod
 		logOutput   mockLogOutput
 		events      []v1.Event
@@ -725,6 +729,31 @@ func TestRun(t *testing.T) {
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_EXEC_ERROR,
 				}, []string{"[foo foo-container] standard_init_linux.go:219: exec user process caused: exec format error"})},
 		},
+
+		// Check to diagnose pods with owner references
+		{
+			description: "pods owned by a uuid",
+			uid:         "foo",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
+							},
+						},
+					}},
+			}},
+		},
 	}
 
 	for _, test := range tests {
@@ -738,13 +767,21 @@ func TestRun(t *testing.T) {
 				return test.logOutput.output, test.logOutput.err
 			}
 			t.Override(&runCli, mRun)
+			t.Override(&getReplicaSet, func(_ *appsv1.Deployment, _ appsclient.AppsV1Interface) ([]*appsv1.ReplicaSet, []*appsv1.ReplicaSet, *appsv1.ReplicaSet, error) {
+				return nil, nil, &appsv1.ReplicaSet{
+					ObjectMeta: metav1.ObjectMeta{
+						UID: types.UID(test.uid),
+					},
+				}, nil
+			})
 			for i, p := range test.pods {
+				p.OwnerReferences = []metav1.OwnerReference{{UID: "", Controller: truePtr()}}
 				rs[i] = p
 			}
 			rs = append(rs, &v1.EventList{Items: test.events})
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 
-			actual, err := testPodValidator(f, map[string]string{}).Validate(context.Background(), "test", metav1.ListOptions{})
+			actual, err := testPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
@@ -759,7 +796,7 @@ func TestRun(t *testing.T) {
 }
 
 // testPodValidator initializes a PodValidator like NewPodValidator except for loading custom rules
-func testPodValidator(k kubernetes.Interface, _ map[string]string) *PodValidator {
+func testPodValidator(k kubernetes.Interface) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
 	return &PodValidator{k: k, recos: rs}
 }
@@ -832,4 +869,9 @@ type result struct {
 	isNotScheduled     bool
 	iScheduledNotReady bool
 	isUnknown          bool
+}
+
+func truePtr() *bool {
+	t := true
+	return &t
 }

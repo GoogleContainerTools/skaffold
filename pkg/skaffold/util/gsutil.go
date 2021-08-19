@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const GsutilExec = "gsutil"
@@ -40,6 +40,6 @@ func (g *Gsutil) Copy(ctx context.Context, src, dst string, recursive bool) erro
 	if err != nil {
 		return fmt.Errorf("copy file(s) with %s failed: %w", GsutilExec, err)
 	}
-	logrus.Info(out)
+	log.Entry(ctx).Info(out)
 	return nil
 }

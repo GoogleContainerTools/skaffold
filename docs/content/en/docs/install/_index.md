@@ -12,6 +12,9 @@ Skaffold is available.
 
 You can turn this update check off by following [these instructions]({{<relref "/docs/references/privacy#update-check">}}).
 
+To help prioritize features and work on improving Skaffold, we collect anonymized Skaffold usage data.
+You can opt out of data collection by following [these instructions]({{<relref "/docs/resources/telemetry">}}).
+
 Your use of this software is subject to the [Google Privacy Policy](https://policies.google.com/privacy)
 
 {{< /alert >}}

@@ -18,6 +18,7 @@ package output
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"os"
@@ -127,7 +128,6 @@ func TestWithEventContext(t *testing.T) {
 		writer    io.Writer
 		phase     constants.Phase
 		subtaskID string
-		origin    string
 
 		expected io.Writer
 	}{
@@ -135,14 +135,13 @@ func TestWithEventContext(t *testing.T) {
 			name: "skaffoldWriter update info",
 			writer: skaffoldWriter{
 				MainWriter:  ioutil.Discard,
-				EventWriter: eventV2.NewLogger(constants.Build, "1", "skaffold-test"),
+				EventWriter: eventV2.NewLogger(constants.Build, "1"),
 			},
 			phase:     constants.Test,
 			subtaskID: "2",
-			origin:    "skaffold-test-change",
 			expected: skaffoldWriter{
 				MainWriter:  ioutil.Discard,
-				EventWriter: eventV2.NewLogger(constants.Test, "2", "skaffold-test-change"),
+				EventWriter: eventV2.NewLogger(constants.Test, "2"),
 			},
 		},
 		{
@@ -154,8 +153,8 @@ func TestWithEventContext(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			got := WithEventContext(test.writer, test.phase, test.subtaskID, test.origin)
-			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false))
+			got, _ := WithEventContext(context.Background(), test.writer, test.phase, test.subtaskID)
+			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false, "", constants.DevLoop))
 		})
 	}
 }
@@ -175,7 +174,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 					timestamps:  true,
 				}
 			},
-			expectedLen: len(TimestampFormat) + len(" \u001B[32mtesting!\u001B[0m"),
+			expectedLen: len(timestampFormat) + len(" \u001B[32mtesting!\u001B[0m"),
 		},
 		{
 			name: "skaffold writer with color and no timestamps",
@@ -196,7 +195,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 					timestamps:  true,
 				}
 			},
-			expectedLen: len(TimestampFormat) + len(" testing!"),
+			expectedLen: len(timestampFormat) + len(" testing!"),
 		},
 		{
 			name: "skaffold writer with no color and no timestamps",

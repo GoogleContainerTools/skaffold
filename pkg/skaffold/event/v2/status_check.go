@@ -31,6 +31,16 @@ func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
 	resourceStatusCheckEventSucceeded(r)
 }
 
+func ResourceStatusCheckEventCompletedMessage(r string, message string, ae proto.ActionableErr) {
+	ResourceStatusCheckEventCompleted(r, ae)
+	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
+		SubtaskId: r,
+		Message:   message,
+		Level:     -1,
+	})
+}
+
 func resourceStatusCheckEventSucceeded(r string) {
 	handler.handleStatusCheckSubtaskEvent(&proto.StatusCheckSubtaskEvent{
 		Id:         r,
@@ -62,6 +72,16 @@ func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
 		Message:       ae.Message,
 		StatusCode:    ae.ErrCode,
 		ActionableErr: &ae,
+	})
+}
+
+func ResourceStatusCheckEventUpdatedMessage(r string, message string, ae proto.ActionableErr) {
+	ResourceStatusCheckEventUpdated(r, ae)
+	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
+		SubtaskId: r,
+		Message:   fmt.Sprintf("%s %s\n", message, ae.Message),
+		Level:     -1,
 	})
 }
 

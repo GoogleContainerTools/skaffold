@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
 )
 
-const baseRef = "origin/master"
+const baseRef = "origin/main"
 
 func RunSchemaCheckOnChangedFiles() error {
 	git, err := newGit(baseRef)
@@ -95,7 +95,7 @@ func RunSchemaCheckOnChangedFiles() error {
 			continue
 		}
 
-		logrus.Warnf("Detected changes to the latest config. Checking on Github if it's released...")
+		logrus.Warn("Detected changes to the latest config. Checking on Github if it's released...")
 		latestVersion, isReleased := GetLatestVersion()
 		if !isReleased {
 			logrus.Infof("Schema %q is not yet released. Changes are ok.", latestVersion)

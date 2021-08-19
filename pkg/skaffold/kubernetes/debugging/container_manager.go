@@ -20,18 +20,21 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var (
 	// For testing
 	notifyDebuggingContainerStarted    = event.DebuggingContainerStarted
 	notifyDebuggingContainerTerminated = event.DebuggingContainerTerminated
+	debuggingContainerStartedV2        = eventV2.DebuggingContainerStarted
+	debuggingContainerTerminatedV2     = eventV2.DebuggingContainerTerminated
 )
 
 type ContainerManager struct {
@@ -39,9 +42,11 @@ type ContainerManager struct {
 	active      map[string]string // set of containers that have been notified
 	events      chan kubernetes.PodEvent
 	stopWatcher func()
+	namespaces  *[]string
+	kubeContext string
 }
 
-func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
+func NewContainerManager(podSelector kubernetes.PodSelector, namespaces *[]string, kubeContext string) *ContainerManager {
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
 	return &ContainerManager{
@@ -49,17 +54,19 @@ func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
 		active:      map[string]string{},
 		events:      make(chan kubernetes.PodEvent),
 		stopWatcher: func() {},
+		namespaces:  namespaces,
+		kubeContext: kubeContext,
 	}
 }
 
-func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error {
+func (d *ContainerManager) Start(ctx context.Context) error {
 	if d == nil {
 		// debug mode probably not enabled
 		return nil
 	}
 
 	d.podWatcher.Register(d.events)
-	stopWatcher, err := d.podWatcher.Start(namespaces)
+	stopWatcher, err := d.podWatcher.Start(d.kubeContext, *d.namespaces)
 	if err != nil {
 		return err
 	}
@@ -104,7 +111,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 	}
 	var configurations map[string]annotations.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(debugConfigString), &configurations); err != nil {
-		logrus.Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
+		log.Entry(context.Background()).Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
 		return
 	}
 	for _, c := range pod.Status.ContainerStatuses {
@@ -124,6 +131,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 					config.Runtime,
 					config.WorkingDir,
 					config.Ports)
+				debuggingContainerStartedV2(pod.Name, c.Name, pod.Namespace, config.Artifact, config.Runtime, config.WorkingDir, config.Ports)
 
 			case c.State.Terminated != nil && seen:
 				delete(d.active, key)
@@ -132,6 +140,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 					config.Runtime,
 					config.WorkingDir,
 					config.Ports)
+				debuggingContainerTerminatedV2(pod.Name, c.Name, pod.Namespace, config.Artifact, config.Runtime, config.WorkingDir, config.Ports)
 			}
 		}
 	}

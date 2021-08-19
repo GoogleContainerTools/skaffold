@@ -43,8 +43,6 @@ const (
 	Succeeded  = "Succeeded"
 	Terminated = "Terminated"
 	Canceled   = "Canceled"
-
-	SubtaskIDNone = "-1"
 )
 
 var handler = newHandler()
@@ -70,8 +68,6 @@ type eventHandler struct {
 	logLock             sync.Mutex
 	applicationLogs     []proto.Event
 	applicationLogsLock sync.Mutex
-	skaffoldLogs        []proto.Event
-	skaffoldLogsLock    sync.Mutex
 	cfg                 Config
 
 	iteration               int
@@ -80,7 +76,6 @@ type eventHandler struct {
 	eventChan               chan *proto.Event
 	eventListeners          []*listener
 	applicationLogListeners []*listener
-	skaffoldLogListeners    []*listener
 }
 
 type listener struct {
@@ -104,10 +99,6 @@ func ForEachEvent(callback func(*proto.Event) error) error {
 
 func ForEachApplicationLog(callback func(*proto.Event) error) error {
 	return handler.forEachApplicationLog(callback)
-}
-
-func ForEachSkaffoldLog(callback func(*proto.Event) error) error {
-	return handler.forEachSkaffoldLog(callback)
 }
 
 func Handle(event *proto.Event) error {
@@ -155,10 +146,6 @@ func (ev *eventHandler) logApplicationLog(event *proto.Event) {
 	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
 }
 
-func (ev *eventHandler) logSkaffoldLog(event *proto.Event) {
-	ev.log(event, &ev.skaffoldLogListeners, &ev.skaffoldLogs, &ev.skaffoldLogsLock)
-}
-
 func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
 	listener := &listener{
 		callback: callback,
@@ -189,10 +176,6 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
 
 func (ev *eventHandler) forEachApplicationLog(callback func(*proto.Event) error) error {
 	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
-}
-
-func (ev *eventHandler) forEachSkaffoldLog(callback func(*proto.Event) error) error {
-	return ev.forEach(&ev.skaffoldLogListeners, &ev.skaffoldLogs, &ev.skaffoldLogsLock, callback)
 }
 
 func emptyState(cfg Config) proto.State {
@@ -316,7 +299,6 @@ func TaskInProgress(task constants.Phase, description string) {
 		handler.iteration++
 
 		handler.applicationLogs = []proto.Event{}
-		handler.skaffoldLogs = []proto.Event{}
 	}
 
 	handler.handleTaskEvent(&proto.TaskEvent{
@@ -401,9 +383,6 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 	switch e := event.GetEventType().(type) {
 	case *proto.Event_ApplicationLogEvent:
 		ev.logApplicationLog(event)
-		return
-	case *proto.Event_SkaffoldLogEvent:
-		ev.logSkaffoldLog(event)
 		return
 	case *proto.Event_BuildSubtaskEvent:
 		be := e.BuildSubtaskEvent

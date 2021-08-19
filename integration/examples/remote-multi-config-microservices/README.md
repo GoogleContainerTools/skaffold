@@ -36,12 +36,12 @@ requires:
 - git:
     repo: https://github.com/GoogleContainerTools/skaffold
     path: examples/multi-config-microservices/leeroy-app
-    ref: master
+    ref: main
 
 - git:
     repo: https://github.com/GoogleContainerTools/skaffold
     path: examples/multi-config-microservices/leeroy-web
-    ref: master
+    ref: main
 
 ```
 
