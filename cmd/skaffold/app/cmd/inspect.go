@@ -39,7 +39,7 @@ func NewCmdInspect() *cobra.Command {
 		WithDescription("Helper commands for Cloud Code IDEs to interact with and modify skaffold configuration files.").
 		WithPersistentFlagAdder(cmdInspectFlags).
 		Hidden().
-		WithCommands(cmdModules(), cmdProfiles(), cmdBuildEnv())
+		WithCommands(cmdModules(), cmdProfiles(), cmdBuildEnv(), cmdTests())
 }
 
 func cmdInspectFlags(f *pflag.FlagSet) {
