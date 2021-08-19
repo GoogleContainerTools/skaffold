@@ -312,3 +312,8 @@ flags-dashboard:
 
 $(STATIK_FILES): go.mod docs/content/en/schemas/*
 	hack/generate-statik.sh
+
+# run comparisonstats - ex: make COMPARISONSTATS_ARGS='usr/local/bin/skaffold /usr/local/bin/skaffold helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats
+.PHONY: comparisonstats
+comparisonstats:
+	go run hack/comparisonstats/main.go $(COMPARISONSTATS_ARGS)
