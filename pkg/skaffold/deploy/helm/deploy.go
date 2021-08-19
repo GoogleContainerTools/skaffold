@@ -436,9 +436,9 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
-func (k *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
+func (h *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
-	if err := k.hookRunner.RunPreHooks(childCtx, out); err != nil {
+	if err := h.hookRunner.RunPreHooks(childCtx, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
@@ -446,9 +446,9 @@ func (k *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
+func (h *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PostHooks")
-	if err := k.hookRunner.RunPostHooks(childCtx, out); err != nil {
+	if err := h.hookRunner.RunPostHooks(childCtx, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
