@@ -14,15 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package inspect
+package lint
 
 import (
+	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/format"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func OutputFormatter(out io.Writer, _ string) format.Formatter {
-	// TODO: implement other output formatters. Currently only JSON is implemented
-	return format.JSONFormatter{Out: out}
+var realWorkDir = util.RealWorkDir
+
+func Lint(ctx context.Context, out io.Writer, opts Options) error {
+	skaffoldYamlRuleList, err := GetSkaffoldYamlsLintResults(ctx, opts)
+	if err != nil {
+		return err
+	}
+	results := []Result{}
+	results = append(results, *skaffoldYamlRuleList...)
+	// output flattened list
+	formatter := OutputFormatter(out, opts.OutFormat)
+	return formatter.Write(results)
 }
