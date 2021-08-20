@@ -31,7 +31,7 @@ import (
 type SkaffoldRunner struct {
 	runner.Builder
 	runner.Pruner
-	test.Tester
+	tester test.Tester
 
 	deployer deploy.Deployer
 	monitor  filemon.Monitor

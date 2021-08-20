@@ -124,7 +124,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	return &SkaffoldRunner{
 		Builder:            *rbuilder,
 		Pruner:             runner.Pruner{Builder: builder},
-		Tester:             tester,
+		tester:             tester,
 		deployer:           deployer,
 		monitor:            monitor,
 		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
