@@ -31,7 +31,12 @@ import (
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-func NewDeployRunner(cli *kubectl.CLI, d v1.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
+// for testing
+var (
+	NewDeployRunner = newDeployRunner
+)
+
+func newDeployRunner(cli *kubectl.CLI, d v1.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
 	return deployRunner{d, cli, namespaces, formatter, opts, new(sync.Map)}
 }
 
