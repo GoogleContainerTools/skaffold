@@ -17,6 +17,7 @@ limitations under the License.
 package v2
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -80,9 +81,18 @@ func (h logHook) Levels() []logrus.Level {
 
 // Fire constructs a SkaffoldLogEvent and sends it to the event channel
 func (h logHook) Fire(entry *logrus.Entry) error {
+	task, ok := entry.Data["task"]
+	if !ok {
+		return errors.New("could not get task from logrus entry")
+	}
+	subtask, ok := entry.Data["subtask"]
+	if !ok {
+		return errors.New("could not get subtask from logrus entry")
+	}
+
 	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
-		TaskId:    fmt.Sprintf("%s-%d", entry.Data["task"], handler.iteration),
-		SubtaskId: fmt.Sprintf("%s", entry.Data["subtask"]),
+		TaskId:    fmt.Sprintf("%s-%d", task, handler.iteration),
+		SubtaskId: fmt.Sprintf("%s", subtask),
 		Level:     levelFromEntry(entry),
 		Message:   entry.Message,
 	})
