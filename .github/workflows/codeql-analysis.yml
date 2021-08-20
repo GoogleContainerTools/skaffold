@@ -1,15 +1,9 @@
 name: "CodeQL"
 
 on:
+  # just run nightly as scan takes 35m
   schedule:
     - cron: '23 17 * * 3'
-
-  ## XXX disable per-commit and per-PR as scan takes 35m
-  push:
-    branches: [ main, release/* ]
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ main ]
 
 permissions: read-all
 
