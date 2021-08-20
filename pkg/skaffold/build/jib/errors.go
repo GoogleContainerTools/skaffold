@@ -61,7 +61,7 @@ func dependencyErr(pType PluginType, workspace string, err error) error {
 	case JibGradle:
 		code = proto.StatusCode_BUILD_JIB_GRADLE_DEP_ERR
 	default:
-		log.Entry(context.Background()).Fatal("Unknown jib build type", pType)
+		log.Entry(context.TODO()).Fatal("Unknown jib build type", pType)
 	}
 	return sErrors.NewError(err,
 		proto.ActionableErr{

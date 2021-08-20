@@ -668,7 +668,7 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	} else if val, ok := v.(pflag.Value); ok {
 		val.Set(fmt.Sprintf("%v", d))
 	} else {
-		log.Entry(context.Background()).Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
+		log.Entry(context.TODO()).Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
 	}
 }
 

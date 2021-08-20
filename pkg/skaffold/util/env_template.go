@@ -74,7 +74,7 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 	}
 
 	var buf bytes.Buffer
-	log.Entry(context.Background()).Debugf("Executing template %v with environment %v", envTemplate, envMap)
+	log.Entry(context.TODO()).Debugf("Executing template %v with environment %v", envTemplate, envMap)
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
 		return "", err
 	}

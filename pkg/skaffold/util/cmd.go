@@ -70,7 +70,7 @@ type Commander struct{}
 
 // RunCmdOut runs an exec.Command and returns the stdout and error.
 func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
-	log.Entry(context.Background()).Debugf("Running command: %s", cmd.Args)
+	log.Entry(context.TODO()).Debugf("Running command: %s", cmd.Args)
 
 	stdout := bytes.Buffer{}
 	cmd.Stdout = &stdout
@@ -91,9 +91,9 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	}
 
 	if stderr.Len() > 0 {
-		log.Entry(context.Background()).Debugf("Command output: [%s], stderr: %s", stdout.String(), stderr.String())
+		log.Entry(context.TODO()).Debugf("Command output: [%s], stderr: %s", stdout.String(), stderr.String())
 	} else {
-		log.Entry(context.Background()).Debugf("Command output: [%s]", stdout.String())
+		log.Entry(context.TODO()).Debugf("Command output: [%s]", stdout.String())
 	}
 
 	return stdout.Bytes(), nil
@@ -101,6 +101,6 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 
 // RunCmd runs an exec.Command.
 func (*Commander) RunCmd(cmd *exec.Cmd) error {
-	log.Entry(context.Background()).Debugf("Running command: %s", cmd.Args)
+	log.Entry(context.TODO()).Debugf("Running command: %s", cmd.Args)
 	return cmd.Run()
 }

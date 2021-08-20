@@ -72,7 +72,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newKubectlDeploy *next.KubectlDeploy
 	if config.Deploy.DeployType.KubectlDeploy != nil {
 		var newManifests []string
-		log.Entry(context.Background()).Warn("Ignoring manifest parameters when transforming v1alpha1 config; check Kubernetes yaml before running skaffold")
+		log.Entry(context.TODO()).Warn("Ignoring manifest parameters when transforming v1alpha1 config; check Kubernetes yaml before running skaffold")
 		for _, manifest := range config.Deploy.DeployType.KubectlDeploy.Manifests {
 			newManifests = append(newManifests, manifest.Paths...)
 		}

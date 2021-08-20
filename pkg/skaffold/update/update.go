@@ -52,7 +52,7 @@ func CheckVersionOnError(config string) (string, error) {
 
 func checkVersion(configfile string, onError bool) (string, error) {
 	if !isUpdateCheckEnabled(configfile) {
-		log.Entry(context.Background()).Debug("Update check not enabled, skipping.")
+		log.Entry(context.TODO()).Debug("Update check not enabled, skipping.")
 		return "", nil
 	}
 	latest, current, err := GetLatestAndCurrentVersion()
@@ -82,7 +82,7 @@ func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 	if err != nil {
 		return none, none, err
 	}
-	log.Entry(context.Background()).Tracef("latest skaffold version: %s", versionString)
+	log.Entry(context.TODO()).Tracef("latest skaffold version: %s", versionString)
 	latest, err := version.ParseVersion(versionString)
 	if err != nil {
 		return none, none, fmt.Errorf("parsing latest version from GCS: %w", err)

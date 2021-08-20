@@ -100,10 +100,10 @@ func (f *PortSet) List() []int {
 //
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
 func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
-	log.Entry(context.Background()).Tracef("looking for port: %s:%d", address, port)
+	log.Entry(context.TODO()).Tracef("looking for port: %s:%d", address, port)
 	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
-			log.Entry(context.Background()).Debugf("found open port: %d", port)
+			log.Entry(context.TODO()).Debugf("found open port: %d", port)
 			return port
 		}
 
@@ -111,7 +111,7 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 		for i := 0; i < 10; i++ {
 			port++
 			if getPortIfAvailable(address, port, usedPorts) {
-				log.Entry(context.Background()).Debugf("found open port: %d", port)
+				log.Entry(context.TODO()).Debugf("found open port: %d", port)
 				return port
 			}
 		}
@@ -119,7 +119,7 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 
 	for port = 4503; port <= 4533; port++ {
 		if getPortIfAvailable(address, port, usedPorts) {
-			log.Entry(context.Background()).Debugf("found open port: %d", port)
+			log.Entry(context.TODO()).Debugf("found open port: %d", port)
 			return port
 		}
 	}
@@ -138,7 +138,7 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 
 func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
 	if alreadySet := usedPorts.LoadOrSet(p); alreadySet {
-		log.Entry(context.Background()).Tracef("port %d already allocated", p)
+		log.Entry(context.TODO()).Tracef("port %d already allocated", p)
 		return false
 	}
 
@@ -149,27 +149,27 @@ func IsPortFree(address string, p int) bool {
 	// Ensure the port is available across all interfaces
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
 	if err != nil {
-		log.Entry(context.Background()).Tracef("port INADDR_ANY:%d already bound: %v", p, err)
+		log.Entry(context.TODO()).Tracef("port INADDR_ANY:%d already bound: %v", p, err)
 		return false
 	} else if l == nil {
-		log.Entry(context.Background()).Tracef("port INADDR_ANY:%d nil listener", p)
+		log.Entry(context.TODO()).Tracef("port INADDR_ANY:%d nil listener", p)
 		return false
 	}
 	l.Close()
-	log.Entry(context.Background()).Tracef("was able to obtain INADDR_ANY:%d", p)
+	log.Entry(context.TODO()).Tracef("was able to obtain INADDR_ANY:%d", p)
 
 	if address != Any {
 		// Ensure the port is available on the specific interface too
 		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p))
 		if err != nil {
-			log.Entry(context.Background()).Tracef("port %s:%d already bound: %v", address, p, err)
+			log.Entry(context.TODO()).Tracef("port %s:%d already bound: %v", address, p, err)
 			return false
 		} else if l == nil {
-			log.Entry(context.Background()).Tracef("port %s:%d nil listener", address, p)
+			log.Entry(context.TODO()).Tracef("port %s:%d nil listener", address, p)
 			return false
 		}
 		l.Close()
-		log.Entry(context.Background()).Tracef("was able to obtain %s:%d", address, p)
+		log.Entry(context.TODO()).Tracef("was able to obtain %s:%d", address, p)
 	}
 	return true
 }

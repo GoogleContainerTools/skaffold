@@ -140,7 +140,7 @@ func initCloudMonitoringExporterMetrics() (*basic.Controller, error) {
 			mexporter.WithMetricDescriptorTypeFormatter(formatter),
 			mexporter.WithMonitoringClientOptions(option.WithCredentialsJSON(b)),
 			mexporter.WithOnError(func(err error) {
-				log.Entry(context.Background()).Debugf("Error with metrics: %v", err)
+				log.Entry(context.TODO()).Debugf("Error with metrics: %v", err)
 			}),
 		},
 	)
@@ -333,20 +333,20 @@ func initTraceExporter(opts ...TraceExporterOption) (trace.TracerProvider, func(
 
 	switch os.Getenv("SKAFFOLD_TRACE") {
 	case "stdout":
-		log.Entry(context.Background()).Debug("using stdout trace exporter")
+		log.Entry(context.TODO()).Debug("using stdout trace exporter")
 		return initIOWriterTracer(teconf.writer)
 	case "gcp-adc":
-		log.Entry(context.Background()).Debug("using cloud trace exporter w/ application default creds")
+		log.Entry(context.TODO()).Debug("using cloud trace exporter w/ application default creds")
 		tp, shutdown, err := initCloudTraceExporterApplicationDefaultCreds()
 		return tp, func(context.Context) error { shutdown(); return nil }, err
 	case "jaeger":
-		log.Entry(context.Background()).Debug("using jaeger trace exporter")
+		log.Entry(context.TODO()).Debug("using jaeger trace exporter")
 		tp, shutdown, err := initJaegerTraceExporter()
 		return tp, func(context.Context) error { shutdown(); return nil }, err
 	}
 
 	if otelTraceExporterVal, ok := os.LookupEnv("OTEL_TRACES_EXPORTER"); ok {
-		log.Entry(context.Background()).Debugf("using otel default exporter - OTEL_TRACES_EXPORTER=%s", otelTraceExporterVal)
+		log.Entry(context.TODO()).Debugf("using otel default exporter - OTEL_TRACES_EXPORTER=%s", otelTraceExporterVal)
 		return nil, func(context.Context) error { return nil }, nil
 	}
 
@@ -376,7 +376,7 @@ func initCloudTraceExporterApplicationDefaultCreds() (trace.TracerProvider, func
 		[]texporter.Option{
 			texporter.WithProjectID(os.Getenv("GOOGLE_CLOUD_PROJECT")),
 			texporter.WithOnError(func(err error) {
-				log.Entry(context.Background()).Debugf("Error with metrics: %v", err)
+				log.Entry(context.TODO()).Debugf("Error with metrics: %v", err)
 			}),
 		},
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),

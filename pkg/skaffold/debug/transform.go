@@ -175,12 +175,12 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 		if group == "apps" || group == "batch" {
 			if version != "v1" {
 				// treat deprecated objects as errors
-				log.Entry(context.Background()).Errorf("deprecated versions not supported by debug: %s (%s)", description, version)
+				log.Entry(context.TODO()).Errorf("deprecated versions not supported by debug: %s (%s)", description, version)
 			} else {
-				log.Entry(context.Background()).Warnf("no debug transformation for: %s", description)
+				log.Entry(context.TODO()).Warnf("no debug transformation for: %s", description)
 			}
 		} else {
-			log.Entry(context.Background()).Debugf("no debug transformation for: %s", description)
+			log.Entry(context.TODO()).Debugf("no debug transformation for: %s", description)
 		}
 		return false
 	}
@@ -200,23 +200,23 @@ func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 	var minTimeout time.Duration = 10 * time.Minute // make it configurable?
 	if annotation, found := metadata.Annotations[annotations.DebugProbeTimeouts]; found {
 		if annotation == "skip" {
-			log.Entry(context.Background()).Debugf("skipping probe rewrite on %q by request", metadata.Name)
+			log.Entry(context.TODO()).Debugf("skipping probe rewrite on %q by request", metadata.Name)
 			return false
 		}
 		if d, err := time.ParseDuration(annotation); err != nil {
-			log.Entry(context.Background()).Warnf("invalid probe timeout value for %q: %q: %v", metadata.Name, annotation, err)
+			log.Entry(context.TODO()).Warnf("invalid probe timeout value for %q: %q: %v", metadata.Name, annotation, err)
 		} else {
 			minTimeout = d
 		}
 	}
 	annotation, found := metadata.Annotations[annotations.DebugConfig]
 	if !found {
-		log.Entry(context.Background()).Debugf("skipping probe rewrite on %q: not configured for debugging", metadata.Name)
+		log.Entry(context.TODO()).Debugf("skipping probe rewrite on %q: not configured for debugging", metadata.Name)
 		return false
 	}
 	var config map[string]annotations.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annotation), &config); err != nil {
-		log.Entry(context.Background()).Warnf("error unmarshalling debugging configuration for %q: %v", metadata.Name, err)
+		log.Entry(context.TODO()).Warnf("error unmarshalling debugging configuration for %q: %v", metadata.Name, err)
 		return false
 	}
 
@@ -229,7 +229,7 @@ func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 			rp := rewriteHTTPGetProbe(c.ReadinessProbe, minTimeout)
 			sp := rewriteHTTPGetProbe(c.StartupProbe, minTimeout)
 			if lp || rp || sp {
-				log.Entry(context.Background()).Infof("Updated probe timeouts for %s/%s", metadata.Name, c.Name)
+				log.Entry(context.TODO()).Infof("Updated probe timeouts for %s/%s", metadata.Name, c.Name)
 			}
 			changed = changed || lp || rp || sp
 		}
@@ -278,18 +278,18 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 			configurations[container.Name] = configuration
 			podSpec.Containers[i] = container // apply any configuration changes
 			if len(requiredImage) > 0 {
-				log.Entry(context.Background()).Infof("%q requires debugging support image %q", container.Name, requiredImage)
+				log.Entry(context.TODO()).Infof("%q requires debugging support image %q", container.Name, requiredImage)
 				containersRequiringSupport = append(containersRequiringSupport, &podSpec.Containers[i])
 				requiredSupportImages[requiredImage] = true
 			}
 		} else {
-			log.Entry(context.Background()).Warnf("Image %q not configured for debugging: %v", container.Name, err)
+			log.Entry(context.TODO()).Warnf("Image %q not configured for debugging: %v", container.Name, err)
 		}
 	}
 
 	// check if we have any images requiring additional debugging support files
 	if len(containersRequiringSupport) > 0 {
-		log.Entry(context.Background()).Info("Configuring installation of debugging support files")
+		log.Entry(context.TODO()).Info("Configuring installation of debugging support files")
 		// we create the volume that will hold the debugging support files
 		supportVolume := v1.Volume{Name: debuggingSupportFilesVolume, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}
 		podSpec.Volumes = append(podSpec.Volumes, supportVolume)
@@ -435,7 +435,7 @@ func isShDashC(cmd, arg string) bool {
 }
 
 func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (annotations.ContainerDebugConfiguration, string, error) {
-	log.Entry(context.Background()).Tracef("Examining container %q with config %v", container.Name, config)
+	log.Entry(context.TODO()).Tracef("Examining container %q with config %v", container.Name, config)
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(container, config, portAlloc, Protocols)
@@ -480,14 +480,14 @@ func exposePort(entries []v1.ContainerPort, portName string, port int32) []v1.Co
 		switch {
 		case entries[i].Name == portName:
 			// Ports and names must be unique so rewrite an existing entry if found
-			log.Entry(context.Background()).Warnf("skaffold debug needs to expose port %d with name %s. Replacing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
+			log.Entry(context.TODO()).Warnf("skaffold debug needs to expose port %d with name %s. Replacing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
 			entries[i].Name = portName
 			entries[i].ContainerPort = port
 			found = true
 			i++
 		case entries[i].ContainerPort == port:
 			// Cut any entries with a clashing port
-			log.Entry(context.Background()).Warnf("skaffold debug needs to expose port %d for %s. Removing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
+			log.Entry(context.TODO()).Warnf("skaffold debug needs to expose port %d for %s. Removing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
 			entries = append(entries[:i], entries[i+1:]...)
 		default:
 			i++

@@ -122,7 +122,7 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 func hasRequiredK8sManifestFields(doc map[string]interface{}) bool {
 	for _, field := range requiredFields {
 		if _, ok := doc[field]; !ok {
-			log.Entry(context.Background()).Debugf("%s not present in yaml, continuing", field)
+			log.Entry(context.TODO()).Debugf("%s not present in yaml, continuing", field)
 			return false
 		}
 	}

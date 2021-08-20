@@ -68,14 +68,14 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever configurationRe
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
-			log.Entry(context.Background()).Debugf("Unable to interpret manifest for debugging: %v\n", err)
+			log.Entry(context.TODO()).Debugf("Unable to interpret manifest for debugging: %v\n", err)
 		} else if transformManifest(obj, retriever, debugHelpersRegistry) {
 			manifest, err = encodeAsYaml(obj)
 			if err != nil {
 				return nil, fmt.Errorf("marshalling yaml: %w", err)
 			}
 			if logrus.IsLevelEnabled(logrus.DebugLevel) {
-				log.Entry(context.Background()).Debugln("Applied debugging transform:\n", string(manifest))
+				log.Entry(context.TODO()).Debugln("Applied debugging transform:\n", string(manifest))
 			}
 		}
 		updated = append(updated, manifest)
@@ -88,12 +88,12 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever configurationRe
 // If `builds` is empty, then treat all `image` images as a build artifact.
 func findArtifact(image string, builds []graph.Artifact) *graph.Artifact {
 	if len(builds) == 0 {
-		log.Entry(context.Background()).Debugf("No build artifacts specified: using image as-is %q", image)
+		log.Entry(context.TODO()).Debugf("No build artifacts specified: using image as-is %q", image)
 		return &graph.Artifact{ImageName: image, Tag: image}
 	}
 	for _, artifact := range builds {
 		if image == artifact.ImageName || image == artifact.Tag {
-			log.Entry(context.Background()).Debugf("Found artifact for image %q", image)
+			log.Entry(context.TODO()).Debugf("Found artifact for image %q", image)
 			return &artifact
 		}
 	}

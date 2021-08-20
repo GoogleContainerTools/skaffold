@@ -37,7 +37,7 @@ var (
 )
 
 func AddRemoteTag(src, target string, cfg Config) error {
-	log.Entry(context.Background()).Debugf("attempting to add tag %s to src %s", target, src)
+	log.Entry(context.TODO()).Debugf("attempting to add tag %s to src %s", target, src)
 	img, err := getRemoteImage(src, cfg)
 	if err != nil {
 		return fmt.Errorf("getting image: %w", err)
@@ -126,7 +126,7 @@ func parseReference(s string, cfg Config, opts ...name.Option) (name.Reference, 
 	if IsInsecure(ref, cfg.GetInsecureRegistries()) {
 		ref, err = name.ParseReference(s, name.Insecure)
 		if err != nil {
-			log.Entry(context.Background()).Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
+			log.Entry(context.TODO()).Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
 		}
 	}
 

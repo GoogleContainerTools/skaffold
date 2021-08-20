@@ -114,7 +114,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDep
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
 	if err != nil {
-		olog.Entry(context.Background()).Warn("unable to parse namespaces - deploy might not work correctly!")
+		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
 	return &Deployer{

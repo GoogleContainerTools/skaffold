@@ -108,7 +108,7 @@ func ResolveDependencyImages(deps []*latestV1.ArtifactDependency, r ArtifactReso
 		case found:
 			m[d.Alias] = &t
 		case missingIsFatal:
-			log.Entry(context.Background()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+			log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 		default:
 			m[d.Alias] = nil
 		}

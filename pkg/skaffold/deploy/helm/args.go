@@ -75,7 +75,7 @@ func constructOverrideArgs(r *latestV1.HelmRelease, builds []graph.Artifact, arg
 			envMap[k+suffix] = v
 		}
 	}
-	log.Entry(context.Background()).Debugf("EnvVarMap: %+v\n", envMap)
+	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
 
 	for _, k := range sortKeys(r.SetValueTemplates) {
 		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
