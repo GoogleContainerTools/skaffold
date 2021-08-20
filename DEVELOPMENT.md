@@ -189,6 +189,12 @@ The unit tests live with the code they test and can be run with:
 make test
 ```
 
+You can also run a smaller set of unit tests that run quicker with:
+
+```shell
+make quicktest
+```
+
 In case you see a linter error such as:
 
 ```shell
