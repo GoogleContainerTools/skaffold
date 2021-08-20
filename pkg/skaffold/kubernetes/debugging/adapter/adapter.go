@@ -25,12 +25,14 @@ import (
 type Adapter struct {
 	container  *v1.Container
 	executable *types.ExecutableContainer
+	valueFrom  map[string]*v1.EnvVarSource
 }
 
 func NewAdapter(c *v1.Container) *Adapter {
 	return &Adapter{
 		container:  c,
 		executable: ExecutableContainerFromK8sContainer(c),
+		valueFrom:  holdValueFrom(c.Env),
 	}
 }
 
@@ -43,7 +45,7 @@ func (a *Adapter) GetContainer() *types.ExecutableContainer {
 func (a *Adapter) Apply() {
 	a.container.Args = a.executable.Args
 	a.container.Command = a.executable.Command
-	a.container.Env = containerEnvToK8sEnv(a.executable.Env)
+	a.container.Env = containerEnvToK8sEnv(a.executable.Env, a.valueFrom)
 	a.container.Ports = containerPortsToK8sPorts(a.executable.Ports)
 }
 
@@ -61,7 +63,6 @@ func ExecutableContainerFromK8sContainer(c *v1.Container) *types.ExecutableConta
 }
 
 func k8sEnvToContainerEnv(k8sEnv []v1.EnvVar) types.ContainerEnv {
-	// TODO(nkubala): ValueFrom is ignored. Do we care?
 	env := make(map[string]string, len(k8sEnv))
 	var order []string
 	for _, entry := range k8sEnv {
@@ -74,12 +75,24 @@ func k8sEnvToContainerEnv(k8sEnv []v1.EnvVar) types.ContainerEnv {
 	}
 }
 
-func containerEnvToK8sEnv(env types.ContainerEnv) []v1.EnvVar {
+// ValueFrom isn't handled by the debug code when altering the env vars.
+// holdValueFrom stores all ValueFrom values as they are on the adapter,
+// which will then be put back in place by Apply() later.
+func holdValueFrom(env []v1.EnvVar) map[string]*v1.EnvVarSource {
+	from := make(map[string]*v1.EnvVarSource, len(env))
+	for _, entry := range env {
+		from[entry.Name] = entry.ValueFrom
+	}
+	return from
+}
+
+func containerEnvToK8sEnv(env types.ContainerEnv, valueFrom map[string]*v1.EnvVarSource) []v1.EnvVar {
 	var k8sEnv []v1.EnvVar
 	for _, k := range env.Order {
 		k8sEnv = append(k8sEnv, v1.EnvVar{
-			Name:  k,
-			Value: env.Env[k],
+			Name:      k,
+			Value:     env.Env[k],
+			ValueFrom: valueFrom[k],
 		})
 	}
 	return k8sEnv

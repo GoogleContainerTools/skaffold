@@ -73,7 +73,6 @@ func transformContainer(adapter types.ContainerAdapter, config ImageConfiguratio
 	container := adapter.GetContainer()
 	defer adapter.Apply()
 	for _, key := range container.Env.Order {
-		// FIXME handle ValueFrom?
 		if config.Env == nil {
 			config.Env = make(map[string]string)
 		}
@@ -150,7 +149,7 @@ func isShDashC(cmd, arg string) bool {
 }
 
 func performContainerTransform(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
-	log.Entry(context.Background()).Tracef("Examining container %q with config %v", adapter.GetContainer().Name, config)
+	log.Entry(context.TODO()).Tracef("Examining container %q with config %v", adapter.GetContainer().Name, config)
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(adapter, config, portAlloc, Protocols)
