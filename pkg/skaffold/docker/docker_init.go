@@ -85,7 +85,7 @@ func (c ArtifactConfig) Path() string {
 func validate(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Entry(context.Background()).Warnf("opening file %s: %s", path, err.Error())
+		log.Entry(context.TODO()).Warnf("opening file %s: %s", path, err.Error())
 		return false
 	}
 	defer f.Close()

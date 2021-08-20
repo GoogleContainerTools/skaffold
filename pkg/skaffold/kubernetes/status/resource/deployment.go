@@ -201,7 +201,7 @@ func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
 			// result.
 			out, writeTrimLines, err := withLogFile(p.Name(), &result, p.Logs(), isMuted)
 			if err != nil {
-				log.Entry(context.Background()).Debugf("could not create log file %v", err)
+				log.Entry(context.TODO()).Debugf("could not create log file %v", err)
 			}
 			trimLines := []string{}
 			for i, l := range p.Logs() {

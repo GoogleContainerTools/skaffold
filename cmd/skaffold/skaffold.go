@@ -43,13 +43,13 @@ func main() {
 			ServiceVersion: version.Get().Version,
 		})
 		if err != nil {
-			log.Entry(context.Background()).Fatalf("failed to start the profiler: %v", err)
+			log.Entry(context.TODO()).Fatalf("failed to start the profiler: %v", err)
 		}
 	}
 	var code int
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {
-			log.Entry(context.Background()).Debugln("ignore error since context is cancelled:", err)
+			log.Entry(context.TODO()).Debugln("ignore error since context is cancelled:", err)
 		} else {
 			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
 			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again

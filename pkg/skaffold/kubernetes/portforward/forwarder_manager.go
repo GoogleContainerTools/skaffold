@@ -105,18 +105,18 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 	}
 	var configurations map[string]annotations.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annot), &configurations); err != nil {
-		log.Entry(context.Background()).Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
+		log.Entry(context.TODO()).Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
 		return nil
 	}
 	dc, found := configurations[c.Name]
 	if !found {
-		log.Entry(context.Background()).Debugf("no debug configuration found on pod/%s/%s", pod.Name, c.Name)
+		log.Entry(context.TODO()).Debugf("no debug configuration found on pod/%s/%s", pod.Name, c.Name)
 		return nil
 	}
 	for _, port := range c.Ports {
 		for _, exposed := range dc.Ports {
 			if uint32(port.ContainerPort) == exposed {
-				log.Entry(context.Background()).Debugf("selecting debug port for pod/%s/%s: %v", pod.Name, c.Name, port)
+				log.Entry(context.TODO()).Debugf("selecting debug port for pod/%s/%s: %v", pod.Name, c.Name, port)
 				ports = append(ports, port)
 			}
 		}

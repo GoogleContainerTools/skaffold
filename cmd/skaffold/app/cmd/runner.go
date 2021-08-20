@@ -152,10 +152,10 @@ func setDefaultDeployer(configs parser.SkaffoldConfigSet) {
 func warnIfUpdateIsAvailable() {
 	warning, err := update.CheckVersionOnError(opts.GlobalConfig)
 	if err != nil {
-		log.Entry(context.Background()).Infof("update check failed: %s", err)
+		log.Entry(context.TODO()).Infof("update check failed: %s", err)
 		return
 	}
 	if warning != "" {
-		log.Entry(context.Background()).Warn(warning)
+		log.Entry(context.TODO()).Warn(warning)
 	}
 }

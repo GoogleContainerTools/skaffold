@@ -57,7 +57,7 @@ func RetrieveWorkingDir(ctx context.Context, tagged string, cfg Config) (string,
 	case cf == nil:
 		return "/", nil
 	case cf.Config.WorkingDir == "":
-		log.Entry(context.Background()).Debugf("Using default workdir '/' for %s", tagged)
+		log.Entry(context.TODO()).Debugf("Using default workdir '/' for %s", tagged)
 		return "/", nil
 	default:
 		return cf.Config.WorkingDir, nil

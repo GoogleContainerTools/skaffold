@@ -71,7 +71,7 @@ func getClient() Client {
 
 func (clientImpl) IsMinikube(ctx context.Context, kubeContext string) bool {
 	if _, _, err := FindMinikubeBinary(ctx); err != nil {
-		log.Entry(context.Background()).Tracef("Minikube cluster not detected: %v", err)
+		log.Entry(context.TODO()).Tracef("Minikube cluster not detected: %v", err)
 		return false
 	}
 	// short circuit if context is 'minikube'
@@ -81,21 +81,21 @@ func (clientImpl) IsMinikube(ctx context.Context, kubeContext string) bool {
 
 	cluster, err := getClusterInfo(kubeContext)
 	if err != nil {
-		log.Entry(context.Background()).Tracef("failed to get cluster info: %v", err)
+		log.Entry(context.TODO()).Tracef("failed to get cluster info: %v", err)
 		return false
 	}
 	if matchClusterCertPath(cluster.CertificateAuthority) {
-		log.Entry(context.Background()).Debugf("Minikube cluster detected: cluster certificate for context %q found inside the minikube directory", kubeContext)
+		log.Entry(context.TODO()).Debugf("Minikube cluster detected: cluster certificate for context %q found inside the minikube directory", kubeContext)
 		return true
 	}
 
 	if ok, err := matchServerURL(ctx, cluster.Server); err != nil {
-		log.Entry(context.Background()).Tracef("failed to match server url: %v", err)
+		log.Entry(context.TODO()).Tracef("failed to match server url: %v", err)
 	} else if ok {
-		log.Entry(context.Background()).Debugf("Minikube cluster detected: server url for context %q matches minikube node ip", kubeContext)
+		log.Entry(context.TODO()).Debugf("Minikube cluster detected: server url for context %q matches minikube node ip", kubeContext)
 		return true
 	}
-	log.Entry(context.Background()).Tracef("Minikube cluster not detected for context %q", kubeContext)
+	log.Entry(context.TODO()).Tracef("Minikube cluster not detected for context %q", kubeContext)
 	return false
 }
 
@@ -184,7 +184,7 @@ func matchServerURL(ctx context.Context, server string) (bool, error) {
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
-		log.Entry(context.Background()).Tracef("invalid server url: %v", err)
+		log.Entry(context.TODO()).Tracef("invalid server url: %v", err)
 	}
 
 	for _, v := range data.Valid {

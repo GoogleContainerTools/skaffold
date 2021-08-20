@@ -173,6 +173,7 @@ func (rc *RunContext) GetKubeNamespace() string                      { return rc
 func (rc *RunContext) GlobalConfig() string                          { return rc.Opts.GlobalConfig }
 func (rc *RunContext) HydratedManifests() []string                   { return rc.Opts.HydratedManifests }
 func (rc *RunContext) LoadImages() bool                              { return rc.Cluster.LoadImages }
+func (rc *RunContext) ForceLoadImages() bool                         { return rc.Opts.ForceLoadImages }
 func (rc *RunContext) MinikubeProfile() string                       { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) Muted() config.Muted                           { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                         { return rc.Opts.NoPruneChildren }
@@ -210,7 +211,7 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
-	log.Entry(context.Background()).Infof("Using kubectl context: %s", kubeContext)
+	log.Entry(context.TODO()).Infof("Using kubectl context: %s", kubeContext)
 
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
@@ -221,7 +222,7 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
-		log.Entry(context.Background()).Warn("error retrieving insecure registries from global config: push/pull issues may exist...")
+		log.Entry(context.TODO()).Warn("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
 	var regList []string
 	regList = append(regList, opts.InsecureRegistries...)

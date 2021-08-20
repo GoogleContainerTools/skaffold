@@ -110,7 +110,7 @@ type creds struct {
 type errHandler struct{}
 
 func (h errHandler) Handle(err error) {
-	log.Entry(context.Background()).Debugf("Error with metrics: %v", err)
+	log.Entry(context.TODO()).Debugf("Error with metrics: %v", err)
 }
 
 type HookPhase string

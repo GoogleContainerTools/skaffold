@@ -91,7 +91,7 @@ func (l *SkaffoldListener) do(devLoop func() error) error {
 	// reset the dependencies resolver cache at the start of every dev loop.
 	l.sourceDependenciesCache.Reset()
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
-		log.Entry(context.Background()).Warnf("Ignoring changes: %s", err.Error())
+		log.Entry(context.TODO()).Warnf("Ignoring changes: %s", err.Error())
 		return nil
 	}
 
@@ -101,7 +101,7 @@ func (l *SkaffoldListener) do(devLoop func() error) error {
 		if errors.Is(err, ErrorConfigurationChanged) {
 			return err
 		}
-		log.Entry(context.Background()).Errorf("error running dev loop: %s", err.Error())
+		log.Entry(context.TODO()).Errorf("error running dev loop: %s", err.Error())
 	}
 
 	return nil

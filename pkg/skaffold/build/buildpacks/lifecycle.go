@@ -202,14 +202,14 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 		if builderImage == d.Alias {
 			builderImage, found = r.GetImageTag(d.ImageName)
 			if !found {
-				log.Entry(context.Background()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			builderImageLocal = true
 		}
 		if runImage == d.Alias {
 			runImage, found = r.GetImageTag(d.ImageName)
 			if !found {
-				log.Entry(context.Background()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			runImageLocal = true
 		}
@@ -224,10 +224,10 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 
 		// if remote image pull is disabled then the image that is not fetched from the required artifacts might not be latestV1.
 		if !pushImages && builderImageLocal {
-			log.Entry(context.Background()).Warn("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
 		}
 		if !pushImages && runImageLocal {
-			log.Entry(context.Background()).Warn("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
 		}
 	}
 

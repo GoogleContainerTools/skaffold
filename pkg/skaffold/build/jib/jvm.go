@@ -54,7 +54,7 @@ func resolveJVM(ctx context.Context) bool {
 	cmd := exec.Command("java", "-version")
 	err := util.RunCmd(ctx, cmd)
 	if err != nil {
-		log.Entry(context.Background()).Warnf("Skipping Jib: no JVM: %v failed: %v", cmd.Args, err)
+		log.Entry(context.TODO()).Warnf("Skipping Jib: no JVM: %v failed: %v", cmd.Args, err)
 	}
 	return err == nil
 }

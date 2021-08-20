@@ -99,7 +99,7 @@ func sanitizeTag(tag string) string {
 	}
 
 	if tag != sanitized {
-		log.Entry(context.Background()).Warnf("Using %q instead of %q as an image tag", sanitized, tag)
+		log.Entry(context.TODO()).Warnf("Using %q instead of %q as an image tag", sanitized, tag)
 	}
 
 	return sanitized

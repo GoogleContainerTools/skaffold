@@ -109,7 +109,7 @@ func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
 // Apply configures a container definition for Python with ptvsd/debugpy/pydevd.
 // Returns a simple map describing the debug configuration details.
 func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
-	log.Entry(context.Background()).Infof("Configuring %q for python debugging", container.Name)
+	log.Entry(context.TODO()).Infof("Configuring %q for python debugging", container.Name)
 
 	// try to find existing `-mptvsd` or `-mdebugpy` command
 	if spec := retrievePythonDebugSpec(config); spec != nil {
@@ -198,7 +198,7 @@ func extractPtvsdSpec(args []string) *pythonSpec {
 			port, err := strconv.ParseInt(args[i+1], 10, 32)
 			// spec.port, err := strconv.Atoi(args[i+1])
 			if err != nil {
-				log.Entry(context.Background()).Errorf("Invalid python ptvsd port %q: %s\n", args[i+1], err)
+				log.Entry(context.TODO()).Errorf("Invalid python ptvsd port %q: %s\n", args[i+1], err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -227,7 +227,7 @@ func extractDebugpySpec(args []string) *pythonSpec {
 			}
 			port, err := strconv.ParseInt(s[len(s)-1], 10, 32)
 			if err != nil {
-				log.Entry(context.Background()).Errorf("Invalid port %q: %s\n", args[i+1], err)
+				log.Entry(context.TODO()).Errorf("Invalid port %q: %s\n", args[i+1], err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -287,7 +287,7 @@ func (spec pythonSpec) launcherMode() string {
 	case debugpy:
 		return "debugpy"
 	}
-	log.Entry(context.Background()).Fatalf("invalid debugger type: %q", spec.debugger)
+	log.Entry(context.TODO()).Fatalf("invalid debugger type: %q", spec.debugger)
 	return ""
 }
 
@@ -298,7 +298,7 @@ func (spec pythonSpec) protocol() string {
 	case debugpy, ptvsd:
 		return dapProtocol
 	default:
-		log.Entry(context.Background()).Fatalf("invalid debugger type: %q", spec.debugger)
+		log.Entry(context.TODO()).Fatalf("invalid debugger type: %q", spec.debugger)
 		return dapProtocol
 	}
 }

@@ -180,7 +180,7 @@ func envVarForImage(imageName string, digest string) map[string]string {
 		customMap[constants.ImageRef.Tag] = ref.Tag
 		customMap[constants.ImageRef.Digest] = ref.Digest
 	} else {
-		log.Entry(context.Background()).Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
+		log.Entry(context.TODO()).Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
 	}
 
 	if digest == "" {

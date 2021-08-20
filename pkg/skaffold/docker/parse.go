@@ -199,7 +199,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 		}
 	}
 
-	log.Entry(context.Background()).Debugf("Found dependencies for dockerfile: %v", fts)
+	log.Entry(context.TODO()).Debugf("Found dependencies for dockerfile: %v", fts)
 	return fts, nil
 }
 
@@ -295,7 +295,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	var srcs []string
 	for _, src := range paths[0 : len(paths)-1] {
 		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			log.Entry(context.Background()).Debugln("Skipping watch on remote dependency", src)
+			log.Entry(context.TODO()).Debugln("Skipping watch on remote dependency", src)
 			continue
 		}
 
@@ -338,7 +338,7 @@ func expandOnbuildInstructions(ctx context.Context, nodes []*parser.Node, cfg Co
 			} else if ons, err := parseOnbuild(ctx, from.image, cfg); err == nil {
 				onbuildNodes = ons
 			} else if warnMsg, ok, _ := isOldImageManifestProblem(cfg, err); ok && warnMsg != "" {
-				log.Entry(context.Background()).Warn(warnMsg)
+				log.Entry(context.TODO()).Warn(warnMsg)
 			} else if !ok {
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
@@ -356,7 +356,7 @@ func expandOnbuildInstructions(ctx context.Context, nodes []*parser.Node, cfg Co
 }
 
 func parseOnbuild(ctx context.Context, image string, cfg Config) ([]*parser.Node, error) {
-	log.Entry(context.Background()).Tracef("Checking base image %s for ONBUILD triggers.", image)
+	log.Entry(context.TODO()).Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(ctx, image, cfg)
@@ -368,7 +368,7 @@ func parseOnbuild(ctx context.Context, image string, cfg Config) ([]*parser.Node
 		return []*parser.Node{}, nil
 	}
 
-	log.Entry(context.Background()).Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
+	log.Entry(context.TODO()).Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
 
 	obRes, err := parser.Parse(strings.NewReader(strings.Join(img.Config.OnBuild, "\n")))
 	if err != nil {

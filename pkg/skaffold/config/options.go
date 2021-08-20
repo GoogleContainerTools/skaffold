@@ -99,6 +99,7 @@ type SkaffoldOptions struct {
 	RepoCacheDir     string
 	SyncRemoteCache  SyncRemoteCacheOption
 	WaitForDeletions WaitForDeletions
+	ForceLoadImages  bool
 }
 
 type RunMode string

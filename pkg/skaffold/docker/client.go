@@ -113,7 +113,7 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 		var exitError ExitCoder
 		if errors.As(err, &exitError) && (exitError.ExitCode() == minikubeDriverConfictExitCode || exitError.ExitCode() == oldMinikubeBadUsageExitCode) {
 			// Let's ignore the error and fall back to local docker daemon.
-			log.Entry(context.Background()).Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
+			log.Entry(context.TODO()).Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
 			return newEnvAPIClient()
 		}
 
@@ -159,7 +159,7 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 	}
 
 	if host != client.DefaultDockerHost {
-		log.Entry(context.Background()).Infof("Using minikube docker daemon at %s", host)
+		log.Entry(context.TODO()).Infof("Using minikube docker daemon at %s", host)
 	}
 
 	// Keep the minikube environment variables
@@ -174,7 +174,7 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 
 func getUserAgentHeader() map[string]string {
 	userAgent := fmt.Sprintf("skaffold-%s", version.Get().Version)
-	log.Entry(context.Background()).Debugf("setting Docker user agent to %s", userAgent)
+	log.Entry(context.TODO()).Debugf("setting Docker user agent to %s", userAgent)
 	return map[string]string{
 		"User-Agent": userAgent,
 	}

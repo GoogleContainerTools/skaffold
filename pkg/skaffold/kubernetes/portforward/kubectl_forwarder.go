@@ -188,7 +188,7 @@ func portForwardArgs(ctx context.Context, kubeContext string, pfe *portForwardEn
 
 // Terminate terminates an existing kubectl port-forward command using SIGTERM
 func (*KubectlForwarder) Terminate(p *portForwardEntry) {
-	log.Entry(context.Background()).Debugf("Terminating port-forward %v", p)
+	log.Entry(context.TODO()).Debugf("Terminating port-forward %v", p)
 
 	p.terminationLock.Lock()
 	defer p.terminationLock.Unlock()

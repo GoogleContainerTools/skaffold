@@ -157,7 +157,7 @@ func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, bool) {
 	}
 	t, ok := v.(string)
 	if !ok {
-		log.Entry(context.Background()).Fatalf("invalid build output recorded for image %s", imageName)
+		log.Entry(context.TODO()).Fatalf("invalid build output recorded for image %s", imageName)
 	}
 	return t, true
 }

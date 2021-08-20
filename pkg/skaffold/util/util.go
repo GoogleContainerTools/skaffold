@@ -114,7 +114,7 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 			return nil, fmt.Errorf("glob: %w", err)
 		}
 		if len(files) == 0 {
-			log.Entry(context.Background()).Warnf("%s did not match any file", p)
+			log.Entry(context.TODO()).Warnf("%s did not match any file", p)
 		}
 
 		for _, f := range files {

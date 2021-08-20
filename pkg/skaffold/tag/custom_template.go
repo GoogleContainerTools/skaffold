@@ -94,7 +94,7 @@ func ParseCustomTemplate(t string) (*template.Template, error) {
 // ExecuteCustomTemplate executes a customTemplate against a custom map.
 func ExecuteCustomTemplate(customTemplate *template.Template, customMap map[string]string) (string, error) {
 	var buf bytes.Buffer
-	log.Entry(context.Background()).Debugf("Executing custom template %v with custom map %v", customTemplate, customMap)
+	log.Entry(context.TODO()).Debugf("Executing custom template %v with custom map %v", customTemplate, customMap)
 	if err := customTemplate.Execute(&buf, customMap); err != nil {
 		return "", fmt.Errorf("executing template: %w", err)
 	}

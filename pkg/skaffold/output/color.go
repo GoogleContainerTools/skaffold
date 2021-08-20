@@ -56,7 +56,7 @@ func SetupColors(ctx context.Context, out io.Writer, defaultColor int, forceColo
 	_, isTerm := util.IsTerminal(out)
 	supportsColor, err := util.SupportsColor(ctx)
 	if err != nil {
-		log.Entry(context.Background()).Debugf("error checking for color support: %v", err)
+		log.Entry(context.TODO()).Debugf("error checking for color support: %v", err)
 	}
 
 	useColors := (isTerm && supportsColor) || forceColors

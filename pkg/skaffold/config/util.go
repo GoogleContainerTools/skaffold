@@ -72,12 +72,12 @@ func readConfigFileCached(filename string) (*GlobalConfig, error) {
 		filenameOrDefault, err := ResolveConfigFile(filename)
 		if err != nil {
 			configFileErr = err
-			log.Entry(context.Background()).Warnf("Could not load global Skaffold defaults. Error resolving config file %q", filenameOrDefault)
+			log.Entry(context.TODO()).Warnf("Could not load global Skaffold defaults. Error resolving config file %q", filenameOrDefault)
 			return
 		}
 		configFile, configFileErr = ReadConfigFileNoCache(filenameOrDefault)
 		if configFileErr == nil {
-			log.Entry(context.Background()).Infof("Loaded Skaffold defaults from %q", filenameOrDefault)
+			log.Entry(context.TODO()).Infof("Loaded Skaffold defaults from %q", filenameOrDefault)
 		}
 	})
 	return configFile, configFileErr
@@ -100,12 +100,12 @@ func ResolveConfigFile(configFile string) (string, error) {
 func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		log.Entry(context.Background()).Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
+		log.Entry(context.TODO()).Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
 		return nil, fmt.Errorf("reading global config: %w", err)
 	}
 	config := GlobalConfig{}
 	if err := yaml.Unmarshal(contents, &config); err != nil {
-		log.Entry(context.Background()).Warnf("Could not load global Skaffold defaults. Error encounter while unmarshalling the contents of file %q", configFile)
+		log.Entry(context.TODO()).Warnf("Could not load global Skaffold defaults. Error encounter while unmarshalling the contents of file %q", configFile)
 		return nil, fmt.Errorf("unmarshalling global skaffold config: %w", err)
 	}
 	return &config, nil
@@ -143,7 +143,7 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 	var mergedConfig ContextConfig
 	for _, contextCfg := range cfg.ContextConfigs {
 		if util.RegexEqual(contextCfg.Kubecontext, kubeContext) {
-			log.Entry(context.Background()).Debugf("found config for context %q", kubeContext)
+			log.Entry(context.TODO()).Debugf("found config for context %q", kubeContext)
 			mergedConfig = *contextCfg
 		}
 	}
@@ -170,7 +170,7 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 		return "", err
 	}
 	if cfg.DefaultRepo != "" {
-		log.Entry(context.Background()).Infof("Using default-repo=%s from config", cfg.DefaultRepo)
+		log.Entry(context.TODO()).Infof("Using default-repo=%s from config", cfg.DefaultRepo)
 	}
 	return cfg.DefaultRepo, nil
 }
@@ -181,7 +181,7 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 		return nil, err
 	}
 	if len(cfg.InsecureRegistries) > 0 {
-		log.Entry(context.Background()).Infof("Using insecure-registries=%v from config", cfg.InsecureRegistries)
+		log.Entry(context.TODO()).Infof("Using insecure-registries=%v from config", cfg.InsecureRegistries)
 	}
 	return cfg.InsecureRegistries, nil
 }
@@ -193,7 +193,7 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	}
 
 	if cfg.DebugHelpersRegistry != "" {
-		log.Entry(context.Background()).Infof("Using debug-helpers-registry=%s from config", cfg.DebugHelpersRegistry)
+		log.Entry(context.TODO()).Infof("Using debug-helpers-registry=%s from config", cfg.DebugHelpersRegistry)
 		return cfg.DebugHelpersRegistry, nil
 	}
 	return constants.DefaultDebugHelpersRegistry, nil
@@ -214,7 +214,7 @@ func GetCluster(ctx context.Context, configFile string, minikubeProfile string, 
 		local = true
 
 	case cfg.LocalCluster != nil:
-		log.Entry(context.Background()).Infof("Using local-cluster=%t from config", *cfg.LocalCluster)
+		log.Entry(context.TODO()).Infof("Using local-cluster=%t from config", *cfg.LocalCluster)
 		local = *cfg.LocalCluster
 
 	case kubeContext == constants.DefaultMinikubeContext ||

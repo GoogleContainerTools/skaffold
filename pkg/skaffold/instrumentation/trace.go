@@ -60,7 +60,7 @@ func InitTraceFromEnvVar(opts ...TraceExporterOption) (trace.TracerProvider, fun
 		}
 	})
 	if tracerInitErr != nil {
-		log.Entry(context.Background()).Debugf("error initializing tracing: %v", tracerInitErr)
+		log.Entry(context.TODO()).Debugf("error initializing tracing: %v", tracerInitErr)
 	}
 	return tracerProvider, tracerShutdown, tracerInitErr
 }

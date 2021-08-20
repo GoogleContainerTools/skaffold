@@ -50,7 +50,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	}
 	defer koPublisher.Close()
 
-	imageRef, err := b.buildAndPublish(ctx, a.ImageName, koBuilder, koPublisher)
+	imageRef, err := b.buildAndPublish(ctx, a, koBuilder, koPublisher)
 	if err != nil {
 		return "", fmt.Errorf("could not build and publish ko image %q: %w", a.ImageName, err)
 	}
@@ -60,10 +60,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 }
 
 // buildAndPublish the image using the ko builder and publisher.
-func (b *Builder) buildAndPublish(ctx context.Context, imageName string, koBuilder build.Interface, koPublisher publish.Interface) (name.Reference, error) {
-	importpath, err := getImportPath(imageName, koBuilder)
+func (b *Builder) buildAndPublish(ctx context.Context, a *latestV1.Artifact, koBuilder build.Interface, koPublisher publish.Interface) (name.Reference, error) {
+	importpath, err := getImportPath(a, koBuilder)
 	if err != nil {
-		return nil, fmt.Errorf("could not determine Go import path for ko image %q: %w", imageName, err)
+		return nil, fmt.Errorf("could not determine Go import path for ko image %q: %w", a.ImageName, err)
 	}
 	imageMap, err := b.publishImages(ctx, []string{importpath}, koPublisher, koBuilder)
 	if err != nil {
@@ -86,11 +86,16 @@ func (b *Builder) buildAndPublish(ctx context.Context, imageName string, koBuild
 //
 // If the image name does _not_ start with `ko://`, determine the Go import
 // path of the image workspace directory.
-func getImportPath(imageName string, koBuilder build.Interface) (string, error) {
-	if strings.HasPrefix(imageName, build.StrictScheme) {
-		return imageName, nil
+func getImportPath(a *latestV1.Artifact, koBuilder build.Interface) (string, error) {
+	if strings.HasPrefix(a.ImageName, build.StrictScheme) {
+		return a.ImageName, nil
 	}
-	return koBuilder.QualifyImport(".")
+	target := a.KoArtifact.Target
+	if target == "" {
+		// default to context directory
+		target = "."
+	}
+	return koBuilder.QualifyImport(target)
 }
 
 // getImageIdentifier returns the image tag or digest for published images (`pushImages=true`),

@@ -375,7 +375,7 @@ func UpgradeTo(configs []util.VersionedConfig, toVersion string) ([]util.Version
 	if !upgradeNeeded {
 		return configs, nil
 	}
-	log.Entry(context.Background()).Debugf("config version out of date: upgrading to latest %q", toVersion)
+	log.Entry(context.TODO()).Debugf("config version out of date: upgrading to latest %q", toVersion)
 	var err error
 	var upgraded []util.VersionedConfig
 	for _, cfg := range configs {
