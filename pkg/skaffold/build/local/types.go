@@ -91,10 +91,10 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, e
 	switch {
 	case pushFlag.Value() != nil:
 		pushImages = *pushFlag.Value()
-		log.Entry(context.Background()).Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
+		log.Entry(context.TODO()).Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
 	case buildCfg.Push == nil:
 		pushImages = cluster.PushImages
-		log.Entry(context.Background()).Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
+		log.Entry(context.TODO()).Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
 	default:
 		pushImages = *buildCfg.Push
 	}

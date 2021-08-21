@@ -95,7 +95,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.Kubect
 	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
 	if err != nil {
-		olog.Entry(context.Background()).Warn("unable to parse namespaces - deploy might not work correctly!")
+		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 
@@ -294,8 +294,8 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	for _, f := range list {
 		if !kubernetes.HasKubernetesFileExtension(f) {
 			if !util.StrSliceContains(manifests, f) {
-				olog.Entry(context.Background()).Infof("refusing to deploy/delete non {json, yaml} file %s", f)
-				olog.Entry(context.Background()).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+				olog.Entry(context.TODO()).Infof("refusing to deploy/delete non {json, yaml} file %s", f)
+				olog.Entry(context.TODO()).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
 			}
 		}

@@ -81,13 +81,13 @@ func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dep
 
 	cacheFile, err := resolveCacheFile(cfg.CacheFile())
 	if err != nil {
-		log.Entry(context.Background()).Warnf("Error resolving cache file, not using skaffold cache: %v", err)
+		log.Entry(context.TODO()).Warnf("Error resolving cache file, not using skaffold cache: %v", err)
 		return &noCache{}, nil
 	}
 
 	artifactCache, err := retrieveArtifactCache(cacheFile)
 	if err != nil {
-		log.Entry(context.Background()).Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
+		log.Entry(context.TODO()).Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return &noCache{}, nil
 	}
 

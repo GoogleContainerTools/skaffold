@@ -255,7 +255,7 @@ func kanikoArgs(artifact *latestV1.KanikoArtifact, tag string, insecureRegistrie
 		return nil, fmt.Errorf("unable build kaniko args: %w", err)
 	}
 
-	log.Entry(context.Background()).Trace("kaniko arguments are ", strings.Join(args, " "))
+	log.Entry(context.TODO()).Trace("kaniko arguments are ", strings.Join(args, " "))
 
 	return args, nil
 }

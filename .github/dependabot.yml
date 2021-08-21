@@ -8,6 +8,9 @@ updates:
     package-ecosystem: "gomod"
     schedule:
       interval: "daily"
+    # Security updates have their own PR limit, so setting this to 0 will only
+    # allow security updates through.
+    open-pull-requests-limit: 0
 
   # check for updates to github actions
   - directory: "/"

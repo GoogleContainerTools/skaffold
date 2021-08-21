@@ -100,7 +100,7 @@ func (k *kustomize) DeployConfig() (latestV1.DeployConfig, []latestV1.Profile) {
 		default:
 			defaultKustomization = k.kustomizations[0]
 		}
-		log.Entry(context.Background()).Warnf("multiple kustomizations found but no default provided - defaulting to %s", defaultKustomization)
+		log.Entry(context.TODO()).Warnf("multiple kustomizations found but no default provided - defaulting to %s", defaultKustomization)
 	}
 
 	for _, kustomization := range k.kustomizations {

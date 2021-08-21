@@ -100,7 +100,7 @@ func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), err
 			for evt := range watcher.ResultChan() {
 				// If the event's type is "ERROR", warn and continue.
 				if evt.Type == watch.Error {
-					log.Entry(context.Background()).Warnf("got unexpected event of type %s", evt.Type)
+					log.Entry(context.TODO()).Warnf("got unexpected event of type %s", evt.Type)
 					continue
 				}
 

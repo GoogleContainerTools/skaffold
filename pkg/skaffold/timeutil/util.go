@@ -26,7 +26,7 @@ import (
 func LessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		log.Entry(context.Background()).Debugf("could not parse date %q", date)
+		log.Entry(context.TODO()).Debugf("could not parse date %q", date)
 		return false
 	}
 	return time.Since(t) < duration

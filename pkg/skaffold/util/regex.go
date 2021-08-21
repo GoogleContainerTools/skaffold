@@ -43,7 +43,7 @@ func regexMatch(expected, actual string) bool {
 
 	matcher, err := re.Compile(expected)
 	if err != nil {
-		log.Entry(context.Background()).Infof("context activation criteria '%s' is not a valid regexp, falling back to string", expected)
+		log.Entry(context.TODO()).Infof("context activation criteria '%s' is not a valid regexp, falling back to string", expected)
 		return false
 	}
 

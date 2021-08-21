@@ -34,7 +34,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 		return nil, labelSettingErr(err)
 	}
 
-	log.Entry(context.Background()).Debugln("manifests with labels", updated.String())
+	log.Entry(context.TODO()).Debugln("manifests with labels", updated.String())
 
 	return updated, nil
 }

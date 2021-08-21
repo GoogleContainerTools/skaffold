@@ -196,7 +196,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 }
 
 func applyProfile(config *latestV1.SkaffoldConfig, profile latestV1.Profile) error {
-	log.Entry(context.Background()).Infof("applying profile: %s", profile.Name)
+	log.Entry(context.TODO()).Infof("applying profile: %s", profile.Name)
 
 	// Apply profile, field by field
 	mergedV := reflect.Indirect(reflect.ValueOf(&config.Pipeline))
@@ -294,7 +294,7 @@ func overlayOneOfField(config interface{}, profile interface{}) interface{} {
 		}
 	}
 	// if we're here, we didn't find any values set in the profile config. just return the original.
-	log.Entry(context.Background()).Infof("no values found in profile for field %s, using original config values", t.Name())
+	log.Entry(context.TODO()).Infof("no values found in profile for field %s, using original config values", t.Name())
 	return config
 }
 
@@ -317,7 +317,7 @@ func overlayStructField(config interface{}, profile interface{}) interface{} {
 func overlayProfileField(fieldName string, config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
-	log.Entry(context.Background()).Debugf("overlaying profile on config for field %s", fieldName)
+	log.Entry(context.TODO()).Debugf("overlaying profile on config for field %s", fieldName)
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
@@ -348,7 +348,7 @@ func overlayProfileField(fieldName string, config interface{}, profile interface
 		}
 		return v.Interface()
 	default:
-		log.Entry(context.Background()).Fatalf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
+		log.Entry(context.TODO()).Fatalf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
 		return config
 	}
 }

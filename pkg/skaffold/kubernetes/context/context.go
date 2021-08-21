@@ -51,7 +51,7 @@ func ConfigureKubeConfig(cliKubeConfig, cliKubeContext string) {
 		kubeContext = cliKubeContext
 		kubeConfigFile = cliKubeConfig
 		if kubeContext != "" {
-			log.Entry(context.Background()).Infof("Activated kube-context %q", kubeContext)
+			log.Entry(context.TODO()).Infof("Activated kube-context %q", kubeContext)
 		}
 	})
 }
@@ -84,7 +84,7 @@ func GetClusterInfo(kctx string) (*clientcmdapi.Cluster, error) {
 }
 
 func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
-	log.Entry(context.Background()).Debugf("getting client config for kubeContext: `%s`", kctx)
+	log.Entry(context.TODO()).Debugf("getting client config for kubeContext: `%s`", kctx)
 
 	rawConfig, err := getCurrentConfig()
 	if err != nil {
@@ -94,7 +94,7 @@ func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, clientcmd.NewDefaultClientConfigLoadingRules())
 	restConfig, err := clientConfig.ClientConfig()
 	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
-		log.Entry(context.Background()).Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
+		log.Entry(context.TODO()).Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
 		restConfig, err := restclient.InClusterConfig()
 		if err != nil {
 			return restConfig, fmt.Errorf("error creating REST client config in-cluster: %w", err)

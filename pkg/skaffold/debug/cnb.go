@@ -203,7 +203,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 	}
 
 	if len(ic.arguments) == 0 {
-		log.Entry(context.Background()).Warnf("no CNB launch found for %s", ic.artifact)
+		log.Entry(context.TODO()).Warnf("no CNB launch found for %s", ic.artifact)
 		return ic, nil
 	}
 

@@ -111,7 +111,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 	}
 	var configurations map[string]annotations.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(debugConfigString), &configurations); err != nil {
-		log.Entry(context.Background()).Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
+		log.Entry(context.TODO()).Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
 		return
 	}
 	for _, c := range pod.Status.ContainerStatuses {

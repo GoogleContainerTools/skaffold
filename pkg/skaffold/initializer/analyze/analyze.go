@@ -148,7 +148,7 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 				continue
 			}
 			if stat.Size() > a.maxFileSize {
-				log.Entry(context.Background()).Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
+				log.Entry(context.TODO()).Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
 				continue
 			}
 		}
