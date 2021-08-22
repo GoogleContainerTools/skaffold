@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package v3
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ import (
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/proto/enums"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

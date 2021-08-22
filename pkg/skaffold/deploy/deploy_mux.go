@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -107,6 +108,7 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
+		eventV3.DeployInProgress(i)
 		w = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 		deployHooks, ok := deployer.(deployerWithHooks)
@@ -117,6 +119,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 		}
 		if err := deployer.Deploy(ctx, w, as); err != nil {
 			eventV2.DeployFailed(i, err)
+			eventV3.DeployFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
@@ -125,6 +128,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 		if ok || m.iterativeStatusCheck {
 			if err := deployer.GetStatusMonitor().Check(ctx, w); err != nil {
 				eventV2.DeployFailed(i, err)
+				eventV3.DeployFailed(i, err)
 				endTrace(instrumentation.TraceEndError(err))
 				return err
 			}
@@ -135,6 +139,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 			}
 		}
 		eventV2.DeploySucceeded(i)
+		eventV3.DeploySucceeded(i)
 		endTrace()
 	}
 

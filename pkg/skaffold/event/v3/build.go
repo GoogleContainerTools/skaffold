@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package v3
 
 import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 const (
@@ -66,6 +66,7 @@ func CacheCheckHit(artifact string) {
 }
 
 func BuildInProgress(artifact string) {
+	fmt.Println("Build Started event")
 	buildEvent := &proto.BuildStartedEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
@@ -80,7 +81,7 @@ func BuildInProgress(artifact string) {
 func BuildFailed(artifact string, err error) {
 	var aErr *proto.ActionableErr
 	if err != nil {
-		aErr = sErrors.ActionableErrV2(handler.cfg, constants.Build, err)
+		aErr = sErrors.ActionableErrV3(handler.cfg, constants.Build, err)
 	}
 	buildEvent := &proto.BuildFailedEvent{
 		Id:            artifact,
@@ -108,7 +109,7 @@ func BuildSucceeded(artifact string) {
 func BuildCanceled(artifact string, err error) {
 	var aErr *proto.ActionableErr
 	if err != nil {
-		aErr = sErrors.ActionableErrV2(handler.cfg, constants.Build, err)
+		aErr = sErrors.ActionableErrV3(handler.cfg, constants.Build, err)
 	}
 	buildEvent := &proto.BuildCancelledEvent{
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),

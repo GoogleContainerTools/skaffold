@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
@@ -66,6 +67,7 @@ func (d *DockerLogFormatter) PrintLine(out io.Writer, line string) {
 	}
 	formattedLine := fmt.Sprintf("%s%s", formattedPrefix, line)
 	eventV2.ApplicationLog("", d.containerName, formattedPrefix, line, formattedLine)
+	eventV3.ApplicationLog("", d.containerName, formattedPrefix, line, formattedLine)
 	fmt.Fprint(out, formattedLine)
 }
 

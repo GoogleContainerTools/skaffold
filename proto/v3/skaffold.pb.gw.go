@@ -2,11 +2,11 @@
 // source: v3/skaffold.proto
 
 /*
-Package proto is a reverse proxy.
+Package v3 is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package proto
+package v3
 
 import (
 	"context"
@@ -32,7 +32,7 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_SkaffoldV2Service_GetState_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_GetState_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
@@ -41,7 +41,7 @@ func request_SkaffoldV2Service_GetState_0(ctx context.Context, marshaler runtime
 
 }
 
-func local_request_SkaffoldV2Service_GetState_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV2ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SkaffoldV3Service_GetState_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV3ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
@@ -50,7 +50,7 @@ func local_request_SkaffoldV2Service_GetState_0(ctx context.Context, marshaler r
 
 }
 
-func request_SkaffoldV2Service_Events_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (SkaffoldV2Service_EventsClient, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_Events_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (SkaffoldV3Service_EventsClient, runtime.ServerMetadata, error) {
 	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
@@ -67,7 +67,7 @@ func request_SkaffoldV2Service_Events_0(ctx context.Context, marshaler runtime.M
 
 }
 
-func request_SkaffoldV2Service_ApplicationLogs_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (SkaffoldV2Service_ApplicationLogsClient, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_ApplicationLogs_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (SkaffoldV3Service_ApplicationLogsClient, runtime.ServerMetadata, error) {
 	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
@@ -84,7 +84,7 @@ func request_SkaffoldV2Service_ApplicationLogs_0(ctx context.Context, marshaler 
 
 }
 
-func request_SkaffoldV2Service_Execute_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_Execute_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UserIntentRequest
 	var metadata runtime.ServerMetadata
 
@@ -101,7 +101,7 @@ func request_SkaffoldV2Service_Execute_0(ctx context.Context, marshaler runtime.
 
 }
 
-func local_request_SkaffoldV2Service_Execute_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV2ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SkaffoldV3Service_Execute_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV3ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UserIntentRequest
 	var metadata runtime.ServerMetadata
 
@@ -118,7 +118,7 @@ func local_request_SkaffoldV2Service_Execute_0(ctx context.Context, marshaler ru
 
 }
 
-func request_SkaffoldV2Service_AutoBuild_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_AutoBuild_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TriggerRequest
 	var metadata runtime.ServerMetadata
 
@@ -135,7 +135,7 @@ func request_SkaffoldV2Service_AutoBuild_0(ctx context.Context, marshaler runtim
 
 }
 
-func local_request_SkaffoldV2Service_AutoBuild_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV2ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SkaffoldV3Service_AutoBuild_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV3ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TriggerRequest
 	var metadata runtime.ServerMetadata
 
@@ -152,7 +152,7 @@ func local_request_SkaffoldV2Service_AutoBuild_0(ctx context.Context, marshaler 
 
 }
 
-func request_SkaffoldV2Service_AutoSync_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_AutoSync_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TriggerRequest
 	var metadata runtime.ServerMetadata
 
@@ -169,7 +169,7 @@ func request_SkaffoldV2Service_AutoSync_0(ctx context.Context, marshaler runtime
 
 }
 
-func local_request_SkaffoldV2Service_AutoSync_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV2ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SkaffoldV3Service_AutoSync_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV3ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TriggerRequest
 	var metadata runtime.ServerMetadata
 
@@ -186,7 +186,7 @@ func local_request_SkaffoldV2Service_AutoSync_0(ctx context.Context, marshaler r
 
 }
 
-func request_SkaffoldV2Service_AutoDeploy_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_AutoDeploy_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TriggerRequest
 	var metadata runtime.ServerMetadata
 
@@ -203,7 +203,7 @@ func request_SkaffoldV2Service_AutoDeploy_0(ctx context.Context, marshaler runti
 
 }
 
-func local_request_SkaffoldV2Service_AutoDeploy_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV2ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SkaffoldV3Service_AutoDeploy_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV3ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TriggerRequest
 	var metadata runtime.ServerMetadata
 
@@ -220,7 +220,7 @@ func local_request_SkaffoldV2Service_AutoDeploy_0(ctx context.Context, marshaler
 
 }
 
-func request_SkaffoldV2Service_Handle_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SkaffoldV3Service_Handle_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV3ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq Event
 	var metadata runtime.ServerMetadata
 
@@ -237,7 +237,7 @@ func request_SkaffoldV2Service_Handle_0(ctx context.Context, marshaler runtime.M
 
 }
 
-func local_request_SkaffoldV2Service_Handle_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV2ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SkaffoldV3Service_Handle_0(ctx context.Context, marshaler runtime.Marshaler, server SkaffoldV3ServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq Event
 	var metadata runtime.ServerMetadata
 
@@ -254,24 +254,24 @@ func local_request_SkaffoldV2Service_Handle_0(ctx context.Context, marshaler run
 
 }
 
-// RegisterSkaffoldV2ServiceHandlerServer registers the http handlers for service SkaffoldV2Service to "mux".
-// UnaryRPC     :call SkaffoldV2ServiceServer directly.
+// RegisterSkaffoldV3ServiceHandlerServer registers the http handlers for service SkaffoldV3Service to "mux".
+// UnaryRPC     :call SkaffoldV3ServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSkaffoldV2ServiceHandlerFromEndpoint instead.
-func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SkaffoldV2ServiceServer) error {
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSkaffoldV3ServiceHandlerFromEndpoint instead.
+func RegisterSkaffoldV3ServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SkaffoldV3ServiceServer) error {
 
-	mux.Handle("GET", pattern_SkaffoldV2Service_GetState_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SkaffoldV3Service_GetState_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/GetState", runtime.WithHTTPPathPattern("/v2/state"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/GetState", runtime.WithHTTPPathPattern("/v3/state"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SkaffoldV2Service_GetState_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SkaffoldV3Service_GetState_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -279,36 +279,36 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 
-		forward_SkaffoldV2Service_GetState_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_GetState_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_SkaffoldV2Service_Events_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SkaffoldV3Service_Events_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 		return
 	})
 
-	mux.Handle("GET", pattern_SkaffoldV2Service_ApplicationLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SkaffoldV3Service_ApplicationLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 		return
 	})
 
-	mux.Handle("POST", pattern_SkaffoldV2Service_Execute_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_SkaffoldV3Service_Execute_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/Execute", runtime.WithHTTPPathPattern("/v2/execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/Execute", runtime.WithHTTPPathPattern("/v3/execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SkaffoldV2Service_Execute_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SkaffoldV3Service_Execute_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -316,22 +316,22 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 
-		forward_SkaffoldV2Service_Execute_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_Execute_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SkaffoldV2Service_AutoBuild_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SkaffoldV3Service_AutoBuild_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoBuild", runtime.WithHTTPPathPattern("/v2/build/auto_execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/AutoBuild", runtime.WithHTTPPathPattern("/v3/build/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SkaffoldV2Service_AutoBuild_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SkaffoldV3Service_AutoBuild_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -339,22 +339,22 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 
-		forward_SkaffoldV2Service_AutoBuild_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_AutoBuild_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SkaffoldV2Service_AutoSync_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SkaffoldV3Service_AutoSync_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoSync", runtime.WithHTTPPathPattern("/v2/sync/auto_execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/AutoSync", runtime.WithHTTPPathPattern("/v3/sync/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SkaffoldV2Service_AutoSync_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SkaffoldV3Service_AutoSync_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -362,22 +362,22 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 
-		forward_SkaffoldV2Service_AutoSync_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_AutoSync_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SkaffoldV2Service_AutoDeploy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SkaffoldV3Service_AutoDeploy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoDeploy", runtime.WithHTTPPathPattern("/v2/deploy/auto_execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/AutoDeploy", runtime.WithHTTPPathPattern("/v3/deploy/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SkaffoldV2Service_AutoDeploy_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SkaffoldV3Service_AutoDeploy_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -385,22 +385,22 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 
-		forward_SkaffoldV2Service_AutoDeploy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_AutoDeploy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_SkaffoldV2Service_Handle_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_SkaffoldV3Service_Handle_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/Handle", runtime.WithHTTPPathPattern("/v2/events/handle"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/Handle", runtime.WithHTTPPathPattern("/v3/events/handle"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SkaffoldV2Service_Handle_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SkaffoldV3Service_Handle_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -408,16 +408,16 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 
-		forward_SkaffoldV2Service_Handle_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_Handle_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
 	return nil
 }
 
-// RegisterSkaffoldV2ServiceHandlerFromEndpoint is same as RegisterSkaffoldV2ServiceHandler but
+// RegisterSkaffoldV3ServiceHandlerFromEndpoint is same as RegisterSkaffoldV3ServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterSkaffoldV2ServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterSkaffoldV3ServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -437,179 +437,179 @@ func RegisterSkaffoldV2ServiceHandlerFromEndpoint(ctx context.Context, mux *runt
 		}()
 	}()
 
-	return RegisterSkaffoldV2ServiceHandler(ctx, mux, conn)
+	return RegisterSkaffoldV3ServiceHandler(ctx, mux, conn)
 }
 
-// RegisterSkaffoldV2ServiceHandler registers the http handlers for service SkaffoldV2Service to "mux".
+// RegisterSkaffoldV3ServiceHandler registers the http handlers for service SkaffoldV3Service to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterSkaffoldV2ServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterSkaffoldV2ServiceHandlerClient(ctx, mux, NewSkaffoldV2ServiceClient(conn))
+func RegisterSkaffoldV3ServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterSkaffoldV3ServiceHandlerClient(ctx, mux, NewSkaffoldV3ServiceClient(conn))
 }
 
-// RegisterSkaffoldV2ServiceHandlerClient registers the http handlers for service SkaffoldV2Service
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "SkaffoldV2ServiceClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "SkaffoldV2ServiceClient"
+// RegisterSkaffoldV3ServiceHandlerClient registers the http handlers for service SkaffoldV3Service
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "SkaffoldV3ServiceClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "SkaffoldV3ServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "SkaffoldV2ServiceClient" to call the correct interceptors.
-func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SkaffoldV2ServiceClient) error {
+// "SkaffoldV3ServiceClient" to call the correct interceptors.
+func RegisterSkaffoldV3ServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SkaffoldV3ServiceClient) error {
 
-	mux.Handle("GET", pattern_SkaffoldV2Service_GetState_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SkaffoldV3Service_GetState_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/GetState", runtime.WithHTTPPathPattern("/v2/state"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/GetState", runtime.WithHTTPPathPattern("/v3/state"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_GetState_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_GetState_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_GetState_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_GetState_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_SkaffoldV2Service_Events_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SkaffoldV3Service_Events_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/Events", runtime.WithHTTPPathPattern("/v2/events"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/Events", runtime.WithHTTPPathPattern("/v3/events"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_Events_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_Events_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_Events_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_Events_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_SkaffoldV2Service_ApplicationLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SkaffoldV3Service_ApplicationLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/ApplicationLogs", runtime.WithHTTPPathPattern("/v2/applicationLogs"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/ApplicationLogs", runtime.WithHTTPPathPattern("/v3/applicationLogs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_ApplicationLogs_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_ApplicationLogs_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_ApplicationLogs_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_ApplicationLogs_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_SkaffoldV2Service_Execute_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_SkaffoldV3Service_Execute_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/Execute", runtime.WithHTTPPathPattern("/v2/execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/Execute", runtime.WithHTTPPathPattern("/v3/execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_Execute_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_Execute_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_Execute_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_Execute_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SkaffoldV2Service_AutoBuild_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SkaffoldV3Service_AutoBuild_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoBuild", runtime.WithHTTPPathPattern("/v2/build/auto_execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/AutoBuild", runtime.WithHTTPPathPattern("/v3/build/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_AutoBuild_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_AutoBuild_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_AutoBuild_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_AutoBuild_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SkaffoldV2Service_AutoSync_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SkaffoldV3Service_AutoSync_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoSync", runtime.WithHTTPPathPattern("/v2/sync/auto_execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/AutoSync", runtime.WithHTTPPathPattern("/v3/sync/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_AutoSync_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_AutoSync_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_AutoSync_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_AutoSync_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SkaffoldV2Service_AutoDeploy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SkaffoldV3Service_AutoDeploy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoDeploy", runtime.WithHTTPPathPattern("/v2/deploy/auto_execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/AutoDeploy", runtime.WithHTTPPathPattern("/v3/deploy/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_AutoDeploy_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_AutoDeploy_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_AutoDeploy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_AutoDeploy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_SkaffoldV2Service_Handle_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_SkaffoldV3Service_Handle_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/Handle", runtime.WithHTTPPathPattern("/v2/events/handle"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v3.SkaffoldV3Service/Handle", runtime.WithHTTPPathPattern("/v3/events/handle"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SkaffoldV2Service_Handle_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SkaffoldV3Service_Handle_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SkaffoldV2Service_Handle_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SkaffoldV3Service_Handle_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -617,37 +617,37 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 }
 
 var (
-	pattern_SkaffoldV2Service_GetState_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "state"}, ""))
+	pattern_SkaffoldV3Service_GetState_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v3", "state"}, ""))
 
-	pattern_SkaffoldV2Service_Events_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "events"}, ""))
+	pattern_SkaffoldV3Service_Events_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v3", "events"}, ""))
 
-	pattern_SkaffoldV2Service_ApplicationLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "applicationLogs"}, ""))
+	pattern_SkaffoldV3Service_ApplicationLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v3", "applicationLogs"}, ""))
 
-	pattern_SkaffoldV2Service_Execute_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "execute"}, ""))
+	pattern_SkaffoldV3Service_Execute_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v3", "execute"}, ""))
 
-	pattern_SkaffoldV2Service_AutoBuild_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v2", "build", "auto_execute"}, ""))
+	pattern_SkaffoldV3Service_AutoBuild_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v3", "build", "auto_execute"}, ""))
 
-	pattern_SkaffoldV2Service_AutoSync_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v2", "sync", "auto_execute"}, ""))
+	pattern_SkaffoldV3Service_AutoSync_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v3", "sync", "auto_execute"}, ""))
 
-	pattern_SkaffoldV2Service_AutoDeploy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v2", "deploy", "auto_execute"}, ""))
+	pattern_SkaffoldV3Service_AutoDeploy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v3", "deploy", "auto_execute"}, ""))
 
-	pattern_SkaffoldV2Service_Handle_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v2", "events", "handle"}, ""))
+	pattern_SkaffoldV3Service_Handle_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v3", "events", "handle"}, ""))
 )
 
 var (
-	forward_SkaffoldV2Service_GetState_0 = runtime.ForwardResponseMessage
+	forward_SkaffoldV3Service_GetState_0 = runtime.ForwardResponseMessage
 
-	forward_SkaffoldV2Service_Events_0 = runtime.ForwardResponseStream
+	forward_SkaffoldV3Service_Events_0 = runtime.ForwardResponseStream
 
-	forward_SkaffoldV2Service_ApplicationLogs_0 = runtime.ForwardResponseStream
+	forward_SkaffoldV3Service_ApplicationLogs_0 = runtime.ForwardResponseStream
 
-	forward_SkaffoldV2Service_Execute_0 = runtime.ForwardResponseMessage
+	forward_SkaffoldV3Service_Execute_0 = runtime.ForwardResponseMessage
 
-	forward_SkaffoldV2Service_AutoBuild_0 = runtime.ForwardResponseMessage
+	forward_SkaffoldV3Service_AutoBuild_0 = runtime.ForwardResponseMessage
 
-	forward_SkaffoldV2Service_AutoSync_0 = runtime.ForwardResponseMessage
+	forward_SkaffoldV3Service_AutoSync_0 = runtime.ForwardResponseMessage
 
-	forward_SkaffoldV2Service_AutoDeploy_0 = runtime.ForwardResponseMessage
+	forward_SkaffoldV3Service_AutoDeploy_0 = runtime.ForwardResponseMessage
 
-	forward_SkaffoldV2Service_Handle_0 = runtime.ForwardResponseMessage
+	forward_SkaffoldV3Service_Handle_0 = runtime.ForwardResponseMessage
 )

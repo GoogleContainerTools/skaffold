@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -74,7 +75,7 @@ func (k *kubernetesLogFormatter) PrintLine(out io.Writer, line string) {
 	}
 	formattedLine := fmt.Sprintf("%s%s", formattedPrefix, line)
 	eventV2.ApplicationLog(k.pod.Name, k.container.Name, formattedPrefix, line, formattedLine)
-
+	eventV3.ApplicationLog(k.pod.Name, k.container.Name, formattedPrefix, line, formattedLine)
 	k.lock.Lock()
 	defer k.lock.Unlock()
 	fmt.Fprint(out, formattedLine)

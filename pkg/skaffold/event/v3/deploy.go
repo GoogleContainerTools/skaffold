@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package v3
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func DeployInProgress(id int) {
@@ -39,7 +39,7 @@ func DeployFailed(id int, err error) {
 		Id:            strconv.Itoa(id),
 		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Status:        Failed,
-		ActionableErr: sErrors.ActionableErrV2(handler.cfg, constants.Deploy, err),
+		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Deploy, err),
 	}
 	WrapInMainAndHandle(deployEvent.Id, deployEvent, DeployFailedEvent)
 }

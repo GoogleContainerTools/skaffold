@@ -29,6 +29,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -303,12 +304,20 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 					p.String(),
 					prefix,
 					sErrors.V2fromV1(p.ActionableError()))
+				eventV3.ResourceStatusCheckEventUpdatedMessage(
+					p.String(),
+					prefix,
+					sErrors.V3fromV1(p.ActionableError()))
 			default:
 				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())
 				eventV2.ResourceStatusCheckEventCompletedMessage(
 					p.String(),
 					fmt.Sprintf("%s running.\n", prefix),
 					sErrors.V2fromV1(p.ActionableError()))
+				eventV3.ResourceStatusCheckEventCompletedMessage(
+					p.String(),
+					fmt.Sprintf("%s running.\n", prefix),
+					sErrors.V3fromV1(p.ActionableError()))
 			}
 		}
 		newPods[p.String()] = p

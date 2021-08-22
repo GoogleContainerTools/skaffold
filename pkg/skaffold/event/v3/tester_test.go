@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package v3
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func TestHandleTestSubtaskEvent(t *testing.T) {
@@ -46,7 +46,7 @@ func TestHandleTestSubtaskEvent(t *testing.T) {
 				Id:            "23",
 				TaskId:        fmt.Sprintf("%s-%d", constants.Test, 0),
 				Status:        Failed,
-				ActionableErr: sErrors.ActionableErrV2(handler.cfg, constants.Test, errors.New("deploy failed")),
+				ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Test, errors.New("deploy failed")),
 			},
 		},
 		{

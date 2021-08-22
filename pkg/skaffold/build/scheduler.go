@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -88,6 +89,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 		// `waitForDependencies` only returns `context.Canceled` error
 		event.BuildCanceled(a.ImageName)
 		eventV2.BuildCanceled(a.ImageName, err)
+		eventV3.BuildCanceled(a.ImageName, err)
 		return err
 	}
 	release := s.concurrencySem.acquire()
@@ -95,6 +97,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 
 	event.BuildInProgress(a.ImageName)
 	eventV2.BuildInProgress(a.ImageName)
+	eventV3.BuildInProgress(a.ImageName)
 	ctx, endTrace := instrumentation.StartTrace(ctx, "build_BuildInProgress", map[string]string{
 		"ArtifactNumber": strconv.Itoa(i),
 		"ImageName":      instrumentation.PII(a.ImageName),
@@ -105,6 +108,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		eventV2.BuildFailed(a.ImageName, err)
+		eventV3.BuildFailed(a.ImageName, err)
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
@@ -117,8 +121,10 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 		if errors.Is(ctx.Err(), context.Canceled) {
 			output.Yellow.Fprintf(w, "Canceled build for %s\n", a.ImageName)
 			eventV2.BuildCanceled(a.ImageName, err)
+			eventV3.BuildCanceled(a.ImageName, err)
 		} else {
 			eventV2.BuildFailed(a.ImageName, err)
+			eventV3.BuildFailed(a.ImageName, err)
 		}
 		endTrace(instrumentation.TraceEndError(err))
 		return err
@@ -128,6 +134,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	n.markComplete()
 	event.BuildComplete(a.ImageName)
 	eventV2.BuildSucceeded(a.ImageName)
+	eventV3.BuildSucceeded(a.ImageName)
 	return nil
 }
 

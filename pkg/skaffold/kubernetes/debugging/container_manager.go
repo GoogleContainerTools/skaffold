@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
@@ -35,6 +36,8 @@ var (
 	notifyDebuggingContainerTerminated = event.DebuggingContainerTerminated
 	debuggingContainerStartedV2        = eventV2.DebuggingContainerStarted
 	debuggingContainerTerminatedV2     = eventV2.DebuggingContainerTerminated
+	debuggingContainerStartedV3        = eventV3.DebuggingContainerStarted
+	debuggingContainerTerminatedV3     = eventV3.DebuggingContainerTerminated
 )
 
 type ContainerManager struct {
@@ -132,6 +135,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 					config.WorkingDir,
 					config.Ports)
 				debuggingContainerStartedV2(pod.Name, c.Name, pod.Namespace, config.Artifact, config.Runtime, config.WorkingDir, config.Ports)
+				debuggingContainerStartedV3(pod.Name, c.Name, pod.Namespace, config.Artifact, config.Runtime, config.WorkingDir, config.Ports)
 
 			case c.State.Terminated != nil && seen:
 				delete(d.active, key)
@@ -141,6 +145,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 					config.WorkingDir,
 					config.Ports)
 				debuggingContainerTerminatedV2(pod.Name, c.Name, pod.Namespace, config.Artifact, config.Runtime, config.WorkingDir, config.Ports)
+				debuggingContainerTerminatedV3(pod.Name, c.Name, pod.Namespace, config.Artifact, config.Runtime, config.WorkingDir, config.Ports)
 			}
 		}
 	}

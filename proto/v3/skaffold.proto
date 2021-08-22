@@ -1,6 +1,6 @@
 syntax = "proto3";
-package proto;
-option go_package = "github.com/GoogleContainerTools/skaffold/proto";
+package proto.v3;
+option go_package = "github.com/GoogleContainerTools/skaffold/proto/v3";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
@@ -483,33 +483,33 @@ message IntOrString {
 }
 
 // Describes all the methods for the Skaffold API
-service SkaffoldV2Service {
+service SkaffoldV3Service {
 
     // Returns the state of the current Skaffold execution
     rpc GetState (google.protobuf.Empty) returns (State) {
         option (google.api.http) = {
-            get: "/v2/state"
+            get: "/v3/state"
         };
     }
 
     // Returns all the events of the current Skaffold execution from the start
     rpc Events (google.protobuf.Empty) returns (stream Event) {
         option (google.api.http) = {
-            get: "/v2/events"
+            get: "/v3/events"
         };
     }
 
     // Returns all the user application logs of the current Skaffold execution
     rpc ApplicationLogs (google.protobuf.Empty) returns (stream Event) {
         option (google.api.http) = {
-            get: "/v2/applicationLogs"
+            get: "/v3/applicationLogs"
         };
     }
 
     // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
     rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
-            post: "/v2/execute"
+            post: "/v3/execute"
             body: "intent"
         };
     }
@@ -517,7 +517,7 @@ service SkaffoldV2Service {
     // Allows for enabling or disabling automatic build trigger
     rpc AutoBuild (TriggerRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
-            put: "/v2/build/auto_execute"
+            put: "/v3/build/auto_execute"
             body: "state"
         };
     }
@@ -525,7 +525,7 @@ service SkaffoldV2Service {
     // Allows for enabling or disabling automatic sync trigger
     rpc AutoSync (TriggerRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
-            put: "/v2/sync/auto_execute"
+            put: "/v3/sync/auto_execute"
             body: "state"
         };
     }
@@ -533,7 +533,7 @@ service SkaffoldV2Service {
     // Allows for enabling or disabling automatic deploy trigger
     rpc AutoDeploy (TriggerRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
-            put: "/v2/deploy/auto_execute"
+            put: "/v3/deploy/auto_execute"
             body: "state"
         };
     }
@@ -541,7 +541,7 @@ service SkaffoldV2Service {
     // EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
     rpc Handle (Event) returns (google.protobuf.Empty) {
         option (google.api.http) = {
-            post: "/v2/events/handle"
+            post: "/v3/events/handle"
             body: "*"
         };
     }

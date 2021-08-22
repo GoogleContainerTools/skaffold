@@ -2,11 +2,11 @@
 // source: v2/skaffold.proto
 
 /*
-Package proto is a reverse proxy.
+Package v2 is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package proto
+package v2
 
 import (
 	"context"
@@ -266,7 +266,7 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/GetState", runtime.WithHTTPPathPattern("/v2/state"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/GetState", runtime.WithHTTPPathPattern("/v2/state"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -303,7 +303,7 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/Execute", runtime.WithHTTPPathPattern("/v2/execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/Execute", runtime.WithHTTPPathPattern("/v2/execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -326,7 +326,7 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoBuild", runtime.WithHTTPPathPattern("/v2/build/auto_execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/AutoBuild", runtime.WithHTTPPathPattern("/v2/build/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -349,7 +349,7 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoSync", runtime.WithHTTPPathPattern("/v2/sync/auto_execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/AutoSync", runtime.WithHTTPPathPattern("/v2/sync/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -372,7 +372,7 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoDeploy", runtime.WithHTTPPathPattern("/v2/deploy/auto_execute"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/AutoDeploy", runtime.WithHTTPPathPattern("/v2/deploy/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -395,7 +395,7 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.SkaffoldV2Service/Handle", runtime.WithHTTPPathPattern("/v2/events/handle"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/Handle", runtime.WithHTTPPathPattern("/v2/events/handle"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -457,7 +457,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/GetState", runtime.WithHTTPPathPattern("/v2/state"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/GetState", runtime.WithHTTPPathPattern("/v2/state"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -477,7 +477,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/Events", runtime.WithHTTPPathPattern("/v2/events"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/Events", runtime.WithHTTPPathPattern("/v2/events"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -497,7 +497,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/ApplicationLogs", runtime.WithHTTPPathPattern("/v2/applicationLogs"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/ApplicationLogs", runtime.WithHTTPPathPattern("/v2/applicationLogs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -517,7 +517,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/Execute", runtime.WithHTTPPathPattern("/v2/execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/Execute", runtime.WithHTTPPathPattern("/v2/execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -537,7 +537,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoBuild", runtime.WithHTTPPathPattern("/v2/build/auto_execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/AutoBuild", runtime.WithHTTPPathPattern("/v2/build/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -557,7 +557,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoSync", runtime.WithHTTPPathPattern("/v2/sync/auto_execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/AutoSync", runtime.WithHTTPPathPattern("/v2/sync/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -577,7 +577,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/AutoDeploy", runtime.WithHTTPPathPattern("/v2/deploy/auto_execute"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/AutoDeploy", runtime.WithHTTPPathPattern("/v2/deploy/auto_execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -597,7 +597,7 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.SkaffoldV2Service/Handle", runtime.WithHTTPPathPattern("/v2/events/handle"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/proto.v2.SkaffoldV2Service/Handle", runtime.WithHTTPPathPattern("/v2/events/handle"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

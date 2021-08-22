@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package v3
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 	proto1 "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -351,7 +351,7 @@ func TaskInProgress(task constants.Phase, description string) {
 }
 
 func TaskFailed(task constants.Phase, err error) {
-	ae := sErrors.ActionableErrV2(handler.cfg, task, err)
+	ae := sErrors.ActionableErrV3(handler.cfg, task, err)
 	event := &proto.TaskStartedEvent{
 		Id:            fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:          string(task),
@@ -430,6 +430,7 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 			ev.stateLock.Unlock()
 		}
 	case BuildStartedEvent:
+		fmt.Println("Build started event catch")
 		buildEvent := &proto.BuildStartedEvent{}
 		fmt.Println(event.Data)
 		anypb.UnmarshalTo(event.Data, buildEvent, proto1.UnmarshalOptions{})
