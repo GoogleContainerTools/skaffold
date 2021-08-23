@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -30,7 +31,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
+	ctl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -260,6 +264,57 @@ func TestKustomizeCleanup(t *testing.T) {
 			t.RequireNoError(err)
 			err = k.Cleanup(context.Background(), ioutil.Discard)
 
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestKustomizeHooks(t *testing.T) {
+	tests := []struct {
+		description string
+		runner      hooks.Runner
+		shouldErr   bool
+	}{
+		{
+			description: "hooks run successfully",
+			runner: hooks.MockRunner{
+				PreHooks: func(context.Context, io.Writer) error {
+					return nil
+				},
+				PostHooks: func(context.Context, io.Writer) error {
+					return nil
+				},
+			},
+		},
+		{
+			description: "hooks fails",
+			runner: hooks.MockRunner{
+				PreHooks: func(context.Context, io.Writer) error {
+					return errors.New("failed to execute hooks")
+				},
+				PostHooks: func(context.Context, io.Writer) error {
+					return errors.New("failed to execute hooks")
+				},
+			},
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&KustomizeBinaryCheck, func() bool { return true })
+			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latestV1.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts) hooks.Runner {
+				return test.runner
+			})
+
+			k, err := NewDeployer(&kustomizeConfig{
+				workingDir: ".",
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
+					Namespace: kubectl.TestNamespace}},
+			}, &label.DefaultLabeller{}, &latestV1.KustomizeDeploy{})
+			t.RequireNoError(err)
+			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
+			t.CheckError(test.shouldErr, err)
+			err = k.PostDeployHooks(context.Background(), ioutil.Discard)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

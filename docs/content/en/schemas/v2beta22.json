@@ -1703,6 +1703,11 @@
           "description": "additional option flags that are passed on the command line to `helm`.",
           "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>."
         },
+        "hooks": {
+          "$ref": "#/definitions/DeployHooks",
+          "description": "describes a set of lifecycle hooks that are executed before and after every deploy.",
+          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after every deploy."
+        },
         "releases": {
           "items": {
             "$ref": "#/definitions/HelmRelease"
@@ -1714,7 +1719,8 @@
       },
       "preferredOrder": [
         "releases",
-        "flags"
+        "flags",
+        "hooks"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -2680,6 +2686,11 @@
           "description": "additional flags passed to `kubectl`.",
           "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
         },
+        "hooks": {
+          "$ref": "#/definitions/DeployHooks",
+          "description": "describes a set of lifecycle hooks that are executed before and after every deploy.",
+          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after every deploy."
+        },
         "paths": {
           "items": {
             "type": "string"
@@ -2694,7 +2705,8 @@
         "paths",
         "flags",
         "buildArgs",
-        "defaultNamespace"
+        "defaultNamespace",
+        "hooks"
       ],
       "additionalProperties": false,
       "type": "object",

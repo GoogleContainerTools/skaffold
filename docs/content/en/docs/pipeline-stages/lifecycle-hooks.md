@@ -64,7 +64,7 @@ build:
 ```
 This config snippet defines that `hook.sh` (for `darwin` or `linux` OS) or `hook.bat` (for `windows` OS) will be executed `before` and `after` each file sync operation for artifact `hooks-example`.
 
-### `before-deploy` and `after-deploy` (only for `kubectl` deployer)
+### `before-deploy` and `after-deploy`
 
 Example: _skaffold.yaml_ snippet
 ```yaml
@@ -127,7 +127,7 @@ build:
 ```
 This config snippet defines a command to run inside the container corresponding to the artifact `hooks-example` image, `before` and `after` each file sync operation.
 
-### `before-deploy` and `after-deploy` (only for `kubectl` deployer)
+### `before-deploy` and `after-deploy`
 
 Example: _skaffold.yaml_ snippet
 ```yaml

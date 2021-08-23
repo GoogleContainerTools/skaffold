@@ -597,7 +597,7 @@ type HelmDeploy struct {
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // HelmDeployFlags are additional option flags that are passed on the command
@@ -629,7 +629,7 @@ type KustomizeDeploy struct {
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
