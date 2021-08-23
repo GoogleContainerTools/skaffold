@@ -142,7 +142,7 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV
 	podSelector := kubernetes.NewImageList()
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
 	if err != nil {
-		olog.Entry(context.Background()).Warn("unable to parse namespaces - deploy might not work correctly!")
+		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 	return &Deployer{
@@ -409,7 +409,7 @@ func (k *Deployer) readManifests(ctx context.Context) (manifest.ManifestList, er
 			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, kustomizePath))
 		} else {
 			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, kustomizePath)...)...)
-			out, err = util.RunCmdOut(cmd)
+			out, err = util.RunCmdOut(ctx, cmd)
 		}
 
 		if err != nil {

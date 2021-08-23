@@ -77,9 +77,9 @@ func sortKeys(m map[string]string) []string {
 }
 
 // binVer returns the version of the helm binary found in PATH.
-func binVer() (semver.Version, error) {
+func binVer(ctx context.Context) (semver.Version, error) {
 	cmd := exec.Command("helm", "version", "--client")
-	b, err := util.RunCmdOut(cmd)
+	b, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", string(b), err)
 	}
@@ -180,7 +180,7 @@ func envVarForImage(imageName string, digest string) map[string]string {
 		customMap[constants.ImageRef.Tag] = ref.Tag
 		customMap[constants.ImageRef.Digest] = ref.Digest
 	} else {
-		log.Entry(context.Background()).Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
+		log.Entry(context.TODO()).Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
 	}
 
 	if digest == "" {
@@ -218,5 +218,5 @@ func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	return util.RunCmd(cmd)
+	return util.RunCmd(ctx, cmd)
 }

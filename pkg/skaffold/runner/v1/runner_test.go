@@ -128,10 +128,12 @@ func (t *TestBench) GetSyncer() sync.Syncer {
 func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
-func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }
-func (t *TestBench) Dependencies() ([]string, error)                       { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error      { return nil }
-func (t *TestBench) Prune(ctx context.Context, out io.Writer) error        { return nil }
+func (t *TestBench) TestDependencies(context.Context, *latestV1.Artifact) ([]string, error) {
+	return nil, nil
+}
+func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -282,7 +284,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			AutoDeploy:        autoTriggers.deploy,
 		},
 	}
-	runner, err := NewForConfig(runCtx)
+	runner, err := NewForConfig(context.Background(), runCtx)
 	t.CheckNoError(err)
 
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
@@ -442,7 +444,9 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
+				return "", semver.Version{}, errors.New("not found")
+			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
 				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
@@ -454,7 +458,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			}
 
-			cfg, err := NewForConfig(runCtx)
+			cfg, err := NewForConfig(context.Background(), runCtx)
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
@@ -541,7 +545,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 			}
-			r, _ := NewForConfig(&runcontext.RunContext{
+			r, _ := NewForConfig(context.Background(), &runcontext.RunContext{
 				Opts:      opts,
 				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{pipeline}),
 			})

@@ -110,7 +110,7 @@ func convertSyncRules(artifacts []*Artifact) [][]*next.SyncRule {
 		a.Sync = nil
 	}
 	if len(incompatiblePatterns) > 0 {
-		log.Entry(context.Background()).Warnf(incompatibleSyncWarning, incompatiblePatterns)
+		log.Entry(context.TODO()).Warnf(incompatibleSyncWarning, incompatiblePatterns)
 	}
 	return newSync
 }

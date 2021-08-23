@@ -39,6 +39,7 @@ type Builder struct {
 	timeout       time.Duration
 	artifactStore build.ArtifactStore
 	teardownFunc  []func()
+	skipTests     bool
 }
 
 type Config interface {
@@ -48,6 +49,7 @@ type Config interface {
 	GetKubeContext() string
 	Muted() config.Muted
 	Mode() config.RunMode
+	SkipTests() bool
 }
 
 type BuilderContext interface {
@@ -69,6 +71,7 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.ClusterDetails) (*Builde
 		mode:           bCtx.Mode(),
 		timeout:        timeout,
 		artifactStore:  bCtx.ArtifactStore(),
+		skipTests:      bCtx.SkipTests(),
 	}, nil
 }
 

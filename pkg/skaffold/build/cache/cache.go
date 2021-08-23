@@ -74,24 +74,24 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
+func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
 
 	cacheFile, err := resolveCacheFile(cfg.CacheFile())
 	if err != nil {
-		log.Entry(context.Background()).Warnf("Error resolving cache file, not using skaffold cache: %v", err)
+		log.Entry(context.TODO()).Warnf("Error resolving cache file, not using skaffold cache: %v", err)
 		return &noCache{}, nil
 	}
 
 	artifactCache, err := retrieveArtifactCache(cacheFile)
 	if err != nil {
-		log.Entry(context.Background()).Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
+		log.Entry(context.TODO()).Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return &noCache{}, nil
 	}
 
-	client, err := docker.NewAPIClient(cfg)
+	client, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		// error only if any pipeline is local.
 		for _, p := range cfg.GetPipelines() {

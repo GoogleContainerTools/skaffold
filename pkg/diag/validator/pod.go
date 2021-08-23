@@ -144,14 +144,14 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	}
 	// If the event type PodScheduled with status False is found then we check if it is due to taints and tolerations.
 	if c, ok := isPodNotScheduled(pod); ok {
-		log.Entry(context.Background()).Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
+		log.Entry(context.TODO()).Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
 		sc, err := getUntoleratedTaints(c.Reason, c.Message)
 		return sc, nil, err
 	}
 	// we can check the container status if the pod has been scheduled successfully. This can be determined by having the event
 	// PodScheduled with status True, or a ContainerReady or PodReady event with status False.
 	if isPodScheduledButNotReady(pod) {
-		log.Entry(context.Background()).Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
+		log.Entry(context.TODO()).Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
 		// TODO(dgageot): Add EphemeralContainerStatuses
 		cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 		// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
@@ -171,11 +171,11 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	}
 
 	if c, ok := isPodStatusUnknown(pod); ok {
-		log.Entry(context.Background()).Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
+		log.Entry(context.TODO()).Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
 		return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 	}
 
-	log.Entry(context.Background()).Debugf("Unable to determine current service state of pod %q", pod.Name)
+	log.Entry(context.TODO()).Debugf("Unable to determine current service state of pod %q", pod.Name)
 	return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf("unable to determine current service state of pod %q", pod.Name)
 }
 
@@ -288,13 +288,13 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
 		return
 	}
-	log.Entry(context.Background()).Debugf("Fetching events for pod %q", pod.Name)
+	log.Entry(context.TODO()).Debugf("Fetching events for pod %q", pod.Name)
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
 	events, err := e.Search(scheme, &pod)
 	if err != nil {
-		log.Entry(context.Background()).Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
+		log.Entry(context.TODO()).Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
 		return
 	}
 	// find the latest failed event.
@@ -385,7 +385,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	log.Entry(context.Background()).Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
+	log.Entry(context.TODO()).Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
 	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %v", c.Name, c.State.Waiting)
 }
 
@@ -405,7 +405,7 @@ func trimSpace(msg string) string {
 }
 
 func getPodLogs(po *v1.Pod, c string, sc proto.StatusCode) (proto.StatusCode, []string) {
-	log.Entry(context.Background()).Debugf("Fetching logs for container %s/%s", po.Name, c)
+	log.Entry(context.TODO()).Debugf("Fetching logs for container %s/%s", po.Name, c)
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {

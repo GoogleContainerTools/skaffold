@@ -17,6 +17,8 @@ limitations under the License.
 package gcp
 
 import (
+	"context"
+
 	"google.golang.org/api/option"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -24,12 +26,12 @@ import (
 
 // ClientOptions returns a list of options to be configured when
 // connecting to Google Cloud services.
-func ClientOptions() []option.ClientOption {
+func ClientOptions(ctx context.Context) []option.ClientOption {
 	options := []option.ClientOption{
 		option.WithUserAgent(version.UserAgent()),
 	}
 
-	creds, cErr := activeUserCredentials()
+	creds, cErr := activeUserCredentials(ctx)
 	if cErr == nil && creds != nil {
 		options = append(options, option.WithCredentials(creds))
 	}

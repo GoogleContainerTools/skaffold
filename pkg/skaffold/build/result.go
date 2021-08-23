@@ -40,7 +40,7 @@ var (
 // The order of output is not guaranteed between multiple builds running concurrently.
 type logAggregator interface {
 	// GetWriter returns an output writer tracked by the logAggregator
-	GetWriter() (w io.Writer, close func(), err error)
+	GetWriter(ctx context.Context) (w io.Writer, close func(), err error)
 	// PrintInOrder prints the output from each allotted writer in build order.
 	// It blocks until the instantiated capacity of io writers have been all allotted and closed, or the context is cancelled.
 	PrintInOrder(ctx context.Context)
@@ -54,7 +54,7 @@ type logAggregatorImpl struct {
 	countMutex sync.Mutex
 }
 
-func (l *logAggregatorImpl) GetWriter() (io.Writer, func(), error) {
+func (l *logAggregatorImpl) GetWriter(ctx context.Context) (io.Writer, func(), error) {
 	if err := l.checkCapacity(); err != nil {
 		return nil, nil, err
 	}
@@ -62,7 +62,7 @@ func (l *logAggregatorImpl) GetWriter() (io.Writer, func(), error) {
 
 	writer := io.Writer(w)
 	if output.IsColorable(l.out) {
-		writer = output.GetWriter(writer, output.DefaultColorCode, false, false)
+		writer = output.GetWriter(ctx, writer, output.DefaultColorCode, false, false)
 	}
 	ch := make(chan string, buffSize)
 	l.messages <- ch
@@ -118,7 +118,7 @@ type noopLogAggregatorImpl struct {
 	out io.Writer
 }
 
-func (n *noopLogAggregatorImpl) GetWriter() (io.Writer, func(), error) {
+func (n *noopLogAggregatorImpl) GetWriter(context.Context) (io.Writer, func(), error) {
 	return n.out, func() {}, nil
 }
 
@@ -157,7 +157,7 @@ func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, bool) {
 	}
 	t, ok := v.(string)
 	if !ok {
-		log.Entry(context.Background()).Fatalf("invalid build output recorded for image %s", imageName)
+		log.Entry(context.TODO()).Fatalf("invalid build output recorded for image %s", imageName)
 	}
 	return t, true
 }

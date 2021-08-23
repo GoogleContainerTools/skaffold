@@ -17,6 +17,7 @@ limitations under the License.
 package analyze
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -74,7 +75,7 @@ func TestConfigAnalyzer(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			err := test.analyzer.analyzeFile(test.inputFile)
+			err := test.analyzer.analyzeFile(context.Background(), test.inputFile)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

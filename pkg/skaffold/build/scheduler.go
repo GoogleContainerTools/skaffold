@@ -101,7 +101,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	})
 	defer endTrace()
 
-	w, closeFn, err := s.logger.GetWriter()
+	w, closeFn, err := s.logger.GetWriter(ctx)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		eventV2.BuildFailed(a.ImageName, err)

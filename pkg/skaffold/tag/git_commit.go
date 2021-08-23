@@ -33,11 +33,11 @@ import (
 // GitCommit tags an image by the git commit it was built at.
 type GitCommit struct {
 	prefix        string
-	runGitFn      func(string) (string, error)
+	runGitFn      func(context.Context, string) (string, error)
 	ignoreChanges bool
 }
 
-var variants = map[string]func(string) (string, error){
+var variants = map[string]func(context.Context, string) (string, error){
 	"":                gitTags,
 	"tags":            gitTags,
 	"commitsha":       gitCommitsha,
@@ -61,8 +61,8 @@ func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error
 }
 
 // GenerateTag generates a tag from the git commit.
-func (t *GitCommit) GenerateTag(image latestV1.Artifact) (string, error) {
-	ref, err := t.runGitFn(image.Workspace)
+func (t *GitCommit) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
+	ref, err := t.runGitFn(ctx, image.Workspace)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)
 	}
@@ -70,7 +70,7 @@ func (t *GitCommit) GenerateTag(image latestV1.Artifact) (string, error) {
 	ref = sanitizeTag(ref)
 
 	if !t.ignoreChanges {
-		changes, err := runGit(image.Workspace, "status", ".", "--porcelain")
+		changes, err := runGit(ctx, image.Workspace, "status", ".", "--porcelain")
 		if err != nil {
 			return "", fmt.Errorf("getting git status: %w", err)
 		}
@@ -99,43 +99,43 @@ func sanitizeTag(tag string) string {
 	}
 
 	if tag != sanitized {
-		log.Entry(context.Background()).Warnf("Using %q instead of %q as an image tag", sanitized, tag)
+		log.Entry(context.TODO()).Warnf("Using %q instead of %q as an image tag", sanitized, tag)
 	}
 
 	return sanitized
 }
 
-func gitTags(workingDir string) (string, error) {
-	return runGit(workingDir, "describe", "--tags", "--always")
+func gitTags(ctx context.Context, workingDir string) (string, error) {
+	return runGit(ctx, workingDir, "describe", "--tags", "--always")
 }
 
-func gitCommitsha(workingDir string) (string, error) {
-	return runGit(workingDir, "rev-list", "-1", "HEAD")
+func gitCommitsha(ctx context.Context, workingDir string) (string, error) {
+	return runGit(ctx, workingDir, "rev-list", "-1", "HEAD")
 }
 
-func gitAbbrevcommitsha(workingDir string) (string, error) {
-	return runGit(workingDir, "rev-list", "-1", "HEAD", "--abbrev-commit")
+func gitAbbrevcommitsha(ctx context.Context, workingDir string) (string, error) {
+	return runGit(ctx, workingDir, "rev-list", "-1", "HEAD", "--abbrev-commit")
 }
 
-func gitTreesha(workingDir string) (string, error) {
-	gitPath, err := getGitPathToWorkdir(workingDir)
+func gitTreesha(ctx context.Context, workingDir string) (string, error) {
+	gitPath, err := getGitPathToWorkdir(ctx, workingDir)
 	if err != nil {
 		return "", err
 	}
 
-	return runGit(workingDir, "rev-parse", "HEAD:"+gitPath+"/")
+	return runGit(ctx, workingDir, "rev-parse", "HEAD:"+gitPath+"/")
 }
 
-func gitAbbrevtreesha(workingDir string) (string, error) {
-	gitPath, err := getGitPathToWorkdir(workingDir)
+func gitAbbrevtreesha(ctx context.Context, workingDir string) (string, error) {
+	gitPath, err := getGitPathToWorkdir(ctx, workingDir)
 	if err != nil {
 		return "", err
 	}
 
-	return runGit(workingDir, "rev-parse", "--short", "HEAD:"+gitPath+"/")
+	return runGit(ctx, workingDir, "rev-parse", "--short", "HEAD:"+gitPath+"/")
 }
 
-func getGitPathToWorkdir(workingDir string) (string, error) {
+func getGitPathToWorkdir(ctx context.Context, workingDir string) (string, error) {
 	absWorkingDir, err := filepath.Abs(workingDir)
 	if err != nil {
 		return "", err
@@ -147,7 +147,7 @@ func getGitPathToWorkdir(workingDir string) (string, error) {
 		return "", err
 	}
 
-	gitRoot, err := runGit(workingDir, "rev-parse", "--show-toplevel")
+	gitRoot, err := runGit(ctx, workingDir, "rev-parse", "--show-toplevel")
 	if err != nil {
 		return "", err
 	}
@@ -155,11 +155,11 @@ func getGitPathToWorkdir(workingDir string) (string, error) {
 	return filepath.Rel(gitRoot, absWorkingDir)
 }
 
-func runGit(workingDir string, arg ...string) (string, error) {
+func runGit(ctx context.Context, workingDir string, arg ...string) (string, error) {
 	cmd := exec.Command("git", arg...)
 	cmd.Dir = workingDir
 
-	out, err := util.RunCmdOut(cmd)
+	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return "", err
 	}

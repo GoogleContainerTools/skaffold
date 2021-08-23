@@ -84,9 +84,9 @@ type jibJSON struct {
 }
 
 // validate checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
-func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
-	if !JVMFound() {
-		log.Entry(context.Background()).Debugf("Skipping Jib for init for %q: no functioning Java VM", path)
+func validate(ctx context.Context, path string, enableGradleAnalysis bool) []ArtifactConfig {
+	if !JVMFound(ctx) {
+		log.Entry(context.TODO()).Debugf("Skipping Jib for init for %q: no functioning Java VM", path)
 		return nil
 	}
 	// Determine whether maven or gradle
@@ -123,7 +123,7 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 	}
 	cmd := exec.Command(executable, taskName, "-q", consoleFlag)
 	cmd.Dir = filepath.Dir(path)
-	stdout, err := util.RunCmdOut(cmd)
+	stdout, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return nil
 	}
@@ -140,7 +140,7 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 		line := bytes.ReplaceAll(match[1], []byte(`\`), []byte(`\\`))
 		parsedJSON := jibJSON{}
 		if err := json.Unmarshal(line, &parsedJSON); err != nil {
-			log.Entry(context.Background()).Warnf("failed to parse jib json: %s", err.Error())
+			log.Entry(context.TODO()).Warnf("failed to parse jib json: %s", err.Error())
 			return nil
 		}
 

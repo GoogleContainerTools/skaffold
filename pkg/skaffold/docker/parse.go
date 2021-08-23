@@ -71,7 +71,7 @@ var (
 	RetrieveImage = retrieveImage
 )
 
-func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
+func readCopyCmdsFromDockerfile(ctx context.Context, onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
 	r, err := ioutil.ReadFile(absDockerfilePath)
 	if err != nil {
 		return nil, err
@@ -92,12 +92,12 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 		return nil, fmt.Errorf("putting build arguments: %w", err)
 	}
 
-	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, cfg)
+	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(ctx, dockerfileLines, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, cfg)
+	cpCmds, err := extractCopyCommands(ctx, dockerfileLinesWithOnbuild, onlyLastImage, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("listing copied files: %w", err)
 	}
@@ -199,11 +199,11 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 		}
 	}
 
-	log.Entry(context.Background()).Debugf("Found dependencies for dockerfile: %v", fts)
+	log.Entry(context.TODO()).Debugf("Found dependencies for dockerfile: %v", fts)
 	return fts, nil
 }
 
-func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) ([]*copyCommand, error) {
+func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImage bool, cfg Config) ([]*copyCommand, error) {
 	stages := map[string]bool{
 		"scratch": true,
 	}
@@ -231,7 +231,7 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 			// If `from` references a previous stage, then the `workdir`
 			// was already changed.
 			if !stages[strings.ToLower(from.image)] {
-				img, err := RetrieveImage(from.image, cfg)
+				img, err := RetrieveImage(ctx, from.image, cfg)
 				if err == nil {
 					workdir = img.Config.WorkingDir
 				} else if _, ok, err := isOldImageManifestProblem(cfg, err); !ok {
@@ -295,7 +295,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	var srcs []string
 	for _, src := range paths[0 : len(paths)-1] {
 		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			log.Entry(context.Background()).Debugln("Skipping watch on remote dependency", src)
+			log.Entry(context.TODO()).Debugln("Skipping watch on remote dependency", src)
 			continue
 		}
 
@@ -314,7 +314,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	}, nil
 }
 
-func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node, error) {
+func expandOnbuildInstructions(ctx context.Context, nodes []*parser.Node, cfg Config) ([]*parser.Node, error) {
 	onbuildNodesCache := map[string][]*parser.Node{
 		"scratch": nil,
 	}
@@ -335,10 +335,10 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 				// some build args like artifact dependencies are not available until the first build sequence has completed.
 				// skip check if there are unavailable images
 				onbuildNodes = []*parser.Node{}
-			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
+			} else if ons, err := parseOnbuild(ctx, from.image, cfg); err == nil {
 				onbuildNodes = ons
 			} else if warnMsg, ok, _ := isOldImageManifestProblem(cfg, err); ok && warnMsg != "" {
-				log.Entry(context.Background()).Warn(warnMsg)
+				log.Entry(context.TODO()).Warn(warnMsg)
 			} else if !ok {
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
@@ -355,11 +355,11 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 	return expandedNodes, nil
 }
 
-func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
-	log.Entry(context.Background()).Tracef("Checking base image %s for ONBUILD triggers.", image)
+func parseOnbuild(ctx context.Context, image string, cfg Config) ([]*parser.Node, error) {
+	log.Entry(context.TODO()).Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
-	img, err := RetrieveImage(image, cfg)
+	img, err := RetrieveImage(ctx, image, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving image %q: %w", image, err)
 	}
@@ -368,7 +368,7 @@ func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
 		return []*parser.Node{}, nil
 	}
 
-	log.Entry(context.Background()).Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
+	log.Entry(context.TODO()).Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
 
 	obRes, err := parser.Parse(strings.NewReader(strings.Join(img.Config.OnBuild, "\n")))
 	if err != nil {
@@ -403,8 +403,8 @@ func unquote(v string) string {
 	return unquoted
 }
 
-func retrieveImage(image string, cfg Config) (*v1.ConfigFile, error) {
-	localDaemon, err := NewAPIClient(cfg)
+func retrieveImage(ctx context.Context, image string, cfg Config) (*v1.ConfigFile, error) {
+	localDaemon, err := NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}

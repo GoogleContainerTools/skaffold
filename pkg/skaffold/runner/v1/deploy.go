@@ -68,7 +68,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 	defer r.deployer.GetStatusMonitor().Reset()
 
-	out, _ = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)
+	out, ctx = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)
 
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
@@ -108,6 +108,11 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		if r.wasBuilt(image.Tag) {
 			localAndBuiltImages = append(localAndBuiltImages, image)
 		}
+	}
+
+	// if --load-images=true, load all images into cluster
+	if r.runCtx.ForceLoadImages() {
+		localAndBuiltImages = artifacts
 	}
 
 	r.deployer.RegisterLocalImages(localAndBuiltImages)

@@ -126,8 +126,8 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy) (*Deployer, error) {
-	hv, err := binVer()
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy) (*Deployer, error) {
+	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
 	}
@@ -149,7 +149,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDe
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
 	if err != nil {
-		olog.Entry(context.Background()).Warn("unable to parse namespaces - deploy might not work correctly!")
+		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
 	return &Deployer{

@@ -161,7 +161,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 		i := i
 		go func() {
-			_tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, *artifacts[i])
+			_tag, err := tag.GenerateFullyQualifiedImageName(ctx, r.tagger, *artifacts[i])
 			tagErrs[i] <- tagErr{tag: _tag, err: err}
 		}()
 	}
@@ -183,7 +183,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 				log.Entry(ctx).Debug(t.err)
 				log.Entry(ctx).Debug("Using a fall-back tagger")
 
-				fallbackTag, err := tag.GenerateFullyQualifiedImageName(&tag.ChecksumTagger{}, *artifact)
+				fallbackTag, err := tag.GenerateFullyQualifiedImageName(ctx, &tag.ChecksumTagger{}, *artifact)
 				if err != nil {
 					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
 				}

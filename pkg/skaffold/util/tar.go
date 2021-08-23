@@ -120,7 +120,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm header
 		}
 
 		if filepath.IsAbs(target) {
-			log.Entry(context.Background()).Warnf("Skipping %s. Only relative symlinks are supported.", src)
+			log.Entry(context.TODO()).Warnf("Skipping %s. Only relative symlinks are supported.", src)
 			return nil
 		}
 

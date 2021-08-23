@@ -86,7 +86,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// These are used for command completion and send debug messages on stderr.
 			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
 				instrumentation.SetCommand(cmd.Name())
-				out := output.GetWriter(out, defaultColor, forceColors, timestamps)
+				out := output.GetWriter(context.Background(), out, defaultColor, forceColors, timestamps)
 				cmd.Root().SetOutput(out)
 
 				// Setup logs
@@ -108,9 +108,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// Print version
 			versionInfo := version.Get()
 			version.SetClient(opts.User)
-			log.Entry(context.Background()).Infof("Skaffold %+v", versionInfo)
+			log.Entry(context.TODO()).Infof("Skaffold %+v", versionInfo)
 			if !isHouseKeepingMessagesAllowed(cmd) {
-				log.Entry(context.Background()).Debug("Disable housekeeping messages for command explicitly")
+				log.Entry(context.TODO()).Debug("Disable housekeeping messages for command explicitly")
 				return nil
 			}
 			s = survey.New(opts.GlobalConfig, opts.ConfigurationFile, opts.Command)
@@ -129,7 +129,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			select {
 			case msg := <-updateMsg:
 				if err := config.UpdateMsgDisplayed(opts.GlobalConfig); err != nil {
-					log.Entry(context.Background()).Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
+					log.Entry(context.TODO()).Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
 				}
 				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
 			default:
@@ -236,7 +236,7 @@ func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
 			// special case for backward compatibility.
 			if f.Name == "namespace" {
 				if val, present := os.LookupEnv("SKAFFOLD_DEPLOY_NAMESPACE"); present {
-					log.Entry(context.Background()).Warn("Using SKAFFOLD_DEPLOY_NAMESPACE env variable is deprecated. Please use SKAFFOLD_NAMESPACE instead.")
+					log.Entry(context.TODO()).Warn("Using SKAFFOLD_DEPLOY_NAMESPACE env variable is deprecated. Please use SKAFFOLD_NAMESPACE instead.")
 					cmd.Flags().Set(f.Name, val)
 				}
 			}
@@ -263,7 +263,7 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: timestamp,
 	})
-	logrus.AddHook(event.NewLogHook(constants.DevLoop, constants.SubtaskIDNone))
+	logrus.AddHook(event.NewLogHook())
 	return nil
 }
 
@@ -311,13 +311,13 @@ func preReleaseVersion(s string) bool {
 func isQuietMode() bool {
 	switch {
 	case !interactive:
-		log.Entry(context.Background()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
+		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
 		return true
 	case quietFlag:
-		log.Entry(context.Background()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
+		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
 		return true
 	case analyze:
-		log.Entry(context.Background()).Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
+		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
 		return true
 	default:
 		return false
@@ -335,16 +335,16 @@ func apiServerShutdownHook(err error) error {
 
 func updateCheckForReleasedVersionsIfNotDisabled(s string) string {
 	if preReleaseVersion(s) {
-		log.Entry(context.Background()).Debug("Skipping update check for pre-release version")
+		log.Entry(context.TODO()).Debug("Skipping update check for pre-release version")
 		return ""
 	}
 	if !update.EnableCheck {
-		log.Entry(context.Background()).Debug("Skipping update check for flag `--update-check` set to false")
+		log.Entry(context.TODO()).Debug("Skipping update check for flag `--update-check` set to false")
 		return ""
 	}
 	msg, err := updateCheck(opts.GlobalConfig)
 	if err != nil {
-		log.Entry(context.Background()).Infof("update check failed: %s", err)
+		log.Entry(context.TODO()).Infof("update check failed: %s", err)
 	}
 	return msg
 }

@@ -95,7 +95,7 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 	for kPath := range kustomizePathMap {
 		// TODO:  support kustomize buildArgs (shall we support it in kpt-fn)?
 		cmd := exec.CommandContext(ctx, "kustomize", "build", kPath)
-		out, err := util.RunCmdOut(cmd)
+		out, err := util.RunCmdOut(ctx, cmd)
 		if err != nil {
 			return nil, err
 		}

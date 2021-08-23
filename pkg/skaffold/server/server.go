@@ -140,9 +140,9 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 	}
 
 	if port != preferredPort {
-		log.Entry(context.Background()).Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
+		log.Entry(context.TODO()).Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
 	} else {
-		log.Entry(context.Background()).Infof("starting gRPC server on port %d", port)
+		log.Entry(context.TODO()).Infof("starting gRPC server on port %d", port)
 	}
 
 	s := grpc.NewServer()
@@ -167,7 +167,7 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 
 	go func() {
 		if err := s.Serve(l); err != nil {
-			log.Entry(context.Background()).Errorf("failed to start grpc server: %s", err)
+			log.Entry(context.TODO()).Errorf("failed to start grpc server: %s", err)
 		}
 	}()
 	return func() error {
@@ -207,9 +207,9 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 	}
 
 	if port != preferredPort {
-		log.Entry(context.Background()).Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
+		log.Entry(context.TODO()).Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
 	} else {
-		log.Entry(context.Background()).Infof("starting gRPC HTTP server on port %d", port)
+		log.Entry(context.TODO()).Infof("starting gRPC HTTP server on port %d", port)
 	}
 
 	server := &http.Server{

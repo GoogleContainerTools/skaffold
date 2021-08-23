@@ -90,7 +90,7 @@ func TestPrintTestsList(t *testing.T) {
 						{Name: "structure-test", Pipeline: v1.Pipeline{Test: []*v1.TestCase{{StructureTests: []string{"structure-test-i0"}}}}}},
 				}, SourceFile: "path/to/cfg1"},
 			}
-			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(_ context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
 				var set parser.SkaffoldConfigSet
 				for _, c := range configSet {

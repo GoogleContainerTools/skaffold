@@ -73,7 +73,7 @@ func GetDependencies(ctx context.Context, buildCfg BuildConfig, cfg Config) ([]s
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
 	}
-	result := getDependencies(buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
+	result := getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
 	dependencyCache.Store(buildCfg.artifact, result)
 	return resultPair(result)
 }
@@ -87,7 +87,7 @@ func GetDependenciesCached(ctx context.Context, buildCfg BuildConfig, cfg Config
 	}
 
 	deps := dependencyCache.Exec(buildCfg.artifact, func() interface{} {
-		return getDependencies(buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
+		return getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
 	})
 	return resultPair(deps)
 }
@@ -103,7 +103,7 @@ func resultPair(deps interface{}) ([]string, error) {
 	}
 }
 
-func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
+func getDependencies(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
 	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
@@ -112,7 +112,7 @@ func getDependencies(workspace string, dockerfilePath string, absDockerfilePath 
 		return []string{dockerfilePath}
 	}
 
-	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, cfg)
+	fts, err := readCopyCmdsFromDockerfile(ctx, false, absDockerfilePath, workspace, buildArgs, cfg)
 	if err != nil {
 		return err
 	}

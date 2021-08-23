@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -99,18 +100,18 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			if test.minikubeNotInPath {
 				ver := semver.Version{}
-				t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
+				t.Override(&FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
 					return "", ver, fmt.Errorf("minikube not in PATH")
 				})
 			} else {
 				if test.minikuneWithoutUserFalg {
 					ver := semver.Version{Major: 1, Minor: 17, Patch: 0}
-					t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
+					t.Override(&FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
 						return "", ver, fmt.Errorf("minikube not in PATH")
 					})
 				} else {
 					ver := semver.Version{Major: 1, Minor: 18, Patch: 1}
-					t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) { return "minikube", ver, nil })
+					t.Override(&FindMinikubeBinary, func(context.Context) (string, semver.Version, error) { return "minikube", ver, nil })
 				}
 			}
 			t.Override(&util.DefaultExecCommand, test.minikubeProfileCmd)
@@ -121,7 +122,7 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 				}, nil
 			})
 
-			ok := GetClient().IsMinikube(test.kubeContext)
+			ok := GetClient().IsMinikube(context.Background(), test.kubeContext)
 			t.CheckDeepEqual(test.expected, ok)
 		})
 	}
@@ -154,7 +155,7 @@ func TestGetVersion(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut("minikube version --output=json",
 				test.versionBlob),
 			)
-			actual, err := getCurrentVersion()
+			actual, err := getCurrentVersion(context.Background())
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, actual, test.expected)
 		})
 	}
@@ -189,10 +190,10 @@ func TestMinikubeExec(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
+			t.Override(&FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
 				return "", test.version, test.err
 			})
-			actual, err := minikubeExec("test")
+			actual, err := minikubeExec(context.Background(), "test")
 			expected := []string{"", "test"}
 			if test.hasUserArg {
 				expected = append(expected, "--user=skaffold")

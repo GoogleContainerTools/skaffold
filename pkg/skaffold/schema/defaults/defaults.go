@@ -123,7 +123,7 @@ func defaultToLocalBuild(c *latestV1.SkaffoldConfig) {
 		return
 	}
 
-	log.Entry(context.Background()).Debug("Defaulting build type to local build")
+	log.Entry(context.TODO()).Debug("Defaulting build type to local build")
 	c.Build.BuildType.LocalBuild = &latestV1.LocalBuild{}
 }
 
@@ -132,7 +132,7 @@ func defaultToKubectlDeploy(c *latestV1.SkaffoldConfig) {
 		return
 	}
 
-	log.Entry(context.Background()).Debug("Defaulting deploy type to kubectl")
+	log.Entry(context.TODO()).Debug("Defaulting deploy type to kubectl")
 	c.Deploy.DeployType.KubectlDeploy = &latestV1.KubectlDeploy{}
 }
 

@@ -259,7 +259,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	for i := range artifacts {
 		artifact := artifacts[i]
 		if err := r.monitor.Register(
-			func() ([]string, error) { return r.tester.TestDependencies(artifact) },
+			func() ([]string, error) { return r.tester.TestDependencies(ctx, artifact) },
 			func(filemon.Events) { r.changeSet.AddRetest(artifact) },
 		); err != nil {
 			event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)

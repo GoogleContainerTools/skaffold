@@ -34,10 +34,10 @@ func resolveKubectlContext() {
 	config, err := kctx.CurrentConfig()
 	switch {
 	case err != nil:
-		log.Entry(context.Background()).Warn("unable to retrieve current kubectl context, using global values")
+		log.Entry(context.TODO()).Warn("unable to retrieve current kubectl context, using global values")
 		global = true
 	case config.CurrentContext == "":
-		log.Entry(context.Background()).Info("no kubectl context currently set, using global values")
+		log.Entry(context.TODO()).Info("no kubectl context currently set, using global values")
 		global = true
 	default:
 		kubecontext = config.CurrentContext

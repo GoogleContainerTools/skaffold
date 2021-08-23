@@ -72,7 +72,7 @@ func fromRequiredArtifacts(imageName string, r docker.ArtifactResolver, deps []*
 		if imageName == d.Alias {
 			image, found := r.GetImageTag(d.ImageName)
 			if !found {
-				log.Entry(context.Background()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			return image
 		}

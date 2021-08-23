@@ -38,7 +38,7 @@ var (
 func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latestV1.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
-	log.Entry(context.Background()).Info("generating skaffold config")
+	log.Entry(context.TODO()).Info("generating skaffold config")
 
 	name, err := suggestConfigName()
 	if err != nil {

@@ -17,6 +17,8 @@ limitations under the License.
 package tag
 
 import (
+	"context"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -25,7 +27,7 @@ import (
 type ChecksumTagger struct{}
 
 // GenerateTag returns either the current tag or `latest`.
-func (t *ChecksumTagger) GenerateTag(image latestV1.Artifact) (string, error) {
+func (t *ChecksumTagger) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
 	parsed, err := docker.ParseReference(image.ImageName)
 	if err != nil {
 		return "", err

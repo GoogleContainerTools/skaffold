@@ -117,5 +117,5 @@ func (c *CLI) Version(ctx context.Context) ClientVersion {
 
 func (c *CLI) getVersion(ctx context.Context) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "kubectl", "version", "--client", "-ojson")
-	return util.RunCmdOut(cmd)
+	return util.RunCmdOut(ctx, cmd)
 }
