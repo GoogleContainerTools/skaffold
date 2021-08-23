@@ -74,7 +74,7 @@ func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command stri
 	cmd.Stdin = in
 	cmd.Stdout = out
 	cmd.Stderr = out
-	return util.RunCmd(cmd)
+	return util.RunCmd(ctx, cmd)
 }
 
 // RunInNamespace shells out kubectl CLI with given namespace
@@ -83,20 +83,20 @@ func (c *CLI) RunInNamespace(ctx context.Context, in io.Reader, out io.Writer, c
 	cmd.Stdin = in
 	cmd.Stdout = out
 	cmd.Stderr = out
-	return util.RunCmd(cmd)
+	return util.RunCmd(ctx, cmd)
 }
 
 // RunOut shells out kubectl CLI.
 func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte, error) {
 	cmd := c.Command(ctx, command, arg...)
-	return util.RunCmdOut(cmd)
+	return util.RunCmdOut(ctx, cmd)
 }
 
 // RunOutInput shells out kubectl CLI with a given input stream.
 func (c *CLI) RunOutInput(ctx context.Context, in io.Reader, command string, arg ...string) ([]byte, error) {
 	cmd := c.Command(ctx, command, arg...)
 	cmd.Stdin = in
-	return util.RunCmdOut(cmd)
+	return util.RunCmdOut(ctx, cmd)
 }
 
 // CommandWithStrictCancellation ensures for windows OS that all child process get terminated on cancellation

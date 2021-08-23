@@ -18,6 +18,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"runtime"
 	"testing"
@@ -77,7 +78,7 @@ func TestSupportsColor(t *testing.T) {
 				test.shouldErr = false
 			}
 
-			supportsColors, err := SupportsColor()
+			supportsColors, err := SupportsColor(context.Background())
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, supportsColors)
 		})
 	}

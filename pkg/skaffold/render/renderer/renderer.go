@@ -113,7 +113,7 @@ func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 	kptFilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	if _, err := os.Stat(kptFilePath); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
-		if _, err := util.RunCmdOut(cmd); err != nil {
+		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
 			return sErrors.NewError(err,
 				proto.ActionableErr{
 					Message: fmt.Sprintf("unable to initialize Kptfile in %v", r.hydrationDir),

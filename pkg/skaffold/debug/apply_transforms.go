@@ -104,7 +104,7 @@ func findArtifact(image string, builds []graph.Artifact) *graph.Artifact {
 // the given build artifact
 func retrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, insecureRegistries map[string]bool) (imageConfiguration, error) {
 	// TODO: use the proper RunContext
-	apiClient, err := docker.NewAPIClient(&runcontext.RunContext{
+	apiClient, err := docker.NewAPIClient(ctx, &runcontext.RunContext{
 		InsecureRegistries: insecureRegistries,
 	})
 	if err != nil {

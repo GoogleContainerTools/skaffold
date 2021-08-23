@@ -46,10 +46,8 @@ func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, er
 	}, nil
 }
 
-func (t *inputDigestTagger) GenerateTag(image latestV1.Artifact) (string, error) {
+func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
 	var inputs []string
-	// TODO(nkubala): plumb through context into Tagger interface
-	ctx := context.TODO()
 	srcFiles, err := t.cache.TransitiveArtifactDependencies(ctx, &image)
 	if err != nil {
 		return "", err

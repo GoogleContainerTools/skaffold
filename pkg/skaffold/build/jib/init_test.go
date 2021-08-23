@@ -17,6 +17,7 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -172,7 +173,7 @@ BEGIN JIB JSON
 				test.stdout,
 			))
 
-			validated := Validate(tmpDir.Path(test.path), test.enableGradle)
+			validated := Validate(context.Background(), tmpDir.Path(test.path), test.enableGradle)
 
 			t.CheckDeepEqual(test.expectedConfig, validated)
 		})

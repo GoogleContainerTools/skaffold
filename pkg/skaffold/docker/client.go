@@ -60,9 +60,9 @@ type Config interface {
 }
 
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
-func NewAPIClientImpl(cfg Config) (LocalDaemon, error) {
+func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(cfg.GetKubeContext(), cfg.MinikubeProfile())
+		env, apiClient, err := newAPIClient(ctx, cfg.GetKubeContext(), cfg.MinikubeProfile())
 		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg)
 		dockerAPIClientErr = err
 	})
@@ -75,12 +75,12 @@ func NewAPIClientImpl(cfg Config) (LocalDaemon, error) {
 // kubecontext API Server to minikube profiles
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
-func newAPIClient(kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
 	if minikubeProfile != "" { // skip validation if explicitly specifying minikubeProfile.
-		return newMinikubeAPIClient(minikubeProfile)
+		return newMinikubeAPIClient(ctx, minikubeProfile)
 	}
-	if cluster.GetClient().IsMinikube(kubeContext) {
-		return newMinikubeAPIClient(kubeContext)
+	if cluster.GetClient().IsMinikube(ctx, kubeContext) {
+		return newMinikubeAPIClient(ctx, kubeContext)
 	}
 	return newEnvAPIClient()
 }
@@ -104,8 +104,8 @@ type ExitCoder interface {
 
 // newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPIClient, error) {
-	env, err := getMinikubeDockerEnv(minikubeProfile)
+func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+	env, err := getMinikubeDockerEnv(ctx, minikubeProfile)
 	if err != nil {
 		// When minikube uses the infamous `none` driver, `minikube docker-env` will exit with
 		// code 51 (>= 1.13.0) or 64 (< 1.13.0).  Note that exit code 51 was unused prior to 1.13.0
@@ -180,15 +180,15 @@ func getUserAgentHeader() map[string]string {
 	}
 }
 
-func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
+func getMinikubeDockerEnv(ctx context.Context, minikubeProfile string) (map[string]string, error) {
 	if minikubeProfile == "" {
 		return nil, fmt.Errorf("empty minikube profile")
 	}
-	cmd, err := cluster.GetClient().MinikubeExec("docker-env", "--shell", "none", "-p", minikubeProfile)
+	cmd, err := cluster.GetClient().MinikubeExec(ctx, "docker-env", "--shell", "none", "-p", minikubeProfile)
 	if err != nil {
 		return nil, fmt.Errorf("executing minikube command: %w", err)
 	}
-	out, err := util.RunCmdOut(cmd)
+	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("getting minikube env: %w", err)
 	}

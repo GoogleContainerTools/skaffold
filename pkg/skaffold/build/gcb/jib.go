@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -29,8 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (b *Builder) jibBuildSpec(artifact *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
-	t, err := jib.DeterminePluginType(artifact.Workspace, artifact.JibArtifact)
+func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
+	t, err := jib.DeterminePluginType(ctx, artifact.Workspace, artifact.JibArtifact)
 	if err != nil {
 		return cloudbuild.Build{}, err
 	}

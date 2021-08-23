@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -58,7 +59,7 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
-func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
+func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, labeller)
 	}
@@ -71,7 +72,7 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 	for _, d := range deployerCfg {
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
+			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
 			if err != nil {
 				return nil, err
 			}
@@ -80,7 +81,7 @@ func GetDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller)
 
 		dCtx := &deployerCtx{runCtx, d}
 		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(dCtx, labeller, d.HelmDeploy)
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.HelmDeploy)
 			if err != nil {
 				return nil, err
 			}

@@ -67,7 +67,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 	cmd.Stderr = out
 
 	log.Entry(ctx).Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(&cmd); err != nil {
+	if err := util.RunCmd(ctx, &cmd); err != nil {
 		return fmt.Errorf("maven build failed: %w", err)
 	}
 
@@ -77,7 +77,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 // getDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func getDependenciesMaven(ctx context.Context, workspace string, a *latestV1.JibArtifact) ([]string, error) {
-	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
+	deps, err := getDependencies(ctx, workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
 		return nil, dependencyErr(JibMaven, workspace, err)
 	}

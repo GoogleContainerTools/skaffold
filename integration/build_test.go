@@ -113,7 +113,7 @@ func TestBuild(t *testing.T) {
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	if !jib.JVMFound() {
+	if !jib.JVMFound(context.Background()) {
 		t.Fatal("test requires Java VM")
 	}
 
@@ -155,7 +155,7 @@ func checkImageExists(t *testing.T, image string) {
 	failNowIfError(t, err)
 
 	// TODO: use the proper RunContext
-	client, err := docker.NewAPIClient(&runcontext.RunContext{
+	client, err := docker.NewAPIClient(context.Background(), &runcontext.RunContext{
 		KubeContext: cfg.CurrentContext,
 	})
 	failNowIfError(t, err)
@@ -183,7 +183,7 @@ func setupGitRepo(t *testing.T, dir string) {
 	for _, args := range gitArgs {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
-		if buf, err := util.RunCmdOut(cmd); err != nil {
+		if buf, err := util.RunCmdOut(context.Background(), cmd); err != nil {
 			t.Logf(string(buf))
 			t.Fatal(err)
 		}

@@ -55,14 +55,14 @@ type Deployer struct {
 	once        sync.Once
 }
 
-func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
-	client, err := dockerutil.NewAPIClient(cfg)
+func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
+	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	tracker := tracker.NewContainerTracker()
-	l, err := logger.NewLogger(tracker, cfg)
+	l, err := logger.NewLogger(ctx, tracker, cfg)
 	if err != nil {
 		return nil, err
 	}

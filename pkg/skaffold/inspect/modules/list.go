@@ -38,7 +38,7 @@ type moduleEntry struct {
 
 func PrintModulesList(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{ConfigurationFile: opts.Filename, RepoCacheDir: opts.RepoCacheDir})
+	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{ConfigurationFile: opts.Filename, RepoCacheDir: opts.RepoCacheDir})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}

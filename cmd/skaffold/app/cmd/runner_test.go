@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -88,7 +89,7 @@ func TestCreateNewRunner(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&validation.DefaultConfig, validation.Options{CheckDeploySource: false})
-			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(&testutil.FakeAPIClient{
 					ErrVersion: true,
 				}, nil, false, nil), nil
@@ -101,7 +102,7 @@ func TestCreateNewRunner(t *testing.T) {
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latestV1.Version, test.config)).
 				Chdir()
 
-			_, _, _, err := createNewRunner(ioutil.Discard, test.options)
+			_, _, _, err := createNewRunner(context.Background(), ioutil.Discard, test.options)
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedError != "" {

@@ -63,7 +63,7 @@ func GetDependencies(ctx context.Context, dir string, a *latestV1.BazelArtifact)
 
 	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no", "--output=label")
 	cmd.Dir = dir
-	stdout, err := util.RunCmdOut(cmd)
+	stdout, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("getting bazel dependencies: %w", err)
 	}

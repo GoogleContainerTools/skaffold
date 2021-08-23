@@ -40,7 +40,7 @@ import (
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.InitializeState(runCtx)
 	event.LogMetaEvent()
 	eventV2.InitializeState(runCtx)
@@ -60,7 +60,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV1.Pipeline) (build.PipelineBuilder, error) {
-		return runner.GetBuilder(runCtx, store, sourceDependencies, p)
+		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -70,14 +70,14 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return isImageLocal(runCtx, imageName)
 	}
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels(), runCtx.GetRunID())
-	tester, err := getTester(runCtx, isLocalImage)
+	tester, err := getTester(ctx, runCtx, isLocalImage)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
 
 	var deployer deploy.Deployer
-	deployer, err = runner.GetDeployer(runCtx, labeller)
+	deployer, err = runner.GetDeployer(ctx, runCtx, labeller)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
@@ -93,7 +93,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			return nil, err
 		}
 
-		testDependencies, err := tester.TestDependencies(artifact)
+		testDependencies, err := tester.TestDependencies(ctx, artifact)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
@@ -101,7 +101,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, g, store)
+	artifactCache, err := cache.NewCache(ctx, runCtx, isLocalImage, depLister, g, store)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("initializing cache: %w", err)
@@ -197,8 +197,8 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 	return !pushImages, nil
 }
 
-func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {
-	tester, err := test.NewTester(cfg, isLocalImage)
+func getTester(ctx context.Context, cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {
+	tester, err := test.NewTester(ctx, cfg, isLocalImage)
 	if err != nil {
 		return nil, err
 	}
