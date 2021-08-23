@@ -96,6 +96,7 @@ func (b *Builder) retrieveEnv(a *latestV1.Artifact, tag string) ([]string, error
 		fmt.Sprintf("%s=%s", constants.Image, tag),
 		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
 		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
+		fmt.Sprintf("%s=%t", constants.SkipTest, b.skipTest),
 	}
 
 	ref, err := docker.ParseReference(tag)
