@@ -37,6 +37,15 @@ type Options struct {
 	ModulesOptions
 	ProfilesOptions
 	BuildEnvOptions
+	TestsOptions
+}
+
+// TestsOptions holds flag values for various `skaffold inspect tests` commands
+type TestsOptions struct {
+	// Profiles is the slice of profile names to activate.
+	TestsProfiles []string
+	// Profile is a target profile to create or edit
+	TestsProfile string
 }
 
 // ModulesOptions holds flag values for various `skaffold inspect modules` commands

@@ -30,7 +30,6 @@ import (
 func cmdTests() *cobra.Command {
 	return NewCmd("tests").
 		WithDescription("View skaffold test information").
-		WithPersistentFlagAdder(cmdTestsFlags).
 		WithCommands(cmdTestsList())
 }
 
@@ -39,6 +38,7 @@ func cmdTestsList() *cobra.Command {
 		WithExample("Get list of tests", "inspect tests list --format json").
 		WithExample("Get list of tests targeting a specific configuration", "inspect tests list --profile local --format json").
 		WithDescription("Print the list of tests that would be run for a given configuration (default skaffold configuration, specific module, specific profile, etc).").
+		WithFlagAdder(cmdTestsListFlags).
 		NoArgs(listTests)
 }
 
@@ -48,10 +48,11 @@ func listTests(ctx context.Context, out io.Writer) error {
 		RepoCacheDir: inspectFlags.repoCacheDir,
 		OutFormat:    inspectFlags.outFormat,
 		Modules:      inspectFlags.modules,
+		TestsOptions: inspect.TestsOptions{TestsProfiles: inspectFlags.profiles},
 	})
 }
 
-func cmdTestsFlags(f *pflag.FlagSet) {
-	f.StringSliceVarP(&inspectFlags.modules, "module", "m", nil, "Names of modules to filter target action by.")
+func cmdTestsListFlags(f *pflag.FlagSet) {
 	f.StringSliceVarP(&inspectFlags.profiles, "profile", "p", nil, `Profile names to activate`)
+	f.StringSliceVarP(&inspectFlags.modules, "module", "m", nil, "Names of modules to filter target action by.")
 }
