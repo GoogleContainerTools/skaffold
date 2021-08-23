@@ -25,14 +25,12 @@ import (
 type Adapter struct {
 	container  *v1.Container
 	executable *types.ExecutableContainer
-	valueFrom  map[string]*v1.EnvVarSource
 }
 
 func NewAdapter(c *v1.Container) *Adapter {
 	return &Adapter{
 		container:  c,
 		executable: ExecutableContainerFromK8sContainer(c),
-		valueFrom:  holdValueFrom(c.Env),
 	}
 }
 
@@ -45,7 +43,7 @@ func (a *Adapter) GetContainer() *types.ExecutableContainer {
 func (a *Adapter) Apply() {
 	a.container.Args = a.executable.Args
 	a.container.Command = a.executable.Command
-	a.container.Env = containerEnvToK8sEnv(a.executable.Env, a.valueFrom)
+	a.container.Env = containerEnvToK8sEnv(a.executable.Env, holdValueFrom(a.container.Env))
 	a.container.Ports = containerPortsToK8sPorts(a.executable.Ports)
 }
 
@@ -75,9 +73,9 @@ func k8sEnvToContainerEnv(k8sEnv []v1.EnvVar) types.ContainerEnv {
 	}
 }
 
-// ValueFrom isn't handled by the debug code when altering the env vars.
 // holdValueFrom stores all ValueFrom values as they are on the adapter,
-// which will then be put back in place by Apply() later.
+// which will then be put back in place by Apply() later, as
+// ValueFrom isn't handled by the debug code when altering the env vars.
 func holdValueFrom(env []v1.EnvVar) map[string]*v1.EnvVarSource {
 	from := make(map[string]*v1.EnvVarSource, len(env))
 	for _, entry := range env {

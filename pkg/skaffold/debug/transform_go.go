@@ -35,7 +35,7 @@ func NewDlvTransformer() containerTransformer {
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, NewDlvTransformer())
+	RegisterContainerTransformer(NewDlvTransformer())
 }
 
 const (

@@ -27,18 +27,18 @@ import (
 )
 
 // containerTransforms are the set of configured transformers
-var containerTransforms []containerTransformer
+var containerTransforms = make(map[containerTransformer]bool)
 
 // RegisterContainerTransformer allows calling packages to register their own
 // transformer implementation with the global transform list.
-// It returns a function to reset the transform list to its original state,
-// which is useful only for testing.
-func RegisterContainerTransformer(t containerTransformer) func() {
-	cpy := make([]containerTransformer, len(containerTransforms))
-	copy(cpy, containerTransforms)
-	resetFunc := func() { containerTransforms = cpy }
-	containerTransforms = append(containerTransforms, t)
-	return resetFunc
+func RegisterContainerTransformer(t containerTransformer) {
+	containerTransforms[t] = true
+}
+
+// UnregisterContainerTransformer removes the provided transformer
+// from the global transformer set.
+func UnregisterContainerTransformer(t containerTransformer) {
+	delete(containerTransforms, t)
 }
 
 // containerTransformer transforms a container definition
@@ -150,7 +150,7 @@ func isShDashC(cmd, arg string) bool {
 
 func performContainerTransform(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
 	log.Entry(context.TODO()).Tracef("Examining container %q with config %v", adapter.GetContainer().Name, config)
-	for _, transform := range containerTransforms {
+	for transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(adapter, config, portAlloc, Protocols)
 		}

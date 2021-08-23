@@ -35,7 +35,7 @@ func NewPythonTransformer() containerTransformer {
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, NewPythonTransformer())
+	RegisterContainerTransformer(NewPythonTransformer())
 }
 
 const (

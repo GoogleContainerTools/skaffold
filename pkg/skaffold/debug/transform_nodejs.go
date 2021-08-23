@@ -34,7 +34,7 @@ func NewNodeTransformer() containerTransformer {
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, NewNodeTransformer())
+	RegisterContainerTransformer(NewNodeTransformer())
 
 	// the `node` image's "docker-entrypoint.sh" launches the command
 	entrypointLaunchers = append(entrypointLaunchers, "docker-entrypoint.sh")

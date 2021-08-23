@@ -32,7 +32,7 @@ func NewNetcoreTransformer() containerTransformer {
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, NewNetcoreTransformer())
+	RegisterContainerTransformer(NewNetcoreTransformer())
 }
 
 // isLaunchingNetcore determines if the arguments seems to be invoking dotnet

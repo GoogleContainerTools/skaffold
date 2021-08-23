@@ -77,8 +77,9 @@ func TestPodEncodeDecode(t *testing.T) {
 // TestSkipAnnotatedPodSpec verifies that transformPodSpec skips podspecs that have a
 // `debug.cloud.google.com/config` annotation.
 func TestSkipAnnotatedPodSpec(t *testing.T) {
-	reset := debug.RegisterContainerTransformer(testTransformer{})
-	defer reset()
+	tfm := testTransformer{}
+	debug.RegisterContainerTransformer(tfm)
+	defer debug.UnregisterContainerTransformer(tfm)
 
 	pod := v1.Pod{
 		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
@@ -96,8 +97,9 @@ func TestSkipAnnotatedPodSpec(t *testing.T) {
 }
 
 func TestApplyDebuggingTransforms(t *testing.T) {
-	reset := debug.RegisterContainerTransformer(testTransformer{})
-	defer reset()
+	tfm := testTransformer{}
+	debug.RegisterContainerTransformer(tfm)
+	defer debug.UnregisterContainerTransformer(tfm)
 
 	tests := []struct {
 		description string
@@ -575,8 +577,9 @@ status: {}`,
 }
 
 func TestWorkingDir(t *testing.T) {
-	reset := debug.RegisterContainerTransformer(testTransformer{})
-	defer reset()
+	tfm := testTransformer{}
+	debug.RegisterContainerTransformer(tfm)
+	defer debug.UnregisterContainerTransformer(tfm)
 
 	pod := &v1.Pod{
 		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
@@ -594,10 +597,9 @@ func TestWorkingDir(t *testing.T) {
 }
 
 func TestArtifactImage(t *testing.T) {
-	// defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
-	// containerTransforms = append(containerTransforms, testTransformer{})
-	reset := debug.RegisterContainerTransformer(testTransformer{})
-	defer reset()
+	tfm := testTransformer{}
+	debug.RegisterContainerTransformer(tfm)
+	defer debug.UnregisterContainerTransformer(tfm)
 
 	pod := &v1.Pod{
 		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},

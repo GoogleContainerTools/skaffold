@@ -34,7 +34,7 @@ func NewJDWPTransformer() containerTransformer {
 }
 
 func init() {
-	containerTransforms = append(containerTransforms, NewJDWPTransformer())
+	RegisterContainerTransformer(NewJDWPTransformer())
 }
 
 const (
