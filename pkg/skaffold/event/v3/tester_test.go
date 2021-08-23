@@ -18,56 +18,37 @@ package v3
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func TestHandleTestSubtaskEvent(t *testing.T) {
-	tests := []struct {
-		name  string
-		event *proto.TestSubtaskEvent
-	}{
-		{
-			name: "In Progress",
-			event: &proto.TestSubtaskEvent{
-				Id:     "0",
-				TaskId: fmt.Sprintf("%s-%d", constants.Test, 0),
-				Status: InProgress,
-			},
-		},
-		{
-			name: "Failed",
-			event: &proto.TestSubtaskEvent{
-				Id:            "23",
-				TaskId:        fmt.Sprintf("%s-%d", constants.Test, 0),
-				Status:        Failed,
-				ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Test, errors.New("deploy failed")),
-			},
-		},
-		{
-			name: "Succeeded",
-			event: &proto.TestSubtaskEvent{
-				Id:     "99",
-				TaskId: fmt.Sprintf("%s-%d", constants.Test, 12),
-				Status: Succeeded,
-			},
-		},
-	}
+	t.Run("In Progress", func(t *testing.T) {
+		handler = newHandler()
+		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
-	defer func() { handler = newHandler() }()
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			handler = newHandler()
-			handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+		wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
+		TesterInProgress(1)
+		wait(t, func() bool { return handler.getState().TestState.Status == Started })
+	})
 
-			wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
-			handler.handleTestSubtaskEvent(test.event)
-			wait(t, func() bool { return handler.getState().TestState.Status == test.event.Status })
-		})
-	}
+	t.Run("Failed", func(t *testing.T) {
+		handler = newHandler()
+		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+
+		wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
+		TesterFailed(1, errors.New("some error in Test"))
+		wait(t, func() bool { return handler.getState().TestState.Status == Started })
+	})
+
+	t.Run("Succeeded", func(t *testing.T) {
+		handler = newHandler()
+		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+
+		wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
+		TesterSucceeded(1)
+		wait(t, func() bool { return handler.getState().DeployState.Status == Succeeded })
+	})
+
 }

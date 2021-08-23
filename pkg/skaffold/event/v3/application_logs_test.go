@@ -21,6 +21,8 @@ import (
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	proto1 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func TestHandleApplicationLogEvent(t *testing.T) {
@@ -35,12 +37,20 @@ func TestHandleApplicationLogEvent(t *testing.T) {
 
 	// ensure that messages sent through the ApplicationLog function are populating the event log
 	for _, message := range messages {
-		testHandler.handleApplicationLogEvent(&proto.ApplicationLogEvent{
-			ContainerName: "containerName-0",
-			PodName:       "pod-0",
-			Message:       message,
-		})
+
+		event := &proto.ApplicationLogEvent{
+			ContainerName:        "containerName-0",
+			PodName:              "pod-0",
+			Prefix:               "",
+			Message:              message,
+			RichFormattedMessage: "",
+		}
+
+		dst := &anypb.Any{}
+		anypb.MarshalFrom(dst, event, proto1.MarshalOptions{})
+		testHandler.handle(message, ApplicationLogEvent, dst)
 	}
+
 	wait(t, func() bool {
 		testHandler.applicationLogsLock.Lock()
 		logLen := len(testHandler.applicationLogs)
