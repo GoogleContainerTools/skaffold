@@ -67,7 +67,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 	cmd.Stderr = out
 
 	log.Entry(ctx).Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(&cmd); err != nil {
+	if err := util.RunCmd(ctx, &cmd); err != nil {
 		return fmt.Errorf("gradle build failed: %w", err)
 	}
 
@@ -78,7 +78,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 // All paths are absolute.
 func getDependenciesGradle(ctx context.Context, workspace string, a *latestV1.JibArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getDependencies(workspace, cmd, a)
+	deps, err := getDependencies(ctx, workspace, cmd, a)
 	if err != nil {
 		return nil, dependencyErr(JibGradle, workspace, err)
 	}

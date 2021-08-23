@@ -71,12 +71,12 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		"Destination": instrumentation.PII(tag),
 	})
 	// TODO: [#4922] Implement required artifact resolution from the `artifactStore`
-	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
+	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions(ctx)...)
 	if err != nil {
 		return "", fmt.Errorf("getting cloudbuild client: %w", err)
 	}
 
-	c, err := cstorage.NewClient(ctx, gcp.ClientOptions()...)
+	c, err := cstorage.NewClient(ctx, gcp.ClientOptions(ctx)...)
 	if err != nil {
 		return "", fmt.Errorf("getting cloud storage client: %w", err)
 	}
@@ -124,7 +124,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("uploading source archive: %w", err)
 	}
 
-	buildSpec, err := b.buildSpec(artifact, tag, cbBucket, buildObject)
+	buildSpec, err := b.buildSpec(ctx, artifact, tag, cbBucket, buildObject)
 	if err != nil {
 		return "", fmt.Errorf("could not create build description: %w", err)
 	}

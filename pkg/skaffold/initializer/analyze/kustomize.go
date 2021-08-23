@@ -17,6 +17,7 @@ limitations under the License.
 package analyze
 
 import (
+	"context"
 	"path/filepath"
 
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
@@ -30,12 +31,12 @@ type kustomizeAnalyzer struct {
 	kustomizePaths []string
 }
 
-func (k *kustomizeAnalyzer) analyzeFile(path string) error {
+func (k *kustomizeAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
 	switch {
-	case deploy.IsKustomizationBase(path):
-		k.bases = append(k.bases, filepath.Dir(path))
-	case deploy.IsKustomizationPath(path):
-		k.kustomizePaths = append(k.kustomizePaths, filepath.Dir(path))
+	case deploy.IsKustomizationBase(filePath):
+		k.bases = append(k.bases, filepath.Dir(filePath))
+	case deploy.IsKustomizationPath(filePath):
+		k.kustomizePaths = append(k.kustomizePaths, filepath.Dir(filePath))
 	}
 	return nil
 }

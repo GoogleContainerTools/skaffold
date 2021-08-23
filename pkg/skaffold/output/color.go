@@ -52,9 +52,9 @@ var DefaultColorCodes = []Color{
 }
 
 // SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
-func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
+func SetupColors(ctx context.Context, out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	_, isTerm := util.IsTerminal(out)
-	supportsColor, err := util.SupportsColor()
+	supportsColor, err := util.SupportsColor(ctx)
 	if err != nil {
 		log.Entry(context.TODO()).Debugf("error checking for color support: %v", err)
 	}

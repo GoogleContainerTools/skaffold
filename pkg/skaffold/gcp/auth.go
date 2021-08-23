@@ -59,10 +59,10 @@ func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile) {
 	}
 }
 
-func activeUserCredentials() (*google.Credentials, error) {
+func activeUserCredentials(ctx context.Context) (*google.Credentials, error) {
 	credsOnce.Do(func() {
 		cmd := exec.Command("gcloud", "auth", "print-access-token", "--format=json")
-		body, err := util.RunCmdOut(cmd)
+		body, err := util.RunCmdOut(ctx, cmd)
 		if err != nil {
 			log.Entry(context.TODO()).Infof("unable to retrieve gcloud access token: %v", err)
 			log.Entry(context.TODO()).Info("falling back to application default credentials")

@@ -56,7 +56,7 @@ func NewCmdDiagnose() *cobra.Command {
 func doDiagnose(ctx context.Context, out io.Writer) error {
 	// force absolute path resolution during diagnose
 	opts.MakePathsAbsolute = util.BoolPtr(true)
-	configs, err := getCfgs(opts)
+	configs, err := getCfgs(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 }
 
 func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []schemaUtil.VersionedConfig) error {
-	runCtx, err := getRunContext(opts, configs)
+	runCtx, err := getRunContext(ctx, opts, configs)
 	if err != nil {
 		return fmt.Errorf("getting run context: %w", err)
 	}

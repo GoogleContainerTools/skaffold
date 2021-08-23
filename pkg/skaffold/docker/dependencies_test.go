@@ -251,7 +251,7 @@ ADD ./file /etc/file
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(image string, _ Config) (*v1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(_ context.Context, image string, _ Config) (*v1.ConfigFile, error) {
 	switch image {
 	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final", "gcr.io/distroless/base":
 		return &v1.ConfigFile{}, nil
@@ -702,7 +702,7 @@ func TestGetDependenciesCached(t *testing.T) {
 	imageFetcher := fakeImageFetcher{}
 	tests := []struct {
 		description     string
-		retrieveImgMock func(_ string, _ Config) (*v1.ConfigFile, error)
+		retrieveImgMock func(context.Context, string, Config) (*v1.ConfigFile, error)
 		dependencyCache map[string]interface{}
 		expected        []string
 		shouldErr       bool
@@ -715,7 +715,7 @@ func TestGetDependenciesCached(t *testing.T) {
 		},
 		{
 			description: "with cached results getDependencies should read from cache",
-			retrieveImgMock: func(_ string, _ Config) (*v1.ConfigFile, error) {
+			retrieveImgMock: func(context.Context, string, Config) (*v1.ConfigFile, error) {
 				return nil, fmt.Errorf("unexpected call")
 			},
 			dependencyCache: map[string]interface{}{"dummy": []string{"random.go"}},
@@ -723,7 +723,7 @@ func TestGetDependenciesCached(t *testing.T) {
 		},
 		{
 			description: "with cached results is error getDependencies should read from cache",
-			retrieveImgMock: func(_ string, _ Config) (*v1.ConfigFile, error) {
+			retrieveImgMock: func(context.Context, string, Config) (*v1.ConfigFile, error) {
 				return &v1.ConfigFile{}, nil
 			},
 			dependencyCache: map[string]interface{}{"dummy": fmt.Errorf("remote manifest fetch")},

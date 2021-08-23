@@ -17,6 +17,7 @@ limitations under the License.
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -1324,8 +1325,10 @@ requires:
 				wd, _ := util.RealWorkDir()
 				expected = test.expected(wd)
 			}
-			t.Override(&git.SyncRepo, func(g latestV1.GitInfo, _ config.SkaffoldOptions) (string, error) { return g.Repo, nil })
-			cfgs, err := GetAllConfigs(config.SkaffoldOptions{
+			t.Override(&git.SyncRepo, func(ctx context.Context, g latestV1.GitInfo, _ config.SkaffoldOptions) (string, error) {
+				return g.Repo, nil
+			})
+			cfgs, err := GetAllConfigs(context.Background(), config.SkaffoldOptions{
 				Command:             "dev",
 				ConfigurationFile:   test.documents[0].path,
 				ConfigurationFilter: test.configFilter,

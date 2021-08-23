@@ -39,7 +39,7 @@ _integration_test: &integration_test
     - git diff --name-only "$TRAVIS_BRANCH"... | grep -v '^docs/' || travis_terminate 0
   cache:
     directories:
-      - $HOME/.cache/go-build
+      - $GOPATH/pkg/mod
       - $HOME/.gradle
       - $HOME/.m2
 

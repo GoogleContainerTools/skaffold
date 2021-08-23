@@ -97,7 +97,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		return "", fmt.Errorf("running build: %w", err)
 	}
 

@@ -173,9 +173,9 @@ func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 var sanityCheck = versionCheck
 
 // versionCheck checks if the kpt and kustomize versions meet the minimum requirements.
-func versionCheck(dir string, stdout io.Writer) error {
+func versionCheck(ctx context.Context, dir string, stdout io.Writer) error {
 	kptCmd := exec.Command("kpt", "version")
-	out, err := util.RunCmdOut(kptCmd)
+	out, err := util.RunCmdOut(ctx, kptCmd)
 	if err != nil {
 		return fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
 			kptDownloadLink)
@@ -198,7 +198,7 @@ func versionCheck(dir string, stdout io.Writer) error {
 	// version when kustomization.yaml config is directed under .deploy.kpt.dir path.
 	if hasKustomization(dir) {
 		kustomizeCmd := exec.Command("kustomize", "version")
-		out, err := util.RunCmdOut(kustomizeCmd)
+		out, err := util.RunCmdOut(ctx, kustomizeCmd)
 		if err != nil {
 			return fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
 				kustomizeDownloadLink)
@@ -237,7 +237,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_sanityCheck")
-	if err := sanityCheck(k.Dir, out); err != nil {
+	if err := sanityCheck(ctx, k.Dir, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
@@ -287,7 +287,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	cmd := exec.CommandContext(childCtx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
@@ -350,7 +350,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "destroy"}, k.getGlobalFlags(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		return err
 	}
 
@@ -365,7 +365,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_sanityCheck")
 
-	if err := sanityCheck(k.Dir, out); err != nil {
+	if err := sanityCheck(ctx, k.Dir, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
@@ -403,14 +403,14 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 	cmd := exec.CommandContext(
 		ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "source"},
 			nil, nil)...)
-	if buf, err = util.RunCmdOut(cmd); err != nil {
+	if buf, err = util.RunCmdOut(ctx, cmd); err != nil {
 		return nil, fmt.Errorf("reading config manifests: %w", err)
 	}
 
 	// Run kpt functions against the manifests read from source.
 	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs("", []string{"fn", "run"}, flags, nil)...)
 	cmd.Stdin = bytes.NewBuffer(buf)
-	if buf, err = util.RunCmdOut(cmd); err != nil {
+	if buf, err = util.RunCmdOut(ctx, cmd); err != nil {
 		return nil, fmt.Errorf("running kpt functions: %w", err)
 	}
 
@@ -450,7 +450,7 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 	// Only run kustomize if kustomization.yaml is found in the output from the kpt functions.
 	if k.hasKustomization(tmpKustomizeDir) {
 		cmd = exec.CommandContext(ctx, "kustomize", append([]string{"build"}, tmpKustomizeDir)...)
-		if buf, err = util.RunCmdOut(cmd); err != nil {
+		if buf, err = util.RunCmdOut(ctx, cmd); err != nil {
 			return nil, fmt.Errorf("kustomize build: %w", err)
 		}
 	}
@@ -500,7 +500,7 @@ func sink(ctx context.Context, buf []byte, sinkDir string) error {
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(sinkDir, []string{"fn", "sink"}, nil, nil)...)
 	cmd.Stdin = bytes.NewBuffer(buf)
-	if _, err := util.RunCmdOut(cmd); err != nil {
+	if _, err := util.RunCmdOut(ctx, cmd); err != nil {
 		return fmt.Errorf("sinking to directory %s: %w", sinkDir, err)
 	}
 	return nil
@@ -566,7 +566,7 @@ func (k *Deployer) getApplyDir(ctx context.Context) (string, error) {
 
 	if _, err := os.Stat(filepath.Join(kptHydrated, inventoryTemplate)); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, k.getKptLiveInitArgs(), nil)...)
-		if _, err := util.RunCmdOut(cmd); err != nil {
+		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
 			return "", err
 		}
 	}

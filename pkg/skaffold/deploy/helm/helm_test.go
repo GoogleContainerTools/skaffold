@@ -461,7 +461,7 @@ func TestBinVer(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
-			ver, err := binVer()
+			ver, err := binVer(context.Background())
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, ver.String())
 		})
@@ -486,7 +486,7 @@ func TestNewDeployer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			_, err := NewDeployer(&helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -1075,7 +1075,7 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
-			deployer, err := NewDeployer(&helmConfig{
+			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace:  test.namespace,
 				force:      test.force,
 				configFile: "test.yaml",
@@ -1154,7 +1154,7 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			deployer, err := NewDeployer(&helmConfig{
+			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
 			}, &label.DefaultLabeller{}, &test.helm)
 			t.RequireNoError(err)
@@ -1259,7 +1259,7 @@ func TestHelmDependencies(t *testing.T) {
 				local = tmpDir.Root()
 			}
 
-			deployer, err := NewDeployer(&helmConfig{}, &label.DefaultLabeller{}, &latestV1.HelmDeploy{
+			deployer, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &latestV1.HelmDeploy{
 				Releases: []latestV1.HelmRelease{{
 					Name:                  "skaffold-helm",
 					ChartPath:             local,
@@ -1522,7 +1522,7 @@ func TestHelmRender(t *testing.T) {
 
 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
 			t.Override(&util.DefaultExecCommand, test.commands)
-			deployer, err := NewDeployer(&helmConfig{
+			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
 			}, &label.DefaultLabeller{}, &test.helm)
 			t.RequireNoError(err)
@@ -1593,7 +1593,7 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			h, err := NewDeployer(&helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			h, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
 			t.RequireNoError(err)
 			result := h.generateSkaffoldDebugFilter(test.buildFile)
 			t.CheckDeepEqual(test.result, result)

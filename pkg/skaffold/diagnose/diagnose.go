@@ -66,13 +66,13 @@ func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 			fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 			fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-			timeSyncMap1, err := timeToConstructSyncMap(artifact, cfg)
+			timeSyncMap1, err := timeToConstructSyncMap(ctx, artifact, cfg)
 			if err != nil {
 				if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 					return fmt.Errorf("construct artifact dependencies: %w", err)
 				}
 			}
-			timeSyncMap2, err := timeToConstructSyncMap(artifact, cfg)
+			timeSyncMap2, err := timeToConstructSyncMap(ctx, artifact, cfg)
 			if err != nil {
 				if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 					return fmt.Errorf("construct artifact dependencies: %w", err)
@@ -123,9 +123,9 @@ func timeToListDependencies(ctx context.Context, a *latestV1.Artifact, cfg Confi
 	return util.ShowHumanizeTime(time.Since(start)), paths, err
 }
 
-func timeToConstructSyncMap(a *latestV1.Artifact, cfg docker.Config) (string, error) {
+func timeToConstructSyncMap(ctx context.Context, a *latestV1.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
-	_, err := sync.SyncMap(a, cfg)
+	_, err := sync.SyncMap(ctx, a, cfg)
 	return util.ShowHumanizeTime(time.Since(start)), err
 }
 

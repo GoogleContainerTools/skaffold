@@ -44,8 +44,8 @@ type Config interface {
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) (Tester, error) {
-	testers, err := getImageTesters(cfg, imagesAreLocal, cfg.TestCases())
+func NewTester(ctx context.Context, cfg Config, imagesAreLocal func(imageName string) (bool, error)) (Tester, error) {
+	testers, err := getImageTesters(ctx, cfg, imagesAreLocal, cfg.TestCases())
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +57,10 @@ func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) 
 }
 
 // TestDependencies returns the watch dependencies for the target artifact to the runner.
-func (t FullTester) TestDependencies(artifact *latestV1.Artifact) ([]string, error) {
+func (t FullTester) TestDependencies(ctx context.Context, artifact *latestV1.Artifact) ([]string, error) {
 	var deps []string
 	for _, tester := range t.Testers[artifact.ImageName] {
-		result, err := tester.TestDependencies()
+		result, err := tester.TestDependencies(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -127,7 +127,7 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Ar
 	return nil
 }
 
-func getImageTesters(cfg docker.Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latestV1.TestCase) (ImageTesters, error) {
+func getImageTesters(ctx context.Context, cfg docker.Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latestV1.TestCase) (ImageTesters, error) {
 	runners := make(map[string][]ImageTester)
 	for _, tc := range tcs {
 		isLocal, err := imagesAreLocal(tc.ImageName)
@@ -136,7 +136,7 @@ func getImageTesters(cfg docker.Config, imagesAreLocal func(imageName string) (b
 		}
 
 		if len(tc.StructureTests) != 0 {
-			structureRunner, err := structure.New(cfg, tc, isLocal)
+			structureRunner, err := structure.New(ctx, cfg, tc, isLocal)
 			if err != nil {
 				return nil, err
 			}

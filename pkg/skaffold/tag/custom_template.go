@@ -46,8 +46,8 @@ func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, er
 }
 
 // GenerateTag generates a tag from a template referencing tagging strategies.
-func (t *customTemplateTagger) GenerateTag(image latestV1.Artifact) (string, error) {
-	customMap, err := t.EvaluateComponents(image)
+func (t *customTemplateTagger) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
+	customMap, err := t.EvaluateComponents(ctx, image)
 	if err != nil {
 		return "", err
 	}
@@ -62,14 +62,14 @@ func (t *customTemplateTagger) GenerateTag(image latestV1.Artifact) (string, err
 }
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
-func (t *customTemplateTagger) EvaluateComponents(image latestV1.Artifact) (map[string]string, error) {
+func (t *customTemplateTagger) EvaluateComponents(ctx context.Context, image latestV1.Artifact) (map[string]string, error) {
 	customMap := map[string]string{}
 
 	gitTagger, _ := NewGitCommit("", "", false)
 	dateTimeTagger := NewDateTimeTagger("", "")
 
 	for k, v := range map[string]Tagger{"GIT": gitTagger, "DATE": dateTimeTagger, "SHA": &ChecksumTagger{}} {
-		tag, _ := v.GenerateTag(image)
+		tag, _ := v.GenerateTag(ctx, image)
 		customMap[k] = tag
 	}
 
@@ -77,7 +77,7 @@ func (t *customTemplateTagger) EvaluateComponents(image latestV1.Artifact) (map[
 		if _, ok := v.(*customTemplateTagger); ok {
 			return nil, fmt.Errorf("invalid component specified in custom template: %v", v)
 		}
-		tag, err := v.GenerateTag(image)
+		tag, err := v.GenerateTag(ctx, image)
 		if err != nil {
 			return nil, fmt.Errorf("evaluating custom template component: %w", err)
 		}

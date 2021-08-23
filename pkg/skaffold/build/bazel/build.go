@@ -67,7 +67,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		return "", fmt.Errorf("running command: %w", err)
 	}
 
@@ -107,7 +107,7 @@ func bazelBin(ctx context.Context, workspace string, a *latestV1.BazelArtifact) 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace
 
-	buf, err := util.RunCmdOut(cmd)
+	buf, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return "", err
 	}

@@ -38,8 +38,8 @@ type Logger struct {
 	muted       int32
 }
 
-func NewLogger(tracker *tracker.ContainerTracker, cfg docker.Config) (*Logger, error) {
-	cli, err := docker.NewAPIClient(cfg)
+func NewLogger(ctx context.Context, tracker *tracker.ContainerTracker, cfg docker.Config) (*Logger, error) {
+	cli, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
