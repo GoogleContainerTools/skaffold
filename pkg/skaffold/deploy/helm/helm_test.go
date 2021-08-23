@@ -1638,6 +1638,7 @@ func TestHelmHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
 			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latestV1.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts) hooks.Runner {
 				return test.runner
 			})
