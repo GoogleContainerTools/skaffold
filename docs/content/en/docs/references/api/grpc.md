@@ -862,6 +862,7 @@ Enum indicating the log level of a line of output
 | FATAL | 4 | Fatal Level |
 | PANIC | 5 | Panic Level |
 | TRACE | 6 | Trace Level |
+| STANDARD | 7 | Skaffold's standard output level |
 
 
 

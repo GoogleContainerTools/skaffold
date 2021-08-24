@@ -99,6 +99,8 @@ enum LogLevel {
     PANIC = 5;
     // Trace Level
     TRACE = 6;
+    // Skaffold's standard output level
+    STANDARD = 7;
 }
 
 // Enum for Status codes<br>
