@@ -31,9 +31,19 @@ The actions performed by Skaffold during the dev loop have precedence over one a
 
 Skaffold computes the dependencies for each artifact based on the builder being used, and the root directory of the artifact. Once all source file dependencies are computed, in `dev` mode, Skaffold will continuously watch these files for changes in the background, and conditionally re-run the loop when changes are detected.
 
-By default, Skaffold uses `notify` to monitor events on the local filesystem. Skaffold also supports a `polling` mode where the filesystem is checked for changes on a configurable interval, or a `manual` mode, where Skaffold waits for user input to check for file changes. These watch modes can be configured through the `--trigger` flag.
+By default, Skaffold uses filesystem notifications of your OS to monitor changes
+on the local filesystem and re-runs the loop on every change.
 
-## Control API
+Skaffold also supports a `polling` mode where the filesystem is checked for
+changes on a configurable interval, or a `manual` mode, where Skaffold waits for
+user input to check for file changes. These watch modes can be configured
+through the `--trigger` flag.
+
+## Controlling the Dev Loop with API
+
+{{< alert title="Note">}}
+This section is intended for developers who build tooling on top of Skaffold.
+{{</alert>}}
 
 By default, the dev loop will carry out all actions (as needed) each time a file is changed locally, with the exception of operating in `manual` trigger mode. However, individual actions can be gated off by user input through the Skaffold API.
 
