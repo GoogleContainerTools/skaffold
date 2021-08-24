@@ -25,9 +25,8 @@ import (
 	cnb "github.com/buildpacks/lifecycle"
 	cnbl "github.com/buildpacks/lifecycle/launch"
 	shell "github.com/kballard/go-shellquote"
-	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
@@ -51,16 +50,16 @@ func init() {
 // CNB images use a special launcher as the entrypoint. In CNB Platform API 0.3,
 // this was always `/cnb/lifecycle/launcher`, but Platform API 0.4 (introduced in pack 0.13)
 // allows using a symlink to a file in `/cnb/process/<type>`.  More below.
-func isCNBImage(ic imageConfiguration) bool {
-	if _, found := ic.labels["io.buildpacks.stack.id"]; !found {
+func isCNBImage(ic ImageConfiguration) bool {
+	if _, found := ic.Labels["io.buildpacks.stack.id"]; !found {
 		return false
 	}
-	return len(ic.entrypoint) == 1 && (ic.entrypoint[0] == cnbLauncher || strings.HasPrefix(ic.entrypoint[0], cnbProcessLauncherPrefix))
+	return len(ic.Entrypoint) == 1 && (ic.Entrypoint[0] == cnbLauncher || strings.HasPrefix(ic.Entrypoint[0], cnbProcessLauncherPrefix))
 }
 
 // hasCNBLauncherEntrypoint returns true if the entrypoint is the cnbLauncher.
-func hasCNBLauncherEntrypoint(ic imageConfiguration) bool {
-	return len(ic.entrypoint) == 1 && ic.entrypoint[0] == cnbLauncher
+func hasCNBLauncherEntrypoint(ic ImageConfiguration) bool {
+	return len(ic.Entrypoint) == 1 && ic.Entrypoint[0] == cnbLauncher
 }
 
 // updateForCNBImage normalizes a CNB image by rewriting the CNB launch configuration into
@@ -106,43 +105,44 @@ func hasCNBLauncherEntrypoint(ic imageConfiguration) bool {
 //     the default process type.  `CNB_PROCESS_TYPE` is ignored in this situation.  A different process
 //     can be used by overriding the image entrypoint.  Direct and script launches are supported by
 //     setting the entrypoint to `/cnb/lifecycle/launcher` and providing the appropriate arguments.
-func updateForCNBImage(container *v1.Container, ic imageConfiguration, transformer func(container *v1.Container, ic imageConfiguration) (annotations.ContainerDebugConfiguration, string, error)) (annotations.ContainerDebugConfiguration, string, error) {
+func updateForCNBImage(adapter types.ContainerAdapter, ic ImageConfiguration, transformer func(adapter types.ContainerAdapter, ic ImageConfiguration) (types.ContainerDebugConfiguration, string, error)) (types.ContainerDebugConfiguration, string, error) {
 	// buildpacks/lifecycle 0.6.0 embeds the process definitions into a special image label.
 	// The build metadata isn't absolutely required as the image args could be
 	// a command line (e.g., `python xxx`) but it likely indicates the
 	// image was built with an older lifecycle.
-	metadataJSON, found := ic.labels["io.buildpacks.build.metadata"]
+	metadataJSON, found := ic.Labels["io.buildpacks.build.metadata"]
 	if !found {
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
 	}
 	m := cnb.BuildMetadata{}
 	if err := json.Unmarshal([]byte(metadataJSON), &m); err != nil {
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")
 	}
 	if len(m.Processes) == 0 {
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
 	}
 
-	needsCnbLauncher := ic.entrypoint[0] != cnbLauncher
+	needsCnbLauncher := ic.Entrypoint[0] != cnbLauncher
 	// Rewrites the command-line with cnbLauncher as the entrypoint
 	ic, rewriter := adjustCommandLine(m, ic)
 
 	// The CNB launcher uses CNB_APP_DIR (defaults to /workspace) and ignores the image's working directory.
-	if appDir := ic.env["CNB_APP_DIR"]; appDir != "" {
-		ic.workingDir = appDir
+	if appDir := ic.Env["CNB_APP_DIR"]; appDir != "" {
+		ic.WorkingDir = appDir
 	} else {
-		ic.workingDir = "/workspace"
+		ic.WorkingDir = "/workspace"
 	}
 
-	c, img, err := transformer(container, ic)
+	c, img, err := transformer(adapter, ic)
 	if err != nil {
 		return c, img, err
 	}
 	// must explicitly modify the working dir as the imageConfig is lost after we return
 	if c.WorkingDir == "" {
-		c.WorkingDir = ic.workingDir
+		c.WorkingDir = ic.WorkingDir
 	}
 
+	container := adapter.GetContainer()
 	if container.Args != nil && rewriter != nil {
 		// Only rewrite the container if the arguments were changed: some transforms only alter
 		// env vars, and the image's arguments are not changed.
@@ -158,11 +158,11 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 // in a form suitable for the normal `skaffold debug` transformations.  It returns an
 // amended configuration with a function to re-transform the command-line to the form
 // expected by cnbLauncher.
-func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfiguration, func([]string) []string) {
+func adjustCommandLine(m cnb.BuildMetadata, ic ImageConfiguration) (ImageConfiguration, func([]string) []string) {
 	// check for direct exec
-	if hasCNBLauncherEntrypoint(ic) && len(ic.arguments) > 0 && ic.arguments[0] == "--" {
+	if hasCNBLauncherEntrypoint(ic) && len(ic.Arguments) > 0 && ic.Arguments[0] == "--" {
 		// strip and then restore the "--"
-		ic.arguments = ic.arguments[1:]
+		ic.Arguments = ic.Arguments[1:]
 		return ic, func(transformed []string) []string {
 			return append([]string{"--"}, transformed...)
 		}
@@ -180,19 +180,19 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 			} else {
 				args := append([]string{p.Command}, p.Args...)
 				args = append(args, clArgs...)
-				ic.entrypoint = []string{cnbLauncher}
-				ic.arguments = args
+				ic.Entrypoint = []string{cnbLauncher}
+				ic.Arguments = args
 				return ic, func(transformed []string) []string {
 					return append([]string{"--"}, transformed...)
 				}
 			}
 		}
 		// Script type: split p.Command, pass it through the transformer, and then reassemble in the rewriter.
-		ic.entrypoint = []string{cnbLauncher}
+		ic.Entrypoint = []string{cnbLauncher}
 		if args, err := shell.Split(p.Command); err == nil {
-			ic.arguments = args
+			ic.Arguments = args
 		} else {
-			ic.arguments = []string{p.Command}
+			ic.Arguments = []string{p.Command}
 		}
 		return ic, func(transformed []string) []string {
 			// reassemble back into a script with arguments
@@ -202,16 +202,16 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 		}
 	}
 
-	if len(ic.arguments) == 0 {
-		log.Entry(context.TODO()).Warnf("no CNB launch found for %s", ic.artifact)
+	if len(ic.Arguments) == 0 {
+		log.Entry(context.TODO()).Warnf("no CNB launch found for %s", ic.Artifact)
 		return ic, nil
 	}
 
 	// ic.arguments[0] is a shell script:  split it, pass it through the transformer, and then reassemble in the rewriter.
 	// If it can't be split, then we return it untouched, to be handled by the normal debug process.
-	if cmdline, err := shell.Split(ic.arguments[0]); err == nil {
-		positionals := ic.arguments[1:] // save aside the script positional arguments
-		ic.arguments = cmdline
+	if cmdline, err := shell.Split(ic.Arguments[0]); err == nil {
+		positionals := ic.Arguments[1:] // save aside the script positional arguments
+		ic.Arguments = cmdline
 		return ic, func(transformed []string) []string {
 			// reassemble back into a script with the positional arguments
 			return append([]string{shJoin(transformed)}, positionals...)
@@ -222,11 +222,11 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 
 // findCNBProcess tries to resolve a CNB process definition given the image configuration.
 // It is assumed that the image is a CNB image.
-func findCNBProcess(ic imageConfiguration, m cnb.BuildMetadata) (cnbl.Process, []string, bool) {
-	if hasCNBLauncherEntrypoint(ic) && len(ic.arguments) > 0 {
+func findCNBProcess(ic ImageConfiguration, m cnb.BuildMetadata) (cnbl.Process, []string, bool) {
+	if hasCNBLauncherEntrypoint(ic) && len(ic.Arguments) > 0 {
 		// the launcher accepts the first argument as a process type
-		if len(ic.arguments) == 1 {
-			processType := ic.arguments[0]
+		if len(ic.Arguments) == 1 {
+			processType := ic.Arguments[0]
 			for _, p := range m.Processes {
 				if p.Type == processType {
 					return p, nil, true // drop the argument
@@ -238,20 +238,20 @@ func findCNBProcess(ic imageConfiguration, m cnb.BuildMetadata) (cnbl.Process, [
 
 	// determine process-type
 	processType := "web" // default buildpacks process type
-	platformAPI := ic.env["CNB_PLATFORM_API"]
+	platformAPI := ic.Env["CNB_PLATFORM_API"]
 	if platformAPI == "0.4" {
 		// Platform API 0.4-style /cnb/process/xxx
-		if !strings.HasPrefix(ic.entrypoint[0], cnbProcessLauncherPrefix) {
+		if !strings.HasPrefix(ic.Entrypoint[0], cnbProcessLauncherPrefix) {
 			return cnbl.Process{}, nil, false
 		}
-		processType = ic.entrypoint[0][len(cnbProcessLauncherPrefix):]
-	} else if len(ic.env["CNB_PROCESS_TYPE"]) > 0 {
-		processType = ic.env["CNB_PROCESS_TYPE"]
+		processType = ic.Entrypoint[0][len(cnbProcessLauncherPrefix):]
+	} else if len(ic.Env["CNB_PROCESS_TYPE"]) > 0 {
+		processType = ic.Env["CNB_PROCESS_TYPE"]
 	}
 
 	for _, p := range m.Processes {
 		if p.Type == processType {
-			return p, ic.arguments, true
+			return p, ic.Arguments, true
 		}
 	}
 	return cnbl.Process{}, nil, false

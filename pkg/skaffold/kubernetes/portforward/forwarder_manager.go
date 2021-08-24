@@ -26,7 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -99,11 +99,11 @@ func allPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 	var ports []v1.ContainerPort
 
-	annot, found := pod.ObjectMeta.Annotations[annotations.DebugConfig]
+	annot, found := pod.ObjectMeta.Annotations[types.DebugConfig]
 	if !found {
 		return nil
 	}
-	var configurations map[string]annotations.ContainerDebugConfiguration
+	var configurations map[string]types.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annot), &configurations); err != nil {
 		log.Entry(context.TODO()).Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
 		return nil
