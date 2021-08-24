@@ -94,7 +94,7 @@ func (h logHook) Fire(entry *logrus.Entry) error {
 		TaskId:    fmt.Sprintf("%s-%d", task, handler.iteration),
 		SubtaskId: fmt.Sprintf("%s", subtask),
 		Level:     levelFromEntry(entry),
-		Message:   entry.Message,
+		Message:   fmt.Sprintf("%s\n", entry.Message),
 	})
 	return nil
 }

@@ -291,7 +291,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.ConfigurationFile(), err)
 	}
 
-	log.Entry(ctx).Info("List generated in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("List generated in", util.ShowHumanizeTime(time.Since(start)))
 
 	// Init Sync State
 	if err := sync.Init(ctx, artifacts); err != nil {
