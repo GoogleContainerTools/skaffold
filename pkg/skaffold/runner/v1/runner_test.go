@@ -289,7 +289,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
 	runner.Builder.Builder = testBench
-	runner.Tester = testBench
+	runner.tester = testBench
 	runner.deployer = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
@@ -467,7 +467,7 @@ func TestNewForConfig(t *testing.T) {
 				} else {
 					t.CheckNoError(err)
 					t.CheckTypeEquality(b, cfg.Pruner.Builder)
-					t.CheckTypeEquality(_t, cfg.Tester)
+					t.CheckTypeEquality(_t, cfg.tester)
 					t.CheckTypeEquality(d, cfg.deployer)
 				}
 			}
