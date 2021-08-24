@@ -23,7 +23,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -76,7 +75,6 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.Test, "")
 	output.Default.Fprintln(out, "Testing images...")
 
 	if t.muted.MuteTest() {
@@ -103,11 +101,9 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 	}
 
 	if err := t.runTests(ctx, out, bRes); err != nil {
-		eventV2.TaskFailed(constants.Test, err)
 		return err
 	}
 
-	eventV2.TaskSucceeded(constants.Test)
 	return nil
 }
 
