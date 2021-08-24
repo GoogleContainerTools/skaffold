@@ -116,13 +116,6 @@ type listener struct {
 	closed   bool
 }
 
-func WrapInMainAndHandle(messageId string, event proto1.Message, eventType string) {
-	dst := &anypb.Any{}
-	anypb.MarshalFrom(dst, event, proto1.MarshalOptions{})
-	//json.Marshal(dst, event, proto1.MarshalOptions{})
-	handler.handle(messageId, eventType, dst)
-}
-
 func GetIteration() int {
 	return handler.iteration
 }
@@ -347,7 +340,7 @@ func TaskInProgress(task constants.Phase, description string) {
 		Iteration:   int32(handler.iteration),
 		Status:      InProgress,
 	}
-	WrapInMainAndHandle(event.Id, event, TaskStartedEvent)
+	handler.handle(event.Id, event, TaskStartedEvent)
 }
 
 func TaskFailed(task constants.Phase, err error) {
@@ -359,7 +352,7 @@ func TaskFailed(task constants.Phase, err error) {
 		Status:        Failed,
 		ActionableErr: ae,
 	}
-	WrapInMainAndHandle(event.Id, event, TaskFailedEvent)
+	handler.handle(event.Id, event, TaskFailedEvent)
 }
 
 func TaskSucceeded(task constants.Phase) {
@@ -369,7 +362,7 @@ func TaskSucceeded(task constants.Phase) {
 		Iteration: int32(handler.iteration),
 		Status:    Succeeded,
 	}
-	WrapInMainAndHandle(event.Id, event, TaskStartedEvent)
+	handler.handle(event.Id, event, TaskStartedEvent)
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
@@ -391,7 +384,7 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 		},
 	}
 
-	WrapInMainAndHandle(event.TaskId, event, PortForwardedEvent)
+	handler.handle(event.TaskId, event, PortForwardedEvent)
 }
 
 func (ev *eventHandler) setState(state proto.State) {
@@ -400,12 +393,15 @@ func (ev *eventHandler) setState(state proto.State) {
 	ev.stateLock.Unlock()
 }
 
-func (ev *eventHandler) handle(id string, eventtype string, dst *anypb.Any) {
-	event := &proto.Event{Id: id, Type: eventtype, Data: dst, Specversion: "1.0", Source: "skaffold.dev"}
-	ev.handleInternal(event)
+func (ev *eventHandler) handle(id string, event proto1.Message, eventtype string) {
+	eventInAnyFormat := &anypb.Any{}
+	anypb.MarshalFrom(eventInAnyFormat, event, proto1.MarshalOptions{})
+
+	wrapperEvent := &proto.Event{Id: id, Type: eventtype, Data: eventInAnyFormat, Specversion: "1.0", Source: "skaffold.dev"}
+	ev.publishEventOnChannel(wrapperEvent)
 }
 
-func (ev *eventHandler) handleInternal(event *proto.Event) {
+func (ev *eventHandler) publishEventOnChannel(event *proto.Event) {
 	event.Time = timestamppb.Now()
 	ev.eventChan <- event
 	if event.Type == "terminationEvent" {

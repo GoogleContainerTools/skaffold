@@ -28,5 +28,5 @@ func ApplicationLog(podName, containerName, prefix, message, formattedMessage st
 		Message:              message,
 		RichFormattedMessage: formattedMessage,
 	}
-	WrapInMainAndHandle("Id-Not-Present", event, ApplicationLogEvent)
+	handler.handle("Id-Not-Present", event, ApplicationLogEvent)
 }

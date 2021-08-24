@@ -31,7 +31,7 @@ func DeployInProgress(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Status: InProgress,
 	}
-	WrapInMainAndHandle(deployEvent.Id, deployEvent, DeployStartedEvent)
+	handler.handle(deployEvent.Id, deployEvent, DeployStartedEvent)
 }
 
 func DeployFailed(id int, err error) {
@@ -41,7 +41,7 @@ func DeployFailed(id int, err error) {
 		Status:        Failed,
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Deploy, err),
 	}
-	WrapInMainAndHandle(deployEvent.Id, deployEvent, DeployFailedEvent)
+	handler.handle(deployEvent.Id, deployEvent, DeployFailedEvent)
 }
 
 func DeploySucceeded(id int) {
@@ -50,5 +50,5 @@ func DeploySucceeded(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Status: Succeeded,
 	}
-	WrapInMainAndHandle(deployEvent.Id, deployEvent, DeploySucceededEvent)
+	handler.handle(deployEvent.Id, deployEvent, DeploySucceededEvent)
 }
