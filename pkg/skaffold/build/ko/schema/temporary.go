@@ -27,6 +27,12 @@ type KoArtifact struct {
 	// Dependencies are the file dependencies that Skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
 
+	// Dir is the directory where the `go` tool will be run.
+	// The value is a directory path relative to the `context` directory.
+	// If empty, the `go` tool will run in the `context` directory.
+	// Example: `./my-app-sources`
+	Dir string `yaml:"dir,omitempty"`
+
 	// Labels are key-value string pairs to add to the image config.
 	// For example: `{"foo":"bar"}`.
 	Labels map[string]string `yaml:"labels,omitempty"`

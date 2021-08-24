@@ -18,6 +18,7 @@ package ko
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/ko/pkg/build"
@@ -30,16 +31,16 @@ import (
 )
 
 func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact) (build.Interface, error) {
-	bo := buildOptions(a.KoArtifact.BaseImage, a.KoArtifact.Platforms, a.Workspace)
+	bo := buildOptions(a.KoArtifact.BaseImage, a.KoArtifact.Platforms, a.Workspace, a.KoArtifact.Dir)
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(baseImage string, platforms []string, workspace string) *options.BuildOptions {
+func buildOptions(baseImage string, platforms []string, workspace string, sourceDir string) *options.BuildOptions {
 	return &options.BuildOptions{
 		BaseImage:        baseImage,
 		ConcurrentBuilds: 1,
 		Platform:         strings.Join(platforms, ","),
 		UserAgent:        version.UserAgentWithClient(),
-		WorkingDirectory: workspace,
+		WorkingDirectory: filepath.Join(workspace, sourceDir),
 	}
 }

@@ -104,7 +104,7 @@ func Test_getImportPath(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
-				ImageName: "foo",
+				ImageName: "any-image-name-1",
 			},
 			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
 		},
@@ -114,7 +114,7 @@ func Test_getImportPath(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
-				ImageName: "bar",
+				ImageName: "any-image-name-2",
 				Workspace: "./testdata/package-main-in-root",
 			},
 			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/testdata/package-main-in-root",
@@ -127,8 +127,22 @@ func Test_getImportPath(t *testing.T) {
 						Target: "./baz",
 					},
 				},
-				ImageName: "baz-image",
+				ImageName: "any-image-name-3",
 				Workspace: "./testdata/package-main-not-in-root",
+			},
+			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/testdata/package-main-not-in-root/baz",
+		},
+		{
+			description: "plain image name with workspace directory and target and source directory",
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Dir:    "package-main-not-in-root",
+						Target: "./baz",
+					},
+				},
+				ImageName: "any-image-name-4",
+				Workspace: "./testdata",
 			},
 			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/testdata/package-main-not-in-root/baz",
 		},
