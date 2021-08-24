@@ -45,6 +45,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -93,6 +94,7 @@ type Deployer struct {
 	logger        log.Logger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
+	hookRunner    hooks.Runner
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
@@ -162,6 +164,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		logger:         logger,
 		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
 		syncer:         component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
+		hookRunner:     hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -431,6 +434,26 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	return manifest.Write(renderedManifests.String(), filepath, out)
+}
+
+func (h *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
+	if err := h.hookRunner.RunPreHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
+}
+
+func (h *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PostHooks")
+	if err := h.hookRunner.RunPostHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
 }
 
 // deployRelease deploys a single release
