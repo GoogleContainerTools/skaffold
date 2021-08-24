@@ -138,7 +138,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		})
 	}
 
-	log.Entry(ctx).Info("Cache check completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Cache check completed in", util.ShowHumanizeTime(time.Since(start)))
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {

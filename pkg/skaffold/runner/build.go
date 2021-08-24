@@ -206,7 +206,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 		output.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
-	log.Entry(ctx).Info("Tags generated in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Tags generated in", util.ShowHumanizeTime(time.Since(start)))
 	return imageTags, nil
 }
 
