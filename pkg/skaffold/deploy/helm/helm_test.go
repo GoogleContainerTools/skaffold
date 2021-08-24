@@ -1643,7 +1643,7 @@ func TestHelmHooks(t *testing.T) {
 				return test.runner
 			})
 
-			k, err := NewDeployer(&helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
 			t.RequireNoError(err)
 			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
 			t.CheckError(test.shouldErr, err)
