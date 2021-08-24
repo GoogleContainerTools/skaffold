@@ -270,7 +270,7 @@ const (
 	LogLevel_PANIC LogLevel = 5
 	// Trace Level
 	LogLevel_TRACE LogLevel = 6
-	// Skaffold's standard output level
+	// User-visible output level
 	LogLevel_STANDARD LogLevel = 7
 )
 
