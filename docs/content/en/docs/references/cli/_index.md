@@ -19,6 +19,7 @@ Pipeline building blocks for CI/CD:
 * [skaffold deploy](#skaffold-deploy) - to deploy the given image(s)
 * [skaffold delete](#skaffold-delete) - to cleanup the deployed artifacts
 * [skaffold render](#skaffold-render) - build and tag images, and output templated Kubernetes manifests
+* [skaffold apply](#skaffold-apply) - to apply hydrated manifests to a cluster
 
 Getting started with a new project:
 
