@@ -44,7 +44,7 @@ func (l logger) Write(p []byte) (int, error) {
 	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 		TaskId:    fmt.Sprintf("%s-%d", l.Phase, handler.iteration),
 		SubtaskId: l.SubtaskID,
-		Level:     -1,
+		Level:     enums.LogLevel_STANDARD,
 		Message:   string(p),
 	})
 

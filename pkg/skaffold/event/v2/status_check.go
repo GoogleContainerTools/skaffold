@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -37,7 +38,7 @@ func ResourceStatusCheckEventCompletedMessage(r string, message string, ae proto
 		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		SubtaskId: r,
 		Message:   message,
-		Level:     -1,
+		Level:     enums.LogLevel_STANDARD,
 	})
 }
 
@@ -81,7 +82,7 @@ func ResourceStatusCheckEventUpdatedMessage(r string, message string, ae proto.A
 		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		SubtaskId: r,
 		Message:   fmt.Sprintf("%s %s\n", message, ae.Message),
-		Level:     -1,
+		Level:     enums.LogLevel_STANDARD,
 	})
 }
 
