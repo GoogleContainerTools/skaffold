@@ -135,7 +135,7 @@ func ForEachApplicationLog(callback func(*proto.Event) error) error {
 
 func Handle(event *proto.Event) error {
 	if event != nil {
-		handler.handleInternal(event)
+		handler.publishEventOnChannel(event)
 	}
 	return nil
 }

@@ -28,5 +28,3 @@ type Server struct {
 	AutoSyncCallback     func(bool)
 	AutoDeployCallback   func(bool)
 }
-
-// TODO(marlongamez): Add Set*Callback() funcs once going for v1 feature parity

@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -28,7 +27,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -257,17 +255,6 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 
 type errResponse struct {
 	Err string `json:"error,omitempty"`
-}
-
-func errorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, _ *http.Request, err error) {
-	//writer.Header().Set("Content-type", marshaler.ContentType())
-	s, _ := status.FromError(err)
-	writer.WriteHeader(runtime.HTTPStatusFromCode(s.Code()))
-	if err := json.NewEncoder(writer).Encode(errResponse{
-		Err: s.Message(),
-	}); err != nil {
-		writer.Write([]byte(`{"error": "failed to marshal error message"}`))
-	}
 }
 
 func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.Listener, int, error) {

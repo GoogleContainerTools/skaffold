@@ -142,7 +142,7 @@ func TestWithEventContext(t *testing.T) {
 			expected: skaffoldWriter{
 				MainWriter:  ioutil.Discard,
 				EventWriter: eventV2.NewLogger(constants.Test, "2"),
-				EventWriter1: eventV3.NewLogger(constants.Test, "2"),			},
+				EventWriterV3: eventV3.NewLogger(constants.Test, "2"),			},
 		},
 		{
 			name:     "non skaffoldWriter returns same",
