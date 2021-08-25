@@ -6,7 +6,7 @@ featureId: init
 ---
 
 `skaffold init` helps you get started using Skaffold by running you through a wizard and
-generating the required `skaffold.yaml` file the root of your project directory.
+generating the required `skaffold.yaml` file in the root of your project directory.
 
 The generated `skaffold.yaml` defines your [build](#build-config-initialization)
 and [deploy](#deploy-config-initialization) config.
