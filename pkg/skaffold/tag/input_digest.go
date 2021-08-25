@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -56,7 +57,7 @@ func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latestV1.Arti
 	// must sort as hashing is sensitive to the order in which files are processed
 	sort.Strings(srcFiles)
 	for _, d := range srcFiles {
-		h, err := fileHasher(d)
+		h, err := fileHasher(d, image.Workspace)
 		if err != nil {
 			if os.IsNotExist(err) {
 				log.Entry(ctx).Tracef("skipping dependency %q for artifact cache calculation: %v", d, err)
@@ -82,13 +83,19 @@ func encode(inputs []string) (string, error) {
 }
 
 // fileHasher hashes the contents and name of a file
-func fileHasher(path string) (string, error) {
+func fileHasher(path string, workspacePath string) (string, error) {
 	h := md5.New()
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return "", err
 	}
-	h.Write([]byte(filepath.Clean(path)))
+	// Always use the file path within workspace when calculating hash.
+	// This will ensure we will always get the same hash independent of workspace location and hierarchy.
+  if (workspacePath == ".") {
+    h.Write([]byte(filepath.Clean(path)))
+  } else {
+    h.Write([]byte(filepath.Clean(strings.Replace(path, workspacePath+string(os.PathSeparator), "", 1))))
+  }
 	if fi.Mode().IsRegular() {
 		f, err := os.Open(path)
 		if err != nil {
