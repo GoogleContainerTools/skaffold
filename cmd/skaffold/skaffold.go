@@ -24,6 +24,8 @@ import (
 	"cloud.google.com/go/profiler"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -54,7 +56,8 @@ func main() {
 			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
 			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
 			// before we print an error to get the right coloring.
-			errOut := output.GetWriter(context.Background(), os.Stderr, output.DefaultColorCode, false, false)
+			errOut := output.SetupColors(context.Background(), os.Stderr, output.DefaultColorCode, false)
+			eventV2.SendErrorMessage(constants.DevLoop, constants.SubtaskIDNone, err)
 			output.Red.Fprintln(errOut, err)
 			code = app.ExitCode(err)
 		}
