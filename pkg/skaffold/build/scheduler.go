@@ -118,6 +118,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 			output.Yellow.Fprintf(w, "Canceled build for %s\n", a.ImageName)
 			eventV2.BuildCanceled(a.ImageName, err)
 		} else {
+			output.Red.Fprintf(w, "Build failed due to %s\n", err)
 			eventV2.BuildFailed(a.ImageName, err)
 		}
 		endTrace(instrumentation.TraceEndError(err))

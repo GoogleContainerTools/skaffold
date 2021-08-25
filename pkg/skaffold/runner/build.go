@@ -105,14 +105,14 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV
 
 		bRes, err := r.Builder.Build(ctx, out, tags, artifacts)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Skaffld dev one because more builds failed")
 		}
 
 		return bRes, nil
 	})
 	if err != nil {
 		eventV2.TaskFailed(constants.Build, err)
-		return nil, err
+		return nil, fmt.Errorf("Skaffold dev failed because one or more builds failed")
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
