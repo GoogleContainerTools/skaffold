@@ -244,6 +244,27 @@ build:
 The `target` field is ignored if the `image` field starts with the `ko://`
 scheme prefix.
 
+## Debugging ko images using Skaffold
+
+Ko provides the
+[`DisableOptimizations`](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/commands/options/build.go#L34)
+build option to
+[set `gcflags` to disable optimizations and inlining](https://github.com/google/ko/blob/335c1ac8a6fdcc5eb0bb26579e4b44b4c62a9565/pkg/build/gobuild.go#L709-L712).
+The ko builder will set `DisableOptimizations` to `true` when the Skaffold
+`runMode` is `Debug`.
+
+Skaffold can
+[recognize Go-based container images](https://skaffold.dev/docs/workflows/debug/#go-runtime-go-protocols-dlv)
+built by ko by the presence of the
+[`KO_DATA_PATH` environment variable](https://github.com/google/ko/blob/9a256a4b1920ed5fd5fbf77d987fddbfb9733c40/pkg/build/gobuild.go#L803-L810).
+This allows Skaffold to transform Pod specifications to enable remote
+debugging.
+
+The ko builder implementation work will add `KO_DATA_PATH` to
+[the set of environment variables used to detect Go-based applications](https://github.com/GoogleContainerTools/skaffold/blob/c75c55133e709b2fee906eb158be13c7ccfa72cd/pkg/skaffold/debug/transform_go.go#L67-L72)
+and updating the associated unit tests and
+[documentation](https://github.com/GoogleContainerTools/skaffold/blob/01a833614efd780ddece99198aa7fdcf3f355706/docs/content/en/docs/workflows/debug.md#L103).
+
 ## Design
 
 Adding the ko builder requires making config changes to the Skaffold schema.
@@ -266,7 +287,7 @@ Adding the ko builder requires making config changes to the Skaffold schema.
       // Dir is the directory where the `go` tool will be run.
       // The value is a directory path relative to the `context` directory.
       // If empty, the `go` tool will run in the `context` directory.
-      // Example: `my-go-mod-is-in-this-dir`
+      // Examples: `live-at-head`, `compat-go114`
       Dir string `yaml:"dir,omitempty"`
 
     	// Env are environment variables, in the `key=value` form, passed to the build.
