@@ -1,5 +1,7 @@
 ### Example: Running container-structure-test on built images
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/structure-tests)
+
 This example shows how to run
 [structure tests](https://github.com/GoogleContainerTools/container-structure-test)
 on newly built images in your skaffold dev loop. Tests are associated with single

@@ -1,5 +1,7 @@
 ### Example: TypeScript + Node.js with hot-reload
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/typescript)
+
 Seeks to be functionally identical to the [Node.js](../nodejs) example, except with TypeScript.
 
 Swaps [nodemon](https://nodemon.io/) for [tsc-watch](https://github.com/gilamran/tsc-watch#the-nodemon-for-typescript)

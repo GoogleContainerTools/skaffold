@@ -1,5 +1,7 @@
 ### Example: hot-reload with Node and Python
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/hot-reload)
+
 Application demonstrating the file synchronization mode with both NodeJS and Python.
 
 #### Init
