@@ -5,11 +5,15 @@ weight: 10
 no_list: true
 ---
 
-Skaffold requires a `skaffold.yaml`, but - for supported projects - Skaffold can generate a simple config for you that you can get started with. To configure Skaffold for your application you can run [`skaffold init`]({{<relref "docs/references/cli#skaffold-init" >}}).
+Skaffold requires a `skaffold.yaml`, but - for supported projects - Skaffold can
+generate a simple config for you that you can get started with. To configure
+Skaffold for your application you can run [`skaffold init`][init].
 
-Running `skaffold init` at the root of your project directory will walk you
+Running [`skaffold init`][init] at the root of your project directory will walk you
 through a wizard and create a `skaffold.yaml` that defines how your project is
 built and deployed.
+
+[init]: {{<relref "docs/pipeline-stages/init" >}}
 
 ```bash
 skaffold init
