@@ -297,18 +297,15 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 		log.Entry(context.TODO()).Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
 		return
 	}
-	// find the latest failed event.
+	// find the latest event.
 	var recentEvent *v1.Event
 	for _, e := range events.Items {
-		if e.Type == v1.EventTypeNormal {
-			continue
-		}
 		event := e.DeepCopy()
 		if recentEvent == nil || recentEvent.EventTime.Before(&event.EventTime) {
 			recentEvent = event
 		}
 	}
-	if recentEvent == nil {
+	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal{
 		return
 	}
 	switch recentEvent.Reason {
