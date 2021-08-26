@@ -305,7 +305,7 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 			recentEvent = event
 		}
 	}
-	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal{
+	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
 		return
 	}
 	switch recentEvent.Reason {
