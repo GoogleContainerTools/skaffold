@@ -34,6 +34,7 @@ func DeployInProgress(id int) {
 }
 
 func DeployFailed(id int, err error) {
+	handler.sendErrorMessage(constants.Deploy, strconv.Itoa(id), err)
 	handler.handleDeploySubtaskEvent(&proto.DeploySubtaskEvent{
 		Id:            strconv.Itoa(id),
 		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),

@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -71,6 +72,7 @@ type eventHandler struct {
 	cfg                 Config
 
 	iteration               int
+	errorOnce               sync.Once
 	state                   proto.State
 	stateLock               sync.Mutex
 	eventChan               chan *proto.Event
@@ -312,6 +314,7 @@ func TaskInProgress(task constants.Phase, description string) {
 
 func TaskFailed(task constants.Phase, err error) {
 	ae := sErrors.ActionableErrV2(handler.cfg, task, err)
+	handler.sendErrorMessage(task, constants.SubtaskIDNone, err)
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:            fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:          string(task),
@@ -352,6 +355,23 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &event,
 		},
+	})
+}
+
+// SendErrorMessageOnce sends an error message to skaffold log events stream only once.
+// Use it if you want to avoid sending duplicate error messages.
+func SendErrorMessageOnce(task constants.Phase, subtaskID string, err error) {
+	handler.sendErrorMessage(task, subtaskID, err)
+}
+
+func (ev *eventHandler) sendErrorMessage(task constants.Phase, subtask string, err error) {
+	ev.errorOnce.Do(func() {
+		ev.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+			TaskId:    fmt.Sprintf("%s-%d", task, handler.iteration),
+			SubtaskId: subtask,
+			Message:   fmt.Sprintf("%s\n", err),
+			Level:     enums.LogLevel_STANDARD,
+		})
 	})
 }
 
