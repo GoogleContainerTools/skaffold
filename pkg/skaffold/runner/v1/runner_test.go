@@ -260,6 +260,12 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	if autoTriggers == nil {
 		autoTriggers = &triggerState{true, true, true}
 	}
+	var tests []*latestV1.TestCase
+	for _, a := range artifacts {
+		tests = append(tests, &latestV1.TestCase{
+			ImageName:         a.ImageName,
+		})
+	}
 	cfg := &latestV1.SkaffoldConfig{
 		Pipeline: latestV1.Pipeline{
 			Build: latestV1.BuildConfig{
@@ -269,6 +275,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 				},
 				Artifacts: artifacts,
 			},
+			Test: tests,
 			Deploy: latestV1.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}

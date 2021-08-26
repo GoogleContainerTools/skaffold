@@ -184,7 +184,7 @@ func (rc *RunContext) Prune() bool                                   { return rc
 func (rc *RunContext) RenderOnly() bool                              { return rc.Opts.RenderOnly }
 func (rc *RunContext) RenderOutput() string                          { return rc.Opts.RenderOutput }
 func (rc *RunContext) SkipRender() bool                              { return rc.Opts.SkipRender }
-func (rc *RunContext) SkipTests() bool                               { return rc.Opts.SkipTests }
+func (rc *RunContext) SkipTests() bool                               { return rc.Opts.SkipTests || len(rc.Pipelines.TestCases()) == 0 }
 func (rc *RunContext) StatusCheck() *bool                            { return rc.Opts.StatusCheck.Value() }
 func (rc *RunContext) IterativeStatusCheck() bool                    { return rc.Opts.IterativeStatusCheck }
 func (rc *RunContext) Tail() bool                                    { return rc.Opts.Tail }
