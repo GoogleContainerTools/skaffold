@@ -1,3 +1,84 @@
+# v1.31.0 Release - 08/26/2021
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.31.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.31.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.31.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.31.0`
+
+Note: This release comes with a new config version, `v2beta22`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Support Skaffold lifecycle hooks for `helm` and `kustomize` deployers. Read more [here](https://skaffold.dev/docs/pipeline-stages/lifecycle-hooks/) [#6454](https://github.com/GoogleContainerTools/skaffold/pull/6454)
+* Add `--load-images` flag to deploy [#6428](https://github.com/GoogleContainerTools/skaffold/pull/6428)
+* Add core ko builder implementation [#6054](https://github.com/GoogleContainerTools/skaffold/pull/6054)
+
+Fixes:
+* custom.GetDependencies should execute Command in workspace [#6321](https://github.com/GoogleContainerTools/skaffold/pull/6321)
+* Skip tests if no tests defined in pipelines [#6527](https://github.com/GoogleContainerTools/skaffold/pull/6527)
+* Fix failed status check events [#6517](https://github.com/GoogleContainerTools/skaffold/pull/6517)
+* Use default values rather than return error in logrus hook [#6523](https://github.com/GoogleContainerTools/skaffold/pull/6523)
+* Send error logs through the event API with the correct task/subtask [#6516](https://github.com/GoogleContainerTools/skaffold/pull/6516)
+* Add newlines to `SkaffoldLogEvent`s that come from `logrus` [#6506](https://github.com/GoogleContainerTools/skaffold/pull/6506)
+* Fix skaffold inspect tests flags and help message [#6493](https://github.com/GoogleContainerTools/skaffold/pull/6493)
+* Do not sync remote configs for specific commands [#6453](https://github.com/GoogleContainerTools/skaffold/pull/6453)
+* Only cache $GOPATH/pkg/mod on Travis [#6475](https://github.com/GoogleContainerTools/skaffold/pull/6475)
+* Fix integration/'s randomPort() to return an unallocated port [#6474](https://github.com/GoogleContainerTools/skaffold/pull/6474)
+
+Updates and Refactors:
+* Add new `enums.LogLevel` to indicate skaffold's standard output [#6507](https://github.com/GoogleContainerTools/skaffold/pull/6507)
+* Abstract k8s container representation from debug transformers [#6335](https://github.com/GoogleContainerTools/skaffold/pull/6335)
+* Wrap tester in `SkaffoldRunner` to improve `SkaffoldLogEvent` labelling [#6469](https://github.com/GoogleContainerTools/skaffold/pull/6469)
+* Plumb `context.Context` down into functions that use `util/cmd` functions [#6468](https://github.com/GoogleContainerTools/skaffold/pull/6468)
+* Add skip_test env for custom build script [#6455](https://github.com/GoogleContainerTools/skaffold/pull/6455)
+* Implement Target support for ko builder [#6447](https://github.com/GoogleContainerTools/skaffold/pull/6447)
+* hooks: add metrics [#6436](https://github.com/GoogleContainerTools/skaffold/pull/6436)
+* Various small UX improvements [#6426](https://github.com/GoogleContainerTools/skaffold/pull/6426)
+* Change `logrus` calls in `pkg/` and `cmd/` to use `log.Entry(ctx)` [#6419](https://github.com/GoogleContainerTools/skaffold/pull/6419)
+* Use context.TODO for not yet plumbed ctx [#6462](https://github.com/GoogleContainerTools/skaffold/pull/6462)
+* Update Jib plugin versions to 3.1.4 [#6460](https://github.com/GoogleContainerTools/skaffold/pull/6460)
+* Refine ko builder behavior for main packages [#6437](https://github.com/GoogleContainerTools/skaffold/pull/6437)
+
+Docs, Test, and Release Updates:
+* Add "Open in Cloud Shell" link to examples [#6514](https://github.com/GoogleContainerTools/skaffold/pull/6514)
+* Document multi-stage dockerfile limitations of filesync [#6526](https://github.com/GoogleContainerTools/skaffold/pull/6526)
+* Explain minikube detection [#6512](https://github.com/GoogleContainerTools/skaffold/pull/6512)
+* Better wording explaining "skaffold init" [#6502](https://github.com/GoogleContainerTools/skaffold/pull/6502)
+* Add `skaffold apply` to CLI docs header [#6509](https://github.com/GoogleContainerTools/skaffold/pull/6509)
+* dev.md improvements [#6503](https://github.com/GoogleContainerTools/skaffold/pull/6503)
+* Updated Cloud Code links to link to debug page [#6505](https://github.com/GoogleContainerTools/skaffold/pull/6505)
+* document `make quicktest` [#6458](https://github.com/GoogleContainerTools/skaffold/pull/6458)
+* remove note on vendor/ usage from DEVELOPMENT.md [#6422](https://github.com/GoogleContainerTools/skaffold/pull/6422)
+* Change wording describing how profiles work [#6445](https://github.com/GoogleContainerTools/skaffold/pull/6445)
+* add opt out operational metrics note [#6427](https://github.com/GoogleContainerTools/skaffold/pull/6427)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Ahmet Alp Balkan
+- Brian de Alwis
+- Chanseok Oh
+- David Zumbrunnen
+- Gaurav
+- Glenn Pratt
+- Halvard Skogsrud
+- Henry Bell
+- Ke Zhu
+- Kourtney
+- Marlon Gamez
+- Mike Verbanic
+- Nick Kubala
+- Pradeep Kumar
+- Tejal Desai
+- Yanshu
+- dependabot[bot]
+- kelsk
+
 # v1.30.0 Release - 08/11/2021
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.30.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
