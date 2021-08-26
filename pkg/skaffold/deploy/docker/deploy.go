@@ -167,6 +167,9 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 			// skip duplication of init containers
 			continue
 		}
+		if err := d.client.Pull(ctx, out, c.Image); err != nil {
+			return errors.Wrap(err, "pulling init container image")
+		}
 		id, err := d.client.Run(ctx, out, c, dockerutil.ContainerCreateOpts{})
 		if err != nil {
 			return errors.Wrap(err, "creating container in local docker")

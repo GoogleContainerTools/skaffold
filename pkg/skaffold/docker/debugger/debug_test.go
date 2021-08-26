@@ -20,10 +20,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types/container"
 )
 
 func TestConfigurationsAndImages(t *testing.T) {

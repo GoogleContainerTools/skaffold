@@ -60,7 +60,9 @@ func folders(root string) ([]string, error) {
 	}
 
 	for _, f := range files {
-		folders = append(folders, f.Name())
+		if f.Mode().IsDir() {
+			folders = append(folders, f.Name())
+		}
 	}
 
 	return folders, err
