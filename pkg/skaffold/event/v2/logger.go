@@ -17,7 +17,6 @@ limitations under the License.
 package v2
 
 import (
-	"errors"
 	"fmt"
 	"io"
 
@@ -83,11 +82,11 @@ func (h logHook) Levels() []logrus.Level {
 func (h logHook) Fire(entry *logrus.Entry) error {
 	task, ok := entry.Data["task"]
 	if !ok {
-		return errors.New("could not get task from logrus entry")
+		task = constants.DevLoop
 	}
 	subtask, ok := entry.Data["subtask"]
 	if !ok {
-		return errors.New("could not get subtask from logrus entry")
+		subtask = constants.SubtaskIDNone
 	}
 
 	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
