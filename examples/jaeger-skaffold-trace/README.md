@@ -1,7 +1,5 @@
 ### Example: Skaffold Command Tracing with Jaeger
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/jaegar-skaffold-trace)
-
 
 _**WARNING: Skaffold's trace functionality is experimental and may change without notice.**_
 

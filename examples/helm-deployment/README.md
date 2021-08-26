@@ -1,7 +1,5 @@
 ### Example: deploy multiple releases with Helm
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/helm-deployment)
-
 You can deploy multiple releases with skaffold, each will need a chartPath, a values file, and namespace.
 Skaffold can inject intermediate build tags in the the values map in the skaffold.yaml.
 

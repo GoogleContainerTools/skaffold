@@ -1,7 +1,5 @@
 ### Example: running Skaffold with docker-compose files
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/compose)
-
 This example provides a simple application set up to run with 
 [Docker Compose](https://docs.docker.com/compose/).
 

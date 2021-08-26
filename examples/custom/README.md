@@ -1,7 +1,5 @@
 ### Example: use the custom builder with ko
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/custom)
-
 This example shows how the custom builder can be used to
 build artifacts with [ko](https://github.com/google/ko).
 
