@@ -1,5 +1,7 @@
 ### Example: Jib Sync
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/jib-sync)
+
 [Jib](https://github.com/GoogleContainerTools/jib) is one of the supported builders in Skaffold. Jib
 has special sync support using the `auto` configuration.
 

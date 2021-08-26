@@ -1,5 +1,7 @@
 ### Example: Getting started with skaffold and CI/CD using Tekton
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/generate-pipeline)
+
 This is a simple example to show users how to run the generate-pipeline command
 
 _Please keep in mind that the generate-pipeline command is still a WIP_
