@@ -108,7 +108,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		}
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
-		processPodEvents(eventsClient, po, ps)
+		updated := processPodEvents(eventsClient, po, ps)
 		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {
@@ -116,11 +116,11 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		}
 		// Add recommendations
 		for _, r := range p.recos {
-			if s := r.Make(ps.ae.ErrCode); s.SuggestionCode != proto.SuggestionCode_NIL {
-				ps.ae.Suggestions = append(ps.ae.Suggestions, &s)
+			if s := r.Make(updated.ae.ErrCode); s.SuggestionCode != proto.SuggestionCode_NIL {
+				updated.ae.Suggestions = append(updated.ae.Suggestions, &s)
 			}
 		}
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.ae, ps.logs))
+		rs = append(rs, NewResourceFromObject(&po, Status(updated.phase), updated.ae, updated.logs))
 	}
 	return rs, nil
 }
@@ -284,9 +284,10 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 	return errCode, fmt.Errorf("%s: 0/%d nodes available: %s", reason, len(messages), strings.Join(messages, ", "))
 }
 
-func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
+func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) *podStatus {
+	updated := ps
 	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
-		return
+		return updated
 	}
 	log.Entry(context.TODO()).Debugf("Fetching events for pod %q", pod.Name)
 	// Get pod events.
@@ -295,34 +296,33 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	events, err := e.Search(scheme, &pod)
 	if err != nil {
 		log.Entry(context.TODO()).Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
-		return
+		return updated
 	}
-	// find the latest failed event.
+	// find the latest event.
 	var recentEvent *v1.Event
 	for _, e := range events.Items {
-		if e.Type == v1.EventTypeNormal {
-			continue
-		}
 		event := e.DeepCopy()
-		if recentEvent == nil || recentEvent.EventTime.Before(&event.EventTime) {
+		if recentEvent == nil || recentEvent.LastTimestamp.Before(&event.LastTimestamp) {
 			recentEvent = event
 		}
 	}
-	if recentEvent == nil {
-		return
+	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
+		return updated
 	}
 	switch recentEvent.Reason {
 	case failedScheduling:
-		ps.updateAE(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, recentEvent.Message)
+		updated.updateAE(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, recentEvent.Message)
 	case unhealthy:
-		ps.updateAE(proto.StatusCode_STATUSCHECK_UNHEALTHY, recentEvent.Message)
+		updated.updateAE(proto.StatusCode_STATUSCHECK_UNHEALTHY, recentEvent.Message)
 	default:
 		// TODO: Add unique error codes for reasons
-		ps.updateAE(
+		updated.updateAE(
 			proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
 			fmt.Sprintf("%s: %s", recentEvent.Reason, recentEvent.Message),
 		)
 	}
+
+	return updated
 }
 
 type podStatus struct {

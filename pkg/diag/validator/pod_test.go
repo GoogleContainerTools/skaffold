@@ -501,18 +501,18 @@ func TestRun(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
 					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
-					EventTime: metav1.MicroTime{Time: before},
+					LastTimestamp: metav1.Time{Time: before},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"},
 					Reason:     "Created", Type: "Normal", Message: "Container Created",
-					EventTime: metav1.MicroTime{Time: after},
+					LastTimestamp: metav1.Time{Time: after},
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				proto.ActionableErr{
-					Message: "eventCode: dummy event",
-					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
+					Message: "could not determine",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
 				}, nil)},
 		},
 		{
@@ -536,12 +536,12 @@ func TestRun(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"},
 					Reason:     "Created", Type: "Normal", Message: "Container Created",
-					EventTime: metav1.MicroTime{Time: before},
+					LastTimestamp: metav1.Time{Time: before},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
 					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
-					EventTime: metav1.MicroTime{Time: after},
+					LastTimestamp: metav1.Time{Time: after},
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
@@ -570,13 +570,13 @@ func TestRun(t *testing.T) {
 			events: []v1.Event{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"}, Reason: "FailedScheduling", Type: "Warning",
-					Message:   "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
-					EventTime: metav1.MicroTime{Time: after},
+					Message:       "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
+					LastTimestamp: metav1.Time{Time: after},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
 					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
-					EventTime: metav1.MicroTime{Time: before},
+					LastTimestamp: metav1.Time{Time: before},
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
