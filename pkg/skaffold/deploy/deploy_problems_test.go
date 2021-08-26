@@ -118,3 +118,4 @@ func (m mockConfig) Prune() bool                            { return true }
 func (m mockConfig) GetKubeContext() string                 { return m.kubeContext }
 func (m mockConfig) GetInsecureRegistries() map[string]bool { return map[string]bool{} }
 func (m mockConfig) Mode() config.RunMode                   { return config.RunModes.Dev }
+func (m mockConfig) TransformableAllowList() []latestV1.ResourceFilter { return nil }
