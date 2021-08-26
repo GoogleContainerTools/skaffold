@@ -13,20 +13,31 @@ uses images straight from your local docker daemon. It leads to much faster deve
 
 ### Auto detection
 
-Skaffold's heuristic to detect local clusters is based on the Kubernetes context name.
-The following context names are checked:
+Skaffold's heuristic to detect local clusters is based on the Kubernetes context name
+set on kubectl. You can find your the current context name by running:
+
+```bash
+kubectl config current-context
+```
+
+Skaffold checks for the following context names:
 
 | Kubernetes context | Local cluster type | Notes |
 | ------------------ | ------------------ | ----- |
 | docker-desktop     | [`Docker Desktop`] | |
 | docker-for-desktop | [`Docker Desktop`] | This context name is deprecated |
-| minikube           | [`minikube`]       | |
+| minikube <sup>1</sup> | [`minikube`]    | See <sup>1</sup> | |
 | kind-(.*)          | [`kind`]           | This pattern is used by kind >= v0.6.0 |
 | (.*)@kind          | [`kind`]           | This pattern was used by kind < v0.6.0 |
 | k3d-(.*)           | [`k3d`]            | This pattern is used by k3d >= v3.0.0 |
 
 For any other name, Skaffold assumes that the cluster is remote and that images
 have to be pushed.
+
+<sup>1</sup> Additionally, a Kubernetes context may be considered as `minikube`
+even if it's not named `minikube` but it's cluster certificate is stored at
+`$HOME/.minikube` or the `minikube profile list` command returns the Kubernetes
+context name.
 
  [`minikube`]: https://github.com/kubernetes/minikube/
  [`Docker Desktop`]: https://www.docker.com/products/docker-desktop
