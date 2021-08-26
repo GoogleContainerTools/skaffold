@@ -18,8 +18,8 @@ package tag
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -28,16 +28,18 @@ import (
 func TestInputDigest_GenerateCorrectChecksumForSingleFile(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		dir := t.TempDir()
-		d1 := []byte("hello\ngo\n")
-		filePath := filepath.Join(dir, "temp.file")
-		ioutil.WriteFile(filePath, d1, 0644)
+		cwdBackup, err := os.Getwd()
+		t.RequireNoError(err)
+		t.RequireNoError(os.Chdir(dir))
+		defer func() { t.RequireNoError(os.Chdir(cwdBackup)) }()
 
-		hash, _ := fileHasher(filePath)
+		filePath := "temp.file"
+		t.RequireNoError(ioutil.WriteFile(filePath, []byte("hello\ngo\n"), 0644))
 
-		// because we are hashing content of file and it's path
-		// we can't get a stable hash in testing because call t.TempDir()
-		// will return a folder to a random name
-		re := regexp.MustCompile(`^[a-fA-F0-9]{32}$`)
-		t.CheckTrue(re.MatchString(hash))
+		expectedDigest := "3cced2dec96a8b41b22875686d8941a9"
+		relPathHash, err := fileHasher(filePath, ".")
+		t.CheckErrorAndDeepEqual(false, err, expectedDigest, relPathHash)
+		absPathHash, err := fileHasher(filepath.Join(dir, filePath), dir)
+		t.CheckErrorAndDeepEqual(false, err, expectedDigest, absPathHash)
 	})
 }
