@@ -57,7 +57,7 @@ func main() {
 			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
 			// before we print an error to get the right coloring.
 			errOut := output.SetupColors(context.Background(), os.Stderr, output.DefaultColorCode, false)
-			eventV2.SendErrorMessage(constants.DevLoop, constants.SubtaskIDNone, err)
+			eventV2.SendErrorMessageOnce(constants.DevLoop, constants.SubtaskIDNone, err)
 			output.Red.Fprintln(errOut, err)
 			code = app.ExitCode(err)
 		}
