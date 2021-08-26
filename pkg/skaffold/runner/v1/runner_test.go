@@ -263,7 +263,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	var tests []*latestV1.TestCase
 	for _, a := range artifacts {
 		tests = append(tests, &latestV1.TestCase{
-			ImageName:         a.ImageName,
+			ImageName: a.ImageName,
 		})
 	}
 	cfg := &latestV1.SkaffoldConfig{
@@ -275,7 +275,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 				},
 				Artifacts: artifacts,
 			},
-			Test: tests,
+			Test:   tests,
 			Deploy: latestV1.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
