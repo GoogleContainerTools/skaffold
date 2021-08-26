@@ -27,6 +27,10 @@ import (
 )
 
 func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	if len(r.runCtx.Pipelines.TestCases()) == 0 {
+		return nil
+	}
+
 	eventV2.TaskInProgress(constants.Test, "Test")
 	out, ctx = output.WithEventContext(ctx, out, constants.Test, constants.SubtaskIDNone)
 
