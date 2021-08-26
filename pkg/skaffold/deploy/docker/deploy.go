@@ -193,7 +193,6 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		Mounts:   mounts,
 	}
 
-	// TODO(nkubala)[08/16/21]: events for debugging, port forwarding
 	id, err := d.client.Run(ctx, out, containerCfg, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating container in local docker")
