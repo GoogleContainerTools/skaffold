@@ -471,7 +471,7 @@ func TestRun(t *testing.T) {
 			events: []v1.Event{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test"},
-					Reason: "eventCode", Type: "Warning", Message: "dummy event",
+					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
@@ -570,7 +570,7 @@ func TestRun(t *testing.T) {
 			events: []v1.Event{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"}, Reason: "FailedScheduling", Type: "Warning",
-					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
+					Message:       "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
 					LastTimestamp: metav1.Time{Time: after},
 				},
 				{
