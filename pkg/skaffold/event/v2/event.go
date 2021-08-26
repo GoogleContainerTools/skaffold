@@ -358,7 +358,9 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 	})
 }
 
-func SendErrorMessage(task constants.Phase, subtaskID string, err error) {
+// SendErrorMessage sends and error message to skaffold log events stream only once. 
+// Use it if you want to avoid sending duplicate error messages.
+func SendErrorMessageOnce(task constants.Phase, subtaskID string, err error) {
 	handler.sendErrorMessage(task, subtaskID, err)
 }
 
