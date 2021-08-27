@@ -17,80 +17,60 @@ limitations under the License.
 package v3
 
 import (
+	"errors"
+	"io/ioutil"
+	"os"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	//nolint:golint,staticcheck
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	proto1 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func wait(t *testing.T, condition func() bool) {
-	ticker := time.NewTicker(10 * time.Millisecond)
-	defer ticker.Stop()
-
-	timeout := time.NewTimer(5 * time.Second)
-	defer timeout.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if condition() {
-				return
-			}
-
-		case <-timeout.C:
-			t.Fatal("Timed out waiting")
-		}
-	}
-}
-
-func mockCfg(pipes []latestV1.Pipeline, kubectx string) config {
-	return config{
-		pipes:   pipes,
-		kubectx: kubectx,
-	}
-}
-
-type config struct {
-	pipes   []latestV1.Pipeline
-	kubectx string
-}
-
-func (c config) GetKubeContext() string            { return c.kubectx }
-func (c config) AutoBuild() bool                   { return true }
-func (c config) AutoDeploy() bool                  { return true }
-func (c config) AutoSync() bool                    { return true }
-func (c config) GetPipelines() []latestV1.Pipeline { return c.pipes }
-func (c config) GetRunID() string                  { return "run-id" }
-
-/*
 var targetPort = proto.IntOrString{Type: 0, IntVal: 2001}
 
 func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
-		ev := newHandler()
+		eventInAnyFormat := &anypb.Any{}
 
+		anypb.MarshalFrom(eventInAnyFormat, &proto.SkaffoldLogEvent{
+			Message: "OLD"}, proto1.MarshalOptions{})
+
+		ev := newHandler()
 		ev.logEvent(&proto.Event{
-			EventType: &proto.Event_SkaffoldLogEvent{
-				SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "OLD"},
-			},
-		})
+			Type: SkaffoldLogEvent, Data: eventInAnyFormat})
+
 		go func() {
+			localEvent1 := &anypb.Any{}
+			anypb.MarshalFrom(localEvent1, &proto.SkaffoldLogEvent{
+				Message: "FRESH"}, proto1.MarshalOptions{})
 			ev.logEvent(&proto.Event{
-				EventType: &proto.Event_SkaffoldLogEvent{
-					SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "FRESH"},
-				},
-			})
+				Type: SkaffoldLogEvent, Data: localEvent1})
+
+			localEvent2 := &anypb.Any{}
+			anypb.MarshalFrom(localEvent2, &proto.SkaffoldLogEvent{
+				Message: "POISON PILL"}, proto1.MarshalOptions{})
 			ev.logEvent(&proto.Event{
-				EventType: &proto.Event_SkaffoldLogEvent{
-					SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "POISON PILL"},
-				},
-			})
+				Type: SkaffoldLogEvent, Data: localEvent2})
+
 		}()
 
 		var received int32
 		ev.forEachEvent(func(e *proto.Event) error {
-			if e.GetSkaffoldLogEvent().Message == "POISON PILL" {
+			se := &proto.SkaffoldLogEvent{}
+			anypb.UnmarshalTo(e.Data, se, proto1.UnmarshalOptions{})
+
+			if se.Message == "POISON PILL" {
 				return errors.New("Done")
 			}
 
@@ -117,6 +97,25 @@ func TestGetState(t *testing.T) {
 	testutil.CheckDeepEqual(t, Complete, state.BuildState.Artifacts["img"])
 }
 
+func wait(t *testing.T, condition func() bool) {
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
+	timeout := time.NewTimer(5 * time.Second)
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if condition() {
+				return
+			}
+
+		case <-timeout.C:
+			t.Fatal("Timed out waiting")
+		}
+	}
+}
 
 func TestResetStateOnBuild(t *testing.T) {
 	defer func() { handler = newHandler() }()
@@ -153,7 +152,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.IgnoreUnexported(proto.State{}))
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
@@ -264,8 +263,13 @@ func TestTaskFailed(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "Build-0"
+
+				if logEntry.Type == TaskFailedEvent {
+					taskFailedEvent := &proto.TaskFailedEvent{}
+					anypb.UnmarshalTo(logEntry.Data, taskFailedEvent, proto1.UnmarshalOptions{})
+					return taskFailedEvent != nil && taskFailedEvent.Id == "Build-0"
+				}
+				return false
 			},
 		},
 		{
@@ -275,8 +279,12 @@ func TestTaskFailed(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "Deploy-0"
+				if logEntry.Type == TaskFailedEvent {
+					taskFailedEvent := &proto.TaskFailedEvent{}
+					anypb.UnmarshalTo(logEntry.Data, taskFailedEvent, proto1.UnmarshalOptions{})
+					return taskFailedEvent != nil && taskFailedEvent.Id == "Deploy-0"
+				}
+				return false
 			},
 		},
 		{
@@ -286,8 +294,12 @@ func TestTaskFailed(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "StatusCheck-0"
+				if logEntry.Type == TaskFailedEvent {
+					taskFailedEvent := &proto.TaskFailedEvent{}
+					anypb.UnmarshalTo(logEntry.Data, taskFailedEvent, proto1.UnmarshalOptions{})
+					return taskFailedEvent != nil && taskFailedEvent.Id == "StatusCheck-0"
+				}
+				return false
 			},
 		},
 	}
@@ -370,12 +382,20 @@ func TestSaveEventsToFile(t *testing.T) {
 		t.Fatalf("error closing tmp file: %v", err)
 	}
 
+	buildEvent := &anypb.Any{}
+	anypb.MarshalFrom(buildEvent, &proto.BuildSucceededEvent{}, proto1.MarshalOptions{})
+
+	taskEvent := &anypb.Any{}
+	anypb.MarshalFrom(taskEvent, &proto.TaskCompletedEvent{}, proto1.MarshalOptions{})
+
 	// add some events to the event log
 	handler.eventLog = []proto.Event{
 		{
-			EventType: &proto.Event_BuildSubtaskEvent{},
+			Data: buildEvent,
+			Type: BuildSucceededEvent,
 		}, {
-			EventType: &proto.Event_TaskEvent{},
+			Data: taskEvent,
+			Type: TaskSucceededEvent,
 		},
 	}
 
@@ -404,13 +424,15 @@ func TestSaveEventsToFile(t *testing.T) {
 	}
 
 	buildCompleteEvent, devLoopCompleteEvent := 0, 0
+
 	for _, entry := range logEntries {
-		t.Log(entry.GetEventType())
-		switch entry.GetEventType().(type) {
-		case *proto.Event_BuildSubtaskEvent:
+		////t.Log(entry.GetEventType())
+
+		switch entry.Type {
+		case BuildSucceededEvent:
 			buildCompleteEvent++
 			t.Logf("build event %d: %v", buildCompleteEvent, entry)
-		case *proto.Event_TaskEvent:
+		case TaskStartedEvent:
 			devLoopCompleteEvent++
 			t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry)
 		default:
@@ -424,7 +446,21 @@ func TestSaveEventsToFile(t *testing.T) {
 	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvent)
 }
 
+type config struct {
+	pipes   []latestV1.Pipeline
+	kubectx string
+}
 
+func (c config) GetKubeContext() string            { return c.kubectx }
+func (c config) AutoBuild() bool                   { return true }
+func (c config) AutoDeploy() bool                  { return true }
+func (c config) AutoSync() bool                    { return true }
+func (c config) GetPipelines() []latestV1.Pipeline { return c.pipes }
+func (c config) GetRunID() string                  { return "run-id" }
 
-
-*/
+func mockCfg(pipes []latestV1.Pipeline, kubectx string) config {
+	return config{
+		pipes:   pipes,
+		kubectx: kubectx,
+	}
+}

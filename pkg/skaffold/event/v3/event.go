@@ -75,6 +75,7 @@ const (
 	FileSyncEvent                     string = "FileSyncEvent"
 	TaskStartedEvent                  string = "TaskStartedEvent"
 	TaskFailedEvent                   string = "TaskFailedEvent"
+	TaskSucceededEvent                string = "TaskSuceededEvent"
 )
 
 var handler = newHandler()

@@ -28,46 +28,49 @@ import (
 )
 
 func TestHandleDeploySubtaskEvent(t *testing.T) {
-	tests := []struct {
-		name  string
-		event *proto.DeploySubtaskEvent
-	}{
-		{
-			name: "In Progress",
-			event: &proto.DeploySubtaskEvent{
-				Id:     "0",
-				TaskId: fmt.Sprintf("%s-%d", constants.Deploy, 0),
-				Status: InProgress,
-			},
-		},
-		{
-			name: "Failed",
-			event: &proto.DeploySubtaskEvent{
-				Id:            "23",
-				TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, 0),
-				Status:        Failed,
-				ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Deploy, errors.New("deploy failed")),
-			},
-		},
-		{
-			name: "Succeeded",
-			event: &proto.DeploySubtaskEvent{
-				Id:     "99",
-				TaskId: fmt.Sprintf("%s-%d", constants.Deploy, 12),
-				Status: Succeeded,
-			},
-		},
+
+	deploymentStartedEvent := &proto.DeployStartedEvent{
+		Id:     "0",
+		TaskId: fmt.Sprintf("%s-%d", constants.Deploy, 0),
+		Status: Started,
+	}
+
+	deploymentFailedEvent := &proto.DeployFailedEvent{
+		Id:            "23",
+		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, 0),
+		Status:        Failed,
+		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Deploy, errors.New("deploy failed")),
+	}
+
+	deploymentSucceededEvent := &proto.DeployFailedEvent{
+		Id:     "99",
+		TaskId: fmt.Sprintf("%s-%d", constants.Deploy, 12),
+		Status: Succeeded,
 	}
 
 	defer func() { handler = newHandler() }()
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			handler = newHandler()
-			handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
-			wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
-			handler.handleDeploySubtaskEvent(test.event)
-			wait(t, func() bool { return handler.getState().DeployState.Status == test.event.Status })
-		})
-	}
+	t.Run("In Progress", func(t *testing.T) {
+		handler = newHandler()
+		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+		wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
+		handler.handle(deploymentStartedEvent.Id, deploymentStartedEvent, DeployStartedEvent)
+		wait(t, func() bool { return handler.getState().DeployState.Status == deploymentStartedEvent.Status })
+	})
+
+	t.Run("Failed", func(t *testing.T) {
+		handler = newHandler()
+		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+		wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
+		handler.handle(deploymentFailedEvent.Id, deploymentFailedEvent, DeployFailedEvent)
+		wait(t, func() bool { return handler.getState().DeployState.Status == deploymentFailedEvent.Status })
+	})
+
+	t.Run("Succeeded", func(t *testing.T) {
+		handler = newHandler()
+		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+		wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
+		handler.handle(deploymentSucceededEvent.Id, deploymentSucceededEvent, DeploySucceededEvent)
+		wait(t, func() bool { return handler.getState().DeployState.Status == deploymentSucceededEvent.Status })
+	})
 }
