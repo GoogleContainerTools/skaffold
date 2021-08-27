@@ -3023,9 +3023,9 @@
         }
       },
       "preferredOrder": [
+        "type",
         "image",
-        "labels",
-        "type"
+        "labels"
       ],
       "additionalProperties": false,
       "type": "object",

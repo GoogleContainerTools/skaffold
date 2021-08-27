@@ -1416,12 +1416,12 @@ type NamedContainerHook struct {
 
 // ResourceFilter contains definition to filter which resource to transform.
 type ResourceFilter struct {
+	// Type is the compact format of a resource type.
+	Type string `yaml:"type" yamltags:"required"`
 	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
 	Image []string `yaml:"image,omitempty"`
 	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
 	Labels []string `yaml:"labels,omitempty"`
-	// Type is the compact format of a resource type.
-	Type string `yaml:"type" yamltags:"required"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with
