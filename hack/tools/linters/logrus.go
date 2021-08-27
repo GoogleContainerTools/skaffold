@@ -23,6 +23,15 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// Ignore files
+var ignoreFileSuffixes = []string {
+	// always ignore test files
+	"_test.go",
+	"pkg/skaffold/output/log/log.go",
+	"pkg/skaffold/event/v2/logger.go",
+	"pkg/skaffold/build/buildpacks/logger.go",
+
+}
 var LogrusAnalyzer = &analysis.Analyzer{
 	Name: "logruslinter",
 	Doc:  "find usage of logrus",
@@ -31,6 +40,11 @@ var LogrusAnalyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
+		pos := pass.Fset.PositionFor(file.Pos(), false)
+		// Ignore logrus usage in test files
+		if ignore(pos.Filename) {
+			continue
+		}
 		ast.Inspect(file, func(n ast.Node) bool {
 			if importSpec, ok := n.(*ast.ImportSpec); ok {
 				if importSpec.Path != nil && strings.Contains(importSpec.Path.Value, "github.com/sirupsen/logrus") {
@@ -38,7 +52,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						Pos:      importSpec.Pos(),
 						End:      0,
 						Category: "logrus-analyzer",
-						Message:  "Dont use github.com/sirupsen/logrus package, use output.Log instead.",
+						Message:  "Do not use github.com/sirupsen/logrus package, use output.log.Entry instead.",
 					})
 				}
 			}
@@ -46,4 +60,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		})
 	}
 	return nil, nil
+}
+
+func ignore(f string) bool {
+	for _, v := range ignoreFileSuffixes {
+		if strings.HasSuffix(f, v) {
+			return true
+	  }
+	}
+	return false
 }

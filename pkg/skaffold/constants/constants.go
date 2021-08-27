@@ -17,8 +17,6 @@ limitations under the License.
 package constants
 
 import (
-	"github.com/sirupsen/logrus"
-
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -35,9 +33,6 @@ const (
 	Sync        = Phase("Sync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
-
-	// DefaultLogLevel is the default global verbosity
-	DefaultLogLevel = logrus.WarnLevel
 
 	// DefaultDockerfilePath is the dockerfile path is given relative to the
 	// context directory

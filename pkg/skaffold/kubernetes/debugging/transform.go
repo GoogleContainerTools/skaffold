@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -80,7 +79,7 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever debug.Configura
 			if err != nil {
 				return nil, fmt.Errorf("marshalling yaml: %w", err)
 			}
-			if logrus.IsLevelEnabled(logrus.DebugLevel) {
+			if log.IsDebugLevelEnabled() {
 				log.Entry(context.Background()).Debugln("Applied debugging transform:\n", string(manifest))
 			}
 		}
