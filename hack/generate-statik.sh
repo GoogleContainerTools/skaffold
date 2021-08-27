@@ -51,7 +51,7 @@ cp -R docs/content/en/schemas "${TMP_DIR}/schemas"
 if ! [[ -f ${STATIK} ]]; then
     echo 'Installing statik tool'
     pushd ${DIR}/tools
-    GOBIN=${BIN} GO111MODULE=on go install -mod=vendor -tags tools github.com/rakyll/statik
+    GOBIN=${BIN} GO111MODULE=on go install -tags tools github.com/rakyll/statik
     popd
 fi
 
