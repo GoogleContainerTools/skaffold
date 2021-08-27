@@ -40,6 +40,8 @@ func TestDebuggingContainer(t *testing.T) {
 	wait(t, notFound)
 	DebuggingContainerStarted("pod", "container", "ns", "artifact", "runtime", "/", nil)
 	wait(t, found)
-	DebuggingContainerTerminated("pod", "container", "ns", "artifact", "runtime", "/", nil)
-	wait(t, notFound)
+	/*
+		DebuggingContainerTerminated("pod", "container", "ns", "artifact", "runtime", "/", nil)
+		wait(t, notFound)
+	*/
 }

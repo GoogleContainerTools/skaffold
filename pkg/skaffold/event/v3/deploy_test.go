@@ -42,7 +42,7 @@ func TestHandleDeploySubtaskEvent(t *testing.T) {
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Deploy, errors.New("deploy failed")),
 	}
 
-	deploymentSucceededEvent := &proto.DeployFailedEvent{
+	deploymentSucceededEvent := &proto.DeploySucceededEvent{
 		Id:     "99",
 		TaskId: fmt.Sprintf("%s-%d", constants.Deploy, 12),
 		Status: Succeeded,

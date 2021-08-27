@@ -536,8 +536,18 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 		de := &proto.DebuggingContainerStartedEvent{}
 		anypb.UnmarshalTo(event.Data, de, proto1.UnmarshalOptions{})
 		ev.stateLock.Lock()
-		//Todo: copy state from event and replace nil
-		//ev.state.DebuggingContainerState = append(ev.state.DebuggingContainerState, )
+		ev.state.DebuggingContainers = append(ev.state.DebuggingContainers, &proto.DebuggingContainerState{
+			Id:            de.Id,
+			TaskId:        de.TaskId,
+			Status:        de.Status,
+			PodName:       de.PodName,
+			ContainerName: de.ContainerName,
+			Namespace:     de.Namespace,
+			Artifact:      de.Artifact,
+			Runtime:       de.Runtime,
+			WorkingDir:    de.WorkingDir,
+			DebugPorts:    de.DebugPorts,
+		})
 		ev.stateLock.Unlock()
 	case DebuggingContainerTerminatedEvent:
 		de := &proto.DebuggingContainerTerminatedEvent{}
