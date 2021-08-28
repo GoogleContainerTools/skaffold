@@ -26,6 +26,7 @@ import (
 func TestHandleRenderSubtaskEvent(t *testing.T) {
 
 	t.Run("In Progress", func(t *testing.T) {
+		defer func() { handler = newHandler() }()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 		wait(t, func() bool { return handler.getState().RenderState.Status == NotStarted })
 		RendererInProgress(1)
@@ -33,6 +34,7 @@ func TestHandleRenderSubtaskEvent(t *testing.T) {
 	})
 
 	t.Run("Failed", func(t *testing.T) {
+		defer func() { handler = newHandler() }()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 		wait(t, func() bool { return handler.getState().RenderState.Status == NotStarted })
 		RendererFailed(1, errors.New("Render failed"))
@@ -40,6 +42,7 @@ func TestHandleRenderSubtaskEvent(t *testing.T) {
 	})
 
 	t.Run("Succeeded", func(t *testing.T) {
+		defer func() { handler = newHandler() }()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 		wait(t, func() bool { return handler.getState().RenderState.Status == NotStarted })
 		RendererSucceeded(1)
