@@ -152,7 +152,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
@@ -186,7 +186,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 			Resources: map[string]string{},
 		},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestEmptyStateCheckState(t *testing.T) {
@@ -194,7 +194,7 @@ func TestEmptyStateCheckState(t *testing.T) {
 	expected := &proto.StatusCheckState{Status: NotStarted,
 		Resources: map[string]string{},
 	}
-	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty())
+	testutil.CheckDeepEqualProtoMessage(t, expected, actual, cmpopts.EquateEmpty())
 }
 
 func TestUpdateStateAutoTriggers(t *testing.T) {
@@ -246,7 +246,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 			AutoTrigger: true,
 		},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestTaskFailed(t *testing.T) {

@@ -25,6 +25,7 @@ import (
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -398,7 +399,8 @@ func (ev *eventHandler) handle(id string, event proto1.Message, eventtype string
 	eventInAnyFormat := &anypb.Any{}
 	anypb.MarshalFrom(eventInAnyFormat, event, proto1.MarshalOptions{})
 
-	wrapperEvent := &proto.Event{Id: id, Type: eventtype, Data: eventInAnyFormat, Specversion: "1.0", Source: "skaffold.dev"}
+	wrapperEvent := &proto.Event{Id: uuid.New().String(), Type: eventtype, Data: eventInAnyFormat, Specversion: "1.0", Source: "skaffold.dev"}
+	wrapperEvent.Datacontenttype = "application/protobuf"
 	ev.publishEventOnChannel(wrapperEvent)
 }
 

@@ -133,6 +133,11 @@ func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
 	CheckDeepEqual(t.T, expected, actual, opts...)
 }
 
+func (t *T) CheckDeepEqualProtoMessage(expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
+	CheckDeepEqualProtoMessage(t.T, expected, actual, opts...)
+}
+
 func (t *T) CheckErrorAndDeepEqual(shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
 	CheckErrorAndDeepEqual(t.T, shouldErr, err, expected, actual, opts...)
@@ -268,6 +273,14 @@ func CheckNotContains(t *testing.T, excluded, actual string) {
 }
 
 func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
+	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
+		t.Errorf("%T differ (-got, +want): %s", expected, diff)
+		return
+	}
+}
+
+func CheckDeepEqualProtoMessage(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
 	ops := protocmp.Transform()
 	opts = append(opts, ops)
 	t.Helper()
@@ -275,7 +288,6 @@ func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Opti
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}
-
 }
 
 // CheckElementsMatch validates that two given slices contain the same elements

@@ -63,7 +63,7 @@ func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
 		StatusCode:    ae.ErrCode,
 		ActionableErr: &ae,
 	}
-	handler.handle(r, event, StatusCheckStartedEvent)
+	handler.handle(r, event, StatusCheckFailedEvent)
 }
 
 func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
