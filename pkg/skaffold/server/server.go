@@ -34,7 +34,7 @@ import (
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	v3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	protoV1 "github.com/GoogleContainerTools/skaffold/proto/v1"
 	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
@@ -172,7 +172,7 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 		AutoDeployCallback:   func(bool) {},
 	}
 
-	proto.RegisterSkaffoldServiceServer(s, srv)
+	protoV1.RegisterSkaffoldServiceServer(s, srv)
 	protoV2.RegisterSkaffoldV2ServiceServer(s, v2.Srv)
 	protoV3.RegisterSkaffoldV3ServiceServer(s, v3.Srv)
 
@@ -215,7 +215,7 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 		}),
 	)
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	err := protoV1.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}

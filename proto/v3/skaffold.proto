@@ -146,13 +146,13 @@ message FileSyncState {
 // `Event` describes an event in the Skaffold process.
 // It is a wrapper on the top of other events like MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 message Event {
-    string specversion = 2;
-    string type = 3;
-    string source = 4;
-    string id = 5;
-    google.protobuf.Timestamp time = 6;
-    google.protobuf.Any data = 7;
-    string datacontenttype = 8;
+    string specversion = 1;
+    string type = 2;
+    string source = 3;
+    string id = 4;
+    google.protobuf.Timestamp time = 5;
+    google.protobuf.Any data = 6;
+    string datacontenttype = 7;
 }
 
 // `TerminationEvent` marks the end of the skaffold session
