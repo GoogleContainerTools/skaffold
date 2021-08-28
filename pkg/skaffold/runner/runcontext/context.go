@@ -106,6 +106,7 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 	}
 	return tests
 }
+
 // TransformableAllowList returns combined allowlist from pipelines
 func (ps Pipelines) TransformableAllowList() []latestV1.ResourceFilter {
 	var allowList []latestV1.ResourceFilter

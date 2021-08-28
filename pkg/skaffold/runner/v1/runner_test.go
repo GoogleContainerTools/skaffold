@@ -325,7 +325,6 @@ func TestNewForConfig(t *testing.T) {
 		expectedBuilder  build.BuilderMux
 		expectedTester   test.Tester
 		expectedDeployer deploy.Deployer
-		hasAllowList	 bool
 	}{
 		{
 			description: "local builder config",
@@ -444,7 +443,6 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &kubectl.Deployer{},
-			hasAllowList:	  true,
 		},
 		{
 			description: "multiple deployers",
@@ -489,7 +487,7 @@ func TestNewForConfig(t *testing.T) {
 			}
 			// Test transformableAllowList
 			filters := runCtx.TransformableAllowList()
-			if test.hasAllowList {
+			if test.pipeline.Deploy.TransformableAllowList != nil {
 				t.CheckDeepEqual(test.pipeline.Deploy.TransformableAllowList, filters)
 			} else {
 				t.CheckEmpty(filters)
