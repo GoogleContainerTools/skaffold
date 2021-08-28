@@ -31,7 +31,7 @@ func TesterInProgress(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Test, handler.iteration),
 		Status: InProgress,
 	}
-	handler.handle(event.TaskId, event, TesterStartedEvent)
+	handler.handle(event.TaskId, event, TestStartedEvent)
 }
 
 func TesterFailed(id int, err error) {
@@ -41,7 +41,7 @@ func TesterFailed(id int, err error) {
 		Status:        Failed,
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Test, err),
 	}
-	handler.handle(event.TaskId, event, TesterFailedEvent)
+	handler.handle(event.TaskId, event, TestFailedEvent)
 }
 
 func TesterSucceeded(id int) {
@@ -50,5 +50,5 @@ func TesterSucceeded(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Test, handler.iteration),
 		Status: Succeeded,
 	}
-	handler.handle(event.TaskId, event, TesterSucceededEvent)
+	handler.handle(event.TaskId, event, TestSucceededEvent)
 }

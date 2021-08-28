@@ -61,21 +61,21 @@ const (
 	DeploySucceededEvent              string = "DeploySucceededEvent"
 	SkaffoldLogEvent                  string = "SkaffoldLogEvent"
 	MetaEvent                         string = "MetaEvent"
-	RendererStartedEvent              string = "RendererStartedEvent"
-	RendererFailedEvent               string = "RendererFailedEvent"
-	ReenderSucceededEvent             string = "ReenderSucceededEvent"
+	RenderStartedEvent                string = "RenderStartedEvent"
+	RenderFailedEvent                 string = "RenderFailedEvent"
+	RenderSucceededEvent              string = "RenderSucceededEvent"
 	StatusCheckFailedEvent            string = "StatusCheckFailedEvent"
 	StatusCheckStartedEvent           string = "StatusCheckStartedEvent"
 	StatusCheckSucceededEvent         string = "StatusCheckSucceededEvent"
-	TesterFailedEvent                 string = "TesterFailedEvent"
-	TesterSucceededEvent              string = "TesterSucceededEvent"
-	TesterStartedEvent                string = "TesterStartedEvent"
+	TestFailedEvent                   string = "TestFailedEvent"
+	TestSucceededEvent                string = "TestSucceededEvent"
+	TestStartedEvent                  string = "TestStartedEvent"
 	ApplicationLogEvent               string = "ApplicationLogEvent"
 	PortForwardedEvent                string = "PortForwardedEvent"
 	FileSyncEvent                     string = "FileSyncEvent"
 	TaskStartedEvent                  string = "TaskStartedEvent"
 	TaskFailedEvent                   string = "TaskFailedEvent"
-	TaskSucceededEvent                string = "TaskSuceededEvent"
+	TaskCompletedEvent                string = "TaskCompletedEvent"
 )
 
 var handler = newHandler()
@@ -346,7 +346,7 @@ func TaskInProgress(task constants.Phase, description string) {
 
 func TaskFailed(task constants.Phase, err error) {
 	ae := sErrors.ActionableErrV3(handler.cfg, task, err)
-	event := &proto.TaskStartedEvent{
+	event := &proto.TaskFailedEvent{
 		Id:            fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:          string(task),
 		Iteration:     int32(handler.iteration),
@@ -357,13 +357,13 @@ func TaskFailed(task constants.Phase, err error) {
 }
 
 func TaskSucceeded(task constants.Phase) {
-	event := &proto.TaskStartedEvent{
+	event := &proto.TaskCompletedEvent{
 		Id:        fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:      string(task),
 		Iteration: int32(handler.iteration),
 		Status:    Succeeded,
 	}
-	handler.handle(event.Id, event, TaskStartedEvent)
+	handler.handle(event.Id, event, TaskCompletedEvent)
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
@@ -451,31 +451,37 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 			ev.state.BuildState.Artifacts[buildEvent.Artifact] = buildEvent.Status
 			ev.stateLock.Unlock()
 		}
-	case TesterFailedEvent:
+	case TestFailedEvent:
 		te := &proto.TestFailedEvent{}
 		anypb.UnmarshalTo(event.Data, te, proto1.UnmarshalOptions{})
 		ev.stateLock.Lock()
 		ev.state.TestState.Status = te.Status
 		ev.stateLock.Unlock()
-	case TesterStartedEvent:
+	case TestStartedEvent:
 		te := &proto.TestStartedEvent{}
 		anypb.UnmarshalTo(event.Data, te, proto1.UnmarshalOptions{})
 		ev.stateLock.Lock()
 		ev.state.TestState.Status = te.Status
 		ev.stateLock.Unlock()
-	case RendererFailedEvent:
+	case TestSucceededEvent:
+		te := &proto.TestSucceededEvent{}
+		anypb.UnmarshalTo(event.Data, te, proto1.UnmarshalOptions{})
+		ev.stateLock.Lock()
+		ev.state.TestState.Status = te.Status
+		ev.stateLock.Unlock()
+	case RenderFailedEvent:
 		re := &proto.RenderFailedEvent{}
 		anypb.UnmarshalTo(event.Data, re, proto1.UnmarshalOptions{})
 		ev.stateLock.Lock()
 		ev.state.RenderState.Status = re.Status
 		ev.stateLock.Unlock()
-	case ReenderSucceededEvent:
+	case RenderSucceededEvent:
 		re := &proto.RenderSucceededEvent{}
 		anypb.UnmarshalTo(event.Data, re, proto1.UnmarshalOptions{})
 		ev.stateLock.Lock()
 		ev.state.RenderState.Status = re.Status
 		ev.stateLock.Unlock()
-	case RendererStartedEvent:
+	case RenderStartedEvent:
 		re := &proto.RenderStartedEvent{}
 		anypb.UnmarshalTo(event.Data, re, proto1.UnmarshalOptions{})
 		ev.stateLock.Lock()

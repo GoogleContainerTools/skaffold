@@ -24,6 +24,7 @@ import (
 )
 
 func TestResourceStatusCheckEventUpdated(t *testing.T) {
+
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()

@@ -32,7 +32,7 @@ func RendererInProgress(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
 		Status: InProgress,
 	}
-	handler.handle(rendererEvent.Id, rendererEvent, RendererStartedEvent)
+	handler.handle(rendererEvent.Id, rendererEvent, RenderStartedEvent)
 }
 
 // RendererFailed adds an event to mark a render process has been failed.
@@ -43,7 +43,7 @@ func RendererFailed(id int, err error) {
 		Status:        Failed,
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Render, err),
 	}
-	handler.handle(rendererEvent.Id, rendererEvent, RendererFailedEvent)
+	handler.handle(rendererEvent.Id, rendererEvent, RenderFailedEvent)
 }
 
 // RendererSucceeded adds an event to mark a render process has been succeeded.
@@ -53,5 +53,5 @@ func RendererSucceeded(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
 		Status: Succeeded,
 	}
-	handler.handle(rendererEvent.Id, rendererEvent, ReenderSucceededEvent)
+	handler.handle(rendererEvent.Id, rendererEvent, RenderSucceededEvent)
 }

@@ -30,7 +30,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/testing/protocmp"
 	"k8s.io/apimachinery/pkg/watch"
+
 	fake_testing "k8s.io/client-go/testing"
 )
 
@@ -266,11 +268,14 @@ func CheckNotContains(t *testing.T, excluded, actual string) {
 }
 
 func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
+	ops := protocmp.Transform()
+	opts = append(opts, ops)
 	t.Helper()
 	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}
+
 }
 
 // CheckElementsMatch validates that two given slices contain the same elements

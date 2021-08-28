@@ -152,7 +152,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.IgnoreUnexported(proto.State{}))
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
@@ -395,7 +395,7 @@ func TestSaveEventsToFile(t *testing.T) {
 			Type: BuildSucceededEvent,
 		}, {
 			Data: taskEvent,
-			Type: TaskSucceededEvent,
+			Type: TaskCompletedEvent,
 		},
 	}
 
@@ -417,6 +417,7 @@ func TestSaveEventsToFile(t *testing.T) {
 			continue
 		}
 		var logEntry proto.Event
+
 		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
 			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
 		}
@@ -432,7 +433,7 @@ func TestSaveEventsToFile(t *testing.T) {
 		case BuildSucceededEvent:
 			buildCompleteEvent++
 			t.Logf("build event %d: %v", buildCompleteEvent, entry)
-		case TaskStartedEvent:
+		case TaskCompletedEvent:
 			devLoopCompleteEvent++
 			t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry)
 		default:

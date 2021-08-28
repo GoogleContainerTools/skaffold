@@ -18,7 +18,6 @@ package v3
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
@@ -40,7 +39,6 @@ func (s *Server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
 }
 
 func (s *Server) Events(_ *empty.Empty, stream proto.SkaffoldV3Service_EventsServer) error {
-	fmt.Println("v3 events")
 	return event.ForEachEvent(stream.Send)
 }
 

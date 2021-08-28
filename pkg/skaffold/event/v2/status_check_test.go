@@ -26,7 +26,7 @@ import (
 func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
-	handler = newHandler()
+	//handler = newHandler()
 	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -40,7 +40,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 func TestResourceStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
-	handler = newHandler()
+	//handler = newHandler()
 	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -51,7 +51,7 @@ func TestResourceStatusCheckEventSucceeded(t *testing.T) {
 func TestResourceStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
-	handler = newHandler()
+	//handler = newHandler()
 	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
