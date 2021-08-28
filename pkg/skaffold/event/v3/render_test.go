@@ -18,61 +18,31 @@ package v3
 
 import (
 	"errors"
-	"fmt"
-	"strconv"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func TestHandleRenderSubtaskEvent(t *testing.T) {
 
-	renderStartedEvent := &proto.RenderStartedEvent{
-		Id:     strconv.Itoa(1),
-		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
-		Status: InProgress,
-	}
-
-	renderFailedEvent := &proto.RenderFailedEvent{
-		Id:            strconv.Itoa(1),
-		TaskId:        fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
-		Status:        Failed,
-		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Render, errors.New("render failed")),
-	}
-
-	renderSucceededEvent := &proto.RenderSucceededEvent{
-		Id:     strconv.Itoa(1),
-		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
-		Status: Succeeded,
-	}
-
 	t.Run("In Progress", func(t *testing.T) {
-		handler = newHandler()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
-
 		wait(t, func() bool { return handler.getState().RenderState.Status == NotStarted })
-		handler.handle(renderStartedEvent.Id, renderStartedEvent, RenderStartedEvent)
+		RendererInProgress(1)
 		wait(t, func() bool { return handler.getState().RenderState.Status == InProgress })
 	})
 
 	t.Run("Failed", func(t *testing.T) {
-		handler = newHandler()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
-
 		wait(t, func() bool { return handler.getState().RenderState.Status == NotStarted })
-		handler.handle(renderFailedEvent.Id, renderFailedEvent, RenderFailedEvent)
+		RendererFailed(1, errors.New("Render failed"))
 		wait(t, func() bool { return handler.getState().RenderState.Status == Failed })
 	})
 
 	t.Run("Succeeded", func(t *testing.T) {
-		handler = newHandler()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
-
 		wait(t, func() bool { return handler.getState().RenderState.Status == NotStarted })
-		handler.handle(renderSucceededEvent.Id, renderSucceededEvent, RenderSucceededEvent)
+		RendererSucceeded(1)
 		wait(t, func() bool { return handler.getState().RenderState.Status == Succeeded })
 	})
 }
