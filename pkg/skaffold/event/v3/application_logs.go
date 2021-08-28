@@ -17,11 +17,11 @@ limitations under the License.
 package v3
 
 import (
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func ApplicationLog(podName, containerName, prefix, message, formattedMessage string) {
-	event := &proto.ApplicationLogEvent{
+	event := &protoV3.ApplicationLogEvent{
 		ContainerName:        containerName,
 		PodName:              podName,
 		Prefix:               prefix,

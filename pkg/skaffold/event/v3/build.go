@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 const (
@@ -30,7 +30,7 @@ const (
 )
 
 func CacheCheckInProgress(artifact string) {
-	buildEvent := &proto.BuildStartedEvent{
+	buildEvent := &protoV3.BuildStartedEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
@@ -42,7 +42,7 @@ func CacheCheckInProgress(artifact string) {
 }
 
 func CacheCheckMiss(artifact string) {
-	buildEvent := &proto.BuildFailedEvent{
+	buildEvent := &protoV3.BuildFailedEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
@@ -54,7 +54,7 @@ func CacheCheckMiss(artifact string) {
 }
 
 func CacheCheckHit(artifact string) {
-	buildEvent := &proto.BuildSucceededEvent{
+	buildEvent := &protoV3.BuildSucceededEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
@@ -67,7 +67,7 @@ func CacheCheckHit(artifact string) {
 
 func BuildInProgress(artifact string) {
 	fmt.Println("Build Started event")
-	buildEvent := &proto.BuildStartedEvent{
+	buildEvent := &protoV3.BuildStartedEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
@@ -79,11 +79,11 @@ func BuildInProgress(artifact string) {
 }
 
 func BuildFailed(artifact string, err error) {
-	var aErr *proto.ActionableErr
+	var aErr *protoV3.ActionableErr
 	if err != nil {
 		aErr = sErrors.ActionableErrV3(handler.cfg, constants.Build, err)
 	}
-	buildEvent := &proto.BuildFailedEvent{
+	buildEvent := &protoV3.BuildFailedEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
@@ -95,7 +95,7 @@ func BuildFailed(artifact string, err error) {
 }
 
 func BuildSucceeded(artifact string) {
-	buildEvent := &proto.BuildSucceededEvent{
+	buildEvent := &protoV3.BuildSucceededEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
@@ -107,11 +107,11 @@ func BuildSucceeded(artifact string) {
 }
 
 func BuildCanceled(artifact string, err error) {
-	var aErr *proto.ActionableErr
+	var aErr *protoV3.ActionableErr
 	if err != nil {
 		aErr = sErrors.ActionableErrV3(handler.cfg, constants.Build, err)
 	}
-	buildEvent := &proto.BuildCancelledEvent{
+	buildEvent := &protoV3.BuildCancelledEvent{
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
 		Step:          Build,

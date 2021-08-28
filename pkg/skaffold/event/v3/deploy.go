@@ -22,11 +22,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func DeployInProgress(id int) {
-	deployEvent := &proto.DeployStartedEvent{
+	deployEvent := &protoV3.DeployStartedEvent{
 		Id:     strconv.Itoa(id),
 		TaskId: fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Status: InProgress,
@@ -35,7 +35,7 @@ func DeployInProgress(id int) {
 }
 
 func DeployFailed(id int, err error) {
-	deployEvent := &proto.DeployFailedEvent{
+	deployEvent := &protoV3.DeployFailedEvent{
 		Id:            strconv.Itoa(id),
 		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Status:        Failed,
@@ -45,7 +45,7 @@ func DeployFailed(id int, err error) {
 }
 
 func DeploySucceeded(id int) {
-	deployEvent := &proto.DeploySucceededEvent{
+	deployEvent := &protoV3.DeploySucceededEvent{
 		Id:     strconv.Itoa(id),
 		TaskId: fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Status: Succeeded,

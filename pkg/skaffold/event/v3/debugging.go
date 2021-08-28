@@ -17,12 +17,12 @@ limitations under the License.
 package v3
 
 import (
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 // DebuggingContainerStarted notifies that a debuggable container has appeared.
 func DebuggingContainerStarted(podName, containerName, namespace, artifact, runtime, workingDir string, debugPorts map[string]uint32) {
-	debuggingContainerEvent := &proto.DebuggingContainerStartedEvent{
+	debuggingContainerEvent := &protoV3.DebuggingContainerStartedEvent{
 		Status:        Started,
 		PodName:       podName,
 		ContainerName: containerName,
@@ -37,7 +37,7 @@ func DebuggingContainerStarted(podName, containerName, namespace, artifact, runt
 
 // DebuggingContainerTerminated notifies that a debuggable container has disappeared.
 func DebuggingContainerTerminated(podName, containerName, namespace, artifact, runtime, workingDir string, debugPorts map[string]uint32) {
-	debuggingContainerEvent := &proto.DebuggingContainerTerminatedEvent{
+	debuggingContainerEvent := &protoV3.DebuggingContainerTerminatedEvent{
 		Status:        Terminated,
 		PodName:       podName,
 		ContainerName: containerName,

@@ -23,7 +23,7 @@ import (
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/proto/enums"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -40,7 +40,7 @@ func TestHandleSkaffoldLogEvent(t *testing.T) {
 
 	// ensure that messages sent through the SkaffoldLog function are populating the event log
 	for _, message := range messages {
-		testHandler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+		testHandler.handleSkaffoldLogEvent(&protoV3.SkaffoldLogEvent{
 			TaskId:    "Test-0",
 			SubtaskId: "1",
 			Level:     enums.LogLevel_INFO,

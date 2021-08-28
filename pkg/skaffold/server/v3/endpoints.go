@@ -39,7 +39,10 @@ func (s *Server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
 }
 
 func (s *Server) Events(_ *empty.Empty, stream proto.SkaffoldV3Service_EventsServer) error {
-	return event.ForEachEvent(stream.Send)
+	return event.ForEachEvent(func(event *proto.Event) error {
+		event.Datacontenttype = "text/xml"
+		return stream.Send(event)
+	})
 }
 
 func (s *Server) ApplicationLogs(_ *empty.Empty, stream proto.SkaffoldV3Service_ApplicationLogsServer) error {

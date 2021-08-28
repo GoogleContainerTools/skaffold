@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -30,7 +30,7 @@ func TestEmptyState(t *testing.T) {
 		description string
 		cfg         latestV1.Pipeline
 		cluster     string
-		expected    *proto.Metadata
+		expected    *protoV3.Metadata
 	}{
 		{
 			description: "one build artifact minikube cluster multiple deployers",
@@ -47,17 +47,17 @@ func TestEmptyState(t *testing.T) {
 				},
 			},
 			cluster: "minikube",
-			expected: &proto.Metadata{
-				Build: &proto.BuildMetadata{
-					Type:      proto.BuildType_LOCAL,
-					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-1"}},
+			expected: &protoV3.Metadata{
+				Build: &protoV3.BuildMetadata{
+					Type:      protoV3.BuildType_LOCAL,
+					Artifacts: []*protoV3.BuildMetadata_Artifact{{Type: protoV3.BuilderType_DOCKER, Name: "docker-artifact-1"}},
 				},
-				Render: &proto.RenderMetadata{},
-				Deploy: &proto.DeployMetadata{
-					Cluster: proto.ClusterType_MINIKUBE,
-					Deployers: []*proto.DeployMetadata_Deployer{
-						{Type: proto.DeployerType_HELM, Count: 2},
-						{Type: proto.DeployerType_KUBECTL, Count: 1},
+				Render: &protoV3.RenderMetadata{},
+				Deploy: &protoV3.DeployMetadata{
+					Cluster: protoV3.ClusterType_MINIKUBE,
+					Deployers: []*protoV3.DeployMetadata_Deployer{
+						{Type: protoV3.DeployerType_HELM, Count: 2},
+						{Type: protoV3.DeployerType_KUBECTL, Count: 1},
 					},
 				},
 				RunID: "run-id",
@@ -81,19 +81,19 @@ func TestEmptyState(t *testing.T) {
 				},
 			},
 			cluster: "gke-tejal-test",
-			expected: &proto.Metadata{
-				Build: &proto.BuildMetadata{
-					Type: proto.BuildType_CLUSTER,
-					Artifacts: []*proto.BuildMetadata_Artifact{
-						{Type: proto.BuilderType_JIB, Name: "jib-artifact-1"},
-						{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-1"},
-						{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-2"},
+			expected: &protoV3.Metadata{
+				Build: &protoV3.BuildMetadata{
+					Type: protoV3.BuildType_CLUSTER,
+					Artifacts: []*protoV3.BuildMetadata_Artifact{
+						{Type: protoV3.BuilderType_JIB, Name: "jib-artifact-1"},
+						{Type: protoV3.BuilderType_DOCKER, Name: "docker-artifact-1"},
+						{Type: protoV3.BuilderType_DOCKER, Name: "docker-artifact-2"},
 					},
 				},
-				Render: &proto.RenderMetadata{},
-				Deploy: &proto.DeployMetadata{
-					Cluster:   proto.ClusterType_GKE,
-					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
+				Render: &protoV3.RenderMetadata{},
+				Deploy: &protoV3.DeployMetadata{
+					Cluster:   protoV3.ClusterType_GKE,
+					Deployers: []*protoV3.DeployMetadata_Deployer{{Type: protoV3.DeployerType_KUSTOMIZE, Count: 1}},
 				},
 				RunID: "run-id",
 			},
@@ -109,13 +109,13 @@ func TestEmptyState(t *testing.T) {
 				},
 			},
 			cluster: "gke-tejal-test",
-			expected: &proto.Metadata{
-				Build: &proto.BuildMetadata{
-					Type:      proto.BuildType_GCB,
-					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_KANIKO, Name: "artifact-1"}},
+			expected: &protoV3.Metadata{
+				Build: &protoV3.BuildMetadata{
+					Type:      protoV3.BuildType_GCB,
+					Artifacts: []*protoV3.BuildMetadata_Artifact{{Type: protoV3.BuilderType_KANIKO, Name: "artifact-1"}},
 				},
-				Render: &proto.RenderMetadata{},
-				Deploy: &proto.DeployMetadata{},
+				Render: &protoV3.RenderMetadata{},
+				Deploy: &protoV3.DeployMetadata{},
 				RunID:  "run-id",
 			},
 		},
@@ -129,12 +129,12 @@ func TestEmptyState(t *testing.T) {
 				},
 			},
 			cluster: "some-private",
-			expected: &proto.Metadata{
-				Build:  &proto.BuildMetadata{},
-				Render: &proto.RenderMetadata{},
-				Deploy: &proto.DeployMetadata{
-					Cluster:   proto.ClusterType_OTHER,
-					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
+			expected: &protoV3.Metadata{
+				Build:  &protoV3.BuildMetadata{},
+				Render: &protoV3.RenderMetadata{},
+				Deploy: &protoV3.DeployMetadata{
+					Cluster:   protoV3.ClusterType_OTHER,
+					Deployers: []*protoV3.DeployMetadata_Deployer{{Type: protoV3.DeployerType_KUSTOMIZE, Count: 1}},
 				},
 				RunID: "run-id",
 			},

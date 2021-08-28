@@ -22,12 +22,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 // RendererInProgress adds an event to mark a render process starts.
 func RendererInProgress(id int) {
-	rendererEvent := &proto.RenderStartedEvent{
+	rendererEvent := &protoV3.RenderStartedEvent{
 		Id:     strconv.Itoa(id),
 		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
 		Status: InProgress,
@@ -37,7 +37,7 @@ func RendererInProgress(id int) {
 
 // RendererFailed adds an event to mark a render process has been failed.
 func RendererFailed(id int, err error) {
-	rendererEvent := &proto.RenderFailedEvent{
+	rendererEvent := &protoV3.RenderFailedEvent{
 		Id:            strconv.Itoa(id),
 		TaskId:        fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
 		Status:        Failed,
@@ -48,7 +48,7 @@ func RendererFailed(id int, err error) {
 
 // RendererSucceeded adds an event to mark a render process has been succeeded.
 func RendererSucceeded(id int) {
-	rendererEvent := &proto.RenderSucceededEvent{
+	rendererEvent := &protoV3.RenderSucceededEvent{
 		Id:     strconv.Itoa(id),
 		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
 		Status: Succeeded,

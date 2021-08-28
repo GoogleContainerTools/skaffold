@@ -22,23 +22,23 @@ import (
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func LogMetaEvent() {
 	metadata := handler.state.Metadata
-	metaEvent := &proto.MetaEvent{
+	metaEvent := &protoV3.MetaEvent{
 		Entry:    fmt.Sprintf("Starting Skaffold: %+v", version.Get()),
 		Metadata: metadata,
 	}
 	handler.handle("Id-Metadata", metaEvent, MetaEvent)
 }
 
-func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID string) *proto.Metadata {
-	m := &proto.Metadata{
-		Build:  &proto.BuildMetadata{},
-		Render: &proto.RenderMetadata{},
-		Deploy: &proto.DeployMetadata{},
+func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID string) *protoV3.Metadata {
+	m := &protoV3.Metadata{
+		Build:  &protoV3.BuildMetadata{},
+		Render: &protoV3.RenderMetadata{},
+		Deploy: &protoV3.DeployMetadata{},
 		RunID:  runID,
 	}
 
@@ -46,17 +46,17 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID
 	// All pipelines are currently constrained to have the same build type.
 	switch {
 	case pipelines[0].Build.LocalBuild != nil:
-		m.Build.Type = proto.BuildType_LOCAL
+		m.Build.Type = protoV3.BuildType_LOCAL
 	case pipelines[0].Build.GoogleCloudBuild != nil:
-		m.Build.Type = proto.BuildType_GCB
+		m.Build.Type = protoV3.BuildType_GCB
 	case pipelines[0].Build.Cluster != nil:
-		m.Build.Type = proto.BuildType_CLUSTER
+		m.Build.Type = protoV3.BuildType_CLUSTER
 	default:
-		m.Build.Type = proto.BuildType_UNKNOWN_BUILD_TYPE
+		m.Build.Type = protoV3.BuildType_UNKNOWN_BUILD_TYPE
 	}
 
-	var artifacts []*proto.BuildMetadata_Artifact
-	var deployers []*proto.DeployMetadata_Deployer
+	var artifacts []*protoV3.BuildMetadata_Artifact
+	var deployers []*protoV3.DeployMetadata_Deployer
 	for _, p := range pipelines {
 		artifacts = append(artifacts, getArtifacts(p.Build)...)
 		deployers = append(deployers, getDeploy(p.Deploy)...)
@@ -64,9 +64,9 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID
 	m.Build.Artifacts = artifacts
 
 	if len(deployers) == 0 {
-		m.Deploy = &proto.DeployMetadata{}
+		m.Deploy = &protoV3.DeployMetadata{}
 	} else {
-		m.Deploy = &proto.DeployMetadata{
+		m.Deploy = &protoV3.DeployMetadata{
 			Deployers: deployers,
 			Cluster:   getClusterType(kubeContext),
 		}
@@ -75,58 +75,58 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID
 	return m
 }
 
-func getArtifacts(b latestV1.BuildConfig) []*proto.BuildMetadata_Artifact {
-	result := []*proto.BuildMetadata_Artifact{}
+func getArtifacts(b latestV1.BuildConfig) []*protoV3.BuildMetadata_Artifact {
+	result := []*protoV3.BuildMetadata_Artifact{}
 	for _, a := range b.Artifacts {
-		artifact := &proto.BuildMetadata_Artifact{
+		artifact := &protoV3.BuildMetadata_Artifact{
 			Name:    a.ImageName,
 			Context: a.Workspace,
 		}
 		switch {
 		case a.BazelArtifact != nil:
-			artifact.Type = proto.BuilderType_BAZEL
+			artifact.Type = protoV3.BuilderType_BAZEL
 		case a.BuildpackArtifact != nil:
-			artifact.Type = proto.BuilderType_BUILDPACKS
+			artifact.Type = protoV3.BuilderType_BUILDPACKS
 		case a.CustomArtifact != nil:
-			artifact.Type = proto.BuilderType_CUSTOM
+			artifact.Type = protoV3.BuilderType_CUSTOM
 		case a.DockerArtifact != nil:
-			artifact.Type = proto.BuilderType_DOCKER
+			artifact.Type = protoV3.BuilderType_DOCKER
 			artifact.Dockerfile = a.DockerArtifact.DockerfilePath
 		case a.JibArtifact != nil:
-			artifact.Type = proto.BuilderType_JIB
+			artifact.Type = protoV3.BuilderType_JIB
 		case a.KanikoArtifact != nil:
-			artifact.Type = proto.BuilderType_KANIKO
+			artifact.Type = protoV3.BuilderType_KANIKO
 			artifact.Dockerfile = a.KanikoArtifact.DockerfilePath
 		default:
-			artifact.Type = proto.BuilderType_UNKNOWN_BUILDER_TYPE
+			artifact.Type = protoV3.BuilderType_UNKNOWN_BUILDER_TYPE
 		}
 		result = append(result, artifact)
 	}
 	return result
 }
 
-func getDeploy(d latestV1.DeployConfig) []*proto.DeployMetadata_Deployer {
-	var deployers []*proto.DeployMetadata_Deployer
+func getDeploy(d latestV1.DeployConfig) []*protoV3.DeployMetadata_Deployer {
+	var deployers []*protoV3.DeployMetadata_Deployer
 
 	if d.HelmDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_HELM, Count: int32(len(d.HelmDeploy.Releases))})
+		deployers = append(deployers, &protoV3.DeployMetadata_Deployer{Type: protoV3.DeployerType_HELM, Count: int32(len(d.HelmDeploy.Releases))})
 	}
 	if d.KubectlDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUBECTL, Count: 1})
+		deployers = append(deployers, &protoV3.DeployMetadata_Deployer{Type: protoV3.DeployerType_KUBECTL, Count: 1})
 	}
 	if d.KustomizeDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
+		deployers = append(deployers, &protoV3.DeployMetadata_Deployer{Type: protoV3.DeployerType_KUSTOMIZE, Count: 1})
 	}
 	return deployers
 }
 
-func getClusterType(c string) proto.ClusterType {
+func getClusterType(c string) protoV3.ClusterType {
 	switch {
 	case strings.Contains(c, "minikube"):
-		return proto.ClusterType_MINIKUBE
+		return protoV3.ClusterType_MINIKUBE
 	case strings.HasPrefix(c, "gke"):
-		return proto.ClusterType_GKE
+		return protoV3.ClusterType_GKE
 	default:
-		return proto.ClusterType_OTHER
+		return protoV3.ClusterType_OTHER
 	}
 }

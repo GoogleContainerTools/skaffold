@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func TestHandleApplicationLogEvent(t *testing.T) {
@@ -35,7 +35,7 @@ func TestHandleApplicationLogEvent(t *testing.T) {
 
 	// ensure that messages sent through the ApplicationLog function are populating the event log
 	for _, message := range messages {
-		event := &proto.ApplicationLogEvent{
+		event := &protoV3.ApplicationLogEvent{
 			ContainerName:        "containerName-0",
 			PodName:              "pod-0",
 			Prefix:               "",

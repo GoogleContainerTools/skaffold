@@ -20,20 +20,20 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
-func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
-	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+func ResourceStatusCheckEventCompleted(r string, ae protoV3.ActionableErr) {
+	if ae.ErrCode != protoV3.StatusCode_STATUSCHECK_SUCCESS {
 		resourceStatusCheckEventFailed(r, ae)
 		return
 	}
 	resourceStatusCheckEventSucceeded(r)
 }
 
-func ResourceStatusCheckEventCompletedMessage(r string, message string, ae proto.ActionableErr) {
+func ResourceStatusCheckEventCompletedMessage(r string, message string, ae protoV3.ActionableErr) {
 	ResourceStatusCheckEventCompleted(r, ae)
-	event := &proto.SkaffoldLogEvent{
+	event := &protoV3.SkaffoldLogEvent{
 		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		SubtaskId: r,
 		Message:   message,
@@ -43,19 +43,19 @@ func ResourceStatusCheckEventCompletedMessage(r string, message string, ae proto
 }
 
 func resourceStatusCheckEventSucceeded(r string) {
-	event := &proto.StatusCheckSucceededEvent{
+	event := &protoV3.StatusCheckSucceededEvent{
 		Id:         r,
 		TaskId:     fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Resource:   r,
 		Status:     Succeeded,
 		Message:    Succeeded,
-		StatusCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+		StatusCode: protoV3.StatusCode_STATUSCHECK_SUCCESS,
 	}
 	handler.handle(r, event, StatusCheckSucceededEvent)
 }
 
-func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
-	event := &proto.StatusCheckFailedEvent{
+func resourceStatusCheckEventFailed(r string, ae protoV3.ActionableErr) {
+	event := &protoV3.StatusCheckFailedEvent{
 		Id:            r,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Resource:      r,
@@ -66,8 +66,8 @@ func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
 	handler.handle(r, event, StatusCheckFailedEvent)
 }
 
-func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
-	event := &proto.StatusCheckStartedEvent{
+func ResourceStatusCheckEventUpdated(r string, ae protoV3.ActionableErr) {
+	event := &protoV3.StatusCheckStartedEvent{
 		Id:            r,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		Resource:      r,
@@ -79,9 +79,9 @@ func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
 	handler.handle(r, event, StatusCheckStartedEvent)
 }
 
-func ResourceStatusCheckEventUpdatedMessage(r string, message string, ae proto.ActionableErr) {
+func ResourceStatusCheckEventUpdatedMessage(r string, message string, ae protoV3.ActionableErr) {
 	ResourceStatusCheckEventUpdated(r, ae)
-	event := &proto.SkaffoldLogEvent{
+	event := &protoV3.SkaffoldLogEvent{
 		TaskId:    fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
 		SubtaskId: r,
 		Message:   fmt.Sprintf("%s %s\n", message, ae.Message),

@@ -22,11 +22,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
+	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 func TesterInProgress(id int) {
-	event := &proto.TestStartedEvent{
+	event := &protoV3.TestStartedEvent{
 		Id:     strconv.Itoa(id),
 		TaskId: fmt.Sprintf("%s-%d", constants.Test, handler.iteration),
 		Status: InProgress,
@@ -35,7 +35,7 @@ func TesterInProgress(id int) {
 }
 
 func TesterFailed(id int, err error) {
-	event := &proto.TestFailedEvent{
+	event := &protoV3.TestFailedEvent{
 		Id:            strconv.Itoa(id),
 		TaskId:        fmt.Sprintf("%s-%d", constants.Test, handler.iteration),
 		Status:        Failed,
@@ -45,7 +45,7 @@ func TesterFailed(id int, err error) {
 }
 
 func TesterSucceeded(id int) {
-	event := &proto.TestSucceededEvent{
+	event := &protoV3.TestSucceededEvent{
 		Id:     strconv.Itoa(id),
 		TaskId: fmt.Sprintf("%s-%d", constants.Test, handler.iteration),
 		Status: Succeeded,
