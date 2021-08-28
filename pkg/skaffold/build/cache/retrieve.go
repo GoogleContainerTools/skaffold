@@ -76,7 +76,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 		case needsBuilding:
 			eventV2.CacheCheckMiss(artifact.ImageName)
-			eventV3.CacheCheckInProgress(artifact.ImageName)
+			eventV3.CacheCheckMiss(artifact.ImageName)
 			output.Yellow.Fprintln(out, "Not found. Building")
 			hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
@@ -84,7 +84,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 		case needsTagging:
 			eventV2.CacheCheckHit(artifact.ImageName)
-			eventV3.CacheCheckInProgress(artifact.ImageName)
+			eventV3.CacheCheckHit(artifact.ImageName)
 			output.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c); err != nil {
 				endTrace(instrumentation.TraceEndError(err))

@@ -85,7 +85,7 @@ func TestGetState(t *testing.T) {
 
 	state := ev.getState()
 
-	testutil.CheckDeepEqual(t, "Complete", state.BuildState.Artifacts["img"])
+	testutil.CheckDeepEqual(t, Complete, state.BuildState.Artifacts["img"])
 }
 
 func wait(t *testing.T, condition func() bool) {
@@ -177,7 +177,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 			Resources: map[string]string{},
 		},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.IgnoreUnexported())
+	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestEmptyStateCheckState(t *testing.T) {
