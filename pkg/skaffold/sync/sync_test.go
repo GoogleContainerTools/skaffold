@@ -826,7 +826,7 @@ func TestIntersect(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, err := intersect(test.context, test.workingDir, test.syncRules, test.files)
+			actual, err := intersect(context.TODO(), test.context, test.workingDir, test.syncRules, test.files)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
