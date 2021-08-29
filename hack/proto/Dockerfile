@@ -30,10 +30,10 @@ ENV GO111MODULE=on
   
 RUN go get \
    github.com/golang/protobuf/protoc-gen-go@v1.5.2 \
-   github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
+   github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.5.0 \
    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.7.0 \
    github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.0 \
-   google.golang.org/grpc/cmd/protoc-gen-go-grpc
+   google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0
  
  
 WORKDIR /proto/google/api
