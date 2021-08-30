@@ -3,6 +3,7 @@ title: "Guides"
 linkTitle: "Guides"
 weight: 30
 aliases: [/docs/how-tos,/docs/concepts/workflow,/docs/concepts/modes]
+no_list: true
 ---
 
 | Skaffold Workflow | |

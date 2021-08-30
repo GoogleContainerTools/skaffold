@@ -2,6 +2,7 @@
 title: "Tutorials"
 linkTitle: "Tutorials"
 weight: 90
+no_list: true
 ---
 
 See the [Github Examples page](https://github.com/GoogleContainerTools/skaffold/tree/main/examples) for examples.
