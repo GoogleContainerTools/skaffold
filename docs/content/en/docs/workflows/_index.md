@@ -1,6 +1,6 @@
 ---
-title: "Working With Skaffold"
-linkTitle: "Working With Skaffold"
+title: "Guides"
+linkTitle: "Guides"
 weight: 30
 aliases: [/docs/how-tos,/docs/concepts/workflow,/docs/concepts/modes]
 ---
