@@ -1,4 +1,4 @@
-name: PR integration tests (darwin)
+name: PR unit tests (darwin)
 
 # Triggers the workflow on push or pull request events
 on: [push, pull_request]
@@ -8,7 +8,7 @@ permissions: read-all
 jobs:
 
   build:
-    name: PR integration tests (darwin)
+    name: PR unit tests (darwin)
     runs-on: macos-latest
     steps:
 
@@ -32,13 +32,12 @@ jobs:
         NON_DOCS_FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.sha }}| grep -v '^docs/' || true) 
         echo "NON_DOCS_FILES_CHANGED=${#NON_DOCS_FILES_CHANGED}" >> $GITHUB_ENV  # get the char len of diff output (used later)
 
-    - name: Make and install Skaffold binary from current PR
+    - name: Run unit tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        make
-        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
+        make coverage
 
-    - name: Run integration tests
+    - name: Run diagnostics tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-         make quicktest
+         make -f Makefile.diag coverage

@@ -1,4 +1,4 @@
-name: PR integration tests (darwin)
+name: PR linters, checks, and unit tests (linux)
 
 # Triggers the workflow on push or pull request events
 on: [push, pull_request]
@@ -8,10 +8,9 @@ permissions: read-all
 jobs:
 
   build:
-    name: PR integration tests (darwin)
-    runs-on: macos-latest
+    name: PR linters, checks, and unit tests (linux)
+    runs-on: ubuntu-latest
     steps:
-
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -23,6 +22,14 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Run make linters
+      run: |
+        make linters
+
+    - name: Run make checks
+      run: |
+        make checks
+
     # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     # NOTE: grep output is stored in env var with `|| true` as the run command cannot fail or action will fail
     - name: Check if only docs changes were made in this PR
@@ -32,13 +39,12 @@ jobs:
         NON_DOCS_FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.sha }}| grep -v '^docs/' || true) 
         echo "NON_DOCS_FILES_CHANGED=${#NON_DOCS_FILES_CHANGED}" >> $GITHUB_ENV  # get the char len of diff output (used later)
 
-    - name: Make and install Skaffold binary from current PR
+    - name: Run unit tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        make
-        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
+        make coverage
 
-    - name: Run integration tests
+    - name: Run diagnostics tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-         make quicktest
+        make coverage
