@@ -183,6 +183,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "wait-for-connection",
+		Usage:         "Blocks execution until the /v2/events gRPC/HTTP endpoint is hit",
+		Value:         &opts.WaitForConnection,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "event-log-file",
 		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true",
 		Hidden:        true,

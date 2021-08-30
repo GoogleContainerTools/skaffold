@@ -31,6 +31,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -128,6 +129,11 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	}
 	if err != nil {
 		return callback, fmt.Errorf("starting HTTP server: %w", err)
+	}
+
+	// Optionally pause execution until endpoint hit
+	if opts.WaitForConnection {
+		eventV2.WaitForConnection()
 	}
 
 	return callback, nil

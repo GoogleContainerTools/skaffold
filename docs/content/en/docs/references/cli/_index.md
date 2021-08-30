@@ -426,6 +426,7 @@ Options:
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
+      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -481,6 +482,7 @@ Env vars:
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
+* `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
@@ -678,6 +680,7 @@ Options:
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
+      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -733,6 +736,7 @@ Env vars:
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
+* `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
