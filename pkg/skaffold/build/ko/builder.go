@@ -16,6 +16,9 @@ limitations under the License.
 
 package ko
 
+// TODO(halvards)[08/31/2021]: Replace the latestV1 import path with the
+// real schema import path once the contents of ./schema has been added to
+// the real schema in pkg/skaffold/schema/latest/v1.
 import (
 	"context"
 	"path/filepath"
@@ -31,16 +34,27 @@ import (
 )
 
 func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact) (build.Interface, error) {
-	bo := buildOptions(a.KoArtifact.BaseImage, a.KoArtifact.Platforms, a.Workspace, a.KoArtifact.Dir)
+	bo := buildOptions(a)
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(baseImage string, platforms []string, workspace string, sourceDir string) *options.BuildOptions {
+func buildOptions(a *latestV1.Artifact) *options.BuildOptions {
+	workingDirectory := filepath.Join(a.Workspace, a.KoArtifact.Dir)
 	return &options.BuildOptions{
-		BaseImage:        baseImage,
+		BaseImage: a.KoArtifact.BaseImage,
+		BuildConfigs: map[string]build.Config{
+			a.Workspace: {
+				ID:      a.ImageName,
+				Dir:     workingDirectory,
+				Env:     a.KoArtifact.Env,
+				Flags:   a.KoArtifact.Flags,
+				Ldflags: a.KoArtifact.Ldflags,
+				Main:    a.KoArtifact.Target,
+			},
+		},
 		ConcurrentBuilds: 1,
-		Platform:         strings.Join(platforms, ","),
+		Platform:         strings.Join(a.KoArtifact.Platforms, ","),
 		UserAgent:        version.UserAgentWithClient(),
-		WorkingDirectory: filepath.Join(workspace, sourceDir),
+		WorkingDirectory: workingDirectory,
 	}
 }
