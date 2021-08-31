@@ -1,9 +1,10 @@
 name: "CodeQL"
 
 on:
-  # just run nightly as scan takes 35m
+  # run nightly rather than on every PR as scan takes 35m
   schedule:
-    - cron: '23 17 * * 3'
+    - cron: '23 4 * * *'
+  workflow_dispatch:
 
 permissions: read-all
 
@@ -27,6 +28,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-gopkgmod-${{ hashFiles('**/go.sum') }}
+        restore-keys: ${{ runner.os }}-gopkgmod-
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
