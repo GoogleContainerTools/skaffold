@@ -2,7 +2,7 @@
 title: "Tutorials"
 linkTitle: "Tutorials"
 weight: 90
-no_list: true
+simple_list: true
 ---
 
 See the [Github Examples page](https://github.com/GoogleContainerTools/skaffold/tree/main/examples) for examples.
@@ -23,10 +23,3 @@ When deploying to a remote cluster you have to point Skaffold to your default im
 ### What's next
 
 Take a look at our other guides:
-
-| Detailed Tutorials |
-|--------------------|
-| [Custom Build Script]({{< relref "/docs/tutorials/custom-builder" >}}) |
-| [Build Artifact Dependencies]({{< relref "/docs/tutorials/artifact-dependencies" >}}) |
-| [Override Buildpacks Run Image]({{< relref "/docs/tutorials/buildpacks-override" >}}) |
-| [Config Dependencies]({{< relref "/docs/tutorials/config-dependencies" >}}) |
