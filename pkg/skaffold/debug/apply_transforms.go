@@ -50,7 +50,7 @@ func findArtifact(image string, builds []graph.Artifact) *graph.Artifact {
 	return nil
 }
 
-// retrieveImageConfiguration retrieves the image container configuration for
+// RetrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
 func RetrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, insecureRegistries map[string]bool) (ImageConfiguration, error) {
 	// TODO: use the proper RunContext

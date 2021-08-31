@@ -24,7 +24,6 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -82,7 +81,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 	return &Deployer{
 		cfg:                d,
 		client:             client,
-		network:            fmt.Sprintf("skaffold-network-%s", uuid.New().String()),
+		network:            fmt.Sprintf("skaffold-network-%s", labeller.GetRunID()),
 		resources:          resources,
 		globalConfig:       cfg.GlobalConfig(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
@@ -128,16 +127,16 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 }
 
 // deploy creates a container in the local docker daemon from a build artifact's image.
-func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) error {
-	if !util.StrSliceContains(d.cfg.Images, b.ImageName) {
+func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Artifact) error {
+	if !util.StrSliceContains(d.cfg.Images, artifact.ImageName) {
 		// TODO(nkubala)[07/20/21]: should we error out in this case?
-		olog.Entry(ctx).Warnf("skipping deploy for image %s since it was not built by Skaffold", b.ImageName)
+		olog.Entry(ctx).Warnf("skipping deploy for image %s since it was not built by Skaffold", artifact.ImageName)
 		return nil
 	}
-	if container, found := d.tracker.ContainerForImage(b.ImageName); found {
-		olog.Entry(ctx).Debugf("removing old container %s for image %s", container.ID, b.ImageName)
+	if container, found := d.tracker.ContainerForImage(artifact.ImageName); found {
+		olog.Entry(ctx).Debugf("removing old container %s for image %s", container.ID, artifact.ImageName)
 		if err := d.client.Delete(ctx, out, container.ID); err != nil {
-			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, b.ImageName, err)
+			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, artifact.ImageName, err)
 		}
 		d.portManager.relinquishPorts(container.Name)
 	}
@@ -146,31 +145,45 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		return fmt.Errorf("docker compose not yet supported by skaffold")
 	}
 
-	ports, bindings, err := d.portManager.getPorts(b.ImageName, d.resources)
+	containerCfg, err := d.containerConfigFromImage(ctx, artifact.Tag)
 	if err != nil {
 		return err
 	}
 
-	containerCfg, err := d.containerConfigFromImage(ctx, b.Tag)
+	bindings, err := d.portManager.getPorts(artifact.ImageName, d.resources, containerCfg)
 	if err != nil {
 		return err
 	}
-	containerCfg.ExposedPorts = ports
 
-	initContainers, err := d.debugger.TransformImage(ctx, b, containerCfg)
+	initContainers, err := d.debugger.TransformImage(ctx, artifact, containerCfg)
 	if err != nil {
 		return errors.Wrap(err, "transforming image for debugging")
 	}
 
+	/*
+		When images are transformed, a set of init containers is sometimes generated which
+		provide necessary debugging files into the application container. These files are
+		shared via a volume created by the init container. We only need to create each init container
+		once, so we track the mounts on the DebugManager. These mounts are then added to the container
+		configuration before creating the container in the daemon.
+
+		NOTE: All tracked mounts (and created init containers) are assumed to be in the same Docker daemon,
+		configured implicitly on the system. The tracking on the DebugManager will need to be updated to account
+		for the active daemon if this is ever extended to support multiple active Docker daemons.
+	*/
 	for _, c := range initContainers {
 		if d.debugger.HasMount(c.Image) {
 			// skip duplication of init containers
 			continue
 		}
+		// pull the debug support image into the local daemon
 		if err := d.client.Pull(ctx, out, c.Image); err != nil {
 			return errors.Wrap(err, "pulling init container image")
 		}
-		id, err := d.client.Run(ctx, out, c, dockerutil.ContainerCreateOpts{})
+		// create the init container
+		id, err := d.client.Run(ctx, out, dockerutil.ContainerCreateOpts{
+			ContainerConfig: c,
+		})
 		if err != nil {
 			return errors.Wrap(err, "creating container in local docker")
 		}
@@ -181,35 +194,38 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) 
 		if len(r.Mounts) != 1 {
 			olog.Entry(ctx).Warnf("unable to retrieve mount from debug init container: debugging may not work correctly!")
 		}
+		// we know there is only one mount point, since we generated the init container config ourselves
 		d.debugger.AddSupportMount(c.Image, r.Mounts[0].Name)
 	}
 
-	containerName := d.getContainerName(ctx, b.ImageName)
+	containerName := d.getContainerName(ctx, artifact.ImageName)
+	// mount all debug support container volumes into the application container
 	var mounts []mount.Mount
 	for _, m := range d.debugger.SupportMounts() {
 		mounts = append(mounts, m)
 	}
 	opts := dockerutil.ContainerCreateOpts{
-		Name:     containerName,
-		Network:  d.network,
-		Bindings: bindings,
-		Mounts:   mounts,
+		Name:            containerName,
+		Network:         d.network,
+		Bindings:        bindings,
+		Mounts:          mounts,
+		ContainerConfig: containerCfg,
 	}
 
-	id, err := d.client.Run(ctx, out, containerCfg, opts)
+	id, err := d.client.Run(ctx, out, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating container in local docker")
 	}
-	d.TrackContainerFromBuild(b, tracker.Container{Name: containerName, ID: id})
+	d.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: id})
 	return nil
 }
 
-func (d *Deployer) containerConfigFromImage(ctx context.Context, image string) (*container.Config, error) {
-	config, _, err := d.client.ImageInspectWithRaw(ctx, image)
+func (d *Deployer) containerConfigFromImage(ctx context.Context, taggedImage string) (*container.Config, error) {
+	config, _, err := d.client.ImageInspectWithRaw(ctx, taggedImage)
 	if err != nil {
 		return nil, err
 	}
-	config.Config.Image = image // the client replaces this with an image ID. put back the originally provided tag
+	config.Config.Image = taggedImage // the client replaces this with an image ID. put back the originally provided tagged image
 	return config.Config, err
 }
 

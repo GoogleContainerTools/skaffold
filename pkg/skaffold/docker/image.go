@@ -63,12 +63,13 @@ type ContainerRun struct {
 }
 
 type ContainerCreateOpts struct {
-	Name        string
-	Network     string
-	VolumesFrom []string
-	Wait        bool
-	Bindings    nat.PortMap
-	Mounts      []mount.Mount
+	Name            string
+	Network         string
+	VolumesFrom     []string
+	Wait            bool
+	Bindings        nat.PortMap
+	Mounts          []mount.Mount
+	ContainerConfig *container.Config
 }
 
 // LocalDaemon talks to a local Docker API.
@@ -85,7 +86,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, cfg *container.Config, opts ContainerCreateOpts) (string, error)
+	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -211,14 +212,17 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns then container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, cfg *container.Config, opts ContainerCreateOpts) (string, error) {
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error) {
+	if opts.ContainerConfig == nil {
+		return "", fmt.Errorf("cannot call Run with empty container config")
+	}
 	hCfg := &container.HostConfig{
 		NetworkMode:  container.NetworkMode(opts.Network),
 		VolumesFrom:  opts.VolumesFrom,
 		PortBindings: opts.Bindings,
 		Mounts:       opts.Mounts,
 	}
-	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, opts.Name)
+	c, err := l.apiClient.ContainerCreate(ctx, opts.ContainerConfig, hCfg, nil, nil, opts.Name)
 	if err != nil {
 		return "", err
 	}

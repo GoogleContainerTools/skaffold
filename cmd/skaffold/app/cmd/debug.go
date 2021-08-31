@@ -50,6 +50,7 @@ func NewCmdDebug() *cobra.Command {
 }
 
 func runDebug(ctx context.Context, out io.Writer) error {
+	// TODO(nkubala)[08/31/21]: remove in favor of conditionally executing transforms on active command at runtime
 	manifest.AddTransform(debugging.ApplyDebuggingTransforms)
 	dockerdebug.EnableTransforms()
 
