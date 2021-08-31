@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
 const (
@@ -132,12 +133,24 @@ func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 
 	details := d.cleanupStatus(string(b))
 
-	ae := parseKubectlRolloutError(details, err)
-	if ae.ErrCode == proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED {
-		ae.Message = fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v: %v", d.deadline, err)
-	}
-
+	ae := parseKubectlRolloutError(details, d.deadline, err)
 	d.UpdateStatus(ae)
+	// send event update in check status.
+	event.ResourceStatusCheckEventCompleted(d.String(), ae)
+	eventV2.ResourceStatusCheckEventCompleted(d.String(), sErrors.V2fromV1(ae))
+	// if deployment is successfully rolled out, send pod success event to make sure
+	// all pod are marked as success in V2
+	// See https://github.com/GoogleCloudPlatform/cloud-code-vscode-internal/issues/5277
+	if ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS {
+		for _, pod := range d.pods {
+			eventV2.ResourceStatusCheckEventCompletedMessage(
+				pod.String(),
+				fmt.Sprintf("%s %s: running.\n", tabHeader, pod.String()),
+				protoV2.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+			)
+		}
+		return
+	}
 	if err := d.fetchPods(ctx); err != nil {
 		log.Entry(ctx).Debugf("pod statuses could not be fetched this time due to %s", err)
 	}
@@ -233,7 +246,7 @@ func (d *Deployment) cleanupStatus(msg string) string {
 // $kubectl logs testPod  -f
 // 2020/06/18 17:28:31 service is running
 // Killed: 9
-func parseKubectlRolloutError(details string, err error) proto.ActionableErr {
+func parseKubectlRolloutError(details string, deadline time.Duration, err error) proto.ActionableErr {
 	switch {
 	case err == nil && strings.Contains(details, rollOutSuccess):
 		return proto.ActionableErr{
@@ -253,7 +266,7 @@ func parseKubectlRolloutError(details string, err error) proto.ActionableErr {
 	case strings.Contains(err.Error(), killedErrMsg):
 		return proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
-			Message: msgKubectlKilled,
+			Message: fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v: %s", deadline, msgKubectlKilled),
 		}
 	default:
 		return proto.ActionableErr{

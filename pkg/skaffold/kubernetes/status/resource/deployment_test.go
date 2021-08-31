@@ -23,12 +23,15 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestDeploymentCheckStatus(t *testing.T) {
@@ -100,6 +103,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
 			r := NewDeployment("graph", "test", 0)
 			r.CheckStatus(context.Background(), &statusConfig{})
@@ -140,7 +144,7 @@ func TestParseKubectlError(t *testing.T) {
 			err:         errors.New("signal: killed"),
 			expectedAe: proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
-				Message: msgKubectlKilled,
+				Message: "received Ctrl-C or deployments could not stabilize within 10s: kubectl rollout status command interrupted\n",
 			},
 		},
 		{
@@ -162,7 +166,7 @@ func TestParseKubectlError(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			ae := parseKubectlRolloutError(test.details, test.err)
+			ae := parseKubectlRolloutError(test.details, 10*time.Second, test.err)
 			t.CheckDeepEqual(test.expectedAe, ae)
 		})
 	}
