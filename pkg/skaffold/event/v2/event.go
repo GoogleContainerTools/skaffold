@@ -51,6 +51,7 @@ var handler = newHandler()
 func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan *proto.Event),
+		wait:      make(chan bool, 1),
 	}
 	go func() {
 		for {
@@ -73,6 +74,7 @@ type eventHandler struct {
 
 	iteration               int
 	errorOnce               sync.Once
+	wait                    chan bool
 	state                   proto.State
 	stateLock               sync.Mutex
 	eventChan               chan *proto.Event
@@ -108,6 +110,11 @@ func Handle(event *proto.Event) error {
 		handler.handle(event)
 	}
 	return nil
+}
+
+// WaitForConnection will block execution until the server receives a connection
+func WaitForConnection() {
+	<-handler.wait
 }
 
 func (ev *eventHandler) getState() proto.State {
@@ -173,6 +180,10 @@ func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
+	select {
+	case handler.wait <- true:
+	default:
+	}
 	return ev.forEach(&ev.eventListeners, &ev.eventLog, &ev.logLock, callback)
 }
 
