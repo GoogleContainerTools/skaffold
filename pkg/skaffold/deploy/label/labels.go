@@ -62,7 +62,7 @@ func Apply(ctx context.Context, labels map[string]string, results []deploy.Artif
 	for _, res := range results {
 		err = nil
 		for i := 0; i < tries; i++ {
-			if err = updateRuntimeObject(ctx, dynClient, client.Discovery(), labels, res); err == nil {
+			if err = updateRuntimeObject(ctx, dynClient, client.Discovery(), labels, res, kubeContext); err == nil {
 				break
 			}
 			time.Sleep(sleeptime)
@@ -84,7 +84,7 @@ func addLabels(labels map[string]string, accessor metav1.Object) {
 	accessor.SetLabels(kv)
 }
 
-func updateRuntimeObject(ctx context.Context, client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res deploy.Artifact) error {
+func updateRuntimeObject(ctx context.Context, client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res deploy.Artifact, kubeContext string) error {
 	originalJSON, _ := json.Marshal(res.Obj)
 	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
@@ -111,7 +111,7 @@ func updateRuntimeObject(ctx context.Context, client dynamic.Interface, disco di
 			namespace = res.Namespace
 		}
 
-		ns, err := resolveNamespace(namespace)
+		ns, err := resolveNamespace(namespace, kubeContext)
 		if err != nil {
 			return fmt.Errorf("resolving namespace: %w", err)
 		}
@@ -130,7 +130,7 @@ func updateRuntimeObject(ctx context.Context, client dynamic.Interface, disco di
 	return nil
 }
 
-func resolveNamespace(ns string) (string, error) {
+func resolveNamespace(ns, kubeContext string) (string, error) {
 	if ns != "" {
 		return ns, nil
 	}
@@ -139,7 +139,7 @@ func resolveNamespace(ns string) (string, error) {
 		return "", fmt.Errorf("getting kubeconfig: %w", err)
 	}
 
-	current, present := cfg.Contexts[cfg.CurrentContext]
+	current, present := cfg.Contexts[kubeContext]
 	if present && current.Namespace != "" {
 		return current.Namespace, nil
 	}
