@@ -124,11 +124,11 @@ breadcrumb_disable = false
 		pre = "<i class='fab fa-github'></i>"
 		url = "https://github.com/GoogleContainerTools/skaffold"
 		icon = "fab fa-github"
-		weight = -100
+		weight = -300
 
 	[[menu.main]]
 		identifier = "slack"
 		pre = "<i class='fab fa-slack'></i>"
 		url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
 		icon = "fab fa-slack"
-		weight = -100
+		weight = -200
