@@ -160,10 +160,10 @@ func TestDockerDebug(t *testing.T) {
 		}
 
 		if !verifyEntrypointRewrite {
-			t.Error()
+			t.Error("couldn't verify rewritten container")
 		}
 		if !verifySupportContainer {
-			t.Error()
+			t.Error("couldn't verify support container was created")
 		}
 	})
 }

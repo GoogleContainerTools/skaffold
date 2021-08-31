@@ -19,10 +19,11 @@ package docker
 import (
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
+
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types/container"
 )
 
 func TestGetPorts(t *testing.T) {
