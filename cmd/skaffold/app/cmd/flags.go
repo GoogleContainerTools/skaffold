@@ -188,7 +188,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.WaitForConnection,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
 		IsEnum:        true,
 	},
 	{
