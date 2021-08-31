@@ -31,9 +31,12 @@ jobs:
 
     - uses: actions/cache@v2
       with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-gopkgmod-${{ hashFiles('**/go.sum') }}
-        restore-keys: ${{ runner.os }}-gopkgmod-
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
