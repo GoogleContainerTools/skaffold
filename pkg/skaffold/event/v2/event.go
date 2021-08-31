@@ -180,8 +180,9 @@ func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
-	if len(handler.wait) != cap(handler.wait) {
-		handler.wait <- true
+	select {
+	case handler.wait <- true:
+	default:
 	}
 	return ev.forEach(&ev.eventListeners, &ev.eventLog, &ev.logLock, callback)
 }
