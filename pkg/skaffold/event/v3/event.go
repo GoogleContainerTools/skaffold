@@ -427,7 +427,6 @@ func (ev *eventHandler) handleExec(event *protoV3.Event) {
 			ev.stateLock.Unlock()
 		}
 	case BuildStartedEvent:
-		fmt.Println("Build started event catch")
 		buildEvent := &protoV3.BuildStartedEvent{}
 		anypb.UnmarshalTo(event.Data, buildEvent, proto.UnmarshalOptions{})
 		fmt.Println(buildEvent)

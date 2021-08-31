@@ -66,7 +66,6 @@ func CacheCheckHit(artifact string) {
 }
 
 func BuildInProgress(artifact string) {
-	fmt.Println("Build Started event")
 	buildEvent := &protoV3.BuildStartedEvent{
 		Id:            artifact,
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
