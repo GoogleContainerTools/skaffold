@@ -136,8 +136,8 @@ func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 	ae := parseKubectlRolloutError(details, d.deadline, err)
 	d.UpdateStatus(ae)
 	// send event update in check status.
-	event.ResourceStatusCheckEventCompleted(d.String(), ae)
-	eventV2.ResourceStatusCheckEventCompleted(d.String(), sErrors.V2fromV1(ae))
+	event.ResourceStatusCheckEventUpdated(d.String(), ae)
+	eventV2.ResourceStatusCheckEventUpdated(d.String(), sErrors.V2fromV1(ae))
 	// if deployment is successfully rolled out, send pod success event to make sure
 	// all pod are marked as success in V2
 	// See https://github.com/GoogleCloudPlatform/cloud-code-vscode-internal/issues/5277
