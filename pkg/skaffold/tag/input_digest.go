@@ -27,7 +27,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -89,13 +88,14 @@ func fileHasher(path string, workspacePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Always use the file path within workspace when calculating hash.
+	// Always try to use the file path relative to workspace when calculating hash.
 	// This will ensure we will always get the same hash independent of workspace location and hierarchy.
-	if workspacePath == "." {
-		h.Write([]byte(filepath.Clean(path)))
-	} else {
-		h.Write([]byte(filepath.Clean(strings.Replace(path, workspacePath+string(os.PathSeparator), "", 1))))
+	pathToHash, err := filepath.Rel(workspacePath, path)
+	if err != nil {
+		pathToHash = path
 	}
+	h.Write([]byte(pathToHash))
+
 	if fi.Mode().IsRegular() {
 		f, err := os.Open(path)
 		if err != nil {
