@@ -1,0 +1,549 @@
+syntax = "proto3";
+package proto.v3;
+option go_package = "github.com/GoogleContainerTools/skaffold/proto/v3";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+
+import public "enums/enums.proto";
+
+message StateResponse {
+    State state = 1;
+}
+
+message Response {
+    string msg = 1;
+}
+
+message Request {
+    string name = 1;
+}
+
+// `State` represents the current state of the Skaffold components
+message State {
+    BuildState buildState = 1;
+    DeployState deployState = 2;
+    map<int32, PortForwardEvent> forwardedPorts = 3;
+    StatusCheckState statusCheckState = 4;
+    FileSyncState fileSyncState = 5;
+    repeated DebuggingContainerState debuggingContainers= 6;
+    Metadata metadata = 7;
+    TestState testState = 8;
+    RenderState renderState = 9;
+}
+
+message Metadata {
+    BuildMetadata build = 1;
+    DeployMetadata deploy = 2;
+    TestMetadata test = 3;
+    string runID = 4;
+    RenderMetadata render = 5;
+    // Additional key value pairs to describe the build pipeline
+    map<string, string> additional = 99;
+}
+
+message BuildMetadata {
+  message Artifact {
+      enums.BuilderType type = 1;
+      string name = 2; // image name
+      string context = 3; // skaffold.yaml context field
+      string dockerfile = 4; // skaffold.yaml path to dockerfile. Not guaranteed to be filled
+  }
+  repeated Artifact artifacts = 1;
+  enums.BuildType type = 2;
+  // Additional key value pairs to describe the build pipeline
+  map<string, string> additional = 99;
+}
+
+// TestMetadata describes the test pipeline
+message TestMetadata {
+    message Tester {
+        enums.TesterType type = 1;
+        int32 count = 2;
+    }
+    repeated Tester Testers = 1;
+}
+
+
+// RenderMetadata describes the render pipeline
+message RenderMetadata {
+    message Renderer {
+        enums.RenderType type = 1;
+        int32 count = 2;
+    }
+    repeated Renderer Renderers = 1;
+}
+
+message DeployMetadata {
+    message Deployer {
+        enums.DeployerType type = 1;
+        int32 count = 2;
+    }
+    repeated Deployer deployers = 1;
+    enums.ClusterType cluster = 2;
+}
+
+// `BuildState` maps Skaffold artifacts to their current build states
+message BuildState {
+    // A map of `artifact name -> build-state`.
+    // Artifact name is defined in the `skaffold.yaml`.
+    // The `build-state` can be: <br>
+    // - `"NotStarted"`: not yet started <br>
+    // - `"InProgress"`: build started <br>
+    // - `"Complete"`: build succeeded <br>
+    // - `"Failed"`: build failed
+    map<string, string> artifacts = 1;
+    bool autoTrigger = 2;
+    enums.StatusCode statusCode = 3;
+}
+
+// `TestState` describes the current state of the test
+message TestState {
+    // Status of the current test
+    string status = 1;
+    // Teststate status code
+    enums.StatusCode statusCode = 2;
+}
+
+// `RenderState` describes the current state of the render
+message RenderState {
+    // Status of the current render
+    string status = 1;
+    // Renderstate status code
+    enums.StatusCode statusCode = 2;
+}
+
+// `DeployState` describes the status of the current deploy
+message DeployState {
+    string status = 1;
+    bool autoTrigger = 2;
+    enums.StatusCode statusCode = 3;
+}
+
+// `StatusCheckState` describes the state of status check of current deployed resources.
+message StatusCheckState {
+    string status = 1;
+    // A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.
+    // The `status-check-state` can be <br>
+    // - `"NotStarted"`: indicates that `status-check` has just started. <br>
+    // - `"InProgress"`: InProgress is sent after every resource check is complete. <br>
+    // - `"Succeeded"`:
+    // - `"Failed"`:
+    map<string, string> resources = 2;
+    // StatusCheck statusCode
+    enums.StatusCode statusCode = 3;
+
+}
+
+// `FileSyncState` contains the status of the current file sync
+message FileSyncState {
+    string status = 1;
+    bool autoTrigger = 2;
+}
+
+// `Event` describes an event in the Skaffold process.
+// It is a wrapper on the top of other events like MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
+message Event {
+    string specversion = 1;
+    string type = 2;
+    string source = 3;
+    string id = 4;
+    google.protobuf.Timestamp time = 5;
+    google.protobuf.Any data = 6;
+    string datacontenttype = 7;
+}
+
+// `TerminationEvent` marks the end of the skaffold session
+message TerminationEvent {
+    string status = 1; // status oneof: Completed or Failed
+    ActionableErr err = 2; // actionable error message
+}
+
+// `ActionableErr` defines an error that occurred along with an optional list of suggestions
+message ActionableErr {
+    enums.StatusCode errCode = 1; // error code representing the error
+    string message = 2; // message describing the error.
+    repeated Suggestion suggestions = 3; // list of suggestions
+}
+
+// `MetaEvent` provides general information regarding Skaffold
+message MetaEvent {
+    string entry = 1; // entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"`
+    Metadata metadata = 2; // Metadata describing skaffold pipeline
+}
+
+// `SkaffoldLogEvent` represents a piece of output that comes from a skaffold run, for example: "Generating tags...", "Step 1/3 : FROM gcr.io/distroless/base"
+message SkaffoldLogEvent {
+    reserved 3;
+    string task_id = 1; // id of the task of skaffold that this log came from
+    string subtask_id = 2; // id of the subtask that the log came from
+    // string origin = 3; // REMOVED: which tool the output came from ex: skaffold, docker
+    enums.LogLevel level = 4; // log level
+    string message = 5; // contents of the log
+}
+
+// `ApplicationLogEvent` represents a log that comes from one of the pods running in the user's application.
+message ApplicationLogEvent {
+    string containerName = 1; // container that the log came from
+    string podName = 2; // pod that the log came from
+    string prefix = 3;
+    string message = 4; // contents of the log
+    string richFormattedMessage = 5; // full message that skaffold writes, with format and color
+}
+
+// `TaskStartedEvent` represent the started phase of a skaffold session.
+// When a phase starts, an actionable error will be attached
+message TaskStartedEvent {
+    string id = 1; // will be used by SkaffoldLog to link it to a task. Follows the form "{task_name}-{iteration-number}"
+    string task = 2; // task name oneof: Tag, Build, Test, Deploy, StatusCheck, PortForward, DevLoop
+    string description = 3; // additional more descriptive text for the task
+    int32 iteration = 4; // which dev/debug iteration is currently running
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+// `TaskCompletedEvent` represent the event which is triggered when Task is completed.
+// If a phase completed, an actionable error will be attached
+message TaskCompletedEvent {
+    string id = 1; // will be used by SkaffoldLog to link it to a task. Follows the form "{task_name}-{iteration-number}"
+    string task = 2; // task name oneof: Tag, Build, Test, Deploy, StatusCheck, PortForward, DevLoop
+    string description = 3; // additional more descriptive text for the task
+    int32 iteration = 4; // which dev/debug iteration is currently running
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+// `TaskFailedEvent` represent the event which is triggered when Task is completed.
+// If a phase fails, an actionable error will be attached
+message TaskFailedEvent {
+    string id = 1; // will be used by SkaffoldLog to link it to a task. Follows the form "{task_name}-{iteration-number}"
+    string task = 2; // task name oneof: Tag, Build, Test, Deploy, StatusCheck, PortForward, DevLoop
+    string description = 3; // additional more descriptive text for the task
+    int32 iteration = 4; // which dev/debug iteration is currently running
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+// `BuildStartedEvent` describes the event that is triggered at the starting of the build
+// When the build starts, an error will be attached to the event.
+message BuildStartedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string artifact = 3; // artifact name
+    string step = 4; // which step of the build for the artifact oneof: Cache, Build, Push
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+// `BuildFailedEvent` describes the event that is triggered when the build fails
+// If the build fails, an error will be attached to the event.
+message BuildFailedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string artifact = 3; // artifact name
+    string step = 4; // which step of the build for the artifact oneof: Cache, Build, Push
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+// `BuildSucceededEvent` describes the event that is triggered at the build is completed successfully
+// If the build succeeded, an error will be attached to the event.
+message BuildSucceededEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string artifact = 3; // artifact name
+    string step = 4; // which step of the build for the artifact oneof: Cache, Build, Push
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+// `BuildCancelledEvent` describes the event that is triggered when Build is cancelled
+// If the build is cancelled, an error will be attached to the event.
+message BuildCancelledEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string artifact = 3; // artifact name
+    string step = 4; // which step of the build for the artifact oneof: Cache, Build, Push
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+// `TestFailedEvent` represents the event that is triggered when Test fails, and is emitted by Skaffold
+message TestFailedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // test status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `TestFailedEvent` represents the event that is triggered when Test starts, and is emitted by Skaffold
+message TestStartedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // test status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `TestSucceededEvent` represents the event that is triggered when Test passes successfully, and is emitted by Skaffold
+message TestSucceededEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // test status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `RenderStartedEvent` represents the renderer event that is triggered at the start of the event, and is emitted by Skaffold
+message RenderStartedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // render status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `RenderFailedEvent` represents the renderer event that is triggered when the renderer fails, and is emitted by Skaffold
+message RenderFailedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // render status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `RenderSucceededEvent` represents the renderer event that is triggered when the renderer succeeded, and is emitted by Skaffold
+message RenderSucceededEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // render status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `DeployStartedEvent` represents the event that is triggered at the start of deploy, and is emitted by Skaffold
+message DeployStartedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // deployment status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+// `DeployFailedEvent` represents the event that is triggered when the deploy fails, and is emitted by Skaffold
+message DeployFailedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // deployment status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `DeploySucceededEvent` represents the event that is triggered when the deploy succeeded, and is emitted by Skaffold
+message DeploySucceededEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // deployment status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// StatusCheckStartedEvent indicates starts of each kubernetes deployment.
+message StatusCheckStartedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string resource = 3; // id of the subtask which will be used in SkaffoldLog
+    string status = 4; // id of the task of skaffold that this event came from
+    string message = 5;
+    enums.StatusCode statusCode = 6;
+    ActionableErr actionableErr = 7; // actionable error message
+}
+
+// StatusCheckStartedEvent indicates the failure of each kubernetes deployment.
+// Skaffold polls for resource status every 0.5 second. If the resource status changes to “Failed”
+// will be sent with the new status.
+message StatusCheckFailedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string resource = 3; // id of the subtask which will be used in SkaffoldLog
+    string status = 4; // id of the task of skaffold that this event came from
+    string message = 5;
+    enums.StatusCode statusCode = 6;
+    ActionableErr actionableErr = 7; // actionable error message
+}
+
+// StatusCheckSucceededEvent indicates the successful completion of each kubernetes deployment.
+// Skaffold polls for resource status every 0.5 second. If the status changes to "Successeed"
+// will be sent with the new status.
+message StatusCheckSucceededEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string resource = 3; // id of the subtask which will be used in SkaffoldLog
+    string status = 4; // id of the task of skaffold that this event came from
+    string message = 5;
+    enums.StatusCode statusCode = 6;
+    ActionableErr actionableErr = 7; // actionable error message
+}
+
+// PortForwardEvent Event describes each port forwarding event.
+message PortForwardEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    int32 localPort = 3; // local port for forwarded resource
+    string podName = 4; // pod name if port forwarded resourceType is Pod
+    string containerName = 5; // container name if specified in the kubernetes spec
+    string namespace = 6; // the namespace of the resource to port forward.
+    string portName = 7;
+    string resourceType = 8; // resource type e.g. "pod", "service".
+    string resourceName = 9; // name of the resource to forward.
+    string address = 10; // address on which to bind
+    IntOrString targetPort = 11; // target port is the resource port that will be forwarded.
+}
+
+// FileSyncEvent describes the sync status.
+message FileSyncEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    int32 fileCount = 3; // number of files synced
+    string image = 4; // the container image to which files are sycned.
+    string status = 5; // status of file sync. one of: Not Started, InProgress, Succeeded, Failed.
+    ActionableErr actionableErr = 6; // actionable error message
+}
+
+message DebuggingContainerState {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // the container status oneof: Started, Terminated
+    string podName = 4; // the pod name with the debugging container
+    string containerName = 5; // the name of the container configured for debugging
+    string namespace = 6; // the namespace of the debugging container
+
+    string artifact = 7; // the corresponding artifact's image name
+    string runtime = 8; // the detected language runtime
+    string workingDir = 9; // the working directory in the container image
+    map<string,uint32> debugPorts = 10; // the exposed debugging-related ports
+}
+
+// DebuggingContainerEvent is raised when a debugging container is started
+message DebuggingContainerStartedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // the container status oneof: Started, Terminated
+    string podName = 4; // the pod name with the debugging container
+    string containerName = 5; // the name of the container configured for debugging
+    string namespace = 6; // the namespace of the debugging container
+
+    string artifact = 7; // the corresponding artifact's image name
+    string runtime = 8; // the detected language runtime
+    string workingDir = 9; // the working directory in the container image
+    map<string,uint32> debugPorts = 10; // the exposed debugging-related ports
+}
+
+// DebuggingContainerTerminatedEvent is raised when a debugging container is terminated
+message DebuggingContainerTerminatedEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // the container status oneof: Started, Terminated
+    string podName = 4; // the pod name with the debugging container
+    string containerName = 5; // the name of the container configured for debugging
+    string namespace = 6; // the namespace of the debugging container
+
+    string artifact = 7; // the corresponding artifact's image name
+    string runtime = 8; // the detected language runtime
+    string workingDir = 9; // the working directory in the container image
+    map<string,uint32> debugPorts = 10; // the exposed debugging-related ports
+}
+
+message UserIntentRequest {
+    Intent intent = 1;
+}
+
+message TriggerRequest {
+  TriggerState state = 1;
+}
+
+// TriggerState represents trigger state for a given phase.
+message TriggerState {
+  oneof val {
+    bool enabled = 1; // enable or disable a trigger state
+  }
+}
+
+// Intent represents user intents for a given phase.
+message Intent {
+    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
+    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
+    bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
+}
+
+// Suggestion defines the action a user needs to recover from an error.
+message Suggestion {
+    enums.SuggestionCode suggestionCode = 1; // code representing a suggestion
+    string action = 2; // action represents the suggestion action
+}
+
+// IntOrString is a type that can hold an int32 or a string.
+message IntOrString {
+    int32 type = 1; // type of stored value
+    int32 intVal = 2; // int value
+    string strVal = 3; // string value
+}
+
+// Describes all the methods for the Skaffold API
+service SkaffoldV3Service {
+
+    // Returns the state of the current Skaffold execution
+    rpc GetState (google.protobuf.Empty) returns (State) {
+        option (google.api.http) = {
+            get: "/v3/state"
+        };
+    }
+
+    // Returns all the events of the current Skaffold execution from the start
+    rpc Events (google.protobuf.Empty) returns (stream Event) {
+        option (google.api.http) = {
+            get: "/v3/events"
+        };
+    }
+
+    // Returns all the user application logs of the current Skaffold execution
+    rpc ApplicationLogs (google.protobuf.Empty) returns (stream Event) {
+        option (google.api.http) = {
+            get: "/v3/applicationLogs"
+        };
+    }
+
+    // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
+    rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v3/execute"
+            body: "intent"
+        };
+    }
+
+    // Allows for enabling or disabling automatic build trigger
+    rpc AutoBuild (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v3/build/auto_execute"
+            body: "state"
+        };
+    }
+
+    // Allows for enabling or disabling automatic sync trigger
+    rpc AutoSync (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v3/sync/auto_execute"
+            body: "state"
+        };
+    }
+
+    // Allows for enabling or disabling automatic deploy trigger
+    rpc AutoDeploy (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v3/deploy/auto_execute"
+            body: "state"
+        };
+    }
+
+    // EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
+    rpc Handle (Event) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v3/events/handle"
+            body: "*"
+        };
+    }
+
+}

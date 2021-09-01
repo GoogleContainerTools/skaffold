@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -141,7 +142,7 @@ func TestWithEventContext(t *testing.T) {
 			expected: skaffoldWriter{
 				MainWriter:  ioutil.Discard,
 				EventWriter: eventV2.NewLogger(constants.Test, "2"),
-			},
+				EventWriterV3: eventV3.NewLogger(constants.Test, "2"),			},
 		},
 		{
 			name:     "non skaffoldWriter returns same",

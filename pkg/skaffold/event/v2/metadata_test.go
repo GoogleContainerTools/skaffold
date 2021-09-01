@@ -150,7 +150,7 @@ func TestEmptyState(t *testing.T) {
 
 			// sort and compare
 			sort.Slice(artifacts, func(i, j int) bool { return artifacts[i].Type < artifacts[j].Type })
-			t.CheckDeepEqual(metadata, test.expected)
+			t.CheckDeepEqualProtoMessage(metadata, test.expected)
 		})
 	}
 }

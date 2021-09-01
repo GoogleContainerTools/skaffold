@@ -25,15 +25,17 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 )
 
 const timestampFormat = "2006-01-02 15:04:05"
 
 type skaffoldWriter struct {
-	MainWriter  io.Writer
-	EventWriter io.Writer
-	task        constants.Phase
-	subtask     string
+	MainWriter    io.Writer
+	EventWriter   io.Writer
+	EventWriterV3 io.Writer
+	task          constants.Phase
+	subtask       string
 
 	timestamps bool
 }
@@ -60,6 +62,7 @@ func (s skaffoldWriter) Write(p []byte) (int, error) {
 	written += n
 
 	s.EventWriter.Write(p)
+	s.EventWriterV3.Write(p)
 
 	return written, nil
 }
@@ -70,9 +73,10 @@ func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps boo
 	}
 
 	return skaffoldWriter{
-		MainWriter:  SetupColors(out, defaultColor, forceColors),
-		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1"),
-		timestamps:  timestamps,
+		MainWriter:    SetupColors(out, defaultColor, forceColors),
+		EventWriter:   eventV2.NewLogger(constants.DevLoop, "-1"),
+		EventWriterV3: eventV3.NewLogger(constants.DevLoop, "-1"),
+		timestamps:    timestamps,
 	}
 }
 
@@ -106,11 +110,12 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) io.Writer {
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{
-			MainWriter:  sw.MainWriter,
-			EventWriter: eventV2.NewLogger(phase, subtaskID),
-			task:        phase,
-			subtask:     subtaskID,
-			timestamps:  sw.timestamps,
+			MainWriter:    sw.MainWriter,
+			EventWriter:   eventV2.NewLogger(phase, subtaskID),
+			EventWriterV3: eventV3.NewLogger(phase, subtaskID),
+			task:          phase,
+			subtask:       subtaskID,
+			timestamps:    sw.timestamps,
 		}
 	}
 

@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -140,6 +141,7 @@ func (p *ForwarderManager) Start(ctx context.Context, out io.Writer) error {
 // Start begins all forwarders managed by the ForwarderManager
 func (p *ForwarderManager) start(ctx context.Context, out io.Writer) error {
 	eventV2.TaskInProgress(constants.PortForward, "Port forward URLs")
+	eventV3.TaskInProgress(constants.PortForward, "Port forward URLs")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Start")
 	defer endTrace()
 
@@ -147,12 +149,14 @@ func (p *ForwarderManager) start(ctx context.Context, out io.Writer) error {
 	for _, f := range p.forwarders {
 		if err := f.Start(ctx, out, *p.namespaces); err != nil {
 			eventV2.TaskFailed(constants.PortForward, err)
+			eventV3.TaskFailed(constants.PortForward, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
 	}
 
 	eventV2.TaskSucceeded(constants.PortForward)
+	eventV3.TaskSucceeded(constants.PortForward)
 	return nil
 }
 

@@ -4,6 +4,10 @@
     "version": "version not set",
     "description": "v1/skaffold.proto"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],
@@ -14,18 +18,12 @@
     "/v1/build/auto_execute": {
       "put": {
         "summary": "Allows for enabling or disabling automatic build trigger",
-        "operationId": "SkaffoldService_AutoBuild",
+        "operationId": "AutoBuild",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -47,18 +45,12 @@
     "/v1/deploy/auto_execute": {
       "put": {
         "summary": "Allows for enabling or disabling automatic deploy trigger",
-        "operationId": "SkaffoldService_AutoDeploy",
+        "operationId": "AutoDeploy",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -80,27 +72,12 @@
     "/v1/event_log": {
       "get": {
         "summary": "DEPRECATED. Events should be used instead.\nTODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)",
-        "operationId": "SkaffoldService_EventLog",
+        "operationId": "EventLog",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/protoLogEntry"
-                },
-                "error": {
-                  "$ref": "#/definitions/runtimeStreamError"
-                }
-              },
-              "description": "Stream result of protoLogEntry"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
+              "$ref": "#/x-stream-definitions/protoLogEntry"
             }
           }
         },
@@ -2524,27 +2501,12 @@
     "/v1/events": {
       "get": {
         "summary": "Returns all the events of the current Skaffold execution from the start",
-        "operationId": "SkaffoldService_Events",
+        "operationId": "Events",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/protoLogEntry"
-                },
-                "error": {
-                  "$ref": "#/definitions/runtimeStreamError"
-                }
-              },
-              "description": "Stream result of protoLogEntry"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
+              "$ref": "#/x-stream-definitions/protoLogEntry"
             }
           }
         },
@@ -2556,18 +2518,12 @@
     "/v1/events/handle": {
       "post": {
         "summary": "EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.",
-        "operationId": "SkaffoldService_Handle",
+        "operationId": "Handle",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -2589,18 +2545,12 @@
     "/v1/execute": {
       "post": {
         "summary": "Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
-        "operationId": "SkaffoldService_Execute",
+        "operationId": "Execute",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -2622,18 +2572,12 @@
     "/v1/state": {
       "get": {
         "summary": "Returns the state of the current Skaffold execution",
-        "operationId": "SkaffoldService_GetState",
+        "operationId": "GetState",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/protoState"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -2645,18 +2589,12 @@
     "/v1/sync/auto_execute": {
       "put": {
         "summary": "Allows for enabling or disabling automatic sync trigger",
-        "operationId": "SkaffoldService_AutoSync",
+        "operationId": "AutoSync",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -3074,7 +3012,8 @@
           "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"Not started\"`: not yet started <br>\n- `\"In progress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
         },
         "autoTrigger": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         },
         "statusCode": {
           "$ref": "#/definitions/enumsStatusCode"
@@ -3155,7 +3094,8 @@
           "type": "string"
         },
         "autoTrigger": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         },
         "statusCode": {
           "$ref": "#/definitions/enumsStatusCode"
@@ -3250,7 +3190,8 @@
           "type": "string"
         },
         "autoTrigger": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`FileSyncState` contains the status of the current file sync"
@@ -3276,13 +3217,16 @@
       "type": "object",
       "properties": {
         "build": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         },
         "sync": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         },
         "deploy": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "Intent represents user intents for a given phase."
@@ -3543,7 +3487,8 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "TriggerState represents trigger state for a given phase."
@@ -3557,27 +3502,6 @@
         "value": {
           "type": "string",
           "format": "byte"
-        }
-      }
-    },
-    "runtimeError": {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "string"
-        },
-        "code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "message": {
-          "type": "string"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protobufAny"
-          }
         }
       }
     },
@@ -3605,6 +3529,20 @@
           }
         }
       }
+    }
+  },
+  "x-stream-definitions": {
+    "protoLogEntry": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/protoLogEntry"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "description": "Stream result of protoLogEntry"
     }
   }
 }

@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -132,6 +133,18 @@ func (pm *PortManager) containerPortForwardEvents(out io.Writer) {
 		)
 
 		eventV2.PortForwarded(
+			entry.localPort,
+			entry.remotePort,
+			"",              // no pod name
+			entry.container, // container name
+			"",              // no namespace
+			"",              // no port name
+			"container",
+			entry.resourceName,
+			entry.resourceAddress,
+		)
+
+		eventV3.PortForwarded(
 			entry.localPort,
 			entry.remotePort,
 			"",              // no pod name

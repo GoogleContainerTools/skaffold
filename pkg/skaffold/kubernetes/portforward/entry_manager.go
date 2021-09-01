@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -44,6 +45,16 @@ var (
 	}
 	portForwardEventV2 = func(entry *portForwardEntry) {
 		eventV2.PortForwarded(
+			int32(entry.localPort),
+			entry.resource.Port,
+			entry.podName,
+			entry.containerName,
+			entry.resource.Namespace,
+			entry.portName,
+			string(entry.resource.Type),
+			entry.resource.Name,
+			entry.resource.Address)
+		eventV3.PortForwarded(
 			int32(entry.localPort),
 			entry.resource.Port,
 			entry.podName,

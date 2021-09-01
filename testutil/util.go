@@ -30,7 +30,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/testing/protocmp"
 	"k8s.io/apimachinery/pkg/watch"
+
 	fake_testing "k8s.io/client-go/testing"
 )
 
@@ -129,6 +131,11 @@ func (t *T) CheckEmpty(actual interface{}) {
 func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
 	CheckDeepEqual(t.T, expected, actual, opts...)
+}
+
+func (t *T) CheckDeepEqualProtoMessage(expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
+	CheckDeepEqualProtoMessage(t.T, expected, actual, opts...)
 }
 
 func (t *T) CheckErrorAndDeepEqual(shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
@@ -266,6 +273,16 @@ func CheckNotContains(t *testing.T, excluded, actual string) {
 }
 
 func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
+	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
+		t.Errorf("%T differ (-got, +want): %s", expected, diff)
+		return
+	}
+}
+
+func CheckDeepEqualProtoMessage(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
+	ops := protocmp.Transform()
+	opts = append(opts, ops)
 	t.Helper()
 	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
