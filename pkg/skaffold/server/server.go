@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
@@ -99,8 +98,14 @@ func SetAutoSyncCallback(callback func(bool)) {
 func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	emptyCallback := func() error { return nil }
 	if !opts.EnableRPC && opts.RPCPort.Value() == nil && opts.RPCHTTPPort.Value() == nil {
-		logrus.Debug("skaffold API not starting as it's not requested")
+		log.Entry(context.TODO()).Debug("skaffold API not starting as it's not requested")
 		return emptyCallback, nil
+	}
+
+	if opts.EnableRPC && opts.RPCPort.Value() == nil && opts.RPCHTTPPort.Value() == nil {
+		log.Entry(context.TODO()).Warn("--enable-rpc is specified without --rpc-port or --rpc-http-port. " +
+			"Skaffold will choose random port numbers for the API endpoints (run with --verbosity=info) " +
+			"while --enable-rpc flag is being deprecated.")
 	}
 
 	preferredGRPCPort := 0 // bind to an available port atomically
