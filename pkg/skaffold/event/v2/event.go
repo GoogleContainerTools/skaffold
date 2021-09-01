@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -43,8 +44,6 @@ const (
 	Succeeded  = "Succeeded"
 	Terminated = "Terminated"
 	Canceled   = "Canceled"
-
-	SubtaskIDNone = "-1"
 )
 
 var handler = newHandler()
@@ -52,6 +51,7 @@ var handler = newHandler()
 func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan *proto.Event),
+		wait:      make(chan bool, 1),
 	}
 	go func() {
 		for {
@@ -73,6 +73,8 @@ type eventHandler struct {
 	cfg                 Config
 
 	iteration               int
+	errorOnce               sync.Once
+	wait                    chan bool
 	state                   proto.State
 	stateLock               sync.Mutex
 	eventChan               chan *proto.Event
@@ -108,6 +110,11 @@ func Handle(event *proto.Event) error {
 		handler.handle(event)
 	}
 	return nil
+}
+
+// WaitForConnection will block execution until the server receives a connection
+func WaitForConnection() {
+	<-handler.wait
 }
 
 func (ev *eventHandler) getState() proto.State {
@@ -173,6 +180,10 @@ func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
+	select {
+	case handler.wait <- true:
+	default:
+	}
 	return ev.forEach(&ev.eventListeners, &ev.eventLog, &ev.logLock, callback)
 }
 
@@ -314,6 +325,7 @@ func TaskInProgress(task constants.Phase, description string) {
 
 func TaskFailed(task constants.Phase, err error) {
 	ae := sErrors.ActionableErrV2(handler.cfg, task, err)
+	handler.sendErrorMessage(task, constants.SubtaskIDNone, err)
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:            fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:          string(task),
@@ -354,6 +366,23 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &event,
 		},
+	})
+}
+
+// SendErrorMessageOnce sends an error message to skaffold log events stream only once.
+// Use it if you want to avoid sending duplicate error messages.
+func SendErrorMessageOnce(task constants.Phase, subtaskID string, err error) {
+	handler.sendErrorMessage(task, subtaskID, err)
+}
+
+func (ev *eventHandler) sendErrorMessage(task constants.Phase, subtask string, err error) {
+	ev.errorOnce.Do(func() {
+		ev.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+			TaskId:    fmt.Sprintf("%s-%d", task, handler.iteration),
+			SubtaskId: subtask,
+			Message:   fmt.Sprintf("%s\n", err),
+			Level:     enums.LogLevel_STANDARD,
+		})
 	})
 }
 

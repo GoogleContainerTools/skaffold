@@ -17,6 +17,8 @@ limitations under the License.
 package analyze
 
 import (
+	"context"
+
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 )
 
@@ -26,7 +28,7 @@ type helmAnalyzer struct {
 	chartPaths []string
 }
 
-func (h *helmAnalyzer) analyzeFile(filePath string) error {
+func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
 	if deploy.IsHelmChart(filePath) {
 		h.chartPaths = append(h.chartPaths, filePath)
 	}

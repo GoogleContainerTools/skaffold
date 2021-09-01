@@ -23,10 +23,11 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var traceEnabled bool
@@ -59,7 +60,7 @@ func InitTraceFromEnvVar(opts ...TraceExporterOption) (trace.TracerProvider, fun
 		}
 	})
 	if tracerInitErr != nil {
-		logrus.Debugf("error initializing tracing: %v", tracerInitErr)
+		log.Entry(context.TODO()).Debugf("error initializing tracing: %v", tracerInitErr)
 	}
 	return tracerProvider, tracerShutdown, tracerInitErr
 }

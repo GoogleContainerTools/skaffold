@@ -24,6 +24,7 @@ import (
 
 func NewCmdCredits() *cobra.Command {
 	return NewCmd("credits").
+		Hidden(). // internal command
 		WithDescription("Export third party notices to given path (./skaffold-credits by default)").
 		WithExample("export third party licenses to ~/skaffold-credits", "credits -d ~/skaffold-credits").
 		WithFlags([]*Flag{

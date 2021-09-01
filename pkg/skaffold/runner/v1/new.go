@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -32,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -42,7 +41,7 @@ import (
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.InitializeState(runCtx)
 	event.LogMetaEvent()
 	eventV2.InitializeState(runCtx)
@@ -64,7 +63,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV1.Pipeline) (build.PipelineBuilder, error) {
-		return runner.GetBuilder(runCtx, store, sourceDependencies, p)
+		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -74,14 +73,14 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return isImageLocal(runCtx, imageName)
 	}
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels(), runCtx.GetRunID())
-	tester, err := getTester(runCtx, isLocalImage)
+	tester, err := getTester(ctx, runCtx, isLocalImage)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
 
 	var deployer deploy.Deployer
-	deployer, err = runner.GetDeployer(runCtx, labeller)
+	deployer, err = runner.GetDeployer(ctx, runCtx, labeller)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
@@ -97,7 +96,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			return nil, err
 		}
 
-		testDependencies, err := tester.TestDependencies(artifact)
+		testDependencies, err := tester.TestDependencies(ctx, artifact)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
@@ -105,7 +104,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, g, store)
+	artifactCache, err := cache.NewCache(ctx, runCtx, isLocalImage, depLister, g, store)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("initializing cache: %w", err)
@@ -128,7 +127,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	return &SkaffoldRunner{
 		Builder:            *rbuilder,
 		Pruner:             runner.Pruner{Builder: builder},
-		Tester:             tester,
+		tester:             tester,
 		deployer:           deployer,
 		monitor:            monitor,
 		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
@@ -158,7 +157,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 	// give the server a callback to set the intent value when a user request is received
 	singleTriggerCallback(func() {
 		if !getAutoTrigger() { // if auto trigger is disabled, we're in manual mode
-			logrus.Debugf("%s intent received, calling back to runner", triggerName)
+			log.Entry(context.TODO()).Debugf("%s intent received, calling back to runner", triggerName)
 			c <- true
 			setIntent(true)
 		}
@@ -166,7 +165,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 
 	// give the server a callback to update auto trigger value when a user request is received
 	autoTriggerCallback(func(val bool) {
-		logrus.Debugf("%s auto trigger update to %t received, calling back to runner", triggerName, val)
+		log.Entry(context.TODO()).Debugf("%s auto trigger update to %t received, calling back to runner", triggerName, val)
 		// signal chan only when auto trigger is set to true
 		if val {
 			c <- true
@@ -190,19 +189,19 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 
 	switch {
 	case runCtx.Opts.PushImages.Value() != nil:
-		logrus.Debugf("push value set via skaffold build --push flag, --push=%t", *runCtx.Opts.PushImages.Value())
+		log.Entry(context.TODO()).Debugf("push value set via skaffold build --push flag, --push=%t", *runCtx.Opts.PushImages.Value())
 		pushImages = *runCtx.Opts.PushImages.Value()
 	case pipeline.Build.LocalBuild.Push == nil:
 		pushImages = cl.PushImages
-		logrus.Debugf("push value not present in isImageLocal(), defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
+		log.Entry(context.TODO()).Debugf("push value not present in isImageLocal(), defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
 	default:
 		pushImages = *pipeline.Build.LocalBuild.Push
 	}
 	return !pushImages, nil
 }
 
-func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {
-	tester, err := test.NewTester(cfg, isLocalImage)
+func getTester(ctx context.Context, cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {
+	tester, err := test.NewTester(ctx, cfg, isLocalImage)
 	if err != nil {
 		return nil, err
 	}

@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
@@ -33,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -79,8 +78,8 @@ type BuilderContext interface {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(bCtx)
+func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(ctx, bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
@@ -92,10 +91,10 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, e
 	switch {
 	case pushFlag.Value() != nil:
 		pushImages = *pushFlag.Value()
-		logrus.Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
+		log.Entry(context.TODO()).Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
 	case buildCfg.Push == nil:
 		pushImages = cluster.PushImages
-		logrus.Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
+		log.Entry(context.TODO()).Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
 	default:
 		pushImages = *buildCfg.Push
 	}
@@ -157,7 +156,7 @@ func newPerArtifactBuilder(b *Builder, a *latestV1.Artifact) (artifactBuilder, e
 	case a.CustomArtifact != nil:
 		// required artifacts as environment variables
 		dependencies := util.EnvPtrMapToSlice(docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true), "=")
-		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, append(b.retrieveExtraEnv(), dependencies...)), nil
+		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests, append(b.retrieveExtraEnv(), dependencies...)), nil
 
 	case a.BuildpackArtifact != nil:
 		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.artifactStore), nil

@@ -28,7 +28,7 @@ Each profile has six parts:
 * Activation (`activation`)
 
 Once a profile is activated, the specified `build`, `test` and `deploy` configuration
-in it will replace the `build`, `test` and `deploy` sections declared
+in it will be laid onto, but won't completely replace, the `build`, `test` and `deploy` sections declared
 in the main section of `skaffold.yaml`. The `build`, `test` and `deploy` configuration in the `profiles`
 section use the same syntax as the `build`, `test` and `deploy` sections of
 `skaffold.yaml`; for more information, see [Builders]({{< relref "/docs/pipeline-stages/builders" >}}),
@@ -67,7 +67,7 @@ In the example below:
 
 ### Override via replacement
 
-The `build`, `test` and `deploy` sections defined in the profile will completely replace the main configuration.
+The `build`, `test` and `deploy` sections defined in the profile will be laid onto the main configuration.
 The default values are the same in profiles as in the main config.
 
 The following example showcases a `skaffold.yaml` with one profile named `gcb`,

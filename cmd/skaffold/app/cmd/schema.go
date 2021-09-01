@@ -28,7 +28,7 @@ import (
 func NewCmdSchema() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schema",
-		Short: "List and print json schemas used to validate skaffold.yaml configuration",
+		Short: "List JSON schemas used to validate skaffold.yaml configuration",
 	}
 
 	cmd.AddCommand(NewCmdSchemaGet())
@@ -38,6 +38,7 @@ func NewCmdSchema() *cobra.Command {
 
 func NewCmdSchemaList() *cobra.Command {
 	return NewCmd("list").
+		Hidden(). // internal command
 		WithDescription("List skaffold.yaml's json schema versions").
 		WithExample("List all the versions", "schema list").
 		WithExample("List all the versions, in json format", "schema list -o json").

@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os/exec"
@@ -43,13 +44,13 @@ func IsTerminal(w io.Writer) (uintptr, bool) {
 	return 0, false
 }
 
-func SupportsColor() (bool, error) {
+func SupportsColor(ctx context.Context) (bool, error) {
 	if runtime.GOOS == constants.Windows {
 		return true, nil
 	}
 
 	cmd := exec.Command("tput", "colors")
-	res, err := RunCmdOut(cmd)
+	res, err := RunCmdOut(ctx, cmd)
 	if err != nil {
 		return false, fmt.Errorf("checking terminal colors: %w", err)
 	}

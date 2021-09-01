@@ -17,6 +17,7 @@ limitations under the License.
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -24,10 +25,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
@@ -62,8 +62,8 @@ func newRecord() *record {
 }
 
 // GetAllConfigs returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs.
-func GetAllConfigs(opts config.SkaffoldOptions) ([]schemaUtil.VersionedConfig, error) {
-	set, err := GetConfigSet(opts)
+func GetAllConfigs(ctx context.Context, opts config.SkaffoldOptions) ([]schemaUtil.VersionedConfig, error) {
+	set, err := GetConfigSet(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -76,10 +76,10 @@ func GetAllConfigs(opts config.SkaffoldOptions) ([]schemaUtil.VersionedConfig, e
 
 // GetConfigSet returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs as a `SkaffoldConfigSet`.
 // This struct additionally contains the file location that each skaffold configuration is parsed from.
-func GetConfigSet(opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
+func GetConfigSet(ctx context.Context, opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
 	r := newRecord()
-	cfgs, err := getConfigs(cOpts, opts, r)
+	cfgs, err := getConfigs(ctx, cOpts, opts, r)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func GetConfigSet(opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 }
 
 // getConfigs recursively parses all configs and their dependencies in the specified `skaffold.yaml`
-func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
+func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -115,7 +115,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 	if len(parsed) == 0 {
 		return nil, sErrors.ZeroConfigsParsedErr(cfgOpts.file)
 	}
-	logrus.Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
+	log.Entry(context.TODO()).Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
 	// validate that config names are unique if specified
 	seen := make(map[string]bool)
@@ -133,7 +133,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 	var configs SkaffoldConfigSet
 	for i, cfg := range parsed {
 		config := cfg.(*latestV1.SkaffoldConfig)
-		processed, err := processEachConfig(config, cfgOpts, opts, r, i)
+		processed, err := processEachConfig(ctx, config, cfgOpts, opts, r, i)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (Ska
 
 // processEachConfig processes each parsed config by applying profiles and recursively processing its dependencies.
 // The `index` parameter specifies the index of the current config in its `skaffold.yaml` file. We use the `index` instead of the config `metadata.name` property to uniquely identify each config since not all configs define `name`.
-func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) (SkaffoldConfigSet, error) {
+func processEachConfig(ctx context.Context, config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) (SkaffoldConfigSet, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
 		prevConfig, found := r.configNameToFile[config.Metadata.Name]
@@ -203,7 +203,7 @@ func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts
 			}
 		}
 		newOpts := configOpts{file: cfgOpts.file, profiles: depProfiles, isRequired: required, isDependency: cfgOpts.isDependency}
-		depConfigs, err := processEachDependency(d, newOpts, opts, r)
+		depConfigs, err := processEachDependency(ctx, d, newOpts, opts, r)
 		if err != nil {
 			return nil, err
 		}
@@ -245,11 +245,11 @@ func filterActiveProfiles(d latestV1.ConfigDependency, profiles []string) []stri
 }
 
 // processEachDependency parses a config dependency with the calculated set of activated profiles.
-func processEachDependency(d latestV1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
+func processEachDependency(ctx context.Context, d latestV1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
 	path := makeConfigPathAbsolute(d.Path, cfgOpts.file)
 
 	if d.GitRepo != nil {
-		cachePath, err := cacheRepo(*d.GitRepo, opts, r)
+		cachePath, err := cacheRepo(ctx, *d.GitRepo, opts, r)
 		if err != nil {
 			return nil, sErrors.ConfigParsingError(fmt.Errorf("caching remote dependency %s: %w", d.GitRepo.Repo, err))
 		}
@@ -278,7 +278,7 @@ func processEachDependency(d latestV1.ConfigDependency, cfgOpts configOpts, opts
 	cfgOpts.isDependency = cfgOpts.isDependency || path != cfgOpts.file
 	cfgOpts.file = path
 	cfgOpts.selection = d.Names
-	depConfigs, err := getConfigs(cfgOpts, opts, r)
+	depConfigs, err := getConfigs(ctx, cfgOpts, opts, r)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func processEachDependency(d latestV1.ConfigDependency, cfgOpts configOpts, opts
 }
 
 // cacheRepo downloads the referenced git repository to skaffold's cache if required and returns the path to the target configuration file in that repository.
-func cacheRepo(g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
+func cacheRepo(ctx context.Context, g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
 	key := fmt.Sprintf("%s@%s", g.Repo, g.Ref)
 	if p, found := r.cachedRepos[key]; found {
 		switch v := p.(type) {
@@ -295,11 +295,11 @@ func cacheRepo(g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (stri
 		case error:
 			return "", v
 		default:
-			logrus.Fatalf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
+			log.Entry(context.TODO()).Fatalf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
 			return "", nil
 		}
 	} else {
-		p, err := git.SyncRepo(g, opts)
+		p, err := git.SyncRepo(ctx, g, opts)
 		if err != nil {
 			r.cachedRepos[key] = err
 			return "", err
@@ -362,10 +362,10 @@ func isMakePathsAbsoluteSet(opts config.SkaffoldOptions) bool {
 
 func getBase(cfgOpts configOpts) (string, error) {
 	if cfgOpts.isDependency {
-		logrus.Tracef("found %s base dir for absolute path substitution within skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
+		log.Entry(context.TODO()).Tracef("found %s base dir for absolute path substitution within skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
 		return filepath.Dir(cfgOpts.file), nil
 	}
-	logrus.Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
+	log.Entry(context.TODO()).Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
 	return util.RealWorkDir()
 }
 

@@ -17,15 +17,15 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -46,24 +46,24 @@ func (b *builderCtx) SourceDependenciesResolver() graph.SourceDependenciesCache 
 }
 
 // GetBuilder creates a builder from a given RunContext and build pipeline type.
-func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latestV1.Pipeline) (build.PipelineBuilder, error) {
+func GetBuilder(ctx context.Context, r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latestV1.Pipeline) (build.PipelineBuilder, error) {
 	bCtx := &builderCtx{artifactStore: s, sourceDependenciesCache: d, RunContext: r}
 	switch {
 	case p.Build.LocalBuild != nil:
-		logrus.Debugln("Using builder: local")
-		builder, err := local.NewBuilder(bCtx, p.Build.LocalBuild)
+		log.Entry(context.TODO()).Debug("Using builder: local")
+		builder, err := local.NewBuilder(ctx, bCtx, p.Build.LocalBuild)
 		if err != nil {
 			return nil, err
 		}
 		return builder, nil
 
 	case p.Build.GoogleCloudBuild != nil:
-		logrus.Debugln("Using builder: google cloud")
+		log.Entry(context.TODO()).Debug("Using builder: google cloud")
 		builder := gcb.NewBuilder(bCtx, p.Build.GoogleCloudBuild)
 		return builder, nil
 
 	case p.Build.Cluster != nil:
-		logrus.Debugln("Using builder: cluster")
+		log.Entry(context.TODO()).Debug("Using builder: cluster")
 		builder, err := cluster.NewBuilder(bCtx, p.Build.Cluster)
 		if err != nil {
 			return nil, err

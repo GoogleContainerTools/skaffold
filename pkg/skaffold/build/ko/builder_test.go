@@ -17,6 +17,7 @@ limitations under the License.
 package ko
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -25,11 +26,13 @@ import (
 
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
-		description  string
-		baseImage    string
-		platforms    []string
-		wantPlatform string
-		workspace    string
+		description          string
+		baseImage            string
+		platforms            []string
+		workspace            string
+		sourceDir            string
+		wantPlatform         string
+		wantWorkingDirectory string
 	}{
 		{
 			description: "all zero value",
@@ -48,28 +51,32 @@ func TestBuildOptions(t *testing.T) {
 			wantPlatform: "linux/amd64,linux/arm64",
 		},
 		{
-			description: "workspace",
-			workspace:   "my-app-subdirectory",
+			description:          "workspace",
+			workspace:            "my-app-subdirectory",
+			wantWorkingDirectory: "my-app-subdirectory",
+		},
+		{
+			description:          "source dir",
+			sourceDir:            "my-go-mod-is-here",
+			wantWorkingDirectory: "my-go-mod-is-here",
+		},
+		{
+			description:          "workspace and source dir",
+			workspace:            "my-app-subdirectory",
+			sourceDir:            "my-go-mod-is-here",
+			wantWorkingDirectory: "my-app-subdirectory" + string(filepath.Separator) + "my-go-mod-is-here",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			bo := buildOptions(test.baseImage, test.platforms, test.workspace)
-			if bo.BaseImage != test.baseImage {
-				t.Errorf("wanted BaseImage (%q), got (%q)", test.baseImage, bo.BaseImage)
-			}
+			bo := buildOptions(test.baseImage, test.platforms, test.workspace, test.sourceDir)
+			t.CheckDeepEqual(test.baseImage, bo.BaseImage)
 			if bo.ConcurrentBuilds < 1 {
 				t.Errorf("ConcurrentBuilds must always be >= 1 for the ko builder")
 			}
-			if bo.Platform != test.wantPlatform {
-				t.Errorf("wanted platform (%q), got (%q)", test.wantPlatform, bo.Platform)
-			}
-			if bo.UserAgent != version.UserAgentWithClient() {
-				t.Errorf("need user agent for fetching the base image")
-			}
-			if bo.WorkingDirectory != test.workspace {
-				t.Errorf("wanted WorkingDirectory (%q), got (%q)", test.workspace, bo.WorkingDirectory)
-			}
+			t.CheckDeepEqual(test.wantPlatform, bo.Platform)
+			t.CheckDeepEqual(version.UserAgentWithClient(), bo.UserAgent)
+			t.CheckDeepEqual(test.wantWorkingDirectory, bo.WorkingDirectory)
 		})
 	}
 }

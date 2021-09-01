@@ -22,10 +22,9 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -67,8 +66,8 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(&cmd); err != nil {
+	log.Entry(ctx).Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(ctx, &cmd); err != nil {
 		return fmt.Errorf("maven build failed: %w", err)
 	}
 
@@ -78,11 +77,11 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 // getDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func getDependenciesMaven(ctx context.Context, workspace string, a *latestV1.JibArtifact) ([]string, error) {
-	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
+	deps, err := getDependencies(ctx, workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
 		return nil, dependencyErr(JibMaven, workspace, err)
 	}
-	logrus.Debugf("Found dependencies for jib maven artifact: %v", deps)
+	log.Entry(ctx).Debugf("Found dependencies for jib maven artifact: %v", deps)
 	return deps, nil
 }
 

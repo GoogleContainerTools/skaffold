@@ -24,9 +24,9 @@ import (
 	"sync"
 
 	"github.com/docker/cli/cli/config/configfile"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -44,7 +44,7 @@ var gcrPrefixes = []string{"gcr.io", "us.gcr.io", "eu.gcr.io", "asia.gcr.io", "s
 // This doesn't modify the ~/.docker/config.json. It's only in-memory
 func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile) {
 	if path, _ := exec.LookPath("docker-credential-gcloud"); path == "" {
-		logrus.Debugln("Skipping credential configuration because docker-credential-gcloud is not on PATH.")
+		log.Entry(context.TODO()).Debug("Skipping credential configuration because docker-credential-gcloud is not on PATH.")
 		return
 	}
 
@@ -59,13 +59,13 @@ func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile) {
 	}
 }
 
-func activeUserCredentials() (*google.Credentials, error) {
+func activeUserCredentials(ctx context.Context) (*google.Credentials, error) {
 	credsOnce.Do(func() {
 		cmd := exec.Command("gcloud", "auth", "print-access-token", "--format=json")
-		body, err := util.RunCmdOut(cmd)
+		body, err := util.RunCmdOut(ctx, cmd)
 		if err != nil {
-			logrus.Infof("unable to retrieve gcloud access token: %v", err)
-			logrus.Infof("falling back to application default credentials")
+			log.Entry(context.TODO()).Infof("unable to retrieve gcloud access token: %v", err)
+			log.Entry(context.TODO()).Info("falling back to application default credentials")
 			credsErr = fmt.Errorf("retrieving gcloud access token: %w", err)
 			return
 		}
@@ -76,14 +76,14 @@ func activeUserCredentials() (*google.Credentials, error) {
 
 		c, err := google.CredentialsFromJSON(context.Background(), body)
 		if err != nil {
-			logrus.Infof("unable to retrieve google creds: %v", err)
-			logrus.Infof("falling back to application default credentials")
+			log.Entry(context.TODO()).Infof("unable to retrieve google creds: %v", err)
+			log.Entry(context.TODO()).Info("falling back to application default credentials")
 			return
 		}
 		_, err = c.TokenSource.Token()
 		if err != nil {
-			logrus.Infof("unable to retrieve token: %v", err)
-			logrus.Infof("falling back to application default credentials")
+			log.Entry(context.TODO()).Infof("unable to retrieve token: %v", err)
+			log.Entry(context.TODO()).Info("falling back to application default credentials")
 			return
 		}
 		creds = c

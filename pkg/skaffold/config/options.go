@@ -95,10 +95,12 @@ type SkaffoldOptions struct {
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	MinikubeProfile  string
-	RepoCacheDir     string
-	SyncRemoteCache  SyncRemoteCacheOption
-	WaitForDeletions WaitForDeletions
+	MinikubeProfile   string
+	RepoCacheDir      string
+	SyncRemoteCache   SyncRemoteCacheOption
+	WaitForDeletions  WaitForDeletions
+	ForceLoadImages   bool
+	WaitForConnection bool
 }
 
 type RunMode string

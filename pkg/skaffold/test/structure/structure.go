@@ -23,10 +23,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -41,8 +40,8 @@ type Runner struct {
 }
 
 // New creates a new structure.Runner.
-func New(cfg docker.Config, tc *latestV1.TestCase, imageIsLocal bool) (*Runner, error) {
-	localDaemon, err := docker.NewAPIClient(cfg)
+func New(ctx context.Context, cfg docker.Config, tc *latestV1.TestCase, imageIsLocal bool) (*Runner, error) {
+	localDaemon, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +76,12 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 		}
 	}
 
-	files, err := cst.TestDependencies()
+	files, err := cst.TestDependencies(ctx)
 	if err != nil {
 		return err
 	}
 
-	logrus.Infof("Running structure tests for files %v", files)
+	log.Entry(ctx).Infof("Running structure tests for files %v", files)
 
 	args := []string{"test", "-v", "warn", "--image", imageTag}
 	for _, f := range files {
@@ -94,7 +93,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 	cmd.Stderr = out
 	cmd.Env = cst.env()
 
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		return fmt.Errorf("error running container-structure-test command: %w", err)
 	}
 
@@ -102,7 +101,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 }
 
 // TestDependencies returns dependencies listed for the structure tests
-func (cst *Runner) TestDependencies() ([]string, error) {
+func (cst *Runner) TestDependencies(context.Context) ([]string, error) {
 	files, err := util.ExpandPathsGlob(cst.workspace, cst.structureTests)
 	if err != nil {
 		return nil, expandingFilePathsErr(err)

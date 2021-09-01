@@ -87,10 +87,12 @@ func Test_getImportPath(t *testing.T) {
 		expectedImportPath string
 	}{
 		{
-			description: "image name is ko-prefixed full Go import path",
+			description: "target is ignored when image name is ko-prefixed full Go import path",
 			artifact: &latestV1.Artifact{
 				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{},
+					KoArtifact: &latestV1.KoArtifact{
+						Target: "./target-should-be-ignored",
+					},
 				},
 				ImageName: "ko://git.example.com/org/foo",
 			},
@@ -102,7 +104,7 @@ func Test_getImportPath(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
-				ImageName: "foo",
+				ImageName: "any-image-name-1",
 			},
 			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
 		},
@@ -112,10 +114,37 @@ func Test_getImportPath(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
-				ImageName: "bar",
-				Workspace: "../docker",
+				ImageName: "any-image-name-2",
+				Workspace: "./testdata/package-main-in-root",
 			},
-			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker", // this package + "../docker"
+			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/testdata/package-main-in-root",
+		},
+		{
+			description: "plain image name with workspace directory and target",
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Target: "./baz",
+					},
+				},
+				ImageName: "any-image-name-3",
+				Workspace: "./testdata/package-main-not-in-root",
+			},
+			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/testdata/package-main-not-in-root/baz",
+		},
+		{
+			description: "plain image name with workspace directory and target and source directory",
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Dir:    "package-main-not-in-root",
+						Target: "./baz",
+					},
+				},
+				ImageName: "any-image-name-4",
+				Workspace: "./testdata",
+			},
+			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/testdata/package-main-not-in-root/baz",
 		},
 	}
 	for _, test := range tests {
@@ -124,7 +153,7 @@ func Test_getImportPath(t *testing.T) {
 			koBuilder, err := b.newKoBuilder(context.Background(), test.artifact)
 			t.CheckNoError(err)
 
-			gotImportPath, err := getImportPath(test.artifact.ImageName, koBuilder)
+			gotImportPath, err := getImportPath(test.artifact, koBuilder)
 			t.CheckNoError(err)
 
 			t.CheckDeepEqual(test.expectedImportPath, gotImportPath)

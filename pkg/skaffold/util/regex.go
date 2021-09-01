@@ -17,10 +17,11 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	re "regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // RegexEqual matches the string 'actual' against a regex compiled from 'expected'
@@ -42,7 +43,7 @@ func regexMatch(expected, actual string) bool {
 
 	matcher, err := re.Compile(expected)
 	if err != nil {
-		logrus.Infof("context activation criteria '%s' is not a valid regexp, falling back to string", expected)
+		log.Entry(context.TODO()).Infof("context activation criteria '%s' is not a valid regexp, falling back to string", expected)
 		return false
 	}
 

@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -73,7 +74,7 @@ func TestDateTime_GenerateTag(t *testing.T) {
 				ImageName: "test",
 			}
 
-			tag, err := c.GenerateTag(image)
+			tag, err := c.GenerateTag(context.Background(), image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, tag)
 		})

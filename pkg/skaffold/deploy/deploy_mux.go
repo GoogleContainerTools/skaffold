@@ -109,7 +109,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
 		eventV3.DeployInProgress(i)
-		w = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i))
+		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 		deployHooks, ok := deployer.(deployerWithHooks)
 		if ok {

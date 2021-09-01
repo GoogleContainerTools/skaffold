@@ -27,13 +27,12 @@ import (
 	"os"
 	"sort"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -134,7 +133,7 @@ func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *late
 		h, err := fileHasherFunc(d)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logrus.Tracef("skipping dependency for artifact cache calculation, file not found %s: %s", d, err)
+				log.Entry(ctx).Tracef("skipping dependency for artifact cache calculation, file not found %s: %s", d, err)
 				continue // Ignore files that don't exist
 			}
 

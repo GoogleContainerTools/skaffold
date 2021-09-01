@@ -30,10 +30,9 @@ import (
 	"github.com/buildpacks/pack"
 	packcfg "github.com/buildpacks/pack/config"
 	"github.com/buildpacks/pack/project"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -97,7 +96,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 
 	builderImage, runImage, pullPolicy := resolveDependencyImages(artifact, b.artifacts, a.Dependencies, b.pushImages)
 
-	if err := runPackBuildFunc(ctx, output.GetUnderlyingWriter(out), b.localDocker, pack.BuildOptions{
+	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
 		AppPath:         workspace,
 		Builder:         builderImage,
 		RunImage:        runImage,
@@ -202,14 +201,14 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 		if builderImage == d.Alias {
 			builderImage, found = r.GetImageTag(d.ImageName)
 			if !found {
-				logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			builderImageLocal = true
 		}
 		if runImage == d.Alias {
 			runImage, found = r.GetImageTag(d.ImageName)
 			if !found {
-				logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			runImageLocal = true
 		}
@@ -224,10 +223,10 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 
 		// if remote image pull is disabled then the image that is not fetched from the required artifacts might not be latestV1.
 		if !pushImages && builderImageLocal {
-			logrus.Warnln("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
 		}
 		if !pushImages && runImageLocal {
-			logrus.Warnln("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
 		}
 	}
 

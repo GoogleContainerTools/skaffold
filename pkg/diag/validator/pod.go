@@ -23,7 +23,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +32,7 @@ import (
 	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -89,10 +89,10 @@ func NewPodValidator(k kubernetes.Interface, d appsv1.Deployment) *PodValidator 
 func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error) {
 	_, _, controller, err := getReplicaSet(&p.depObj, p.k.AppsV1())
 	if err != nil {
-		logrus.Debugf("could not fetch deployment replica set %s", err)
+		log.Entry(ctx).Debugf("could not fetch deployment replica set %s", err)
 		return []Resource{}, err
 	} else if controller == nil {
-		logrus.Debugf("deployment replica set not created yet.")
+		log.Entry(ctx).Debugf("deployment replica set not created yet.")
 		return []Resource{}, nil
 	}
 
@@ -108,7 +108,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		}
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
-		processPodEvents(eventsClient, po, ps)
+		updated := processPodEvents(eventsClient, po, ps)
 		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {
@@ -116,11 +116,11 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		}
 		// Add recommendations
 		for _, r := range p.recos {
-			if s := r.Make(ps.ae.ErrCode); s.SuggestionCode != proto.SuggestionCode_NIL {
-				ps.ae.Suggestions = append(ps.ae.Suggestions, &s)
+			if s := r.Make(updated.ae.ErrCode); s.SuggestionCode != proto.SuggestionCode_NIL {
+				updated.ae.Suggestions = append(updated.ae.Suggestions, &s)
 			}
 		}
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.ae, ps.logs))
+		rs = append(rs, NewResourceFromObject(&po, Status(updated.phase), updated.ae, updated.logs))
 	}
 	return rs, nil
 }
@@ -144,14 +144,14 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	}
 	// If the event type PodScheduled with status False is found then we check if it is due to taints and tolerations.
 	if c, ok := isPodNotScheduled(pod); ok {
-		logrus.Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
+		log.Entry(context.TODO()).Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
 		sc, err := getUntoleratedTaints(c.Reason, c.Message)
 		return sc, nil, err
 	}
 	// we can check the container status if the pod has been scheduled successfully. This can be determined by having the event
 	// PodScheduled with status True, or a ContainerReady or PodReady event with status False.
 	if isPodScheduledButNotReady(pod) {
-		logrus.Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
+		log.Entry(context.TODO()).Debugf("Pod %q scheduled but not ready: checking container statuses", pod.Name)
 		// TODO(dgageot): Add EphemeralContainerStatuses
 		cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 		// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
@@ -171,11 +171,11 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	}
 
 	if c, ok := isPodStatusUnknown(pod); ok {
-		logrus.Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
+		log.Entry(context.TODO()).Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
 		return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 	}
 
-	logrus.Debugf("Unable to determine current service state of pod %q", pod.Name)
+	log.Entry(context.TODO()).Debugf("Unable to determine current service state of pod %q", pod.Name)
 	return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf("unable to determine current service state of pod %q", pod.Name)
 }
 
@@ -284,45 +284,45 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 	return errCode, fmt.Errorf("%s: 0/%d nodes available: %s", reason, len(messages), strings.Join(messages, ", "))
 }
 
-func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
+func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) *podStatus {
+	updated := ps
 	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
-		return
+		return updated
 	}
-	logrus.Debugf("Fetching events for pod %q", pod.Name)
+	log.Entry(context.TODO()).Debugf("Fetching events for pod %q", pod.Name)
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
 	events, err := e.Search(scheme, &pod)
 	if err != nil {
-		logrus.Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
-		return
+		log.Entry(context.TODO()).Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
+		return updated
 	}
-	// find the latest failed event.
+	// find the latest event.
 	var recentEvent *v1.Event
 	for _, e := range events.Items {
-		if e.Type == v1.EventTypeNormal {
-			continue
-		}
 		event := e.DeepCopy()
-		if recentEvent == nil || recentEvent.EventTime.Before(&event.EventTime) {
+		if recentEvent == nil || recentEvent.LastTimestamp.Before(&event.LastTimestamp) {
 			recentEvent = event
 		}
 	}
-	if recentEvent == nil {
-		return
+	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
+		return updated
 	}
 	switch recentEvent.Reason {
 	case failedScheduling:
-		ps.updateAE(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, recentEvent.Message)
+		updated.updateAE(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, recentEvent.Message)
 	case unhealthy:
-		ps.updateAE(proto.StatusCode_STATUSCHECK_UNHEALTHY, recentEvent.Message)
+		updated.updateAE(proto.StatusCode_STATUSCHECK_UNHEALTHY, recentEvent.Message)
 	default:
 		// TODO: Add unique error codes for reasons
-		ps.updateAE(
+		updated.updateAE(
 			proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
 			fmt.Sprintf("%s: %s", recentEvent.Reason, recentEvent.Message),
 		)
 	}
+
+	return updated
 }
 
 type podStatus struct {
@@ -385,7 +385,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	logrus.Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
+	log.Entry(context.TODO()).Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
 	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %v", c.Name, c.State.Waiting)
 }
 
@@ -405,7 +405,7 @@ func trimSpace(msg string) string {
 }
 
 func getPodLogs(po *v1.Pod, c string, sc proto.StatusCode) (proto.StatusCode, []string) {
-	logrus.Debugf("Fetching logs for container %s/%s", po.Name, c)
+	log.Entry(context.TODO()).Debugf("Fetching logs for container %s/%s", po.Name, c)
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {

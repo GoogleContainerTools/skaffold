@@ -22,10 +22,9 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -70,16 +69,16 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latestV1.Pipe
 			switch {
 			case minConcurrency < 0:
 				minConcurrency = concurrency
-				logrus.Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+				log.Entry(context.TODO()).Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
 			case concurrency > 0 && (minConcurrency == 0 || concurrency < minConcurrency):
 				minConcurrency = concurrency
-				logrus.Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+				log.Entry(context.TODO()).Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
 			default:
-				logrus.Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
+				log.Entry(context.TODO()).Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
 			}
 		}
 	}
-	logrus.Infof("final build concurrency value is %d", minConcurrency)
+	log.Entry(context.TODO()).Infof("final build concurrency value is %d", minConcurrency)
 
 	return &BuilderMux{builders: pb, byImageName: m, store: store, concurrency: minConcurrency}, nil
 }

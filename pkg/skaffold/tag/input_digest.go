@@ -28,10 +28,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -47,10 +46,8 @@ func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, er
 	}, nil
 }
 
-func (t *inputDigestTagger) GenerateTag(image latestV1.Artifact) (string, error) {
+func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
 	var inputs []string
-	// TODO(nkubala): plumb through context into Tagger interface
-	ctx := context.TODO()
 	srcFiles, err := t.cache.TransitiveArtifactDependencies(ctx, &image)
 	if err != nil {
 		return "", err
@@ -62,7 +59,7 @@ func (t *inputDigestTagger) GenerateTag(image latestV1.Artifact) (string, error)
 		h, err := fileHasher(d)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logrus.Tracef("skipping dependency %q for artifact cache calculation: %v", d, err)
+				log.Entry(ctx).Tracef("skipping dependency %q for artifact cache calculation: %v", d, err)
 				continue // Ignore files that don't exist
 			}
 

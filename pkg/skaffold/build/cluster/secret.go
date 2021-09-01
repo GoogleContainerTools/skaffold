@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedV1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -30,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const (
@@ -57,7 +57,7 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 	}
 	if b.PullSecretPath == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
-		logrus.Warnf("Assuming the secret %s is mounted inside Kaniko pod with the filename %s. If your secret is mounted at different path, please specify using config key `pullSecretPath`.\nSee https://skaffold.dev/docs/references/yaml/#build-cluster-pullSecretPath", b.PullSecretName, defaultKanikoSecretPath)
+		log.Entry(ctx).Warnf("Assuming the secret %s is mounted inside Kaniko pod with the filename %s. If your secret is mounted at different path, please specify using config key `pullSecretPath`.\nSee https://skaffold.dev/docs/references/yaml/#build-cluster-pullSecretPath", b.PullSecretName, defaultKanikoSecretPath)
 		b.PullSecretPath = defaultKanikoSecretPath
 		return func() {}, nil
 	}
@@ -85,7 +85,7 @@ func (b *Builder) createSecretFromFile(ctx context.Context, secrets typedV1.Secr
 
 	return func() {
 		if err := secrets.Delete(ctx, b.PullSecretName, metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("deleting pull secret")
+			log.Entry(ctx).Warn("deleting pull secret")
 		}
 	}, nil
 }
@@ -105,7 +105,7 @@ func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (f
 	secrets := client.CoreV1().Secrets(b.Namespace)
 
 	if b.DockerConfig.Path == "" {
-		logrus.Debug("No docker config specified. Checking for one in the cluster.")
+		log.Entry(ctx).Debug("No docker config specified. Checking for one in the cluster.")
 
 		if _, err := secrets.Get(ctx, b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
 			return nil, fmt.Errorf("checking for existing kaniko secret: %w", err)
@@ -135,7 +135,7 @@ func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (f
 
 	return func() {
 		if err := secrets.Delete(ctx, b.DockerConfig.SecretName, metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("deleting docker config secret")
+			log.Entry(ctx).Warn("deleting docker config secret")
 		}
 	}, nil
 }

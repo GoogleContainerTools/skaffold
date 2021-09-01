@@ -22,10 +22,9 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -67,8 +66,8 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(&cmd); err != nil {
+	log.Entry(ctx).Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(ctx, &cmd); err != nil {
 		return fmt.Errorf("gradle build failed: %w", err)
 	}
 
@@ -79,11 +78,11 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 // All paths are absolute.
 func getDependenciesGradle(ctx context.Context, workspace string, a *latestV1.JibArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getDependencies(workspace, cmd, a)
+	deps, err := getDependencies(ctx, workspace, cmd, a)
 	if err != nil {
 		return nil, dependencyErr(JibGradle, workspace, err)
 	}
-	logrus.Debugf("Found dependencies for jib-gradle artifact: %v", deps)
+	log.Entry(ctx).Debugf("Found dependencies for jib-gradle artifact: %v", deps)
 	return deps, nil
 }
 

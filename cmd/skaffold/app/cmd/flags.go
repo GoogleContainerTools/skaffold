@@ -17,17 +17,18 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var (
@@ -148,10 +149,15 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
-		Name:          "sync-remote-cache",
-		Usage:         "Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.",
-		Value:         &opts.SyncRemoteCache,
-		DefValue:      "always",
+		Name:     "sync-remote-cache",
+		Usage:    "Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.",
+		Value:    &opts.SyncRemoteCache,
+		DefValue: "always",
+		DefValuePerCommand: map[string]interface{}{
+			"inspect":  "missing",
+			"diagnose": "missing",
+			"fix":      "missing",
+		},
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"all"},
 	},
@@ -172,6 +178,15 @@ var flagRegistry = []Flag{
 			"dev":   true,
 			"debug": true,
 		},
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "wait-for-connection",
+		Usage:         "Blocks execution until the /v2/events gRPC/HTTP endpoint is hit",
+		Value:         &opts.WaitForConnection,
+		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
 		IsEnum:        true,
@@ -571,6 +586,13 @@ var flagRegistry = []Flag{
 			"run": true,
 		},
 		IsEnum: true,
+	}, {
+		Name:          "load-images",
+		Usage:         "If true, skaffold will force load the container images into the local cluster.",
+		Value:         &opts.ForceLoadImages,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy"},
 	},
 }
 
@@ -660,7 +682,7 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	} else if val, ok := v.(pflag.Value); ok {
 		val.Set(fmt.Sprintf("%v", d))
 	} else {
-		logrus.Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
+		log.Entry(context.TODO()).Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
 	}
 }
 

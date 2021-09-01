@@ -24,13 +24,13 @@ import (
 	"sync"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -74,24 +74,24 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
+func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
 
 	cacheFile, err := resolveCacheFile(cfg.CacheFile())
 	if err != nil {
-		logrus.Warnf("Error resolving cache file, not using skaffold cache: %v", err)
+		log.Entry(context.TODO()).Warnf("Error resolving cache file, not using skaffold cache: %v", err)
 		return &noCache{}, nil
 	}
 
 	artifactCache, err := retrieveArtifactCache(cacheFile)
 	if err != nil {
-		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
+		log.Entry(context.TODO()).Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return &noCache{}, nil
 	}
 
-	client, err := docker.NewAPIClient(cfg)
+	client, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		// error only if any pipeline is local.
 		for _, p := range cfg.GetPipelines() {

@@ -25,12 +25,13 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	v3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -131,6 +132,11 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		return callback, fmt.Errorf("starting HTTP server: %w", err)
 	}
 
+	// Optionally pause execution until endpoint hit
+	if opts.WaitForConnection {
+		eventV2.WaitForConnection()
+	}
+
 	return callback, nil
 }
 
@@ -141,9 +147,9 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 	}
 
 	if port != preferredPort {
-		logrus.Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
+		log.Entry(context.TODO()).Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
 	} else {
-		logrus.Infof("starting gRPC server on port %d", port)
+		log.Entry(context.TODO()).Infof("starting gRPC server on port %d", port)
 	}
 
 	s := grpc.NewServer()
@@ -178,7 +184,7 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 
 	go func() {
 		if err := s.Serve(l); err != nil {
-			logrus.Errorf("failed to start grpc server: %s", err)
+			log.Entry(context.TODO()).Errorf("failed to start grpc server: %s", err)
 		}
 	}()
 	return func() error {
@@ -235,9 +241,9 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 	}
 
 	if port != preferredPort {
-		logrus.Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
+		log.Entry(context.TODO()).Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
 	} else {
-		logrus.Infof("starting gRPC HTTP server on port %d", port)
+		log.Entry(context.TODO()).Infof("starting gRPC HTTP server on port %d", port)
 	}
 
 	server := &http.Server{

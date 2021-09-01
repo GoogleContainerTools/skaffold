@@ -23,11 +23,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -96,7 +95,7 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 	for kPath := range kustomizePathMap {
 		// TODO:  support kustomize buildArgs (shall we support it in kpt-fn)?
 		cmd := exec.CommandContext(ctx, "kustomize", "build", kPath)
-		out, err := util.RunCmdOut(cmd)
+		out, err := util.RunCmdOut(ctx, cmd)
 		if err != nil {
 			return nil, err
 		}
@@ -108,8 +107,8 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 	for _, nkPath := range nonKustomizePaths {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
 			if !util.StrSliceContains(g.config.RawK8s, nkPath) {
-				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
-				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+				log.Entry(ctx).Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
+				log.Entry(ctx).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
 			}
 		}

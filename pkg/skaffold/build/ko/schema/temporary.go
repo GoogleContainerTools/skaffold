@@ -27,6 +27,12 @@ type KoArtifact struct {
 	// Dependencies are the file dependencies that Skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
 
+	// Dir is the directory where the `go` tool will be run.
+	// The value is a directory path relative to the `context` directory.
+	// If empty, the `go` tool will run in the `context` directory.
+	// Example: `./my-app-sources`
+	Dir string `yaml:"dir,omitempty"`
+
 	// Labels are key-value string pairs to add to the image config.
 	// For example: `{"foo":"bar"}`.
 	Labels map[string]string `yaml:"labels,omitempty"`
@@ -36,6 +42,14 @@ type KoArtifact struct {
 	// Defaults to `all` to build for all platforms supported by the
 	// base image.
 	Platforms []string `yaml:"platforms,omitempty"`
+
+	// Target is the location of the main package.
+	// If target is specified as a relative path, it is relative to the `context` directory.
+	// If target is empty, the ko builder looks for the main package in the `context` directory only, but not in any subdirectories.
+	// If target is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
+	// Target is ignored if the `ImageName` starts with `ko://`.
+	// Example: `./cmd/foo`
+	Target string `yaml:"target,omitempty"`
 }
 
 // KoDependencies is used to specify dependencies for an artifact built by ko.

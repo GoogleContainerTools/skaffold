@@ -21,12 +21,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -63,7 +62,7 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infoln("Build completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Build completed in", util.ShowHumanizeTime(time.Since(start)))
 	return bRes, nil
 }
 
@@ -75,7 +74,7 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Test completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Test completed in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 
@@ -87,7 +86,7 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.A
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Deploy completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Deploy completed in", util.ShowHumanizeTime(time.Since(start)))
 	return err
 }
 
@@ -99,7 +98,7 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Cleanup completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Cleanup completed in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 
@@ -111,6 +110,6 @@ func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Image prune completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Image prune completed in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }

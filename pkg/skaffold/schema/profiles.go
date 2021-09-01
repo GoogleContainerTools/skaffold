@@ -17,16 +17,17 @@ limitations under the License.
 package schema
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
 	"strings"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
-	"github.com/sirupsen/logrus"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -195,7 +196,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 }
 
 func applyProfile(config *latestV1.SkaffoldConfig, profile latestV1.Profile) error {
-	logrus.Infof("applying profile: %s", profile.Name)
+	log.Entry(context.TODO()).Infof("applying profile: %s", profile.Name)
 
 	// Apply profile, field by field
 	mergedV := reflect.Indirect(reflect.ValueOf(&config.Pipeline))
@@ -293,7 +294,7 @@ func overlayOneOfField(config interface{}, profile interface{}) interface{} {
 		}
 	}
 	// if we're here, we didn't find any values set in the profile config. just return the original.
-	logrus.Infof("no values found in profile for field %s, using original config values", t.Name())
+	log.Entry(context.TODO()).Infof("no values found in profile for field %s, using original config values", t.Name())
 	return config
 }
 
@@ -316,7 +317,7 @@ func overlayStructField(config interface{}, profile interface{}) interface{} {
 func overlayProfileField(fieldName string, config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
-	logrus.Debugf("overlaying profile on config for field %s", fieldName)
+	log.Entry(context.TODO()).Debugf("overlaying profile on config for field %s", fieldName)
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
@@ -347,7 +348,7 @@ func overlayProfileField(fieldName string, config interface{}, profile interface
 		}
 		return v.Interface()
 	default:
-		logrus.Fatalf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
+		log.Entry(context.TODO()).Fatalf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
 		return config
 	}
 }

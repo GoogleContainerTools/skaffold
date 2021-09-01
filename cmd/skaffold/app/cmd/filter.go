@@ -26,8 +26,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -44,7 +44,7 @@ func NewCmdFilter() *cobra.Command {
 
 	return NewCmd("filter").
 		Hidden(). // internal command
-		WithDescription("[alpha] Filter and transform a set of Kubernetes manifests from stdin").
+		WithDescription("Filter and transform a set of Kubernetes manifests from stdin").
 		WithLongDescription("Unlike `render`, this command does not build artifacts.").
 		WithCommonFlags().
 		WithFlags([]*Flag{

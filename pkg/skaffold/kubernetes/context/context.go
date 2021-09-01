@@ -17,13 +17,15 @@ limitations under the License.
 package context
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // For testing
@@ -49,7 +51,7 @@ func ConfigureKubeConfig(cliKubeConfig, cliKubeContext string) {
 		kubeContext = cliKubeContext
 		kubeConfigFile = cliKubeConfig
 		if kubeContext != "" {
-			logrus.Infof("Activated kube-context %q", kubeContext)
+			log.Entry(context.TODO()).Infof("Activated kube-context %q", kubeContext)
 		}
 	})
 }
@@ -82,7 +84,7 @@ func GetClusterInfo(kctx string) (*clientcmdapi.Cluster, error) {
 }
 
 func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
-	logrus.Debugf("getting client config for kubeContext: `%s`", kctx)
+	log.Entry(context.TODO()).Debugf("getting client config for kubeContext: `%s`", kctx)
 
 	rawConfig, err := getCurrentConfig()
 	if err != nil {
@@ -92,7 +94,7 @@ func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, clientcmd.NewDefaultClientConfigLoadingRules())
 	restConfig, err := clientConfig.ClientConfig()
 	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
-		logrus.Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
+		log.Entry(context.TODO()).Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
 		restConfig, err := restclient.InClusterConfig()
 		if err != nil {
 			return restConfig, fmt.Errorf("error creating REST client config in-cluster: %w", err)

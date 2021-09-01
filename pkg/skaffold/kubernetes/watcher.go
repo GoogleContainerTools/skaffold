@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type PodWatcher interface {
@@ -100,7 +100,7 @@ func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), err
 			for evt := range watcher.ResultChan() {
 				// If the event's type is "ERROR", warn and continue.
 				if evt.Type == watch.Error {
-					logrus.Warnf("got unexpected event of type %s", evt.Type)
+					log.Entry(context.TODO()).Warnf("got unexpected event of type %s", evt.Type)
 					continue
 				}
 

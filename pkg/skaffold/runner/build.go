@@ -23,8 +23,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -33,6 +31,7 @@ import (
 	eventV3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -67,7 +66,7 @@ func (r *Builder) GetBuilds() []graph.Artifact {
 func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build, "Build containers")
 	eventV3.TaskInProgress(constants.Build, "Build containers")
-	out = output.WithEventContext(out, constants.Build, eventV2.SubtaskIDNone)
+	out, ctx = output.WithEventContext(ctx, out, constants.Build, constants.SubtaskIDNone)
 
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == NoneDigestSource {
@@ -168,7 +167,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 		i := i
 		go func() {
-			_tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, *artifacts[i])
+			_tag, err := tag.GenerateFullyQualifiedImageName(ctx, r.tagger, *artifacts[i])
 			tagErrs[i] <- tagErr{tag: _tag, err: err}
 		}()
 	}
@@ -178,7 +177,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
-		out := output.WithEventContext(out, constants.Build, imageName)
+		out, ctx := output.WithEventContext(ctx, out, constants.Build, imageName)
 		output.Default.Fprintf(out, " - %s -> ", imageName)
 
 		select {
@@ -187,10 +186,10 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 		case t := <-tagErrs[i]:
 			if t.err != nil {
-				logrus.Debugln(t.err)
-				logrus.Debugln("Using a fall-back tagger")
+				log.Entry(ctx).Debug(t.err)
+				log.Entry(ctx).Debug("Using a fall-back tagger")
 
-				fallbackTag, err := tag.GenerateFullyQualifiedImageName(&tag.ChecksumTagger{}, *artifact)
+				fallbackTag, err := tag.GenerateFullyQualifiedImageName(ctx, &tag.ChecksumTagger{}, *artifact)
 				if err != nil {
 					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
 				}
@@ -213,7 +212,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 		output.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
-	logrus.Infoln("Tags generated in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Tags generated in", util.ShowHumanizeTime(time.Since(start)))
 	return imageTags, nil
 }
 
