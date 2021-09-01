@@ -74,6 +74,7 @@ func BuildInProgress(artifact string) {
 		Status:        InProgress,
 		ActionableErr: nil,
 	}
+	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
 	handler.handle(artifact, buildEvent, BuildStartedEvent)
 }
 
@@ -90,6 +91,7 @@ func BuildFailed(artifact string, err error) {
 		Status:        Failed,
 		ActionableErr: aErr,
 	}
+	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
 	handler.handle(artifact, buildEvent, BuildFailedEvent)
 }
 
@@ -102,6 +104,7 @@ func BuildSucceeded(artifact string) {
 		Status:        Succeeded,
 		ActionableErr: nil,
 	}
+	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
 	handler.handle(artifact, buildEvent, BuildSucceededEvent)
 }
 
@@ -117,5 +120,12 @@ func BuildCanceled(artifact string, err error) {
 		Status:        Canceled,
 		ActionableErr: aErr,
 	}
+	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
 	handler.handle(artifact, buildEvent, BuildCancelledEvent)
+}
+
+func updateBuildStatus(artifact string, status string) {
+	handler.stateLock.Lock()
+	handler.state.BuildState.Artifacts[artifact] = status
+	handler.stateLock.Unlock()
 }

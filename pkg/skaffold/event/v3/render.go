@@ -32,6 +32,7 @@ func RendererInProgress(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
 		Status: InProgress,
 	}
+	updateRenderStatus(rendererEvent.Status)
 	handler.handle(rendererEvent.Id, rendererEvent, RenderStartedEvent)
 }
 
@@ -43,6 +44,7 @@ func RendererFailed(id int, err error) {
 		Status:        Failed,
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Render, err),
 	}
+	updateRenderStatus(rendererEvent.Status)
 	handler.handle(rendererEvent.Id, rendererEvent, RenderFailedEvent)
 }
 
@@ -53,5 +55,12 @@ func RendererSucceeded(id int) {
 		TaskId: fmt.Sprintf("%s-%d", constants.Render, handler.iteration),
 		Status: Succeeded,
 	}
+	updateRenderStatus(rendererEvent.Status)
 	handler.handle(rendererEvent.Id, rendererEvent, RenderSucceededEvent)
+}
+
+func updateRenderStatus(status string) {
+	handler.stateLock.Lock()
+	handler.state.RenderState.Status = status
+	handler.stateLock.Unlock()
 }

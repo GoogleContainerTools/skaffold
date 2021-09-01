@@ -51,6 +51,7 @@ func resourceStatusCheckEventSucceeded(r string) {
 		Message:    Succeeded,
 		StatusCode: protoV3.StatusCode_STATUSCHECK_SUCCESS,
 	}
+	updateStatusCheckState(event.Resource, event.Status)
 	handler.handle(r, event, StatusCheckSucceededEvent)
 }
 
@@ -63,6 +64,7 @@ func resourceStatusCheckEventFailed(r string, ae protoV3.ActionableErr) {
 		StatusCode:    ae.ErrCode,
 		ActionableErr: &ae,
 	}
+	updateStatusCheckState(event.Resource, event.Status)
 	handler.handle(r, event, StatusCheckFailedEvent)
 }
 
@@ -76,6 +78,7 @@ func ResourceStatusCheckEventUpdated(r string, ae protoV3.ActionableErr) {
 		StatusCode:    ae.ErrCode,
 		ActionableErr: &ae,
 	}
+	updateStatusCheckState(event.Resource, event.Status)
 	handler.handle(r, event, StatusCheckStartedEvent)
 }
 
@@ -88,4 +91,10 @@ func ResourceStatusCheckEventUpdatedMessage(r string, message string, ae protoV3
 		Level:     -1,
 	}
 	handler.handle(event.TaskId, event, SkaffoldLogEvent)
+}
+
+func updateStatusCheckState(resrouce string, status string) {
+	handler.stateLock.Lock()
+	handler.state.StatusCheckState.Resources[resrouce] = status
+	handler.stateLock.Unlock()
 }

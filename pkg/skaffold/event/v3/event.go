@@ -385,6 +385,13 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 		},
 	}
 
+	handler.stateLock.Lock()
+	if handler.state.ForwardedPorts == nil {
+		handler.state.ForwardedPorts = map[int32]*protoV3.PortForwardEvent{}
+	}
+	handler.state.ForwardedPorts[event.LocalPort] = event
+	handler.stateLock.Unlock()
+
 	handler.handle(event.TaskId, event, PortForwardedEvent)
 }
 
@@ -418,155 +425,11 @@ func (ev *eventHandler) handleExec(event *protoV3.Event) {
 	case ApplicationLogEvent:
 		ev.logApplicationLog(event)
 		return
-	case BuildSucceededEvent:
-		buildEvent := &protoV3.BuildSucceededEvent{}
-		anypb.UnmarshalTo(event.Data, buildEvent, proto.UnmarshalOptions{})
-		if buildEvent.Step == Build {
-			ev.stateLock.Lock()
-			ev.state.BuildState.Artifacts[buildEvent.Artifact] = buildEvent.Status
-			ev.stateLock.Unlock()
-		}
-	case BuildStartedEvent:
-		buildEvent := &protoV3.BuildStartedEvent{}
-		anypb.UnmarshalTo(event.Data, buildEvent, proto.UnmarshalOptions{})
-		fmt.Println(buildEvent)
-		if buildEvent.Step == Build {
-			ev.stateLock.Lock()
-			ev.state.BuildState.Artifacts[buildEvent.Artifact] = buildEvent.Status
-			ev.stateLock.Unlock()
-		}
-	case BuildFailedEvent:
-		buildEvent := &protoV3.BuildFailedEvent{}
-		anypb.UnmarshalTo(event.Data, buildEvent, proto.UnmarshalOptions{})
-		if buildEvent.Step == Build {
-			ev.stateLock.Lock()
-			ev.state.BuildState.Artifacts[buildEvent.Artifact] = buildEvent.Status
-			ev.stateLock.Unlock()
-		}
-	case BuildCancelledEvent:
-		buildEvent := &protoV3.BuildCancelledEvent{}
-		anypb.UnmarshalTo(event.Data, buildEvent, proto.UnmarshalOptions{})
-		if buildEvent.Step == Build {
-			ev.stateLock.Lock()
-			ev.state.BuildState.Artifacts[buildEvent.Artifact] = buildEvent.Status
-			ev.stateLock.Unlock()
-		}
-	case TestFailedEvent:
-		te := &protoV3.TestFailedEvent{}
-		anypb.UnmarshalTo(event.Data, te, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.TestState.Status = te.Status
-		ev.stateLock.Unlock()
-	case TestStartedEvent:
-		te := &protoV3.TestStartedEvent{}
-		anypb.UnmarshalTo(event.Data, te, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.TestState.Status = te.Status
-		ev.stateLock.Unlock()
-	case TestSucceededEvent:
-		te := &protoV3.TestSucceededEvent{}
-		anypb.UnmarshalTo(event.Data, te, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.TestState.Status = te.Status
-		ev.stateLock.Unlock()
-	case RenderFailedEvent:
-		re := &protoV3.RenderFailedEvent{}
-		anypb.UnmarshalTo(event.Data, re, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.RenderState.Status = re.Status
-		ev.stateLock.Unlock()
-	case RenderSucceededEvent:
-		re := &protoV3.RenderSucceededEvent{}
-		anypb.UnmarshalTo(event.Data, re, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.RenderState.Status = re.Status
-		ev.stateLock.Unlock()
-	case RenderStartedEvent:
-		re := &protoV3.RenderStartedEvent{}
-		anypb.UnmarshalTo(event.Data, re, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.RenderState.Status = re.Status
-		ev.stateLock.Unlock()
-	case DeployStartedEvent:
-		de := &protoV3.DeployStartedEvent{}
-		anypb.UnmarshalTo(event.Data, de, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.DeployState.Status = de.Status
-		ev.stateLock.Unlock()
-	case DeployFailedEvent:
-		de := &protoV3.DeployFailedEvent{}
-		anypb.UnmarshalTo(event.Data, de, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.DeployState.Status = de.Status
-		ev.stateLock.Unlock()
-	case DeploySucceededEvent:
-		de := &protoV3.DeploySucceededEvent{}
-		anypb.UnmarshalTo(event.Data, de, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.DeployState.Status = de.Status
-		ev.stateLock.Unlock()
-	case PortForwardedEvent:
-		pe := &protoV3.PortForwardEvent{}
-		anypb.UnmarshalTo(event.Data, pe, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		if ev.state.ForwardedPorts == nil {
-			ev.state.ForwardedPorts = map[int32]*protoV3.PortForwardEvent{}
-		}
-		ev.state.ForwardedPorts[pe.LocalPort] = pe
-		ev.stateLock.Unlock()
-	case StatusCheckStartedEvent:
-		se := &protoV3.StatusCheckStartedEvent{}
-		anypb.UnmarshalTo(event.Data, se, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.StatusCheckState.Resources[se.Resource] = se.Status
-		ev.stateLock.Unlock()
-	case StatusCheckSucceededEvent:
-		se := &protoV3.StatusCheckSucceededEvent{}
-		anypb.UnmarshalTo(event.Data, se, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.StatusCheckState.Resources[se.Resource] = se.Status
-		ev.stateLock.Unlock()
-	case StatusCheckFailedEvent:
-		se := &protoV3.StatusCheckFailedEvent{}
-		anypb.UnmarshalTo(event.Data, se, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.StatusCheckState.Resources[se.Resource] = se.Status
-		ev.stateLock.Unlock()
 	case FileSyncEvent:
 		fse := &protoV3.FileSyncEvent{}
 		anypb.UnmarshalTo(event.Data, fse, proto.UnmarshalOptions{})
 		ev.stateLock.Lock()
 		ev.state.FileSyncState.Status = fse.Status
-		ev.stateLock.Unlock()
-	case DebuggingContainerStartedEvent:
-		de := &protoV3.DebuggingContainerStartedEvent{}
-		anypb.UnmarshalTo(event.Data, de, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		ev.state.DebuggingContainers = append(ev.state.DebuggingContainers, &protoV3.DebuggingContainerState{
-			Id:            de.Id,
-			TaskId:        de.TaskId,
-			Status:        de.Status,
-			PodName:       de.PodName,
-			ContainerName: de.ContainerName,
-			Namespace:     de.Namespace,
-			Artifact:      de.Artifact,
-			Runtime:       de.Runtime,
-			WorkingDir:    de.WorkingDir,
-			DebugPorts:    de.DebugPorts,
-		})
-		ev.stateLock.Unlock()
-	case DebuggingContainerTerminatedEvent:
-		de := &protoV3.DebuggingContainerTerminatedEvent{}
-		anypb.UnmarshalTo(event.Data, de, proto.UnmarshalOptions{})
-		ev.stateLock.Lock()
-		n := 0
-		for _, x := range ev.state.DebuggingContainers {
-			if x.Namespace != de.Namespace || x.PodName != de.PodName || x.ContainerName != de.ContainerName {
-				ev.state.DebuggingContainers[n] = x
-				n++
-			}
-		}
-		ev.state.DebuggingContainers = ev.state.DebuggingContainers[:n]
 		ev.stateLock.Unlock()
 	}
 	ev.logEvent(event)

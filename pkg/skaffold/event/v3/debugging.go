@@ -32,6 +32,22 @@ func DebuggingContainerStarted(podName, containerName, namespace, artifact, runt
 		WorkingDir:    workingDir,
 		DebugPorts:    debugPorts,
 	}
+
+	handler.stateLock.Lock()
+	handler.state.DebuggingContainers = append(handler.state.DebuggingContainers, &protoV3.DebuggingContainerState{
+		Id:            debuggingContainerEvent.Id,
+		TaskId:        debuggingContainerEvent.TaskId,
+		Status:        debuggingContainerEvent.Status,
+		PodName:       debuggingContainerEvent.PodName,
+		ContainerName: debuggingContainerEvent.ContainerName,
+		Namespace:     debuggingContainerEvent.Namespace,
+		Artifact:      debuggingContainerEvent.Artifact,
+		Runtime:       debuggingContainerEvent.Runtime,
+		WorkingDir:    debuggingContainerEvent.WorkingDir,
+		DebugPorts:    debuggingContainerEvent.DebugPorts,
+	})
+	handler.stateLock.Unlock()
+
 	handler.handle(artifact, debuggingContainerEvent, DebuggingContainerStartedEvent)
 }
 
@@ -47,5 +63,17 @@ func DebuggingContainerTerminated(podName, containerName, namespace, artifact, r
 		WorkingDir:    workingDir,
 		DebugPorts:    debugPorts,
 	}
+
+	handler.stateLock.Lock()
+	n := 0
+	for _, x := range handler.state.DebuggingContainers {
+		if x.Namespace != debuggingContainerEvent.Namespace || x.PodName != debuggingContainerEvent.PodName || x.ContainerName != debuggingContainerEvent.ContainerName {
+			handler.state.DebuggingContainers[n] = x
+			n++
+		}
+	}
+	handler.state.DebuggingContainers = handler.state.DebuggingContainers[:n]
+	handler.stateLock.Unlock()
+
 	handler.handle(artifact, debuggingContainerEvent, DebuggingContainerTerminatedEvent)
 }
