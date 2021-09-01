@@ -288,6 +288,8 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 		// another deployment failed
 		return
 	}
+	event.ResourceStatusCheckEventCompleted(r.String(), ae)
+	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
 	out, _ = output.WithEventContext(context.Background(), out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
