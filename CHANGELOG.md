@@ -83,7 +83,6 @@ Huge thanks goes out to all of our contributors for this release:
 - Pradeep Kumar
 - Tejal Desai
 - Yanshu
-- dependabot[bot]
 - kelsk
 
 # v1.30.0 Release - 08/11/2021
