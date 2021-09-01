@@ -60,15 +60,6 @@ type Config interface {
 	Mode() config.RunMode
 }
 
-func DefaultAPIClient() (LocalDaemon, error) {
-	env, apiClient, err := newEnvAPIClient()
-	if err != nil {
-		return nil, err
-	}
-	cli := NewLocalDaemon(apiClient, env, false, nil)
-	return cli, nil
-}
-
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
 func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {

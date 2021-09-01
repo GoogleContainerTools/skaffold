@@ -26,11 +26,24 @@ import (
 	dockertypes "github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+type debugConfig struct {
+	kubeContext string
+}
+
+func (d debugConfig) GetKubeContext() string                 { return d.kubeContext }
+func (d debugConfig) MinikubeProfile() string                { return "" }
+func (d debugConfig) GlobalConfig() string                   { return "" }
+func (d debugConfig) Prune() bool                            { return false }
+func (d debugConfig) GetInsecureRegistries() map[string]bool { return nil }
+func (d debugConfig) Mode() config.RunMode                   { return "" }
 
 func TestDebug(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
@@ -126,7 +139,15 @@ func TestDockerDebug(t *testing.T) {
 
 		// use docker client to verify container has been created properly
 		// check this container and verify entrypoint has been rewritten
-		client, err := docker.DefaultAPIClient()
+		kubeConfig, err := kubectx.CurrentConfig()
+		if err != nil {
+			t.Log("unable to get current cluster context: %w", err)
+			t.Logf("test might not be running against the right docker daemon")
+		}
+		kubeContext := kubeConfig.CurrentContext
+		// log.Entry(context.TODO()).Infof("Using kubectl context: %s", kubeContext)
+		// client, err := docker.DefaultAPIClient(kubeContext)
+		client, err := docker.NewAPIClient(context.Background(), debugConfig{kubeContext: kubeContext})
 		if err != nil {
 			t.Fail()
 		}
