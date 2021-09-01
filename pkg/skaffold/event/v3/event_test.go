@@ -29,7 +29,6 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	proto "google.golang.org/protobuf/proto"
-	proto1 "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -69,7 +68,7 @@ func TestGetLogEvents(t *testing.T) {
 		var received int32
 		ev.forEachEvent(func(e *protoV3.Event) error {
 			se := &protoV3.SkaffoldLogEvent{}
-			anypb.UnmarshalTo(e.Data, se, proto1.UnmarshalOptions{})
+			anypb.UnmarshalTo(e.Data, se, proto.UnmarshalOptions{})
 
 			if se.Message == "POISON PILL" {
 				return errors.New("Done")
