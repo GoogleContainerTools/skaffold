@@ -198,8 +198,8 @@ func (rc *RunContext) BuildConcurrency() int                         { return rc
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) IsDefaultKubeContext() bool                    { return rc.Opts.KubeContext == "" }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
-func (rc *RunContext) RPCPort() int                                  { return rc.Opts.RPCPort }
-func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
+func (rc *RunContext) RPCPort() *int                                 { return rc.Opts.RPCPort.Value() }
+func (rc *RunContext) RPCHTTPPort() *int                             { return rc.Opts.RPCHTTPPort.Value() }
 func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
 
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {

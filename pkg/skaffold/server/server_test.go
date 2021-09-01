@@ -37,8 +37,8 @@ func TestServerStartup(t *testing.T) {
 	// start up servers
 	shutdown, err := Initialize(config.SkaffoldOptions{
 		EnableRPC:   true,
-		RPCPort:     rpcAddr,
-		RPCHTTPPort: httpAddr,
+		RPCPort:     config.NewIntOrUndefined(&rpcAddr),
+		RPCHTTPPort: config.NewIntOrUndefined(&httpAddr),
 	})
 	defer shutdown()
 	testutil.CheckError(t, false, err)

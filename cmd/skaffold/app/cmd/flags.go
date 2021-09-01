@@ -26,7 +26,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
@@ -170,17 +169,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
 	},
 	{
-		Name:     "enable-rpc",
-		Usage:    "Enable gRPC for exposing Skaffold events",
-		Value:    &opts.EnableRPC,
-		DefValue: false,
-		DefValuePerCommand: map[string]interface{}{
-			"dev":   true,
-			"debug": true,
-		},
+		Name:          "enable-rpc",
+		Usage:         "Enable gRPC or HTTP APIs for exposing Skaffold events",
+		Value:         &opts.EnableRPC,
+		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
 		IsEnum:        true,
+		Deprecated:    "flags --rpc-port or --rpc-http-port now imply --enable-rpc=true, so please use only those instead",
 	},
 	{
 		Name:          "wait-for-connection",
@@ -193,7 +189,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "event-log-file",
-		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true",
+		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --rpc-port or --rpc-http-port",
 		Hidden:        true,
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
@@ -202,18 +198,18 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "rpc-port",
-		Usage:         "tcp port to expose event API",
+		Usage:         "tcp port to expose the Skaffold API over gRPC",
 		Value:         &opts.RPCPort,
-		DefValue:      constants.DefaultRPCPort,
-		FlagAddMethod: "IntVar",
+		DefValue:      nil,
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
 	},
 	{
 		Name:          "rpc-http-port",
-		Usage:         "tcp port to expose event REST API over HTTP",
+		Usage:         "tcp port to expose the Skaffold API over HTTP REST",
 		Value:         &opts.RPCHTTPPort,
-		DefValue:      constants.DefaultRPCHTTPPort,
-		FlagAddMethod: "IntVar",
+		DefValue:      nil,
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
 	},
 	{
@@ -601,6 +597,8 @@ func methodNameByType(v reflect.Value) string {
 	switch t {
 	case reflect.Bool:
 		return "BoolVar"
+	case reflect.Int:
+		return "IntVar"
 	case reflect.String:
 		return "StringVar"
 	case reflect.Slice:

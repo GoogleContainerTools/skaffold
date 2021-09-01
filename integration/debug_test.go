@@ -143,7 +143,7 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+	skaffold.Debug("--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
 
 	waitForDebugEvent(t, client, rpcAddr)
 }
@@ -157,7 +157,7 @@ func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+	skaffold.Debug("--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
 
 	waitForDebugEvent(t, client, rpcAddr)
 }

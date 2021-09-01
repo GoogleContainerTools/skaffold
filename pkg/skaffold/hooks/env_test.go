@@ -31,8 +31,8 @@ func TestSetupStaticEnvOptions(t *testing.T) {
 	cfg := mockCfg{
 		defaultRepo: util.StringPtr("gcr.io/foo"),
 		workDir:     ".",
-		rpcPort:     8080,
-		httpPort:    8081,
+		rpcPort:     util.IntPtr(8080),
+		httpPort:    util.IntPtr(8081),
 	}
 	SetupStaticEnvOptions(cfg)
 	testutil.CheckDeepEqual(t, cfg.defaultRepo, staticEnvOpts.DefaultRepo)
@@ -51,8 +51,8 @@ func TestGetEnv(t *testing.T) {
 			description: "static env opts, all defined",
 			input: StaticEnvOpts{
 				DefaultRepo: util.StringPtr("gcr.io/foo"),
-				RPCPort:     8080,
-				HTTPPort:    8081,
+				RPCPort:     util.IntPtr(8080),
+				HTTPPort:    util.IntPtr(8081),
 				WorkDir:     "./foo",
 			},
 			expected: []string{
@@ -65,8 +65,8 @@ func TestGetEnv(t *testing.T) {
 		{
 			description: "static env opts, some missing",
 			input: StaticEnvOpts{
-				RPCPort:  8080,
-				HTTPPort: 8081,
+				RPCPort:  util.IntPtr(8080),
+				HTTPPort: util.IntPtr(8081),
 				WorkDir:  "./foo",
 			},
 			expected: []string{
@@ -152,11 +152,11 @@ func TestGetEnv(t *testing.T) {
 type mockCfg struct {
 	defaultRepo *string
 	workDir     string
-	rpcPort     int
-	httpPort    int
+	rpcPort     *int
+	httpPort    *int
 }
 
 func (m mockCfg) DefaultRepo() *string  { return m.defaultRepo }
 func (m mockCfg) GetWorkingDir() string { return m.workDir }
-func (m mockCfg) RPCPort() int          { return m.rpcPort }
-func (m mockCfg) RPCHTTPPort() int      { return m.httpPort }
+func (m mockCfg) RPCPort() *int         { return m.rpcPort }
+func (m mockCfg) RPCHTTPPort() *int     { return m.httpPort }
