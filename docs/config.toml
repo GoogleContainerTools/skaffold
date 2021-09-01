@@ -110,6 +110,10 @@ breadcrumb_disable = false
 	name = "Mailing List"
 	url = "https://groups.google.com/forum/#!forum/skaffold-users"
 	icon = "fa fa-envelope"
+[[params.links.developer]]
+	name = "Feedback"
+	url = "https://forms.gle/BMTbGQXLWSdn7vEs6"
+	icon = "fas fa-poll"
 
 [menu]
 	[[menu.main]]
