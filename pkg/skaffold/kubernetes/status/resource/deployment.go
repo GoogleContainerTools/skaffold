@@ -136,8 +136,6 @@ func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 	ae := parseKubectlRolloutError(details, d.deadline, err)
 	d.UpdateStatus(ae)
 	// send event update in check status.
-	event.ResourceStatusCheckEventUpdated(d.String(), ae)
-	eventV2.ResourceStatusCheckEventUpdated(d.String(), sErrors.V2fromV1(ae))
 	// if deployment is successfully rolled out, send pod success event to make sure
 	// all pod are marked as success in V2
 	// See https://github.com/GoogleCloudPlatform/cloud-code-vscode-internal/issues/5277
@@ -307,14 +305,8 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 		if !found || originalPod.StatusUpdated(p) {
 			d.status.changed = true
 			prefix := fmt.Sprintf("%s %s:", tabHeader, p.String())
-			switch p.ActionableError().ErrCode {
-			case proto.StatusCode_STATUSCHECK_SUCCESS:
-				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())
-				eventV2.ResourceStatusCheckEventCompletedMessage(
-					p.String(),
-					fmt.Sprintf("%s running.\n", prefix),
-					sErrors.V2fromV1(p.ActionableError()))
-			default:
+			if p.ActionableError().ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS &&
+				p.ActionableError().Message != "" {
 				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
 				eventV2.ResourceStatusCheckEventUpdatedMessage(
 					p.String(),
