@@ -100,6 +100,7 @@ const LogLevel_ERROR = enums.LogLevel_ERROR
 const LogLevel_FATAL = enums.LogLevel_FATAL
 const LogLevel_PANIC = enums.LogLevel_PANIC
 const LogLevel_TRACE = enums.LogLevel_TRACE
+const LogLevel_STANDARD = enums.LogLevel_STANDARD
 
 var LogLevel_name = enums.LogLevel_name
 var LogLevel_value = enums.LogLevel_value
