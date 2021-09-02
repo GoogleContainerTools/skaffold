@@ -62,8 +62,8 @@ func TestNewResource(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := NewResourceFromObject(test.resource, Status(""), proto.ActionableErr{}, nil)
-			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}))
-			t.CheckDeepEqual(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}))
+			t.CheckDeepEqualProtoMessage(test.expected, actual, cmp.AllowUnexported(Resource{}))
+			t.CheckDeepEqualProtoMessage(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}))
 		})
 	}
 }

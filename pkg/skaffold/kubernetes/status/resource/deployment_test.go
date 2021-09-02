@@ -167,7 +167,7 @@ func TestParseKubectlError(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			ae := parseKubectlRolloutError(test.details, 10*time.Second, test.err)
-			t.CheckDeepEqual(test.expectedAe, ae)
+			t.CheckDeepEqualProtoMessage(test.expectedAe, ae)
 		})
 	}
 }

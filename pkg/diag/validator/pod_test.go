@@ -783,7 +783,7 @@ func TestRun(t *testing.T) {
 
 			actual, err := testPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
+			t.CheckDeepEqualProtoMessage(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
 					return true
 				} else if x != nil && y != nil {

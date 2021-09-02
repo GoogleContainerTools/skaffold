@@ -190,7 +190,7 @@ func TestBuildProblems(t *testing.T) {
 			actual := sErrors.ShowAIError(&cfg, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(&cfg, constants.Build, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqualProtoMessage(test.expectedAE, actualAE)
 		})
 	}
 }

@@ -162,7 +162,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			}
 			if test.err != nil && test.expectedErrCode != 0 {
 				if ae, ok := err.(sErrors.ErrDef); ok {
-					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode())
+					t.CheckDeepEqualProtoMessage(test.expectedErrCode, ae.StatusCode())
 					t.CheckErrorContains(test.expectedErr.Error(), ae)
 				} else {
 					t.Fatalf("expected to find an actionable error. not found")

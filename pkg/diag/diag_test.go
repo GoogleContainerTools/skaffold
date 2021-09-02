@@ -82,7 +82,7 @@ func TestRun(t *testing.T) {
 			m := &mockValidator{}
 			d = d.WithValidators([]validator.Validator{m})
 			d.Run(context.Background())
-			t.CheckDeepEqual(test.expected, m, cmp.AllowUnexported(mockValidator{}))
+			t.CheckDeepEqualProtoMessage(test.expected, m, cmp.AllowUnexported(mockValidator{}))
 		})
 	}
 }

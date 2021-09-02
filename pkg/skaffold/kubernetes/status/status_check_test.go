@@ -610,7 +610,7 @@ func TestPollDeployment(t *testing.T) {
 
 			pollDeploymentStatus(context.Background(), &statusConfig{}, dep)
 
-			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
+			t.CheckDeepEqualProtoMessage(test.expected, test.dep.Status().ActionableError().ErrCode)
 		})
 	}
 }
