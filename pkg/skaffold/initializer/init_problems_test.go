@@ -123,7 +123,7 @@ func TestInitProblems(t *testing.T) {
 			actual := sErrors.ShowAIError(nil, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(nil, constants.Init, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqualProtoMessage(test.expectedAE, actualAE)
 		})
 	}
 }
