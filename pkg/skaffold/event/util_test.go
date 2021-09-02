@@ -142,7 +142,7 @@ func TestEmptyState(t *testing.T) {
 
 			// sort and compare
 			sort.Slice(builders, func(i, j int) bool { return builders[i].Type < builders[j].Type })
-			t.CheckDeepEqual(metadata, test.expected)
+			t.CheckDeepEqualProtoMessage(metadata, test.expected)
 		})
 	}
 }

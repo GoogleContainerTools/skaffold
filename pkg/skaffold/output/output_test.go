@@ -137,7 +137,7 @@ func TestWithEventContext(t *testing.T) {
 			writer: skaffoldWriter{
 				MainWriter:  ioutil.Discard,
 				EventWriter: eventV2.NewLogger(constants.Build, "1"),
-			},
+				EventWriterV3: eventV3.NewLogger(constants.Build, "1"),			},
 			phase:     constants.Test,
 			subtaskID: "2",
 			expected: skaffoldWriter{
@@ -172,6 +172,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 				return skaffoldWriter{
 					MainWriter:  colorableWriter{out},
 					EventWriter: ioutil.Discard,
+					EventWriterV3: ioutil.Discard,
 					timestamps:  true,
 				}
 			},
@@ -183,6 +184,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 				return skaffoldWriter{
 					MainWriter:  colorableWriter{out},
 					EventWriter: ioutil.Discard,
+					EventWriterV3: ioutil.Discard,
 				}
 			},
 			expectedLen: len("\u001B[32mtesting!\u001B[0m"),
@@ -193,6 +195,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 				return skaffoldWriter{
 					MainWriter:  out,
 					EventWriter: ioutil.Discard,
+					EventWriterV3: ioutil.Discard,
 					timestamps:  true,
 				}
 			},
@@ -204,6 +207,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 				return skaffoldWriter{
 					MainWriter:  out,
 					EventWriter: ioutil.Discard,
+					EventWriterV3: ioutil.Discard,
 				}
 			},
 			expectedLen: len("testing!"),

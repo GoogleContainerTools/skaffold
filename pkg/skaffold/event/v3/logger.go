@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/enums"
-	protoV3 "github.com/GoogleContainerTools/skaffold/proto/v3"
+	proto "github.com/GoogleContainerTools/skaffold/proto/v3"
 )
 
 type logger struct {
@@ -40,31 +40,25 @@ func NewLogger(phase constants.Phase, subtaskID string) io.Writer {
 }
 
 func (l logger) Write(p []byte) (int, error) {
-	handler.handleSkaffoldLogEvent(&protoV3.SkaffoldLogEvent{
+	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 		TaskId:    fmt.Sprintf("%s-%d", l.Phase, handler.iteration),
 		SubtaskId: l.SubtaskID,
-		Level:     -1,
+		Level:     enums.LogLevel_STANDARD,
 		Message:   string(p),
 	})
 
 	return len(p), nil
 }
 
-func (ev *eventHandler) handleSkaffoldLogEvent(e *protoV3.SkaffoldLogEvent) {
+func (ev *eventHandler) handleSkaffoldLogEvent(e *proto.SkaffoldLogEvent) {
 	ev.handle(e, SkaffoldLogEvent)
 }
 
 // logHook is an implementation of logrus.Hook used to send SkaffoldLogEvents
-type logHook struct {
-	task    constants.Phase
-	subtask string
-}
+type logHook struct{}
 
-func NewLogHook(task constants.Phase, subtask string) logrus.Hook {
-	return logHook{
-		task:    task,
-		subtask: subtask,
-	}
+func NewLogHook() logrus.Hook {
+	return logHook{}
 }
 
 // Levels returns all levels as we want to send events for all levels
@@ -82,11 +76,20 @@ func (h logHook) Levels() []logrus.Level {
 
 // Fire constructs a SkaffoldLogEvent and sends it to the event channel
 func (h logHook) Fire(entry *logrus.Entry) error {
-	handler.handleSkaffoldLogEvent(&protoV3.SkaffoldLogEvent{
-		TaskId:    fmt.Sprintf("%s-%d", h.task, handler.iteration),
-		SubtaskId: h.subtask,
+	task, ok := entry.Data["task"]
+	if !ok {
+		task = constants.DevLoop
+	}
+	subtask, ok := entry.Data["subtask"]
+	if !ok {
+		subtask = constants.SubtaskIDNone
+	}
+
+	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+		TaskId:    fmt.Sprintf("%s-%d", task, handler.iteration),
+		SubtaskId: fmt.Sprintf("%s", subtask),
 		Level:     levelFromEntry(entry),
-		Message:   entry.Message,
+		Message:   fmt.Sprintf("%s\n", entry.Message),
 	})
 	return nil
 }

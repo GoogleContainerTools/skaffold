@@ -127,7 +127,7 @@ func TestShowAIError(t *testing.T) {
 			actual := ShowAIError(runCtx, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := ActionableErr(runCtx, test.phase, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqualProtoMessage(test.expectedAE, actualAE)
 		})
 	}
 }
