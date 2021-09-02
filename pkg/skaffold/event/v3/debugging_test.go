@@ -23,8 +23,6 @@ import (
 )
 
 func TestDebuggingContainer(t *testing.T) {
-	defer func() { handler = newHandler() }()
-
 	handler = newHandler()
 	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 

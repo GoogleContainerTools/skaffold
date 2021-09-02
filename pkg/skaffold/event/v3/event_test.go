@@ -42,7 +42,6 @@ var targetPort = protoV3.IntOrString{Type: 0, IntVal: 2001}
 func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
 		eventInAnyFormat := &anypb.Any{}
-
 		anypb.MarshalFrom(eventInAnyFormat, &protoV3.SkaffoldLogEvent{
 			Message: "OLD"}, proto.MarshalOptions{})
 

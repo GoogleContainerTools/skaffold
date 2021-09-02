@@ -26,6 +26,7 @@ import (
 func TestHandleDeploySubtaskEvent(t *testing.T) {
 	t.Run("In Progress", func(t *testing.T) {
 		defer func() { handler = newHandler() }()
+		handler = newHandler()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 		wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 		DeployInProgress(1)
@@ -33,6 +34,7 @@ func TestHandleDeploySubtaskEvent(t *testing.T) {
 	})
 
 	t.Run("Failed", func(t *testing.T) {
+		handler = newHandler()
 		defer func() { handler = newHandler() }()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 		wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -42,6 +44,7 @@ func TestHandleDeploySubtaskEvent(t *testing.T) {
 
 	t.Run("Succeeded", func(t *testing.T) {
 		defer func() { handler = newHandler() }()
+		handler = newHandler()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 		wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 		DeploySucceeded(1)
