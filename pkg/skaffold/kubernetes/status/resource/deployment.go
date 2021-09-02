@@ -326,9 +326,9 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 					prefix,
 					sErrors.V2fromV1(p.ActionableError()))
 				eventV3.ResourceStatusCheckEventUpdatedMessage(
-						p.String(),
-						prefix,
-						sErrors.V3fromV1(p.ActionableError()))
+					p.String(),
+					prefix,
+					sErrors.V3fromV1(p.ActionableError()))
 			}
 		}
 		newPods[p.String()] = p
