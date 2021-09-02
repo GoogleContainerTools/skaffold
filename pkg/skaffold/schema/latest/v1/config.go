@@ -519,7 +519,7 @@ type DeployConfig struct {
 	Logs LogsConfig `yaml:"logs,omitempty"`
 
 	// TransformableAllowList configures an allowlist for transforming manifests.
-	TransformableAllowList []ResourceFilter `yaml:"transformableAllowList,omitempty"`
+	TransformableAllowList []ResourceFilter `yaml:"-,omitempty"`
 }
 
 // DeployType contains the specific implementation and parameters needed
