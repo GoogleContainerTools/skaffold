@@ -33,7 +33,7 @@ func RendererInProgress(id int) {
 		Status: InProgress,
 	}
 	updateRenderStatus(rendererEvent.Status)
-	handler.handle(rendererEvent.Id, rendererEvent, RenderStartedEvent)
+	handler.handle(rendererEvent, RenderStartedEvent)
 }
 
 // RendererFailed adds an event to mark a render process has been failed.
@@ -45,7 +45,7 @@ func RendererFailed(id int, err error) {
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Render, err),
 	}
 	updateRenderStatus(rendererEvent.Status)
-	handler.handle(rendererEvent.Id, rendererEvent, RenderFailedEvent)
+	handler.handle(rendererEvent, RenderFailedEvent)
 }
 
 // RendererSucceeded adds an event to mark a render process has been succeeded.
@@ -56,7 +56,7 @@ func RendererSucceeded(id int) {
 		Status: Succeeded,
 	}
 	updateRenderStatus(rendererEvent.Status)
-	handler.handle(rendererEvent.Id, rendererEvent, RenderSucceededEvent)
+	handler.handle(rendererEvent, RenderSucceededEvent)
 }
 
 func updateRenderStatus(status string) {

@@ -341,7 +341,7 @@ func TaskInProgress(task constants.Phase, description string) {
 		Iteration:   int32(handler.iteration),
 		Status:      InProgress,
 	}
-	handler.handle(event.Id, event, TaskStartedEvent)
+	handler.handle(event, TaskStartedEvent)
 }
 
 func TaskFailed(task constants.Phase, err error) {
@@ -353,7 +353,7 @@ func TaskFailed(task constants.Phase, err error) {
 		Status:        Failed,
 		ActionableErr: ae,
 	}
-	handler.handle(event.Id, event, TaskFailedEvent)
+	handler.handle(event, TaskFailedEvent)
 }
 
 func TaskSucceeded(task constants.Phase) {
@@ -363,7 +363,7 @@ func TaskSucceeded(task constants.Phase) {
 		Iteration: int32(handler.iteration),
 		Status:    Succeeded,
 	}
-	handler.handle(event.Id, event, TaskCompletedEvent)
+	handler.handle(event, TaskCompletedEvent)
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
@@ -392,7 +392,7 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 	handler.state.ForwardedPorts[event.LocalPort] = event
 	handler.stateLock.Unlock()
 
-	handler.handle(event.TaskId, event, PortForwardedEvent)
+	handler.handle(event, PortForwardedEvent)
 }
 
 func (ev *eventHandler) setState(state protoV3.State) {
@@ -401,7 +401,7 @@ func (ev *eventHandler) setState(state protoV3.State) {
 	ev.stateLock.Unlock()
 }
 
-func (ev *eventHandler) handle(id string, event proto.Message, eventtype string) {
+func (ev *eventHandler) handle(event proto.Message, eventtype string) {
 	eventInAnyFormat := &anypb.Any{}
 	anypb.MarshalFrom(eventInAnyFormat, event, proto.MarshalOptions{})
 

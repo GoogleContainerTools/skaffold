@@ -48,7 +48,7 @@ func DebuggingContainerStarted(podName, containerName, namespace, artifact, runt
 	})
 	handler.stateLock.Unlock()
 
-	handler.handle(artifact, debuggingContainerEvent, DebuggingContainerStartedEvent)
+	handler.handle(debuggingContainerEvent, DebuggingContainerStartedEvent)
 }
 
 // DebuggingContainerTerminated notifies that a debuggable container has disappeared.
@@ -75,5 +75,5 @@ func DebuggingContainerTerminated(podName, containerName, namespace, artifact, r
 	handler.state.DebuggingContainers = handler.state.DebuggingContainers[:n]
 	handler.stateLock.Unlock()
 
-	handler.handle(artifact, debuggingContainerEvent, DebuggingContainerTerminatedEvent)
+	handler.handle(debuggingContainerEvent, DebuggingContainerTerminatedEvent)
 }

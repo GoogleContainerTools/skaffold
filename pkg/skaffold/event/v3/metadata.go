@@ -31,7 +31,7 @@ func LogMetaEvent() {
 		Entry:    fmt.Sprintf("Starting Skaffold: %+v", version.Get()),
 		Metadata: metadata,
 	}
-	handler.handle("Id-Metadata", metaEvent, MetaEvent)
+	handler.handle(metaEvent, MetaEvent)
 }
 
 func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID string) *protoV3.Metadata {

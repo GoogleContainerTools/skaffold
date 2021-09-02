@@ -38,7 +38,7 @@ func CacheCheckInProgress(artifact string) {
 		Status:        InProgress,
 		ActionableErr: nil,
 	}
-	handler.handle(artifact, buildEvent, BuildStartedEvent)
+	handler.handle(buildEvent, BuildStartedEvent)
 }
 
 func CacheCheckMiss(artifact string) {
@@ -50,7 +50,7 @@ func CacheCheckMiss(artifact string) {
 		Status:        Failed,
 		ActionableErr: nil,
 	}
-	handler.handle(artifact, buildEvent, BuildFailedEvent)
+	handler.handle(buildEvent, BuildFailedEvent)
 }
 
 func CacheCheckHit(artifact string) {
@@ -62,7 +62,7 @@ func CacheCheckHit(artifact string) {
 		Status:        Succeeded,
 		ActionableErr: nil,
 	}
-	handler.handle(artifact, buildEvent, BuildSucceededEvent)
+	handler.handle(buildEvent, BuildSucceededEvent)
 }
 
 func BuildInProgress(artifact string) {
@@ -75,7 +75,7 @@ func BuildInProgress(artifact string) {
 		ActionableErr: nil,
 	}
 	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
-	handler.handle(artifact, buildEvent, BuildStartedEvent)
+	handler.handle(buildEvent, BuildStartedEvent)
 }
 
 func BuildFailed(artifact string, err error) {
@@ -92,7 +92,7 @@ func BuildFailed(artifact string, err error) {
 		ActionableErr: aErr,
 	}
 	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
-	handler.handle(artifact, buildEvent, BuildFailedEvent)
+	handler.handle(buildEvent, BuildFailedEvent)
 }
 
 func BuildSucceeded(artifact string) {
@@ -105,7 +105,7 @@ func BuildSucceeded(artifact string) {
 		ActionableErr: nil,
 	}
 	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
-	handler.handle(artifact, buildEvent, BuildSucceededEvent)
+	handler.handle(buildEvent, BuildSucceededEvent)
 }
 
 func BuildCanceled(artifact string, err error) {
@@ -121,7 +121,7 @@ func BuildCanceled(artifact string, err error) {
 		ActionableErr: aErr,
 	}
 	updateBuildStatus(buildEvent.Artifact, buildEvent.Status)
-	handler.handle(artifact, buildEvent, BuildCancelledEvent)
+	handler.handle(buildEvent, BuildCancelledEvent)
 }
 
 func updateBuildStatus(artifact string, status string) {

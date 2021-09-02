@@ -32,7 +32,7 @@ func TesterInProgress(id int) {
 		Status: InProgress,
 	}
 	updateTestStatus(event.Status)
-	handler.handle(event.TaskId, event, TestStartedEvent)
+	handler.handle(event, TestStartedEvent)
 }
 
 func TesterFailed(id int, err error) {
@@ -43,7 +43,7 @@ func TesterFailed(id int, err error) {
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Test, err),
 	}
 	updateTestStatus(event.Status)
-	handler.handle(event.TaskId, event, TestFailedEvent)
+	handler.handle(event, TestFailedEvent)
 }
 
 func TesterSucceeded(id int) {
@@ -53,7 +53,7 @@ func TesterSucceeded(id int) {
 		Status: Succeeded,
 	}
 	updateTestStatus(event.Status)
-	handler.handle(event.TaskId, event, TestSucceededEvent)
+	handler.handle(event, TestSucceededEvent)
 }
 
 func updateTestStatus(status string) {

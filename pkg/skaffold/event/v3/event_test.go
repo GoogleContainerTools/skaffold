@@ -427,7 +427,6 @@ func TestSaveEventsToFile(t *testing.T) {
 	buildCompleteEvent, devLoopCompleteEvent := 0, 0
 
 	for _, entry := range logEntries {
-		////t.Log(entry.GetEventType())
 
 		switch entry.Type {
 		case BuildSucceededEvent:

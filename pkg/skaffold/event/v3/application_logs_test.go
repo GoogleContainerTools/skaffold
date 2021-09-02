@@ -42,7 +42,7 @@ func TestHandleApplicationLogEvent(t *testing.T) {
 			Message:              message,
 			RichFormattedMessage: "",
 		}
-		testHandler.handle(message, event, ApplicationLogEvent)
+		testHandler.handle(event, ApplicationLogEvent)
 	}
 
 	wait(t, func() bool {

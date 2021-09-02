@@ -32,7 +32,7 @@ func DeployInProgress(id int) {
 		Status: InProgress,
 	}
 	updateDeployStatus(deployEvent.Status)
-	handler.handle(deployEvent.Id, deployEvent, DeployStartedEvent)
+	handler.handle(deployEvent, DeployStartedEvent)
 }
 
 func DeployFailed(id int, err error) {
@@ -43,7 +43,7 @@ func DeployFailed(id int, err error) {
 		ActionableErr: sErrors.ActionableErrV3(handler.cfg, constants.Deploy, err),
 	}
 	updateDeployStatus(deployEvent.Status)
-	handler.handle(deployEvent.Id, deployEvent, DeployFailedEvent)
+	handler.handle(deployEvent, DeployFailedEvent)
 }
 
 func DeploySucceeded(id int) {
@@ -53,7 +53,7 @@ func DeploySucceeded(id int) {
 		Status: Succeeded,
 	}
 	updateDeployStatus(deployEvent.Status)
-	handler.handle(deployEvent.Id, deployEvent, DeploySucceededEvent)
+	handler.handle(deployEvent, DeploySucceededEvent)
 }
 
 func updateDeployStatus(status string) {

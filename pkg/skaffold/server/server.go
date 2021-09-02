@@ -259,10 +259,6 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 	}, nil
 }
 
-type errResponse struct {
-	Err string `json:"error,omitempty"`
-}
-
 func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.Listener, int, error) {
 	for try := 1; ; try++ {
 		port := util.GetAvailablePort(util.Loopback, preferredPort, usedPorts)

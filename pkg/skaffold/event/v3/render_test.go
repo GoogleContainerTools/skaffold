@@ -24,7 +24,6 @@ import (
 )
 
 func TestHandleRenderSubtaskEvent(t *testing.T) {
-
 	t.Run("In Progress", func(t *testing.T) {
 		defer func() { handler = newHandler() }()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
