@@ -24,7 +24,6 @@ import (
 )
 
 func TestHandleTestSubtaskEvent(t *testing.T) {
-
 	t.Run("In Progress", func(t *testing.T) {
 		defer func() { handler = newHandler() }()
 		handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
@@ -50,5 +49,4 @@ func TestHandleTestSubtaskEvent(t *testing.T) {
 		TesterSucceeded(1)
 		wait(t, func() bool { return handler.getState().TestState.Status == Succeeded })
 	})
-
 }

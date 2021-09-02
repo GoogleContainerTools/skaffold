@@ -62,7 +62,6 @@ func TestGetLogEvents(t *testing.T) {
 				Message: "POISON PILL"}, proto.MarshalOptions{})
 			ev.logEvent(&protoV3.Event{
 				Type: SkaffoldLogEvent, Data: localEvent2})
-
 		}()
 
 		var received int32
@@ -427,7 +426,6 @@ func TestSaveEventsToFile(t *testing.T) {
 	buildCompleteEvent, devLoopCompleteEvent := 0, 0
 
 	for _, entry := range logEntries {
-
 		switch entry.Type {
 		case BuildSucceededEvent:
 			buildCompleteEvent++

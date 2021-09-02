@@ -28,19 +28,19 @@ import (
 )
 
 func TestMakeAuthSuggestionsForRepo(t *testing.T) {
-	testutil.CheckDeepEqual(t, &proto.Suggestion{
+	testutil.CheckDeepEqualProtoMessage(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `docker login`",
 	}, makeAuthSuggestionsForRepo(""))
-	testutil.CheckDeepEqual(t, &proto.Suggestion{
+	testutil.CheckDeepEqualProtoMessage(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
 	}, makeAuthSuggestionsForRepo("gcr.io/test"))
-	testutil.CheckDeepEqual(t, &proto.Suggestion{
+	testutil.CheckDeepEqualProtoMessage(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
 	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"))
-	testutil.CheckDeepEqual(t, &proto.Suggestion{
+	testutil.CheckDeepEqualProtoMessage(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
 	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"))
