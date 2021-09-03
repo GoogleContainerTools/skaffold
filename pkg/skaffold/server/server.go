@@ -18,16 +18,15 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -35,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	protoV1 "github.com/GoogleContainerTools/skaffold/proto/v1"
 	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -168,7 +167,7 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 		AutoSyncCallback:     func(bool) {},
 		AutoDeployCallback:   func(bool) {},
 	}
-	proto.RegisterSkaffoldServiceServer(s, srv)
+	protoV1.RegisterSkaffoldServiceServer(s, srv)
 	protoV2.RegisterSkaffoldV2ServiceServer(s, v2.Srv)
 
 	go func() {
@@ -196,9 +195,21 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 }
 
 func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func() error, error) {
-	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler), runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
+			Marshaler: &runtime.JSONPb{
+				MarshalOptions: protojson.MarshalOptions{
+					UseProtoNames:   true,
+					EmitUnpopulated: true,
+				},
+				UnmarshalOptions: protojson.UnmarshalOptions{
+					DiscardUnknown: true,
+				},
+			},
+		}),
+	)
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	err := protoV1.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
@@ -229,21 +240,6 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 		defer cancel()
 		return server.Shutdown(ctx)
 	}, nil
-}
-
-type errResponse struct {
-	Err string `json:"error,omitempty"`
-}
-
-func errorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, _ *http.Request, err error) {
-	writer.Header().Set("Content-type", marshaler.ContentType())
-	s, _ := status.FromError(err)
-	writer.WriteHeader(runtime.HTTPStatusFromCode(s.Code()))
-	if err := json.NewEncoder(writer).Encode(errResponse{
-		Err: s.Message(),
-	}); err != nil {
-		writer.Write([]byte(`{"error": "failed to marshal error message"}`))
-	}
 }
 
 func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.Listener, int, error) {

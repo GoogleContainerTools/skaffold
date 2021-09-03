@@ -18,7 +18,10 @@ package initializer
 
 import (
 	"fmt"
+	"google.golang.org/protobuf/testing/protocmp"
 	"testing"
+
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -123,7 +126,7 @@ func TestInitProblems(t *testing.T) {
 			actual := sErrors.ShowAIError(nil, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(nil, constants.Init, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqual(test.expectedAE, actualAE, protocmp.Transform())
 		})
 	}
 }

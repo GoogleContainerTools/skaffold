@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/testing/protocmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -167,7 +169,7 @@ func TestParseKubectlError(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			ae := parseKubectlRolloutError(test.details, 10*time.Second, test.err)
-			t.CheckDeepEqual(test.expectedAe, ae)
+			t.CheckDeepEqual(test.expectedAe, ae, protocmp.Transform())
 		})
 	}
 }

@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/protobuf/testing/protocmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -610,7 +611,7 @@ func TestPollDeployment(t *testing.T) {
 
 			pollDeploymentStatus(context.Background(), &statusConfig{}, dep)
 
-			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
+			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode, protocmp.Transform())
 		})
 	}
 }

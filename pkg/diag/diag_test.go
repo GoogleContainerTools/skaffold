@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/testing/protocmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
@@ -82,7 +83,7 @@ func TestRun(t *testing.T) {
 			m := &mockValidator{}
 			d = d.WithValidators([]validator.Validator{m})
 			d.Run(context.Background())
-			t.CheckDeepEqual(test.expected, m, cmp.AllowUnexported(mockValidator{}))
+			t.CheckDeepEqual(test.expected, m, cmp.AllowUnexported(mockValidator{}, protocmp.Transform()))
 		})
 	}
 }

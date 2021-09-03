@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/testing/protocmp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -62,8 +63,8 @@ func TestNewResource(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := NewResourceFromObject(test.resource, Status(""), proto.ActionableErr{}, nil)
-			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}))
-			t.CheckDeepEqual(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}))
+			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), protocmp.Transform())
+			t.CheckDeepEqual(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}), protocmp.Transform())
 		})
 	}
 }
