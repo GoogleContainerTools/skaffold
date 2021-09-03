@@ -39,12 +39,7 @@ func (s *Server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
 }
 
 func (s *Server) Events(_ *empty.Empty, stream proto.SkaffoldV3Service_EventsServer) error {
-
-	// grpc gateway converts messagesf from protobuf to JSON, so updating DatacontentType to application/json
-	return event.ForEachEvent(func(event *proto.Event) error {
-		event.Datacontenttype = "application/json"
-		return stream.Send(event)
-	})
+	return event.ForEachEvent(stream.Send)
 }
 
 func (s *Server) ApplicationLogs(_ *empty.Empty, stream proto.SkaffoldV3Service_ApplicationLogsServer) error {
