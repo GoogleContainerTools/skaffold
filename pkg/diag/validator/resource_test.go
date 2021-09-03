@@ -44,7 +44,7 @@ func TestNewResource(t *testing.T) {
 					Name:      "foo",
 				},
 			},
-			expected:     Resource{"default", "pod", "foo", nil, Status(""), proto.ActionableErr{}},
+			expected:     Resource{"default", "pod", "foo", nil, Status(""), &proto.ActionableErr{}},
 			expectedName: "pod/foo",
 		},
 		{
@@ -56,13 +56,13 @@ func TestNewResource(t *testing.T) {
 					Name:      "bar",
 				},
 			},
-			expected:     Resource{"test", "pod", "bar", nil, Status(""), proto.ActionableErr{}},
+			expected:     Resource{"test", "pod", "bar", nil, Status(""), &proto.ActionableErr{}},
 			expectedName: "test:pod/bar",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := NewResourceFromObject(test.resource, Status(""), proto.ActionableErr{}, nil)
+			actual := NewResourceFromObject(test.resource, Status(""), &proto.ActionableErr{}, nil)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), protocmp.Transform())
 			t.CheckDeepEqual(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}), protocmp.Transform())
 		})

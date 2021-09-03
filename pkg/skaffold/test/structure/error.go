@@ -25,7 +25,7 @@ import (
 
 func containerStructureTestErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("running container-structure-test: %s", err),
 			ErrCode: proto.StatusCode_TEST_CST_USER_ERR,
 		},
@@ -34,7 +34,7 @@ func containerStructureTestErr(err error) error {
 
 func expandingFilePathsErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("expanding test file paths: %s", err),
 			ErrCode: proto.StatusCode_TEST_USER_CONFIG_ERR,
 		},
@@ -43,7 +43,7 @@ func expandingFilePathsErr(err error) error {
 
 func dockerPullImageErr(fqn string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to docker pull image %s: %s", fqn, err),
 			ErrCode: proto.StatusCode_TEST_IMG_PULL_ERR,
 		},

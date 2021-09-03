@@ -256,11 +256,11 @@ func TestGetDeployStatus(t *testing.T) {
 			deployments: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
 					resource.NewDeployment("r2", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
 		},
@@ -285,7 +285,7 @@ func TestGetDeployStatus(t *testing.T) {
 			deployments: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("deployment", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
 				),
 			},
 			shouldErr:    true,
@@ -297,15 +297,15 @@ func TestGetDeployStatus(t *testing.T) {
 			deployments: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("deployment-cancelled", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 				),
 				withStatus(
 					resource.NewDeployment("deployment-success", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
 					resource.NewDeployment("deployment", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
 				),
 			},
 			shouldErr:    true,
@@ -333,7 +333,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 		namespace   string
 		deployment  string
 		pending     int32
-		ae          proto.ActionableErr
+		ae          *proto.ActionableErr
 		expected    string
 	}{
 		{
@@ -341,7 +341,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     0,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - test:deployment/dep is ready.\n",
 		},
 		{
@@ -349,7 +349,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "default",
 			deployment:  "dep",
 			pending:     0,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - deployment/dep is ready.\n",
 		},
 		{
@@ -357,7 +357,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     0,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
@@ -365,7 +365,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     4,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - test:deployment/dep is ready. [4/10 deployment(s) still pending]\n",
 		},
 		{
@@ -373,7 +373,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     8,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
@@ -381,7 +381,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     4,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 			expected:    "",
 		},
 	}
@@ -416,7 +416,7 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
 			expected: true,
@@ -426,7 +426,7 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "error"},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "error"},
 				),
 			},
 			expected: true,
@@ -436,12 +436,12 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
 					resource.NewDeployment("r2", "test", 1).
 						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 						Message: "pending\n"},
 				),
 			},
@@ -454,11 +454,11 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
 					resource.NewDeployment("r2", "test", 1),
-					proto.ActionableErr{
+					&proto.ActionableErr{
 						ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 						Message: resource.MsgKubectlConnection},
 				),
@@ -471,7 +471,7 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 				),
 			},
 			expected:    true,
@@ -491,7 +491,7 @@ func TestPrintStatus(t *testing.T) {
 	}
 }
 
-func withStatus(d *resource.Deployment, ae proto.ActionableErr) *resource.Deployment {
+func withStatus(d *resource.Deployment, ae *proto.ActionableErr) *resource.Deployment {
 	d.UpdateStatus(ae)
 	return d
 }
@@ -575,7 +575,7 @@ func TestPollDeployment(t *testing.T) {
 					"pod",
 					"dep-pod",
 					"Pending",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
 					[]string{"err"})},
 			},
 			expected: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
@@ -595,7 +595,7 @@ func TestPollDeployment(t *testing.T) {
 					"pod",
 					"dep-pod",
 					"Pending",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
 					[]string{"err"})},
 			},
 			expected: proto.StatusCode_STATUSCHECK_SUCCESS,

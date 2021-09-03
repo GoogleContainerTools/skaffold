@@ -111,7 +111,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			r.CheckStatus(context.Background(), &statusConfig{})
 
 			if test.cancelled {
-				r.UpdateStatus(proto.ActionableErr{
+				r.UpdateStatus(&proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 					Message: "context cancelled",
 				})
@@ -131,12 +131,12 @@ func TestParseKubectlError(t *testing.T) {
 		description string
 		details     string
 		err         error
-		expectedAe  proto.ActionableErr
+		expectedAe  *proto.ActionableErr
 	}{
 		{
 			description: "rollout status connection error",
 			err:         errors.New("Unable to connect to the server"),
-			expectedAe: proto.ActionableErr{
+			expectedAe: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 				Message: MsgKubectlConnection,
 			},
@@ -144,7 +144,7 @@ func TestParseKubectlError(t *testing.T) {
 		{
 			description: "rollout status kubectl command killed",
 			err:         errors.New("signal: killed"),
-			expectedAe: proto.ActionableErr{
+			expectedAe: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
 				Message: "received Ctrl-C or deployments could not stabilize within 10s: kubectl rollout status command interrupted\n",
 			},
@@ -152,7 +152,7 @@ func TestParseKubectlError(t *testing.T) {
 		{
 			description: "rollout status random error",
 			err:         errors.New("deployment test not found"),
-			expectedAe: proto.ActionableErr{
+			expectedAe: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
 				Message: "deployment test not found",
 			},
@@ -160,7 +160,7 @@ func TestParseKubectlError(t *testing.T) {
 		{
 			description: "rollout status nil error",
 			details:     "successfully rolled out",
-			expectedAe: proto.ActionableErr{
+			expectedAe: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 				Message: "successfully rolled out",
 			},
@@ -222,14 +222,14 @@ func TestReportSinceLastUpdated(t *testing.T) {
 	tmpDir := filepath.Clean(os.TempDir())
 	var tests = []struct {
 		description  string
-		ae           proto.ActionableErr
+		ae           *proto.ActionableErr
 		logs         []string
 		expected     string
 		expectedMute string
 	}{
 		{
 			description: "logs more than 3 lines",
-			ae:          proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
+			ae:          &proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
 			logs: []string{
 				"[pod container] Waiting for mongodb to start...",
 				"[pod container] Waiting for connection for 2 sec",
@@ -255,7 +255,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 		},
 		{
 			description: "logs less than 3 lines",
-			ae:          proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
+			ae:          &proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
 			logs: []string{
 				"[pod container] Waiting for mongodb to start...",
 				"[pod container] Waiting for connection for 2 sec",
@@ -276,7 +276,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 		},
 		{
 			description: "no logs or empty",
-			ae:          proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
+			ae:          &proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
 			expected: ` - test-ns:deployment/test: container terminated with exit code 11
     - test:pod/foo: container terminated with exit code 11
 `,
@@ -294,7 +294,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 					"pod",
 					"foo",
 					"Pending",
-					proto.ActionableErr{
+					&proto.ActionableErr{
 						ErrCode: proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR,
 						Message: "container terminated with exit code 11"},
 					test.logs,
@@ -345,7 +345,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 			dep := NewDeployment("test", "test-ns", 1)
 			var actual string
 			for i, status := range test.podStatuses {
-				dep.UpdateStatus(proto.ActionableErr{
+				dep.UpdateStatus(&proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 					Message: status,
 				})
@@ -355,7 +355,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 						"pod",
 						"foo",
 						"Pending",
-						proto.ActionableErr{
+						&proto.ActionableErr{
 							ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 							Message: status,
 						},

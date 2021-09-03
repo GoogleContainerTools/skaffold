@@ -93,7 +93,7 @@ func (d *Deployment) Deadline() time.Duration {
 	return d.deadline
 }
 
-func (d *Deployment) UpdateStatus(ae proto.ActionableErr) {
+func (d *Deployment) UpdateStatus(ae *proto.ActionableErr) {
 	updated := newStatus(ae)
 	if d.status.Equal(updated) {
 		d.status.changed = false
@@ -112,7 +112,7 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 		name:         name,
 		namespace:    ns,
 		rType:        deploymentType,
-		status:       newStatus(proto.ActionableErr{}),
+		status:       newStatus(&proto.ActionableErr{}),
 		deadline:     deadline,
 		podValidator: diag.New(nil),
 	}
@@ -144,7 +144,7 @@ func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 			eventV2.ResourceStatusCheckEventCompletedMessage(
 				pod.String(),
 				fmt.Sprintf("%s %s: running.\n", tabHeader, pod.String()),
-				protoV2.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+				&protoV2.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			)
 		}
 		return
@@ -244,30 +244,30 @@ func (d *Deployment) cleanupStatus(msg string) string {
 // $kubectl logs testPod  -f
 // 2020/06/18 17:28:31 service is running
 // Killed: 9
-func parseKubectlRolloutError(details string, deadline time.Duration, err error) proto.ActionableErr {
+func parseKubectlRolloutError(details string, deadline time.Duration, err error) *proto.ActionableErr {
 	switch {
 	case err == nil && strings.Contains(details, rollOutSuccess):
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 			Message: details,
 		}
 	case err == nil:
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 			Message: details,
 		}
 	case strings.Contains(err.Error(), connectionErrMsg):
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 			Message: MsgKubectlConnection,
 		}
 	case strings.Contains(err.Error(), killedErrMsg):
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
 			Message: fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v: %s", deadline, msgKubectlKilled),
 		}
 	default:
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
 			Message: err.Error(),
 		}
@@ -342,7 +342,7 @@ func (d *Deployment) WithPodStatuses(scs []proto.StatusCode) *Deployment {
 	for i, s := range scs {
 		name := fmt.Sprintf("%s-%d", d.name, i)
 		d.pods[name] = validator.NewResource("test", "pod", "foo", validator.Status("failed"),
-			proto.ActionableErr{Message: "pod failed", ErrCode: s}, nil)
+			&proto.ActionableErr{Message: "pod failed", ErrCode: s}, nil)
 	}
 	return d
 }

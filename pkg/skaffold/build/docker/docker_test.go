@@ -162,7 +162,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
 			}
 			if test.err != nil && test.expectedErrCode != 0 {
-				if ae, ok := err.(sErrors.ErrDef); ok {
+				if ae, ok := err.(*sErrors.ErrDef); ok {
 					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode(), protocmp.Transform())
 					t.CheckErrorContains(test.expectedErr.Error(), ae)
 				} else {

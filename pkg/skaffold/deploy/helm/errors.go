@@ -34,7 +34,7 @@ const (
 
 func versionGetErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: deployerr.MissingToolErr(toolName, fmt.Errorf(versionErrorString, err)),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_VERSION_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -48,7 +48,7 @@ func versionGetErr(err error) error {
 
 func minVersionErr() error {
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: "skaffold requires Helm version 3.0.0 or greater",
 			ErrCode: proto.StatusCode_DEPLOY_HELM_MIN_VERSION_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -62,7 +62,7 @@ func minVersionErr() error {
 
 func helmLabelErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_APPLY_LABELS,
 		})
@@ -74,7 +74,7 @@ func userErr(prefix string, err error) error {
 
 func noMatchingBuild(image string) error {
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("No built image found for `releases.artifactOverrides` value %s", image),
 			ErrCode: proto.StatusCode_DEPLOY_NO_MATCHING_BUILD,
 			Suggestions: []*proto.Suggestion{
@@ -88,7 +88,7 @@ func noMatchingBuild(image string) error {
 
 func createNamespaceErr(version string) error {
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("Skaffold config options `createNamespace` is not available in the current Helm version %s", version),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE,
 			Suggestions: []*proto.Suggestion{
