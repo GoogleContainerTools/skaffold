@@ -1,4 +1,6 @@
 name: "CodeQL"
+# Run the GitHub CodeQL analysis tasks against Skaffold
+# https://codeql.github.com/docs/
 
 on:
   # run nightly rather than on every PR as scan takes 35m
