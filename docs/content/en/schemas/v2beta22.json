@@ -1211,14 +1211,6 @@
           "type": "integer",
           "description": "*beta* deadline for deployments to stabilize in seconds.",
           "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
-        },
-        "transformableAllowList": {
-          "items": {
-            "$ref": "#/definitions/ResourceFilter"
-          },
-          "type": "array",
-          "description": "configures an allowlist for transforming manifests.",
-          "x-intellij-html-description": "configures an allowlist for transforming manifests."
         }
       },
       "preferredOrder": [
@@ -1229,8 +1221,7 @@
         "statusCheck",
         "statusCheckDeadlineSeconds",
         "kubeContext",
-        "logs",
-        "transformableAllowList"
+        "logs"
       ],
       "additionalProperties": false,
       "type": "object",
