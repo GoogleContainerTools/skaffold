@@ -87,6 +87,12 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			// detect images built by ko: https://github.com/google/ko#static-assets
+			description: "KO_DATA_PATH",
+			source:      ImageConfiguration{Env: map[string]string{"KO_DATA_PATH": "cmd/app/kodata/"}},
+			result:      true,
+		},
+		{
 			description: "entrypoint with dlv",
 			source:      ImageConfiguration{Entrypoint: []string{"dlv", "exec", "--headless"}},
 			result:      true,
