@@ -27,6 +27,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -219,6 +220,7 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 				},
 			},
 		}),
+		runtime.WithForwardResponseOption(messageMutationFilter),
 	)
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := protoV1.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
@@ -275,4 +277,12 @@ func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.List
 
 		return l, port, nil
 	}
+}
+
+func messageMutationFilter(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
+	// grpc gateway converts messages from protobuf format to JSON format, so updating DatacontentType to application/json
+	if event, ok := resp.(*protoV3.Event); ok {
+		event.Datacontenttype = "application/json"
+	}
+	return nil
 }
