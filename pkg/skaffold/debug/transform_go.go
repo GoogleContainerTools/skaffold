@@ -70,6 +70,11 @@ func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
 			return true
 		}
 	}
+	// Detect ko image by author, see https://github.com/google/ko/blob/v0.8.3/pkg/build/gobuild.go#L610
+	if config.Author == "github.com/google/ko" {
+		log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has author %q", config.Artifact, config.Author)
+		return true
+	}
 
 	// FIXME: as there is currently no way to identify a buildpacks-produced image as holding a Go binary,
 	// nor to cause certain environment variables to be defined in the resulting image, look at the image's
