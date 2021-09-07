@@ -2984,6 +2984,45 @@
       "description": "describes a mapping from referenced config profiles to the current config profiles. If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles.",
       "x-intellij-html-description": "describes a mapping from referenced config profiles to the current config profiles. If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles."
     },
+    "ResourceFilter": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "image": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "an optional slice of JSON-path-like paths of where to rewrite images.",
+          "x-intellij-html-description": "an optional slice of JSON-path-like paths of where to rewrite images.",
+          "default": "[]"
+        },
+        "labels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "an optional slide of JSON-path-like paths of where to add a labels block if missing.",
+          "x-intellij-html-description": "an optional slide of JSON-path-like paths of where to add a labels block if missing.",
+          "default": "[]"
+        },
+        "type": {
+          "type": "string",
+          "description": "compact format of a resource type.",
+          "x-intellij-html-description": "compact format of a resource type."
+        }
+      },
+      "preferredOrder": [
+        "type",
+        "image",
+        "labels"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "contains definition to filter which resource to transform.",
+      "x-intellij-html-description": "contains definition to filter which resource to transform."
+    },
     "ResourceRequirement": {
       "properties": {
         "cpu": {
