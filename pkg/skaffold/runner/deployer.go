@@ -78,7 +78,8 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				return nil, err
 			}
 			// Override the cluster on the runcontext.
-			// This is used to determine whether we should push images, and we want to avoid that unless explicitly asked for
+			// This is used to determine whether we should push images, and we want to avoid that unless explicitly asked for.
+			// Safe to do because we explicitly disallow simultaneous remote and local deployments.
 			runCtx.Cluster = config.Cluster{
 				Local:      true,
 				PushImages: false,

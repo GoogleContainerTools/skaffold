@@ -180,6 +180,7 @@ func IsPortFree(address string, p int) bool {
 func AllocatePort(isPortAvailable func(int32) bool, desiredPort int32) int32 {
 	var maxPort int32 = 65535 // ports are normally [1-65535]
 	if desiredPort < 1024 || desiredPort > maxPort {
+		log.Entry(context.TODO()).Debugf("skipping reserved port %d", desiredPort)
 		desiredPort = 1024 // skip reserved ports
 	}
 	// We assume ports are rather sparsely allocated, so even if desiredPort

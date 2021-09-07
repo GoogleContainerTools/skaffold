@@ -1169,6 +1169,11 @@
     },
     "DeployConfig": {
       "properties": {
+        "docker": {
+          "$ref": "#/definitions/DockerDeploy",
+          "description": "*alpha* uses the `docker` CLI to create application containers in Docker.",
+          "x-intellij-html-description": "<em>alpha</em> uses the <code>docker</code> CLI to create application containers in Docker."
+        },
         "helm": {
           "$ref": "#/definitions/HelmDeploy",
           "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
@@ -1214,6 +1219,7 @@
         }
       },
       "preferredOrder": [
+        "docker",
         "helm",
         "kpt",
         "kubectl",
