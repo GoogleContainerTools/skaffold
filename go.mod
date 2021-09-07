@@ -18,6 +18,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.2.15
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
+	github.com/ahmetb/dlog v0.0.0-20170105205344-4fb5f8204f26 // indirect
 	github.com/aws/aws-sdk-go v1.36.30 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.3.4
