@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta21
+package v2beta22
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta22"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2beta21
+	yaml := `apiVersion: skaffold/v2beta22
 kind: Config
 build:
   artifacts:
@@ -104,7 +104,7 @@ profiles:
         - k8s-*
       kustomize: {}
 `
-	expected := `apiVersion: skaffold/v2beta22
+	expected := `apiVersion: skaffold/v2beta23
 kind: Config
 build:
   artifacts:

@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta22
+apiVersion: skaffold/v2beta23
 kind: Config
 build:
   local:
