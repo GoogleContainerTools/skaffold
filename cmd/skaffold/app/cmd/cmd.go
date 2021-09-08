@@ -313,9 +313,11 @@ func isQuietMode() bool {
 }
 
 func apiServerShutdownHook(err error) error {
-	// clean up server at end of the execution since cobra post run hooks
+	// Clean up server at end of the execution since cobra post run hooks
 	// are only executed if RunE is successful.
+	// Also sends out error message on event stream before shutting down server.
 	if shutdownAPIServer != nil {
+		event.SendErrorMessageOnce(constants.DevLoop, constants.SubtaskIDNone, err)
 		shutdownAPIServer()
 	}
 	return err

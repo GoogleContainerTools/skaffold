@@ -22,6 +22,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ahmetb/dlog"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -92,8 +94,9 @@ func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
 		_ = tw.Close()
 	}()
 
+	dr := dlog.NewReader(tr) // https://ahmet.im/blog/docker-logs-api-binary-format-explained/
 	formatter := NewDockerLogFormatter(l.colorPicker, l.tracker, l.IsMuted, id)
-	if err := logstream.StreamRequest(ctx, l.out, formatter, tr); err != nil {
+	if err := logstream.StreamRequest(ctx, l.out, formatter, dr); err != nil {
 		log.Entry(ctx).Errorf("streaming request: %s", err)
 	}
 }

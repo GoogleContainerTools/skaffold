@@ -1,4 +1,4 @@
-name: per-pr (darwin)
+name: PR integration tests (darwin)
 
 # Triggers the workflow on push or pull request events
 on: [push, pull_request]
@@ -8,7 +8,7 @@ permissions: read-all
 jobs:
 
   build:
-    name: PR integration tests
+    name: PR integration tests (darwin)
     runs-on: macos-latest
     steps:
 

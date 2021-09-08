@@ -186,6 +186,10 @@ there are multiple main packages,
 Implementation note: The value of `target` will be the input when invoking
 [`QualifyImport()`](https://github.com/GoogleContainerTools/skaffold/blob/953594000be68fa8fad0ec4636ab03f8153a1c08/pkg/skaffold/build/ko/build.go#L93).
 
+If the Go sources and the `go.mod` file are in a subdirectory of the `context`
+directory, users can use the `dir` config field to specify the path where the
+ko builder runs the `go` tool.
+
 ## Supporting existing ko users
 
 To support existing ko users moving to Skaffold, the ko builder also supports
@@ -240,6 +244,27 @@ build:
 The `target` field is ignored if the `image` field starts with the `ko://`
 scheme prefix.
 
+## Debugging ko images using Skaffold
+
+Ko provides the
+[`DisableOptimizations`](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/commands/options/build.go#L34)
+build option to
+[set `gcflags` to disable optimizations and inlining](https://github.com/google/ko/blob/335c1ac8a6fdcc5eb0bb26579e4b44b4c62a9565/pkg/build/gobuild.go#L709-L712).
+The ko builder will set `DisableOptimizations` to `true` when the Skaffold
+`runMode` is `Debug`.
+
+Skaffold can
+[recognize Go-based container images](https://skaffold.dev/docs/workflows/debug/#go-runtime-go-protocols-dlv)
+built by ko by the presence of the
+[`KO_DATA_PATH` environment variable](https://github.com/google/ko/blob/9a256a4b1920ed5fd5fbf77d987fddbfb9733c40/pkg/build/gobuild.go#L803-L810).
+This allows Skaffold to transform Pod specifications to enable remote
+debugging.
+
+The ko builder implementation work will add `KO_DATA_PATH` to
+[the set of environment variables used to detect Go-based applications](https://github.com/GoogleContainerTools/skaffold/blob/c75c55133e709b2fee906eb158be13c7ccfa72cd/pkg/skaffold/debug/transform_go.go#L67-L72)
+and updating the associated unit tests and
+[documentation](https://github.com/GoogleContainerTools/skaffold/blob/01a833614efd780ddece99198aa7fdcf3f355706/docs/content/en/docs/workflows/debug.md#L103).
+
 ## Design
 
 Adding the ko builder requires making config changes to the Skaffold schema.
@@ -259,6 +284,12 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
     	Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
 
+      // Dir is the directory where the `go` tool will be run.
+      // The value is a directory path relative to the `context` directory.
+      // If empty, the `go` tool will run in the `context` directory.
+      // Examples: `live-at-head`, `compat-go114`
+      Dir string `yaml:"dir,omitempty"`
+
     	// Env are environment variables, in the `key=value` form, passed to the build.
     	// These environment variables are only used at build time.
     	// They are _not_ set in the resulting container image.
@@ -266,7 +297,7 @@ Adding the ko builder requires making config changes to the Skaffold schema.
 
     	// Flags are additional build flags passed to the builder.
     	// For example: `["-trimpath", "-v"]`.
-    	Flags []string `yaml:"args,omitempty"`
+    	Flags []string `yaml:"flags,omitempty"`
 
     	// Gcflags are Go compiler flags passed to the builder.
     	// For example: `["-m"]`.
@@ -301,9 +332,6 @@ Adding the ko builder requires making config changes to the Skaffold schema.
       Target string `yaml:"target,omitempty"`
     }
     ```
-
-    Some of these fields depend on functionality being added to ko in
-    [google/ko#340](https://github.com/google/ko/pull/340).
 
 2.  Add a `KoArtifact` field to the `ArtifactType` struct:
 
@@ -382,13 +410,15 @@ build:
   - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko-complete
     ko:
       asmflags: []
-      fromImage: gcr.io/distroless/static-debian10:nonroot
+      fromImage: gcr.io/distroless/base:nonroot
       dependencies:
         paths:
         - go.mod
         - "**.go"
-      env: []
-      args:
+      dir: '.'
+      env:
+      - GOPRIVATE=source.developers.google.com
+      flags:
       - -trimpath
       - -v
       gcflags:
@@ -631,13 +661,17 @@ The steps roughly outlined:
 
     Config options supported, all are optional:
 
-    -   `dependencies`, for Skaffold file watching.
+    -   `fromImage`, to override the default distroless base image
+    -   `dependencies`, for Skaffold file watching
+    -   `dir`, if Go sources are not in the `context` directory
     -   `env`, to support ko CLI users who currently set environment variables
         such as `GOFLAGS` when running ko.
-    -   `fromImage`, to override the default distroless base image
-    -   `labels`
+    -   `labels`, e.g., to
+        [link an image to a Git repository](https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys)
     -   `platforms`
     -   `sourceDateEpoch`
+    -   `flags`, e.g., `-v`, `-trimpath`
+    -   `ldflags`, e.g., `-s`
 
     Example `skaffold.yaml` supported at this stage:
 
@@ -653,25 +687,25 @@ The steps roughly outlined:
             paths:
             - go.mod
             - "**.go"
+          dir: '.'
+          env:
+          - GOPRIVATE=source.developers.google.com
           labels:
             foo: bar
             baz: frob
+          ldflags:
+          - -s
           platforms:
           - linux/amd64
           - linux/arm64
+          target: ./cmd/foo
     ```
 
-3.  Implement Skaffold config support for additional ko config options added in
-    [google/ko#340](https://github.com/google/ko/pull/340):
+3.  Implement Skaffold config support for additional ko config options not
+    currently supported by ko:
 
-    -   `args`, e.g., `-v`, `-trimpath`
     -   `asmflags`
     -   `gcflags`
-    -   `env`
-    -   `ldflags`
-
-    See related discussion in
-    [google/ko#316](https://github.com/google/ko/issues/316).
 
     Provide this as a feature in an upcoming Skaffold release.
 

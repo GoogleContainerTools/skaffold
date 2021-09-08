@@ -596,14 +596,6 @@ func TestPollDeployment(t *testing.T) {
 					"Pending",
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
 					[]string{"err"})},
-				// pod recovered
-				{validator.NewResource(
-					"test",
-					"pod",
-					"dep-pod",
-					"Running",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
-					nil)},
 			},
 			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
 		},

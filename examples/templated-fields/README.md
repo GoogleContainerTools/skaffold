@@ -1,5 +1,7 @@
 ### Example: use image values in templated fields for build and deploy 
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/templated-fields)
+
 This example shows how `IMAGE_REPO` and `IMAGE_TAG` keywords are available in templated fields for custom build and helm deploy
 
 * **building** a single Go file app with ko

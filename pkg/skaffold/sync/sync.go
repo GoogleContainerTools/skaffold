@@ -87,12 +87,12 @@ func syncItem(ctx context.Context, a *latestV1.Artifact, tag string, e filemon.E
 		return nil, fmt.Errorf("retrieving working dir for %q: %w", tag, err)
 	}
 
-	toCopy, err := intersect(a.Workspace, containerWd, syncRules, append(e.Added, e.Modified...))
+	toCopy, err := intersect(ctx, a.Workspace, containerWd, syncRules, append(e.Added, e.Modified...))
 	if err != nil {
 		return nil, fmt.Errorf("intersecting sync map and added, modified files: %w", err)
 	}
 
-	toDelete, err := intersect(a.Workspace, containerWd, syncRules, e.Deleted)
+	toDelete, err := intersect(ctx, a.Workspace, containerWd, syncRules, e.Deleted)
 	if err != nil {
 		return nil, fmt.Errorf("intersecting sync map and deleted files: %w", err)
 	}
@@ -134,14 +134,14 @@ func inferredSyncItem(ctx context.Context, a *latestV1.Artifact, tag string, e f
 			}
 		}
 		if !matches {
-			log.Entry(context.TODO()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(ctx).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
 		if dsts, ok := syncMap[relPath]; ok {
 			toCopy[f] = dsts
 		} else {
-			log.Entry(context.TODO()).Infof("Changed file %s is not syncable. Skipping sync", relPath)
+			log.Entry(ctx).Infof("Changed file %s is not syncable. Skipping sync", relPath)
 			return nil, nil
 		}
 	}
@@ -206,7 +206,7 @@ func latestTag(image string, builds []graph.Artifact) string {
 	return ""
 }
 
-func intersect(contextWd, containerWd string, syncRules []*latestV1.SyncRule, files []string) (syncMap, error) {
+func intersect(ctx context.Context, contextWd, containerWd string, syncRules []*latestV1.SyncRule, files []string) (syncMap, error) {
 	ret := make(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
@@ -220,7 +220,7 @@ func intersect(contextWd, containerWd string, syncRules []*latestV1.SyncRule, fi
 		}
 
 		if len(dsts) == 0 {
-			log.Entry(context.TODO()).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(ctx).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 

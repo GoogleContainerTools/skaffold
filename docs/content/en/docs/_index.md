@@ -19,12 +19,12 @@ Kubernetes cluster.
 
 * Fast local Kubernetes Development
   * **optimized "Source to Kubernetes"** - Skaffold detects changes in your source code and handles the pipeline to
-  **build**, **push**, and **deploy** your application automatically with **policy-based image tagging** and **highly optimized, fast local workflows**
+  **build**, **push**, **test** and **deploy** your application automatically with **policy-based image tagging** and **highly optimized, fast local workflows**
   * **continuous feedback** - Skaffold automatically manages deployment logging and resource port-forwarding
 * Skaffold projects work everywhere
   * **share with other developers** - Skaffold is the easiest way to **share your project** with the world: `git clone` and `skaffold run`
   * **context aware** - use Skaffold profiles, local user config, environment variables, and flags to easily incorporate differences across environments
-  * **CI/CD building blocks** - use `skaffold build` and `skaffold deploy` as part of your CI/CD pipeline, or simply `skaffold run` end-to-end
+  * **CI/CD building blocks** - use `skaffold build`, `skaffold test` and `skaffold deploy` as part of your CI/CD pipeline, or simply `skaffold run` end-to-end
   * **GitOps integration** - use `skaffold render` to build your images and render templated Kubernetes manifests for use in GitOps workflows
 * skaffold.yaml - a single pluggable, declarative configuration for your project
   * **skaffold init** - Skaffold can discover your build and deployment configuration and generate a Skaffold config
@@ -47,7 +47,7 @@ stages into one simple command. Every time you run `skaffold dev`, the system
 1. Collects and watches your source code for changes
 1. Syncs files directly to pods if user marks them as syncable
 1. Builds artifacts from the source code
-1. Tests the built artifacts using [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test)
+1. Tests the built artifacts using [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) or custom scripts
 1. Tags the artifacts
 1. Pushes the artifacts
 1. Deploys the artifacts
@@ -89,6 +89,7 @@ Skaffold supports the following tools:
 
 {{% tab "TESTERS" %}}
 * [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
+* custom script
 {{% /tab %}}
 
 {{% tab "DEPLOYERS" %}}
