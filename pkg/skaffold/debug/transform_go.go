@@ -64,7 +64,7 @@ func isLaunchingDlv(args []string) bool {
 }
 
 func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
-	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK"} {
+	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK", "KO_DATA_PATH"} {
 		if _, found := config.Env[name]; found {
 			log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has env %q", config.Artifact, name)
 			return true
