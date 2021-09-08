@@ -58,11 +58,6 @@ func (d *deployerCtx) StatusCheck() *bool {
 	return d.deploy.StatusCheck
 }
 
-func (d *deployerCtx) TransformableAllowList() []v1.ResourceFilter {
-	// overrides allowlist from other pipelines
-	return d.deploy.TransformableAllowList
-}
-
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
 func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
