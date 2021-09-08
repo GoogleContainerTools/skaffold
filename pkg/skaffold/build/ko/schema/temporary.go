@@ -33,9 +33,23 @@ type KoArtifact struct {
 	// Example: `./my-app-sources`
 	Dir string `yaml:"dir,omitempty"`
 
+	// Env are environment variables, in the `key=value` form, passed to the build.
+	// These environment variables are only used at build time.
+	// They are _not_ set in the resulting container image.
+	// For example: `["GOPRIVATE=source.developers.google.com", "GOCACHE=/workspace/.gocache"]`.
+	Env []string `yaml:"env,omitempty"`
+
+	// Flags are additional build flags passed to the builder.
+	// For example: `["-trimpath", "-v"]`.
+	Flags []string `yaml:"args,omitempty"`
+
 	// Labels are key-value string pairs to add to the image config.
-	// For example: `{"foo":"bar"}`.
+	// For example: `{"org.opencontainers.image.source":"https://github.com/GoogleContainerTools/skaffold"}`.
 	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Ldflags are linker flags passed to the builder.
+	// For example: `["-buildid=", "-s", "-w"]`.
+	Ldflags []string `yaml:"ldflags,omitempty"`
 
 	// Platforms is the list of platforms to build images for. Each platform
 	// is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.

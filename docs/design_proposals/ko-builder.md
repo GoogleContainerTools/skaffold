@@ -293,6 +293,7 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     	// Env are environment variables, in the `key=value` form, passed to the build.
     	// These environment variables are only used at build time.
     	// They are _not_ set in the resulting container image.
+    	// For example: `["GOPRIVATE=source.developers.google.com", "GOCACHE=/workspace/.gocache"]`.
     	Env []string `yaml:"env,omitempty"`
 
     	// Flags are additional build flags passed to the builder.
@@ -304,7 +305,7 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     	Gcflags []string `yaml:"gcflags,omitempty"`
 
     	// Labels are key-value string pairs to add to the image config.
-    	// For example: `{"foo":"bar"}`.
+    	// For example: `{"org.opencontainers.image.source":"https://github.com/GoogleContainerTools/skaffold"}`.
     	Labels map[string]string `yaml:"labels,omitempty"`
 
     	// Ldflags are linker flags passed to the builder.
