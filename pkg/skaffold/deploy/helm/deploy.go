@@ -436,6 +436,10 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
+func (h *Deployer) HasRunnableHooks() bool {
+	return len(h.HelmDeploy.LifecycleHooks.PreHooks) > 0 || len(h.HelmDeploy.LifecycleHooks.PostHooks) > 0
+}
+
 func (h *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
 	if err := h.hookRunner.RunPreHooks(childCtx, out); err != nil {
