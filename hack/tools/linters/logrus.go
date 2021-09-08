@@ -24,13 +24,12 @@ import (
 )
 
 // Ignore files
-var ignoreFileSuffixes = []string {
+var ignoreFileSuffixes = []string{
 	// always ignore test files
 	"_test.go",
 	"pkg/skaffold/output/log/log.go",
 	"pkg/skaffold/event/v2/logger.go",
 	"pkg/skaffold/build/buildpacks/logger.go",
-
 }
 var LogrusAnalyzer = &analysis.Analyzer{
 	Name: "logruslinter",
@@ -66,7 +65,7 @@ func ignore(f string) bool {
 	for _, v := range ignoreFileSuffixes {
 		if strings.HasSuffix(f, v) {
 			return true
-	  }
+		}
 	}
 	return false
 }
