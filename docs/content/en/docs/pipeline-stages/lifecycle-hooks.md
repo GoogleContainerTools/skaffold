@@ -18,6 +18,10 @@ Host hooks are executed on the runner and can be defined for the following phase
 
 ### `before-build` and `after-build`
 
+Build hooks are executed if the build phase runs. If the resulting artifact
+is cached, the hooks are not executed. To test the build hooks, run Skaffold
+with `--cache-artifacts=false` option.
+
 Example: _skaffold.yaml_ snippet
 ```yaml
 build:
