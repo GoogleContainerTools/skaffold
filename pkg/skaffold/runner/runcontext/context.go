@@ -107,6 +107,17 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 	return tests
 }
 
+// TransformableAllowList returns combined allowlist from pipelines
+func (ps Pipelines) TransformableAllowList() []latestV1.ResourceFilter {
+	var allowList []latestV1.ResourceFilter
+	for _, p := range ps.pipelines {
+		if p.Deploy.TransformableAllowList != nil {
+			allowList = append(allowList, p.Deploy.TransformableAllowList...)
+		}
+	}
+	return allowList
+}
+
 func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	c := 0
 	// set the group status check deadline to maximum of any individually specified value
@@ -149,6 +160,10 @@ func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 
 func (rc *RunContext) SkipTests() bool {
 	return rc.Opts.SkipTests || len(rc.TestCases()) == 0
+}
+
+func (rc *RunContext) TransformableAllowList() []latestV1.ResourceFilter {
+	return rc.Pipelines.TransformableAllowList()
 }
 
 func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
