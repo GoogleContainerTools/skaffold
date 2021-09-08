@@ -54,6 +54,7 @@ if ! [ -x "$(command -v ${BIN}/logrus-analyzer)" ] ; then
   GO111MODULE=on go build -o ${BIN}/logrus-analyzer logrus_analyzer.go
   cd -
 fi
-${BIN}/logrus-analyzer ${FLAGS} github.com/GoogleContainerTools/skaffold{/pkg,/cmd,/diag}...
+# This analyzer doesn't support any flags currently, so we don't include ${FLAGS}
+${BIN}/logrus-analyzer github.com/GoogleContainerTools/skaffold{/pkg,/cmd,/diag}...
 
 
