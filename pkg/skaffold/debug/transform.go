@@ -73,6 +73,7 @@ type ImageConfiguration struct {
 	// Artifact is the corresponding Artifact's image name (`pkg/skaffold/build.Artifact.ImageName`)
 	Artifact string
 
+	Author     string
 	Labels     map[string]string
 	Env        map[string]string
 	Entrypoint []string

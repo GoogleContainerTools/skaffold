@@ -73,6 +73,7 @@ func retrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, i
 	// need to duplicate slices as apiClient caches requests
 	return ImageConfiguration{
 		Artifact:   artifact.ImageName,
+		Author:     manifest.Author,
 		Env:        envAsMap(config.Env),
 		Entrypoint: dupArray(config.Entrypoint),
 		Arguments:  dupArray(config.Cmd),

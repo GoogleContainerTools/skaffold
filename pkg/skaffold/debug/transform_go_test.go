@@ -104,6 +104,11 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			description: "ko author",
+			source:      ImageConfiguration{Author: "github.com/google/ko"},
+			result:      true,
+		},
+		{
 			description: "entrypoint /bin/sh",
 			source:      ImageConfiguration{Entrypoint: []string{"/bin/sh"}},
 			result:      false,
