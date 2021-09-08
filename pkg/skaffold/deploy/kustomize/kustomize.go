@@ -206,6 +206,10 @@ func kustomizeBinaryExists() bool {
 	return err == nil
 }
 
+func (k *Deployer) HasRunnableHooks() bool {
+	return len(k.KustomizeDeploy.LifecycleHooks.PreHooks) > 0 || len(k.KustomizeDeploy.LifecycleHooks.PostHooks) > 0
+}
+
 func (k *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
 	if err := k.hookRunner.RunPreHooks(childCtx, out); err != nil {
