@@ -124,6 +124,12 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 			if logFileErr != nil {
 				errStr += fmt.Sprintf("event log file error: %s\n", logFileErr.Error())
 			}
+
+			v2EventLogFile := fmt.Sprintf(`%s.v2`, opts.EventLogFile)
+			logFileV2Err := eventV2.SaveEventsToFile(v2EventLogFile)
+			if logFileV2Err != nil {
+				errStr += fmt.Sprintf("eventV2 log file error: %s\n", logFileV2Err.Error())
+			}
 		}
 		return errors.New(errStr)
 	}
