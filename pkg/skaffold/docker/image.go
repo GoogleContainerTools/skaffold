@@ -275,7 +275,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 }
 
 func (l *localDaemon) CheckCompatible(a *latestV1.DockerArtifact) error {
-	if a.Secret != nil || a.SSH != "" {
+	if len(a.Secrets) > 0 || a.SSH != "" {
 		return fmt.Errorf("docker build options, secrets and ssh, require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
 	}
 	return nil
@@ -617,10 +617,10 @@ func ToCLIBuildArgs(a *latestV1.DockerArtifact, evaluatedArgs map[string]*string
 		args = append(args, "--squash")
 	}
 
-	if a.Secret != nil {
-		secretString := fmt.Sprintf("id=%s", a.Secret.ID)
-		if a.Secret.Source != "" {
-			secretString += ",src=" + a.Secret.Source
+	for _, secret := range a.Secrets {
+		secretString := fmt.Sprintf("id=%s", secret.ID)
+		if secret.Source != "" {
+			secretString += ",src=" + secret.Source
 		}
 		args = append(args, "--secret", secretString)
 	}
