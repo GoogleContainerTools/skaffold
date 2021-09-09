@@ -34,5 +34,26 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	// move: docker.Secret
+	//   to: docker.Secrets[]
+	for i, newArtifact := range newBuild.Artifacts {
+		oldArtifact := oldBuild.Artifacts[i]
+
+		docker := oldArtifact.DockerArtifact
+		if docker == nil {
+			continue
+		}
+
+		secret := docker.Secret
+		if secret == nil {
+			continue
+		}
+
+		newArtifact.DockerArtifact.Secrets = []*next.DockerSecret{{ID: secret.ID, Source: secret.Source}}
+	}
+
 	return nil
 }
