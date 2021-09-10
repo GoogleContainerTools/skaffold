@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y unzip moreutils
 
 WORKDIR /protoc
 ENV PROTOC_VERSION=3.17.3
-RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
+RUN plat=$(case $(uname -s)-$(uname -m) in Linux-x86_64) echo linux-x86_64;; Linux-aarch64) echo linux-aarch_64;; *) echo UNKNOWN;; esac); \
+  wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${plat}.zip
 RUN unzip protoc.zip
 ENV PATH="/protoc/bin:${PATH}"
 
