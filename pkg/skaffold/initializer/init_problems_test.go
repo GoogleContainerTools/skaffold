@@ -18,7 +18,6 @@ package initializer
 
 import (
 	"fmt"
-	"google.golang.org/protobuf/testing/protocmp"
 	"testing"
 
 	"google.golang.org/protobuf/testing/protocmp"

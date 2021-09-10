@@ -25,7 +25,6 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestEmptyState(t *testing.T) {

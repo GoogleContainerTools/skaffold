@@ -195,7 +195,7 @@ func copyState(state *proto.State) *proto.State {
 	var s proto.State
 	json.Unmarshal(buf, &s)
 	// fields are known to be nil'd out when empty
-	if s.StatusCheckState.Resources == nil {
+	if s.StatusCheckState != nil && s.StatusCheckState.Resources == nil {
 		s.StatusCheckState.Resources = map[string]string{}
 	}
 	return &s
