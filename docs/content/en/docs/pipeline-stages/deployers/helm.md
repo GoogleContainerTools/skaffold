@@ -48,8 +48,8 @@ Associating the Helm image key allows Skaffold to track the image being built, a
 
 ```yaml
 build:
-  artifact:
-    - name: gcr.io/my-project/my-image # must match in artifactOverrides
+  artifacts:
+    - image: gcr.io/my-project/my-image # must match in artifactOverrides
 deploy:
   helm:
     releases:
