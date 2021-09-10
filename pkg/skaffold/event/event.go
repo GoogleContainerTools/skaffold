@@ -53,6 +53,7 @@ var handler = newHandler()
 func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan firedEvent),
+		state:     &proto.State{},
 	}
 	go func() {
 		for {

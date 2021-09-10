@@ -52,6 +52,7 @@ func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan *proto.Event),
 		wait:      make(chan bool, 1),
+		state:     &proto.State{},
 	}
 	go func() {
 		for {
