@@ -16,7 +16,7 @@
 
 set -e
 
-docker build --platform linux/amd64 -t gen-proto -f hack/proto/Dockerfile --target generate-files proto
+docker build -t gen-proto -f hack/proto/Dockerfile --target generate-files proto
 docker run --rm gen-proto cat enums/github.com/GoogleContainerTools/skaffold/proto/enums/enums.pb.go > proto/enums/enums.pb.go
 
 # Copy v1 files
