@@ -17,9 +17,10 @@ limitations under the License.
 package tag
 
 import (
-	"github.com/sirupsen/logrus"
+	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -39,7 +40,7 @@ func StripTag(image string, ignoreDigest bool) string {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
 		// It's possible that it's a templatized name that can't be parsed as is.
-		logrus.Debugf("Couldn't parse image [%s]: %s", image, err.Error())
+		olog.Entry(context.TODO()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return ""
 	}
 	if ignoreDigest && parsed.Digest != "" {
