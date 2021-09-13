@@ -79,6 +79,9 @@ func (d *DebugManager) SupportMounts() map[string]mount.Mount {
 }
 
 func (d *DebugManager) Start(context.Context) error {
+	if d == nil {
+		return nil
+	}
 	for _, image := range d.images {
 		config := d.configurations[image]
 		notifyDebuggingContainerStarted(
@@ -95,6 +98,9 @@ func (d *DebugManager) Start(context.Context) error {
 }
 
 func (d *DebugManager) Stop() {
+	if d == nil {
+		return
+	}
 	for _, image := range d.images {
 		config := d.configurations[image]
 		notifyDebuggingContainerTerminated(
@@ -114,6 +120,9 @@ func (d *DebugManager) Stop() {
 func (d *DebugManager) Name() string { return "Docker Debug Manager" }
 
 func (d *DebugManager) TransformImage(ctx context.Context, artifact graph.Artifact, cfg *container.Config) ([]*container.Config, error) {
+	if d == nil {
+		return nil, nil
+	}
 	configurations, initContainers, err := TransformImage(ctx, artifact, cfg, d.insecureRegistries, d.debugHelpersRegistry)
 	if err != nil {
 		return nil, err

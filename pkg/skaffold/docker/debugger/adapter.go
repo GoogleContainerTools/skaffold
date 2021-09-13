@@ -17,15 +17,16 @@ limitations under the License.
 package debugger
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type DockerAdapter struct {
@@ -70,7 +71,7 @@ func dockerEnvToContainerEnv(dockerEnv []string) types.ContainerEnv {
 	for _, entry := range dockerEnv {
 		parts := strings.SplitN(entry, "=", 2) // split to max 2 substrings, `=` is a valid character in the env value
 		if len(parts) != 2 {
-			logrus.Warnf("malformed env entry %s: skipping", entry)
+			log.Entry(context.TODO()).Warnf("malformed env entry %s: skipping", entry)
 			continue
 		}
 		order = append(order, parts[0])
@@ -109,7 +110,7 @@ func containerPortsToDockerPorts(containerPorts []types.ContainerPort) nat.PortS
 		portStr := strconv.Itoa(int(port.ContainerPort))
 		dockerPort, err := nat.NewPort(port.Protocol, portStr)
 		if err != nil {
-			logrus.Warnf("error translating port %s - debug might not work correctly!", portStr)
+			log.Entry(context.TODO()).Warnf("error translating port %s - debug might not work correctly!", portStr)
 		}
 		dockerPorts[dockerPort] = struct{}{}
 	}

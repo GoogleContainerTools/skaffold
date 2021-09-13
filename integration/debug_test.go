@@ -42,6 +42,7 @@ func (d debugConfig) GetKubeContext() string                 { return d.kubeCont
 func (d debugConfig) MinikubeProfile() string                { return "" }
 func (d debugConfig) GlobalConfig() string                   { return "" }
 func (d debugConfig) Prune() bool                            { return false }
+func (d debugConfig) Debug() bool                            { return false }
 func (d debugConfig) GetInsecureRegistries() map[string]bool { return nil }
 func (d debugConfig) Mode() config.RunMode                   { return "" }
 

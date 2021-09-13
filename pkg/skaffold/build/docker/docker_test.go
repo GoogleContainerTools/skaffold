@@ -225,3 +225,7 @@ func (m mockConfig) Mode() config.RunMode {
 func (m mockConfig) Prune() bool {
 	return m.prune
 }
+
+func (m mockConfig) Debug() bool {
+	return false
+}

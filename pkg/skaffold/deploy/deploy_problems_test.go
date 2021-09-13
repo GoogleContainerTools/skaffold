@@ -115,6 +115,7 @@ func (m mockConfig) ConfigurationFile() string                         { return 
 func (m mockConfig) DefaultRepo() *string                              { return &m.minikube }
 func (m mockConfig) SkipRender() bool                                  { return true }
 func (m mockConfig) Prune() bool                                       { return true }
+func (m mockConfig) Debug() bool                                       { return false }
 func (m mockConfig) GetKubeContext() string                            { return m.kubeContext }
 func (m mockConfig) GetInsecureRegistries() map[string]bool            { return map[string]bool{} }
 func (m mockConfig) Mode() config.RunMode                              { return config.RunModes.Dev }

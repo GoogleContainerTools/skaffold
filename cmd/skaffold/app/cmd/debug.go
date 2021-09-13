@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	dockerdebug "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/debugger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
@@ -52,7 +51,7 @@ func NewCmdDebug() *cobra.Command {
 func runDebug(ctx context.Context, out io.Writer) error {
 	// TODO(nkubala)[08/31/21]: remove in favor of conditionally executing transforms on active command at runtime
 	manifest.AddTransform(debugging.ApplyDebuggingTransforms)
-	dockerdebug.EnableTransforms()
+	opts.Debug = true
 
 	return doDev(ctx, out)
 }

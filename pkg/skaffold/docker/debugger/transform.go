@@ -22,30 +22,22 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/volume"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var (
-	shouldTransform    bool
 	SupportVolumeMount = volume.VolumeCreateBody{Name: debug.DebuggingSupportFilesVolume}
 	TransformImage     = transformImage // For testing
 )
 
 type Transform func(string) string
 
-func EnableTransforms() {
-	shouldTransform = true
-}
-
 func transformImage(ctx context.Context, artifact graph.Artifact, cfg *container.Config, insecureRegistries map[string]bool, debugHelpersRegistry string) (map[string]types.ContainerDebugConfiguration, []*container.Config, error) {
-	if !shouldTransform {
-		return nil, nil, nil
-	}
 	portAvailable := func(port int32) bool {
 		return isPortAvailable(cfg, port)
 	}
@@ -69,17 +61,17 @@ func transformImage(ctx context.Context, artifact graph.Artifact, cfg *container
 	if configuration, requiredImage, err := debug.TransformContainer(adapter, imageConfig, portAlloc); err == nil {
 		configurations[adapter.GetContainer().Name] = configuration
 		if len(requiredImage) > 0 {
-			logrus.Infof("%q requires debugging support image %q", cfg.Image, requiredImage)
+			log.Entry(context.TODO()).Infof("%q requires debugging support image %q", cfg.Image, requiredImage)
 			containersRequiringSupport = append(containersRequiringSupport, cfg)
 			requiredSupportImages[requiredImage] = true
 		}
 	} else {
-		logrus.Warnf("Image %q not configured for debugging: %v", cfg.Image, err)
+		log.Entry(context.TODO()).Warnf("Image %q not configured for debugging: %v", cfg.Image, err)
 	}
 
 	// check if we have any images requiring additional debugging support files
 	if len(containersRequiringSupport) > 0 {
-		logrus.Infof("Configuring installation of debugging support files")
+		log.Entry(context.TODO()).Infof("Configuring installation of debugging support files")
 		// the initContainers are responsible for populating the contents of `/dbg`
 		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := &container.Config{

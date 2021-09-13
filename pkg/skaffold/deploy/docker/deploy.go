@@ -73,9 +73,13 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		return nil, err
 	}
 
-	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(cfg.GlobalConfig())
-	if err != nil {
-		return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
+	var dbg *debugger.DebugManager
+	if cfg.Debug() {
+		debugHelpersRegistry, err := config.GetDebugHelpersRegistry(cfg.GlobalConfig())
+		if err != nil {
+			return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
+		}
+		dbg = debugger.NewDebugManager(cfg.GetInsecureRegistries(), debugHelpersRegistry)
 	}
 
 	return &Deployer{
@@ -87,7 +91,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		tracker:            tracker,
 		portManager:        NewPortManager(), // fulfills Accessor interface
-		debugger:           debugger.NewDebugManager(cfg.GetInsecureRegistries(), debugHelpersRegistry),
+		debugger:           dbg,
 		logger:             l,
 		monitor:            &status.NoopMonitor{},
 		syncer:             pkgsync.NewContainerSyncer(),
@@ -155,6 +159,36 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		return err
 	}
 
+	containerName := d.getContainerName(ctx, artifact.ImageName)
+	opts := dockerutil.ContainerCreateOpts{
+		Name:            containerName,
+		Network:         d.network,
+		Bindings:        bindings,
+		ContainerConfig: containerCfg,
+	}
+
+	if d.debugger != nil {
+		if err := d.setupDebugging(ctx, out, artifact, containerCfg); err != nil {
+			return errors.Wrap(err, "setting up debugger")
+		}
+
+		// mount all debug support container volumes into the application container
+		var mounts []mount.Mount
+		for _, m := range d.debugger.SupportMounts() {
+			mounts = append(mounts, m)
+		}
+		opts.Mounts = mounts
+	}
+
+	id, err := d.client.Run(ctx, out, opts)
+	if err != nil {
+		return errors.Wrap(err, "creating container in local docker")
+	}
+	d.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: id})
+	return nil
+}
+
+func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact graph.Artifact, containerCfg *container.Config) error {
 	initContainers, err := d.debugger.TransformImage(ctx, artifact, containerCfg)
 	if err != nil {
 		return errors.Wrap(err, "transforming image for debugging")
@@ -197,26 +231,6 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		// we know there is only one mount point, since we generated the init container config ourselves
 		d.debugger.AddSupportMount(c.Image, r.Mounts[0].Name)
 	}
-
-	containerName := d.getContainerName(ctx, artifact.ImageName)
-	// mount all debug support container volumes into the application container
-	var mounts []mount.Mount
-	for _, m := range d.debugger.SupportMounts() {
-		mounts = append(mounts, m)
-	}
-	opts := dockerutil.ContainerCreateOpts{
-		Name:            containerName,
-		Network:         d.network,
-		Bindings:        bindings,
-		Mounts:          mounts,
-		ContainerConfig: containerCfg,
-	}
-
-	id, err := d.client.Run(ctx, out, opts)
-	if err != nil {
-		return errors.Wrap(err, "creating container in local docker")
-	}
-	d.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: id})
 	return nil
 }
 

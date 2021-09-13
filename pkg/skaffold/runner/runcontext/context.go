@@ -177,6 +177,7 @@ func (rc *RunContext) AddSkaffoldLabels() bool                       { return rc
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
 func (rc *RunContext) AutoSync() bool                                { return rc.Opts.AutoSync }
+func (rc *RunContext) Debug() bool                                   { return rc.Opts.Debug }
 func (rc *RunContext) CacheArtifacts() bool                          { return rc.Opts.CacheArtifacts }
 func (rc *RunContext) CacheFile() string                             { return rc.Opts.CacheFile }
 func (rc *RunContext) ConfigurationFile() string                     { return rc.Opts.ConfigurationFile }

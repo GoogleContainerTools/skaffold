@@ -27,6 +27,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestZeroValue(t *testing.T) {
+	t.Run("nil DebugManager should not raise nil pointer dereference", func(t *testing.T) {
+		var d *DebugManager
+		d.Start(context.TODO())
+		d.Stop()
+		d.TransformImage(context.TODO(), graph.Artifact{}, nil)
+	})
+}
+
 func TestConfigurationsAndImages(t *testing.T) {
 	tests := []struct {
 		name      string
