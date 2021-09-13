@@ -49,7 +49,7 @@ func buildOptions(a *latestV1.Artifact) *options.BuildOptions {
 				Env:     a.KoArtifact.Env,
 				Flags:   a.KoArtifact.Flags,
 				Ldflags: a.KoArtifact.Ldflags,
-				Main:    a.KoArtifact.Target,
+				Main:    a.KoArtifact.Main,
 			},
 		},
 		ConcurrentBuilds: 1,
