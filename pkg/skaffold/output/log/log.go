@@ -51,3 +51,23 @@ func Entry(ctx context.Context) *logrus.Entry {
 		"subtask": constants.SubtaskIDNone,
 	})
 }
+
+func IsErrorEnabled(l *logrus.Entry) bool {
+	return l.Logger.IsLevelEnabled(logrus.ErrorLevel)
+}
+
+func IsWarnEnabled(l *logrus.Entry) bool {
+	return l.Logger.IsLevelEnabled(logrus.WarnLevel)
+}
+
+func IsInfoEnabled(l *logrus.Entry) bool {
+	return l.Logger.IsLevelEnabled(logrus.InfoLevel)
+}
+
+func IsDebugEnabled(l *logrus.Entry) bool {
+	return l.Logger.IsLevelEnabled(logrus.DebugLevel)
+}
+
+func IsTraceEnabled(l *logrus.Entry) bool {
+	return l.Logger.IsLevelEnabled(logrus.TraceLevel)
+}

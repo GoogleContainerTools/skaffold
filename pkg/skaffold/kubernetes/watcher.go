@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -128,7 +127,7 @@ func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), err
 					continue
 				}
 
-				if l.Logger.IsLevelEnabled(logrus.TraceLevel) {
+				if log.IsTraceEnabled(l) {
 					st := fmt.Sprintf("podWatcher[%s/%s:%v] phase:%v ", pod.Namespace, pod.Name, evt.Type, pod.Status.Phase)
 					if len(pod.Status.Reason) > 0 {
 						st += fmt.Sprintf("reason:%s ", pod.Status.Reason)
