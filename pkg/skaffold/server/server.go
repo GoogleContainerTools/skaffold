@@ -102,12 +102,6 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		return emptyCallback, nil
 	}
 
-	if opts.EnableRPC && opts.RPCPort.Value() == nil && opts.RPCHTTPPort.Value() == nil {
-		log.Entry(context.TODO()).Warn("--enable-rpc is specified without --rpc-port or --rpc-http-port. " +
-			"Skaffold will choose random port numbers for the API endpoints (run with --verbosity=info) " +
-			"while --enable-rpc flag is being deprecated.")
-	}
-
 	preferredGRPCPort := 0 // bind to an available port atomically
 	if opts.RPCPort.Value() != nil {
 		preferredGRPCPort = *opts.RPCPort.Value()
@@ -116,8 +110,8 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	if err != nil {
 		return grpcCallback, fmt.Errorf("starting gRPC server: %w", err)
 	}
-	httpCallback := emptyCallback
 
+	httpCallback := emptyCallback
 	if opts.RPCHTTPPort.Value() != nil {
 		httpCallback, err = newHTTPServer(*opts.RPCHTTPPort.Value(), grpcPort)
 	}
@@ -141,6 +135,10 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	}
 	if err != nil {
 		return callback, fmt.Errorf("starting HTTP server: %w", err)
+	}
+
+	if opts.EnableRPC && opts.RPCPort.Value() == nil {
+		log.Entry(context.TODO()).Warnf("started skaffold gRPC API on random port %d", grpcPort)
 	}
 
 	// Optionally pause execution until endpoint hit
