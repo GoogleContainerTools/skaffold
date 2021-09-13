@@ -137,7 +137,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		return callback, fmt.Errorf("starting HTTP server: %w", err)
 	}
 
-	if opts.EnableRPC && opts.RPCPort.Value() == nil {
+	if opts.EnableRPC && opts.RPCPort.Value() == nil && opts.RPCHTTPPort.Value() == nil {
 		log.Entry(context.TODO()).Warnf("started skaffold gRPC API on random port %d", grpcPort)
 	}
 
