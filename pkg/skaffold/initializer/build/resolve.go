@@ -39,7 +39,7 @@ func (d *defaultBuildInitializer) resolveBuilderImages() error {
 	if len(d.builders) == 1 {
 		if len(d.unresolvedImages) == 0 {
 			// no image was parsed from k8s manifests, so we create an image name
-			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedBuilderPair(d.builders[0]))
+			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedArtifactInfo(d.builders[0]))
 			return nil
 		}
 		// we already have the image, just use it and return
@@ -130,13 +130,13 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 		}
 
 		for _, choice := range chosen {
-			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedBuilderPair(choiceMap[choice]))
+			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedArtifactInfo(choiceMap[choice]))
 		}
 	}
 	return nil
 }
 
-func getGeneratedBuilderPair(b InitBuilder) GeneratedArtifactInfo {
+func getGeneratedArtifactInfo(b InitBuilder) GeneratedArtifactInfo {
 	path := b.Path()
 	var imageName string
 	// if the builder is in a nested directory, use that as the image name AND the path to write the manifest

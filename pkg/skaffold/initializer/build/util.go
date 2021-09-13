@@ -65,6 +65,10 @@ func Artifacts(artifactInfos []ArtifactInfo) []*latestV1.Artifact {
 	var artifacts []*latestV1.Artifact
 
 	for _, info := range artifactInfos {
+		// Don't create artifact build config for "None" builder
+		if info.Builder.Name() == NoneBuilderName {
+			continue
+		}
 		workspace := info.Workspace
 		if workspace == "" {
 			workspace = filepath.Dir(info.Builder.Path())

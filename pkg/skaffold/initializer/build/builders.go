@@ -48,11 +48,35 @@ type InitBuilder interface {
 	Path() string
 }
 
+type NoneBuilder struct {}
+
+const NoneBuilderName = "none"
+func (b NoneBuilder) Name() string {
+	return NoneBuilderName
+}
+
+func (b NoneBuilder) Describe() string {
+	return ""
+}
+
+func (b NoneBuilder) ArtifactType(string) latestV1.ArtifactType {
+	return latestV1.ArtifactType{}
+}
+
+func (b NoneBuilder) ConfiguredImage() string {
+	return ""
+}
+
+func (b NoneBuilder) Path() string {
+	return ""
+}
+
 // ArtifactInfo defines a builder and the image it builds
 type ArtifactInfo struct {
 	Builder   InitBuilder
 	ImageName string
 	Workspace string
+	Manifest  ManifestInfo
 }
 
 // GeneratedArtifactInfo pairs a discovered builder with a
@@ -60,6 +84,11 @@ type ArtifactInfo struct {
 type GeneratedArtifactInfo struct {
 	ArtifactInfo
 	ManifestPath string
+}
+
+type ManifestInfo struct {
+	Generate bool
+	Port     int
 }
 
 type Initializer interface {
