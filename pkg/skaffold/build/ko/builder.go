@@ -21,6 +21,7 @@ package ko
 // the real schema in pkg/skaffold/schema/latest/v1.
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -55,8 +56,17 @@ func buildOptions(a *latestV1.Artifact, runMode config.RunMode) *options.BuildOp
 		},
 		ConcurrentBuilds:     1,
 		DisableOptimizations: runMode == config.RunModes.Debug,
+		Labels:               labels(a),
 		Platform:             strings.Join(a.KoArtifact.Platforms, ","),
 		UserAgent:            version.UserAgentWithClient(),
 		WorkingDirectory:     workingDirectory,
 	}
+}
+
+func labels(a *latestV1.Artifact) []string {
+	labels := []string{}
+	for k, v := range a.KoArtifact.Labels {
+		labels = append(labels, fmt.Sprintf("%s=%s", k, v))
+	}
+	return labels
 }
