@@ -18,13 +18,13 @@ package event
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
+	pbuf "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -106,8 +106,14 @@ func Handle(event *proto.Event) error {
 
 func (ev *eventHandler) getState() *proto.State {
 	ev.stateLock.Lock()
-	state := copyState(ev.state)
+	state := pbuf.Clone(ev.state).(*proto.State)
 	ev.stateLock.Unlock()
+
+	// fields are known to be nil'd out when empty
+	//if s.StatusCheckState != nil && s.StatusCheckState.Resources == nil {
+	//	s.StatusCheckState.Resources = map[string]string{}
+	//}
+
 	return state
 }
 
@@ -188,18 +194,6 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 		},
 		Metadata: metadata,
 	}
-}
-
-func copyState(state *proto.State) *proto.State {
-	// Deep copy
-	buf, _ := json.Marshal(state)
-	var s proto.State
-	json.Unmarshal(buf, &s)
-	// fields are known to be nil'd out when empty
-	if s.StatusCheckState != nil && s.StatusCheckState.Resources == nil {
-		s.StatusCheckState.Resources = map[string]string{}
-	}
-	return &s
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.

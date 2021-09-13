@@ -18,13 +18,13 @@ package v2
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
+	pbuf "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -121,13 +121,10 @@ func WaitForConnection() {
 func (ev *eventHandler) getState() *proto.State {
 	ev.stateLock.Lock()
 	// Deep copy
-	buf, _ := json.Marshal(ev.state)
+	state := pbuf.Clone(ev.state).(*proto.State)
 	ev.stateLock.Unlock()
 
-	var state proto.State
-	json.Unmarshal(buf, &state)
-
-	return &state
+	return state
 }
 
 func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]*proto.Event, lock sync.Locker) {
