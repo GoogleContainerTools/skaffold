@@ -48,9 +48,10 @@ type InitBuilder interface {
 	Path() string
 }
 
-type NoneBuilder struct {}
+type NoneBuilder struct{}
 
 const NoneBuilderName = "none"
+
 func (b NoneBuilder) Name() string {
 	return NoneBuilderName
 }

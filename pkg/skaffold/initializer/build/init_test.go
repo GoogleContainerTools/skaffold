@@ -182,7 +182,7 @@ spec:
 				generatedArtifactInfos: test.generatedInfos,
 			}
 
-			manifests, err := d.GenerateManifests(nil, test.force)
+			manifests, err := d.GenerateManifests(nil, test.force, true)
 
 			expected := make(map[GeneratedArtifactInfo][]byte)
 			for i, info := range test.generatedInfos {
