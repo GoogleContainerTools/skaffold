@@ -78,8 +78,12 @@ func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.artifactInfos, d.builders, d.unresolvedImages)
 }
 
-func (d *defaultBuildInitializer) GenerateManifests(out io.Writer, force bool) (map[GeneratedArtifactInfo][]byte, error) {
+func (d *defaultBuildInitializer) GenerateManifests(out io.Writer, force, enableManifestGeneration bool) (map[GeneratedArtifactInfo][]byte, error) {
 	generatedManifests := map[GeneratedArtifactInfo][]byte{}
+	if !enableManifestGeneration {
+		return generatedManifests, nil
+	}
+
 	for _, info := range d.generatedArtifactInfos {
 		port := 8080
 		var err error

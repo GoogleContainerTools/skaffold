@@ -74,13 +74,23 @@ func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.artifactInfos, c.builders, nil)
 }
 
-func (c *cliBuildInitializer) GenerateManifests(out io.Writer, force bool) (map[GeneratedArtifactInfo][]byte, error) {
+func (c *cliBuildInitializer) GenerateManifests(_ io.Writer, _, enableManifestGeneration bool) (map[GeneratedArtifactInfo][]byte, error) {
 	generatedManifests := map[GeneratedArtifactInfo][]byte{}
+
+	artifactWithManifests := false
+	for _, info := range c.artifactInfos {
+		if info.Manifest.Generate {
+			artifactWithManifests = true
+		}
+	}
+	if !enableManifestGeneration && !artifactWithManifests {
+		return generatedManifests, nil
+	}
 	for _, info := range c.artifactInfos {
 		if info.Manifest.Generate {
 			generatedInfo := GeneratedArtifactInfo{
 				ArtifactInfo: info,
-				ManifestPath: filepath.Join(info.Builder.Path(), "deployment.yaml"),
+				ManifestPath: filepath.Join(filepath.Dir(info.Builder.Path()), "deployment.yaml"),
 			}
 			manifest, manifestInfo, err := generator.Generate(info.ImageName, info.Manifest.Port)
 			if err != nil {
