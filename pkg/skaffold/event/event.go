@@ -108,12 +108,6 @@ func (ev *eventHandler) getState() *proto.State {
 	ev.stateLock.Lock()
 	state := pbuf.Clone(ev.state).(*proto.State)
 	ev.stateLock.Unlock()
-
-	// fields are known to be nil'd out when empty
-	//if s.StatusCheckState != nil && s.StatusCheckState.Resources == nil {
-	//	s.StatusCheckState.Resources = map[string]string{}
-	//}
-
 	return state
 }
 
