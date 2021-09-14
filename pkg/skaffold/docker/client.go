@@ -53,7 +53,7 @@ var (
 
 type Config interface {
 	Prune() bool
-	Debug() bool
+	ContainerDebugging() bool
 	GlobalConfig() string
 	GetKubeContext() string
 	MinikubeProfile() string

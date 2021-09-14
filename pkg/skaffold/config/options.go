@@ -52,7 +52,7 @@ type SkaffoldOptions struct {
 	MinikubeProfile       string
 	RepoCacheDir          string
 	Apply                 bool
-	Debug                 bool
+	ContainerDebugging    bool
 	Cleanup               bool
 	Notification          bool
 	Tail                  bool

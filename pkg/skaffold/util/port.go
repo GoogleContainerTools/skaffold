@@ -177,6 +177,7 @@ func IsPortFree(address string, p int) bool {
 // AllocatePort looks for a port close to desiredPort, using the provided implementation of
 // isPortAvailable to determine what ports can be used.
 // We deal with wrapping and avoid allocating ports < 1024
+// TODO(nkubala)[09/14/21]: plumb through context from callers
 func AllocatePort(isPortAvailable func(int32) bool, desiredPort int32) int32 {
 	var maxPort int32 = 65535 // ports are normally [1-65535]
 	if desiredPort < 1024 || desiredPort > maxPort {

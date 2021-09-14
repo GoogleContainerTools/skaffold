@@ -74,7 +74,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 	}
 
 	var dbg *debugger.DebugManager
-	if cfg.Debug() {
+	if cfg.ContainerDebugging() {
 		debugHelpersRegistry, err := config.GetDebugHelpersRegistry(cfg.GlobalConfig())
 		if err != nil {
 			return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))

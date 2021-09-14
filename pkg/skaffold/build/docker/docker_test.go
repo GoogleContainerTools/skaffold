@@ -226,6 +226,6 @@ func (m mockConfig) Prune() bool {
 	return m.prune
 }
 
-func (m mockConfig) Debug() bool {
+func (m mockConfig) ContainerDebugging() bool {
 	return false
 }
