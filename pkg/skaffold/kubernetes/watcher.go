@@ -127,7 +127,7 @@ func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), err
 					continue
 				}
 
-				if log.IsTraceEnabled(l) {
+				if log.IsTraceLevelEnabled() {
 					st := fmt.Sprintf("podWatcher[%s/%s:%v] phase:%v ", pod.Namespace, pod.Name, evt.Type, pod.Status.Phase)
 					if len(pod.Status.Reason) > 0 {
 						st += fmt.Sprintf("reason:%s ", pod.Status.Reason)

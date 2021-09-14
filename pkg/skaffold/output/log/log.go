@@ -58,21 +58,6 @@ func Entry(ctx context.Context) *logrus.Entry {
 	})
 }
 
-// IsErrorEnabled returns true if error level log is enabled.
-func IsErrorEnabled(l *logrus.Entry) bool {
-	return l.Logger.IsLevelEnabled(logrus.ErrorLevel)
-}
-
-// IsWarnEnabled returns true if warn level log is enabled.
-func IsWarnEnabled(l *logrus.Entry) bool {
-	return l.Logger.IsLevelEnabled(logrus.WarnLevel)
-}
-
-// IsInfoEnabled returns true if infor level log is enabled.
-func IsInfoEnabled(l *logrus.Entry) bool {
-	return l.Logger.IsLevelEnabled(logrus.InfoLevel)
-}
-
 // IsDebugLevelEnabled returns true if debug level log is enabled.
 func IsDebugLevelEnabled() bool {
 	return logrus.IsLevelEnabled(logrus.DebugLevel)
