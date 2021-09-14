@@ -1354,10 +1354,13 @@
           "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
           "default": "false"
         },
-        "secret": {
-          "$ref": "#/definitions/DockerSecret",
-          "description": "contains information about a local secret passed to `docker build`, along with optional destination information.",
-          "x-intellij-html-description": "contains information about a local secret passed to <code>docker build</code>, along with optional destination information."
+        "secrets": {
+          "items": {
+            "$ref": "#/definitions/DockerSecret"
+          },
+          "type": "array",
+          "description": "used to pass in --secret to docker build, `useBuildKit: true` is required.",
+          "x-intellij-html-description": "used to pass in --secret to docker build, <code>useBuildKit: true</code> is required."
         },
         "squash": {
           "type": "boolean",
@@ -1386,7 +1389,7 @@
         "cliFlags",
         "noCache",
         "squash",
-        "secret",
+        "secrets",
         "ssh"
       ],
       "additionalProperties": false,
@@ -1468,8 +1471,8 @@
       ],
       "additionalProperties": false,
       "type": "object",
-      "description": "contains information about a local secret passed to `docker build`, along with optional destination information.",
-      "x-intellij-html-description": "contains information about a local secret passed to <code>docker build</code>, along with optional destination information."
+      "description": "used to pass in --secret to docker build, `useBuildKit: true` is required.",
+      "x-intellij-html-description": "used to pass in --secret to docker build, <code>useBuildKit: true</code> is required."
     },
     "DockerfileDependency": {
       "properties": {

@@ -111,8 +111,8 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
-      secret:
-        id: id
+      secrets:
+      - id: id
         src: /file.txt
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
