@@ -34,14 +34,14 @@ jobs:
     #    sudo install minikube /usr/local/bin/minikube
     #    minikube start --profile=minikube --driver=docker
 
-    - name: Install latest Skaffold built from HEAD
+    - name: Build Skaffold from HEAD
       if: ${{ env.CHANGED_EXAMPLES_COUNT > 0 }}
       run: |
         make
         echo SKAFFOLD_BINARY=$PWD/out/skaffold >> $GITHUB_ENV
         out/skaffold config set --global collect-metrics false
 
-    - name: Build
+    - name: Build changed examples
       if: ${{ env.CHANGED_EXAMPLES_COUNT > 0 }}
       run: |
         for dir in $CHANGED_EXAMPLES; do
