@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
@@ -75,6 +76,14 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
 			if err != nil {
 				return nil, err
+			}
+			// Override the cluster on the runcontext.
+			// This is used to determine whether we should push images, and we want to avoid that unless explicitly asked for.
+			// Safe to do because we explicitly disallow simultaneous remote and local deployments.
+			runCtx.Cluster = config.Cluster{
+				Local:      true,
+				PushImages: false,
+				LoadImages: false,
 			}
 			deployers = append(deployers, d)
 		}

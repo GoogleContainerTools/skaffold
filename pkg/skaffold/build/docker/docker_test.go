@@ -206,6 +206,10 @@ func (m mockConfig) GetKubeContext() string {
 	return ""
 }
 
+func (m mockConfig) GlobalConfig() string {
+	return ""
+}
+
 func (m mockConfig) MinikubeProfile() string {
 	return ""
 }
@@ -220,4 +224,8 @@ func (m mockConfig) Mode() config.RunMode {
 
 func (m mockConfig) Prune() bool {
 	return m.prune
+}
+
+func (m mockConfig) ContainerDebugging() bool {
+	return false
 }
