@@ -1,3 +1,67 @@
+# v1.32.0 Release - 09/15/2021
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.32.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.32.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.32.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.32.0`
+
+Note: This release comes with a new config version, `v2beta23`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* **Skaffold now supports a brand new deploy type - `docker`, enabling iterative application development without Kubernetes by creating containers directly in the local Docker daemon!**
+  - _This is an experimental **alpha** feature - we expect to find issues as it is put through the paces. Please be patient as we work to refine the experience, and be sure to report any issues or improvement ideas!_
+* The Skaffold HTTP/gRPC APIs are now disabled by default for `dev` and `run`, and the `--enable-rpc` flag is now deprecated. The APIs will now only be activated if the `--rpc-port` or `--rpc-http-port` flags are set, and will only bind to the provided ports (rather than defaulting to `50051` or `50052`). Please see the documentation for more details.
+
+New Features and Additions:
+* New config option deploy.transformableAllowList [#6452](https://github.com/GoogleContainerTools/skaffold/pull/6452)
+
+Fixes:
+* fix: add podforwaders correctly for multimodule projects [#6606](https://github.com/GoogleContainerTools/skaffold/pull/6606)
+* fix: treat pod deletion as if its containers were terminated [#6587](https://github.com/GoogleContainerTools/skaffold/pull/6587)
+* Updating load images to use only local images [#6582](https://github.com/GoogleContainerTools/skaffold/pull/6582)
+* fix: iterative-status-check only for deployers defining hooks [#6574](https://github.com/GoogleContainerTools/skaffold/pull/6574)
+
+Updates and Refactors:
+* Extend `--artifact` API schema to allow for manifest generation [#6599](https://github.com/GoogleContainerTools/skaffold/pull/6599)
+* api: Strict port number handling and --enable-rpc deprecation [#6459](https://github.com/GoogleContainerTools/skaffold/pull/6459)
+* add testType field to skaffold inspect tests output [#6561](https://github.com/GoogleContainerTools/skaffold/pull/6561)
+* Persist EventV2 logs when `--event-log-file` exists [#6581](https://github.com/GoogleContainerTools/skaffold/pull/6581)
+* Ko builder: Add Env, Flags, and Ldflags config [#6546](https://github.com/GoogleContainerTools/skaffold/pull/6546)
+* Detect ko images for debugging, by image author [#6569](https://github.com/GoogleContainerTools/skaffold/pull/6569)
+* Detect ko images for debugging, by envvar [#6563](https://github.com/GoogleContainerTools/skaffold/pull/6563)
+* Make inputDigest hash calculation independent of workspace path [#6522](https://github.com/GoogleContainerTools/skaffold/pull/6522)
+
+Docs, Test, and Release Updates:
+* Make TestHelmDeploy hermetic [#6590](https://github.com/GoogleContainerTools/skaffold/pull/6590)
+* Fix wrong link on the custom-tests example, fixes #6591 [#6592](https://github.com/GoogleContainerTools/skaffold/pull/6592)
+* Updates skaffold.yaml example in helm section [#6585](https://github.com/GoogleContainerTools/skaffold/pull/6585)
+* docs: mention hooks don't run on cached artifacts [#6577](https://github.com/GoogleContainerTools/skaffold/pull/6577)
+* Run CodeQL analysis nightly and cache the go modules cache [#6548](https://github.com/GoogleContainerTools/skaffold/pull/6548)
+* Fix issue 6513 - CI/CD page readability [#6555](https://github.com/GoogleContainerTools/skaffold/pull/6555)
+* docs: use dropdown menu for selecting version [#6559](https://github.com/GoogleContainerTools/skaffold/pull/6559)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Ahmet Alp Balkan
+- Brian de Alwis
+- Gaurav
+- Gerson Sosa
+- Halvard Skogsrud
+- Ke Zhu
+- Marlon Gamez
+- Mattias Öhrn
+- Mike Verbanic
+- Nick Kubala
+- Tejal Desai
+- Yuki Ito
+
 # v1.31.0 Release - 09/01/2021
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.31.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
