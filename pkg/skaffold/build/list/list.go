@@ -21,21 +21,30 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/bmatcuk/doublestar"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 // Files list files in a workspace, given a list of patterns and exclusions.
+// It supports globstar (`**`) for recursive listing of subdirectories.
 func Files(workspace string, patterns, excludes []string) ([]string, error) {
+	// doublestar.Glob() doesn't find matches for patterns such as "."
+	// Solve this by turning the relative workspace directory into an absolute path.
+	workspace, err := filepath.Abs(workspace)
+	if err != nil {
+		return nil, fmt.Errorf("could not get absolute path of workspace %q: %w", workspace, err)
+	}
+
 	notExcluded := notExcluded(workspace, excludes)
 
-	var dependencies []string
+	depSet := map[string]bool{}
 
 	for _, pattern := range patterns {
-		expanded, err := filepath.Glob(filepath.Join(workspace, pattern))
+		expanded, err := doublestar.Glob(filepath.Join(workspace, pattern))
 		if err != nil {
 			return nil, err
 		}
-
 		if len(expanded) == 0 {
 			return nil, fmt.Errorf("pattern %q did not match any file", pattern)
 		}
@@ -46,8 +55,7 @@ func Files(workspace string, patterns, excludes []string) ([]string, error) {
 				if err != nil {
 					return err
 				}
-
-				dependencies = append(dependencies, relPath)
+				depSet[relPath] = true
 				return nil
 			}); err != nil {
 				return nil, fmt.Errorf("walking %q: %w", absFrom, err)
@@ -55,6 +63,18 @@ func Files(workspace string, patterns, excludes []string) ([]string, error) {
 		}
 	}
 
+	if len(depSet) == 0 {
+		// Adding this conditional in order to be very (overly?) careful with backwards compatibility.
+		// The previous implementation returned nil rather than empty slice in the case of no file dependencies.
+		return nil, nil
+	}
+
+	dependencies := make([]string, len(depSet))
+	i := 0
+	for dep := range depSet {
+		dependencies[i] = dep
+		i++
+	}
 	sort.Strings(dependencies)
 	return dependencies, nil
 }
@@ -69,7 +89,7 @@ func notExcluded(workspace string, excludes []string) walk.Predicate {
 		}
 
 		for _, exclude := range excludes {
-			matches, err := filepath.Match(exclude, relPath)
+			matches, err := doublestar.PathMatch(exclude, relPath)
 			if err != nil {
 				return false, err
 			}
