@@ -37,16 +37,17 @@ jobs:
     - name: Install latest Skaffold built from HEAD
       if: ${{ env.CHANGED_EXAMPLES_COUNT > 0 }}
       run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64
-        sudo install skaffold /usr/local/bin/skaffold
+        make
+        echo SKAFFOLD_BINARY=$PWD/out/skaffold >> $GITHUB_ENV
+        out/skaffold config set --global collect-metrics false
 
     - name: Build
       if: ${{ env.CHANGED_EXAMPLES_COUNT > 0 }}
       run: |
         for dir in $CHANGED_EXAMPLES; do
             (cd $dir && echo ">> $dir" && \
-                if [ $(expr "$(skaffold inspect build-env list)" : '.*"type":"local".*') -gt 0 ]; then \
-                    skaffold build --push=false; \
+                if [ $(expr "$($SKAFFOLD_BINARY inspect build-env list)" : '.*"type":"local".*') -gt 0 ]; then \
+                    $SKAFFOLD_BINARY build --push=false; \
                 else \
                     echo "skipping $dir: not local build-env"; \
                 fi) \
