@@ -27,6 +27,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -35,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	ctl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -1079,6 +1081,9 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return env })
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+				return api.Config{CurrentContext: ""}, nil
+			})
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace:  test.namespace,
