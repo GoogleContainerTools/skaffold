@@ -56,9 +56,6 @@ const (
 	DefaultCacheFile   = "cache"
 	DefaultMetricFile  = "metrics"
 
-	DefaultRPCPort     = 50051
-	DefaultRPCHTTPPort = 50052
-
 	DefaultPortForwardAddress = "127.0.0.1"
 
 	DefaultProjectDescriptor = "project.toml"
