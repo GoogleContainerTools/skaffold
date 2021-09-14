@@ -151,6 +151,76 @@ func TestBoolOrUndefined(t *testing.T) {
 	}
 }
 
+func TestIntOrUndefinedUsage(t *testing.T) {
+	var output bytes.Buffer
+
+	cmd := &cobra.Command{}
+	cmd.Flags().Var(&IntOrUndefined{}, "int-flag", "use it like this")
+	cmd.SetOut(&output)
+	cmd.Usage()
+	testutil.CheckDeepEqual(t, "Usage:\n\nFlags:\n      --int-flag int   use it like this\n", output.String())
+}
+
+func TestIntOrUndefined_SetNil(t *testing.T) {
+	var s IntOrUndefined
+	s.Set("1")
+	testutil.CheckDeepEqual(t, "1", s.String())
+	s.SetNil()
+	testutil.CheckDeepEqual(t, "", s.String())
+	testutil.CheckDeepEqual(t, (*int)(nil), s.value)
+	testutil.CheckDeepEqual(t, (*int)(nil), s.Value())
+}
+func TestIntOrUndefined(t *testing.T) {
+	tests := []struct {
+		description string
+		args        []string
+		expected    *int
+	}{
+		{
+			description: "undefined",
+			args:        []string{},
+			expected:    nil,
+		},
+		{
+			description: "empty",
+			args:        []string{"--int-flag="},
+			expected:    nil,
+		},
+		{
+			description: "invalid",
+			args:        []string{"--int-flag=invalid"},
+			expected:    nil,
+		},
+		{
+			description: "0",
+			args:        []string{"--int-flag=0"},
+			expected:    util.IntPtr(0),
+		},
+		{
+			description: "1",
+			args:        []string{"--int-flag=1"},
+			expected:    util.IntPtr(1),
+		},
+		{
+			description: "-1",
+			args:        []string{"--int-flag=-1"},
+			expected:    util.IntPtr(-1),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			var flag IntOrUndefined
+
+			cmd := &cobra.Command{}
+			cmd.Flags().Var(&flag, "int-flag", "")
+			cmd.SetArgs(test.args)
+			cmd.Execute()
+
+			t.CheckDeepEqual(test.expected, flag.value)
+		})
+	}
+}
+
 func TestMuted(t *testing.T) {
 	tests := []struct {
 		phases                  []string

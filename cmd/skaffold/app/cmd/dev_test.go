@@ -176,6 +176,5 @@ func TestNewCmdDev(t *testing.T) {
 
 		t.CheckDeepEqual(true, opts.Tail)
 		t.CheckDeepEqual(false, opts.Force)
-		t.CheckDeepEqual(true, opts.EnableRPC)
 	})
 }

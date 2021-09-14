@@ -28,7 +28,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -278,7 +277,7 @@ func findNewestPodForService(ctx context.Context, kubeContext, ns, serviceName s
 	}
 	sort.Slice(pods, newestPodsFirst(pods))
 
-	if logrus.IsLevelEnabled((logrus.TraceLevel)) {
+	if log.IsTraceLevelEnabled() {
 		var names []string
 		for _, p := range pods {
 			names = append(names, fmt.Sprintf("(pod:%q phase:%v created:%v)", p.Name, p.Status.Phase, p.CreationTimestamp))

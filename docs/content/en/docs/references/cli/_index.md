@@ -121,7 +121,6 @@ Examples:
 
 Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
@@ -146,7 +145,6 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_CONFIG` (same as `--config`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
@@ -196,7 +194,6 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --dry-run=false: Don't build images, just compute the tag for each artifact.
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events
       --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -212,8 +209,8 @@ Options:
       --push=: Push the built images to the specified image repository.
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
@@ -237,7 +234,6 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DRY_RUN` (same as `--dry-run`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILE_OUTPUT` (same as `--file-output`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -402,7 +398,6 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --enable-rpc=true: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -421,8 +416,8 @@ Options:
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --protocols=[]: Priority sorted order of debugger protocols to support.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -458,7 +453,6 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -564,7 +558,6 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
   -i, --images=: A list of pre-built images to deploy
@@ -581,8 +574,8 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-render=false: Don't render the manifests, just deploy them
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -608,7 +601,6 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_IMAGES` (same as `--images`)
@@ -659,7 +651,6 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
-      --enable-rpc=true: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -677,8 +668,8 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -715,7 +706,6 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -907,7 +897,6 @@ Options:
       --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
@@ -935,7 +924,6 @@ Env vars:
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
@@ -976,7 +964,6 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -994,8 +981,8 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -1027,7 +1014,6 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -1130,15 +1116,14 @@ Examples:
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --rpc-http-port=50052: tcp port to expose event REST API over HTTP
-      --rpc-port=50051: tcp port to expose event API
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
 
@@ -1153,7 +1138,6 @@ Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
-* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)

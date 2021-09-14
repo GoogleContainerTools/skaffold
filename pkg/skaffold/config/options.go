@@ -88,8 +88,8 @@ type SkaffoldOptions struct {
 	InsecureRegistries []string
 	Muted              Muted
 	Command            string
-	RPCPort            int
-	RPCHTTPPort        int
+	RPCPort            IntOrUndefined
+	RPCHTTPPort        IntOrUndefined
 	BuildConcurrency   int
 	MakePathsAbsolute  *bool
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):

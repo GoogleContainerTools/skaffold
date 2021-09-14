@@ -97,10 +97,23 @@ func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), err
 
 		watchers = append(watchers, watcher)
 		go func() {
+			l := log.Entry(context.TODO())
 			for evt := range watcher.ResultChan() {
-				// If the event's type is "ERROR", warn and continue.
+				// If the event's type is "ERROR", log and continue.
 				if evt.Type == watch.Error {
-					log.Entry(context.TODO()).Warnf("got unexpected event of type %s", evt.Type)
+					// These errors sem to arise from the watch stream being closed from a ^C.
+					// evt.Object seems likely to be a https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Status
+					//    Status{
+					//        Status:Failure,
+					//        Code:500,
+					//        Reason:InternalError,
+					//        Message:an error on the server ("unable to decode an event from the watch stream: http2: response body closed") has prevented the request from succeeding,
+					//        Details:&StatusDetails{
+					//          Causes:[]StatusCause{
+					//            {Type:UnexpectedServerResponse,Message:unable to decode an event from the watch stream: http2: response body closed},
+					//            {Type:ClientWatchDecoding,Message:unable to decode an event from the watch stream: http2: response body closed}},
+					//          RetryAfterSeconds:0}}
+					l.Debugf("podWatcher: got unexpected event of type %s: %v", evt.Type, evt.Object)
 					continue
 				}
 
@@ -112,6 +125,24 @@ func (w *podWatcher) Start(kubeContext string, namespaces []string) (func(), err
 
 				if !w.podSelector.Select(pod) {
 					continue
+				}
+
+				if log.IsTraceLevelEnabled() {
+					st := fmt.Sprintf("podWatcher[%s/%s:%v] phase:%v ", pod.Namespace, pod.Name, evt.Type, pod.Status.Phase)
+					if len(pod.Status.Reason) > 0 {
+						st += fmt.Sprintf("reason:%s ", pod.Status.Reason)
+					}
+					for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+						switch {
+						case c.State.Waiting != nil:
+							st += fmt.Sprintf("%s<waiting> ", c.Name)
+						case c.State.Running != nil:
+							st += fmt.Sprintf("%s<running> ", c.Name)
+						case c.State.Terminated != nil:
+							st += fmt.Sprintf("%s<terminated> ", c.Name)
+						}
+					}
+					l.Trace(st)
 				}
 
 				w.receiverLock.Lock()
