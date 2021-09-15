@@ -57,4 +57,3 @@ fi
 # This analyzer doesn't support any flags currently, so we don't include ${FLAGS}
 ${BIN}/logrus-analyzer github.com/GoogleContainerTools/skaffold{/pkg,/cmd,/diag}...
 
-

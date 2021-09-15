@@ -26,22 +26,22 @@ import (
 func TestString(t *testing.T) {
 	var tests = []struct {
 		description string
-		ae          proto.ActionableErr
+		ae          *proto.ActionableErr
 		expected    string
 	}{
 		{
 			description: "should return error string if error is set",
-			ae:          proto.ActionableErr{Message: "some error"},
+			ae:          &proto.ActionableErr{Message: "some error"},
 			expected:    "some error",
 		},
 		{
 			description: "should return error if both details and error are set",
-			ae:          proto.ActionableErr{Message: "error happened due to something"},
+			ae:          &proto.ActionableErr{Message: "error happened due to something"},
 			expected:    "error happened due to something",
 		},
 		{
 			description: "should return empty string if all empty",
-			ae:          proto.ActionableErr{},
+			ae:          &proto.ActionableErr{},
 		},
 	}
 	for _, test := range tests {
@@ -61,24 +61,24 @@ func TestEqual(t *testing.T) {
 	}{
 		{
 			description: "status should be same if error messages are same",
-			old:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 0/1 replicas to be available..."}},
-			new:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 0/1 replicas to be available..."}},
+			old:         Status{ae: &proto.ActionableErr{ErrCode: 100, Message: "Waiting for 0/1 replicas to be available..."}},
+			new:         Status{ae: &proto.ActionableErr{ErrCode: 100, Message: "Waiting for 0/1 replicas to be available..."}},
 			expected:    true,
 		},
 		{
 			description: "status should be new if error is different",
-			old:         Status{ae: proto.ActionableErr{}},
-			new:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "see this error"}},
+			old:         Status{ae: &proto.ActionableErr{}},
+			new:         Status{ae: &proto.ActionableErr{ErrCode: 100, Message: "see this error"}},
 		},
 		{
 			description: "status should be new if errcode are different but same message",
-			old:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "see this error"}},
-			new:         Status{ae: proto.ActionableErr{ErrCode: 101, Message: "see this error"}},
+			old:         Status{ae: &proto.ActionableErr{ErrCode: 100, Message: "see this error"}},
+			new:         Status{ae: &proto.ActionableErr{ErrCode: 101, Message: "see this error"}},
 		},
 		{
 			description: "status should be new if messages change",
-			old:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 2/2 replicas to be available..."}},
-			new:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 1/2 replicas to be available..."}},
+			old:         Status{ae: &proto.ActionableErr{ErrCode: 100, Message: "Waiting for 2/2 replicas to be available..."}},
+			new:         Status{ae: &proto.ActionableErr{ErrCode: 100, Message: "Waiting for 1/2 replicas to be available..."}},
 		},
 	}
 	for _, test := range tests {

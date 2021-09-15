@@ -117,10 +117,10 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		// Add recommendations
 		for _, r := range p.recos {
 			if s := r.Make(updated.ae.ErrCode); s.SuggestionCode != proto.SuggestionCode_NIL {
-				updated.ae.Suggestions = append(updated.ae.Suggestions, &s)
+				updated.ae.Suggestions = append(updated.ae.Suggestions, s)
 			}
 		}
-		rs = append(rs, NewResourceFromObject(&po, Status(updated.phase), updated.ae, updated.logs))
+		rs = append(rs, NewResourceFromObject(&po, Status(updated.phase), &updated.ae, updated.logs))
 	}
 	return rs, nil
 }

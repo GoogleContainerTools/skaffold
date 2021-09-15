@@ -180,7 +180,7 @@ func TestEventLogHTTP(t *testing.T) {
 			defer httpResponse.Body.Close()
 
 			numEntries := 0
-			var logEntries []proto.LogEntry
+			var logEntries []*proto.LogEntry
 			for {
 				e := make([]byte, 1024)
 				l, err := httpResponse.Body.Read(e)
@@ -195,13 +195,13 @@ func TestEventLogHTTP(t *testing.T) {
 					if entryStr == "" {
 						continue
 					}
-					var entry proto.LogEntry
+					entry := new(proto.LogEntry)
 					// the HTTP wrapper sticks the proto messages into a map of "result" -> message.
 					// attempting to JSON unmarshal drops necessary proto information, so we just manually
 					// strip the string off the response and unmarshal directly to the proto message
 					entryStr = strings.Replace(entryStr, "{\"result\":", "", 1)
 					entryStr = entryStr[:len(entryStr)-1]
-					if err := jsonpb.UnmarshalString(entryStr, &entry); err != nil {
+					if err := jsonpb.UnmarshalString(entryStr, entry); err != nil {
 						t.Errorf("error converting http response %s to proto: %s", entryStr, err.Error())
 					}
 					numEntries++
@@ -279,7 +279,7 @@ func TestGetStateRPC(t *testing.T) {
 	var grpcState *proto.State
 	for i := 0; i < readRetries; i++ {
 		grpcState = retrieveRPCState(ctx, t, client)
-		if grpcState != nil && checkBuildAndDeployComplete(*grpcState) {
+		if grpcState != nil && checkBuildAndDeployComplete(grpcState) {
 			success = true
 			break
 		}
@@ -298,7 +298,7 @@ func TestGetStateHTTP(t *testing.T) {
 	time.Sleep(3 * time.Second) // give skaffold time to process all events
 
 	success := false
-	var httpState proto.State
+	var httpState *proto.State
 	for i := 0; i < readRetries; i++ {
 		httpState = retrieveHTTPState(t, httpAddr)
 		if checkBuildAndDeployComplete(httpState) {
@@ -331,8 +331,8 @@ func retrieveRPCState(ctx context.Context, t *testing.T, client proto.SkaffoldSe
 	}
 }
 
-func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
-	var httpState proto.State
+func retrieveHTTPState(t *testing.T, httpAddr string) *proto.State {
+	httpState := new(proto.State)
 
 	// retrieve the state via HTTP as well, and verify the result is the same
 	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", httpAddr))
@@ -345,7 +345,7 @@ func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
 	if err != nil {
 		t.Errorf("error reading body from http response: %s", err.Error())
 	}
-	if err := jsonpb.UnmarshalString(string(b), &httpState); err != nil {
+	if err := jsonpb.UnmarshalString(string(b), httpState); err != nil {
 		t.Errorf("error converting http response to proto: %s", err.Error())
 	}
 	return httpState
@@ -380,7 +380,7 @@ func randomPort() string {
 	return strconv.Itoa(p)
 }
 
-func checkBuildAndDeployComplete(state proto.State) bool {
+func checkBuildAndDeployComplete(state *proto.State) bool {
 	if state.BuildState == nil || state.DeployState == nil {
 		return false
 	}

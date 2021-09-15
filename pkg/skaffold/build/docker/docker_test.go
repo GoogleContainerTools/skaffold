@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/errdefs"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -161,8 +162,8 @@ func TestDockerCLIBuild(t *testing.T) {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
 			}
 			if test.err != nil && test.expectedErrCode != 0 {
-				if ae, ok := err.(sErrors.ErrDef); ok {
-					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode())
+				if ae, ok := err.(*sErrors.ErrDef); ok {
+					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode(), protocmp.Transform())
 					t.CheckErrorContains(test.expectedErr.Error(), ae)
 				} else {
 					t.Fatalf("expected to find an actionable error. not found")

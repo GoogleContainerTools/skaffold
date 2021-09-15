@@ -45,7 +45,7 @@ func newBuildError(err error, cfg docker.Config) error {
 	switch errU.(type) {
 	case *jsonmessage.JSONError:
 		return sErrors.NewError(err,
-			proto.ActionableErr{
+			&proto.ActionableErr{
 				Message: err.Error(),
 				ErrCode: proto.StatusCode_BUILD_USER_ERROR,
 				Suggestions: []*proto.Suggestion{
@@ -60,7 +60,7 @@ func newBuildError(err error, cfg docker.Config) error {
 	}
 }
 
-func getActionableErr(err error, cfg docker.Config) proto.ActionableErr {
+func getActionableErr(err error, cfg docker.Config) *proto.ActionableErr {
 	var errCode proto.StatusCode
 	suggestions := []*proto.Suggestion{
 		{
@@ -112,7 +112,7 @@ func getActionableErr(err error, cfg docker.Config) proto.ActionableErr {
 		errCode = proto.StatusCode_BUILD_DOCKER_UNKNOWN
 	}
 
-	return proto.ActionableErr{
+	return &proto.ActionableErr{
 		Message:     err.Error(),
 		ErrCode:     errCode,
 		Suggestions: suggestions,
@@ -121,7 +121,7 @@ func getActionableErr(err error, cfg docker.Config) proto.ActionableErr {
 
 func dockerfileNotFound(err error, artifact string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_DOCKERFILE_NOT_FOUND,
 			Suggestions: []*proto.Suggestion{
@@ -136,7 +136,7 @@ func dockerfileNotFound(err error, artifact string) error {
 
 func cacheFromPullErr(err error, artifact string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_DOCKER_CACHE_FROM_PULL_ERR,
 			Suggestions: []*proto.Suggestion{

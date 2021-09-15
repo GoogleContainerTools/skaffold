@@ -115,7 +115,7 @@ func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
 		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
 			return sErrors.NewError(err,
-				proto.ActionableErr{
+				&proto.ActionableErr{
 					Message: fmt.Sprintf("unable to initialize Kptfile in %v", r.hydrationDir),
 					ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
 					Suggestions: []*proto.Suggestion{
@@ -161,7 +161,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	kfConfig := &kptfile.KptFile{}
 	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
 		return sErrors.NewError(err,
-			proto.ActionableErr{
+			&proto.ActionableErr{
 				Message: fmt.Sprintf("unable to parse Kptfile in %v", r.hydrationDir),
 				ErrCode: proto.StatusCode_RENDER_KPTFILE_INVALID_YAML_ERR,
 				Suggestions: []*proto.Suggestion{

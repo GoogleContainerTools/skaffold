@@ -71,7 +71,7 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 		if !ok {
 			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
 			return nil, sErrors.NewErrorWithStatusCode(
-				proto.ActionableErr{
+				&proto.ActionableErr{
 					Message: fmt.Sprintf("unsupported transformer %q", c.Name),
 					ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
 					Suggestions: []*proto.Suggestion{
@@ -89,7 +89,7 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 				items := strings.Split(stringifiedData, ":")
 				if len(items) != 2 {
 					return nil, sErrors.NewErrorWithStatusCode(
-						proto.ActionableErr{
+						&proto.ActionableErr{
 							Message: fmt.Sprintf("unknown arguments for transformer %v", c.Name),
 							ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
 							Suggestions: []*proto.Suggestion{
