@@ -60,18 +60,18 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description: "buildkit",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
+			localBuild:  latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			expectedEnv: []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "buildkit and extra env",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
+			localBuild:  latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			extraEnv:    []string{"OTHER=VALUE"},
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "env var collisions",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
+			localBuild:  latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			extraEnv:    []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// env var collisions are handled by cmd.Run(). Last one wins.
 			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
@@ -135,7 +135,7 @@ func TestDockerCLIBuild(t *testing.T) {
 					test.err,
 				)
 				t.Override(&util.DefaultExecCommand, mockCmd)
-			} else if test.localBuild.UseBuildkit || test.localBuild.UseDockerCLI {
+			} else if (test.localBuild.UseBuildkit != nil && *test.localBuild.UseBuildkit) || test.localBuild.UseDockerCLI {
 				mockCmd = testutil.CmdRunEnv(
 					"docker build . --file "+dockerfilePath+" -t tag",
 					test.expectedEnv,
