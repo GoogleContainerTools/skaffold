@@ -29,6 +29,8 @@ fi
 
 # you can pass your github token with --token here if you run out of requests
 "${DIR}/release-notes" GoogleContainerTools skaffold
+# remove binary when done
+rm "${DIR}/release-notes"
 
 # sync files from integration examples to examples/
 rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
