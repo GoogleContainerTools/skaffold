@@ -177,3 +177,11 @@ func (p *ForwarderManager) stop() {
 func (p *ForwarderManager) Name() string {
 	return "PortForwarding"
 }
+
+func (p *ForwarderManager) AddPodForwarder(cli *kubectl.CLI, podSelector kubernetes.PodSelector, runMode config.RunMode, options config.PortForwardOptions) {
+	if options.ForwardPods(runMode) {
+		p.forwarders = append(p.forwarders, NewWatchingPodForwarder(p.entryManager, cli.KubeContext, podSelector, allPorts))
+	} else if options.ForwardDebug(runMode) {
+		p.forwarders = append(p.forwarders, NewWatchingPodForwarder(p.entryManager, cli.KubeContext, podSelector, debugPorts))
+	}
+}
