@@ -152,6 +152,16 @@
     "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
     "url": "/docs/pipeline-stages/deployers"
   },
+  "deploy.docker": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Deploy",
+    "feature": "Docker Deployer",
+    "maturity": "alpha",
+    "description": "Deploy applications to the local Docker daemon"
+  },
   "deploy.status_check": {
     "dev": "x",
     "deploy": "x",
@@ -160,7 +170,7 @@
     "area": "Deploy",
     "feature": "Status check",
     "maturity": "GA",
-    "description": "User can wait for deployments to stabilize "
+    "description": "User can wait for deployments to stabilize"
   },
   "dev": {
     "dev": "x",
