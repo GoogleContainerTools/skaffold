@@ -7,7 +7,8 @@ build:
       buildCommand: ./build.sh
       dependencies:
         paths:
-        - "go.mod"
-        - "**.go"
+        - "**/*.go"
+        - go.mod
+        - .ko.yaml
   tagPolicy:
     sha256: {}

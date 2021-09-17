@@ -1,12 +1,14 @@
 apiVersion: skaffold/v2beta24
 kind: Config
-
 build:
   artifacts:
   - image: skaffold-examples-buildx
     custom:
       buildCommand: sh buildx.sh
       dependencies:
-        paths: ["go.mod", "**.go", "buildx.sh"]
+        paths:
+        - "**/*.go"
+        - buildx.sh
+        - go.mod
   tagPolicy:
     sha256: {}
