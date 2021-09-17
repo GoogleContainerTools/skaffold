@@ -61,12 +61,12 @@ func main() {
 	})
 
 	// Create code to upgrade from current to new
-	cp(template("upgrade.template.go"), path(current, "upgrade.go"))
+	cp(template("upgrade.template"), path(current, "upgrade.go"))
 	sed(path(current, "upgrade.go"), "%NEXT_VERSION%", next)
 	sed(path(current, "upgrade.go"), "%PREV_VERSION%", current)
 
 	// Create a test for the upgrade from current to new
-	cp(template("upgrade_test.template.go"), path(current, "upgrade_test.go"))
+	cp(template("upgrade_test.template"), path(current, "upgrade_test.go"))
 	sed(path(current, "upgrade_test.go"), "%NEXT_VERSION%", next)
 	sed(path(current, "upgrade_test.go"), "%PREV_VERSION%", current)
 
