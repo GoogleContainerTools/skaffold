@@ -24,24 +24,24 @@ import (
 )
 
 func Lint(ctx context.Context, out io.Writer, opts inspect.Options) error {
-	skaffoldYamlLintRuleList, err := GetSkaffoldYamlsList(ctx, out, opts)
+	skaffoldYamlRuleList, err := GetSkaffoldYamlsList(ctx, out, opts)
 	if err != nil {
 		return err
 	}
-	dockerfileLintRuleList, err := GetDockerfilesList(ctx, out, opts)
+	dockerfileRuleList, err := GetDockerfilesList(ctx, out, opts)
 	if err != nil {
 		return err
 	}
-	k8sYamlLintRuleList, err := GetK8sYamlsList(ctx, out, opts)
+	k8sYamlRuleList, err := GetK8sYamlsList(ctx, out, opts)
 	if err != nil {
 		return err
 	}
-	recList := LintRuleList{
-		LinterResultList: []MatchResult{},
+	recList := RuleList{
+		LinterResultList: []Result{},
 	}
-	recList.LinterResultList = append(recList.LinterResultList, skaffoldYamlLintRuleList.SkaffoldYamlLintRules...)
-	recList.LinterResultList = append(recList.LinterResultList, dockerfileLintRuleList.DockerfileLintRules...)
-	recList.LinterResultList = append(recList.LinterResultList, k8sYamlLintRuleList.K8sYamlLintRules...)
+	recList.LinterResultList = append(recList.LinterResultList, skaffoldYamlRuleList.SkaffoldYamlRules...)
+	recList.LinterResultList = append(recList.LinterResultList, dockerfileRuleList.DockerfileRules...)
+	recList.LinterResultList = append(recList.LinterResultList, k8sYamlRuleList.K8sYamlRules...)
 
 	//   output flattened list
 	formatter := OutputFormatter(out, opts.OutFormat)

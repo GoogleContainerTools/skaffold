@@ -72,27 +72,13 @@ func (j jsonFormatter) WriteErr(err error) error {
 type recommendFormatter struct {
 	out io.Writer
 }
-
-func convert1DFileIndexTo2D(input string, idx int) (int, int) {
-	line := 1
-	col := 0
-	for i := 0; i < idx; i++ {
-		col++
-		if input[i] == '\n' {
-			line++
-			col = 0
-		}
-	}
-	return line, col
-}
-
 type golangCIStyleOutput struct {
 	RelFilePath    string
 	LineNumber     int
 	ColumnNumber   int
-	LintRuleId     string
+	RuleID         string
 	Explanation    string
-	LintRuleType   string
+	RuleType       string
 	FlaggedText    string
 	ColPointerLine string
 }
@@ -106,42 +92,27 @@ func genColPointerLine(colIdx int) string {
 	return s
 }
 
-func generateGolangCIStyleOutput(mr *MatchResult) string {
+func generateGolangCIStyleOutput(lr *Result) string {
 	// TODO(aaron-prindle) fix hack, re-reading file to not store text in match result
-	text, err := ioutil.ReadFile(mr.AbsFilePath)
+	text, err := ioutil.ReadFile(lr.AbsFilePath)
 	if err != nil {
 		return ""
 	}
-
-	// TODO(aaron-prindle) avoid multiple string(text) castes?
-
-	var line, col int
-	if mr.Line != nil {
-		// use line and column numbers already set, use those
-		line = *mr.Line
-		col = *mr.Column - 1 // TODO(aaron-prindle) index seems to be one off what I would expect?
-		// col = *mr.Column // TODO(aaron-prindle) currently this is only used for json field values and these are maybe off atm?
-		// TODO(aaron-prindle) stub, FIXX!!
-	} else {
-		line, col = convert1DFileIndexTo2D(string(text), mr.TextStartIndex)
-	}
-	flaggedText := strings.Split(string(text), "\n")[line-1]
-
 	gcisout := golangCIStyleOutput{
-		RelFilePath:    mr.RelFilePath,
-		LineNumber:     line,
-		ColumnNumber:   col,
-		LintRuleId:     mr.LintRuleId.String(),
-		Explanation:    mr.Explanation,
-		LintRuleType:   mr.LintRuleType.String(),
-		FlaggedText:    flaggedText, // TODO(aaron-prindle) should this be the whole line?
-		ColPointerLine: genColPointerLine(col),
+		RelFilePath:    lr.RelFilePath,
+		LineNumber:     lr.Line,
+		ColumnNumber:   lr.Column,
+		RuleID:         lr.RuleID.String(),
+		Explanation:    RuleIDToLintRuleMap[lr.RuleID].Explanation,
+		RuleType:       RuleIDToLintRuleMap[lr.RuleID].RuleType.String(),
+		FlaggedText:    strings.Split(string(text), "\n")[lr.Line-1], // TODO(aaron-prindle) should this be the whole line?
+		ColPointerLine: genColPointerLine(lr.Column),
 	}
 	// TODO(aaron-prindle) - different template for multiline matches -> (no ColPointerLine, show multi line match)
 	// if flagged text contains \n character, don't show colpointerline
 
-	// TODO(aaron-prindle) - different template based on LintRuleType
-	tmpl, err := template.New("golangCIStyleOutput").Parse("{{.RelFilePath}}:{{.LineNumber}}:{{.ColumnNumber}}: {{.LintRuleId}}: {{.Explanation}}: ({{.LintRuleType}})\n{{.FlaggedText}}\n{{.ColPointerLine}}")
+	// TODO(aaron-prindle) - different template based on RuleType
+	tmpl, err := template.New("golangCIStyleOutput").Parse("{{.RelFilePath}}:{{.LineNumber}}:{{.ColumnNumber}}: {{.RuleID}}: {{.Explanation}}: ({{.RuleType}})\n{{.FlaggedText}}\n{{.ColPointerLine}}")
 	if err != nil {
 		panic(err)
 	}
@@ -155,7 +126,7 @@ func generateGolangCIStyleOutput(mr *MatchResult) string {
 }
 
 func (j recommendFormatter) Write(data interface{}) error {
-	l := data.(LintRuleList)
+	l := data.(RuleList)
 	for _, rec := range l.LinterResultList {
 		fmt.Fprintln(j.out, generateGolangCIStyleOutput(&rec))
 	}
@@ -187,15 +158,15 @@ type numOnlyLintFormatter struct {
 	out io.Writer
 }
 
-func generateNumOnlyLintOutput(mrs *[]MatchResult) string {
+func generateNumOnlyLintOutput(mrs *[]Result) string {
 	return fmt.Sprintf("%d configuration recommendations found for your application.  Run 'skaffold recommend' for the detailed list of these recommendations", len(*mrs))
 }
 
-// TODO(aaron-prindle) fix this to have a context timeout and to NOT use DockerfileLintRules (use LintRules instead)
+// TODO(aaron-prindle) fix this to have a context timeout and to NOT use DockerfileRules (use Rules instead)
 func (j numOnlyLintFormatter) Write(data interface{}) error {
-	l := data.(AllLintRuleList)
-	df := l.DockerfileLintRuleList
-	fmt.Fprintln(j.out, generateNumOnlyLintOutput(&df.DockerfileLintRules))
+	l := data.(AllRuleLists)
+	df := l.DockerfileRuleList
+	fmt.Fprintln(j.out, generateNumOnlyLintOutput(&df.DockerfileRules))
 	return nil
 }
 

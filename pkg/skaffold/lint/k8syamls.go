@@ -18,34 +18,25 @@ package lint
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
-var K8sYamlLinters = []FileLinter{
+var K8sYamlLinters = []Linter{
 	&StringEqualsLinter{},
-	&RegexpLinter{},
+	&RegExpLinter{},
 	&YamlFieldLinter{},
 }
 
-var K8sYamlLintRules = []LintRule{
-	{
-		// TODO(aaron-prindle) make a better recommendation regexp
-		YamlFilter:   yaml.Lookup("metadata", "labels"),
-		YamlValue:    "app.kubernetes.io/managed-by",
-		LintRuleId:   K8S_YAML_PLACEHOLDER,
-		LintRuleType: YamlFieldCheck,
-		Explanation: fmt.Sprintln("Found usage of label 'app.kubernetes.io/managed-by'.  skaffold overwrites the 'app.kubernetes.io/managed-by' field to 'app.kubernetes.io/managed-by: skaffold'. " +
-			"Remove this label or use the --dont-apply-managed-by-label flag to not have skaffold modify this label"),
-	},
+var K8sYamlRules = []Rule{
+	RuleIDToLintRuleMap[K8S_YAML_MANAGED_BY_LABEL_IS_IN_USE],
 	// ideas
 	// if: see multiple contexts for image builds
 	//   &: those contexts have similar structure for deployments
@@ -57,7 +48,7 @@ var K8sYamlLintRules = []LintRule{
 	// if repo prefix used, recommend removing so default-repo works
 }
 
-func GetK8sYamlsList(ctx context.Context, out io.Writer, opts inspect.Options) (*K8sYamlLintRuleList, error) {
+func GetK8sYamlsList(ctx context.Context, out io.Writer, opts inspect.Options) (*K8sYamlRuleList, error) {
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
@@ -72,7 +63,7 @@ func GetK8sYamlsList(ctx context.Context, out io.Writer, opts inspect.Options) (
 	if err != nil {
 		return nil, err
 	}
-	l := &K8sYamlLintRuleList{K8sYamlLintRules: []MatchResult{}}
+	l := &K8sYamlRuleList{K8sYamlRules: []Result{}}
 	for _, c := range cfgs {
 		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
 			// NOTE: pattern is a pattern that can have wildcards, eg: leeroy-app/kubernetes/*
@@ -98,15 +89,15 @@ func GetK8sYamlsList(ctx context.Context, out io.Writer, opts inspect.Options) (
 					RelPath: relPath,
 					Text:    string(b),
 				}
-				mrs := []MatchResult{}
+				results := []Result{}
 				for _, r := range K8sYamlLinters {
-					recs, err := r.Lint(k8syaml, &K8sYamlLintRules)
+					recs, err := r.Lint(k8syaml, &K8sYamlRules)
 					if err != nil {
 						return nil, err
 					}
-					mrs = append(mrs, *recs...)
+					results = append(results, *recs...)
 				}
-				l.K8sYamlLintRules = append(l.K8sYamlLintRules, mrs...)
+				l.K8sYamlRules = append(l.K8sYamlRules, results...)
 			}
 		}
 	}

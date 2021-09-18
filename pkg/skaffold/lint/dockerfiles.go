@@ -20,57 +20,26 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/moby/buildkit/frontend/dockerfile/command"
-	"github.com/sirupsen/logrus"
 )
 
 // TODO(aaron-prindle) FIX, not correct
-var DockerfileLinters = []FileLinter{
+
+var DockerfileLinters = []Linter{
 	&StringEqualsLinter{},
-	&RegexpLinter{},
+	&RegExpLinter{},
 	&DockerfileCommandLinter{},
 }
 
-var DockerfileLintRules = []LintRule{
-	{
-		// TODO(aaron-prindle), why doesn't start of line anchor work for regexp? Because it is one big string? eg: "(?i)^COPY [.] [.]"
-		DockerCommand:    command.Copy,
-		DockerCopySource: ".",
-		LintRuleId:       DOCKERFILE_PLACEHOLDER,
-		LintRuleType:     DockerfileCommandCheck,
-		// TODO(aaron-prindle) figure out how to best do conditions...
-		// can do them here which is better or can hardcode them in the linters with the specific IDs
-		LintConditions: []func(string) bool{func(sourcePath string) bool {
-			files := 0
-			err := filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					logrus.Errorf("DOCKERFILE_PLACEHOLDER lint condition encountered error: %v", err)
-					return err
-				}
-				files++
-				return nil
-			})
-			if err != nil {
-				logrus.Errorf("DOCKERFILE_PLACEHOLDER lint condition encountered error: %v", err)
-				return false
-			}
-			return files > 100
-		}},
-		Explanation: "Found 'COPY . <DEST>', for a source directory that has > 100 files.  This has the potential to dramatically slow 'skaffold dev' down by " +
-			"having skaffold watch all of the files in the copied directory for changes. " +
-			"If you notice skaffold rebuilding images unnecessarily when non-image-critical files are " +
-			"modified, consider changing this to `COPY $REQUIRED_SOURCE_FILE <DEST>` for each required source file instead of " +
-			"using 'COPY . <DEST>'",
-	},
+var DockerfileRules = []Rule{
+	RuleIDToLintRuleMap[DOCKERFILE_COPY_DOT_OVER_100_FILES],
 }
 
-func GetDockerfilesList(ctx context.Context, out io.Writer, opts inspect.Options) (*DockerfileLintRulesList, error) {
+func GetDockerfilesList(ctx context.Context, out io.Writer, opts inspect.Options) (*DockerfileRulesList, error) {
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
@@ -81,7 +50,7 @@ func GetDockerfilesList(ctx context.Context, out io.Writer, opts inspect.Options
 		return nil, nil
 	}
 
-	l := &DockerfileLintRulesList{}
+	l := &DockerfileRulesList{}
 	seen := map[string]bool{}
 	workdir, err := util.RealWorkDir()
 	if err != nil {
@@ -104,16 +73,15 @@ func GetDockerfilesList(ctx context.Context, out io.Writer, opts inspect.Options
 					RelPath: filepath.Join(a.Workspace, a.DockerArtifact.DockerfilePath),
 					Text:    string(b),
 				}
-				mrs := []MatchResult{}
+				results := []Result{}
 				for _, r := range DockerfileLinters {
-					recs, err := r.Lint(dockerfile, &DockerfileLintRules)
+					recs, err := r.Lint(dockerfile, &DockerfileRules)
 					if err != nil {
 						return nil, err
 					}
-					mrs = append(mrs, *recs...)
+					results = append(results, *recs...)
 				}
-				l.DockerfileLintRules = append(l.DockerfileLintRules, mrs...)
-				l.Dockerfiles = append(l.Dockerfiles, dockerfile)
+				l.DockerfileRules = append(l.DockerfileRules, results...)
 			}
 		}
 	}

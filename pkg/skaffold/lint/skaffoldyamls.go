@@ -18,7 +18,6 @@ package lint
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -26,36 +25,18 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
-var SkaffoldYamlLinters = []FileLinter{
+var SkaffoldYamlLinters = []Linter{
 	&StringEqualsLinter{},
-	&RegexpLinter{},
+	&RegExpLinter{},
 	&YamlFieldLinter{},
 }
 
-var SkaffoldYamlLintRules = []LintRule{
-	{
-		// TODO(aaron-prindle) make a better recommendation regexp
-		Regexp:       "gcr.io/|docker.io/|amazonaws.com/",
-		LintRuleId:   SKAFFOLD_YAML_PLACEHOLDER,
-		LintRuleType: RegexpMatchCheck,
-		Explanation: "Found image registry prefix on an image skaffold manages.  This is not recommended as it reduces the usability of skaffold project. " +
-			"The image registry name should be removed and an image registry should be added programatically via skaffold, for example with the --default-repo flag",
-	},
-
-	{
-		// TODO(aaron-prindle) check to see how kyaml supports regexp and how to best plumb that through
-		YamlFilter: yaml.Get("apiVersion"),
-		YamlValue:  "skaffold/v2beta21",
-		// YamlValue:          version.Get().ConfigVersion,
-		LintRuleId:   SKAFFOLD_YAML_PLACEHOLDER,
-		LintRuleType: YamlFieldCheck,
-		Explanation:  fmt.Sprintf("Found 'apiVersion' field with value that is not the latest skaffold apiVersion. Modify the apiVersion to the latest supported version: `apiVersion: %s`", version.Get().ConfigVersion),
-	},
-
+var SkaffoldYamlRules = []Rule{
+	RuleIDToLintRuleMap[SKAFFOLD_YAML_API_VERSION_OUT_OF_DATE],
+	RuleIDToLintRuleMap[SKAFFOLD_YAML_REPO_IS_HARD_CODED],
+	RuleIDToLintRuleMap[SKAFFOLD_YAML_SUGGEST_INFER_STANZA],
 	// ideas
 	// if: see multiple contexts for image builds
 	//   &: those contexts have similar structure for deployments
@@ -67,7 +48,7 @@ var SkaffoldYamlLintRules = []LintRule{
 	// if repo prefix used, recommend removing so default-repo works
 }
 
-func GetSkaffoldYamlsList(ctx context.Context, out io.Writer, opts inspect.Options) (*SkaffoldYamlLintRuleList, error) {
+func GetSkaffoldYamlsList(ctx context.Context, out io.Writer, opts inspect.Options) (*SkaffoldYamlRuleList, error) {
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
@@ -82,7 +63,7 @@ func GetSkaffoldYamlsList(ctx context.Context, out io.Writer, opts inspect.Optio
 	if err != nil {
 		return nil, err
 	}
-	l := &SkaffoldYamlLintRuleList{SkaffoldYamlLintRules: []MatchResult{}}
+	l := &SkaffoldYamlRuleList{SkaffoldYamlRules: []Result{}}
 	for _, c := range cfgs {
 		b, err := ioutil.ReadFile(c.SourceFile)
 		if err != nil {
@@ -93,15 +74,15 @@ func GetSkaffoldYamlsList(ctx context.Context, out io.Writer, opts inspect.Optio
 			RelPath: strings.TrimPrefix(c.SourceFile, workdir),
 			Text:    string(b),
 		}
-		mrs := []MatchResult{}
+		results := []Result{}
 		for _, r := range SkaffoldYamlLinters {
-			recs, err := r.Lint(skaffoldyaml, &SkaffoldYamlLintRules)
+			recs, err := r.Lint(skaffoldyaml, &SkaffoldYamlRules)
 			if err != nil {
 				return nil, err
 			}
-			mrs = append(mrs, *recs...)
+			results = append(results, *recs...)
 		}
-		l.SkaffoldYamlLintRules = append(l.SkaffoldYamlLintRules, mrs...)
+		l.SkaffoldYamlRules = append(l.SkaffoldYamlRules, results...)
 	}
 	return l, nil
 }

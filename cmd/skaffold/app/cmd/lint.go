@@ -20,10 +20,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/lint"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/lint"
 )
 
 var lintFlags = struct {
