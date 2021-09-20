@@ -50,7 +50,7 @@ func buildOptions(a *latestV1.Artifact, runMode config.RunMode) *options.BuildOp
 				Env:     a.KoArtifact.Env,
 				Flags:   a.KoArtifact.Flags,
 				Ldflags: a.KoArtifact.Ldflags,
-				Main:    a.KoArtifact.Target,
+				Main:    a.KoArtifact.Main,
 			},
 		},
 		ConcurrentBuilds:     1,

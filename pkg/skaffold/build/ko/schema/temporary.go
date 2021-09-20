@@ -51,19 +51,19 @@ type KoArtifact struct {
 	// For example: `["-buildid=", "-s", "-w"]`.
 	Ldflags []string `yaml:"ldflags,omitempty"`
 
+	// Main is the location of the main package. It is the pattern passed to `go build`.
+	// If main is specified as a relative path, it is relative to the `context` directory.
+	// If main is empty, the ko builder uses a default value of `.`.
+	// If main is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
+	// Main is ignored if the `ImageName` starts with `ko://`.
+	// Example: `./cmd/foo`
+	Main string `yaml:"main,omitempty"`
+
 	// Platforms is the list of platforms to build images for. Each platform
 	// is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
 	// Defaults to `all` to build for all platforms supported by the
 	// base image.
 	Platforms []string `yaml:"platforms,omitempty"`
-
-	// Target is the location of the main package.
-	// If target is specified as a relative path, it is relative to the `context` directory.
-	// If target is empty, the ko builder looks for the main package in the `context` directory only, but not in any subdirectories.
-	// If target is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
-	// Target is ignored if the `ImageName` starts with `ko://`.
-	// Example: `./cmd/foo`
-	Target string `yaml:"target,omitempty"`
 }
 
 // KoDependencies is used to specify dependencies for an artifact built by ko.
