@@ -32,6 +32,7 @@ import (
 
 	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -149,7 +150,7 @@ func Test_getImportPath(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			b := NewArtifactBuilder(nil, false)
+			b := NewArtifactBuilder(nil, false, config.RunModes.Build)
 			koBuilder, err := b.newKoBuilder(context.Background(), test.artifact)
 			t.CheckNoError(err)
 
@@ -210,7 +211,7 @@ func Test_getImageIdentifier(t *testing.T) {
 func stubKoArtifactBuilder(ref string, imageID string, pushImages bool, importpath string) *Builder {
 	api := (&testutil.FakeAPIClient{}).Add(ref, imageID)
 	localDocker := fakeLocalDockerDaemon(api)
-	b := NewArtifactBuilder(localDocker, pushImages)
+	b := NewArtifactBuilder(localDocker, pushImages, config.RunModes.Build)
 
 	// Fake implementation of the `publishImages` function.
 	// Returns a map with one entry: importpath -> ref

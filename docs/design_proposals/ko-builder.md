@@ -250,7 +250,7 @@ Ko provides the
 [`DisableOptimizations`](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/commands/options/build.go#L34)
 build option to
 [set `gcflags` to disable optimizations and inlining](https://github.com/google/ko/blob/335c1ac8a6fdcc5eb0bb26579e4b44b4c62a9565/pkg/build/gobuild.go#L709-L712).
-The ko builder will set `DisableOptimizations` to `true` when the Skaffold
+The ko builder sets `DisableOptimizations` to `true` when the Skaffold
 `runMode` is `Debug`.
 
 Skaffold can

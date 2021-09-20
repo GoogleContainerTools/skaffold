@@ -24,6 +24,7 @@ import (
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/publish"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
@@ -31,16 +32,18 @@ import (
 type Builder struct {
 	localDocker docker.LocalDaemon
 	pushImages  bool
+	runMode     config.RunMode
 
 	// publishImages can be overridden for unit testing purposes.
 	publishImages func(context.Context, []string, publish.Interface, build.Interface) (map[string]name.Reference, error)
 }
 
 // NewArtifactBuilder returns a new ko artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, runMode config.RunMode) *Builder {
 	return &Builder{
 		localDocker:   localDocker,
 		pushImages:    pushImages,
+		runMode:       runMode,
 		publishImages: commands.PublishImages,
 	}
 }
