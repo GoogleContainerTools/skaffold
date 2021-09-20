@@ -42,9 +42,9 @@ func TestDockerCLIBuild(t *testing.T) {
 		cfg             mockConfig
 		extraEnv        []string
 		expectedEnv     []string
-		wantDockerCLI   bool
 		err             error
 		expectedErr     error
+		wantDockerCLI   bool
 		expectedErrCode proto.StatusCode
 	}{
 		{
