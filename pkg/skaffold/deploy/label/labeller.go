@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	RunIDLabel           = "skaffold.dev/run-id"
+	RunIDLabel = "skaffold.dev/run-id"
 )
 
 type Config interface {
