@@ -150,7 +150,7 @@ func Test_getImportPath(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			b := NewArtifactBuilder(nil, false, config.RunModes.Build)
+			b := NewArtifactBuilder(nil, false, config.RunModes.Build, nil)
 			koBuilder, err := b.newKoBuilder(context.Background(), test.artifact)
 			t.CheckNoError(err)
 
@@ -211,7 +211,7 @@ func Test_getImageIdentifier(t *testing.T) {
 func stubKoArtifactBuilder(ref string, imageID string, pushImages bool, importpath string) *Builder {
 	api := (&testutil.FakeAPIClient{}).Add(ref, imageID)
 	localDocker := fakeLocalDockerDaemon(api)
-	b := NewArtifactBuilder(localDocker, pushImages, config.RunModes.Build)
+	b := NewArtifactBuilder(localDocker, pushImages, config.RunModes.Build, nil)
 
 	// Fake implementation of the `publishImages` function.
 	// Returns a map with one entry: importpath -> ref

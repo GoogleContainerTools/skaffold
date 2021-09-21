@@ -23,7 +23,7 @@ import (
 )
 
 func TestNewArtifactBuilderCanPublishImages(t *testing.T) {
-	b := NewArtifactBuilder(nil, true, config.RunModes.Build)
+	b := NewArtifactBuilder(nil, true, config.RunModes.Build, nil)
 	if b.publishImages == nil {
 		t.Errorf("constructor function should populate publishImages func")
 	}
