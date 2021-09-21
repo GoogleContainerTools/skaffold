@@ -28,25 +28,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-type Rule struct {
-	RuleID      RuleID
-	RuleType    RuleType
-	Explanation string
-	Result      Result
-	Severity    string // TODO(aaron-prindle) make this an enum and plumb all throughout
-	// TODO(aaron-prindle) split this out or refactor so that not all match types bundled here
-	// Filter {}interface OR Filter interface?
-	// Value ?
-	LintString       string
-	RegExp           string
-	YamlField        string
-	YamlFieldLinter  string
-	YamlValue        string
-	YamlFilter       yaml.Filter
+type DockerCommandFilter struct {
 	DockerCommand    string
 	DockerCopyDest   string
 	DockerCopySource string
-	// TODO(aaron-prindle) generalize the LintConditions struct
+}
+
+type Rule struct {
+	RuleID         RuleID
+	RuleType       RuleType
+	Explanation    string
+	Severity       string      // TODO(aaron-prindle) make this an enum and plumb all throughout
+	Filter         interface{} // TODO(aaron-prindle) not the best polymorphism...
+	Value          string
 	LintConditions []func(string) bool
 }
 
@@ -57,11 +51,6 @@ type Result struct {
 	Line        int
 	Column      int
 }
-
-// type RegExpRule struct {
-// 	RegExp string
-// 	Rule
-// }
 
 type ConfigFile struct {
 	AbsPath string
@@ -97,18 +86,17 @@ const (
 )
 
 func (a RuleID) String() string {
-	// DFC:DockerfileCommand Lint Rule, REG: RegExp Lint Rule, YF:Yaml Field Lint Rule
-	return [...]string{"DFC000001", "REG000001", "YF000001", "YF000002", "YF000003"}[a]
-	// TODO(aaron-prindle) fix, hacky af
-	// return fmt.Sprintf("ID%06d", a+1)
+	return fmt.Sprintf("ID%06d", a+1)
 }
 
 var RuleIDToLintRuleMap = map[RuleID]Rule{
 	DOCKERFILE_COPY_DOT_OVER_100_FILES: {
-		RuleType:         DockerfileCommandLintRule,
-		DockerCommand:    command.Copy,
-		DockerCopySource: ".",
-		RuleID:           DOCKERFILE_COPY_DOT_OVER_100_FILES,
+		RuleType: DockerfileCommandLintRule,
+		Filter: DockerCommandFilter{
+			DockerCommand:    command.Copy,
+			DockerCopySource: ".",
+		},
+		RuleID: DOCKERFILE_COPY_DOT_OVER_100_FILES,
 		// TODO(aaron-prindle) figure out how to best do conditions...
 		// can do them here which is better or can hardcode them in the linters with the specific IDs
 		Explanation: "Found 'COPY . <DEST>', for a source directory that has > 100 files.  This has the potential to dramatically slow 'skaffold dev' down by " +
@@ -134,18 +122,18 @@ var RuleIDToLintRuleMap = map[RuleID]Rule{
 		}},
 	},
 	K8S_YAML_MANAGED_BY_LABEL_IS_IN_USE: {
-		YamlFilter: yaml.Lookup("metadata", "labels"),
-		YamlValue:  "app.kubernetes.io/managed-by",
-		RuleID:     K8S_YAML_MANAGED_BY_LABEL_IS_IN_USE,
-		RuleType:   YamlFieldLintRule,
+		Filter:   yaml.Lookup("metadata", "labels"),
+		Value:    "app.kubernetes.io/managed-by",
+		RuleID:   K8S_YAML_MANAGED_BY_LABEL_IS_IN_USE,
+		RuleType: YamlFieldLintRule,
 		Explanation: "Found usage of label 'app.kubernetes.io/managed-by'.  skaffold overwrites the 'app.kubernetes.io/managed-by' field to 'app.kubernetes.io/managed-by: skaffold'. " +
 			"Remove this label or use the --dont-apply-managed-by-label flag to not have skaffold modify this label",
 	},
+	// TODO(aaron-prindle) not actually implemented, is a stub
 	SKAFFOLD_YAML_API_VERSION_OUT_OF_DATE: {
 		// TODO(aaron-prindle) check to see how kyaml supports regexp and how to best plumb that through
-		YamlFilter: yaml.Get("apiVersion"),
-		YamlValue:  "skaffold/v2beta21",
-		// YamlValue:          version.Get().ConfigVersion,
+		Filter:   yaml.Get("apiVersion"),
+		Value:    "skaffold/v2beta21",
 		RuleID:   SKAFFOLD_YAML_API_VERSION_OUT_OF_DATE,
 		RuleType: YamlFieldLintRule,
 		Explanation: fmt.Sprintf("Found 'apiVersion' field with value that is not the latest skaffold apiVersion. Modify the apiVersion to the latest supported version: `apiVersion: %s` "+
@@ -153,20 +141,25 @@ var RuleIDToLintRuleMap = map[RuleID]Rule{
 	},
 	SKAFFOLD_YAML_REPO_IS_HARD_CODED: {
 		// TODO(aaron-prindle) make a better recommendation regexp
-		RegExp:   "gcr.io/|docker.io/|amazonaws.com/",
+		Filter:   "gcr.io/|docker.io/|amazonaws.com/",
 		RuleID:   SKAFFOLD_YAML_REPO_IS_HARD_CODED,
 		RuleType: RegExpLintLintRule,
 		Explanation: "Found image registry prefix on an image skaffold manages directly (eg: in a skaffold.yaml).  This is not recommended as it reduces the re-usability " +
 			"of skaffold project as it disallows configuration of the image registries (it is hardcoded). " +
 			"The image registry prefix should be removed and an image registry should be added programatically via skaffold, for example with the --default-repo flag",
 	},
+	// TODO(aaron-prindle) not actually implemented, is a stub
 	SKAFFOLD_YAML_SUGGEST_INFER_STANZA: {
 		// TODO(aaron-prindle) check to see how kyaml supports regexp and how to best plumb that through
-		YamlFilter: yaml.Get("build"),
-		YamlValue:  ".*",
-		// YamlValue:          version.Get().ConfigVersion,
-
-		// ideas on how this could be implemented
+		Filter:   yaml.Get("build"),
+		Value:    ".*",
+		RuleID:   SKAFFOLD_YAML_SUGGEST_INFER_STANZA,
+		RuleType: YamlFieldLintRule,
+		Explanation: "Found files with extension in docker build container image that should be synced (via rsync) vs watched for rebuilding image. " +
+			"It is recommended to put the following stanza in the `build` section of the flagged skaffold.yaml:\n" + `    sync:
+      - '*.txt'
+      - '*.html'` + "\n",
+		// ideas on how this could actually be implemented
 		// LintConditions
 		//  - if no current 'infer' stanza
 		//
@@ -181,14 +174,6 @@ var RuleIDToLintRuleMap = map[RuleID]Rule{
 				 - '*.html'
 		*/
 		// TODO(aaron-prindle) verify rsync^^^^^ is correct term to use
-		RuleID:   SKAFFOLD_YAML_SUGGEST_INFER_STANZA,
-		RuleType: YamlFieldLintRule,
-		Explanation: "Found files in docker build container image that should be synced (via rsync) vs watched for rebuilding image. " +
-			"It is recommended to put the following stanza in the `build` section of the flagged skaffold.yaml:\n" + `    sync:
-      # Sync files with matching suffixes directly into container via skaffold's rsync implementation for faster dev loop iteration
-      - '*.txt'
-      - '*.html'
-	  `,
 	},
 }
 

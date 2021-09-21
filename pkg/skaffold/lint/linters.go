@@ -24,10 +24,16 @@ func (*StringEqualsLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error)
 		if ignoreRules[rule.RuleID] || rule.RuleType != StringEqualsLintRule {
 			continue
 		}
-		// TODO(aaron-prindle) ignore case might make sense as an option here if speed is a concern later
-		if idx := strings.Index(strings.ToUpper(cf.Text), strings.ToUpper(rule.LintString)); idx != -1 {
-			// if idx := strings.Index(cf.Text, strings.ToUpper(string(rule.LintString))); idx != -1 {
-			logrus.Infof("stringequals match found: [%d %d]\n", idx, idx+len(rule.LintString))
+		var matchString string
+		switch v := rule.Filter.(type) {
+		case string:
+			matchString = v
+		default:
+			return nil, fmt.Errorf("unknown filter type found for StringEqualsLinter lint rule: %v", rule)
+		}
+		// TODO(aaron-prindle) ignore case might make sense as lint option here, regexp might make more sense though
+		if idx := strings.Index(cf.Text, matchString); idx != -1 {
+			logrus.Infof("stringequals match found: [%d %d]\n", idx, idx+len(matchString))
 			line, col := convert1DFileIndexTo2D(cf.Text, idx)
 			mr := Result{
 				RuleID:      rule.RuleID,
@@ -50,13 +56,20 @@ func (*RegExpLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
 		if ignoreRules[rule.RuleID] || rule.RuleType != RegExpLintLintRule {
 			continue
 		}
-		r, err := regexp.Compile(rule.RegExp)
+		var regexpFilter string
+		switch v := rule.Filter.(type) {
+		case string:
+			regexpFilter = v
+		default:
+			return nil, fmt.Errorf("unknown filter type found for RegExpLinter lint rule: %v", rule)
+		}
+		r, err := regexp.Compile(regexpFilter)
 		if err != nil {
 			return nil, err
 		}
 		matches := r.FindAllStringSubmatchIndex(cf.Text, -1)
 		for _, m := range matches {
-			logrus.Infof("regexp match found for %s: %v\n", rule.RegExp, m)
+			logrus.Infof("regexp match found for %s: %v\n", regexpFilter, m)
 			// TODO(aaron-prindle) support matches with more than 2 values for m?
 			line, col := convert1DFileIndexTo2D(cf.Text, m[0])
 			mr := Result{
@@ -89,17 +102,24 @@ func (*DockerfileCommandLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, e
 		if ignoreRules[rule.RuleID] || rule.RuleType != DockerfileCommandLintRule {
 			continue
 		}
+		var dockerCommandFilter DockerCommandFilter
+		switch v := rule.Filter.(type) {
+		case DockerCommandFilter:
+			dockerCommandFilter = v
+		default:
+			return nil, fmt.Errorf("unknown filter type found for DockerfileCommandLinter lint rule: %v", rule)
+		}
 		// NOTE: ADD and COPY are both treated the same from the linter perspective - eg: if you have linter look at COPY src/dest it will also check ADD src/dest
-		if rule.DockerCommand != command.Copy && rule.DockerCommand != command.Add {
-			logrus.Errorf("unsupported docker command found for DockerfileCommandLinter: %v", rule.DockerCommand)
+		if dockerCommandFilter.DockerCommand != command.Copy && dockerCommandFilter.DockerCommand != command.Add {
+			logrus.Errorf("unsupported docker command found for DockerfileCommandLinter: %v", dockerCommandFilter.DockerCommand)
 			continue
 		}
 		for _, cpyCmd := range copyCommands {
 			for _, src := range cpyCmd.srcs {
-				if rule.DockerCopySource != src {
+				if dockerCommandFilter.DockerCopySource != src {
 					continue
 				}
-				logrus.Infof("docker command 'copy' match found for source: %s\n", rule.DockerCopySource)
+				logrus.Infof("docker command 'copy' match found for source: %s\n", dockerCommandFilter.DockerCopySource)
 				allPassed := true
 				for _, f := range rule.LintConditions {
 					if !f(filepath.Join(filepath.Dir(cf.AbsPath), src)) {
@@ -135,7 +155,14 @@ func (*YamlFieldLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
 		if ignoreRules[rule.RuleID] || rule.RuleType != YamlFieldLintRule {
 			continue
 		}
-		node, err := obj.Pipe(rule.YamlFilter)
+		var yamlFilter yaml.Filter
+		switch v := rule.Filter.(type) {
+		case yaml.Filter:
+			yamlFilter = v
+		default:
+			return nil, fmt.Errorf("unknown filter type found for DockerfileCommandLinter lint rule: %v", rule)
+		}
+		node, err := obj.Pipe(yamlFilter)
 		if err != nil {
 			return nil, err
 		}
@@ -143,20 +170,20 @@ func (*YamlFieldLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
 			continue
 		}
 		// TODO(aaron-prindle) perhaps handle the below case to be an actual regexp for .*
-		if rule.YamlValue == ".*" { // only field existence matters
+		if rule.Value == ".*" { // only field existence matters
 			*results = append(*results, yamlMatchToResult(rule, cf, node.Document().Line-1, 0))
 		}
 		// case occures when value itself is key/value mapping eg: apiVersion
 		if node.Document().Value != "" {
-			if node.Document().Value == rule.YamlValue {
-				logrus.Infof("yaml field and value match found for %s\n", rule.YamlValue)
+			if node.Document().Value == rule.Value {
+				logrus.Infof("yaml field and value match found for %s\n", rule.Value)
 				*results = append(*results, yamlMatchToResult(rule, cf, node.Document().Line, node.Document().Column-1))
 
 			}
 		} else { // case occurs when value is a nested object, for example metadata.labels
 			for _, n := range node.Content() {
-				if n.Value == rule.YamlValue {
-					logrus.Infof("yaml field and value match found for %s\n", rule.YamlValue)
+				if n.Value == rule.Value {
+					logrus.Infof("yaml field and value match found for %s\n", rule.Value)
 
 					*results = append(*results, yamlMatchToResult(rule, cf, node.Document().Line, node.Document().Column))
 				}
