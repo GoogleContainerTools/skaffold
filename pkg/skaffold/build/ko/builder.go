@@ -30,15 +30,16 @@ import (
 
 	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact) (build.Interface, error) {
-	bo := buildOptions(a)
+	bo := buildOptions(a, b.runMode)
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(a *latestV1.Artifact) *options.BuildOptions {
+func buildOptions(a *latestV1.Artifact, runMode config.RunMode) *options.BuildOptions {
 	workingDirectory := filepath.Join(a.Workspace, a.KoArtifact.Dir)
 	return &options.BuildOptions{
 		BaseImage: a.KoArtifact.BaseImage,
@@ -49,12 +50,13 @@ func buildOptions(a *latestV1.Artifact) *options.BuildOptions {
 				Env:     a.KoArtifact.Env,
 				Flags:   a.KoArtifact.Flags,
 				Ldflags: a.KoArtifact.Ldflags,
-				Main:    a.KoArtifact.Target,
+				Main:    a.KoArtifact.Main,
 			},
 		},
-		ConcurrentBuilds: 1,
-		Platform:         strings.Join(a.KoArtifact.Platforms, ","),
-		UserAgent:        version.UserAgentWithClient(),
-		WorkingDirectory: workingDirectory,
+		ConcurrentBuilds:     1,
+		DisableOptimizations: runMode == config.RunModes.Debug,
+		Platform:             strings.Join(a.KoArtifact.Platforms, ","),
+		UserAgent:            version.UserAgentWithClient(),
+		WorkingDirectory:     workingDirectory,
 	}
 }

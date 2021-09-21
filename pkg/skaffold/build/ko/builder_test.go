@@ -23,17 +23,21 @@ import (
 	"path/filepath"
 	"testing"
 
+	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
-		description          string
-		artifact             latestV1.Artifact
-		wantPlatform         string
-		wantWorkingDirectory string
+		description              string
+		artifact                 latestV1.Artifact
+		runMode                  config.RunMode
+		wantPlatform             string
+		wantWorkingDirectory     string
+		wantDisableOptimizations bool
 	}{
 		{
 			description: "all zero value",
@@ -107,10 +111,20 @@ func TestBuildOptions(t *testing.T) {
 			},
 			wantWorkingDirectory: "my-app-subdirectory" + string(filepath.Separator) + "my-go-mod-is-here",
 		},
+		{
+			description: "disable compiler optimizations for debug",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{},
+				},
+			},
+			runMode:                  config.RunModes.Debug,
+			wantDisableOptimizations: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			bo := buildOptions(&test.artifact)
+			bo := buildOptions(&test.artifact, test.runMode)
 			t.CheckDeepEqual(test.artifact.KoArtifact.BaseImage, bo.BaseImage)
 			if bo.ConcurrentBuilds < 1 {
 				t.Errorf("ConcurrentBuilds must always be >= 1 for the ko builder")
@@ -118,6 +132,7 @@ func TestBuildOptions(t *testing.T) {
 			t.CheckDeepEqual(test.wantPlatform, bo.Platform)
 			t.CheckDeepEqual(version.UserAgentWithClient(), bo.UserAgent)
 			t.CheckDeepEqual(test.wantWorkingDirectory, bo.WorkingDirectory)
+			t.CheckDeepEqual(test.wantDisableOptimizations, bo.DisableOptimizations)
 		})
 	}
 }

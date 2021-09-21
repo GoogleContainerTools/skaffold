@@ -90,12 +90,12 @@ func getImportPath(a *latestV1.Artifact, koBuilder build.Interface) (string, err
 	if strings.HasPrefix(a.ImageName, build.StrictScheme) {
 		return a.ImageName, nil
 	}
-	target := a.KoArtifact.Target
-	if target == "" {
+	localImportPath := a.KoArtifact.Main
+	if localImportPath == "" {
 		// default to context directory
-		target = "."
+		localImportPath = "."
 	}
-	return koBuilder.QualifyImport(target)
+	return koBuilder.QualifyImport(localImportPath)
 }
 
 // getImageIdentifier returns the image tag or digest for published images (`pushImages=true`),
