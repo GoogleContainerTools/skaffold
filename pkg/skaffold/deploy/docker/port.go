@@ -35,6 +35,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+var GetAvailablePort = util.GetAvailablePort // For testing
+
 type containerPortForwardEntry struct {
 	container       string
 	resourceName    string
@@ -85,11 +87,14 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 			log.Entry(context.TODO()).Debugf("skipping non-container port forward resource in Docker deploy: %s\n", p.Name)
 			continue
 		}
-		localPort := util.GetAvailablePort(p.Address, p.LocalPort, &pm.portSet)
+		localPort := GetAvailablePort(p.Address, p.LocalPort, &pm.portSet)
 		ports = append(ports, localPort)
 		port, err := nat.NewPort("tcp", p.Port.String())
 		if err != nil {
 			return nil, err
+		}
+		if cfg.ExposedPorts == nil {
+			cfg.ExposedPorts = nat.PortSet{}
 		}
 		cfg.ExposedPorts[port] = struct{}{}
 		m[port] = []nat.PortBinding{
