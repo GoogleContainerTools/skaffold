@@ -32,6 +32,7 @@ func TestZeroValue(t *testing.T) {
 		var d *DebugManager
 		d.Start(context.TODO())
 		d.Stop()
+		d.SupportMounts()
 		d.TransformImage(context.TODO(), graph.Artifact{}, nil)
 	})
 }
