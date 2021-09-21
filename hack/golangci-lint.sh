@@ -22,7 +22,7 @@ VERSION=1.37.1
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
-  ${DIR}/install_golint.sh -b ${BIN} v$VERSION
+  ${DIR}/install-golint.sh -b ${BIN} v$VERSION
 }
 
 if ! [ -x "$(command -v ${BIN}/golangci-lint)" ] ; then

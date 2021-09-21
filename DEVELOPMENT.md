@@ -203,7 +203,7 @@ RUN hack/linter.sh
 ERRO Running error: no such linter "gocritic"
 ```
 
-re-run the `hack/install_golint.sh` script to upgrade `golangci-lint`.
+re-run the `hack/install-golint.sh` script to upgrade `golangci-lint`.
 
 ### Integration tests
 
