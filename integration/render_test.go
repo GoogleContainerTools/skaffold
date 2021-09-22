@@ -686,7 +686,7 @@ resources:
 kind: Pod
 metadata:
   labels:
-    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
+    skaffold.dev/run-id: SOMEDYNAMICVALUE
     this-is-from: kustomization.yaml
   name: my-pod-123
 spec:
