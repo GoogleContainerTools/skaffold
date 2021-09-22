@@ -584,7 +584,6 @@ spec:
 kind: Pod
 metadata:
   labels:
-    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
     skaffold.dev/run-id: SOMEDYNAMICVALUE
   name: my-pod-123
 spec:
@@ -687,7 +686,6 @@ resources:
 kind: Pod
 metadata:
   labels:
-    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
     skaffold.dev/run-id: SOMEDYNAMICVALUE
     this-is-from: kustomization.yaml
   name: my-pod-123
@@ -735,7 +733,7 @@ spec:
 			err = yaml.UnmarshalStrict(fileContent, parsed)
 			t.CheckNoError(err)
 
-			fileContentReplaced := regexp.MustCompile("(?m)(app.kubernetes.io/managed-by|skaffold.dev/run-id|skaffold.dev/docker-api-version): .+$").ReplaceAll(fileContent, []byte("$1: SOMEDYNAMICVALUE"))
+			fileContentReplaced := regexp.MustCompile("(?m)(skaffold.dev/run-id|skaffold.dev/docker-api-version): .+$").ReplaceAll(fileContent, []byte("$1: SOMEDYNAMICVALUE"))
 
 			t.RequireNoError(err)
 			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced))

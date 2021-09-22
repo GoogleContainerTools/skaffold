@@ -865,9 +865,6 @@ func fakeCmd(ctx context.Context, _ v1.Pod, _ v1.Container, files syncMap) *exec
 var pod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
-		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold",
-		},
 	},
 	Status: v1.PodStatus{
 		Phase: v1.PodRunning,
@@ -885,9 +882,6 @@ var pod = &v1.Pod{
 var nonRunningPod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
-		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold",
-		},
 	},
 	Status: v1.PodStatus{
 		Phase: v1.PodPending,
