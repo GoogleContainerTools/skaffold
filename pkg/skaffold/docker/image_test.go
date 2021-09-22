@@ -353,13 +353,22 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--secret", "id=mysecret"},
 		},
 		{
-			description: "secret with source",
+			description: "secret with file source",
 			artifact: &latestV1.DockerArtifact{
 				Secrets: []*latestV1.DockerSecret{
 					{ID: "mysecret", Source: "foo.src"},
 				},
 			},
 			want: []string{"--secret", "id=mysecret,src=foo.src"},
+		},
+		{
+			description: "secret with env source",
+			artifact: &latestV1.DockerArtifact{
+				Secrets: []*latestV1.DockerSecret{
+					{ID: "mysecret", Env: "FOO"},
+				},
+			},
+			want: []string{"--secret", "id=mysecret,env=FOO"},
 		},
 		{
 			description: "multiple secrets",

@@ -1315,7 +1315,10 @@ type DockerSecret struct {
 	ID string `yaml:"id,omitempty" yamltags:"required"`
 
 	// Source is the path to the secret on the host machine.
-	Source string `yaml:"src,omitempty"`
+	Source string `yaml:"src,omitempty" yamltags:"oneOf=secretSource"`
+
+	// Env is the environment variable name containing the secret value.
+	Env string `yaml:"env,omitempty" yamltags:"oneOf=secretSource"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
