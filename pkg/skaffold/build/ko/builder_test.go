@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -35,9 +37,10 @@ func TestBuildOptions(t *testing.T) {
 		description              string
 		artifact                 latestV1.Artifact
 		runMode                  config.RunMode
+		wantDisableOptimizations bool
+		wantLabels               []string
 		wantPlatform             string
 		wantWorkingDirectory     string
-		wantDisableOptimizations bool
 	}{
 		{
 			description: "all zero value",
@@ -121,6 +124,20 @@ func TestBuildOptions(t *testing.T) {
 			runMode:                  config.RunModes.Debug,
 			wantDisableOptimizations: true,
 		},
+		{
+			description: "labels",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Labels: map[string]string{
+							"foo":  "bar",
+							"frob": "baz",
+						},
+					},
+				},
+			},
+			wantLabels: []string{"foo=bar", "frob=baz"},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -133,6 +150,9 @@ func TestBuildOptions(t *testing.T) {
 			t.CheckDeepEqual(version.UserAgentWithClient(), bo.UserAgent)
 			t.CheckDeepEqual(test.wantWorkingDirectory, bo.WorkingDirectory)
 			t.CheckDeepEqual(test.wantDisableOptimizations, bo.DisableOptimizations)
+			t.CheckDeepEqual(test.wantLabels, bo.Labels,
+				cmpopts.SortSlices(func(x, y string) bool { return x < y }),
+				cmpopts.EquateEmpty())
 		})
 	}
 }
