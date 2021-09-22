@@ -75,6 +75,9 @@ func (d *DebugManager) HasMount(image string) bool {
 }
 
 func (d *DebugManager) SupportMounts() map[string]mount.Mount {
+	if d == nil {
+		return nil
+	}
 	return d.supportMounts
 }
 
