@@ -14,26 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta22
+package v2beta23
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta23"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2beta22
+	yaml := `apiVersion: skaffold/v2beta23
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
-      secret:
-        id: id
+      secrets:
+      - id: id
         src: /file.txt
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
@@ -104,7 +104,7 @@ profiles:
         - k8s-*
       kustomize: {}
 `
-	expected := `apiVersion: skaffold/v2beta23
+	expected := `apiVersion: skaffold/v2beta24
 kind: Config
 build:
   artifacts:
