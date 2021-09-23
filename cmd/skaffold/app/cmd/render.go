@@ -40,7 +40,7 @@ var (
 // NewCmdRender describes the CLI command to build artifacts render Kubernetes manifests.
 func NewCmdRender() *cobra.Command {
 	return NewCmd("render").
-		WithDescription("Perform all image builds, and output rendered Kubernetes manifests").
+		WithDescription("Outputs rendered Kubernetes manifests").
 		WithExample("Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry ", "render --digest-source=remote").
 		WithCommonFlags().
 		WithFlags([]*Flag{
