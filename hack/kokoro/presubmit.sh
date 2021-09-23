@@ -14,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-sysctl net.ipv4.tcp_mtu_probing
-sudo sysctl -w net.ipv4.tcp_mtu_probing=1
+echo "Setting net.ipv4.tcp_mtu_probing to 1"
+echo "was: $(sysctl net.ipv4.tcp_mtu_probing)"
+echo "now: $(sudo sysctl -w net.ipv4.tcp_mtu_probing=1)"
 
 export DOCKER_NAMESPACE=gcr.io/k8s-skaffold
 source $KOKORO_GFILE_DIR/common.sh
