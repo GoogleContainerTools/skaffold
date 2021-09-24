@@ -642,6 +642,9 @@ func ToCLIBuildArgs(a *latestV1.DockerArtifact, evaluatedArgs map[string]*string
 		if secret.Source != "" {
 			secretString += ",src=" + secret.Source
 		}
+		if secret.Env != "" {
+			secretString += ",env=" + secret.Env
+		}
 		args = append(args, "--secret", secretString)
 	}
 
