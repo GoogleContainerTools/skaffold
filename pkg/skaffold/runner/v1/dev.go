@@ -55,13 +55,15 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	log.Entry(ctx).Tracef("dev intents: build %t, sync %t, deploy %t\n", buildIntent, syncIntent, deployIntent)
-	needsSync := syncIntent && len(r.changeSet.NeedsResync()) > 0
 	needsBuild := buildIntent && len(r.changeSet.NeedsRebuild()) > 0
+	needsSync := syncIntent && (len(r.changeSet.NeedsResync()) > 0 || needsBuild)
 	needsTest := len(r.changeSet.NeedsRetest()) > 0
-	needsDeploy := deployIntent && r.changeSet.NeedsRedeploy()
+	needsDeploy := deployIntent && (r.changeSet.NeedsRedeploy() || needsBuild)
 	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
 	}
+	log.Entry(ctx).Debugf(" devloop: build %t, sync %t, deploy %t\n", needsBuild, needsSync, needsDeploy)
+
 
 	r.deployer.GetLogger().Mute()
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing

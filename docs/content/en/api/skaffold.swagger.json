@@ -3227,6 +3227,10 @@
         "deploy": {
           "type": "boolean",
           "format": "boolean"
+        },
+        "devloop": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "Intent represents user intents for a given phase."
