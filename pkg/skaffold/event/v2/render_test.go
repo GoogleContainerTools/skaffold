@@ -64,7 +64,6 @@ func TestHandleRenderSubtaskEvent(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			handler = newHandler()
 			handler.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
-
 			wait(t, func() bool { return handler.getState().RenderState.Status == NotStarted })
 			handler.handleRenderSubtaskEvent(test.event)
 			wait(t, func() bool { return handler.getState().RenderState.Status == test.event.Status })

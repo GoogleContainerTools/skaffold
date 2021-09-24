@@ -28,21 +28,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
-// NoopComponentProvider is for tests
-var NoopComponentProvider = ComponentProvider{
-	Accessor: &access.NoopProvider{},
-	Debugger: &debug.NoopProvider{},
-	Logger:   &log.NoopProvider{},
-	Monitor:  &status.NoopProvider{},
-	Syncer:   &sync.NoopProvider{},
-}
-
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
-	// cluster. Returns the list of impacted namespaces.
-	Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error)
+	// cluster.
+	Deploy(context.Context, io.Writer, []graph.Artifact) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -70,16 +61,9 @@ type Deployer interface {
 	// TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
 	TrackBuildArtifacts([]graph.Artifact)
 
+	// RegisterLocalImages tracks all local images to be loaded by the Deployer
+	RegisterLocalImages([]graph.Artifact)
+
 	// GetStatusMonitor returns a Deployer's implementation of a StatusMonitor
 	GetStatusMonitor() status.Monitor
-}
-
-// ComponentProvider serves as a clean way to send three providers
-// as params to the Deployer constructors
-type ComponentProvider struct {
-	Accessor access.Provider
-	Debugger debug.Provider
-	Logger   log.Provider
-	Monitor  status.Provider
-	Syncer   sync.Provider
 }

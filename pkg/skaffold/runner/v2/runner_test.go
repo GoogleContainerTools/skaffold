@@ -134,6 +134,7 @@ func (t *TestBench) GetSyncer() sync.Syncer {
 	return t
 }
 
+func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
 func (t *TestBench) TestDependencies(*latestV2.Artifact) ([]string, error) { return nil, nil }
@@ -169,7 +170,7 @@ func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artif
 	return builds, nil
 }
 
-func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
+func (t *TestBench) Sync(_ context.Context, _ io.Writer, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]
@@ -195,17 +196,17 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) ([]string, error) {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return t.namespaces, nil
+	return nil
 }
 
 func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) error {

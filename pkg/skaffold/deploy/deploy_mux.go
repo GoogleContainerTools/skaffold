@@ -93,33 +93,35 @@ func (m DeployerMux) GetSyncer() sync.Syncer {
 	return syncers
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {
-	seenNamespaces := util.NewStringSet()
+func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
+	for _, deployer := range m.deployers {
+		deployer.RegisterLocalImages(images)
+	}
+}
 
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
 		w = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i), "skaffold")
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 
-		namespaces, err := deployer.Deploy(ctx, w, as)
-		if err != nil {
+		if err := deployer.Deploy(ctx, w, as); err != nil {
 			eventV2.DeployFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
+			return err
 		}
-		seenNamespaces.Insert(namespaces...)
 		if m.iterativeStatusCheck {
-			if err = deployer.GetStatusMonitor().Check(ctx, w); err != nil {
+			if err := deployer.GetStatusMonitor().Check(ctx, w); err != nil {
 				eventV2.DeployFailed(i, err)
 				endTrace(instrumentation.TraceEndError(err))
-				return nil, err
+				return err
 			}
 		}
 		eventV2.DeploySucceeded(i)
 		endTrace()
 	}
 
-	return seenNamespaces.ToList(), nil
+	return nil
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {

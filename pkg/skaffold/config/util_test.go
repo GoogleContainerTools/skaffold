@@ -451,155 +451,6 @@ func TestK3dClusterName(t *testing.T) {
 	}
 }
 
-func TestIsSurveyPromptDisabled(t *testing.T) {
-	tests := []struct {
-		description string
-		cfg         *ContextConfig
-		readErr     error
-		expected    bool
-	}{
-		{
-			description: "config disable-prompt is nil returns false",
-			cfg:         &ContextConfig{},
-		},
-		{
-			description: "config disable-prompt is true",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
-			expected:    true,
-		},
-		{
-			description: "config disable-prompt is false",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
-		},
-		{
-			description: "disable prompt is nil",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{}},
-		},
-		{
-			description: "config is nil",
-			cfg:         nil,
-		},
-		{
-			description: "config has err",
-			cfg:         nil,
-			readErr:     fmt.Errorf("error while reading"),
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, test.readErr })
-			_, actual := isSurveyPromptDisabled("dummyconfig")
-			t.CheckDeepEqual(test.expected, actual)
-		})
-	}
-}
-
-func TestLessThan(t *testing.T) {
-	tests := []struct {
-		description string
-		date        string
-		duration    time.Duration
-		expected    bool
-	}{
-		{
-			description: "date is less than 10 days from 01/30/2019",
-			date:        "2019-01-22T13:04:05Z",
-			duration:    10 * 24 * time.Hour,
-			expected:    true,
-		},
-		{
-			description: "date is not less than 10 days from 01/30/2019",
-			date:        "2019-01-19T13:04:05Z",
-			duration:    10 * 24 * time.Hour,
-		},
-		{
-			description: "date is not right format",
-			date:        "01-19=20129",
-			expected:    false,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&current, func() time.Time {
-				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
-				return t
-			})
-			t.CheckDeepEqual(test.expected, lessThan(test.date, test.duration))
-		})
-	}
-}
-
-func TestShouldDisplayPrompt(t *testing.T) {
-	tests := []struct {
-		description string
-		cfg         *ContextConfig
-		expected    bool
-	}{
-		{
-			description: "should not display prompt when prompt is disabled",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
-		},
-		{
-			description: "should not display prompt when last prompted is less than 2 weeks",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-22T00:00:00Z",
-				},
-			},
-		},
-		{
-			description: "should not display prompt when last taken in less than 3 months",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2018-11-22T00:00:00Z",
-				},
-			},
-		},
-		{
-			description: "should display prompt when last prompted is before 2 weeks",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-10T00:00:00Z",
-				},
-			},
-			expected: true,
-		},
-		{
-			description: "should display prompt when last taken is before than 3 months ago",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2017-11-10T00:00:00Z",
-				},
-			},
-			expected: true,
-		},
-		{
-			description: "should not display prompt when last taken is recent than 3 months ago",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2019-01-10T00:00:00Z",
-					LastPrompted:  "2019-01-10T00:00:00Z",
-				},
-			},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
-			t.Override(&current, func() time.Time {
-				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
-				return t
-			})
-			t.CheckDeepEqual(test.expected, ShouldDisplaySurveyPrompt("dummyconfig"))
-		})
-	}
-}
-
 func TestGetDefaultRepo(t *testing.T) {
 	tests := []struct {
 		description  string
@@ -693,7 +544,7 @@ kubeContexts: []`,
 			})
 
 			// update the time
-			err := UpdateGlobalSurveyTaken(cfg)
+			err := UpdateHaTSSurveyTaken(cfg)
 			t.CheckNoError(err)
 
 			actualConfig, cfgErr := ReadConfigFile(cfg)
@@ -831,9 +682,8 @@ kubeContexts: []`,
 }
 
 func TestShouldDisplayUpdateMsg(t *testing.T) {
-	today, _ := time.Parse(time.RFC3339, "2021-01-01T12:04:05Z")
-	todayStr := "2021-01-01T00:00:00Z"
-	yesterday := "2020-12-22T00:00:00Z"
+	todayStr := time.Now().Format(time.RFC3339)
+	yesterday := time.Now().AddDate(0, 0, -1).Format(time.RFC3339)
 	tests := []struct {
 		description string
 		cfg         *ContextConfig
@@ -856,10 +706,81 @@ func TestShouldDisplayUpdateMsg(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
-			t.Override(&current, func() time.Time {
-				return today
-			})
 			t.CheckDeepEqual(test.expected, ShouldDisplayUpdateMsg("dummyconfig"))
+		})
+	}
+}
+
+func TestUpdateUserSurveyTaken(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         string
+		id          string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when user survey is empty",
+			id:          "foo",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{UserSurveys: []*UserSurvey{
+						{ID: "foo", Taken: util.BoolPtr(true)},
+					}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "append user survey when not nil",
+			cfg: `
+global:
+  survey:
+    user-surveys:
+      - id: "foo1"
+        taken: true
+kubeContexts: []`,
+			id: "foo2",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{
+						UserSurveys: []*UserSurvey{
+							{ID: "foo1", Taken: util.BoolPtr(true)},
+							{ID: "foo2", Taken: util.BoolPtr(true)},
+						}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update entry for a key in user survey",
+			cfg: `
+global:
+  survey:
+    user-surveys:
+      - id: "foo" 
+        taken: false
+kubeContexts: []`,
+			id: "foo",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{
+						UserSurveys: []*UserSurvey{
+							{ID: "foo", Taken: util.BoolPtr(true)},
+						}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := t.TempFile("config", []byte(test.cfg))
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+
+			// update the time
+			err := UpdateUserSurveyTaken(cfg, test.id)
+			t.CheckNoError(err)
+
+			actualConfig, cfgErr := ReadConfigFile(cfg)
+			t.CheckNoError(cfgErr)
+			t.CheckDeepEqual(test.expectedCfg, actualConfig)
 		})
 	}
 }

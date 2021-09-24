@@ -25,7 +25,7 @@ import (
 // that accesses and exposes deployed resources from Skaffold.
 type Accessor interface {
 	// Start starts the resource accessor.
-	Start(context.Context, io.Writer, []string) error
+	Start(context.Context, io.Writer) error
 
 	// Stop stops the resource accessor.
 	Stop()
@@ -33,6 +33,6 @@ type Accessor interface {
 
 type NoopAccessor struct{}
 
-func (n *NoopAccessor) Start(context.Context, io.Writer, []string) error { return nil }
+func (n *NoopAccessor) Start(context.Context, io.Writer) error { return nil }
 
 func (n *NoopAccessor) Stop() {}

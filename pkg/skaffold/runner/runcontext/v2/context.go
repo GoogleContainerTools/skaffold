@@ -18,29 +18,15 @@ package v2
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
 
-	"github.com/buildpacks/lifecycle/cmd"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-)
-
-const (
-	emptyNamespace = ""
-)
-
-var (
-	confirmHydrationDirOverride = prompt.ConfirmHydrationDirOverride
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 type RunContext struct {
@@ -131,6 +117,7 @@ func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	}
 	return c
 }
+
 func NewPipelines(pipelines []latestV2.Pipeline) Pipelines {
 	m := make(map[string]latestV2.Pipeline)
 	for _, p := range pipelines {
@@ -186,6 +173,7 @@ func (rc *RunContext) GetKubeConfig() string                         { return rc
 func (rc *RunContext) GetKubeNamespace() string                      { return rc.Opts.Namespace }
 func (rc *RunContext) GlobalConfig() string                          { return rc.Opts.GlobalConfig }
 func (rc *RunContext) HydratedManifests() []string                   { return rc.Opts.HydratedManifests }
+func (rc *RunContext) LoadImages() bool                              { return rc.Cluster.LoadImages }
 func (rc *RunContext) MinikubeProfile() string                       { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) Muted() config.Muted                           { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                         { return rc.Opts.NoPruneChildren }
@@ -206,45 +194,8 @@ func (rc *RunContext) WatchPollInterval() int                        { return rc
 func (rc *RunContext) BuildConcurrency() int                         { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
-
-// GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
-func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
-	var hydratedDir string
-	var err error
-
-	if ops.HydrationDir == constants.DefaultHydrationDir {
-		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
-		promptIfNeeded = false
-	} else {
-		hydratedDir = ops.HydrationDir
-	}
-	if hydratedDir, err = filepath.Abs(hydratedDir); err != nil {
-		return "", err
-	}
-
-	if _, err := os.Stat(hydratedDir); os.IsNotExist(err) {
-		logrus.Infof("hydrated-dir does not exist, creating %v\n", hydratedDir)
-		if err := os.MkdirAll(hydratedDir, os.ModePerm); err != nil {
-			return "", err
-		}
-	} else if !isDirEmpty(hydratedDir) {
-		if promptIfNeeded && !ops.AssumeYes {
-			fmt.Println("you can skip this promp message with flag \"--assume-yes=true\"")
-			if ok := confirmHydrationDirOverride(os.Stdin); !ok {
-				cmd.Exit(nil)
-			}
-		}
-	}
-	logrus.Infof("manifests hydration will take place in %v\n", hydratedDir)
-	return hydratedDir, nil
-}
-
-func isDirEmpty(dir string) bool {
-	f, _ := os.Open(dir)
-	defer f.Close()
-	_, err := f.Readdirnames(1)
-	return err == io.EOF
-}
+func (rc *RunContext) RPCPort() int                                  { return rc.Opts.RPCPort }
+func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
 
 // GetRenderConfig returns the top tier RenderConfig.
 // TODO: design how to support multi-module.
@@ -256,11 +207,11 @@ func (rc *RunContext) GetRenderConfig() *latestV2.RenderConfig {
 	return &latestV2.RenderConfig{}
 }
 
-func GetRunContext(opts config.SkaffoldOptions, configs []*latestV2.SkaffoldConfig) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV2.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
-			pipelines = append(pipelines, cfg.Pipeline)
+			pipelines = append(pipelines, cfg.(*latestV2.SkaffoldConfig).Pipeline)
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()
@@ -274,11 +225,6 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV2.SkaffoldConf
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("finding current directory: %w", err)
-	}
-
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, pipelines)
-	if err != nil {
-		return nil, fmt.Errorf("getting namespace list: %w", err)
 	}
 
 	// combine all provided lists of insecure registries into a map
@@ -313,19 +259,8 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV2.SkaffoldConf
 		Pipelines:          ps,
 		WorkingDir:         cwd,
 		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 		Cluster:            cluster,
 		RunID:              runID,
 	}, nil
-}
-
-func (rc *RunContext) UpdateNamespaces(ns []string) {
-	if len(ns) == 0 {
-		return
-	}
-	namespaces := util.NewStringSet()
-	namespaces.Insert(append(rc.Namespaces, ns...)...)
-	namespaces.Delete(emptyNamespace)
-	rc.Namespaces = namespaces.ToList()
 }

@@ -18,11 +18,26 @@ package util
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	k8s "k8s.io/client-go/kubernetes"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/buildpacks/lifecycle/cmd"
+	"github.com/sirupsen/logrus"
+)
+
+var (
+	confirmHydrationDirOverride = prompt.ConfirmHydrationDirOverride
 )
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
@@ -51,4 +66,57 @@ func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.
 			podSelector.Add(artifact.Tag)
 		}
 	}
+}
+
+func MockK8sClient() (k8s.Interface, error) {
+	return fakekubeclientset.NewSimpleClientset(), nil
+}
+
+func ConsolidateNamespaces(original, new []string) []string {
+	if len(new) == 0 {
+		return original
+	}
+	namespaces := util.NewStringSet()
+	namespaces.Insert(append(original, new...)...)
+	namespaces.Delete("")
+	return namespaces.ToList()
+}
+
+// GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
+func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
+	var hydratedDir string
+	var err error
+
+	if ops.HydrationDir == constants.DefaultHydrationDir {
+		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
+		promptIfNeeded = false
+	} else {
+		hydratedDir = ops.HydrationDir
+	}
+	if hydratedDir, err = filepath.Abs(hydratedDir); err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(hydratedDir); os.IsNotExist(err) {
+		logrus.Infof("hydrated-dir does not exist, creating %v\n", hydratedDir)
+		if err := os.MkdirAll(hydratedDir, os.ModePerm); err != nil {
+			return "", err
+		}
+	} else if !isDirEmpty(hydratedDir) {
+		if promptIfNeeded && !ops.AssumeYes {
+			fmt.Println("you can skip this promp message with flag \"--assume-yes=true\"")
+			if ok := confirmHydrationDirOverride(os.Stdin); !ok {
+				cmd.Exit(nil)
+			}
+		}
+	}
+	logrus.Infof("manifests hydration will take place in %v\n", hydratedDir)
+	return hydratedDir, nil
+}
+
+func isDirEmpty(dir string) bool {
+	f, _ := os.Open(dir)
+	defer f.Close()
+	_, err := f.Readdirnames(1)
+	return err == io.EOF
 }

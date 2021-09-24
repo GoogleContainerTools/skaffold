@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // NewCmdDelete describes the CLI command to delete deployed resources.
@@ -35,7 +35,7 @@ func NewCmdDelete() *cobra.Command {
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, out, func(r runner.Runner, _ []*latestV2.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, _ []util.VersionedConfig) error {
 		return r.Cleanup(ctx, out)
 	})
 }

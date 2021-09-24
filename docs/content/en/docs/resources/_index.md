@@ -5,32 +5,21 @@ weight: 130
 no_list: true
 ---
 
-## 2020 Roadmap
+## Community
 
-This now lives [on Github](https://github.com/GoogleContainerTools/skaffold/blob/master/ROADMAP.md).
+Join the Skaffold community and discuss the project at:
 
-## 2019 Roadmap
+* StackOverflow using the [`skaffold` tag](https://stackoverflow.com/questions/tagged/skaffold)
+* [Skaffold Mailing List]
+* [#Skaffold channel on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/) (click on _Create an account_ to join)
+* [Give us feedback](feedback)
 
-* Plugin model for builders
-   * DONE - see custom artifacts
-* IDE integration VSCode and IntelliJ Skaffold dev/build/run/deploy support, Skaffold Config code completion
-   * DONE, see [Cloud Code](http://cloud.google.com/code)
-* Debugging JVM applications 
-    * DONE, we have Java, go, python and node for [debugging]({{<relref "/docs/workflows/debug">}})
-* Skaffold keeps track of what it built, for faster restarts
-    * DONE, artifact caching is enabled by default, can be controlled with the `--cache-artifacts` flag
-* Pipeline CRD integration
-    * DONE - we have Tekton pipeline generation in alpha, docs to come
+The Skaffold Project also holds a monthly meeting on the last
+Wednesday of the month at 9:30am PST on [Google Meet](https://meet.google.com/tje-kwpx-ixv)!
+Everyone is welcome to attend!  If you join the [Skaffold Mailing List],
+a calendar invite will be sent to your Google Calendar.
 
-In 2019 we also focused a major part of our efforts in fixing bugs, improve our triage, pull request and design processes, created better documentation, and continuously increased test coverage.
-
-We reprioritized these items for next year: 
-
-* Provide help with integration testing
-* Automated Kubernetes manifest generation
-* Infrastructure scaffolding for CI/CD on GCP/GKE
-* Document end-to-end solutions
-* Status dashboard for build (test) and deployment besides logging
+[Skaffold Mailing List]: https://groups.google.com/forum#!forum/skaffold-users
 
 ## Contributing
 
@@ -43,7 +32,7 @@ on GitHub.
 
 See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/main/CHANGELOG.md) on Github.
 
-## Community
+## Roadmap
 
 You can join the Skaffold community and discuss the project at:
 

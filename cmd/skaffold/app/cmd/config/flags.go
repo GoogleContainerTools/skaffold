@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	configFile, kubecontext string
-	showAll, global, survey bool
+	configFile, kubecontext, surveyID string
+	showAll, global, survey           bool
 )
 
 func AddCommonFlags(f *pflag.FlagSet) {
@@ -37,5 +37,8 @@ func AddListFlags(f *pflag.FlagSet) {
 func AddSetUnsetFlags(f *pflag.FlagSet) {
 	f.BoolVarP(&global, "global", "g", false, "Set value for global config")
 	f.BoolVarP(&survey, "survey", "s", false, "Set value for skaffold survey config")
+	f.StringVarP(&surveyID, "id", "i", "", "Set value for given survey config")
+
 	f.MarkHidden("survey")
+	f.MarkHidden("id")
 }

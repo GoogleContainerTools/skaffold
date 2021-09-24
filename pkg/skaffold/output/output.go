@@ -19,17 +19,32 @@ package output
 import (
 	"io"
 	"os"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 )
 
+const TimestampFormat = "2006-01-02 15:04:05"
+
 type skaffoldWriter struct {
 	MainWriter  io.Writer
 	EventWriter io.Writer
+
+	timestamps bool
 }
 
 func (s skaffoldWriter) Write(p []byte) (int, error) {
+	written := 0
+	if s.timestamps {
+		t, err := s.MainWriter.Write([]byte(time.Now().Format(TimestampFormat) + " "))
+		if err != nil {
+			return t, err
+		}
+
+		written += t
+	}
+
 	n, err := s.MainWriter.Write(p)
 	if err != nil {
 		return n, err
@@ -38,20 +53,22 @@ func (s skaffoldWriter) Write(p []byte) (int, error) {
 		return n, io.ErrShortWrite
 	}
 
+	written += n
+
 	s.EventWriter.Write(p)
 
-	return len(p), nil
+	return written, nil
 }
 
-func GetWriter(out io.Writer, defaultColor int, forceColors bool) io.Writer {
+func GetWriter(out io.Writer, defaultColor int, forceColors bool, timestamps bool) io.Writer {
 	if _, isSW := out.(skaffoldWriter); isSW {
 		return out
 	}
 
 	return skaffoldWriter{
-		MainWriter: SetupColors(out, defaultColor, forceColors),
-		// TODO(marlongamez): Replace this once event writer is implemented
+		MainWriter:  SetupColors(out, defaultColor, forceColors),
 		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1", "skaffold"),
+		timestamps:  timestamps,
 	}
 }
 
@@ -87,6 +104,7 @@ func WithEventContext(out io.Writer, phase constants.Phase, subtaskID, origin st
 		return skaffoldWriter{
 			MainWriter:  sw.MainWriter,
 			EventWriter: eventV2.NewLogger(phase, subtaskID, origin),
+			timestamps:  sw.timestamps,
 		}
 	}
 

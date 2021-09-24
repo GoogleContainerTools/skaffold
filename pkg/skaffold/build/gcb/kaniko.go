@@ -20,8 +20,10 @@ import (
 	"fmt"
 
 	"google.golang.org/api/cloudbuild/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
@@ -40,10 +42,24 @@ func (b *Builder) kanikoBuildSpec(a *latestV2.Artifact, tag string) (cloudbuild.
 		return cloudbuild.Build{}, err
 	}
 
+	env, err := misc.EvaluateEnv(envFromVars(k.Env))
+	if err != nil {
+		return cloudbuild.Build{}, fmt.Errorf("unable to evaluate env variables: %w", err)
+	}
+
 	return cloudbuild.Build{
 		Steps: []*cloudbuild.BuildStep{{
 			Name: b.KanikoImage,
 			Args: kanikoArgs,
+			Env:  env,
 		}},
 	}, nil
+}
+
+func envFromVars(env []v1.EnvVar) []string {
+	s := make([]string, 0, len(env))
+	for _, envVar := range env {
+		s = append(s, envVar.Name+"="+envVar.Value)
+	}
+	return s
 }

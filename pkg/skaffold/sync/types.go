@@ -18,33 +18,43 @@ package sync
 
 import (
 	"context"
+	"io"
 
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type syncMap map[string][]string
 
 type Item struct {
-	Image  string
-	Copy   map[string][]string
-	Delete map[string][]string
+	Image    string
+	Artifact *v1.Artifact
+	Copy     map[string][]string
+	Delete   map[string][]string
 }
 
 type Syncer interface {
-	Sync(context.Context, *Item) error
+	Sync(context.Context, io.Writer, *Item) error
 }
 
-type podSyncer struct {
+type PodSyncer struct {
 	kubectl    *pkgkubectl.CLI
-	namespaces []string
+	namespaces *[]string
 }
 
-type Config interface {
-	GetNamespaces() []string
+func NewPodSyncer(cli *pkgkubectl.CLI, namespaces *[]string) *PodSyncer {
+	return &PodSyncer{
+		kubectl:    cli,
+		namespaces: namespaces,
+	}
 }
 
 type NoopSyncer struct{}
 
-func (s *NoopSyncer) Sync(context.Context, *Item) error {
+func (s *NoopSyncer) Sync(context.Context, io.Writer, *Item) error {
 	return nil
+}
+
+func (i *Item) HasChanges() bool {
+	return i != nil && (len(i.Copy) > 0 || len(i.Delete) > 0)
 }

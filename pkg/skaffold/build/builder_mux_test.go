@@ -123,6 +123,8 @@ func (m *mockPipelineBuilder) Concurrency() int { return m.concurrency }
 
 func (m *mockPipelineBuilder) Prune(context.Context, io.Writer) error { return nil }
 
+func (m *mockPipelineBuilder) PushImages() bool { return false }
+
 func newMockPipelineBuilder(p latestV2.Pipeline) (PipelineBuilder, error) {
 	switch {
 	case p.Build.BuildType.LocalBuild != nil:

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package util
 
 import (
 	"os"
@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestRunContext_UpdateNamespaces(t *testing.T) {
+func TestConsolidateNamespaces(t *testing.T) {
 	tests := []struct {
 		description   string
 		oldNamespaces []string
@@ -83,13 +83,9 @@ func TestRunContext_UpdateNamespaces(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			runCtx := &RunContext{
-				Namespaces: test.oldNamespaces,
-			}
+			ns := ConsolidateNamespaces(test.oldNamespaces, test.newNamespaces)
 
-			runCtx.UpdateNamespaces(test.newNamespaces)
-
-			t.CheckDeepEqual(test.expected, runCtx.Namespaces)
+			t.CheckDeepEqual(test.expected, ns)
 		})
 	}
 }

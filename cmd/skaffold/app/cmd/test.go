@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // NewCmdTest describes the CLI command to test artifacts.
@@ -39,10 +40,10 @@ func NewCmdTest() *cobra.Command {
 }
 
 func doTest(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV2.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		var artifacts []*latestV2.Artifact
 		for _, c := range configs {
-			artifacts = append(artifacts, c.Build.Artifacts...)
+			artifacts = append(artifacts, c.(*latestV2.SkaffoldConfig).Build.Artifacts...)
 		}
 		buildArtifacts, err := getBuildArtifactsAndSetTags(artifacts, r.ApplyDefaultRepo)
 		if err != nil {

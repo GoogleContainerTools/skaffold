@@ -18,7 +18,6 @@ package generate
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -157,6 +156,7 @@ func TestGenerate(t *testing.T) {
 			},
 			expected: manifest.ManifestList{[]byte(podYaml), []byte(podsYaml)},
 		},
+		/* disabled
 		{
 			description: "render kustomize manifests",
 			generateConfig: latestV2.Generate{
@@ -176,6 +176,7 @@ func TestGenerate(t *testing.T) {
 				filepath.Join(".kpt-pipeline", "fn"))),
 			expected: manifest.ManifestList{},
 		},
+		*/
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

@@ -527,10 +527,11 @@ type Generate struct {
 }
 
 type Helm struct {
-	Releases []HelmRelease `yaml:"releases,omitempty"`
 	// Flags are additional option flags that are passed on the command
 	// line to `helm`.
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
+
+	Releases *[]HelmRelease `yaml:"releases,omitempty"`
 }
 
 // Transformer describes the supported kpt transformers.
@@ -563,8 +564,10 @@ type KptV2Deploy struct {
 
 	// Name *alpha* is the inventory object name.
 	Name string `yaml:"name,omitempty"`
+
 	// InventoryID *alpha* is the inventory ID which annotates the resources being lively applied by kpt.
 	InventoryID string `yaml:"inventoryID,omitempty"`
+
 	// InventoryNamespace *alpha* sets the inventory namespace.
 	InventoryNamespace string `yaml:"namespace,omitempty"`
 
@@ -573,6 +576,9 @@ type KptV2Deploy struct {
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`
+
+	// DefaultNamespace is the default namespace passed to kpt on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.
@@ -600,6 +606,9 @@ type DeployType struct {
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
+	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
+	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
+
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
@@ -616,6 +625,8 @@ type DeployType struct {
 type KubectlDeploy struct {
 	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
 	// Manifests lists the Kubernetes yaml or json manifests.
+	// Defaults to `["k8s/*.yaml"]`.
+
 	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
 	// This field is only used by v1 kubectl deployer.

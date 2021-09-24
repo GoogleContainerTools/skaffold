@@ -33,8 +33,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -72,14 +73,16 @@ type Deployer struct {
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	labeller       *label.DefaultLabeller
+	originalImages []graph.Artifact // the set of images marked as "local" by the Runner
+	localImages    []graph.Artifact // the set of images parsed from the Deployer's manifest set
 
 	insecureRegistries map[string]bool
-	labels             map[string]string
 	globalConfig       string
 	kubeContext        string
 	kubeConfig         string
 	namespace          string
+	namespaces         *[]string
 }
 
 type Config interface {
@@ -88,9 +91,23 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KptV2Deploy,
-	opts config.SkaffoldOptions) *Deployer {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptV2Deploy, opts config.SkaffoldOptions) (*Deployer, error) {
+	defaultNamespace := ""
+	if d.DefaultNamespace != nil {
+		var err error
+		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	podSelector := kubernetes.NewImageList()
+	namespaces := []string{}
+
+	// TODO(nkubala)[v2-merge]: We probably shouldn't use kubectl at all here?
+	// But if we do, need to expose a `kubectlFlags` field on the kpt schema?
+	kubectl := kubectl.NewCLI(cfg, latestV2.KubectlFlags{}, defaultNamespace)
+
 	if opts.InventoryNamespace != "" {
 		d.InventoryNamespace = opts.InventoryNamespace
 	}
@@ -101,22 +118,21 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 		d.Name = opts.InventoryName
 	}
 	return &Deployer{
-		KptV2Deploy: d,
-		applyDir:    d.Dir,
-		podSelector: podSelector,
-		// TODO: use pkg/skaffold/deploy/component/kubernetes. need cherry-picking from master.
-		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
-		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
+		KptV2Deploy:        d,
+		applyDir:           d.Dir,
+		podSelector:        podSelector,
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
+		logger:             component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces),
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:             component.NewSyncer(kubectl.CLI, &namespaces),
 		insecureRegistries: cfg.GetInsecureRegistries(),
-		labels:             labels,
+		labeller:           labeller,
 		globalConfig:       cfg.GlobalConfig(),
 		kubeContext:        cfg.GetKubeContext(),
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
-	}
+	}, nil
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -143,6 +159,10 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
 	k.logger.RegisterArtifacts(artifacts)
+}
+
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
 }
 
 func (k *Deployer) getManifests(ctx context.Context) (manifest.ManifestList, error) {
@@ -211,6 +231,8 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		if k.InventoryID != "" {
 			args = append(args, "--inventory-id", k.InventoryID)
 		}
+		// TODO(nkubala)[v2-merge]: we're tracking multiple namespaces on the deployer now.
+		// should this be removed?
 		if k.namespace != "" {
 			args = append(args, "--namespace", k.namespace)
 		} else if k.InventoryNamespace != "" {
@@ -260,9 +282,9 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	return nil
 }
 
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	if err := kptInitFunc(ctx, out, k); err != nil {
-		return nil, err
+		return err
 	}
 
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
@@ -293,11 +315,12 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, liveApplyErr(err, k.applyDir)
+		return liveApplyErr(err, k.applyDir)
 	}
 	k.TrackBuildArtifacts(builds)
+	k.trackNamespaces(namespaces)
 	endTrace()
-	return namespaces, nil
+	return nil
 }
 
 // TODO(yuwenma)[07/23/22]: remove Render func from all deployers and deployerMux.
@@ -329,4 +352,8 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	}
 
 	return nil
+}
+
+func (k *Deployer) trackNamespaces(namespaces []string) {
+	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
 }

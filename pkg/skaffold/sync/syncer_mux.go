@@ -16,13 +16,16 @@ limitations under the License.
 
 package sync
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
 type SyncerMux []Syncer
 
-func (s SyncerMux) Sync(ctx context.Context, item *Item) error {
+func (s SyncerMux) Sync(ctx context.Context, out io.Writer, item *Item) error {
 	for _, syncer := range s {
-		if err := syncer.Sync(ctx, item); err != nil {
+		if err := syncer.Sync(ctx, out, item); err != nil {
 			return err
 		}
 	}

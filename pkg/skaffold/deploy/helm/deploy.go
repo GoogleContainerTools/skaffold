@@ -39,7 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -47,10 +47,13 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -86,17 +89,21 @@ type Deployer struct {
 
 	accessor      access.Accessor
 	debugger      debug.Debugger
+	imageLoader   loader.ImageLoader
 	logger        log.Logger
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubeContext string
 	kubeConfig  string
 	namespace   string
 	configFile  string
+
+	namespaces *[]string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -113,12 +120,13 @@ type Deployer struct {
 type Config interface {
 	kubectl.Config
 	kstatus.Config
+	kloader.Config
 	portforward.Config
 	IsMultiConfig() bool
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, h *latestV2.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, h *latestV2.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -138,26 +146,34 @@ func NewDeployer(cfg Config, labels map[string]string, provider deploy.Component
 	}
 
 	podSelector := kubernetes.NewImageList()
+	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
+	namespaces := []string{}
 
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
-		accessor:       provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:       provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:         provider.Logger.GetKubernetesLogger(podSelector),
-		statusMonitor:  provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:         provider.Syncer.GetKubernetesSyncer(podSelector),
+		namespaces:     &namespaces,
+		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
+		imageLoader:    component.NewImageLoader(cfg, kubectl),
+		logger:         component.NewLogger(cfg, kubectl, podSelector, &namespaces),
+		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:         component.NewSyncer(kubectl, &namespaces),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
 		namespace:      cfg.GetKubeNamespace(),
 		forceDeploy:    cfg.ForceDeploy(),
 		configFile:     cfg.ConfigurationFile(),
-		labels:         labels,
+		labels:         labeller.Labels(),
 		bV:             hv,
 		enableDebug:    cfg.Mode() == config.RunModes.Debug,
 		isMultiConfig:  cfg.IsMultiConfig(),
 	}, nil
+}
+
+func (h *Deployer) trackNamespaces(namespaces []string) {
+	*h.namespaces = deployutil.ConsolidateNamespaces(*h.namespaces, namespaces)
 }
 
 func (h *Deployer) GetAccessor() access.Accessor {
@@ -180,17 +196,35 @@ func (h *Deployer) GetSyncer() sync.Syncer {
 	return h.syncer
 }
 
+func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	h.localImages = images
+}
+
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
-	ctx, endTrace := instrumentation.StartTrace(ctx, "Render", map[string]string{
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
 	defer endTrace()
+
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
 
 	logrus.Infof("Deploying with helm v%s ...", h.bV)
 
@@ -202,11 +236,15 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
-		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV)
+		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("deploying %q", releaseName), err)
+			return userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
+		}
+		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV, chartVersion)
+		if err != nil {
+			return userErr(fmt.Sprintf("deploying %q", releaseName), err)
 		}
 
 		// collect namespaces
@@ -227,7 +265,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	if err := label.Apply(ctx, h.labels, dRes); err != nil {
-		return nil, helmLabelErr(fmt.Errorf("adding labels: %w", err))
+		return helmLabelErr(fmt.Errorf("adding labels: %w", err))
 	}
 
 	// Collect namespaces in a string
@@ -237,7 +275,8 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	h.TrackBuildArtifacts(builds)
-	return namespaces, nil
+	h.trackNamespaces(namespaces)
+	return nil
 }
 
 // Dependencies returns a list of files that the deployer depends on.
@@ -392,7 +431,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 }
 
 // deployRelease deploys a single release
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latestV2.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latestV2.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
 	var err error
 	opts := installOpts{
 		releaseName: releaseName,
@@ -402,6 +441,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		chartPath:   chartSource(r),
 		helmVersion: helmVersion,
 		repo:        r.Repo,
+		version:     chartVersion,
 	}
 
 	var installEnv []string

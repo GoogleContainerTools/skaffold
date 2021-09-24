@@ -25,7 +25,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -56,19 +59,20 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
-func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, labels map[string]string, hydrationDir string) (deploy.Deployer, error) {
+func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
-		return getDefaultDeployer(runCtx, provider, labels, hydrationDir)
+		return getDefaultDeployer(runCtx, labeller, hydrationDir)
 	}
 	var deployers []deploy.Deployer
 
-	for _, p := range runCtx.GetPipelines() {
-		dCtx := &deployerCtx{runCtx, p.Deploy}
-		// TODO: Dirty workaround due to the missing helm strategy in kpt. This should be moved to
-		// renderer.generate instead.
+	// TODO(nkubala)[v2-merge]: Dirty workaround due to the missing helm strategy in kpt.
+	// This should be moved to renderer.generate instead, and replaced with LegacyHelmDeployer
+	pipelines := runCtx.GetPipelines()
+	for _, p := range pipelines {
 		if p.Render.Generate.Helm != nil {
-			h, err := helm.NewDeployer(dCtx, labels, provider, &latestV2.HelmDeploy{
-				Releases: p.Render.Generate.Helm.Releases,
+			dCtx := &deployerCtx{runCtx, p.Deploy}
+			h, err := helm.NewDeployer(dCtx, labeller, &latestV2.HelmDeploy{
+				Releases: *p.Render.Generate.Helm.Releases,
 				Flags:    p.Render.Generate.Helm.Flags,
 			})
 			if err != nil {
@@ -76,21 +80,52 @@ func GetDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, label
 			}
 			deployers = append(deployers, h)
 		}
+	}
 
-		if p.Deploy.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labels, provider, p.Deploy.KubectlDeploy, hydrationDir)
+	deployerCfg := runCtx.Deployers()
+	for _, d := range deployerCfg {
+		dCtx := &deployerCtx{runCtx, d}
+
+		// TODO(nkubala)[v2-merge]: add d.LegacyHelmDeploy (or something similar)
+
+		// if d.HelmDeploy != nil {
+		// 	h, err := helm.NewDeployer(dCtx, labeller, d.HelmDeploy)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// 	deployers = append(deployers, h)
+		// }
+
+		if d.KptDeploy != nil {
+			deployer := kpt.NewDeployer(dCtx, labeller, d.KptDeploy)
+			deployers = append(deployers, deployer)
+		}
+
+		if d.KubectlDeploy != nil {
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, deployer)
 		}
 
-		if p.Deploy.KptV2Deploy != nil {
-			if p.Deploy.KptV2Deploy.Dir == "" {
+		if d.KptV2Deploy != nil {
+			if d.KptV2Deploy.Dir == "" {
 				logrus.Infof("manifests are deployed from render path %v\n", hydrationDir)
-				p.Deploy.KptV2Deploy.Dir = hydrationDir
+				d.KptV2Deploy.Dir = hydrationDir
 			}
-			deployer := kptV2.NewDeployer(dCtx, labels, provider, p.Deploy.KptV2Deploy, runCtx.Opts)
+			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptV2Deploy, runCtx.Opts)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, deployer)
+		}
+
+		if d.KustomizeDeploy != nil {
+			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy)
+			if err != nil {
+				return nil, err
+			}
 			deployers = append(deployers, deployer)
 		}
 	}
@@ -111,7 +146,7 @@ The default deployer will honor a select set of deploy configuration from an exi
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider, labels map[string]string, hydrationDir string) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latestV2.KubectlFlags
@@ -169,7 +204,7 @@ func getDefaultDeployer(runCtx *v2.RunContext, provider deploy.ComponentProvider
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
-	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, provider, k, hydrationDir)
+	defaultDeployer, err := kubectl.NewDeployer(runCtx, labeller, k, hydrationDir)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}

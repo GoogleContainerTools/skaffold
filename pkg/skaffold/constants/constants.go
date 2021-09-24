@@ -75,6 +75,8 @@ const (
 	Windows = "windows"
 
 	DefaultHydrationDir = ".kpt-pipeline"
+	// HaTS is the HaTS Survey ID
+	HaTS = "hats"
 )
 
 type Phase string

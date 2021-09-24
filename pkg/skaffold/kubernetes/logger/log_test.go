@@ -98,7 +98,7 @@ func TestLogAggregatorZeroValue(t *testing.T) {
 	var m *LogAggregator
 
 	// Should not raise a nil dereference
-	m.Start(context.Background(), ioutil.Discard, []string{})
+	m.Start(context.Background(), ioutil.Discard)
 	m.Mute()
 	m.Unmute()
 	m.Stop()
@@ -157,7 +157,7 @@ func TestPrefix(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			logger := NewLogAggregator(nil, nil, &mockConfig{log: latestV2.LogsConfig{
+			logger := NewLogAggregator(nil, nil, nil, &mockConfig{log: latestV2.LogsConfig{
 				Prefix: test.prefix,
 			}})
 

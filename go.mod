@@ -12,8 +12,8 @@ replace (
 )
 
 require (
-	4d63.com/tz v1.1.0
-	cloud.google.com/go v0.72.0
+	4d63.com/tz v1.2.0
+	cloud.google.com/go v0.84.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/AlecAivazis/survey/v2 v2.2.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
@@ -36,8 +36,8 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
-	github.com/golang/protobuf v1.4.3
-	github.com/google/go-cmp v0.5.5
+	github.com/golang/protobuf v1.5.2
+	github.com/google/go-cmp v0.5.6
 	github.com/google/go-containerregistry v0.5.1
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210216200643-d81088d9983e // indirect
 	github.com/google/go-github v17.0.0+incompatible
@@ -61,7 +61,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rjeczalik/notify v0.9.3-0.20201210012515-e2a77dcc14cf
-	github.com/russross/blackfriday/v2 v2.0.1
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/segmentio/textio v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3
@@ -77,16 +77,14 @@ require (
 	go.opentelemetry.io/otel/trace v0.20.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/mod v0.4.2
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
-	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210228012217-479acdf4ea46
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys v0.0.0-20210603125802-9665404d3644
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
-	google.golang.org/api v0.35.0
-	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20201202151023-55d61f90c1ce
-	google.golang.org/grpc v1.33.2
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/api v0.48.0
+	google.golang.org/genproto v0.0.0-20210608205507-b6d2f5bf0d7d
+	google.golang.org/grpc v1.38.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	honnef.co/go/tools v0.1.3 // indirect

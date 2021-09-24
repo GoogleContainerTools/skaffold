@@ -63,8 +63,9 @@ const (
 
 func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
-	surveyPrompt := make(chan bool, 1)
+	surveyPrompt := make(chan string, 1)
 	var metricsPrompt bool
+	var s *survey.Runner
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -78,22 +79,18 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.Root().SilenceUsage = true
 
-			opts.Command = cmd.Use
-			instrumentation.SetCommand(cmd.Use)
-			out := output.GetWriter(out, defaultColor, forceColors)
-			if timestamps {
-				l := logrus.New()
-				l.SetOutput(out)
-				l.SetFormatter(&logrus.TextFormatter{
-					DisableTimestamp: false,
-				})
-				out = l.Writer()
-			}
-			cmd.Root().SetOutput(out)
+			opts.Command = cmd.Name()
+			// Don't redirect output for Cobra internal `__complete` and `__completeNoDesc` commands.
+			// These are used for command completion and send debug messages on stderr.
+			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
+				instrumentation.SetCommand(cmd.Name())
+				out := output.GetWriter(out, defaultColor, forceColors, timestamps)
+				cmd.Root().SetOutput(out)
 
-			// Setup logs
-			if err := setUpLogs(errOut, v, timestamps); err != nil {
-				return err
+				// Setup logs
+				if err := setUpLogs(errOut, v, timestamps); err != nil {
+					return err
+				}
 			}
 
 			// Setup kubeContext and kubeConfig
@@ -114,10 +111,11 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				logrus.Debugf("Disable housekeeping messages for command explicitly")
 				return nil
 			}
+			s = survey.New(opts.GlobalConfig, opts.ConfigurationFile, opts.Command)
 			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-				surveyPrompt <- config.ShouldDisplaySurveyPrompt(opts.GlobalConfig)
+				surveyPrompt <- s.NextSurveyID()
 			}()
 			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
@@ -136,9 +134,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			}
 			// check if survey prompt needs to be displayed
 			select {
-			case shouldDisplay := <-surveyPrompt:
-				if shouldDisplay {
-					if err := survey.New(opts.GlobalConfig).DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
+			case promptSurveyID := <-surveyPrompt:
+				if promptSurveyID != "" {
+					if err := s.DisplaySurveyPrompt(cmd.OutOrStdout(), promptSurveyID); err != nil {
 						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 					}
 				}

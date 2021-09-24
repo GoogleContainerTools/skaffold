@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/timeutil"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -57,6 +58,7 @@ var (
 
 	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
+	updateUserTaken = "skaffold config set --survey --global --id %s taken true"
 	// update global config with the time the survey was last prompted
 	updateLastPrompted = "skaffold config set --survey --global last-prompted %s"
 )
@@ -307,26 +309,6 @@ func IsUpdateCheckEnabled(configfile string) bool {
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }
 
-func ShouldDisplaySurveyPrompt(configfile string) bool {
-	cfg, disabled := isSurveyPromptDisabled(configfile)
-	return !disabled && !recentlyPromptedOrTaken(cfg)
-}
-
-func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
-	cfg, err := GetConfigForCurrentKubectx(configfile)
-	if err != nil {
-		return nil, false
-	}
-	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
-}
-
-func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
-	if cfg == nil || cfg.Survey == nil {
-		return false
-	}
-	return lessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
-}
-
 func ShouldDisplayUpdateMsg(configfile string) bool {
 	cfg, err := GetConfigForCurrentKubectx(configfile)
 	if err != nil {
@@ -335,7 +317,7 @@ func ShouldDisplayUpdateMsg(configfile string) bool {
 	if cfg == nil || cfg.UpdateCheckConfig == nil {
 		return true
 	}
-	return !lessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
+	return !timeutil.LessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
 }
 
 // UpdateMsgDisplayed updates the `last-prompted` config for `update-config` in
@@ -363,16 +345,7 @@ func UpdateMsgDisplayed(configFile string) error {
 	return err
 }
 
-func lessThan(date string, duration time.Duration) bool {
-	t, err := time.Parse(time.RFC3339, date)
-	if err != nil {
-		logrus.Debugf("could not parse date %q", date)
-		return false
-	}
-	return current().Sub(t) < duration
-}
-
-func UpdateGlobalSurveyTaken(configFile string) error {
+func UpdateHaTSSurveyTaken(configFile string) error {
 	// Today's date
 	today := current().Format(time.RFC3339)
 	ai := fmt.Sprintf(updateLastTaken, today)
@@ -461,4 +434,39 @@ func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 	return nil
+}
+
+func UpdateUserSurveyTaken(configFile string, id string) error {
+	ai := fmt.Sprintf(updateUserTaken, id)
+	aiErr := fmt.Errorf("could not automatically update the survey prompted timestamp - please run `%s`", ai)
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.Survey == nil {
+		fullConfig.Global.Survey = &SurveyConfig{}
+	}
+	fullConfig.Global.Survey.UserSurveys = updatedUserSurveys(fullConfig.Global.Survey.UserSurveys, id)
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return aiErr
+	}
+	return nil
+}
+
+func updatedUserSurveys(us []*UserSurvey, id string) []*UserSurvey {
+	for _, s := range us {
+		if s.ID == id {
+			s.Taken = util.BoolPtr(true)
+			return us
+		}
+	}
+	return append(us, &UserSurvey{ID: id, Taken: util.BoolPtr(true)})
 }

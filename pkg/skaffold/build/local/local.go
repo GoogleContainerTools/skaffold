@@ -64,6 +64,10 @@ func (b *Builder) Concurrency() int {
 	return *b.local.Concurrency
 }
 
+func (b *Builder) PushImages() bool {
+	return b.pushImages
+}
+
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag)
 	if err != nil {

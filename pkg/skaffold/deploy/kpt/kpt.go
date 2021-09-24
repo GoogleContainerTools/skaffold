@@ -35,17 +35,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -77,11 +81,13 @@ type Deployer struct {
 	accessor      access.Accessor
 	logger        log.Logger
 	debugger      debug.Debugger
+	imageLoader   loader.ImageLoader
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	insecureRegistries map[string]bool
 	labels             map[string]string
@@ -90,33 +96,45 @@ type Deployer struct {
 	kubeContext        string
 	kubeConfig         string
 	namespace          string
+
+	namespaces *[]string
 }
 
 type Config interface {
 	kubectl.Config
 	kstatus.Config
 	portforward.Config
+	kloader.Config
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KptDeploy) *Deployer {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
+	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
+	namespaces := []string{}
+
 	return &Deployer{
 		KptDeploy:          d,
 		podSelector:        podSelector,
-		accessor:           provider.Accessor.GetKubernetesAccessor(cfg, podSelector),
-		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
-		statusMonitor:      provider.Monitor.GetKubernetesMonitor(cfg),
-		syncer:             provider.Syncer.GetKubernetesSyncer(podSelector),
+		namespaces:         &namespaces,
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
+		imageLoader:        component.NewImageLoader(cfg, kubectl),
+		logger:             component.NewLogger(cfg, kubectl, podSelector, &namespaces),
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:             component.NewSyncer(kubectl, &namespaces),
 		insecureRegistries: cfg.GetInsecureRegistries(),
-		labels:             labels,
+		labels:             labeller.Labels(),
 		globalConfig:       cfg.GlobalConfig(),
 		hasKustomization:   hasKustomization,
 		kubeContext:        cfg.GetKubeContext(),
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
 	}
+}
+
+func (k *Deployer) trackNamespaces(namespaces []string) {
+	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -137,6 +155,10 @@ func (k *Deployer) GetStatusMonitor() status.Monitor {
 
 func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
+}
+
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
@@ -198,28 +220,41 @@ func versionCheck(dir string, stdout io.Writer) error {
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kpt",
 	})
 
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
 	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_sanityCheck")
 	if err := sanityCheck(k.Dir, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_loadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 	manifests, err := k.renderManifests(childCtx, builds)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	if len(manifests) == 0 {
 		endTrace()
-		return nil, nil
+		return nil
 	}
 	endTrace()
 
@@ -234,13 +269,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_getApplyDir")
 	applyDir, err := k.getApplyDir(childCtx)
 	if err != nil {
-		return nil, fmt.Errorf("getting applyDir: %w", err)
+		return fmt.Errorf("getting applyDir: %w", err)
 	}
 	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_manifest.Write")
 	if err = sink(ctx, []byte(manifests.String()), applyDir); err != nil {
-		return nil, err
+		return err
 	}
 	endTrace()
 
@@ -250,12 +285,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	k.TrackBuildArtifacts(builds)
 	endTrace()
-	return namespaces, nil
+	k.trackNamespaces(namespaces)
+	return nil
 }
 
 // Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.

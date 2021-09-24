@@ -94,16 +94,16 @@ func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.A
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting deploy...")
 
-	ns, err := w.Deployer.Deploy(ctx, out, builds)
+	err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	logrus.Infoln("Deploy completed in", util.ShowHumanizeTime(time.Since(start)))
-	return ns, err
+	return err
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {

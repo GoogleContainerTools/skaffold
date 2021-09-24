@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -96,8 +97,8 @@ func TestDoDev(t *testing.T) {
 				hasDeployed: test.hasDeployed,
 				errDev:      context.Canceled,
 			}
-			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV2.SkaffoldConfig, *v2.RunContext, error) {
-				return mockRunner, []*latestV2.SkaffoldConfig{{}}, nil, nil
+			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *v2.RunContext, error) {
+				return mockRunner, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
 			})
 			t.Override(&opts, config.SkaffoldOptions{
 				Cleanup: true,
@@ -146,8 +147,8 @@ func TestDevConfigChange(t *testing.T) {
 	testutil.Run(t, "test config change", func(t *testutil.T) {
 		mockRunner := &mockConfigChangeRunner{}
 
-		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV2.SkaffoldConfig, *v2.RunContext, error) {
-			return mockRunner, []*latestV2.SkaffoldConfig{{}}, nil, nil
+		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *v2.RunContext, error) {
+			return mockRunner, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{
 			Cleanup: true,

@@ -141,6 +141,14 @@ func (t *T) CheckError(shouldErr bool, err error) {
 	CheckError(t.T, shouldErr, err)
 }
 
+// CheckElementsMatch validates that two given slices contain the same elements
+// while disregarding their order.
+// Elements of both slices have to be comparable by '=='
+func (t *T) CheckElementsMatch(expected, actual interface{}) {
+	t.Helper()
+	CheckElementsMatch(t.T, expected, actual)
+}
+
 // CheckErrorAndFailNow checks that the provided error complies with whether or not we expect an error
 // and fails the test execution immediately if it does not.
 // Useful for testing functions which return (obj interface{}, e error) and subsequent checks operate on `obj`

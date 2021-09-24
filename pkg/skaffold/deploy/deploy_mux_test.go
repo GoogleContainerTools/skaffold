@@ -39,14 +39,13 @@ import (
 func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
 
 type MockDeployer struct {
-	labels           map[string]string
-	deployNamespaces []string
-	deployErr        error
-	dependencies     []string
-	dependenciesErr  error
-	cleanupErr       error
-	renderResult     string
-	renderErr        error
+	labels          map[string]string
+	deployErr       error
+	dependencies    []string
+	dependenciesErr error
+	cleanupErr      error
+	renderResult    string
+	renderErr       error
 }
 
 func (m *MockDeployer) GetAccessor() access.Accessor {
@@ -68,6 +67,8 @@ func (m *MockDeployer) GetStatusMonitor() status.Monitor {
 func (m *MockDeployer) GetSyncer() sync.Syncer {
 	return &sync.NoopSyncer{}
 }
+
+func (m *MockDeployer) RegisterLocalImages(_ []graph.Artifact) {}
 
 func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}
 
@@ -104,18 +105,13 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error) {
-	return m.deployNamespaces, m.deployErr
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) error {
+	return m.deployErr
 }
 
 func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []graph.Artifact, _ bool, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
-}
-
-func (m *MockDeployer) WithDeployNamespaces(namespaces []string) *MockDeployer {
-	m.deployNamespaces = namespaces
-	return m
 }
 
 func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
@@ -139,32 +135,14 @@ func TestDeployerMux_Deploy(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			name:        "disjoint namespaces are combined",
-			namespaces1: []string{"ns-a"},
-			namespaces2: []string{"ns-b"},
-			expectedNs:  []string{"ns-a", "ns-b"},
+			name:      "short-circuits when first call fails",
+			err1:      fmt.Errorf("failed in first"),
+			shouldErr: true,
 		},
 		{
-			name:        "repeated namespaces are not duplicated",
-			namespaces1: []string{"ns-a", "ns-c"},
-			namespaces2: []string{"ns-b", "ns-c"},
-			expectedNs:  []string{"ns-a", "ns-b", "ns-c"},
-		},
-		{
-			name:        "short-circuits when first call fails",
-			namespaces1: []string{"ns-a"},
-			err1:        fmt.Errorf("failed in first"),
-			namespaces2: []string{"ns-b"},
-			expectedNs:  nil,
-			shouldErr:   true,
-		},
-		{
-			name:        "when second call fails",
-			namespaces1: []string{"ns-a"},
-			namespaces2: []string{"ns-b"},
-			err2:        fmt.Errorf("failed in second"),
-			expectedNs:  nil,
-			shouldErr:   true,
+			name:      "when second call fails",
+			err2:      fmt.Errorf("failed in second"),
+			shouldErr: true,
 		},
 	}
 
@@ -179,13 +157,13 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				}}})
 
 			deployerMux := NewDeployerMux([]Deployer{
-				NewMockDeployer().WithDeployNamespaces(test.namespaces1).WithDeployErr(test.err1),
-				NewMockDeployer().WithDeployNamespaces(test.namespaces2).WithDeployErr(test.err2),
+				NewMockDeployer().WithDeployErr(test.err1),
+				NewMockDeployer().WithDeployErr(test.err2),
 			}, false)
 
-			namespaces, err := deployerMux.Deploy(context.Background(), nil, nil)
+			err := deployerMux.Deploy(context.Background(), nil, nil)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedNs, namespaces)
+			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }

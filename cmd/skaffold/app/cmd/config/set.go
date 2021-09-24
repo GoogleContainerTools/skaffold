@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	surveyFieldName = "Survey"
+	surveyFieldName      = "Survey"
+	userSurveysFieldName = "UserSurveys"
 )
 
 type cfgStruct struct {
@@ -52,46 +53,66 @@ func setConfigValue(name string, value string) error {
 		return err
 	}
 
-	fieldIdx, err := getFieldIndex(cfg, name)
+	fieldIdx, valI, err := getFieldIndex(cfg, name, value)
 	if err != nil {
 		return err
 	}
 
+	lastIdx := 0
+	if isUserSurvey() {
+		lastIdx = fieldIdx[len(fieldIdx)-1]
+		fieldIdx = fieldIdx[:len(fieldIdx)-1]
+	}
 	field := reflect.Indirect(reflect.ValueOf(cfg)).FieldByIndex(fieldIdx)
-	val, err := parseAsType(value, field)
+	val, err := parseAsType(valI, field, lastIdx, value)
 	if err != nil {
 		return fmt.Errorf("%s is not a valid value for field %s", value, name)
 	}
-
 	reflect.ValueOf(cfg).Elem().FieldByIndex(fieldIdx).Set(val)
 
 	return writeConfig(cfg)
 }
 
-func getFieldIndex(cfg *config.ContextConfig, name string) ([]int, error) {
+func getFieldIndex(cfg *config.ContextConfig, name string, val string) ([]int, interface{}, error) {
+	valI := getValueInterface(cfg, val)
 	cs, err := getConfigStructWithIndex(cfg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for i := 0; i < cs.value.NumField(); i++ {
 		fieldType := cs.rType.Field(i)
 		for _, tag := range strings.Split(fieldType.Tag.Get("yaml"), ",") {
 			if tag == name {
 				if f, ok := cs.rType.FieldByName(fieldType.Name); ok {
-					return append(cs.idx, f.Index...), nil
+					return append(cs.idx, f.Index...), valI, nil
 				}
-				return nil, fmt.Errorf("could not find config field %s", name)
+				return nil, valI, fmt.Errorf("could not find config field %s", name)
 			}
 		}
 	}
-	return nil, fmt.Errorf("%s is not a valid config field", name)
+	return nil, nil, fmt.Errorf("%s is not a valid config field", name)
+}
+
+func getValueInterface(cfg *config.ContextConfig, value string) interface{} {
+	if !isUserSurvey() {
+		return value
+	}
+	if cfg.Survey == nil {
+		cfg.Survey = &config.SurveyConfig{}
+	}
+	if cfg.Survey.UserSurveys == nil {
+		cfg.Survey.UserSurveys = []*config.UserSurvey{}
+	}
+	return cfg.Survey.UserSurveys
 }
 
 func getConfigStructWithIndex(cfg *config.ContextConfig) (*cfgStruct, error) {
 	t := reflect.TypeOf(*cfg)
 	if survey {
 		if cfg.Survey == nil {
-			cfg.Survey = &config.SurveyConfig{}
+			cfg.Survey = &config.SurveyConfig{
+				UserSurveys: []*config.UserSurvey{},
+			}
 		}
 		return surveyStruct(cfg.Survey, t)
 	}
@@ -103,18 +124,34 @@ func getConfigStructWithIndex(cfg *config.ContextConfig) (*cfgStruct, error) {
 }
 
 func surveyStruct(s *config.SurveyConfig, t reflect.Type) (*cfgStruct, error) {
-	surveyType := reflect.TypeOf(*s)
-	if surveyField, ok := t.FieldByName(surveyFieldName); ok {
-		return &cfgStruct{
-			value: reflect.Indirect(reflect.ValueOf(s)),
-			rType: surveyType,
-			idx:   surveyField.Index,
-		}, nil
+	field, ok := t.FieldByName(surveyFieldName)
+	if !ok {
+		return nil, fmt.Errorf("survey config field %q not found in config struct %s", surveyFieldName, t.Name())
 	}
-	return nil, fmt.Errorf("survey config field 'Survey' not found in config struct %s", t.Name())
+	rType := reflect.TypeOf(*s)
+	if isUserSurvey() {
+		return userSurveyStruct(&config.UserSurvey{}, rType, field.Index)
+	}
+	return &cfgStruct{
+		value: reflect.Indirect(reflect.ValueOf(s)),
+		rType: rType,
+		idx:   field.Index,
+	}, nil
 }
 
-func parseAsType(value string, field reflect.Value) (reflect.Value, error) {
+func userSurveyStruct(as *config.UserSurvey, t reflect.Type, idx []int) (*cfgStruct, error) {
+	field, ok := t.FieldByName(userSurveysFieldName)
+	if !ok {
+		return nil, fmt.Errorf("survey config field %q not found in config struct %s", userSurveysFieldName, t.Name())
+	}
+	return &cfgStruct{
+		value: reflect.Indirect(reflect.ValueOf(as)),
+		rType: reflect.TypeOf(*as),
+		idx:   append(idx, field.Index...),
+	}, nil
+}
+
+func parseAsType(value interface{}, field reflect.Value, childIdx int, childValue string) (reflect.Value, error) {
 	fieldType := field.Type()
 	switch fieldType.String() {
 	case "string":
@@ -128,14 +165,37 @@ func parseAsType(value string, field reflect.Value) (reflect.Value, error) {
 		if value == "" {
 			return reflect.Zero(fieldType), nil
 		}
-		valBase, err := strconv.ParseBool(value)
+		valBase, err := strconv.ParseBool(value.(string))
 		if err != nil {
 			return reflect.Value{}, err
 		}
 		return reflect.ValueOf(&valBase), nil
+	case "[]*config.UserSurvey":
+		us := field.Interface().([]*config.UserSurvey)
+		parentVal, parentIdx := hasUserSurvey(us)
+		childField := reflect.Indirect(parentVal).FieldByIndex([]int{childIdx})
+		v1, err := parseAsType(childValue, childField, 0, "")
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		childField.Set(v1)
+		if parentIdx == -1 {
+			return reflect.Append(field, parentVal), nil
+		}
+		field.Index(parentIdx).Set(parentVal)
+		return field, nil
 	default:
 		return reflect.Value{}, fmt.Errorf("unsupported type: %s", fieldType)
 	}
+}
+
+func hasUserSurvey(cs []*config.UserSurvey) (reflect.Value, int) {
+	for i, f := range cs {
+		if f.ID == surveyID {
+			return reflect.ValueOf(f), i
+		}
+	}
+	return reflect.ValueOf(&config.UserSurvey{ID: surveyID}), -1
 }
 
 func writeConfig(cfg *config.ContextConfig) error {
@@ -166,4 +226,8 @@ func logSetConfigForUser(out io.Writer, key string, value string) {
 	} else {
 		fmt.Fprintf(out, "set value %s to %s for context %s\n", key, value, kubecontext)
 	}
+}
+
+func isUserSurvey() bool {
+	return survey && surveyID != ""
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -92,19 +93,20 @@ func TestDoRun(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
 			mockRunner := &mockRunRunner{}
-			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV2.SkaffoldConfig, *v2.RunContext, error) {
-				return mockRunner, []*latestV2.SkaffoldConfig{{
-					Pipeline: latestV2.Pipeline{
-						Build: latestV2.BuildConfig{
-							Artifacts: []*latestV2.Artifact{
-								{ImageName: "first"},
-								{ImageName: "second-test"},
-								{ImageName: "test"},
-								{ImageName: "aaabbbccc"},
+			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *v2.RunContext, error) {
+				return mockRunner, []util.VersionedConfig{
+					&latestV2.SkaffoldConfig{
+						Pipeline: latestV2.Pipeline{
+							Build: latestV2.BuildConfig{
+								Artifacts: []*latestV2.Artifact{
+									{ImageName: "first"},
+									{ImageName: "second-test"},
+									{ImageName: "test"},
+									{ImageName: "aaabbbccc"},
+								},
 							},
 						},
-					},
-				}}, nil, nil
+					}}, nil, nil
 			})
 			t.Override(&opts, config.SkaffoldOptions{
 				TargetImages: []string{"test"},

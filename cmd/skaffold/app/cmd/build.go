@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 var (
@@ -67,7 +68,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV2.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		bRes, err := r.Build(ctx, buildOut, targetArtifacts(opts, configs))
 
 		if quietFlag || buildOutputFlag != "" {
@@ -94,10 +95,10 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func targetArtifacts(opts config.SkaffoldOptions, configs []*latestV2.SkaffoldConfig) []*latestV2.Artifact {
+func targetArtifacts(opts config.SkaffoldOptions, configs []util.VersionedConfig) []*latestV2.Artifact {
 	var targetArtifacts []*latestV2.Artifact
 	for _, cfg := range configs {
-		for _, artifact := range cfg.Build.Artifacts {
+		for _, artifact := range cfg.(*latestV2.SkaffoldConfig).Build.Artifacts {
 			if opts.IsTargetImage(artifact) {
 				targetArtifacts = append(targetArtifacts, artifact)
 			}

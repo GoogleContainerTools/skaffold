@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -61,12 +62,12 @@ func newRecord() *record {
 }
 
 // GetAllConfigs returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs.
-func GetAllConfigs(opts config.SkaffoldOptions) ([]*latestV2.SkaffoldConfig, error) {
+func GetAllConfigs(opts config.SkaffoldOptions) ([]schemaUtil.VersionedConfig, error) {
 	set, err := GetConfigSet(opts)
 	if err != nil {
 		return nil, err
 	}
-	var cfgs []*latestV2.SkaffoldConfig
+	var cfgs []schemaUtil.VersionedConfig
 	for _, cfg := range set {
 		cfgs = append(cfgs, cfg.SkaffoldConfig)
 	}

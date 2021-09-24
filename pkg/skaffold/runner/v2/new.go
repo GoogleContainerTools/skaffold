@@ -22,26 +22,21 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
@@ -53,7 +48,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.LogMetaEvent()
 	eventV2.InitializeState(runCtx)
 	eventV2.LogMetaEvent()
-	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 	_, endTrace := instrumentation.StartTrace(context.Background(), "NewForConfig")
 	defer endTrace()
 
@@ -86,15 +80,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	var deployer deploy.Deployer
-	provider := deploy.ComponentProvider{
-		Accessor: access.NewAccessorProvider(labeller),
-		Debugger: debug.NewDebugProvider(runCtx),
-		Logger:   log.NewLogProvider(runCtx, kubectlCLI),
-		Monitor:  status.NewMonitorProvider(labeller),
-		Syncer:   sync.NewSyncProvider(runCtx, kubectlCLI),
-	}
 
-	hydrationDir, err := runcontext.GetHydrationDir(runCtx.Opts, runCtx.WorkingDir, true)
+	hydrationDir, err := util.GetHydrationDir(runCtx.Opts, runCtx.WorkingDir, true)
 
 	if err != nil {
 		return nil, fmt.Errorf("getting render output path: %w", err)
@@ -107,7 +94,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating renderer: %w", err)
 	}
 
-	deployer, err = runner.GetDeployer(runCtx, provider, labeller.Labels(), hydrationDir)
+	deployer, err = runner.GetDeployer(runCtx, labeller, hydrationDir)
 
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -163,7 +150,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
 		artifactStore:      store,
 		sourceDependencies: sourceDependencies,
-		kubectlCLI:         kubectlCLI,
 		labeller:           labeller,
 		cache:              artifactCache,
 		runCtx:             runCtx,

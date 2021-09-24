@@ -25,8 +25,11 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -65,46 +68,26 @@ func TestDeploy(t *testing.T) {
 	}
 }
 
-func TestDeployNamespace(t *testing.T) {
-	tests := []struct {
-		description string
-		Namespaces  []string
-		testBench   *TestBench
-		expected    []string
-	}{
-		{
-			description: "deploy shd add all namespaces to run Context",
-			Namespaces:  []string{"test", "test-ns"},
-			testBench:   NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
-			expected:    []string{"test", "test-ns", "test-ns-1"},
-		},
-		{
-			description: "deploy without command opts namespace",
-			testBench:   NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
-			expected:    []string{"test-ns", "test-ns-1"},
-		},
-		{
-			description: "deploy with no namespaces returned",
-			Namespaces:  []string{"test"},
-			testBench:   &TestBench{},
-			expected:    []string{"test"},
-		},
-	}
+func TestSkaffoldDeployRenderOnly(t *testing.T) {
+	testutil.Run(t, "does not make kubectl calls", func(t *testutil.T) {
+		runCtx := &v2.RunContext{
+			Opts: config.SkaffoldOptions{
+				Namespace:  "testNamespace",
+				RenderOnly: true,
+			},
+			KubeContext: "does-not-exist",
+		}
 
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&client.Client, mockK8sClient)
+		deployer, err := runner.GetDeployer(runCtx, nil, "")
+		t.RequireNoError(err)
+		r := SkaffoldRunner{
+			runCtx:   runCtx,
+			deployer: deployer,
+		}
+		var builds []graph.Artifact
 
-			r := createRunner(t, test.testBench, nil, []*latestV2.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
-			r.runCtx.Namespaces = test.Namespaces
+		err = r.Deploy(context.Background(), ioutil.Discard, builds)
 
-			err := r.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
-				{ImageName: "img1", Tag: "img1:tag1"},
-				{ImageName: "img2", Tag: "img2:tag2"},
-			})
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, r.runCtx.GetNamespaces())
-		})
-	}
+		t.CheckNoError(err)
+	})
 }

@@ -11,23 +11,36 @@ jobs:
   check:
     name: Check if release commit
     runs-on: ubuntu-latest
+    if: "startsWith(github.event.head_commit.message, 'release: ')"
+    steps:
+    - name: Apply release-matching regexp to commit message
+      id: regex-match
+      uses: actions-ecosystem/action-regex-match@v2
+      with:
+        text: ${{ github.event.head_commit.message }}
+        # Allow optional `v` prefix and GitHub PR reference suffix on first line only
+        #   release: v1.2.3
+        #   release: 1.2.3-beta.1
+        #   release: v1.2.3-beta.1 (#9456)
+        regex: '^release: v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?)(\s+\(#[0-9]+\))?$'
+        flags: m
+
+    - name: Determine if applicable
+      id: check-commit-message
+      if: steps.regex-match.outputs.group1 != ''
+      run: |
+        echo "::set-output name=applicable::true"
+        echo "This is a release commit: ${{ steps.regex-match.outputs.group1 }}"
     outputs:
       applicable: ${{ steps.check-commit-message.outputs.applicable }}
-    steps:
-    - name: Check commit message
-      id: check-commit-message
-      run: |
-        str='${{ github.event.head_commit.message }}'
-        regex="^release\s*:\s*(v[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+\.[0-9]+)"
-        if [[ "$str" =~ $regex ]]; then
-        echo "::set-output name=applicable::true"
-        echo This is a release commit.
-        fi
+      version: ${{ steps.regex-match.outputs.group1 }}
 
   release:
+    name: Create Tag and Draft Release
     needs: check
     if: needs.check.outputs.applicable == 'true'
-    name: Create Tag and Draft Release
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -35,15 +48,10 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Calculate Tag and release names
+    - name: Calculate Tag and Release names
       run: |
-        t=$(echo ${{ github.event.head_commit.message }} | sed -ne 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
-        if [ -z "$t" ]; then
-        echo Malformed commit message; failed to extract semVer tag
-        return 1
-        fi
-        echo TAG_NAME="v${t}" >> $GITHUB_ENV
-        echo RELEASE_NAME="v${t} Release" >> $GITHUB_ENV
+        echo TAG_NAME="v${{ needs.check.outputs.version }}" >> $GITHUB_ENV
+        echo RELEASE_NAME="v${{ needs.check.outputs.version }} Release" >> $GITHUB_ENV
 
     - name: Create and push Tag
       run: |
@@ -60,14 +68,14 @@ jobs:
 
     - name: Download release artifacts
       run: |
-        #Wait 60m for all artifacts to be available
+        # Wait up to 60m for all artifacts to be available
         retries=20
         found=0
         while [ $found -lt 10 -a $retries -gt 0 ]
         do
-        sleep 3m
-        found=$(gsutil du  gs://skaffold/releases/${{ env.TAG_NAME }}/ | wc -l)
-        retries=$((retries-1))
+          sleep 3m
+          found=$(gsutil du  gs://skaffold/releases/${{ env.TAG_NAME }}/ | wc -l)
+          retries=$((retries-1))
         done
         gsutil -m cp -r gs://skaffold/releases/${{ env.TAG_NAME }}/ $HOME
 
@@ -78,7 +86,7 @@ jobs:
         body=$(git log -p --follow -1 CHANGELOG.md | grep '^\+' | cut -c 2- | tail -n +2)
         assets=()
         for asset in $HOME/${{ env.TAG_NAME }}/*; do
-        assets+=("-a" "$asset")
+          assets+=("-a" "$asset")
         done
         bin/hub release create "${assets[@]}" -m "${{ env.RELEASE_NAME }}" -m "$body" --draft ${{ env.TAG_NAME }}
       env:

@@ -27,9 +27,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -51,7 +53,7 @@ spec:
 
 // Test that kpt deployer manipulate manifests in the given order and no intermediate data is
 // stored after each step:
-//	Step 1. `kp fn source` (read in the manifest as stdin),
+//	Step 1. `kpt fn source` (read in the manifest as stdin),
 //  Step 2. `kpt fn run` (validate, transform or generate the manifests via kpt functions),
 //  Step 3. `kpt fn sink` (to temp dir to run kuustomize build on),
 //  Step 4. `kustomize build` (if the temp dir from step 3 has a Kustomization hydrate the manifest),
@@ -229,9 +231,10 @@ func TestKpt_Deploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&client.Client, deployutil.MockK8sClient)
 			t.NewTempDir().Chdir()
 
-			k := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt)
+			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
@@ -242,7 +245,7 @@ func TestKpt_Deploy(t *testing.T) {
 				t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 			}
 
-			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -374,7 +377,7 @@ func TestKpt_Dependencies(t *testing.T) {
 			tmpDir.WriteFiles(test.createFiles)
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt)
+			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
 
 			res, err := k.Dependencies()
 
@@ -427,7 +430,7 @@ func TestKpt_Cleanup(t *testing.T) {
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, deploy.NoopComponentProvider, &latestV2.KptDeploy{
+			}, &label.DefaultLabeller{}, &latestV2.KptDeploy{
 				Live: latestV2.KptLive{
 					Apply: latestV2.KptApplyInventory{
 						Dir: test.applyDir,
@@ -489,7 +492,7 @@ spec:
 	tests := []struct {
 		description      string
 		builds           []graph.Artifact
-		labels           map[string]string
+		labels           []string
 		kpt              latestV2.KptDeploy
 		commands         util.Command
 		hasKustomization func(string) bool
@@ -534,7 +537,7 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			labels: map[string]string{"user/label": "test"},
+			labels: []string{"user/label=test"},
 			kpt: latestV2.KptDeploy{
 				Dir: "test",
 				Fn:  latestV2.KptFn{FnPath: "kpt-func.yaml"},
@@ -608,7 +611,7 @@ spec:
 					Tag:       "gcr.io/project/image1:tag1",
 				},
 			},
-			labels: map[string]string{"user/label": "test"},
+			labels: []string{"user/label=test"},
 			kpt: latestV2.KptDeploy{
 				Dir: ".",
 			},
@@ -787,7 +790,9 @@ spec:
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.NewTempDir().Chdir()
 
-			k := NewDeployer(&kptConfig{workingDir: "."}, test.labels, deploy.NoopComponentProvider, &test.kpt)
+			labeller := label.NewLabeller(false, test.labels, "")
+
+			k := NewDeployer(&kptConfig{workingDir: "."}, labeller, &test.kpt)
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
@@ -864,7 +869,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, deploy.NoopComponentProvider, &latestV2.KptDeploy{
+			}, &label.DefaultLabeller{}, &latestV2.KptDeploy{
 				Live: test.live,
 			})
 
@@ -1023,7 +1028,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, nil)
+			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, nil)
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
@@ -1169,7 +1174,8 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, commands)
-		k := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, deploy.NoopComponentProvider, &latestV2.KptDeploy{
+		t.Override(&client.Client, deployutil.MockK8sClient)
+		k := NewDeployer(&kptConfig{config: "testConfigPath"}, &label.DefaultLabeller{}, &latestV2.KptDeploy{
 			Dir: ".",
 			Live: latestV2.KptLive{
 				Apply: latestV2.KptApplyInventory{
@@ -1179,7 +1185,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 		})
 		t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 		defer os.RemoveAll(k.Live.Apply.Dir)
-		_, err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
+		err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
 		t.CheckNoError(err)
 	})
 }
