@@ -64,7 +64,6 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	}
 	log.Entry(ctx).Debugf(" devloop: build %t, sync %t, deploy %t\n", needsBuild, needsSync, needsDeploy)
 
-
 	r.deployer.GetLogger().Mute()
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()

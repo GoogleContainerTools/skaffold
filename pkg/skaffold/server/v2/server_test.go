@@ -129,7 +129,7 @@ func TestServer_Execute(t *testing.T) {
 			},
 			numCallBacks: 1,
 			expected: mockData{
-				Build:  true,
+				Build: true,
 			},
 		},
 	}
