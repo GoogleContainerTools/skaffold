@@ -14,9 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Setting net.ipv4.tcp_mtu_probing to 1"
-echo "was: $(sysctl net.ipv4.tcp_mtu_probing)"
-echo "now: $(sudo sysctl -w net.ipv4.tcp_mtu_probing=1)"
+echo "Clamping MSS"
+sudo iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS  --clamp-mss-to-pmtu
 
 export DOCKER_NAMESPACE=gcr.io/k8s-skaffold
 source $KOKORO_GFILE_DIR/common.sh
