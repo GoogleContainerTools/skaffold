@@ -475,12 +475,12 @@ func TestSetDefaultRenderer(t *testing.T) {
 			description: "helm manifests",
 			input: latestV2.RenderConfig{
 				Generate: latestV2.Generate{
-					Helm: &latestV2.Helm{Releases: []latestV2.HelmRelease{{Name: "test"}}},
+					Helm: &latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
 				},
 			},
 			expected: latestV2.RenderConfig{
 				Generate: latestV2.Generate{
-					Helm: &latestV2.Helm{Releases: []latestV2.HelmRelease{{Name: "test"}}},
+					Helm: &latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
 				},
 			},
 		},
@@ -490,14 +490,14 @@ func TestSetDefaultRenderer(t *testing.T) {
 				Generate: latestV2.Generate{
 					Kpt:       []string{"/kmanifests1"},
 					Kustomize: []string{"/kmanifests2"},
-					Helm:      &latestV2.Helm{Releases: []latestV2.HelmRelease{{Name: "test"}}},
+					Helm:      &latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
 				},
 			},
 			expected: latestV2.RenderConfig{
 				Generate: latestV2.Generate{
 					Kpt:       []string{"/kmanifests1"},
 					Kustomize: []string{"/kmanifests2"},
-					Helm:      &latestV2.Helm{Releases: []latestV2.HelmRelease{{Name: "test"}}},
+					Helm:      &latestV2.Helm{Releases: &[]latestV2.HelmRelease{{Name: "test"}}},
 				},
 			},
 		},

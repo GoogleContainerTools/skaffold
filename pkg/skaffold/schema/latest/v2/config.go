@@ -606,9 +606,6 @@ type DeployType struct {
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
-	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
-	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
-
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`

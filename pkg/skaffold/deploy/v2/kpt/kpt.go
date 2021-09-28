@@ -132,6 +132,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptV2D
 		kubeContext:        cfg.GetKubeContext(),
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
+		namespaces:         &namespaces,
 	}, nil
 }
 

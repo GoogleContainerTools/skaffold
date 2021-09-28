@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -141,14 +142,9 @@ func TestKptfileInitIfNot(t *testing.T) {
 			}
 			tmpDir.Chdir()
 
-			k, err := NewDeployer(&kptConfig{}, nil, &latestV2.KptV2Deploy{Dir: "."},
+			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latestV2.KptV2Deploy{Dir: "."},
 				config.SkaffoldOptions{})
-			if !test.shouldErr {
-				t.CheckNoError(err)
-			} else {
-				t.CheckErrorContains(test.expectedErr, err)
-			}
-			err = kptfileInitIfNot(context.Background(), ioutil.Discard, k)
+			err := kptfileInitIfNot(context.Background(), ioutil.Discard, k)
 			if !test.shouldErr {
 				t.CheckNoError(err)
 			} else {
@@ -185,7 +181,7 @@ func TestDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			kptInitFunc = func(context.Context, io.Writer, *Deployer) error { return nil }
 
-			k, err := NewDeployer(&kptConfig{}, nil, &test.kpt, config.SkaffoldOptions{})
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{})
 			t.CheckNoError(err)
 			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckNoError(err)

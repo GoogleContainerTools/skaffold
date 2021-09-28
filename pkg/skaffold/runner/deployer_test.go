@@ -26,9 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -101,21 +99,6 @@ func TestGetDeployer(tOuter *testing.T) {
 				}, false),
 			},
 			{
-				description: "kpt V2 deployer",
-				cfg: latestV2.Pipeline{
-					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
-					},
-				},
-				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					t.RequireNonNilResult(kustomize.NewDeployer(&v2.RunContext{
-						Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
-					}, &label.DefaultLabeller{}, &latestV2.KustomizeDeploy{
-						Flags: latestV2.KubectlFlags{},
-					})).(deploy.Deployer),
-				}, false),
-			},
-			{
 				description: "kpt deployer",
 				cfg: latestV2.Pipeline{
 					Deploy: latestV2.DeployConfig{
@@ -123,7 +106,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					},
 				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					&kpt.Deployer{},
+					&kptV2.Deployer{},
 				}, false),
 			},
 			{

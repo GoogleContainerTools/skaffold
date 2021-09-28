@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -72,11 +71,13 @@ func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrati
 		if p.Render.Generate.Helm != nil {
 			dCtx := &deployerCtx{runCtx, p.Deploy}
 			h, err := helm.NewDeployer(dCtx, labeller, &latestV2.HelmDeploy{
-				Releases: *p.Render.Generate.Helm.Releases,
-				Flags:    p.Render.Generate.Helm.Flags,
+				Flags: p.Render.Generate.Helm.Flags,
 			})
 			if err != nil {
 				return nil, err
+			}
+			if p.Render.Generate.Helm.Releases != nil {
+				h.Releases = append(h.Releases, *p.Render.Generate.Helm.Releases...)
 			}
 			deployers = append(deployers, h)
 		}
@@ -95,11 +96,6 @@ func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrati
 		// 	}
 		// 	deployers = append(deployers, h)
 		// }
-
-		if d.KptDeploy != nil {
-			deployer := kpt.NewDeployer(dCtx, labeller, d.KptDeploy)
-			deployers = append(deployers, deployer)
-		}
 
 		if d.KubectlDeploy != nil {
 			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)

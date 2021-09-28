@@ -89,6 +89,10 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 	var configs []util.VersionedConfig
+	for _, cfg := range cfgSet {
+		configs = append(configs, cfg.SkaffoldConfig)
+	}
+
 	runCtx, err := runcontext.GetRunContext(opts, configs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting run context: %w", err)
