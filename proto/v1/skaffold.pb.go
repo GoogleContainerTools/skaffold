@@ -110,6 +110,7 @@ const LogLevel_WARN = LogLevel(enums.LogLevel_WARN)
 const LogLevel_ERROR = LogLevel(enums.LogLevel_ERROR)
 const LogLevel_FATAL = LogLevel(enums.LogLevel_FATAL)
 const LogLevel_PANIC = LogLevel(enums.LogLevel_PANIC)
+const LogLevel_TRACE = LogLevel(enums.LogLevel_TRACE)
 
 // StatusCode from public import enums/enums.proto
 type StatusCode = enums.StatusCode
@@ -265,6 +266,7 @@ const StatusCode_CONFIG_UNKNOWN_API_VERSION_ERR = StatusCode(enums.StatusCode_CO
 const StatusCode_CONFIG_UNKNOWN_VALIDATOR = StatusCode(enums.StatusCode_CONFIG_UNKNOWN_VALIDATOR)
 const StatusCode_CONFIG_UNKNOWN_TRANSFORMER = StatusCode(enums.StatusCode_CONFIG_UNKNOWN_TRANSFORMER)
 const StatusCode_CONFIG_MISSING_MANIFEST_FILE_ERR = StatusCode(enums.StatusCode_CONFIG_MISSING_MANIFEST_FILE_ERR)
+const StatusCode_CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR = StatusCode(enums.StatusCode_CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR)
 const StatusCode_INSPECT_UNKNOWN_ERR = StatusCode(enums.StatusCode_INSPECT_UNKNOWN_ERR)
 const StatusCode_INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR = StatusCode(enums.StatusCode_INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR)
 const StatusCode_INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR = StatusCode(enums.StatusCode_INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR)
@@ -333,6 +335,7 @@ const SuggestionCode_CONFIG_FIX_API_VERSION = SuggestionCode(enums.SuggestionCod
 const SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS = SuggestionCode(enums.SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS)
 const SuggestionCode_CONFIG_ALLOWLIST_transformers = SuggestionCode(enums.SuggestionCode_CONFIG_ALLOWLIST_transformers)
 const SuggestionCode_CONFIG_FIX_MISSING_MANIFEST_FILE = SuggestionCode(enums.SuggestionCode_CONFIG_FIX_MISSING_MANIFEST_FILE)
+const SuggestionCode_CONFIG_ENABLE_REMOTE_REPO_SYNC = SuggestionCode(enums.SuggestionCode_CONFIG_ENABLE_REMOTE_REPO_SYNC)
 const SuggestionCode_INSPECT_USE_MODIFY_OR_NEW_PROFILE = SuggestionCode(enums.SuggestionCode_INSPECT_USE_MODIFY_OR_NEW_PROFILE)
 const SuggestionCode_INSPECT_USE_ADD_BUILD_ENV = SuggestionCode(enums.SuggestionCode_INSPECT_USE_ADD_BUILD_ENV)
 const SuggestionCode_INSPECT_CHECK_INPUT_PROFILE = SuggestionCode(enums.SuggestionCode_INSPECT_CHECK_INPUT_PROFILE)

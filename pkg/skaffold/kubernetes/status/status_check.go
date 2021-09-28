@@ -111,7 +111,6 @@ func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
 
 func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	eventV2.TaskInProgress(constants.StatusCheck, "Verify service availability")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
 
@@ -121,12 +120,10 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	errCode, err := s.statusCheck(ctx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	if err != nil {
-		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err
 	}
 
 	output.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
-	eventV2.TaskSucceeded(constants.StatusCheck)
 	return nil
 }
 
@@ -290,6 +287,7 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
+	out, _ = output.WithEventContext(out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -335,6 +333,7 @@ func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer)
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
 			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
+			out, _ := output.WithEventContext(out, constants.Deploy, r.String())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}

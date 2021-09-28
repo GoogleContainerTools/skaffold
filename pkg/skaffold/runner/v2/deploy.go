@@ -66,6 +66,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 }
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	defer r.deployer.GetStatusMonitor().Reset()
 	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone, "skaffold")
 
 	output.Default.Fprintln(out, "Tags used in deployment:")
@@ -100,6 +101,15 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy_Deploying")
 	defer endTrace()
 
+	// we only want to register images that are local AND were built by this runner
+	var localAndBuiltImages []graph.Artifact
+	for _, image := range localImages {
+		if r.wasBuilt(image.Tag) {
+			localAndBuiltImages = append(localAndBuiltImages, image)
+		}
+	}
+
+	r.deployer.RegisterLocalImages(localAndBuiltImages)
 	err = r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
@@ -119,20 +129,22 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployComplete()
+	if !r.runCtx.Opts.IterativeStatusCheck {
+		// run final aggregated status check only if iterative status check is turned off.
+		if err = r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut); err != nil {
+			eventV2.TaskFailed(constants.Deploy, err)
+			return err
+		}
+	}
 	eventV2.TaskSucceeded(constants.Deploy)
-	sErr := r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut)
-	return sErr
+	return nil
 }
 
-func (r *SkaffoldRunner) getCurrentContext() (*api.Context, error) {
-	currentCfg, err := kubectx.CurrentConfig()
-	if err != nil {
-		return nil, fmt.Errorf("unable to get kubernetes config: %w", err)
+func (r *SkaffoldRunner) wasBuilt(tag string) bool {
+	for _, built := range r.Builds {
+		if built.Tag == tag {
+			return true
+		}
 	}
-
-	currentContext, present := currentCfg.Contexts[r.runCtx.GetKubeContext()]
-	if !present {
-		return nil, fmt.Errorf("unable to get current kubernetes context: %w", err)
-	}
-	return currentContext, nil
+	return false
 }

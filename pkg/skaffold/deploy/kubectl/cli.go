@@ -74,7 +74,7 @@ func NewCLI(cfg Config, flags latestV2.KubectlFlags, defaultNamespace string) CL
 
 // Delete runs `kubectl delete` on a list of manifests.
 func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
-	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "-f", "-")
+	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "--wait=false", "-f", "-")
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
 		return deployerr.CleanupErr(fmt.Errorf("kubectl delete: %w", err))
 	}

@@ -1,0 +1,22 @@
+apiVersion: skaffold/v2beta20
+kind: Config
+build:
+  local:
+    push: false
+  artifacts:
+  - image: react-reload-docker
+    context: app
+    sync:
+      manual:
+      - src: 'src/components/*'
+        dest: .
+      - src: 'src/styles/*'
+        dest: .
+deploy:
+  docker:
+    images: [react-reload-docker]
+portForward:
+- resourceType: Container
+  resourceName: react-reload-docker
+  port: 8080
+  localPort: 9000

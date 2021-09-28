@@ -86,23 +86,6 @@ func request_SkaffoldV2Service_ApplicationLogs_0(ctx context.Context, marshaler 
 
 }
 
-func request_SkaffoldV2Service_SkaffoldLogs_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (SkaffoldV2Service_SkaffoldLogsClient, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
-	stream, err := client.SkaffoldLogs(ctx, &protoReq)
-	if err != nil {
-		return nil, metadata, err
-	}
-	header, err := stream.Header()
-	if err != nil {
-		return nil, metadata, err
-	}
-	metadata.HeaderMD = header
-	return stream, metadata, nil
-
-}
-
 func request_SkaffoldV2Service_Execute_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldV2ServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UserIntentRequest
 	var metadata runtime.ServerMetadata
@@ -310,13 +293,6 @@ func RegisterSkaffoldV2ServiceHandlerServer(ctx context.Context, mux *runtime.Se
 	})
 
 	mux.Handle("GET", pattern_SkaffoldV2Service_ApplicationLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
-		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-		return
-	})
-
-	mux.Handle("GET", pattern_SkaffoldV2Service_SkaffoldLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -539,26 +515,6 @@ func RegisterSkaffoldV2ServiceHandlerClient(ctx context.Context, mux *runtime.Se
 
 	})
 
-	mux.Handle("GET", pattern_SkaffoldV2Service_SkaffoldLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_SkaffoldV2Service_SkaffoldLogs_0(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_SkaffoldV2Service_SkaffoldLogs_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
-
-	})
-
 	mux.Handle("POST", pattern_SkaffoldV2Service_Execute_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -669,8 +625,6 @@ var (
 
 	pattern_SkaffoldV2Service_ApplicationLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "applicationLogs"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_SkaffoldV2Service_SkaffoldLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "skaffoldLogs"}, "", runtime.AssumeColonVerbOpt(true)))
-
 	pattern_SkaffoldV2Service_Execute_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "execute"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_SkaffoldV2Service_AutoBuild_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v2", "build", "auto_execute"}, "", runtime.AssumeColonVerbOpt(true)))
@@ -688,8 +642,6 @@ var (
 	forward_SkaffoldV2Service_Events_0 = runtime.ForwardResponseStream
 
 	forward_SkaffoldV2Service_ApplicationLogs_0 = runtime.ForwardResponseStream
-
-	forward_SkaffoldV2Service_SkaffoldLogs_0 = runtime.ForwardResponseStream
 
 	forward_SkaffoldV2Service_Execute_0 = runtime.ForwardResponseMessage
 

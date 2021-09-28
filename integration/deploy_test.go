@@ -101,6 +101,15 @@ func TestDeployTail(t *testing.T) {
 	WaitForLogs(t, out, "Hello world!")
 }
 
+func TestDeployTailDefaultNamespace(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").RunLive(t)
+
+	WaitForLogs(t, out, "Hello world!")
+}
+
 func TestDeployWithInCorrectConfig(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

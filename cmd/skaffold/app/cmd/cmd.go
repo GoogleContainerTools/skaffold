@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	event "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation/prompt"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -261,6 +262,7 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: timestamp,
 	})
+	logrus.AddHook(event.NewLogHook(constants.DevLoop, event.SubtaskIDNone))
 	return nil
 }
 

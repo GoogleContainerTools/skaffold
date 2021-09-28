@@ -78,7 +78,7 @@ func ConsolidateNamespaces(original, new []string) []string {
 	}
 	namespaces := util.NewStringSet()
 	namespaces.Insert(append(original, new...)...)
-	namespaces.Delete("")
+	namespaces.Delete("") // if we have provided namespaces, remove the empty "default" namespace
 	return namespaces.ToList()
 }
 

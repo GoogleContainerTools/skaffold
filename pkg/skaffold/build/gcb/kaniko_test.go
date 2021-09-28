@@ -301,6 +301,16 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 		},
 		{
+			description: "with PushRetry",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				PushRetry:      "9",
+			},
+			expectedArgs: []string{
+				"--push-retry", "9",
+			},
+		},
+		{
 			description: "with TarPath",
 			artifact: &latestV2.KanikoArtifact{
 				DockerfilePath: "Dockerfile",

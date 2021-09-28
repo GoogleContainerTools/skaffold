@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
 func matchBuildersToImages(builders []InitBuilder, images []string) ([]ArtifactInfo, []InitBuilder, []string) {

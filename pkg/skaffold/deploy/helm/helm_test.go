@@ -524,7 +524,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.0beta namespaced context deploy success",
@@ -537,7 +537,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployConfig,
 			namespace:          kubectl.TestNamespace,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.0 deploy success",
@@ -549,7 +549,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.0 namespaced deploy success",
@@ -561,7 +561,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployNamespacedConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.0 namespaced (with env template) deploy success",
@@ -586,7 +586,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployConfig,
 			namespace:          kubectl.TestNamespace,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.0 namespaced context deploy success overrides release namespaces",
@@ -599,7 +599,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployNamespacedConfig,
 			namespace:          kubectl.TestNamespace,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.1 deploy success",
@@ -611,7 +611,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.1 namespaced deploy success",
@@ -623,7 +623,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployNamespacedConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.1 namespaced deploy (with env template) success",
@@ -647,7 +647,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfigRemoteRepo,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.1 namespaced context deploy success",
@@ -660,7 +660,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployConfig,
 			namespace:          kubectl.TestNamespace,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.1 namespaced context deploy success overrides release namespaces",
@@ -673,7 +673,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployNamespacedConfig,
 			namespace:          kubectl.TestNamespace,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy success with recreatePods",
@@ -685,7 +685,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployRecreatePodsConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy success with skipBuildDependencies",
@@ -696,7 +696,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeploySkipBuildDependenciesConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy should error for unmatched parameter",
@@ -709,7 +709,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployConfigParameterUnmatched,
 			builds:             testBuilds,
 			shouldErr:          true,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",
@@ -720,7 +720,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeploySkipBuildDependencies,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy success when `upgradeOnChange: false` and does not upgrade",
@@ -728,7 +728,7 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm-upgradeOnChange --kubeconfig kubeconfig"),
 			helm:               testDeployUpgradeOnChange,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy remote chart",
@@ -738,7 +738,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployRemoteChart,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy remote chart with version",
@@ -748,7 +748,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext install skaffold-helm-remote --version 1.0.0 stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployRemoteChartVersion,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy error with remote chart",
@@ -758,7 +758,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRunErr("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig", fmt.Errorf("building helm dependencies")),
 			helm:               testDeployRemoteChart,
 			shouldErr:          true,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "get failure should install not upgrade",
@@ -770,7 +770,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3 get failure should install not upgrade",
@@ -782,7 +782,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "get failure should install not upgrade with helm image strategy",
@@ -794,7 +794,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployHelmStyleConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm image strategy with explicit registry should set the Helm registry value",
@@ -806,7 +806,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployHelmExplicitRegistryStyleConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "get success should upgrade by force, not install",
@@ -819,7 +819,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployConfig,
 			force:              true,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "get success should upgrade without force, not install",
@@ -831,7 +831,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy error",
@@ -844,7 +844,7 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:          true,
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "dep build error",
@@ -857,7 +857,7 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:          true,
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm 3.0 beta should package chart and deploy",
@@ -871,7 +871,7 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:          false,
 			helm:               testDeployFooWithPackaged,
 			builds:             testBuildsFoo,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm 3.1 should package chart and deploy",
@@ -885,7 +885,7 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:          false,
 			helm:               testDeployFooWithPackaged,
 			builds:             testBuildsFoo,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "should fail to deploy when packaging fails",
@@ -897,7 +897,7 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:          true,
 			helm:               testDeployFooWithPackaged,
 			builds:             testBuildsFoo,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description:        "deploy and get missing templated release name should fail",
@@ -905,7 +905,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployWithTemplatedName,
 			builds:             testBuilds,
 			shouldErr:          true,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy and get templated release name",
@@ -918,7 +918,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all user-skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployWithTemplatedName,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy with templated values",
@@ -930,7 +930,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfigTemplated,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy with valuesFiles templated",
@@ -942,7 +942,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfigValuesFilesTemplated,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy with templated version",
@@ -955,7 +955,7 @@ func TestHelmDeploy(t *testing.T) {
 			env:                []string{"VERSION=1.0"},
 			helm:               testDeployConfigVersionTemplated,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy with setFiles",
@@ -967,7 +967,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testDeployConfigSetFiles,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "deploy without actual tags",
@@ -983,7 +983,7 @@ func TestHelmDeploy(t *testing.T) {
 				"See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration",
 				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
 			},
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "first release without tag, second with tag",
@@ -999,7 +999,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig"),
 			helm:               testTwoReleases,
 			builds:             testBuilds,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description:        "debug for helm3.0 failure",
@@ -1008,7 +1008,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployConfig,
 			builds:             testBuilds,
 			configure:          func(deployer *Deployer) { deployer.enableDebug = true },
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "debug for helm3.1 success",
@@ -1022,7 +1022,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployConfig,
 			builds:             testBuilds,
 			configure:          func(deployer *Deployer) { deployer.enableDebug = true },
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.1 should fail to deploy with createNamespace option",
@@ -1033,7 +1033,7 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployCreateNamespaceConfig,
 			builds:             testBuilds,
 			shouldErr:          true,
-			expectedNamespaces: []string{},
+			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.2 get failure should install with createNamespace not upgrade",

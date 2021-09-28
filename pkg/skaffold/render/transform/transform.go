@@ -24,7 +24,8 @@ import (
 )
 
 var (
-	transformerAllowlist = map[string]kptfile.Function{
+	allowListedTransformer = []string{"set-labels"}
+	transformerAllowlist   = map[string]kptfile.Function{
 		"set-namespace": {
 			Image:     "gcr.io/kpt-fn/set-namespace",
 			ConfigMap: map[string]string{},

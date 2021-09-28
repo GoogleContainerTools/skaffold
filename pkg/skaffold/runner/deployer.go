@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
@@ -42,7 +43,8 @@ type deployerCtx struct {
 }
 
 func (d *deployerCtx) GetKubeContext() string {
-	if d.deploy.KubeContext != "" {
+	// if the kubeContext is not overridden by CLI flag or env. variable then use the value provided in config.
+	if d.RunContext.IsDefaultKubeContext() && d.deploy.KubeContext != "" {
 		return d.deploy.KubeContext
 	}
 	return d.RunContext.GetKubeContext()
@@ -62,6 +64,7 @@ func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrati
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, labeller, hydrationDir)
 	}
+
 	var deployers []deploy.Deployer
 
 	// TODO(nkubala)[v2-merge]: Dirty workaround due to the missing helm strategy in kpt.
@@ -84,8 +87,19 @@ func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrati
 	}
 
 	deployerCfg := runCtx.Deployers()
+	localDeploy := false
+	remoteDeploy := false
 	for _, d := range deployerCfg {
 		dCtx := &deployerCtx{runCtx, d}
+
+		if d.DockerDeploy != nil {
+			localDeploy = true
+			d, err := docker.NewDeployer(runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, d)
+		}
 
 		// TODO(nkubala)[v2-merge]: add d.LegacyHelmDeploy (or something similar)
 
@@ -124,6 +138,10 @@ func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrati
 			}
 			deployers = append(deployers, deployer)
 		}
+	}
+
+	if localDeploy && remoteDeploy {
+		return nil, errors.New("docker deployment not supported alongside cluster deployments")
 	}
 
 	return deploy.NewDeployerMux(deployers, runCtx.IterativeStatusCheck()), nil

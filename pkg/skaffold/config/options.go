@@ -99,6 +99,7 @@ type SkaffoldOptions struct {
 	StatusCheck        BoolOrUndefined
 	Muted              Muted
 	WaitForDeletions   WaitForDeletions
+	SyncRemoteCache    SyncRemoteCacheOption
 }
 
 type RunMode string

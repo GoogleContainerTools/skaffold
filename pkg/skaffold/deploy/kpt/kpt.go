@@ -28,6 +28,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syaml "sigs.k8s.io/yaml"
@@ -111,7 +112,10 @@ type Config interface {
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
-	namespaces := []string{}
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
+	}
 
 	return &Deployer{
 		KptDeploy:          d,

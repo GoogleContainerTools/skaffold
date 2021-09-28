@@ -104,70 +104,6 @@ func TestLogAggregatorZeroValue(t *testing.T) {
 	m.Stop()
 }
 
-func TestPrefix(t *testing.T) {
-	tests := []struct {
-		description    string
-		prefix         string
-		pod            v1.Pod
-		container      v1.ContainerStatus
-		expectedPrefix string
-	}{
-		{
-			description:    "auto (different names)",
-			prefix:         "auto",
-			pod:            podWithName("pod"),
-			container:      containerWithName("container"),
-			expectedPrefix: "[pod container]",
-		},
-		{
-			description:    "auto (same names)",
-			prefix:         "auto",
-			pod:            podWithName("hello"),
-			container:      containerWithName("hello"),
-			expectedPrefix: "[hello]",
-		},
-		{
-			description:    "container",
-			prefix:         "container",
-			pod:            podWithName("pod"),
-			container:      containerWithName("container"),
-			expectedPrefix: "[container]",
-		},
-		{
-			description:    "podAndContainer (different names)",
-			prefix:         "podAndContainer",
-			pod:            podWithName("pod"),
-			container:      containerWithName("container"),
-			expectedPrefix: "[pod container]",
-		},
-		{
-			description:    "podAndContainer (same names)",
-			prefix:         "podAndContainer",
-			pod:            podWithName("hello"),
-			container:      containerWithName("hello"),
-			expectedPrefix: "[hello hello]",
-		},
-		{
-			description:    "none",
-			prefix:         "none",
-			pod:            podWithName("hello"),
-			container:      containerWithName("hello"),
-			expectedPrefix: "",
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			logger := NewLogAggregator(nil, nil, nil, &mockConfig{log: latestV2.LogsConfig{
-				Prefix: test.prefix,
-			}})
-
-			p := logger.prefix(&test.pod, test.container)
-
-			t.CheckDeepEqual(test.expectedPrefix, p)
-		})
-	}
-}
-
 func podWithName(n string) v1.Pod {
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -181,6 +117,7 @@ func containerWithName(n string) v1.ContainerStatus {
 		Name: n,
 	}
 }
+<<<<<<< HEAD
 
 type mockConfig struct {
 	log latestV2.LogsConfig
@@ -201,3 +138,5 @@ func (c *mockConfig) DefaultPipeline() latestV2.Pipeline {
 	pipeline.Deploy.Logs = c.log
 	return pipeline
 }
+=======
+>>>>>>> v1.29.0

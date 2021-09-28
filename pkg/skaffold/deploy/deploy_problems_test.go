@@ -109,6 +109,7 @@ type mockConfig struct {
 func (m mockConfig) MinikubeProfile() string                { return m.minikube }
 func (m mockConfig) GetPipelines() []latestV2.Pipeline      { return []latestV2.Pipeline{} }
 func (m mockConfig) GetWorkingDir() string                  { return "" }
+func (m mockConfig) GetNamespace() string                   { return "" }
 func (m mockConfig) GlobalConfig() string                   { return "" }
 func (m mockConfig) ConfigurationFile() string              { return "" }
 func (m mockConfig) DefaultRepo() *string                   { return &m.minikube }

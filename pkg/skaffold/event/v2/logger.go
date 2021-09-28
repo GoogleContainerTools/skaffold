@@ -20,21 +20,22 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
 type logger struct {
 	Phase     constants.Phase
 	SubtaskID string
-	Origin    string
 }
 
-func NewLogger(phase constants.Phase, subtaskID, origin string) io.Writer {
+func NewLogger(phase constants.Phase, subtaskID string) io.Writer {
 	return logger{
 		Phase:     phase,
 		SubtaskID: subtaskID,
-		Origin:    origin,
 	}
 }
 
@@ -42,8 +43,7 @@ func (l logger) Write(p []byte) (int, error) {
 	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 		TaskId:    fmt.Sprintf("%s-%d", l.Phase, handler.iteration),
 		SubtaskId: l.SubtaskID,
-		Origin:    l.Origin,
-		Level:     0,
+		Level:     -1,
 		Message:   string(p),
 	})
 
@@ -56,4 +56,60 @@ func (ev *eventHandler) handleSkaffoldLogEvent(e *proto.SkaffoldLogEvent) {
 			SkaffoldLogEvent: e,
 		},
 	})
+}
+
+// logHook is an implementation of logrus.Hook used to send SkaffoldLogEvents
+type logHook struct {
+	task    constants.Phase
+	subtask string
+}
+
+func NewLogHook(task constants.Phase, subtask string) logrus.Hook {
+	return logHook{
+		task:    task,
+		subtask: subtask,
+	}
+}
+
+// Levels returns all levels as we want to send events for all levels
+func (h logHook) Levels() []logrus.Level {
+	return []logrus.Level{
+		logrus.PanicLevel,
+		logrus.FatalLevel,
+		logrus.ErrorLevel,
+		logrus.WarnLevel,
+		logrus.InfoLevel,
+		logrus.DebugLevel,
+		logrus.TraceLevel,
+	}
+}
+
+// Fire constructs a SkaffoldLogEvent and sends it to the event channel
+func (h logHook) Fire(entry *logrus.Entry) error {
+	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+		TaskId:    fmt.Sprintf("%s-%d", h.task, handler.iteration),
+		SubtaskId: h.subtask,
+		Level:     levelFromEntry(entry),
+		Message:   entry.Message,
+	})
+	return nil
+}
+
+func levelFromEntry(entry *logrus.Entry) enums.LogLevel {
+	switch entry.Level {
+	case logrus.FatalLevel:
+		return enums.LogLevel_FATAL
+	case logrus.ErrorLevel:
+		return enums.LogLevel_ERROR
+	case logrus.WarnLevel:
+		return enums.LogLevel_WARN
+	case logrus.InfoLevel:
+		return enums.LogLevel_INFO
+	case logrus.PanicLevel:
+		return enums.LogLevel_PANIC
+	case logrus.TraceLevel:
+		return enums.LogLevel_TRACE
+	default:
+		return enums.LogLevel_DEBUG
+	}
 }

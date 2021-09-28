@@ -148,6 +148,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
+		Name:          "sync-remote-cache",
+		Usage:         "Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.",
+		Value:         &opts.SyncRemoteCache,
+		DefValue:      "always",
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"all"},
+	},
+	{
 		Name:          "insecure-registry",
 		Usage:         "Target registries for built images which are not secure",
 		Value:         &opts.InsecureRegistries,

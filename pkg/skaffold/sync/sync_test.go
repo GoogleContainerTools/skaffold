@@ -848,7 +848,7 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec.Cmd {
+func fakeCmd(ctx context.Context, _ v1.Pod, _ v1.Container, files syncMap) *exec.Cmd {
 	var args []string
 
 	for src, dsts := range files {

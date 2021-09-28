@@ -102,7 +102,7 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
-		w = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i), "skaffold")
+		w, _ = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 
 		if err := deployer.Deploy(ctx, w, as); err != nil {

@@ -36,8 +36,8 @@ func TestHandleApplicationLogEvent(t *testing.T) {
 	// ensure that messages sent through the ApplicationLog function are populating the event log
 	for _, message := range messages {
 		testHandler.handleApplicationLogEvent(&proto.ApplicationLogEvent{
-			ContainerName: "pod-0",
-			PodName:       "containerName-0",
+			ContainerName: "containerName-0",
+			PodName:       "pod-0",
 			Message:       message,
 		})
 	}
