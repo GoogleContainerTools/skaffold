@@ -119,21 +119,23 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 	a.output = out
 
 	a.podWatcher.Register(a.events)
-	stopWatcher, err := a.podWatcher.Start(a.kubectlcli.KubeContext, *a.namespaces)
-	a.stopWatcher = stopWatcher
+	stopWatcher, err := a.podWatcher.Start(ctx, a.kubectlcli.KubeContext, *a.namespaces)
 	if err != nil {
 		return err
 	}
 
 	go func() {
 		defer stopWatcher()
-
+		l := olog.Entry(ctx)
+		defer l.Tracef("logAggregator: cease waiting for pod events")
+		l.Tracef("logAggregator: waiting for pod events")
 		for {
 			select {
 			case <-ctx.Done():
-				return
+				l.Tracef("logAggregator: context canceled, ignoring")
 			case evt, ok := <-a.events:
 				if !ok {
+					l.Tracef("logAggregator: channel closed, returning")
 					return
 				}
 
@@ -164,13 +166,14 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 
 // Stop stops the logger.
 func (a *LogAggregator) Stop() {
+	l := olog.Entry(context.Background())
 	if a == nil {
 		// Logs are not activated.
 		return
 	}
-	a.stopWatcher()
 	a.podWatcher.Deregister(a.events)
-	close(a.events)
+	l.Tracef("logAggregator: Stop() close channel")
+	close(a.events) // the receiver shouldn't really be the one to close the channel
 }
 
 func sinceSeconds(d time.Duration) int64 {

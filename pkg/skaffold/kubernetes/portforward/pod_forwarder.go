@@ -69,20 +69,23 @@ func NewWatchingPodForwarder(entryManager *EntryManager, kubeContext string, pod
 func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	p.podWatcher.Register(p.events)
 	p.output = out
-	stopWatcher, err := p.podWatcher.Start(p.kubeContext, namespaces)
+	stopWatcher, err := p.podWatcher.Start(ctx, p.kubeContext, namespaces)
 	if err != nil {
 		return err
 	}
 
 	go func() {
 		defer stopWatcher()
-
+		l := log.Entry(ctx)
+		defer l.Tracef("podForwarder: cease waiting for pod events")
+		l.Tracef("podForwarder: waiting for pod events")
 		for {
 			select {
 			case <-ctx.Done():
-				return
+				l.Tracef("podForwarder: context canceled, ignoring")
 			case evt, ok := <-p.events:
 				if !ok {
+					l.Tracef("podForwarder: channel closed, returning")
 					return
 				}
 
@@ -103,6 +106,8 @@ func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespa
 
 func (p *WatchingPodForwarder) Stop() {
 	p.entryManager.Stop()
+	p.podWatcher.Deregister(p.events)
+	close(p.events) // the receiver shouldn't really be the one to close the channel
 }
 
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
