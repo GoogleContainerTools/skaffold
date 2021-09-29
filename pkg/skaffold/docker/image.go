@@ -599,6 +599,8 @@ func ToCLIBuildArgs(a *latestV2.DockerArtifact, evaluatedArgs map[string]*string
 		args = append(args, "--cache-from", from)
 	}
 
+	args = append(args, a.CliFlags...)
+
 	if a.Target != "" {
 		args = append(args, "--target", a.Target)
 	}

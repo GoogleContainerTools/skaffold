@@ -42,7 +42,7 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 	}
 
 	output.Default.Fprintf(out, "Checking for kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -97,7 +97,7 @@ func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (f
 
 	output.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

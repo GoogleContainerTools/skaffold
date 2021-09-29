@@ -83,3 +83,24 @@ func TestSkaffoldCmdline_MainUnknownCommand(t *testing.T) {
 		t.CheckError(true, err)
 	})
 }
+
+func TestMain_InvalidUsageExitCode(t *testing.T) {
+	testutil.Run(t, "unknown command", func(t *testutil.T) {
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "unknown", "--interactive=false"})
+		err := Run(ioutil.Discard, ioutil.Discard)
+		t.CheckErrorAndExitCode(127, err)
+	})
+	testutil.Run(t, "unknown flag", func(t *testutil.T) {
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "--help2", "--interactive=false"})
+		err := Run(ioutil.Discard, ioutil.Discard)
+		t.CheckErrorAndExitCode(127, err)
+	})
+	testutil.Run(t, "exactargs error", func(t *testutil.T) {
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "config", "set", "a", "b", "c"})
+		err := Run(ioutil.Discard, ioutil.Discard)
+		t.CheckErrorAndExitCode(127, err)
+	})
+}

@@ -439,6 +439,7 @@ var (
 	version30   = `version.BuildInfo{Version:"v3.0.0", GitCommit:"e29ce2a54e96cd02ccfce88bee4f58bb6e2a28b6", GitTreeState:"clean", GoVersion:"go1.13.4"}`
 	version31   = `version.BuildInfo{Version:"v3.1.1", GitCommit:"afe70585407b420d0097d07b21c47dc511525ac8", GitTreeState:"clean", GoVersion:"go1.13.8"}`
 	version32   = `version.BuildInfo{Version:"v3.2.0", GitCommit:"e11b7ce3b12db2941e90399e874513fbd24bcb71", GitTreeState:"clean", GoVersion:"go1.14"}`
+	version35   = `version.BuildInfo{Version:"3.5.2", GitCommit:"c4e74854886b2efe3321e185578e6db9be0a6e29", GitTreeState:"clean", GoVersion:"go1.14.15"}`
 )
 
 func TestBinVer(t *testing.T) {
@@ -453,8 +454,8 @@ func TestBinVer(t *testing.T) {
 		{"Helm 3.0b3", version30b, "3.0.0-beta.3", false},
 		{"Helm 3.0", version30, "3.0.0", false},
 		{"Helm 3.1.1", version31, "3.1.1", false},
+		{"Helm 3.5.2 without leading 'v'", version35, "3.5.2", false},
 		{"Custom Helm 3.3 build from Manjaro", "v3.3", "3.3.0", false}, // not semver compliant
-		{"Invalid", "3.1.0", "0.0.0", true},
 	}
 
 	for _, test := range tests {

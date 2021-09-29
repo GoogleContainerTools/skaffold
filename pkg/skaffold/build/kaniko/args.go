@@ -73,6 +73,10 @@ func Args(artifact *latestV2.KanikoArtifact, tag, context string) ([]string, err
 		args = append(args, ForceFlag)
 	}
 
+	if artifact.ImageFSExtractRetry != "" {
+		args = append(args, ImageFSExtractRetryFlag, artifact.ImageFSExtractRetry)
+	}
+
 	if artifact.ImageNameWithDigestFile != "" {
 		args = append(args, ImageNameWithDigestFileFlag, artifact.ImageNameWithDigestFile)
 	}

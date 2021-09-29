@@ -1197,6 +1197,9 @@ type KanikoArtifact struct {
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
+	// ImageFSExtractRetry is the number of retries that should happen for extracting an image filesystem.
+	ImageFSExtractRetry string `yaml:"imageFSExtractRetry,omitempty"`
+
 	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
@@ -1285,6 +1288,10 @@ type DockerArtifact struct {
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
+
+	// CliFlags are any additional flags to pass to the local daemon during a build.
+	// These flags are only used during a build through the Docker CLI.
+	CliFlags []string `yaml:"cliFlags,omitempty"`
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`

@@ -144,17 +144,17 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV
 	if err != nil {
 		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
 	}
-
+	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
 		namespaces:          &namespaces,
 		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
-		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
+		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
-		logger:              component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces),
+		logger:              logger,
 		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:              component.NewSyncer(kubectl.CLI, &namespaces),
+		syncer:              component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
@@ -222,7 +222,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// Check that the cluster is reachable.
 	// This gives a better error message when the cluster can't
 	// be reached.
-	if err := kubernetes.FailIfClusterIsNotReachable(); err != nil {
+	if err := kubernetes.FailIfClusterIsNotReachable(k.kubectl.KubeContext); err != nil {
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 

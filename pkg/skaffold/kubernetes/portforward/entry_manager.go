@@ -56,44 +56,6 @@ var (
 	}
 )
 
-type forwardedResources struct {
-	resources map[string]*portForwardEntry
-	lock      sync.Mutex
-}
-
-func (f *forwardedResources) Store(k string, v *portForwardEntry) {
-	f.lock.Lock()
-
-	if f.resources == nil {
-		f.resources = map[string]*portForwardEntry{}
-	}
-	f.resources[k] = v
-
-	f.lock.Unlock()
-}
-
-func (f *forwardedResources) Load(key string) (*portForwardEntry, bool) {
-	f.lock.Lock()
-	val, exists := f.resources[key]
-	f.lock.Unlock()
-
-	return val, exists
-}
-
-func (f *forwardedResources) Delete(key string) {
-	f.lock.Lock()
-	delete(f.resources, key)
-	f.lock.Unlock()
-}
-
-func (f *forwardedResources) Length() int {
-	f.lock.Lock()
-	length := len(f.resources)
-	f.lock.Unlock()
-
-	return length
-}
-
 // EntryManager handles forwarding entries and keeping track of
 // forwarded ports and resources.
 type EntryManager struct {
@@ -103,7 +65,7 @@ type EntryManager struct {
 	forwardedPorts util.PortSet
 
 	// forwardedResources is a map of portForwardEntry key (string) -> portForwardEntry
-	forwardedResources forwardedResources
+	forwardedResources sync.Map
 }
 
 // NewEntryManager returns a new port forward entry manager to keep track
@@ -115,13 +77,12 @@ func NewEntryManager(entryForwarder EntryForwarder) *EntryManager {
 }
 
 func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Writer, entry *portForwardEntry) {
-	out, _ = output.WithEventContext(out, constants.PortForward, fmt.Sprintf("%s/%s", entry.resource.Type, entry.resource.Name))
+	out = output.WithEventContext(out, constants.PortForward, fmt.Sprintf("%s/%s", entry.resource.Type, entry.resource.Name))
 
 	// Check if this resource has already been forwarded
-	if _, ok := b.forwardedResources.Load(entry.key()); ok {
+	if _, found := b.forwardedResources.LoadOrStore(entry.key(), entry); found {
 		return
 	}
-	b.forwardedResources.Store(entry.key(), entry)
 
 	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
 		output.Green.Fprintln(
@@ -147,9 +108,11 @@ func (b *EntryManager) Start(out io.Writer) {
 
 // Stop terminates all kubectl port-forward commands.
 func (b *EntryManager) Stop() {
-	for _, pfe := range b.forwardedResources.resources {
+	b.forwardedResources.Range(func(_, value interface{}) bool {
+		pfe := value.(*portForwardEntry)
 		b.Terminate(pfe)
-	}
+		return true
+	})
 }
 
 // Terminate terminates a single port forward entry

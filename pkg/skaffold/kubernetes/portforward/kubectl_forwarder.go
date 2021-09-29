@@ -74,7 +74,7 @@ func (k *KubectlForwarder) Start(out io.Writer) {
 	k.out = out
 }
 
-// Forward port-forwards a pod using kubectl port-forward in the background
+// Forward port-forwards a pod using kubectl port-forward in the background.
 // It kills the command on errors in the kubectl port-forward log
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken
@@ -119,7 +119,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		ctx, cancel := context.WithCancel(parentCtx)
 		pfe.cancel = cancel
 
-		args := portForwardArgs(ctx, pfe)
+		args := portForwardArgs(ctx, k.kubectl.KubeContext, pfe)
 		var buf bytes.Buffer
 		cmd := k.kubectl.CommandWithStrictCancellation(ctx, "port-forward", args...)
 		cmd.Stdout = &buf
@@ -160,14 +160,14 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 	}
 }
 
-func portForwardArgs(ctx context.Context, pfe *portForwardEntry) []string {
+func portForwardArgs(ctx context.Context, kubeContext string, pfe *portForwardEntry) []string {
 	args := []string{"--pod-running-timeout", "1s", "--namespace", pfe.resource.Namespace}
 
 	_, disableServiceForwarding := os.LookupEnv("SKAFFOLD_DISABLE_SERVICE_FORWARDING")
 	switch {
 	case pfe.resource.Type == "service" && !disableServiceForwarding:
 		// Services need special handling: https://github.com/GoogleContainerTools/skaffold/issues/4522
-		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port)
+		podName, remotePort, err := findNewestPodForSvc(ctx, kubeContext, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port)
 		if err == nil {
 			args = append(args, fmt.Sprintf("pod/%s", podName), fmt.Sprintf("%d:%d", pfe.localPort, remotePort))
 			break
@@ -244,8 +244,8 @@ func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *k
 // findNewestPodForService queries the cluster to find a pod that fulfills the given service, giving
 // preference to pods that were most recently created.  This is in contrast to the selection algorithm
 // used by kubectl (see https://github.com/GoogleContainerTools/skaffold/issues/4522 for details).
-func findNewestPodForService(ctx context.Context, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
-	client, err := kubernetesclient.Client()
+func findNewestPodForService(ctx context.Context, kubeContext, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return "", -1, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

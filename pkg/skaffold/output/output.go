@@ -27,11 +27,13 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 )
 
-const TimestampFormat = "2006-01-02 15:04:05"
+const timestampFormat = "2006-01-02 15:04:05"
 
 type skaffoldWriter struct {
 	MainWriter  io.Writer
 	EventWriter io.Writer
+	task        constants.Phase
+	subtask     string
 
 	timestamps bool
 }
@@ -39,7 +41,7 @@ type skaffoldWriter struct {
 func (s skaffoldWriter) Write(p []byte) (int, error) {
 	written := 0
 	if s.timestamps {
-		t, err := s.MainWriter.Write([]byte(time.Now().Format(TimestampFormat) + " "))
+		t, err := s.MainWriter.Write([]byte(time.Now().Format(timestampFormat) + " "))
 		if err != nil {
 			return t, err
 		}
@@ -101,14 +103,35 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 
 // WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
 // If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
-func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) (io.Writer, *logrus.Logger) {
+func WithEventContext(out io.Writer, phase constants.Phase, subtaskID string) io.Writer {
 	if sw, isSW := out.(skaffoldWriter); isSW {
 		return skaffoldWriter{
 			MainWriter:  sw.MainWriter,
 			EventWriter: eventV2.NewLogger(phase, subtaskID),
+			task:        phase,
+			subtask:     subtaskID,
 			timestamps:  sw.timestamps,
-		}, nil
+		}
 	}
 
-	return out, nil
+	return out
+}
+
+// Log takes an io.Writer (ideally of type output.skaffoldWriter) and constructs
+// a logrus.Entry from it, adding fields for task and subtask information
+func Log(out io.Writer) *logrus.Entry {
+	sw, isSW := out.(skaffoldWriter)
+	if isSW {
+		return logrus.WithFields(logrus.Fields{
+			"task":    sw.task,
+			"subtask": sw.subtask,
+		})
+	}
+
+	// Use constants.DevLoop as the default task, as it's the highest level task we
+	// can default to if one isn't specified.
+	return logrus.WithFields(logrus.Fields{
+		"task":    constants.DevLoop,
+		"subtask": eventV2.SubtaskIDNone,
+	})
 }

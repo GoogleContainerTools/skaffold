@@ -960,11 +960,11 @@ func TestPerform(t *testing.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
 
 			t.Override(&util.DefaultExecCommand, cmdRecord)
-			t.Override(&client.Client, func() (kubernetes.Interface, error) {
+			t.Override(&client.Client, func(string) (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(test.pod), test.clientErr
 			})
 
-			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
+			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""}, "")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})

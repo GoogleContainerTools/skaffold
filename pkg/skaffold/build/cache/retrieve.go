@@ -62,7 +62,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
 		eventV2.CacheCheckInProgress(artifact.ImageName)
-		out, _ := output.WithEventContext(out, constants.Build, artifact.ImageName)
+		out := output.WithEventContext(out, constants.Build, artifact.ImageName)
 		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
 		result := results[i]

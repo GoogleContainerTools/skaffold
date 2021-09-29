@@ -26,24 +26,31 @@ import (
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
+type Logger interface {
+	log.Logger
+	GetFormatter() Formatter
+}
+
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
-	output      io.Writer
-	kubectlcli  *kubectl.CLI
-	config      Config
-	podSelector kubernetes.PodSelector
-	podWatcher  kubernetes.PodWatcher
-	colorPicker output.ColorPicker
-
+	output            io.Writer
+	kubectlcli        *kubectl.CLI
+	config            Config
+	podSelector       kubernetes.PodSelector
+	podWatcher        kubernetes.PodWatcher
+	colorPicker       output.ColorPicker
+	formatter         Formatter
 	muted             int32
 	stopWatcher       func()
 	sinceTime         time.Time
@@ -60,7 +67,7 @@ type Config interface {
 
 // NewLogAggregator creates a new LogAggregator for a given output.
 func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces *[]string, config Config) *LogAggregator {
-	return &LogAggregator{
+	a := &LogAggregator{
 		kubectlcli:  cli,
 		config:      config,
 		podSelector: podSelector,
@@ -70,6 +77,15 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, name
 		events:      make(chan kubernetes.PodEvent),
 		namespaces:  namespaces,
 	}
+	a.formatter = func(p v1.Pod, c v1.ContainerStatus, isMuted func() bool) log.Formatter {
+		pod := p
+		return newKubernetesLogFormatter(config, a.colorPicker, isMuted, &pod, c)
+	}
+	return a
+}
+
+func (a *LogAggregator) GetFormatter() Formatter {
+	return a.formatter
 }
 
 // RegisterArtifacts tracks the provided build artifacts in the colorpicker
@@ -103,7 +119,7 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 	a.output = out
 
 	a.podWatcher.Register(a.events)
-	stopWatcher, err := a.podWatcher.Start(*a.namespaces)
+	stopWatcher, err := a.podWatcher.Start(a.kubectlcli.KubeContext, *a.namespaces)
 	a.stopWatcher = stopWatcher
 	if err != nil {
 		return err
@@ -123,6 +139,10 @@ func (a *LogAggregator) Start(ctx context.Context, out io.Writer) error {
 
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				pod := evt.Pod
+				if evt.Type == watch.Deleted {
+					continue
+				}
+
 				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.ContainerID == "" {
 						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
@@ -183,8 +203,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 		_ = tw.Close()
 	}()
 
-	formatter := NewKubernetesLogFormatter(a.config, a.colorPicker, a.IsMuted, pod, container)
-	if err := stream.StreamRequest(ctx, a.output, formatter, tr); err != nil {
+	if err := stream.StreamRequest(ctx, a.output, a.formatter(*pod, container, a.IsMuted), tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
 }
@@ -205,7 +224,6 @@ func (a *LogAggregator) Unmute() {
 		// Logs are not activated.
 		return
 	}
-
 	atomic.StoreInt32(&a.muted, 0)
 }
 
@@ -232,3 +250,10 @@ func (t *trackedContainers) add(id string) bool {
 
 	return alreadyTracked
 }
+
+// NoopLogger is used in tests. It will never retrieve any logs from any resources.
+type NoopLogger struct {
+	*log.NoopLogger
+}
+
+func (*NoopLogger) GetFormatter() Formatter { return nil }

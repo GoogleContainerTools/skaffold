@@ -35,13 +35,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -86,6 +86,7 @@ type Monitor struct {
 	seenResources   resource.Group
 	singleRun       singleflight.Group
 	namespaces      *[]string
+	kubeContext     string
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on deployments and pods.
@@ -98,6 +99,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		seenResources:   make(resource.Group),
 		singleRun:       singleflight.Group{},
 		namespaces:      namespaces,
+		kubeContext:     cfg.GetKubeContext(),
 	}
 }
 
@@ -132,7 +134,7 @@ func (s *Monitor) Reset() {
 }
 
 func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(s.kubeContext)
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -202,9 +204,10 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
+
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, d)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)
@@ -287,7 +290,7 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
-	out, _ = output.WithEventContext(out, constants.Deploy, r.String())
+	out = output.WithEventContext(out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -333,7 +336,7 @@ func (s *Monitor) printStatus(deployments []*resource.Deployment, out io.Writer)
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
 			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
-			out, _ := output.WithEventContext(out, constants.Deploy, r.String())
+			out := output.WithEventContext(out, constants.Deploy, r.String())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +39,7 @@ type ResourceForwarder struct {
 	entryManager         *EntryManager
 	label                string
 	userDefinedResources []*latestV2.PortForwardResource
+	kubeContext          string
 	services             bool
 }
 
@@ -48,18 +50,20 @@ var (
 )
 
 // NewServicesForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewServicesForwarder(entryManager *EntryManager, label string) *ResourceForwarder {
+func NewServicesForwarder(entryManager *EntryManager, kubeContext string, label string) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager: entryManager,
 		label:        label,
 		services:     true,
+		kubeContext:  kubeContext,
 	}
 }
 
 // NewUserDefinedForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewUserDefinedForwarder(entryManager *EntryManager, userDefinedResources []*latestV2.PortForwardResource) *ResourceForwarder {
+func NewUserDefinedForwarder(entryManager *EntryManager, kubeContext string, userDefinedResources []*latestV2.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager:         entryManager,
+		kubeContext:          kubeContext,
 		userDefinedResources: userDefinedResources,
 	}
 }
@@ -94,7 +98,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces
 
 	var serviceResources []*latestV2.PortForwardResource
 	if p.services {
-		found, err := retrieveServices(ctx, p.label, namespaces)
+		found, err := retrieveServices(ctx, p.label, namespaces, p.kubeContext)
 		if err != nil {
 			return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
 		}
@@ -126,11 +130,15 @@ func (p *ResourceForwarder) Stop() {
 
 // Port forward each resource individually in a goroutine
 func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latestV2.PortForwardResource) {
-	go func() {
-		for _, r := range resources {
-			p.portForwardResource(ctx, *r)
-		}
-	}()
+	var wg sync.WaitGroup
+	for _, r := range resources {
+		wg.Add(1)
+		go func(r latestV2.PortForwardResource) {
+			defer wg.Done()
+			p.portForwardResource(ctx, r)
+		}(*r)
+	}
+	wg.Wait()
 }
 
 func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latestV2.PortForwardResource) {
@@ -145,8 +153,9 @@ func (p *ResourceForwarder) getCurrentEntry(resource latestV2.PortForwardResourc
 	entry := newPortForwardEntry(0, resource, "", "", "", "", 0, false)
 
 	// If we have, return the current entry
-	oldEntry, ok := p.entryManager.forwardedResources.Load(entry.key())
+	oe, ok := p.entryManager.forwardedResources.Load(entry.key())
 	if ok {
+		oldEntry := oe.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry
 	}
@@ -163,8 +172,8 @@ func (p *ResourceForwarder) getCurrentEntry(resource latestV2.PortForwardResourc
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(ctx context.Context, label string, namespaces []string) ([]*latestV2.PortForwardResource, error) {
-	client, err := kubernetesclient.Client()
+func retrieveServiceResources(ctx context.Context, label string, namespaces []string, kubeContext string) ([]*latestV2.PortForwardResource, error) {
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

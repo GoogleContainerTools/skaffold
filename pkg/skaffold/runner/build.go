@@ -65,7 +65,7 @@ func (r *Builder) GetBuilds() []graph.Artifact {
 // Build builds a list of artifacts.
 func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build, "Build containers")
-	out, _ = output.WithEventContext(out, constants.Build, eventV2.SubtaskIDNone)
+	out = output.WithEventContext(out, constants.Build, eventV2.SubtaskIDNone)
 
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == NoneDigestSource {
@@ -172,7 +172,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
-		out, _ := output.WithEventContext(out, constants.Build, imageName)
+		out := output.WithEventContext(out, constants.Build, imageName)
 		output.Default.Fprintf(out, " - %s -> ", imageName)
 
 		select {

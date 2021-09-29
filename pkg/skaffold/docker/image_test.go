@@ -309,6 +309,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--cache-from", "gcr.io/foo/bar", "--cache-from", "baz:latest"},
 		},
 		{
+			description: "additional CLI flags",
+			artifact: &latestV1.DockerArtifact{
+				CliFlags: []string{"--foo", "--bar"},
+			},
+			want: []string{"--foo", "--bar"},
+		},
+		{
 			description: "target",
 			artifact: &latestV2.DockerArtifact{
 				Target: "stage1",
@@ -371,8 +378,9 @@ func TestGetBuildArgs(t *testing.T) {
 				CacheFrom:   []string{"foo"},
 				Target:      "stage1",
 				NetworkMode: "None",
+				CliFlags:    []string{"--foo", "--bar"},
 			},
-			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1", "--network", "none"},
+			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--foo", "--bar", "--target", "stage1", "--network", "none"},
 		},
 	}
 	for _, test := range tests {

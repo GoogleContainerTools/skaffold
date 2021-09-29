@@ -32,20 +32,29 @@ import (
 var (
 	Client        = getClientset
 	DynamicClient = getDynamicClient
+	DefaultClient = getDefaultClientset
 )
 
-func getClientset() (kubernetes.Interface, error) {
-	config, err := context.GetRestClientConfig()
+func getClientset(kubeContext string) (kubernetes.Interface, error) {
+	config, err := context.GetRestClientConfig(kubeContext)
 	if err != nil {
 		return nil, fmt.Errorf("getting client config for Kubernetes client: %w", err)
 	}
 	return kubernetes.NewForConfig(config)
 }
 
-func getDynamicClient() (dynamic.Interface, error) {
-	config, err := context.GetRestClientConfig()
+func getDynamicClient(kubeContext string) (dynamic.Interface, error) {
+	config, err := context.GetRestClientConfig(kubeContext)
 	if err != nil {
 		return nil, fmt.Errorf("getting client config for dynamic client: %w", err)
 	}
 	return dynamic.NewForConfig(config)
+}
+
+func getDefaultClientset() (kubernetes.Interface, error) {
+	config, err := context.GetDefaultRestClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("getting client config for Kubernetes client: %w", err)
+	}
+	return kubernetes.NewForConfig(config)
 }

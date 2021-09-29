@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
 
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
@@ -27,6 +28,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -50,19 +53,46 @@ func runningImageSelector(image string) containerSelector {
 	}
 }
 
+// namePatternSelector chooses containers that match the glob patterns for pod and container names
+func namePatternSelector(podName, containerName string) containerSelector {
+	return func(p v1.Pod, c v1.Container) (bool, error) {
+		if p.Status.Phase != v1.PodRunning {
+			return false, nil
+		}
+		for _, status := range p.Status.ContainerStatuses {
+			if status.Name == c.Name && status.State.Running == nil {
+				return false, nil
+			}
+		}
+		if matched, err := path.Match(podName, p.Name); err != nil {
+			return false, fmt.Errorf("failed to evaluate pod name pattern %q due to error %w", podName, err)
+		} else if podName != "" && !matched {
+			return false, nil
+		}
+
+		if matched, err := path.Match(containerName, c.Name); err != nil {
+			return false, fmt.Errorf("failed to evaluate container name pattern %q due to error %w", containerName, err)
+		} else if containerName != "" && !matched {
+			return false, nil
+		}
+		return true, nil
+	}
+}
+
 // containerHook represents a lifecycle hook to be executed inside a running container
 type containerHook struct {
 	cfg        latestV2.ContainerHook
 	cli        *kubectl.CLI
 	selector   containerSelector
 	namespaces []string
+	formatter  logger.Formatter
 }
 
 // run executes the lifecycle hook inside the target container
 func (h containerHook) run(ctx context.Context, out io.Writer) error {
 	errs, ctx := errgroup.WithContext(ctx)
 
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.Client(h.cli.KubeContext)
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -83,16 +113,28 @@ func (h containerHook) run(ctx context.Context, out io.Writer) error {
 				args := []string{p.Name, "--namespace", p.Namespace, "-c", c.Name, "--"}
 				args = append(args, h.cfg.Command...)
 				cmd := h.cli.Command(ctx, "exec", args...)
-				cmd.Stderr = out
-				cmd.Stdout = out
+				tr, tw := io.Pipe()
+				cmd.Stderr = tw
+				cmd.Stdout = tw
 				podName := p.Name
 				containerName := c.Name
 				errs.Go(func() error {
+					defer tw.Close()
 					err := util.RunCmd(cmd)
 					if err != nil {
 						return fmt.Errorf("hook execution failed for pod %q container %q: %w", podName, containerName, err)
 					}
 					return nil
+				})
+				pod := p
+				var containerStatus v1.ContainerStatus
+				for _, status := range pod.Status.ContainerStatuses {
+					if status.Name == c.Name {
+						containerStatus = status
+					}
+				}
+				errs.Go(func() error {
+					return stream.StreamRequest(ctx, out, h.formatter(pod, containerStatus, func() bool { return false }), tr)
 				})
 			}
 		}

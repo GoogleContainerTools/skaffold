@@ -54,12 +54,17 @@ func ConfigureKubeConfig(cliKubeConfig, cliKubeContext string) {
 	})
 }
 
-// GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.
+// GetDefaultRestClientConfig returns a REST client config for API calls against the Kubernetes API.
 // If ConfigureKubeConfig was called before, the CurrentContext will be overridden.
 // The kubeconfig used will be cached for the life of the skaffold process after the first call.
 // If the CurrentContext is empty and the resulting config is empty, this method attempts to
 // create a RESTClient with an in-cluster config.
-func GetRestClientConfig() (*restclient.Config, error) {
+func GetDefaultRestClientConfig() (*restclient.Config, error) {
+	return getRestClientConfig(kubeContext, kubeConfigFile)
+}
+
+// GetRestClientConfig returns a REST client config for API calls against the Kubernetes API for the given context.
+func GetRestClientConfig(kubeContext string) (*restclient.Config, error) {
 	return getRestClientConfig(kubeContext, kubeConfigFile)
 }
 

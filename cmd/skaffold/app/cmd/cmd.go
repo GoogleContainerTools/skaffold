@@ -122,7 +122,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if isQuietMode() && !isHouseKeepingMessagesAllowed(cmd) {
+			if isQuietMode() || !isHouseKeepingMessagesAllowed(cmd) {
 				return
 			}
 			select {
@@ -321,6 +321,15 @@ func isQuietMode() bool {
 	default:
 		return false
 	}
+}
+
+func apiServerShutdownHook(err error) error {
+	// clean up server at end of the execution since cobra post run hooks
+	// are only executed if RunE is successful.
+	if shutdownAPIServer != nil {
+		shutdownAPIServer()
+	}
+	return err
 }
 
 func updateCheckForReleasedVersionsIfNotDisabled(s string) string {

@@ -44,7 +44,7 @@ import (
 )
 
 type testForwarder struct {
-	forwardedResources forwardedResources
+	forwardedResources sync.Map
 	forwardedPorts     util.PortSet
 }
 
@@ -126,24 +126,24 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latestV2.Pipeline{{}})
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, map[int]struct{}{}, test.availablePorts))
-			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latestV2.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latestV2.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(fakeForwarder)
 
-			rf := NewServicesForwarder(entryManager, "")
+			rf := NewServicesForwarder(entryManager, "", "")
 			if err := rf.Start(context.Background(), ioutil.Discard, []string{"test"}); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-				return len(test.expected) == fakeForwarder.forwardedResources.Length(), nil
+				return len(test.expected) == length(&fakeForwarder.forwardedResources), nil
 			})
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources.resources)
+				t.Fatalf("expected entries didn't match actual entries.\nExpected: %v\n  Actual: %v", test.expected, print(&fakeForwarder.forwardedResources))
 			}
 		})
 	}
@@ -210,10 +210,11 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			})
 
 			entryManager := NewEntryManager(newTestForwarder())
-			entryManager.forwardedResources = forwardedResources{
-				resources: test.forwardedResources,
+			entryManager.forwardedResources = sync.Map{}
+			for k, v := range test.forwardedResources {
+				entryManager.forwardedResources.Store(k, v)
 			}
-			rf := NewServicesForwarder(entryManager, "")
+			rf := NewServicesForwarder(entryManager, "", "")
 			actualEntry := rf.getCurrentEntry(test.resource)
 
 			expectedEntry := test.expected
@@ -311,7 +312,7 @@ func TestUserDefinedResources(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latestV2.Pipeline{{}})
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, map[int]struct{}{}, []int{8080, 9000}))
-			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latestV2.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latestV2.PortForwardResource, error) {
 				return []*latestV2.PortForwardResource{svc}, nil
 			})
 
@@ -322,27 +323,29 @@ func TestUserDefinedResources(t *testing.T) {
 				return []string{"FOO=bar"}
 			}
 
-			rf := NewUserDefinedForwarder(entryManager, test.userResources)
+			rf := NewUserDefinedForwarder(entryManager, "", test.userResources)
 			if err := rf.Start(context.Background(), ioutil.Discard, test.namespaces); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-				return len(test.expectedResources) == fakeForwarder.forwardedResources.Length(), nil
+				return len(test.expectedResources) == length(&fakeForwarder.forwardedResources), nil
 			})
 			for _, key := range test.expectedResources {
-				t.CheckNotNil(fakeForwarder.forwardedResources.resources[key])
+				pfe, found := fakeForwarder.forwardedResources.Load(key)
+				t.CheckTrue(found)
+				t.CheckNotNil(pfe)
 			}
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expectedResources, fakeForwarder.forwardedResources.resources)
+				t.Fatalf("expected entries didn't match actual entries.\nExpected: %v\n  Actual: %v", test.expectedResources, print(&fakeForwarder.forwardedResources))
 			}
 		})
 	}
 }
 
-func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
-	return func() (kubernetes.Interface, error) {
+func mockClient(m kubernetes.Interface) func(string) (kubernetes.Interface, error) {
+	return func(string) (kubernetes.Interface, error) {
 		return m, nil
 	}
 }
@@ -434,7 +437,7 @@ func TestRetrieveServices(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := retrieveServiceResources(context.Background(), fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces)
+			actual, err := retrieveServiceResources(context.Background(), fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

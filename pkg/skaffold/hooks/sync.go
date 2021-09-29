@@ -24,14 +24,16 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func NewSyncRunner(cli *kubectl.CLI, imageName, imageRef string, namespaces []string, d v2.SyncHooks, opts SyncEnvOpts) Runner {
-	return syncRunner{d, cli, imageName, imageRef, namespaces, opts}
+func NewSyncRunner(cli *kubectl.CLI, imageName, imageRef string, namespaces []string, formatter logger.Formatter, d v2.SyncHooks, opts SyncEnvOpts) Runner {
+	return syncRunner{d, cli, imageName, imageRef, namespaces, formatter, opts}
 }
+
 func NewSyncEnvOpts(a *v2.Artifact, image string, addOrModifyFiles []string, deleteFiles []string, namespaces []string, kubeContext string) (SyncEnvOpts, error) {
 	workDir, err := filepath.Abs(a.Workspace)
 	if err != nil {
@@ -53,6 +55,7 @@ type syncRunner struct {
 	imageName  string
 	imageRef   string
 	namespaces []string
+	formatter  logger.Formatter
 	opts       SyncEnvOpts
 }
 
@@ -87,6 +90,7 @@ func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v2.SyncHookI
 				cli:        r.cli,
 				selector:   runningImageSelector(r.imageRef),
 				namespaces: r.namespaces,
+				formatter:  r.formatter,
 			}
 			if err := hook.run(ctx, out); err != nil {
 				return fmt.Errorf("failed to execute container %s hook %d for artifact %q: %w", phase, i+1, r.imageName, err)

@@ -30,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -97,7 +98,7 @@ func TestContainerRun(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.cmd)
-			t.Override(&kubernetesclient.Client, func() (kubernetes.Interface, error) {
+			t.Override(&kubernetesclient.Client, func(string) (kubernetes.Interface, error) {
 				return fakeclient.NewSimpleClientset(test.objects...), nil
 			})
 			h := containerHook{
@@ -105,6 +106,7 @@ func TestContainerRun(t *testing.T) {
 				cli:        &kubectl.CLI{KubeContext: test.kubeContext},
 				selector:   test.selector,
 				namespaces: test.namespaces,
+				formatter:  func(corev1.Pod, corev1.ContainerStatus, func() bool) log.Formatter { return mockLogFormatter{} },
 			}
 			var output bytes.Buffer
 

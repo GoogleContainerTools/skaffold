@@ -35,7 +35,7 @@ func TestCreateSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("secret.json")
 		fakeKubernetesclient := fake.NewSimpleClientset()
-		t.Override(&client.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.DefaultClient, func() (kubernetes.Interface, error) {
 			return fakeKubernetesclient, nil
 		})
 
@@ -66,7 +66,7 @@ func TestCreateSecret(t *testing.T) {
 
 func TestExistingSecretNotFound(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&client.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.DefaultClient, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(), nil
 		})
 
@@ -85,7 +85,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 
 func TestExistingSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&client.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.DefaultClient, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "kaniko-secret",
@@ -109,7 +109,7 @@ func TestExistingSecret(t *testing.T) {
 
 func TestSkipSecretCreation(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&client.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.DefaultClient, func() (kubernetes.Interface, error) {
 			return nil, nil
 		})
 

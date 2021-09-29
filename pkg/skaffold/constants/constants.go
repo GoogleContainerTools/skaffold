@@ -114,10 +114,13 @@ var (
 	Timeout = "TIMEOUT"
 
 	AllowedUsers = map[string]struct{}{
-		"vsc":      {},
-		"intellij": {},
-		"gcloud":   {},
+		"vsc":          {},
+		"intellij":     {},
+		"gcloud":       {},
+		"cloud-deploy": {},
 	}
+
+	AllowedUserPattern = `^%v(\/.+)?$`
 )
 
 var ImageRef = struct {

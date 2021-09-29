@@ -68,7 +68,7 @@ func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.
 	}
 }
 
-func MockK8sClient() (k8s.Interface, error) {
+func MockK8sClient(string) (k8s.Interface, error) {
 	return fakekubeclientset.NewSimpleClientset(), nil
 }
 

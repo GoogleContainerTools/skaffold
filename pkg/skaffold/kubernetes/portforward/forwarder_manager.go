@@ -45,6 +45,7 @@ type Config interface {
 
 // Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
+	// Start initiates the forwarder's operation. It should not return until any ports have been allocated.
 	Start(ctx context.Context, out io.Writer, namespaces []string) error
 	Stop()
 }
@@ -68,17 +69,18 @@ func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, l
 
 	entryManager := NewEntryManager(NewKubectlForwarder(cli))
 
+	// The order matters to ensure user-defined port-forwards with local-ports are processed first.
 	var forwarders []Forwarder
 	if options.ForwardUser(runMode) {
-		forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, userDefined))
+		forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, cli.KubeContext, userDefined))
 	}
 	if options.ForwardServices(runMode) {
-		forwarders = append(forwarders, NewServicesForwarder(entryManager, label))
+		forwarders = append(forwarders, NewServicesForwarder(entryManager, cli.KubeContext, label))
 	}
 	if options.ForwardPods(runMode) {
-		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, allPorts))
+		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, cli.KubeContext, podSelector, allPorts))
 	} else if options.ForwardDebug(runMode) {
-		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, debugPorts))
+		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, cli.KubeContext, podSelector, debugPorts))
 	}
 
 	return &ForwarderManager{

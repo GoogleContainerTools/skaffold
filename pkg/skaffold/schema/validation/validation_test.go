@@ -18,7 +18,6 @@ package validation
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -1246,80 +1245,6 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 	}
 	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
-}
-
-func TestValidateSingleKubeContext(t *testing.T) {
-	tests := []struct {
-		description string
-		configs     []*latestV2.SkaffoldConfig
-		err         []error
-	}{
-		{
-			description: "different kubeContext specified",
-			configs: []*latestV2.SkaffoldConfig{
-				{
-					Pipeline: latestV2.Pipeline{
-						Deploy: latestV2.DeployConfig{
-							KubeContext: "",
-						},
-					},
-				},
-				{
-					Pipeline: latestV2.Pipeline{
-						Deploy: latestV2.DeployConfig{
-							KubeContext: "foo",
-						},
-					},
-				},
-			},
-			err: []error{errors.New("all configs should have the same value for `deploy.kubeContext`")},
-		},
-		{
-			description: "same kubeContext specified",
-			configs: []*latestV2.SkaffoldConfig{
-				{
-					Pipeline: latestV2.Pipeline{
-						Deploy: latestV2.DeployConfig{
-							KubeContext: "foo",
-						},
-					},
-				},
-				{
-					Pipeline: latestV2.Pipeline{
-						Deploy: latestV2.DeployConfig{
-							KubeContext: "foo",
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "no kubeContext specified",
-			configs: []*latestV2.SkaffoldConfig{
-				{
-					Pipeline: latestV2.Pipeline{
-						Deploy: latestV2.DeployConfig{},
-					},
-				},
-				{
-					Pipeline: latestV2.Pipeline{
-						Deploy: latestV2.DeployConfig{},
-					},
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			set := parser.SkaffoldConfigSet{}
-			for _, c := range test.configs {
-				set = append(set, &parser.SkaffoldConfigEntry{SkaffoldConfig: c})
-			}
-			errs := validateSingleKubeContext(set)
-			t.CheckDeepEqual(test.err, errs, cmp.Comparer(errorsComparer))
-		})
-	}
 }
 
 func TestValidateValidDependencyAliases(t *testing.T) {

@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -86,6 +87,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	if err != nil {
 		// `waitForDependencies` only returns `context.Canceled` error
 		event.BuildCanceled(a.ImageName)
+		eventV2.BuildCanceled(a.ImageName, err)
 		return err
 	}
 	release := s.concurrencySem.acquire()
@@ -108,11 +110,16 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	}
 	defer closeFn()
 
-	w, _ = output.WithEventContext(w, constants.Build, a.ImageName)
+	w = output.WithEventContext(w, constants.Build, a.ImageName)
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
-		eventV2.BuildFailed(a.ImageName, err)
+		if errors.Is(ctx.Err(), context.Canceled) {
+			output.Yellow.Fprintf(w, "Canceled build for %s\n", a.ImageName)
+			eventV2.BuildCanceled(a.ImageName, err)
+		} else {
+			eventV2.BuildFailed(a.ImageName, err)
+		}
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}

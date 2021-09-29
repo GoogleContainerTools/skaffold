@@ -1,10 +1,11 @@
-apiVersion: skaffold/v2beta20
+apiVersion: skaffold/v2beta21
 kind: Config
 build:
   artifacts:
   - image: skaffold-buildpacks
     buildpacks:
       builder: "gcr.io/buildpacks/builder:v1"
+      trustBuilder: true
       env:
       - GOPROXY={{.GOPROXY}}
 profiles:

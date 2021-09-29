@@ -40,10 +40,12 @@ type Builder interface {
 	NoArgs(action func(context.Context, io.Writer) error) *cobra.Command
 	WithCommands(cmds ...*cobra.Command) *cobra.Command
 	WithPersistentFlagAdder(adder func(*pflag.FlagSet)) Builder
+	WithPostRunHook(hook func(error) error) Builder
 }
 
 type builder struct {
-	cmd cobra.Command
+	cmd          cobra.Command
+	postRunHooks []func(error) error
 }
 
 // NewCmd creates a new command builder.
@@ -109,45 +111,41 @@ func (b *builder) Hidden() Builder {
 	return b
 }
 
+// WithPostRunHook adds a post run hook to the action executed regardless if
+// the RunE action returns an error or not. Executed in the order they are
+// added.
+func (b *builder) WithPostRunHook(hook func(error) error) Builder {
+	b.postRunHooks = append(b.postRunHooks, hook)
+	return b
+}
+
 func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		err := action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
-		// clean up server at end of the execution since post run hooks are only executed if
-		// RunE is successful
-		if shutdownAPIServer != nil {
-			shutdownAPIServer()
-		}
-		return err
+		return action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
 	}
+	b.WithPostRunHook(apiServerShutdownHook)
+	applyPostRunHooks(&b.cmd, b.postRunHooks)
 	return &b.cmd
 }
 
 func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		err := action(b.cmd.Context(), b.cmd.OutOrStdout())
-		// clean up server at end of the execution since post run hooks are only executed if
-		// RunE is successful
-		if shutdownAPIServer != nil {
-			shutdownAPIServer()
-		}
-		return err
+		return action(b.cmd.Context(), b.cmd.OutOrStdout())
 	}
+	b.WithPostRunHook(apiServerShutdownHook)
+	applyPostRunHooks(&b.cmd, b.postRunHooks)
 	return &b.cmd
 }
 
 func (b *builder) WithArgs(f cobra.PositionalArgs, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = f
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		err := action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
-		// clean up server at end of the execution since post run hooks are only executed if
-		// RunE is successful
-		if shutdownAPIServer != nil {
-			shutdownAPIServer()
-		}
-		return err
+		return action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
 	}
+	b.WithPostRunHook(apiServerShutdownHook)
+	applyPostRunHooks(&b.cmd, b.postRunHooks)
 	return &b.cmd
 }
 
@@ -156,4 +154,15 @@ func (b *builder) WithCommands(cmds ...*cobra.Command) *cobra.Command {
 		b.cmd.AddCommand(c)
 	}
 	return &b.cmd
+}
+
+func applyPostRunHooks(cmd *cobra.Command, postRunHooks []func(error) error) {
+	for _, hook := range postRunHooks {
+		cur := cmd.RunE
+		h := hook // need to capture for the closure
+		new := func(c *cobra.Command, args []string) error {
+			return h(cur(c, args))
+		}
+		cmd.RunE = new
+	}
 }

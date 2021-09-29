@@ -80,7 +80,6 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 		errs = append(errs, wrapWithContext(config, cfgErrs...)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
-	errs = append(errs, validateSingleKubeContext(configs)...)
 	if validateConfig.CheckDeploySource {
 		// TODO(6050) validate for other deploy types - helm, kpt, etc.
 		errs = append(errs, validateKubectlManifests(configs)...)
@@ -554,19 +553,6 @@ func validateLogPrefix(lc latestV2.LogsConfig) []error {
 	return nil
 }
 
-func validateSingleKubeContext(configs parser.SkaffoldConfigSet) []error {
-	if len(configs) < 2 {
-		return nil
-	}
-	k := configs[0].Deploy.KubeContext
-	for _, c := range configs {
-		if c.Deploy.KubeContext != k {
-			return []error{errors.New("all configs should have the same value for `deploy.kubeContext`")}
-		}
-	}
-	return nil
-}
-
 // validateCustomTest
 // - makes sure that command is not empty
 // - makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
@@ -595,9 +581,9 @@ func validateCustomTest(tcs []*latestV2.TestCase) (errs []error) {
 func wrapWithContext(config *parser.SkaffoldConfigEntry, errs ...error) []error {
 	var id string
 	if config.Metadata.Name != "" {
-		id = fmt.Sprintf("module %q", config.Metadata.Name)
+		id = fmt.Sprintf("in module %q", config.Metadata.Name)
 	} else {
-		id = fmt.Sprintf("unnamed config at index %d", config.SourceIndex)
+		id = fmt.Sprintf("in unnamed config at index %d", config.SourceIndex)
 	}
 	for i := range errs {
 		errs[i] = errors.Wrapf(errs[i], "source: %s, %s", config.SourceFile, id)

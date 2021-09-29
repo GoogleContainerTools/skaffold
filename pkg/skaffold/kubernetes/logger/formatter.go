@@ -30,6 +30,8 @@ import (
 	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
+type Formatter func(pod v1.Pod, containerStatus v1.ContainerStatus, isMuted func() bool) log.Formatter
+
 type kubernetesLogFormatter struct {
 	colorPicker output.ColorPicker
 	prefix      string
@@ -58,6 +60,9 @@ func newKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, is
 func (k *kubernetesLogFormatter) Name() string { return k.prefix }
 
 func (k *kubernetesLogFormatter) PrintLine(out io.Writer, line string) {
+	if k.isMuted() {
+		return
+	}
 	formattedPrefix := k.prefix
 	if output.IsColorable(out) {
 		formattedPrefix = k.color().Sprintf("%s", k.prefix)
@@ -70,11 +75,9 @@ func (k *kubernetesLogFormatter) PrintLine(out io.Writer, line string) {
 	formattedLine := fmt.Sprintf("%s%s", formattedPrefix, line)
 	eventV2.ApplicationLog(k.pod.Name, k.container.Name, formattedPrefix, line, formattedLine)
 
-	if !k.isMuted() {
-		k.lock.Lock()
-		defer k.lock.Unlock()
-		fmt.Fprint(out, formattedLine)
-	}
+	k.lock.Lock()
+	defer k.lock.Unlock()
+	fmt.Fprint(out, formattedLine)
 }
 
 func (k *kubernetesLogFormatter) color() output.Color {

@@ -198,6 +198,7 @@ func (rc *RunContext) IsDefaultKubeContext() bool                    { return rc
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
 func (rc *RunContext) RPCPort() int                                  { return rc.Opts.RPCPort }
 func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
+func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
 
 // GetRenderConfig returns the top tier RenderConfig.
 // TODO: design how to support multi-module.

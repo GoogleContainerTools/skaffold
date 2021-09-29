@@ -40,7 +40,7 @@ type hostHook struct {
 // run executes the lifecycle hook on the host machine
 func (h hostHook) run(ctx context.Context, out io.Writer) error {
 	if len(h.cfg.OS) > 0 && !util.StrSliceContains(h.cfg.OS, runtime.GOOS) {
-		logrus.Infof("host hook execution skipped due to OS criteria %s not matched for commands:\n%s\n", strings.Join(h.cfg.OS, ","), strings.Join(h.cfg.Command, "\n"))
+		logrus.Infof("host hook execution skipped due to OS criteria %q not matched for commands:\n%q\n", strings.Join(h.cfg.OS, ","), strings.Join(h.cfg.Command, " "))
 		return nil
 	}
 	cmd := h.retrieveCmd(ctx, out)
