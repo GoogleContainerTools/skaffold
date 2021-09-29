@@ -26,7 +26,7 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
@@ -89,7 +89,7 @@ func (k *kubernetesLogFormatter) color() output.Color {
 }
 
 func prefix(config Config, pod *v1.Pod, container v1.ContainerStatus) string {
-	var c latestV1.Pipeline
+	var c latestV2.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
 		if c, present = config.PipelineForImage(tagutil.StripTag(container.Image, false)); present {

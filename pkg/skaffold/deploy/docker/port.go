@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -72,7 +72,7 @@ func (pm *PortManager) Stop() {
 // getPorts converts PortForwardResources into docker.PortSet/PortMap objects.
 // These are passed to ContainerCreate on Deploy to expose container ports on the host.
 // It also returns a list of containerPortForwardEntry, to be passed to the event handler
-func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource) (nat.PortSet, nat.PortMap, error) {
+func (pm *PortManager) getPorts(containerName string, pf []*v2.PortForwardResource) (nat.PortSet, nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	s := make(nat.PortSet)

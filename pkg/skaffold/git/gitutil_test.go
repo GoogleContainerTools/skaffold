@@ -102,7 +102,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "first time repo clone with sync off via flag fails",
-			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV2.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			syncFlag:    "never",
 			shouldErr:   true,
 		},
@@ -142,7 +142,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing dirty repo with sync off via flag succeeds",
-			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV2.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},

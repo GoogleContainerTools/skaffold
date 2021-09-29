@@ -27,7 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -52,7 +52,7 @@ func runningImageSelector(image string) containerSelector {
 
 // containerHook represents a lifecycle hook to be executed inside a running container
 type containerHook struct {
-	cfg        latestV1.ContainerHook
+	cfg        latestV2.ContainerHook
 	cli        *kubectl.CLI
 	selector   containerSelector
 	namespaces []string

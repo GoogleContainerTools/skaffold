@@ -25,7 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -38,21 +38,21 @@ func (m *mockColorPicker) Pick(image string) output.Color {
 func (m *mockColorPicker) AddImage(string) {}
 
 type mockConfig struct {
-	log latestV1.LogsConfig
+	log latestV2.LogsConfig
 }
 
 func (c *mockConfig) Tail() bool {
 	return true
 }
 
-func (c *mockConfig) PipelineForImage(string) (latestV1.Pipeline, bool) {
-	var pipeline latestV1.Pipeline
+func (c *mockConfig) PipelineForImage(string) (latestV2.Pipeline, bool) {
+	var pipeline latestV2.Pipeline
 	pipeline.Deploy.Logs = c.log
 	return pipeline, true
 }
 
-func (c *mockConfig) DefaultPipeline() latestV1.Pipeline {
-	var pipeline latestV1.Pipeline
+func (c *mockConfig) DefaultPipeline() latestV2.Pipeline {
+	var pipeline latestV2.Pipeline
 	pipeline.Deploy.Logs = c.log
 	return pipeline
 }
@@ -67,7 +67,7 @@ func TestPrintLogLine(t *testing.T) {
 			groups        = 5
 		)
 
-		f := NewKubernetesLogFormatter(&mockConfig{log: latestV1.LogsConfig{Prefix: "none"}}, &mockColorPicker{}, func() bool { return false }, &v1.Pod{}, v1.ContainerStatus{})
+		f := NewKubernetesLogFormatter(&mockConfig{log: latestV2.LogsConfig{Prefix: "none"}}, &mockColorPicker{}, func() bool { return false }, &v1.Pod{}, v1.ContainerStatus{})
 
 		for i := 0; i < groups; i++ {
 			wg.Add(1)
@@ -151,7 +151,7 @@ func TestColorForPod(t *testing.T) {
 	p.AddImage("second")
 
 	for _, test := range tests {
-		f := newKubernetesLogFormatter(&mockConfig{log: latestV1.LogsConfig{Prefix: "none"}}, p, func() bool { return false }, test.pod, v1.ContainerStatus{})
+		f := newKubernetesLogFormatter(&mockConfig{log: latestV2.LogsConfig{Prefix: "none"}}, p, func() bool { return false }, test.pod, v1.ContainerStatus{})
 
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			color := f.color()
@@ -214,7 +214,7 @@ func TestPrefix(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			f := newKubernetesLogFormatter(&mockConfig{log: latestV1.LogsConfig{
+			f := newKubernetesLogFormatter(&mockConfig{log: latestV2.LogsConfig{
 				Prefix: test.prefix,
 			}}, &mockColorPicker{}, func() bool { return false }, &test.pod, test.container)
 

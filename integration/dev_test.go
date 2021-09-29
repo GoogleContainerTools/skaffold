@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -399,7 +401,6 @@ func assertResponseFromPort(t *testing.T, address string, port int, expected str
 	}
 }
 
-/*
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
 	fInfo, err := os.Stat(filepath)
 	if err != nil {
@@ -416,7 +417,6 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 
 	return original, fInfo.Mode(), err
 }
-*/
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.

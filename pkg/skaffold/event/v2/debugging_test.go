@@ -19,14 +19,14 @@ package v2
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 func TestDebuggingContainer(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
 
 	found := func() bool {
 		for _, dc := range handler.getState().DebuggingContainers {

@@ -302,7 +302,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with PushRetry",
-			artifact: &latestV1.KanikoArtifact{
+			artifact: &latestV2.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				PushRetry:      "9",
 			},

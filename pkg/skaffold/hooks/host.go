@@ -27,13 +27,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // hostHook represents a lifecycle hook to be executed on the host machine
 type hostHook struct {
-	cfg v1.HostHook
+	cfg v2.HostHook
 	env []string // environment variables to set in the hook process
 }
 

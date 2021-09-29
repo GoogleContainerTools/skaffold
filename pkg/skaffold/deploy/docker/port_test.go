@@ -19,7 +19,7 @@ package docker
 import (
 	"testing"
 
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -27,11 +27,11 @@ import (
 func TestGetPorts(t *testing.T) {
 	tests := []struct {
 		name      string
-		resources map[int]*v1.PortForwardResource // we map local port to resources for ease of testing
+		resources map[int]*v2.PortForwardResource // we map local port to resources for ease of testing
 	}{
 		{
 			name: "one port, one resource",
-			resources: map[int]*v1.PortForwardResource{
+			resources: map[int]*v2.PortForwardResource{
 				9000: {
 					Port: util.IntOrString{
 						IntVal: 9000,
@@ -44,7 +44,7 @@ func TestGetPorts(t *testing.T) {
 		},
 		{
 			name: "two ports, two resources",
-			resources: map[int]*v1.PortForwardResource{
+			resources: map[int]*v2.PortForwardResource{
 				1234: {
 					Port: util.IntOrString{
 						IntVal: 20,
@@ -80,8 +80,8 @@ func TestGetPorts(t *testing.T) {
 	}
 }
 
-func collectResources(resourceMap map[int]*v1.PortForwardResource) []*v1.PortForwardResource {
-	var resources []*v1.PortForwardResource
+func collectResources(resourceMap map[int]*v2.PortForwardResource) []*v2.PortForwardResource {
+	var resources []*v2.PortForwardResource
 	for _, r := range resourceMap {
 		resources = append(resources, r)
 	}

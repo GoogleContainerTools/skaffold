@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -36,7 +36,7 @@ func TestDockerSync(t *testing.T) {
 			description: "additions are added via tar",
 			item: &Item{
 				Image: "image:123",
-				Artifact: &latestV1.Artifact{
+				Artifact: &latestV2.Artifact{
 					ImageName: "image",
 				},
 				Copy: syncMap{"test.go": {"/test.go"}},
@@ -47,7 +47,7 @@ func TestDockerSync(t *testing.T) {
 			description: "one deletion",
 			item: &Item{
 				Image: "image:123",
-				Artifact: &latestV1.Artifact{
+				Artifact: &latestV2.Artifact{
 					ImageName: "image",
 				},
 				Delete: syncMap{"test.go": {"/test.go"}},
@@ -58,7 +58,7 @@ func TestDockerSync(t *testing.T) {
 			description: "two deletions",
 			item: &Item{
 				Image: "image:123",
-				Artifact: &latestV1.Artifact{
+				Artifact: &latestV2.Artifact{
 					ImageName: "image",
 				},
 				Delete: syncMap{"test.go": {"/test.go"}, "foobar.js": {"/dev/js/foobar.js"}},

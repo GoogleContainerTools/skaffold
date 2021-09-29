@@ -22,7 +22,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -40,7 +39,6 @@ type SkaffoldRunner struct {
 	monitor  filemon.Monitor
 	listener runner.Listener
 
-	kubectlCLI         *kubectl.CLI
 	cache              cache.Cache
 	changeSet          runner.ChangeSet
 	runCtx             *runcontext.RunContext

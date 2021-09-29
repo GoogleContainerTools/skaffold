@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -117,26 +116,3 @@ func containerWithName(n string) v1.ContainerStatus {
 		Name: n,
 	}
 }
-<<<<<<< HEAD
-
-type mockConfig struct {
-	log latestV2.LogsConfig
-}
-
-func (c *mockConfig) Tail() bool {
-	return true
-}
-
-func (c *mockConfig) PipelineForImage(string) (latestV2.Pipeline, bool) {
-	var pipeline latestV2.Pipeline
-	pipeline.Deploy.Logs = c.log
-	return pipeline, true
-}
-
-func (c *mockConfig) DefaultPipeline() latestV2.Pipeline {
-	var pipeline latestV2.Pipeline
-	pipeline.Deploy.Logs = c.log
-	return pipeline
-}
-=======
->>>>>>> v1.29.0

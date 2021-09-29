@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	pkgsync "github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -46,16 +46,16 @@ type Deployer struct {
 	monitor  status.Monitor
 	syncer   pkgsync.Syncer
 
-	cfg         *v1.DockerDeploy
+	cfg         *v2.DockerDeploy
 	tracker     *tracker.ContainerTracker
 	portManager *PortManager // functions as Accessor
 	client      dockerutil.LocalDaemon
 	network     string
-	resources   []*v1.PortForwardResource
+	resources   []*v2.PortForwardResource
 	once        sync.Once
 }
 
-func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
+func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v2.DockerDeploy, resources []*v2.PortForwardResource) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(cfg)
 	if err != nil {
 		return nil, err
