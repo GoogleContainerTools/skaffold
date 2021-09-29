@@ -28,10 +28,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
-func NewDeployRunner(cli *kubectl.CLI, d v1.DeployHooks, namespaces []string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
+func NewDeployRunner(cli *kubectl.CLI, d v2.DeployHooks, namespaces []string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
 	return deployRunner{d, cli, namespaces, formatter, opts, new(sync.Map)}
 }
 
@@ -44,7 +44,7 @@ func NewDeployEnvOpts(runID string, kubeContext string, namespaces []string) Dep
 }
 
 type deployRunner struct {
-	v1.DeployHooks
+	v2.DeployHooks
 	cli         *kubectl.CLI
 	namespaces  []string
 	formatter   logger.Formatter
@@ -66,7 +66,7 @@ func (r deployRunner) getEnv() []string {
 	return append(common, deploy...)
 }
 
-func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []v1.DeployHookItem, phase phase) error {
+func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []v2.DeployHookItem, phase phase) error {
 	if len(hooks) > 0 {
 		output.Default.Fprintln(out, fmt.Sprintf("Starting %s hooks...", phase))
 	}
@@ -79,7 +79,7 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []v1.DeployH
 			}
 		} else if h.ContainerHook != nil {
 			hook := containerHook{
-				cfg:        v1.ContainerHook{Command: h.ContainerHook.Command},
+				cfg:        v2.ContainerHook{Command: h.ContainerHook.Command},
 				cli:        r.cli,
 				selector:   filterPodsSelector(r.visitedPods, phase, namePatternSelector(h.ContainerHook.PodName, h.ContainerHook.ContainerName)),
 				namespaces: r.namespaces,

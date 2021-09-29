@@ -310,7 +310,7 @@ func TestGetBuildArgs(t *testing.T) {
 		},
 		{
 			description: "additional CLI flags",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				CliFlags: []string{"--foo", "--bar"},
 			},
 			want: []string{"--foo", "--bar"},

@@ -117,15 +117,17 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptV2D
 	if opts.InventoryName != "" {
 		d.Name = opts.InventoryName
 	}
+
+	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 	return &Deployer{
 		KptV2Deploy:        d,
 		applyDir:           d.Dir,
 		podSelector:        podSelector,
 		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
-		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces),
-		logger:             component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		logger:             logger,
 		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:             component.NewSyncer(kubectl.CLI, &namespaces),
+		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labeller:           labeller,
 		globalConfig:       cfg.GlobalConfig(),

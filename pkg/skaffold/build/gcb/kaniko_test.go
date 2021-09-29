@@ -109,7 +109,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with ImageFSExtractRetry",
-			artifact: &latestV1.KanikoArtifact{
+			artifact: &latestV2.KanikoArtifact{
 				DockerfilePath:      "Dockerfile",
 				ImageFSExtractRetry: "5",
 			},

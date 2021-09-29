@@ -312,7 +312,7 @@ func TestNewBuilder(t *testing.T) {
 				return dummyDaemon, nil
 			},
 			pushFlag: config.NewBoolOrUndefined(util.BoolPtr(false)),
-			localBuild: latestV1.LocalBuild{
+			localBuild: latestV2.LocalBuild{
 				Push: util.BoolPtr(true),
 			},
 			shouldErr:    false,
