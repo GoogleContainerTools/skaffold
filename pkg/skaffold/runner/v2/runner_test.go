@@ -285,7 +285,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	}
 	var tests []*latestV2.TestCase
 	for _, a := range artifacts {
-		tests = append(tests, &latestV1.TestCase{
+		tests = append(tests, &latestV2.TestCase{
 			ImageName: a.ImageName,
 		})
 	}
@@ -337,7 +337,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 		return nil
 	}
 
-	return r
+	return runner
 }
 
 func TestNewForConfig(t *testing.T) {
@@ -523,7 +523,7 @@ func TestNewForConfig(t *testing.T) {
 			}
 
 			cfg, err := NewForConfig(context.Background(), runCtx)
-			t.CheckError(test.shouldErr, err)
+			t.CheckError(tt.shouldErr, err)
 			if cfg != nil {
 				b, _t, r, d := runner.WithTimings(&tt.expectedBuilder, tt.expectedTester, tt.expectedRenderer,
 					tt.expectedDeployer, tt.cacheArtifacts)

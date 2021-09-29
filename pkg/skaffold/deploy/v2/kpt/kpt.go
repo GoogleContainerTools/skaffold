@@ -171,7 +171,7 @@ func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
 func (k *Deployer) getManifests(ctx context.Context) (manifest.ManifestList, error) {
 	cmd := exec.CommandContext(
 		ctx, "kpt", "fn", "source", k.applyDir)
-	buf, err := util.RunCmdOut(cmd)
+	buf, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return nil, sourceErr(err, k.applyDir)
 	}
@@ -207,7 +207,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", k.applyDir)
 		cmd.Stdout = out
 		cmd.Stderr = out
-		if err := util.RunCmd(cmd); err != nil {
+		if err := util.RunCmd(ctx, cmd); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return pkgInitErr(err, k.applyDir)
 		}
@@ -247,7 +247,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		cmd := exec.CommandContext(ctx, "kpt", args...)
 		cmd.Stdout = out
 		cmd.Stderr = out
-		if err := util.RunCmd(cmd); err != nil {
+		if err := util.RunCmd(ctx, cmd); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return liveInitErr(err, k.applyDir)
 		}
@@ -316,7 +316,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	cmd := exec.CommandContext(childCtx, "kpt", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return liveApplyErr(err, k.applyDir)
 	}
@@ -350,7 +350,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	cmd := exec.CommandContext(ctx, "kpt", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		return liveDestroyErr(err, k.applyDir)
 	}
 

@@ -61,11 +61,7 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
-<<<<<<< HEAD
-func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
-=======
-func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
->>>>>>> v1.31.0
+func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, labeller, hydrationDir)
 	}
@@ -78,7 +74,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	for _, p := range pipelines {
 		if p.Render.Generate.Helm != nil {
 			dCtx := &deployerCtx{runCtx, p.Deploy}
-			h, err := helm.NewDeployer(dCtx, labeller, &latestV2.HelmDeploy{
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, &latestV2.HelmDeploy{
 				Flags: p.Render.Generate.Helm.Flags,
 			})
 			if err != nil {
@@ -106,7 +102,6 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			deployers = append(deployers, d)
 		}
 
-<<<<<<< HEAD
 		// TODO(nkubala)[v2-merge]: add d.LegacyHelmDeploy (or something similar)
 
 		// if d.HelmDeploy != nil {
@@ -119,11 +114,6 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 
 		if d.KubectlDeploy != nil {
 			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)
-=======
-		dCtx := &deployerCtx{runCtx, d}
-		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.HelmDeploy)
->>>>>>> v1.31.0
 			if err != nil {
 				return nil, err
 			}

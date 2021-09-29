@@ -302,15 +302,15 @@ func TestKustomizeHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&KustomizeBinaryCheck, func() bool { return true })
-			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latestV1.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts) hooks.Runner {
+			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latestV2.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts) hooks.Runner {
 				return test.runner
 			})
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
+				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, &label.DefaultLabeller{}, &latestV1.KustomizeDeploy{})
+			}, &label.DefaultLabeller{}, &latestV2.KustomizeDeploy{})
 			t.RequireNoError(err)
 			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
 			t.CheckError(test.shouldErr, err)

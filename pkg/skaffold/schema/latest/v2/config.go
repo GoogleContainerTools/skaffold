@@ -1515,6 +1515,9 @@ type HelmDeploy struct {
 	// Flags are additional option flags that are passed on the command
 	// line to `helm`.
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // HelmDeployFlags are additional option flags that are passed on the command
@@ -1544,6 +1547,9 @@ type KustomizeDeploy struct {
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.

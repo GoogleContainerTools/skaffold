@@ -25,14 +25,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-<<<<<<< HEAD
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-=======
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
->>>>>>> v1.31.0
 )
 
 // builderCtx encapsulates a given skaffold run context along with additional builder constructs.
@@ -51,11 +46,7 @@ func (b *builderCtx) SourceDependenciesResolver() graph.SourceDependenciesCache 
 }
 
 // GetBuilder creates a builder from a given RunContext and build pipeline type.
-<<<<<<< HEAD
-func GetBuilder(r *v2.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latestV2.Pipeline) (build.PipelineBuilder, error) {
-=======
-func GetBuilder(ctx context.Context, r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latestV1.Pipeline) (build.PipelineBuilder, error) {
->>>>>>> v1.31.0
+func GetBuilder(ctx context.Context, r *v2.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latestV2.Pipeline) (build.PipelineBuilder, error) {
 	bCtx := &builderCtx{artifactStore: s, sourceDependenciesCache: d, RunContext: r}
 	switch {
 	case p.Build.LocalBuild != nil:

@@ -125,7 +125,7 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 		cmd := exec.CommandContext(tCtx, "kpt", "fn", "render", kPath,
 			fmt.Sprintf("--output=%v", outputDir))
 		cmd.Stderr = out
-		if err = util.RunCmd(cmd); err != nil {
+		if err = util.RunCmd(ctx, cmd); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
