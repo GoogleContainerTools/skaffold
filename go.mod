@@ -9,6 +9,10 @@ replace (
 	// pin yamlv3 to parent of https://github.com/go-yaml/yaml/commit/ae27a744346343ea814bd6f3bdd41d8669b172d0
 	// Avoid indenting sequences.
 	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+	k8s.io/api => k8s.io/api v0.21.3
+	k8s.io/apimachinery => k8s.io/apimachinery v0.21.3
+	k8s.io/client-go => k8s.io/client-go v0.21.3
+	k8s.io/kubectl => k8s.io/kubectl v0.21.3
 
 	sigs.k8s.io/kustomize/kyaml => sigs.k8s.io/kustomize/kyaml v0.9.2
 )

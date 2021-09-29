@@ -842,12 +842,8 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-<<<<<<< HEAD
-      --version='skaffold/v3alpha2': Target schema version to upgrade to
-=======
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --version='skaffold/v2beta20': Target schema version to upgrade to
->>>>>>> v1.29.0
+      --version='skaffold/v3alpha2': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
