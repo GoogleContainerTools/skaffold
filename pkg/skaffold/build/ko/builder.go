@@ -16,9 +16,6 @@ limitations under the License.
 
 package ko
 
-// TODO(halvards)[08/31/2021]: Replace the latestV1 import path with the
-// real schema import path once the contents of ./schema has been added to
-// the real schema in pkg/skaffold/schema/latest/v1.
 import (
 	"context"
 	"fmt"
@@ -29,9 +26,8 @@ import (
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/commands/options"
 
-	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 

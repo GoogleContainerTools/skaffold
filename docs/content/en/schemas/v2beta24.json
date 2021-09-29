@@ -2412,6 +2412,132 @@
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
       "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
     },
+    "KoArtifact": {
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional build flags passed to the builder.",
+          "x-intellij-html-description": "additional build flags passed to the builder.",
+          "default": "[]",
+          "examples": [
+            "[\"-trimpath\", \"-v\"]"
+          ]
+        },
+        "dependencies": {
+          "$ref": "#/definitions/KoDependencies",
+          "description": "file dependencies that Skaffold should watch for both rebuilding and file syncing for this artifact.",
+          "x-intellij-html-description": "file dependencies that Skaffold should watch for both rebuilding and file syncing for this artifact."
+        },
+        "dir": {
+          "type": "string",
+          "description": "directory where the `go` tool will be run. The value is a directory path relative to the `context` directory. If empty, the `go` tool will run in the `context` directory. Example: `./my-app-sources`.",
+          "x-intellij-html-description": "directory where the <code>go</code> tool will be run. The value is a directory path relative to the <code>context</code> directory. If empty, the <code>go</code> tool will run in the <code>context</code> directory. Example: <code>./my-app-sources</code>."
+        },
+        "env": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "environment variables, in the `key=value` form, passed to the build. These environment variables are only used at build time. They are _not_ set in the resulting container image.",
+          "x-intellij-html-description": "environment variables, in the <code>key=value</code> form, passed to the build. These environment variables are only used at build time. They are <em>not</em> set in the resulting container image.",
+          "default": "[]",
+          "examples": [
+            "[\"GOPRIVATE=source.developers.google.com\", \"GOCACHE=/workspace/.gocache\"]"
+          ]
+        },
+        "fromImage": {
+          "type": "string",
+          "description": "overrides the default ko base image (`gcr.io/distroless/static:nonroot`). Corresponds to, and overrides, the `defaultBaseImage` in `.ko.yaml`.",
+          "x-intellij-html-description": "overrides the default ko base image (<code>gcr.io/distroless/static:nonroot</code>). Corresponds to, and overrides, the <code>defaultBaseImage</code> in <code>.ko.yaml</code>."
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value string pairs to add to the image config.",
+          "x-intellij-html-description": "key-value string pairs to add to the image config.",
+          "default": "{}",
+          "examples": [
+            "{\"org.opencontainers.image.source\":\"https://github.com/GoogleContainerTools/skaffold\"}"
+          ]
+        },
+        "ldflags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "linker flags passed to the builder.",
+          "x-intellij-html-description": "linker flags passed to the builder.",
+          "default": "[]",
+          "examples": [
+            "[\"-buildid=\", \"-s\", \"-w\"]"
+          ]
+        },
+        "main": {
+          "type": "string",
+          "description": "location of the main package. It is the pattern passed to `go build`. If main is specified as a relative path, it is relative to the `context` directory. If main is empty, the ko builder uses a default value of `.`. If main is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails. Main is ignored if the `ImageName` starts with `ko://`. Example: `./cmd/foo`.",
+          "x-intellij-html-description": "location of the main package. It is the pattern passed to <code>go build</code>. If main is specified as a relative path, it is relative to the <code>context</code> directory. If main is empty, the ko builder uses a default value of <code>.</code>. If main is a pattern with wildcards, such as <code>./...</code>, the expansion must contain only one main package, otherwise ko fails. Main is ignored if the <code>ImageName</code> starts with <code>ko://</code>. Example: <code>./cmd/foo</code>."
+        },
+        "platforms": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "list of platforms to build images for. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Use `[\"all\"]` to build for all platforms supported by the base image. If empty, the builder uses the ko default (`[\"linux/amd64\"]`). Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+          "x-intellij-html-description": "list of platforms to build images for. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Use <code>[&quot;all&quot;]</code> to build for all platforms supported by the base image. If empty, the builder uses the ko default (<code>[&quot;linux/amd64&quot;]</code>). Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "fromImage",
+        "dependencies",
+        "dir",
+        "env",
+        "args",
+        "labels",
+        "ldflags",
+        "main",
+        "platforms"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "builds images using [ko](https://github.com/google/ko).",
+      "x-intellij-html-description": "builds images using <a href=\"https://github.com/google/ko\">ko</a>."
+    },
+    "KoDependencies": {
+      "properties": {
+        "ignore": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies the paths that should be ignored by Skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.",
+          "x-intellij-html-description": "specifies the paths that should be ignored by Skaffold's file watcher. If a file exists in both <code>paths</code> and in <code>ignore</code>, it will be ignored, and will be excluded from both rebuilds and file synchronization.",
+          "default": "[]"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "x-intellij-html-description": "should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "default": "[\".\"]"
+        }
+      },
+      "preferredOrder": [
+        "paths",
+        "ignore"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "used to specify dependencies for an artifact built by ko.",
+      "x-intellij-html-description": "used to specify dependencies for an artifact built by ko."
+    },
     "KptApplyInventory": {
       "properties": {
         "dir": {
