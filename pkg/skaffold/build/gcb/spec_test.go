@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -48,7 +49,7 @@ func TestBuildSpecFail(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			builder := NewBuilder(&mockBuilderContext{}, &latestV2.GoogleCloudBuild{})
 
-			_, err := builder.buildSpec(test.artifact, "tag", "bucket", "object")
+			_, err := builder.buildSpec(context.Background(), test.artifact, "tag", "bucket", "object")
 
 			t.CheckError(true, err)
 		})

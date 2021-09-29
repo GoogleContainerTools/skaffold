@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/segmentio/textio"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -47,6 +46,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -96,7 +96,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.Kubect
 	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
 	if err != nil {
-		logrus.Warnf("unable to parse namespaces - deploy might not work correctly!")
+		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 
@@ -110,7 +110,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.Kubect
 		logger:             logger,
 		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
 		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
-		hookRunner:         hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		hookRunner:         hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
@@ -298,8 +298,8 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	for _, f := range list {
 		if !kubernetes.HasKubernetesFileExtension(f) {
 			if !util.StrSliceContains(manifests, f) {
-				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
-				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+				olog.Entry(context.TODO()).Infof("refusing to deploy/delete non {json, yaml} file %s", f)
+				olog.Entry(context.TODO()).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
 			}
 		}

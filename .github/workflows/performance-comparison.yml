@@ -1,0 +1,123 @@
+name: performance comparison (on comment)
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    if: ${{ startsWith(github.event.comment.body, '/run-comparisonstats') }}
+    name: Performance comparison (on comment)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        kustomize_version: [3.5.4]
+        ko_version: [0.4.0]
+        kompose_version: [1.21.0]
+        gcloud_sdk_version: [335.0.0]
+        container_structure_tests_version: [1.8.0]
+    steps:
+    - name: "Check if user has write access"
+      uses: "lannonbr/repo-permission-check-action@2bb8c89ba8bf115c4bfab344d6a6f442b24c9a1f"
+      with:
+        permission: "write"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Add reaction
+      uses: peter-evans/create-or-update-comment@a35cf36e5301d70b76f316e867e7788a55a31dae
+      with:
+        comment-id: ${{ github.event.comment.id }}
+        reactions: rocket
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Install Kustomize
+      run: |
+        wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${{ matrix.kustomize_version }}/kustomize_v${{ matrix.kustomize_version }}_linux_amd64.tar.gz
+        sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
+
+    - name: Install Ko
+      run: |
+        wget -O ko.tar.gz https://github.com/google/ko/releases/download/v${{ matrix.ko_version }}/ko_${{ matrix.ko_version }}_Linux_x86_64.tar.gz
+        sudo tar -xvf ko.tar.gz -C /usr/local/bin/
+
+    - name: Install Kompose
+      run: |
+        wget -O kompose https://github.com/kubernetes/kompose/releases/download/v${{ matrix.kompose_version }}/kompose-linux-amd64 && chmod +x kompose
+        sudo mv kompose /usr/local/bin/
+
+    - name: Install GCloud
+      run: |
+        wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-linux-x86_64.tar.gz
+        tar -xvf gcloud.tar.gz -C ${HOME}/
+        CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
+        echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
+
+    - name: Configure GCloud with Docker
+      run:  gcloud auth configure-docker
+
+    - name: Install Container Structure Test
+      run: |
+        wget -O container-structure-test https://storage.googleapis.com/container-structure-test/v${{ matrix.container_structure_tests_version }}/container-structure-test-linux-amd64 && chmod +x container-structure-test
+        sudo mv container-structure-test /usr/local/bin/
+
+    - name: Setup other files and permissions
+      run: |
+        sudo chown $(whoami):docker ${HOME}/.docker -R
+        sudo chmod g+rw ${HOME}/.docker -R
+        echo '{}' > ${HOME}/.docker/config.json
+        mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
+        
+    - name: Install Minikube from minikube master branch @HEAD and start cluster
+      run: |
+        curl -Lo minikube https://storage.googleapis.com/minikube-builds/master/minikube-linux-amd64
+        sudo install minikube /usr/local/bin/minikube
+        minikube start --profile=minikube --driver=docker
+
+    - uses: xt0rted/pull-request-comment-branch@f2f07162618551540507cbd00ddf16ffcaa0c72f
+      id: comment-branch
+
+    - name: Make and install Skaffold binary from current PR
+      run: |
+        make
+        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold-${{ steps.comment-branch.outputs.head_ref }}
+
+    - name: Install Skaffold from main branch (built from CI/CD on merge)
+      run: |
+        curl -Lo skaffold-from-main-branch https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && \
+        sudo install skaffold-from-main-branch /usr/local/bin/
+
+    - name: Parse Comment To Yaml Format
+      run: |
+        tail -n +2 <<< '${{ github.event.comment.body }}' > yaml-input-file.yaml
+
+    - name: Run performance comparison benchmarks
+      id: run-performance-comparison-benchmarks
+      run: |
+        /usr/local/bin/skaffold-${{ steps.comment-branch.outputs.head_ref }} config set --global collect-metrics false
+        make COMPARISONSTATS_ARGS='--summary-output-path=gh-comment.txt --yaml-input-file=yaml-input-file.yaml --warmup-runs=1 /usr/local/bin/skaffold-from-main-branch /usr/local/bin/skaffold-${{ steps.comment-branch.outputs.head_ref }} helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats
+        body=$(cat gh-comment.txt)
+        body="${body//'%'/'%25'}"
+        body="${body//$'\n'/'%0A'}"
+        body="${body//$'\r'/'%0D'}" 
+        echo ::set-output name=body::$body
+
+    - name: Create comment
+      uses: peter-evans/create-or-update-comment@a35cf36e5301d70b76f316e867e7788a55a31dae
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        body: "${{ steps.run-performance-comparison-benchmarks.outputs.body }}"

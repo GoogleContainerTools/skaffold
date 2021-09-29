@@ -17,11 +17,11 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -61,7 +61,7 @@ func dependencyErr(pType PluginType, workspace string, err error) error {
 	case JibGradle:
 		code = proto.StatusCode_BUILD_JIB_GRADLE_DEP_ERR
 	default:
-		logrus.Fatal("Unknown jib build type", pType)
+		log.Entry(context.TODO()).Fatal("Unknown jib build type", pType)
 	}
 	return sErrors.NewError(err,
 		proto.ActionableErr{

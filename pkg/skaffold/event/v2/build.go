@@ -61,6 +61,7 @@ func buildSubtaskEvent(artifact, step, status string, err error) {
 	var aErr *proto.ActionableErr
 	if err != nil {
 		aErr = sErrors.ActionableErrV2(handler.cfg, constants.Build, err)
+		handler.sendErrorMessage(constants.Build, artifact, err)
 	}
 	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
 		Id:            artifact,

@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"testing"
 
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -104,7 +105,7 @@ func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 				ImageName: test.imageName,
 			}
 
-			got, err := c.GenerateTag(image)
+			got, err := c.GenerateTag(context.Background(), image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)

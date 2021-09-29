@@ -21,17 +21,17 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
@@ -99,24 +99,24 @@ func allPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 	var ports []v1.ContainerPort
 
-	annot, found := pod.ObjectMeta.Annotations[annotations.DebugConfig]
+	annot, found := pod.ObjectMeta.Annotations[types.DebugConfig]
 	if !found {
 		return nil
 	}
-	var configurations map[string]annotations.ContainerDebugConfiguration
+	var configurations map[string]types.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annot), &configurations); err != nil {
-		logrus.Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
+		log.Entry(context.TODO()).Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
 		return nil
 	}
 	dc, found := configurations[c.Name]
 	if !found {
-		logrus.Debugf("no debug configuration found on pod/%s/%s", pod.Name, c.Name)
+		log.Entry(context.TODO()).Debugf("no debug configuration found on pod/%s/%s", pod.Name, c.Name)
 		return nil
 	}
 	for _, port := range c.Ports {
 		for _, exposed := range dc.Ports {
 			if uint32(port.ContainerPort) == exposed {
-				logrus.Debugf("selecting debug port for pod/%s/%s: %v", pod.Name, c.Name, port)
+				log.Entry(context.TODO()).Debugf("selecting debug port for pod/%s/%s: %v", pod.Name, c.Name, port)
 				ports = append(ports, port)
 			}
 		}

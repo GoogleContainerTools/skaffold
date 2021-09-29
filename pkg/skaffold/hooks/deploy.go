@@ -31,7 +31,12 @@ import (
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
-func NewDeployRunner(cli *kubectl.CLI, d v2.DeployHooks, namespaces []string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
+// for testing
+var (
+	NewDeployRunner = newDeployRunner
+)
+
+func newDeployRunner(cli *kubectl.CLI, d v2.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
 	return deployRunner{d, cli, namespaces, formatter, opts, new(sync.Map)}
 }
 
@@ -46,7 +51,7 @@ func NewDeployEnvOpts(runID string, kubeContext string, namespaces []string) Dep
 type deployRunner struct {
 	v2.DeployHooks
 	cli         *kubectl.CLI
-	namespaces  []string
+	namespaces  *[]string
 	formatter   logger.Formatter
 	opts        DeployEnvOpts
 	visitedPods *sync.Map // maintain a list of previous iteration pods, so that they can be skipped
@@ -82,7 +87,7 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []v2.DeployH
 				cfg:        v2.ContainerHook{Command: h.ContainerHook.Command},
 				cli:        r.cli,
 				selector:   filterPodsSelector(r.visitedPods, phase, namePatternSelector(h.ContainerHook.PodName, h.ContainerHook.ContainerName)),
-				namespaces: r.namespaces,
+				namespaces: *r.namespaces,
 				formatter:  r.formatter,
 			}
 			if err := hook.run(ctx, out); err != nil {

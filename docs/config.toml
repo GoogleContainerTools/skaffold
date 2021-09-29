@@ -82,7 +82,7 @@ weight = 1
 copyright = "Skaffold Authors"
 privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v2beta21"
+skaffold_version = "skaffold/v2beta22"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 # gcs_engine_id = "013756393218025596041:3nojel67sum"
@@ -110,6 +110,10 @@ breadcrumb_disable = false
 	name = "Mailing List"
 	url = "https://groups.google.com/forum/#!forum/skaffold-users"
 	icon = "fa fa-envelope"
+[[params.links.developer]]
+	name = "Feedback"
+	url = "https://forms.gle/BMTbGQXLWSdn7vEs6"
+	icon = "fas fa-poll"
 
 [menu]
 	[[menu.main]]
@@ -124,11 +128,11 @@ breadcrumb_disable = false
 		pre = "<i class='fab fa-github'></i>"
 		url = "https://github.com/GoogleContainerTools/skaffold"
 		icon = "fab fa-github"
-		weight = -100
+		weight = -300
 
 	[[menu.main]]
 		identifier = "slack"
 		pre = "<i class='fab fa-slack'></i>"
 		url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
 		icon = "fab fa-slack"
-		weight = -100
+		weight = -200

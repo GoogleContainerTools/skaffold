@@ -31,9 +31,9 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -101,7 +101,7 @@ func GetBuildDefinitions(workspace string, a *latestV2.JibArtifact) []string {
 
 // GetDependencies returns a list of files to watch for changes to rebuild
 func GetDependencies(ctx context.Context, workspace string, artifact *latestV2.JibArtifact) ([]string, error) {
-	t, err := DeterminePluginType(workspace, artifact)
+	t, err := DeterminePluginType(ctx, workspace, artifact)
 	if err != nil {
 		return nil, unableToDeterminePluginType(workspace, err)
 	}
@@ -116,8 +116,8 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latestV2.J
 }
 
 // DeterminePluginType tries to determine the Jib plugin type for the given artifact.
-func DeterminePluginType(workspace string, artifact *latestV2.JibArtifact) (PluginType, error) {
-	if !JVMFound() {
+func DeterminePluginType(ctx context.Context, workspace string, artifact *latestV2.JibArtifact) (PluginType, error) {
+	if !JVMFound(ctx) {
 		return "", errors.New("no working JVM available")
 	}
 
@@ -142,7 +142,7 @@ func DeterminePluginType(workspace string, artifact *latestV2.JibArtifact) (Plug
 }
 
 // getDependencies returns a list of files to watch for changes to rebuild
-func getDependencies(workspace string, cmd exec.Cmd, a *latestV2.JibArtifact) ([]string, error) {
+func getDependencies(ctx context.Context, workspace string, cmd exec.Cmd, a *latestV2.JibArtifact) ([]string, error) {
 	var dependencyList []string
 	files, ok := watchedFiles[getProjectKey(workspace, a)]
 	if !ok {
@@ -156,13 +156,13 @@ func getDependencies(workspace string, cmd exec.Cmd, a *latestV2.JibArtifact) ([
 		}
 
 		// Refresh dependency list if empty
-		if err := refreshDependencyList(&files, cmd); err != nil {
+		if err := refreshDependencyList(ctx, &files, cmd); err != nil {
 			return nil, fmt.Errorf("initial Jib dependency refresh failed: %w", err)
 		}
 	} else if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
 		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
-			return refreshDependencyList(&files, cmd)
+			return refreshDependencyList(ctx, &files, cmd)
 		}
 		return nil
 	}); err != nil {
@@ -192,8 +192,8 @@ func getDependencies(workspace string, cmd exec.Cmd, a *latestV2.JibArtifact) ([
 }
 
 // refreshDependencyList calls out to Jib to update files with the latest list of files/directories to watch.
-func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
-	stdout, err := util.RunCmdOut(&cmd)
+func refreshDependencyList(ctx context.Context, files *filesLists, cmd exec.Cmd) error {
+	stdout, err := util.RunCmdOut(ctx, &cmd)
 	if err != nil {
 		return fmt.Errorf("failed to get Jib dependencies: %w", err)
 	}
@@ -233,7 +233,7 @@ func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, c
 		info, err := os.Stat(dep)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logrus.Debugf("could not stat dependency: %s", err)
+				log.Entry(context.TODO()).Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
 			return fmt.Errorf("unable to stat file %q: %w", dep, err)
@@ -341,7 +341,7 @@ func baseImageArg(a *latestV2.JibArtifact, r ArtifactResolver, deps []*latestV2.
 		}
 		img, found := r.GetImageTag(d.ImageName)
 		if !found {
-			logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+			log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 		}
 		if pushImages {
 			// pull image from the registry (prefix `registry://` is optional)

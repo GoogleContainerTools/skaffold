@@ -9,8 +9,12 @@ aliases: [/docs/how-tos/debug]
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods
 for debugging as required for each container's runtime technology.
 The associated debugging ports are exposed and labelled so that they can be port-forwarded to the
-local machine.  IDEs like [Google's Cloud Code extensions](https://cloud.google.com/code) use Skaffold's events
-to automatically configure debug sessions.
+local machine.
+
+To debug in an IDE that uses Skaffold events to automatically configure debug sessions, you can use
+[Google Cloud Code for VS Code](https://cloud.google.com/code/docs/vscode/debug),
+[Cloud Code for IntelliJ](https://cloud.google.com/code/docs/intellij/kubernetes-debugging),
+or, for an IDE in your browser, [Cloud Code for Cloud Shell](https://cloud.google.com/code/docs/shell/debug).
 
 One notable difference from `skaffold dev` is that `debug` disables image rebuilding and
 syncing as it leads to users accidentally terminating debugging sessions by saving file changes.

@@ -17,14 +17,15 @@ limitations under the License.
 package v2
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -148,7 +149,10 @@ func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
 }
 
-func (rc *RunContext) DefaultPipeline() latestV2.Pipeline            { return rc.Pipelines.Head() }
+func (rc *RunContext) DefaultPipeline() latestV2.Pipeline { return rc.Pipelines.Head() }
+func (rc *RunContext) SkipTests() bool {
+	return rc.Opts.SkipTests || len(rc.TestCases()) == 0
+}
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
 func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }
 func (rc *RunContext) GetPipelines() []latestV2.Pipeline             { return rc.Pipelines.All() }
@@ -175,6 +179,7 @@ func (rc *RunContext) GetKubeNamespace() string                      { return rc
 func (rc *RunContext) GlobalConfig() string                          { return rc.Opts.GlobalConfig }
 func (rc *RunContext) HydratedManifests() []string                   { return rc.Opts.HydratedManifests }
 func (rc *RunContext) LoadImages() bool                              { return rc.Cluster.LoadImages }
+func (rc *RunContext) ForceLoadImages() bool                         { return rc.Opts.ForceLoadImages }
 func (rc *RunContext) MinikubeProfile() string                       { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) Muted() config.Muted                           { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                         { return rc.Opts.NoPruneChildren }
@@ -185,7 +190,6 @@ func (rc *RunContext) Prune() bool                                   { return rc
 func (rc *RunContext) RenderOnly() bool                              { return rc.Opts.RenderOnly }
 func (rc *RunContext) RenderOutput() string                          { return rc.Opts.RenderOutput }
 func (rc *RunContext) SkipRender() bool                              { return rc.Opts.SkipRender }
-func (rc *RunContext) SkipTests() bool                               { return rc.Opts.SkipTests }
 func (rc *RunContext) StatusCheck() *bool                            { return rc.Opts.StatusCheck.Value() }
 func (rc *RunContext) IterativeStatusCheck() bool                    { return rc.Opts.IterativeStatusCheck }
 func (rc *RunContext) Tail() bool                                    { return rc.Opts.Tail }
@@ -210,7 +214,7 @@ func (rc *RunContext) GetRenderConfig() *latestV2.RenderConfig {
 	return &latestV2.RenderConfig{}
 }
 
-func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
+func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV2.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
@@ -222,7 +226,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
-	logrus.Infof("Using kubectl context: %s", kubeContext)
+	log.Entry(context.TODO()).Infof("Using kubectl context: %s", kubeContext)
 
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
@@ -233,7 +237,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
-		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
+		log.Entry(context.TODO()).Warn("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
 	var regList []string
 	regList = append(regList, opts.InsecureRegistries...)
@@ -250,7 +254,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []schemaUtil.VersionedCo
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	cluster, err := config.GetCluster(opts.GlobalConfig, opts.MinikubeProfile, opts.DetectMinikube)
+	cluster, err := config.GetCluster(ctx, opts.GlobalConfig, opts.MinikubeProfile, opts.DetectMinikube)
 	if err != nil {
 		return nil, fmt.Errorf("getting cluster: %w", err)
 	}

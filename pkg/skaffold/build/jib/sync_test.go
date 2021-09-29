@@ -120,7 +120,7 @@ func TestGetSyncMapFromSystem(t *testing.T) {
 				test.stdout,
 			))
 
-			results, err := getSyncMapFromSystem(&exec.Cmd{Args: []string{"ignored"}})
+			results, err := getSyncMapFromSystem(context.Background(), &exec.Cmd{Args: []string{"ignored"}})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, results)
 		})

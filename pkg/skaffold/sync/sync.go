@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -57,7 +57,7 @@ func NewItem(ctx context.Context, a *latestV2.Artifact, e filemon.Events, builds
 	}
 
 	if dependentArtifactsCount > 0 {
-		logrus.Warnf("Ignoring sync rules for image %q as it is being used as a required artifact for other images.", a.ImageName)
+		log.Entry(ctx).Warnf("Ignoring sync rules for image %q as it is being used as a required artifact for other images.", a.ImageName)
 		return nil, nil
 	}
 
@@ -68,31 +68,31 @@ func NewItem(ctx context.Context, a *latestV2.Artifact, e filemon.Events, builds
 
 	switch {
 	case len(a.Sync.Manual) > 0:
-		return syncItem(a, tag, e, a.Sync.Manual, cfg)
+		return syncItem(ctx, a, tag, e, a.Sync.Manual, cfg)
 
 	case a.Sync.Auto != nil:
 		return autoSyncItem(ctx, a, tag, e, cfg)
 
 	case len(a.Sync.Infer) > 0:
-		return inferredSyncItem(a, tag, e, cfg)
+		return inferredSyncItem(ctx, a, tag, e, cfg)
 
 	default:
 		return nil, nil
 	}
 }
 
-func syncItem(a *latestV2.Artifact, tag string, e filemon.Events, syncRules []*latestV2.SyncRule, cfg docker.Config) (*Item, error) {
-	containerWd, err := WorkingDir(tag, cfg)
+func syncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filemon.Events, syncRules []*latestV2.SyncRule, cfg docker.Config) (*Item, error) {
+	containerWd, err := WorkingDir(ctx, tag, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving working dir for %q: %w", tag, err)
 	}
 
-	toCopy, err := intersect(a.Workspace, containerWd, syncRules, append(e.Added, e.Modified...))
+	toCopy, err := intersect(ctx, a.Workspace, containerWd, syncRules, append(e.Added, e.Modified...))
 	if err != nil {
 		return nil, fmt.Errorf("intersecting sync map and added, modified files: %w", err)
 	}
 
-	toDelete, err := intersect(a.Workspace, containerWd, syncRules, e.Deleted)
+	toDelete, err := intersect(ctx, a.Workspace, containerWd, syncRules, e.Deleted)
 	if err != nil {
 		return nil, fmt.Errorf("intersecting sync map and deleted files: %w", err)
 	}
@@ -105,13 +105,13 @@ func syncItem(a *latestV2.Artifact, tag string, e filemon.Events, syncRules []*l
 	return &Item{Image: tag, Artifact: a, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func inferredSyncItem(a *latestV2.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
+func inferredSyncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	// deleted files are no longer contained in the syncMap, so we need to rebuild
 	if len(e.Deleted) > 0 {
 		return nil, nil
 	}
 
-	syncMap, err := SyncMap(a, cfg)
+	syncMap, err := SyncMap(ctx, a, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("inferring syncmap for image %q: %w", a.ImageName, err)
 	}
@@ -134,14 +134,14 @@ func inferredSyncItem(a *latestV2.Artifact, tag string, e filemon.Events, cfg do
 			}
 		}
 		if !matches {
-			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(ctx).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
 		if dsts, ok := syncMap[relPath]; ok {
 			toCopy[f] = dsts
 		} else {
-			logrus.Infof("Changed file %s is not syncable. Skipping sync", relPath)
+			log.Entry(ctx).Infof("Changed file %s is not syncable. Skipping sync", relPath)
 			return nil, nil
 		}
 	}
@@ -149,16 +149,16 @@ func inferredSyncItem(a *latestV2.Artifact, tag string, e filemon.Events, cfg do
 	return &Item{Image: tag, Artifact: a, Copy: toCopy}, nil
 }
 
-func syncMapForArtifact(a *latestV2.Artifact, cfg docker.Config) (map[string][]string, error) {
+func syncMapForArtifact(ctx context.Context, a *latestV2.Artifact, cfg docker.Config) (map[string][]string, error) {
 	switch {
 	case a.DockerArtifact != nil:
-		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, cfg)
+		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, cfg)
 
 	case a.CustomArtifact != nil && a.CustomArtifact.Dependencies != nil && a.CustomArtifact.Dependencies.Dockerfile != nil:
-		return docker.SyncMap(a.Workspace, a.CustomArtifact.Dependencies.Dockerfile.Path, a.CustomArtifact.Dependencies.Dockerfile.BuildArgs, cfg)
+		return docker.SyncMap(ctx, a.Workspace, a.CustomArtifact.Dependencies.Dockerfile.Path, a.CustomArtifact.Dependencies.Dockerfile.BuildArgs, cfg)
 
 	case a.KanikoArtifact != nil:
-		return docker.SyncMap(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, cfg)
+		return docker.SyncMap(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, cfg)
 
 	default:
 		return nil, build.ErrSyncMapNotSupported{}
@@ -168,7 +168,7 @@ func syncMapForArtifact(a *latestV2.Artifact, cfg docker.Config) (map[string][]s
 func autoSyncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	switch {
 	case a.BuildpackArtifact != nil:
-		labels, err := Labels(tag, cfg)
+		labels, err := Labels(ctx, tag, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving labels for %q: %w", tag, err)
 		}
@@ -178,7 +178,7 @@ func autoSyncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filem
 			return nil, fmt.Errorf("extracting sync rules from labels for %q: %w", tag, err)
 		}
 
-		return syncItem(a, tag, e, rules, cfg)
+		return syncItem(ctx, a, tag, e, rules, cfg)
 
 	case a.JibArtifact != nil:
 		toCopy, toDelete, err := jib.GetSyncDiff(ctx, a.Workspace, a.JibArtifact, e)
@@ -206,7 +206,7 @@ func latestTag(image string, builds []graph.Artifact) string {
 	return ""
 }
 
-func intersect(contextWd, containerWd string, syncRules []*latestV2.SyncRule, files []string) (syncMap, error) {
+func intersect(ctx context.Context, contextWd, containerWd string, syncRules []*latestV2.SyncRule, files []string) (syncMap, error) {
 	ret := make(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
@@ -220,7 +220,7 @@ func intersect(contextWd, containerWd string, syncRules []*latestV2.SyncRule, fi
 		}
 
 		if len(dsts) == 0 {
-			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			log.Entry(ctx).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
@@ -286,7 +286,7 @@ func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 
 func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
 	if len(item.Copy) > 0 {
-		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
+		log.Entry(ctx).Info("Copying files:", item.Copy, "to", item.Image)
 
 		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, *s.namespaces, s.kubectl.KubeContext); err != nil {
 			return fmt.Errorf("copying files: %w", err)
@@ -294,7 +294,7 @@ func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
 	}
 
 	if len(item.Delete) > 0 {
-		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
+		log.Entry(ctx).Info("Deleting files:", item.Delete, "from", item.Image)
 
 		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, *s.namespaces, s.kubectl.KubeContext); err != nil {
 			return fmt.Errorf("deleting files: %w", err)
@@ -335,7 +335,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 				cmd := cmdFn(ctx, p, c, files)
 				errs.Go(func() error {
-					_, err := util.RunCmdOut(cmd)
+					_, err := util.RunCmdOut(ctx, cmd)
 					return err
 				})
 				numSynced++

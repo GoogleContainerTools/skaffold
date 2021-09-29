@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"testing"
 
 	"google.golang.org/api/cloudbuild/v1"
@@ -426,7 +427,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				}
 				return m, nil
 			})
-			desc, err := builder.buildSpec(artifact, "gcr.io/nginx", "bucket", "object")
+			desc, err := builder.buildSpec(context.Background(), artifact, "gcr.io/nginx", "bucket", "object")
 
 			expected := cloudbuild.Build{
 				LogsBucket: "bucket",

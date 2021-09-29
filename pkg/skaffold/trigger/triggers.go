@@ -26,9 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	fsNotify "github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger/fsnotify"
 )
@@ -150,7 +149,7 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 		for {
 			_, _, err := reader.ReadRune()
 			if err != nil {
-				logrus.Debugf("manual trigger error: %s", err)
+				log.Entry(ctx).Debugf("manual trigger error: %s", err)
 			}
 
 			// Wait until the context is cancelled.
@@ -177,7 +176,7 @@ func StartTrigger(ctx context.Context, t Trigger) (<-chan bool, error) {
 		return ret, err
 	}
 	if fsnotify, ok := t.(*fsNotify.Trigger); ok {
-		logrus.Debugln("Couldn't start notify trigger. Falling back to a polling trigger")
+		log.Entry(ctx).Debug("Couldn't start notify trigger. Falling back to a polling trigger")
 
 		t = &pollTrigger{
 			Interval: fsnotify.Interval,

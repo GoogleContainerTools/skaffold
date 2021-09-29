@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -366,9 +367,17 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	})
 }
 
-// randomPort chooses a port in range [1024, 65535]
+// randomPort chooses a random port
 func randomPort() string {
-	return strconv.Itoa(1024 + rand.Intn(65536-1024))
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		// listening for port 0 should never error but just in case
+		return strconv.Itoa(1024 + rand.Intn(65536-1024))
+	}
+
+	p := l.Addr().(*net.TCPAddr).Port
+	l.Close()
+	return strconv.Itoa(p)
 }
 
 /*

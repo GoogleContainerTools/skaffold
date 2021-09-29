@@ -46,3 +46,23 @@ var phases = struct {
 	PreDeploy:  "pre-deploy",
 	PostDeploy: "post-deploy",
 }
+
+// MockRunner implements the Runner interface, to be used in unit tests
+type MockRunner struct {
+	PreHooks  func(ctx context.Context, out io.Writer) error
+	PostHooks func(ctx context.Context, out io.Writer) error
+}
+
+func (m MockRunner) RunPreHooks(ctx context.Context, out io.Writer) error {
+	if m.PreHooks != nil {
+		return m.PreHooks(ctx, out)
+	}
+	return nil
+}
+
+func (m MockRunner) RunPostHooks(ctx context.Context, out io.Writer) error {
+	if m.PostHooks != nil {
+		return m.PostHooks(ctx, out)
+	}
+	return nil
+}

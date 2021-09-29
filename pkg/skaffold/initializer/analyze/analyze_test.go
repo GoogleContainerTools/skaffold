@@ -17,6 +17,7 @@ limitations under the License.
 package analyze
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -413,7 +414,7 @@ func fakeValidateDockerfile(path string) bool {
 	return strings.Contains(strings.ToLower(path), "dockerfile")
 }
 
-func fakeValidateJibConfig(path string, enableGradle bool) []jib.ArtifactConfig {
+func fakeValidateJibConfig(_ context.Context, path string, enableGradle bool) []jib.ArtifactConfig {
 	if strings.HasSuffix(path, "build.gradle") && enableGradle {
 		return []jib.ArtifactConfig{{BuilderName: jib.PluginName(jib.JibGradle), File: path}}
 	}

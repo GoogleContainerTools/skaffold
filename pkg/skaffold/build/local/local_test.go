@@ -224,7 +224,7 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemon(test.api), nil
 			})
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
@@ -238,11 +238,10 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}})
 
-			builder, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()},
-				&latestV2.LocalBuild{
-					Push:        util.BoolPtr(test.pushImages),
-					Concurrency: &constants.DefaultLocalConcurrency,
-				})
+			builder, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV2.LocalBuild{
+				Push:        util.BoolPtr(test.pushImages),
+				Concurrency: &constants.DefaultLocalConcurrency,
+			})
 			t.CheckNoError(err)
 			ab := builder.Build(context.Background(), ioutil.Discard, test.artifact)
 			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag)
@@ -267,18 +266,19 @@ func TestNewBuilder(t *testing.T) {
 		cluster       config.Cluster
 		localBuild    latestV2.LocalBuild
 		pushFlag      config.BoolOrUndefined
-		localDockerFn func(docker.Config) (docker.LocalDaemon, error)
+		localBuild    latestV2.LocalBuild
+		localDockerFn func(context.Context, docker.Config) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return nil, errors.New("dummy docker error")
 			},
 			shouldErr: true,
 		},
 		{
 			description: "pushImages becomes cluster.PushImages when local:push and --push is not defined",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			cluster:      config.Cluster{PushImages: true},
@@ -286,7 +286,7 @@ func TestNewBuilder(t *testing.T) {
 		},
 		{
 			description: "pushImages becomes config (local:push) when --push is not defined",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			cluster: config.Cluster{PushImages: true},
@@ -298,7 +298,7 @@ func TestNewBuilder(t *testing.T) {
 		},
 		{
 			description: "pushImages defined in flags (--push=false), ignores cluster.PushImages",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			cluster:      config.Cluster{PushImages: true},
@@ -308,7 +308,7 @@ func TestNewBuilder(t *testing.T) {
 		},
 		{
 			description: "pushImages defined in flags (--push=false), ignores config (local:push)",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			pushFlag: config.NewBoolOrUndefined(util.BoolPtr(false)),
@@ -325,7 +325,7 @@ func TestNewBuilder(t *testing.T) {
 				t.Override(&docker.NewAPIClient, test.localDockerFn)
 			}
 
-			builder, err := NewBuilder(&mockBuilderContext{
+			builder, err := NewBuilder(context.Background(), &mockBuilderContext{
 				local:    test.localBuild,
 				cluster:  test.cluster,
 				pushFlag: test.pushFlag,
@@ -399,14 +399,14 @@ func TestGetArtifactBuilder(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemon(&testutil.FakeAPIClient{}), nil
 			})
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 				return args, nil
 			})
 
-			b, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV2.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
+			b, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV2.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
 			t.CheckNoError(err)
 
 			builder, err := newPerArtifactBuilder(b, test.artifact)

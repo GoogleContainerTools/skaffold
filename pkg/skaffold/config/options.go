@@ -100,6 +100,8 @@ type SkaffoldOptions struct {
 	Muted              Muted
 	WaitForDeletions   WaitForDeletions
 	SyncRemoteCache    SyncRemoteCacheOption
+	ForceLoadImages    bool
+	WaitForConnection  bool
 }
 
 type RunMode string

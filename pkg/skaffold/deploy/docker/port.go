@@ -24,11 +24,11 @@ import (
 	"sync"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -81,7 +81,7 @@ func (pm *PortManager) getPorts(containerName string, pf []*v2.PortForwardResour
 	var ports []int
 	for _, p := range pf {
 		if strings.ToLower(string(p.Type)) != "container" {
-			logrus.Debugf("skipping non-container port forward resource in Docker deploy: %s\n", p.Name)
+			log.Entry(context.TODO()).Debugf("skipping non-container port forward resource in Docker deploy: %s\n", p.Name)
 			continue
 		}
 		localPort := util.GetAvailablePort(p.Address, p.LocalPort, &pm.portSet)

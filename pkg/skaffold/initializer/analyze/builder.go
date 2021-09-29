@@ -17,6 +17,7 @@ limitations under the License.
 package analyze
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 
@@ -38,10 +39,10 @@ type builderAnalyzer struct {
 	parentDirToStopFindJibSettings string
 }
 
-func (a *builderAnalyzer) analyzeFile(filePath string) error {
+func (a *builderAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
 	if a.findBuilders {
 		lookForJib := a.parentDirToStopFindJibSettings == "" || a.parentDirToStopFindJibSettings == a.currentDir
-		builderConfigs, lookForJib := a.detectBuilders(filePath, lookForJib)
+		builderConfigs, lookForJib := a.detectBuilders(ctx, filePath, lookForJib)
 		a.foundBuilders = append(a.foundBuilders, builderConfigs...)
 		if !lookForJib {
 			a.parentDirToStopFindJibSettings = a.currentDir
@@ -59,14 +60,14 @@ func (a *builderAnalyzer) exitDir(dir string) {
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
 // configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
 // continue to be searched, false = subdirectories should not be searched for more builders)
-func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]build.InitBuilder, bool) {
+func (a *builderAnalyzer) detectBuilders(ctx context.Context, path string, detectJib bool) ([]build.InitBuilder, bool) {
 	var results []build.InitBuilder
 	searchSubDirectories := true
 
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if a.enableJibInit && detectJib {
 		// Check for jib
-		if builders := jib.Validate(path, a.enableJibGradleInit); builders != nil {
+		if builders := jib.Validate(ctx, path, a.enableJibGradleInit); builders != nil {
 			for i := range builders {
 				results = append(results, builders[i])
 			}

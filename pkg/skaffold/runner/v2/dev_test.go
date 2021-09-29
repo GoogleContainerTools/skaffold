@@ -457,7 +457,7 @@ func TestDevAutoTriggers(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
+			t.Override(&sync.WorkingDir, func(context.Context, string, docker.Config) (string, error) { return "/", nil })
 			testBench := &TestBench{}
 			testBench.cycles = len(test.watchEvents)
 			testBench.userIntents = test.userIntents
@@ -568,7 +568,7 @@ func TestDevSync(t *testing.T) {
 			t.Override(&fileSyncInProgress, func(int, string) { actualFileSyncEventCalls.InProgress++ })
 			t.Override(&fileSyncFailed, func(int, string, error) { actualFileSyncEventCalls.Failed++ })
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
-			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
+			t.Override(&sync.WorkingDir, func(context.Context, string, docker.Config) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
 			artifacts := []*latestV2.Artifact{
 				{

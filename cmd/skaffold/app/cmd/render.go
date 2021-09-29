@@ -39,7 +39,7 @@ var (
 // NewCmdRender describes the CLI command to build artifacts render Kubernetes manifests.
 func NewCmdRender() *cobra.Command {
 	return NewCmd("render").
-		WithDescription("[alpha] Perform all image builds, and output rendered Kubernetes manifests").
+		WithDescription("Perform all image builds, and output rendered Kubernetes manifests").
 		WithExample("Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry ", "render --digest-source=remote").
 		WithCommonFlags().
 		WithFlags([]*Flag{
@@ -47,7 +47,7 @@ func NewCmdRender() *cobra.Command {
 			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
 			{Value: &offline, Name: "offline", DefValue: false, Usage: `Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.`, IsEnum: true},
 			// This "--output" flag replaces the --render-output flag, which is deprecated.
-			{Value: &opts.RenderOutput, Name: "output", Shorthand: "o", DefValue: "", Usage: "file to write the rendered manifests to"},
+			{Value: &renderOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write rendered manifests to"},
 		}).
 		NoArgs(doRender)
 }

@@ -50,21 +50,6 @@ Once you've done this, clone your fork to your local machine:
    _Adding the `upstream` remote sets you up nicely for regularly [syncing your
    fork](https://help.github.com/articles/syncing-a-fork/)._
 
-## IDE setup 
-
-Skaffold uses go modules and we commit to the `vendor` directory all our dependencies to make CI faster.  
-We recommend checking out Skaffold outside of the `GOPATH`. 
-
-JetBrains Goland: 
-1. `File > Open...` (choose your skaffold directory) 
-2. ensure `Go > Go modules > Vendoring mode` is checked
-
-JetBrains IntelliJ with [Go plugin](https://plugins.jetbrains.com/plugin/9568-go): 
-1. `File > Open...` (choose your skaffold directory) 
-  
-Visual Studio Code with [Go plugin](https://github.com/Microsoft/vscode-go): 
-1. `File > Open...` 
-
 ## Making a config change
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
@@ -202,6 +187,12 @@ The unit tests live with the code they test and can be run with:
 
 ```shell
 make test
+```
+
+You can also run a smaller set of unit tests that run quicker with:
+
+```shell
+make quicktest
 ```
 
 In case you see a linter error such as:

@@ -17,13 +17,14 @@ limitations under the License.
 package update
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -51,7 +52,7 @@ func CheckVersionOnError(config string) (string, error) {
 
 func checkVersion(configfile string, onError bool) (string, error) {
 	if !isUpdateCheckEnabled(configfile) {
-		logrus.Debugf("Update check not enabled, skipping.")
+		log.Entry(context.TODO()).Debug("Update check not enabled, skipping.")
 		return "", nil
 	}
 	latest, current, err := GetLatestAndCurrentVersion()
@@ -81,7 +82,7 @@ func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 	if err != nil {
 		return none, none, err
 	}
-	logrus.Tracef("latest skaffold version: %s", versionString)
+	log.Entry(context.TODO()).Tracef("latest skaffold version: %s", versionString)
 	latest, err := version.ParseVersion(versionString)
 	if err != nil {
 		return none, none, fmt.Errorf("parsing latest version from GCS: %w", err)

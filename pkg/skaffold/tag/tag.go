@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"fmt"
 
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -28,14 +29,14 @@ type ImageTags map[string]string
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
 	// GenerateTag generates a tag for an artifact.
-	GenerateTag(image latestV2.Artifact) (string, error)
+	GenerateTag(ctx context.Context, image latestV2.Artifact) (string, error)
 }
 
 // GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
 // The workingDir is the root directory of the artifact with respect to the Skaffold root,
 // and imageName is the base name of the image.
-func GenerateFullyQualifiedImageName(t Tagger, image latestV2.Artifact) (string, error) {
-	tag, err := t.GenerateTag(image)
+func GenerateFullyQualifiedImageName(ctx context.Context, t Tagger, image latestV2.Artifact) (string, error) {
+	tag, err := t.GenerateTag(ctx, image)
 	if err != nil {
 		return "", fmt.Errorf("generating tag: %w", err)
 	}

@@ -17,14 +17,15 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
@@ -71,7 +72,7 @@ func fromRequiredArtifacts(imageName string, r docker.ArtifactResolver, deps []*
 		if imageName == d.Alias {
 			image, found := r.GetImageTag(d.ImageName)
 			if !found {
-				logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			return image
 		}

@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -60,7 +61,11 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
+<<<<<<< HEAD
 func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
+=======
+func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
+>>>>>>> v1.31.0
 	if runCtx.Opts.Apply {
 		return getDefaultDeployer(runCtx, labeller, hydrationDir)
 	}
@@ -94,13 +99,14 @@ func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrati
 
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
+			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, d)
 		}
 
+<<<<<<< HEAD
 		// TODO(nkubala)[v2-merge]: add d.LegacyHelmDeploy (or something similar)
 
 		// if d.HelmDeploy != nil {
@@ -113,6 +119,11 @@ func GetDeployer(runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrati
 
 		if d.KubectlDeploy != nil {
 			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)
+=======
+		dCtx := &deployerCtx{runCtx, d}
+		if d.HelmDeploy != nil {
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.HelmDeploy)
+>>>>>>> v1.31.0
 			if err != nil {
 				return nil, err
 			}

@@ -26,7 +26,7 @@ import (
 func NewCmdConfig() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Interact with the global skaffold config file (defaults to `$HOME/.skaffold/config`)",
+		Short: "Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/config`)",
 	}
 
 	cmd.AddCommand(NewCmdSet())

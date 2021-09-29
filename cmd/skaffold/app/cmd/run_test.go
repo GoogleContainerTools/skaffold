@@ -93,7 +93,7 @@ func TestDoRun(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
 			mockRunner := &mockRunRunner{}
-			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *v2.RunContext, error) {
+			t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *v2.RunContext, error) {
 				return mockRunner, []util.VersionedConfig{
 					&latestV2.SkaffoldConfig{
 						Pipeline: latestV2.Pipeline{

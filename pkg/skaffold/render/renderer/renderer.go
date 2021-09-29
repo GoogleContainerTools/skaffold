@@ -103,7 +103,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 			return err
 		}
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
-		if err := util.RunCmd(cmd); err != nil {
+		if err := util.RunCmd(ctx, cmd); err != nil {
 			endTrace(instrumentation.TraceEndError(fmt.Errorf("`kpt pkg init %v`:%w", r.hydrationDir, err)))
 			return err
 		}
@@ -180,7 +180,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	cmd := exec.CommandContext(rCtx, "kpt", "fn", "render", r.hydrationDir)
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
 		return err
@@ -198,7 +198,7 @@ func (r *SkaffoldRenderer) writeManifestsToFile(ctx context.Context, out io.Writ
 	cmd := exec.CommandContext(rCtx, "kpt", "fn", "source", r.hydrationDir, "-o", "unwrap")
 	var buf []byte
 	cmd.Stderr = out
-	buf, err := util.RunCmdOut(cmd)
+	buf, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err

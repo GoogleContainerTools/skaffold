@@ -93,7 +93,7 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, imageTag str
 		return cmdRunRetrieveErr(command, ct.imageName, err)
 	}
 
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
 			// If the process exited by itself, just return the error
 			if e.Exited() {
@@ -123,7 +123,7 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, imageTag str
 }
 
 // TestDependencies returns dependencies listed for a custom test
-func (ct *Runner) TestDependencies() ([]string, error) {
+func (ct *Runner) TestDependencies(ctx context.Context) ([]string, error) {
 	test := ct.customTest
 
 	if test.Dependencies != nil {
@@ -137,7 +137,7 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 				cmd = exec.CommandContext(context.Background(), "sh", "-c", test.Dependencies.Command)
 			}
 
-			output, err := util.RunCmdOut(cmd)
+			output, err := util.RunCmdOut(ctx, cmd)
 			if err != nil {
 				return nil, gettingDependenciesCommandErr(test.Dependencies.Command, err)
 			}
@@ -166,7 +166,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	env, err := ct.getEnv(imageTag)
+	env, err := ct.getEnv(ctx, imageTag)
 	if err != nil {
 		return nil, fmt.Errorf("setting env variables: %w", err)
 	}
@@ -181,7 +181,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	return cmd, nil
 }
 
-func (ct *Runner) getEnv(imageTag string) ([]string, error) {
+func (ct *Runner) getEnv(ctx context.Context, imageTag string) ([]string, error) {
 	testContext, err := testContext(ct.workspace)
 	if err != nil {
 		return nil, fmt.Errorf("getting absolute path for test context: %w", err)
@@ -195,7 +195,7 @@ func (ct *Runner) getEnv(imageTag string) ([]string, error) {
 	envs = append(envs, util.OSEnviron()...)
 
 	// add minikube docker env vars to command env context if minikube cluster detected
-	localDaemon, err := docker.NewAPIClient(ct.cfg)
+	localDaemon, err := docker.NewAPIClient(ctx, ct.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client information: %w", err)
 	}

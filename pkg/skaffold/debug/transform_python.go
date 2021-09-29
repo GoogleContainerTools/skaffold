@@ -17,21 +17,25 @@ limitations under the License.
 package debug
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type pythonTransformer struct{}
 
+//nolint:golint
+func NewPythonTransformer() containerTransformer {
+	return pythonTransformer{}
+}
+
 func init() {
-	containerTransforms = append(containerTransforms, pythonTransformer{})
+	RegisterContainerTransformer(NewPythonTransformer())
 }
 
 const (
@@ -94,27 +98,28 @@ func hasCommonPythonEnvVars(env map[string]string) bool {
 	return false
 }
 
-func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
-	if hasCommonPythonEnvVars(config.env) {
+func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
+	if hasCommonPythonEnvVars(config.Env) {
 		return true
 	}
 
-	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
-		return isLaunchingPython(config.entrypoint)
+	if len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint) {
+		return isLaunchingPython(config.Entrypoint)
 	}
-	return isLaunchingPython(config.arguments)
+	return isLaunchingPython(config.Arguments)
 }
 
 // Apply configures a container definition for Python with ptvsd/debugpy/pydevd.
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
-	logrus.Infof("Configuring %q for python debugging", container.Name)
+func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+	container := adapter.GetContainer()
+	log.Entry(context.TODO()).Infof("Configuring %q for python debugging", container.Name)
 
 	// try to find existing `-mptvsd` or `-mdebugpy` command
 	if spec := retrievePythonDebugSpec(config); spec != nil {
 		protocol := spec.protocol()
 		container.Ports = exposePort(container.Ports, protocol, spec.port)
-		return annotations.ContainerDebugConfiguration{
+		return types.ContainerDebugConfiguration{
 			Runtime: "python",
 			Ports:   map[string]uint32{protocol: uint32(spec.port)},
 		}, "", nil
@@ -123,33 +128,33 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	spec := createPythonDebugSpec(overrideProtocols, portAlloc)
 
 	switch {
-	case isLaunchingPython(config.entrypoint):
-		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
+	case isLaunchingPython(config.Entrypoint):
+		container.Command = rewritePythonCommandLine(config.Entrypoint, *spec)
 
-	case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingPython(config.arguments):
-		container.Args = rewritePythonCommandLine(config.arguments, *spec)
+	case (len(config.Entrypoint) == 0 || isEntrypointLauncher(config.Entrypoint)) && isLaunchingPython(config.Arguments):
+		container.Args = rewritePythonCommandLine(config.Arguments, *spec)
 
-	case hasCommonPythonEnvVars(config.env):
-		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
+	case hasCommonPythonEnvVars(config.Env):
+		container.Command = rewritePythonCommandLine(config.Entrypoint, *spec)
 
 	default:
-		return annotations.ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
+		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
 	}
 
 	protocol := spec.protocol()
 	container.Ports = exposePort(container.Ports, protocol, spec.port)
 
-	return annotations.ContainerDebugConfiguration{
+	return types.ContainerDebugConfiguration{
 		Runtime: "python",
 		Ports:   map[string]uint32{protocol: uint32(spec.port)},
 	}, "python", nil
 }
 
-func retrievePythonDebugSpec(config imageConfiguration) *pythonSpec {
-	if spec := extractPythonDebugSpec(config.entrypoint); spec != nil {
+func retrievePythonDebugSpec(config ImageConfiguration) *pythonSpec {
+	if spec := extractPythonDebugSpec(config.Entrypoint); spec != nil {
 		return spec
 	}
-	if spec := extractPythonDebugSpec(config.arguments); spec != nil {
+	if spec := extractPythonDebugSpec(config.Arguments); spec != nil {
 		return spec
 	}
 	return nil
@@ -165,7 +170,7 @@ func extractPythonDebugSpec(args []string) *pythonSpec {
 	return nil
 }
 
-func createPythonDebugSpec(overrideProtocols []string, portAlloc portAllocator) *pythonSpec {
+func createPythonDebugSpec(overrideProtocols []string, portAlloc PortAllocator) *pythonSpec {
 	for _, p := range overrideProtocols {
 		switch p {
 		case pydevdProtocol:
@@ -197,7 +202,7 @@ func extractPtvsdSpec(args []string) *pythonSpec {
 			port, err := strconv.ParseInt(args[i+1], 10, 32)
 			// spec.port, err := strconv.Atoi(args[i+1])
 			if err != nil {
-				logrus.Errorf("Invalid python ptvsd port %q: %s\n", args[i+1], err)
+				log.Entry(context.TODO()).Errorf("Invalid python ptvsd port %q: %s\n", args[i+1], err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -226,7 +231,7 @@ func extractDebugpySpec(args []string) *pythonSpec {
 			}
 			port, err := strconv.ParseInt(s[len(s)-1], 10, 32)
 			if err != nil {
-				logrus.Errorf("Invalid port %q: %s\n", args[i+1], err)
+				log.Entry(context.TODO()).Errorf("Invalid port %q: %s\n", args[i+1], err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -286,7 +291,7 @@ func (spec pythonSpec) launcherMode() string {
 	case debugpy:
 		return "debugpy"
 	}
-	logrus.Fatalf("invalid debugger type: %q", spec.debugger)
+	log.Entry(context.TODO()).Fatalf("invalid debugger type: %q", spec.debugger)
 	return ""
 }
 
@@ -297,7 +302,7 @@ func (spec pythonSpec) protocol() string {
 	case debugpy, ptvsd:
 		return dapProtocol
 	default:
-		logrus.Fatalf("invalid debugger type: %q", spec.debugger)
+		log.Entry(context.TODO()).Fatalf("invalid debugger type: %q", spec.debugger)
 		return dapProtocol
 	}
 }

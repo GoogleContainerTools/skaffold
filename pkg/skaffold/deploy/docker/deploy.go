@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
@@ -34,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	pkgsync "github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -55,14 +55,14 @@ type Deployer struct {
 	once        sync.Once
 }
 
-func NewDeployer(cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v2.DockerDeploy, resources []*v2.PortForwardResource) (*Deployer, error) {
-	client, err := dockerutil.NewAPIClient(cfg)
+func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v2.DockerDeploy, resources []*v2.PortForwardResource) (*Deployer, error) {
+	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	tracker := tracker.NewContainerTracker()
-	l, err := logger.NewLogger(tracker, cfg)
+	l, err := logger.NewLogger(ctx, tracker, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -118,11 +118,11 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 func (d *Deployer) deploy(ctx context.Context, out io.Writer, b graph.Artifact) error {
 	if !util.StrSliceContains(d.cfg.Images, b.ImageName) {
 		// TODO(nkubala)[07/20/21]: should we error out in this case?
-		logrus.Warnf("skipping deploy for image %s since it was not built by Skaffold", b.ImageName)
+		olog.Entry(ctx).Warnf("skipping deploy for image %s since it was not built by Skaffold", b.ImageName)
 		return nil
 	}
 	if container, found := d.tracker.ContainerForImage(b.ImageName); found {
-		logrus.Debugf("removing old container %s for image %s", container.ID, b.ImageName)
+		olog.Entry(ctx).Debugf("removing old container %s for image %s", container.ID, b.ImageName)
 		if err := d.client.Delete(ctx, out, container.ID); err != nil {
 			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, b.ImageName, err)
 		}
@@ -167,7 +167,7 @@ func (d *Deployer) getContainerName(ctx context.Context, name string) string {
 	}
 
 	if currentName != name {
-		logrus.Debugf("container %s already present in local daemon: using %s instead", name, currentName)
+		olog.Entry(ctx).Debugf("container %s already present in local daemon: using %s instead", name, currentName)
 	}
 	return currentName
 }

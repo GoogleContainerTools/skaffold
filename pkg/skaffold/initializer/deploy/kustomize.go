@@ -17,13 +17,13 @@ limitations under the License.
 package deploy
 
 import (
+	"context"
 	"path/filepath"
-
-	"github.com/sirupsen/logrus"
 
 	pkgkustomize "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
@@ -100,7 +100,7 @@ func (k *kustomize) DeployConfig() (latestV2.DeployConfig, []latestV2.Profile) {
 		default:
 			defaultKustomization = k.kustomizations[0]
 		}
-		logrus.Warnf("multiple kustomizations found but no default provided - defaulting to %s", defaultKustomization)
+		log.Entry(context.TODO()).Warnf("multiple kustomizations found but no default provided - defaulting to %s", defaultKustomization)
 	}
 
 	for _, kustomization := range k.kustomizations {

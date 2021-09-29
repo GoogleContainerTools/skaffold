@@ -17,15 +17,15 @@ limitations under the License.
 package initializer
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -38,7 +38,7 @@ var (
 func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latestV2.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
-	logrus.Info("generating skaffold config")
+	log.Entry(context.TODO()).Info("generating skaffold config")
 
 	name, err := suggestConfigName()
 	if err != nil {

@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +31,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// these tests don't actually require a JVM
-	jib.JVMFound = func() bool { return true }
+	jib.JVMFound = func(context.Context) bool { return true }
 	os.Exit(m.Run())
 }
 
@@ -85,7 +86,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			})
 			builder.skipTests = test.skipTests
 
-			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", "bucket", "object")
 			t.CheckNoError(err)
 
 			expected := []*cloudbuild.BuildStep{{
@@ -130,7 +131,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 			})
 			builder.skipTests = test.skipTests
 
-			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", "bucket", "object")
 			t.CheckNoError(err)
 
 			expected := []*cloudbuild.BuildStep{{

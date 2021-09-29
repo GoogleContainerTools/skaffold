@@ -17,8 +17,6 @@ limitations under the License.
 package kubernetes
 
 import (
-	"fmt"
-	"os"
 	"reflect"
 	"testing"
 
@@ -69,7 +67,6 @@ func TestGetAccessor(t *testing.T) {
 				opts.Append("1") // default enabled mode
 			}
 			a := NewAccessor(mockAccessConfig{opts: opts}, test.description, &kubectl.CLI{}, nil, label.NewLabeller(false, nil, ""), nil)
-			fmt.Fprintf(os.Stdout, "retrieved accessor: %+v\n", a)
 			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(a)).Type() == reflect.TypeOf(access.NoopAccessor{}))
 		})
 	}

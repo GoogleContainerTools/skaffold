@@ -692,7 +692,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 			// disable yamltags validation
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 			t.Override(&util.OSEnviron, func() []string { return test.env })
-			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				fakeClient := &fakeCommonAPIClient{
 					CommonAPIClient: &testutil.FakeAPIClient{
 						ErrVersion: true,
@@ -702,7 +702,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 				return docker.NewLocalDaemon(fakeClient, nil, false, nil), nil
 			})
 
-			err := ProcessWithRunContext(&v2.RunContext{
+			err := ProcessWithRunContext(context.Background(), &v2.RunContext{
 				Pipelines: v2.NewPipelines([]latestV2.Pipeline{
 					{
 						Build: latestV2.BuildConfig{

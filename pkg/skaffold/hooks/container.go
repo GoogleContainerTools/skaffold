@@ -120,7 +120,7 @@ func (h containerHook) run(ctx context.Context, out io.Writer) error {
 				containerName := c.Name
 				errs.Go(func() error {
 					defer tw.Close()
-					err := util.RunCmd(cmd)
+					err := util.RunCmd(ctx, cmd)
 					if err != nil {
 						return fmt.Errorf("hook execution failed for pod %q container %q: %w", podName, containerName, err)
 					}

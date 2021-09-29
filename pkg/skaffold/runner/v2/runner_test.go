@@ -137,10 +137,12 @@ func (t *TestBench) GetSyncer() sync.Syncer {
 func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
-func (t *TestBench) TestDependencies(*latestV2.Artifact) ([]string, error) { return nil, nil }
-func (t *TestBench) Dependencies() ([]string, error)                       { return nil, nil }
-func (t *TestBench) Cleanup(context.Context, io.Writer) error              { return nil }
-func (t *TestBench) Prune(context.Context, io.Writer) error                { return nil }
+func (t *TestBench) TestDependencies(context.Context, *latestV2.Artifact) ([]string, error) {
+	return nil, nil
+}
+func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -281,6 +283,12 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	if autoTriggers == nil {
 		autoTriggers = &triggerState{true, true, true}
 	}
+	var tests []*latestV2.TestCase
+	for _, a := range artifacts {
+		tests = append(tests, &latestV1.TestCase{
+			ImageName: a.ImageName,
+		})
+	}
 	cfg := &latestV2.SkaffoldConfig{
 		Pipeline: latestV2.Pipeline{
 			Build: latestV2.BuildConfig{
@@ -290,6 +298,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 				},
 				Artifacts: artifacts,
 			},
+			Test:   tests,
 			Deploy: latestV2.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
@@ -305,15 +314,16 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 		},
 		WorkingDir: tmpDir.Root(),
 	}
-	r, err := NewForConfig(runCtx)
+	runner, err := NewForConfig(context.Background(), runCtx)
 	t.CheckNoError(err)
 
-	r.Builder.Builder = testBench
-	r.Tester = testBench
-	r.renderer = testBench
-	r.deployer = testBench
-	r.listener = testBench
-	r.monitor = monitor
+	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
+	runner.Builder.Builder = testBench
+	runner.tester = testBench
+	runner.deployer = testBench
+	runner.listener = testBench
+	runner.monitor = monitor
+	runner.renderer = testBench
 
 	testBench.devLoop = func(ctx context.Context, out io.Writer, doDev func() error) error {
 		if err := monitor.Run(true); err != nil {
@@ -496,7 +506,9 @@ func TestNewForConfig(t *testing.T) {
 	for _, tt := range tests {
 		testutil.Run(t, tt.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
+				return "", semver.Version{}, errors.New("not found")
+			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
 				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
@@ -510,8 +522,8 @@ func TestNewForConfig(t *testing.T) {
 				WorkingDir: tmpDir.Root(),
 			}
 
-			cfg, err := NewForConfig(runCtx)
-			t.CheckError(tt.shouldErr, err)
+			cfg, err := NewForConfig(context.Background(), runCtx)
+			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, r, d := runner.WithTimings(&tt.expectedBuilder, tt.expectedTester, tt.expectedRenderer,
 					tt.expectedDeployer, tt.cacheArtifacts)
@@ -520,8 +532,8 @@ func TestNewForConfig(t *testing.T) {
 				} else {
 					t.CheckNoError(err)
 					t.CheckTypeEquality(b, cfg.Pruner.Builder)
-					t.CheckTypeEquality(_t, cfg.Tester)
 					t.CheckTypeEquality(r, cfg.renderer)
+					t.CheckTypeEquality(_t, cfg.tester)
 					t.CheckTypeEquality(d, cfg.deployer)
 				}
 			}
@@ -601,7 +613,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 			}
-			r, _ := NewForConfig(&v2.RunContext{
+			r, _ := NewForConfig(context.Background(), &v2.RunContext{
 				Opts:       opts,
 				Pipelines:  v2.NewPipelines([]latestV2.Pipeline{pipeline}),
 				WorkingDir: tmpDir.Root(),

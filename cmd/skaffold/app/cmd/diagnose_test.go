@@ -58,11 +58,11 @@ metadata:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getRunContext, func(config.SkaffoldOptions, []util.VersionedConfig) (*v2.RunContext, error) {
+			t.Override(&getRunContext, func(context.Context, config.SkaffoldOptions, []util.VersionedConfig) (*v2.RunContext, error) {
 				return nil, fmt.Errorf("cannot get the runtime context")
 			})
 			t.Override(&yamlOnly, test.yamlOnly)
-			t.Override(&getCfgs, func(opts config.SkaffoldOptions) ([]util.VersionedConfig, error) {
+			t.Override(&getCfgs, func(context.Context, config.SkaffoldOptions) ([]util.VersionedConfig, error) {
 				return []util.VersionedConfig{
 					&latestV2.SkaffoldConfig{
 						APIVersion: "testVersion",

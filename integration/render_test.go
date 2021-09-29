@@ -420,7 +420,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer, err := helm.NewDeployer(&v2.RunContext{
+			deployer, err := helm.NewDeployer(context.Background(), &v2.RunContext{
 				Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
 					Deploy: latestV2.DeployConfig{
 						DeployType: latestV2.DeployType{

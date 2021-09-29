@@ -17,6 +17,7 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -27,7 +28,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// these tests don't actually require a JVM
-	JVMFound = func() bool { return true }
+	JVMFound = func(context.Context) bool { return true }
 	os.Exit(m.Run())
 }
 
@@ -44,7 +45,7 @@ func TestResolveJVM(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.cmd)
 
-			result := resolveJVM()
+			result := resolveJVM(context.Background())
 			t.CheckDeepEqual(test.expected, result)
 		})
 	}

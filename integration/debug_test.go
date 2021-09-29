@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	debugannotations "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -78,7 +78,7 @@ func TestDebug(t *testing.T) {
 			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
 			verifyDebugAnnotations := func(annotations map[string]string) {
-				var configs map[string]debugannotations.ContainerDebugConfiguration
+				var configs map[string]types.ContainerDebugConfiguration
 				if anno, found := annotations["debug.cloud.google.com/config"]; !found {
 					t.Errorf("deployment missing debug annotation: %v", annotations)
 				} else if err := json.Unmarshal([]byte(anno), &configs); err != nil {

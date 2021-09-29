@@ -16,6 +16,8 @@ limitations under the License.
 
 package analyze
 
+import "context"
+
 // directoryAnalyzer is a base analyzer that can be included in every analyzer as a convenience
 // it saves the current directory on enterDir events. Benefits to include this into other analyzers is that
 // they can rely on the current directory var, but also they don't have to implement enterDir and exitDir.
@@ -23,7 +25,7 @@ type directoryAnalyzer struct {
 	currentDir string
 }
 
-func (a *directoryAnalyzer) analyzeFile(_ string) error {
+func (a *directoryAnalyzer) analyzeFile(ctx context.Context, file string) error {
 	return nil
 }
 

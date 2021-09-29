@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"fmt"
 	"text/template"
 
@@ -42,7 +43,7 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 }
 
 // GenerateTag generates a tag from a template referencing environment variables.
-func (t *envTemplateTagger) GenerateTag(image latestV2.Artifact) (string, error) {
+func (t *envTemplateTagger) GenerateTag(ctx context.Context, image latestV2.Artifact) (string, error) {
 	// missingkey=error throws error when map is indexed with an undefined key
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME": image.ImageName,

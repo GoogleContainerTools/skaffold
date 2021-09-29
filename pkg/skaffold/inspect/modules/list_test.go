@@ -79,7 +79,7 @@ func TestPrintModulesList(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(ctx context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				if len(opts.ConfigurationFilter) == 0 {
 					return test.configSet, test.err
 				}

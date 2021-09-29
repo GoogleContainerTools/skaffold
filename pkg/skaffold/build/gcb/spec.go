@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"fmt"
 
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -25,9 +26,9 @@ import (
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
-func (b *Builder) buildSpec(artifact *latestV2.Artifact, tag, bucket, object string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpec(ctx context.Context, artifact *latestV2.Artifact, tag, bucket, object string) (cloudbuild.Build, error) {
 	// Artifact specific build spec
-	buildSpec, err := b.buildSpecForArtifact(artifact, tag)
+	buildSpec, err := b.buildSpecForArtifact(ctx, artifact, tag)
 	if err != nil {
 		return buildSpec, err
 	}
@@ -53,7 +54,7 @@ func (b *Builder) buildSpec(artifact *latestV2.Artifact, tag, bucket, object str
 	return buildSpec, nil
 }
 
-func (b *Builder) buildSpecForArtifact(a *latestV2.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latestV2.Artifact, tag string) (cloudbuild.Build, error) {
 	switch {
 	case a.KanikoArtifact != nil:
 		return b.kanikoBuildSpec(a, tag)
@@ -62,7 +63,7 @@ func (b *Builder) buildSpecForArtifact(a *latestV2.Artifact, tag string) (cloudb
 		return b.dockerBuildSpec(a, tag)
 
 	case a.JibArtifact != nil:
-		return b.jibBuildSpec(a, tag)
+		return b.jibBuildSpec(ctx, a, tag)
 
 	case a.BuildpackArtifact != nil:
 		return b.buildpackBuildSpec(a.BuildpackArtifact, tag, a.Dependencies)

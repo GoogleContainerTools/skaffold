@@ -59,7 +59,7 @@ spec:
 //  Step 4. `kustomize build` (if the temp dir from step 3 has a Kustomization hydrate the manifest),
 //  Step 5. `kpt fn sink` (store the stdout in a given dir).
 func TestKpt_Deploy(t *testing.T) {
-	sanityCheck = func(dir string, buf io.Writer) error { return nil }
+	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
 	tests := []struct {
 		description      string
 		builds           []graph.Artifact
@@ -446,7 +446,7 @@ func TestKpt_Cleanup(t *testing.T) {
 }
 
 func TestKpt_Render(t *testing.T) {
-	sanityCheck = func(dir string, buf io.Writer) error { return nil }
+	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
 	// The follow are outputs to `kpt fn run` commands.
 	output1 := `apiVersion: v1
 kind: Pod
@@ -1155,7 +1155,7 @@ func TestVersionCheck(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
 			tmpDir.WriteFiles(test.kustomizations)
-			err := versionCheck("", io.Writer(&buf))
+			err := versionCheck(context.Background(), "", io.Writer(&buf))
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				testutil.CheckDeepEqual(t.T, test.error.Error(), err.Error())

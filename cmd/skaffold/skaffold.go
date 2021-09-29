@@ -19,15 +19,14 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"os"
 
 	"cloud.google.com/go/profiler"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
@@ -44,18 +43,18 @@ func main() {
 			ServiceVersion: version.Get().Version,
 		})
 		if err != nil {
-			log.Fatalf("failed to start the profiler: %v", err)
+			log.Entry(context.TODO()).Fatalf("failed to start the profiler: %v", err)
 		}
 	}
 	var code int
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {
-			logrus.Debugln("ignore error since context is cancelled:", err)
+			log.Entry(context.TODO()).Debugln("ignore error since context is cancelled:", err)
 		} else {
 			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
 			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
 			// before we print an error to get the right coloring.
-			errOut := output.GetWriter(os.Stderr, output.DefaultColorCode, false, false)
+			errOut := output.SetupColors(context.Background(), os.Stderr, output.DefaultColorCode, false)
 			output.Red.Fprintln(errOut, err)
 			code = app.ExitCode(err)
 		}

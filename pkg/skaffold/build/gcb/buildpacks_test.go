@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"testing"
 
 	"google.golang.org/api/cloudbuild/v1"
@@ -193,7 +194,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latestV2.GoogleCloudBuild{
 				PackImage: "pack/image",
 			})
-			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", "bucket", "object")
 			t.CheckError(test.shouldErr, err)
 
 			if !test.shouldErr {

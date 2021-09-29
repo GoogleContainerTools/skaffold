@@ -22,10 +22,9 @@ import (
 	"io/ioutil"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -69,7 +68,7 @@ func (c *cache) lookup(ctx context.Context, a *latestV2.Artifact, tag string, h 
 	c.cacheMutex.RUnlock()
 	if !cacheHit {
 		if entry, err = c.tryImport(ctx, a, tag, hash); err != nil {
-			logrus.Debugf("Could not import artifact from Docker, building instead (%s)", err)
+			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
 			return needsBuilding{hash: hash}
 		}
 	}
@@ -141,13 +140,13 @@ func (c *cache) tryImport(ctx context.Context, a *latestV2.Artifact, tag string,
 	}
 
 	if !c.client.ImageExists(ctx, tag) {
-		logrus.Debugf("Importing artifact %s from docker registry", tag)
+		log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
 		err := c.client.Pull(ctx, ioutil.Discard, tag)
 		if err != nil {
 			return entry, err
 		}
 	} else {
-		logrus.Debugf("Importing artifact %s from local docker", tag)
+		log.Entry(ctx).Debugf("Importing artifact %s from local docker", tag)
 	}
 
 	imageID, err := c.client.ImageID(ctx, tag)
@@ -160,7 +159,7 @@ func (c *cache) tryImport(ctx context.Context, a *latestV2.Artifact, tag string,
 	}
 
 	if digest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
-		logrus.Debugf("Added digest for %s to cache entry", tag)
+		log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
 		entry.Digest = digest
 	}
 

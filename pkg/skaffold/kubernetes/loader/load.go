@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -60,7 +61,7 @@ func NewImageLoader(kubeContext string, cli *kubectl.CLI) *ImageLoader {
 func imagesToLoad(localImages, deployerImages, images []graph.Artifact) []graph.Artifact {
 	local := map[string]bool{}
 	for _, image := range localImages {
-		local[image.ImageName] = true
+		local[docker.SanitizeImageName(image.ImageName)] = true
 	}
 
 	tracked := map[string]bool{}
@@ -72,7 +73,7 @@ func imagesToLoad(localImages, deployerImages, images []graph.Artifact) []graph.
 
 	var res []graph.Artifact
 	for _, image := range images {
-		if tracked[image.ImageName] {
+		if tracked[docker.SanitizeImageName(image.ImageName)] {
 			res = append(res, image)
 		}
 	}
@@ -152,7 +153,7 @@ func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts [
 		}
 
 		cmd := createCmd(artifact.Tag)
-		if cmdOut, err := util.RunCmdOut(cmd); err != nil {
+		if cmdOut, err := util.RunCmdOut(ctx, cmd); err != nil {
 			output.Red.Fprintln(out, "Failed")
 			return fmt.Errorf("unable to load image %q into cluster: %w, %s", artifact.Tag, err, cmdOut)
 		}

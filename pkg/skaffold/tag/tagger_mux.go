@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -29,12 +30,12 @@ type TaggerMux struct {
 	byImageName map[string]Tagger
 }
 
-func (t *TaggerMux) GenerateTag(image latestV2.Artifact) (string, error) {
+func (t *TaggerMux) GenerateTag(ctx context.Context, image latestV2.Artifact) (string, error) {
 	tagger, found := t.byImageName[image.ImageName]
 	if !found {
 		return "", fmt.Errorf("no valid tagger found for artifact: %q", image.ImageName)
 	}
-	return tagger.GenerateTag(image)
+	return tagger.GenerateTag(ctx, image)
 }
 
 func NewTaggerMux(runCtx *v2.RunContext) (Tagger, error) {

@@ -94,7 +94,7 @@ func TestDeployHooks(t *testing.T) {
 		kubeContext := "context1"
 		opts := NewDeployEnvOpts("run_id", kubeContext, namespaces)
 		formatter := func(corev1.Pod, corev1.ContainerStatus, func() bool) log.Formatter { return mockLogFormatter{} }
-		runner := NewDeployRunner(&kubectl.CLI{KubeContext: kubeContext}, deployer.LifecycleHooks, namespaces, formatter, opts)
+		runner := NewDeployRunner(&kubectl.CLI{KubeContext: kubeContext}, deployer.LifecycleHooks, &namespaces, formatter, opts)
 
 		t.Override(&util.DefaultExecCommand,
 			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).

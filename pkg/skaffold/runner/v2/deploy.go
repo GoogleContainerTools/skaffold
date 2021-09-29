@@ -22,8 +22,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -31,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
@@ -47,7 +46,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	defer r.deployer.GetAccessor().Stop()
 
 	if err := r.deployer.GetAccessor().Start(ctx, out); err != nil {
-		logrus.Warnln("Error starting port forwarding:", err)
+		log.Entry(ctx).Warn("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
@@ -65,7 +64,8 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	defer r.deployer.GetStatusMonitor().Reset()
-	out = output.WithEventContext(out, constants.Deploy, eventV2.SubtaskIDNone)
+
+	out, ctx = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)
 
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
@@ -84,7 +84,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 
 	if len(localImages) > 0 {
-		logrus.Debugln(`Local images can't be referenced by digest.
+		log.Entry(ctx).Debug(`Local images can't be referenced by digest.
 They are tagged and referenced by a unique, local only, tag instead.
 See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
@@ -107,8 +107,14 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		}
 	}
 
+	// if --load-images=true, load all images into cluster
+	if r.runCtx.ForceLoadImages() {
+		localAndBuiltImages = artifacts
+	}
+
 	r.deployer.RegisterLocalImages(localAndBuiltImages)
 	err = r.deployer.Deploy(ctx, deployOut, artifacts)
+	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
@@ -116,8 +122,6 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-
-	r.hasDeployed = true
 
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	defer postStatusCheckFn()

@@ -111,6 +111,7 @@ const LogLevel_ERROR = LogLevel(enums.LogLevel_ERROR)
 const LogLevel_FATAL = LogLevel(enums.LogLevel_FATAL)
 const LogLevel_PANIC = LogLevel(enums.LogLevel_PANIC)
 const LogLevel_TRACE = LogLevel(enums.LogLevel_TRACE)
+const LogLevel_STANDARD = LogLevel(enums.LogLevel_STANDARD)
 
 // StatusCode from public import enums/enums.proto
 type StatusCode = enums.StatusCode

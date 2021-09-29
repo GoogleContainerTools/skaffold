@@ -201,6 +201,13 @@ func TestImagesToLoad(t *testing.T) {
 			expectedImages: nil,
 		},
 		{
+			name:           "single image marked as local, with ko prefix and Go import path with uppercase characters",
+			localImages:    []graph.Artifact{{ImageName: "ko://example.com/Organization/Image1", Tag: "Foo"}},
+			deployerImages: []graph.Artifact{{ImageName: "example.com/organization/image1", Tag: "Foo"}},
+			builtImages:    []graph.Artifact{{ImageName: "ko://example.com/Organization/Image1", Tag: "Foo"}},
+			expectedImages: []graph.Artifact{{ImageName: "ko://example.com/Organization/Image1", Tag: "Foo"}},
+		},
+		{
 			name:           "two images marked as local",
 			localImages:    []graph.Artifact{{ImageName: "image1", Tag: "foo"}, {ImageName: "image2", Tag: "bar"}},
 			deployerImages: []graph.Artifact{{ImageName: "image1", Tag: "foo"}, {ImageName: "image2", Tag: "bar"}},

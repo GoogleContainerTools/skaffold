@@ -7,7 +7,7 @@ weight: 20
 
 `skaffold dev` enables continuous local development on an application.
 While in `dev` mode, Skaffold will watch an application's source files, and when it detects changes,
-will rebuild your images (or sync files to your running containers), push any new images, and redeploy the application to your cluster.
+will rebuild your images (or sync files to your running containers), push any new images, test built images, and redeploy the application to your cluster.
 
 `skaffold dev` is considered Skaffold's main mode of operation, as it allows you
 to leverage all of the features of Skaffold in a continuous way while iterating
@@ -15,7 +15,7 @@ on your application.
 
 ## Dev loop
 
-When `skaffold dev` is run, Skaffold will first do a full build and deploy of all artifacts specified in the `skaffold.yaml`, similar to `skaffold run`. Upon successful build and deploy, Skaffold will start watching all source file dependencies for all artifacts specified in the project. As changes are made to these source files, Skaffold will rebuild the associated artifacts, and redeploy the new changes to your cluster.
+When `skaffold dev` is run, Skaffold will first do a full build, test and deploy of all artifacts specified in the `skaffold.yaml`, similar to `skaffold run`. Upon successful build, test and deploy, Skaffold will start watching all source file dependencies for all artifacts specified in the project. As changes are made to these source files, Skaffold will rebuild and retest the associated artifacts, and redeploy the new changes to your cluster.
 
 The dev loop will run until the user cancels the Skaffold process with `Ctrl+C`. Upon receiving this signal, Skaffold will clean up all deployed artifacts on the active cluster, meaning that Skaffold won't abandon any Kubernetes resources that it created throughout the lifecycle of the run. This can be optionally disabled by using the `--no-prune` flag.
 
@@ -23,17 +23,28 @@ The dev loop will run until the user cancels the Skaffold process with `Ctrl+C`.
 
 The actions performed by Skaffold during the dev loop have precedence over one another, so that behavior is always predictable. The order of actions is:
 
-1. File Sync
-1. Build
-1. Deploy
+1. [File Sync]({{<relref "/docs/pipeline-stages/filesync" >}})
+1. [Build]({{<relref "/docs/pipeline-stages/builders" >}})
+1. [Test]({{<relref "/docs/pipeline-stages/testers" >}})
+1. [Deploy]({{<relref "/docs/pipeline-stages/deployers" >}})
 
 ## File Watcher and Watch Modes
 
 Skaffold computes the dependencies for each artifact based on the builder being used, and the root directory of the artifact. Once all source file dependencies are computed, in `dev` mode, Skaffold will continuously watch these files for changes in the background, and conditionally re-run the loop when changes are detected.
 
-By default, Skaffold uses `notify` to monitor events on the local filesystem. Skaffold also supports a `polling` mode where the filesystem is checked for changes on a configurable interval, or a `manual` mode, where Skaffold waits for user input to check for file changes. These watch modes can be configured through the `--trigger` flag.
+By default, Skaffold uses filesystem notifications of your OS to monitor changes
+on the local filesystem and re-runs the loop on every change.
 
-## Control API
+Skaffold also supports a `polling` mode where the filesystem is checked for
+changes on a configurable interval, or a `manual` mode, where Skaffold waits for
+user input to check for file changes. These watch modes can be configured
+through the `--trigger` flag.
+
+## Controlling the Dev Loop with API
+
+{{< alert title="Note">}}
+This section is intended for developers who build tooling on top of Skaffold.
+{{</alert>}}
 
 By default, the dev loop will carry out all actions (as needed) each time a file is changed locally, with the exception of operating in `manual` trigger mode. However, individual actions can be gated off by user input through the Skaffold API.
 

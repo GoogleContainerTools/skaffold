@@ -27,13 +27,13 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -97,9 +97,9 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 
 // ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
 // It returns all encountered errors as a concatenated string.
-func ProcessWithRunContext(runCtx *v2.RunContext) error {
+func ProcessWithRunContext(ctx context.Context, runCtx *v2.RunContext) error {
 	var errs []error
-	errs = append(errs, validateDockerNetworkContainerExists(runCtx.Artifacts(), runCtx)...)
+	errs = append(errs, validateDockerNetworkContainerExists(ctx, runCtx.Artifacts(), runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -329,16 +329,16 @@ func validateDockerNetworkMode(artifacts []*latestV2.Artifact) (errs []error) {
 }
 
 // Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
-func validateDockerNetworkContainerExists(artifacts []*latestV2.Artifact, runCtx docker.Config) []error {
+func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*latestV2.Artifact, runCtx docker.Config) []error {
 	var errs []error
-	apiClient, err := docker.NewAPIClient(runCtx)
+	apiClient, err := docker.NewAPIClient(ctx, runCtx)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
 	}
 
 	client := apiClient.RawClient()
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(5*time.Second))
 	defer cancel()
 
 	for _, a := range artifacts {
@@ -602,7 +602,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 			continue
 		}
 		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
-			logrus.Debugln("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
+			log.Entry(context.TODO()).Debug("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
 			continue
 		}
 
