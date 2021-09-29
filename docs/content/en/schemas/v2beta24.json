@@ -1454,6 +1454,11 @@
         "id"
       ],
       "properties": {
+        "env": {
+          "type": "string",
+          "description": "environment variable name containing the secret value.",
+          "x-intellij-html-description": "environment variable name containing the secret value."
+        },
         "id": {
           "type": "string",
           "description": "id of the secret.",
@@ -1467,7 +1472,8 @@
       },
       "preferredOrder": [
         "id",
-        "src"
+        "src",
+        "env"
       ],
       "additionalProperties": false,
       "type": "object",
