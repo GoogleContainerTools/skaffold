@@ -219,6 +219,73 @@ func TestKubectlDeploy(t *testing.T) {
 			shouldErr:        true,
 			waitForDeletions: true,
 		},
+		{
+			description: "kubectl dry-run=server",
+			kubectl: latestV1.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+				DryRun:    "server",
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=server -oyaml -f deployment.yaml", DeploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+			builds: []graph.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:v1",
+			}},
+			waitForDeletions: true,
+		},
+		{
+			description: "kubectl dry-run=client",
+			kubectl: latestV1.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+				DryRun:    "client",
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+			builds: []graph.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:v1",
+			}},
+			waitForDeletions: true,
+		},
+		{
+			description: "kubectl dry-run=none",
+			kubectl: latestV1.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+				DryRun:    "none",
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=none -oyaml -f deployment.yaml", DeploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+			builds: []graph.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:v1",
+			}},
+			waitForDeletions: true,
+		},
+		{
+			description: "no dry run set defaults to `client`",
+			kubectl: latestV1.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+			builds: []graph.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:v1",
+			}},
+			waitForDeletions: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

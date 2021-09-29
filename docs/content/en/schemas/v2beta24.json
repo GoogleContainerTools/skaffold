@@ -2586,6 +2586,17 @@
           "description": "default namespace passed to kubectl on deployment if no other override is given.",
           "x-intellij-html-description": "default namespace passed to kubectl on deployment if no other override is given."
         },
+        "dryRun": {
+          "type": "string",
+          "description": "value kubectl will use with `kubectl create --dry-run=`. Valid values are `client` (default): validate manifests using `kubectl create --dry-run=client`. `server`: validate manifests using `kubectl create --dry-run=server`. `none`: validate manifests using `kubectl create --dry-run=none`.",
+          "x-intellij-html-description": "value kubectl will use with <code>kubectl create --dry-run=</code>. Valid values are <code>client</code> (default): validate manifests using <code>kubectl create --dry-run=client</code>. <code>server</code>: validate manifests using <code>kubectl create --dry-run=server</code>. <code>none</code>: validate manifests using <code>kubectl create --dry-run=none</code>.",
+          "default": "client",
+          "enum": [
+            "client",
+            "server",
+            "none"
+          ]
+        },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
@@ -2620,6 +2631,7 @@
         "remoteManifests",
         "flags",
         "defaultNamespace",
+        "dryRun",
         "hooks"
       ],
       "additionalProperties": false,

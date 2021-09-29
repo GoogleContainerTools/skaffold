@@ -137,7 +137,7 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV
 		}
 	}
 
-	kubectl := kubectl.NewCLI(cfg, d.Flags, defaultNamespace)
+	kubectl := kubectl.NewCLI(cfg, d.Flags, defaultNamespace, "")
 	// if user has kustomize binary, prioritize that over kubectl kustomize
 	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 

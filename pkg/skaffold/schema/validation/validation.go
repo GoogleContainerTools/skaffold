@@ -77,6 +77,7 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 		cfgErrs = append(cfgErrs, validateArtifactTypes(config.Build)...)
 		cfgErrs = append(cfgErrs, validateTaggingPolicy(config.Build)...)
 		cfgErrs = append(cfgErrs, validateCustomTest(config.Test)...)
+		cfgErrs = append(cfgErrs, validateDeployConfig(config.Deploy)...)
 		errs = append(errs, wrapWithContext(config, cfgErrs...)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
@@ -631,6 +632,25 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 					}))
 			}
 		}
+	}
+	return errs
+}
+
+func validateDeployConfig(d latestV1.DeployConfig) []error {
+	var errs []error
+	if d.KubectlDeploy != nil {
+		errs = append(errs, validateKubectlDeploy(d.KubectlDeploy)...)
+	}
+	return errs
+}
+
+func validateKubectlDeploy(d *latestV1.KubectlDeploy) []error {
+	var errs []error
+	validDryRunValues := util.NewStringSet()
+	// Allow empty, since `client` will be set in this case
+	validDryRunValues.Insert("none", "server", "client", "")
+	if !validDryRunValues.Contains(d.DryRun) {
+		errs = append(errs, fmt.Errorf("deploy.kubectl.dryRun value must be `none`, `server` or `client`, got `%s`", d.DryRun))
 	}
 	return errs
 }

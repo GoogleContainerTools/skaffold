@@ -92,7 +92,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.Kubect
 	}
 
 	podSelector := kubernetes.NewImageList()
-	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
+	kubectl := NewCLI(cfg, d.Flags, defaultNamespace, d.DryRun)
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
 	if err != nil {
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
@@ -188,7 +188,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace()
 	case k.skipRender:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
-		manifests, err = k.readManifests(childCtx, false)
+		manifests, err = k.readManifests(childCtx, false, false)
 		endTrace()
 	default:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
@@ -310,7 +310,7 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 }
 
 // readManifests reads the manifests to deploy/delete.
-func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
+func (k *Deployer) readManifests(ctx context.Context, offline bool, cleanup bool) (manifest.ManifestList, error) {
 	// Get file manifests
 	manifests, err := k.Dependencies()
 	// Clean the temporary directory that holds the manifests downloaded from GCS
@@ -334,7 +334,7 @@ func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.Ma
 	}
 
 	if !offline {
-		return k.kubectl.ReadManifests(ctx, manifests)
+		return k.kubectl.ReadManifests(ctx, manifests, cleanup)
 	}
 
 	// In case no URLs are provided, we can stay offline - no need to run "kubectl create" which
@@ -406,7 +406,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 		return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
 	}
 	var localManifests, remoteManifests manifest.ManifestList
-	localManifests, err = k.readManifests(ctx, offline)
+	localManifests, err = k.readManifests(ctx, offline, false)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +472,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
-	manifests, err := k.readManifests(ctx, false)
+	manifests, err := k.readManifests(ctx, false, true)
 	if err != nil {
 		return err
 	}

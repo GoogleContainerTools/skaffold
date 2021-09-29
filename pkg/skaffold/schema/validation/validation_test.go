@@ -1507,3 +1507,44 @@ func TestValidateKubectlManifests(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateKubectlDeploy(t *testing.T) {
+	tests := []struct {
+		description    string
+		kubectlDeploy  *latestV1.KubectlDeploy
+		expectedErrors int
+	}{
+		{
+			description: "valid with `none` dryRun value",
+			kubectlDeploy: &latestV1.KubectlDeploy{
+				DryRun: "none",
+			},
+		},
+		{
+			description: "valid with `server` dryRun value",
+			kubectlDeploy: &latestV1.KubectlDeploy{
+				DryRun: "server",
+			},
+		},
+		{
+			description: "valid with `client` dryRun value",
+			kubectlDeploy: &latestV1.KubectlDeploy{
+				DryRun: "client",
+			},
+		},
+		{
+			description: "error with invalid dryRun value",
+			kubectlDeploy: &latestV1.KubectlDeploy{
+				DryRun: "this-shouldn't-work",
+			},
+			expectedErrors: 1,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			errs := validateKubectlDeploy(test.kubectlDeploy)
+			t.CheckDeepEqual(test.expectedErrors, len(errs))
+		})
+	}
+}

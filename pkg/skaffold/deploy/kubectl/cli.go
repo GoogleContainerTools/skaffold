@@ -45,6 +45,7 @@ type CLI struct {
 	forceDeploy      bool
 	waitForDeletions config.WaitForDeletions
 	previousApply    manifest.ManifestList
+	dryRun           string
 }
 
 type Config interface {
@@ -62,12 +63,18 @@ type Config interface {
 	PipelineForImage(imageName string) (latestV1.Pipeline, bool)
 }
 
-func NewCLI(cfg Config, flags latestV1.KubectlFlags, defaultNamespace string) CLI {
+// NewCLI constructs an object to interface with the kubectl CLI
+// The dryRun parameter will be treated as `client` in the case of it's value being an empty string
+func NewCLI(cfg Config, flags latestV1.KubectlFlags, defaultNamespace string, dryRun string) CLI {
+	if dryRun == "" {
+		dryRun = "client"
+	}
 	return CLI{
 		CLI:              kubectl.NewCLI(cfg, defaultNamespace),
 		Flags:            flags,
 		forceDeploy:      cfg.ForceDeploy(),
 		waitForDeletions: cfg.WaitForDeletions(),
+		dryRun:           dryRun,
 	}
 }
 
@@ -192,8 +199,10 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests man
 	}
 }
 
-// ReadManifests reads a list of manifests in yaml format.
-func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.ManifestList, error) {
+// ReadManifests reads a list of manifests in yaml format and validates them by running `kubectl create --dry-run`.
+// The cleanup parameter here helps us when validating the manifests before cleaning them from the cluster. In this case,
+// we use `--dry-run=client`, to avoid the server giving us an error related to resources already existing on the cluster.
+func (c *CLI) ReadManifests(ctx context.Context, manifests []string, cleanup bool) (manifest.ManifestList, error) {
 	var list []string
 	for _, manifest := range manifests {
 		list = append(list, "-f", manifest)
@@ -205,7 +214,12 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.M
 		return nil, versionGetErr(err)
 	}
 	if compTo1_18 >= 0 {
-		dryRun += "=client"
+		// Always use `client` on cleanup to avoid errors from resources already existing on cluster
+		if cleanup {
+			dryRun += "=client"
+		} else {
+			dryRun += fmt.Sprintf("=%s", c.dryRun)
+		}
 	}
 
 	args := c.args([]string{dryRun, "-oyaml"}, list...)

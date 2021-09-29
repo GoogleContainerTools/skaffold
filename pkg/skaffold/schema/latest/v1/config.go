@@ -568,6 +568,13 @@ type KubectlDeploy struct {
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 
+	// DryRun is the value kubectl will use with `kubectl create --dry-run=`. Valid values are
+	// `client` (default): validate manifests using `kubectl create --dry-run=client`.
+	// `server`: validate manifests using `kubectl create --dry-run=server`.
+	// `none`: validate manifests using `kubectl create --dry-run=none`.
+	// Defaults to `client`.
+	DryRun string `yaml:"dryRun,omitempty"`
+
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
