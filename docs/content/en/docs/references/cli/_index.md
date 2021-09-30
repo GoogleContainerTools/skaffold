@@ -77,7 +77,7 @@ Pipeline Building Blocks:
   test              Run tests against your built application images
   deploy            Deploy pre-built artifacts
   delete            Delete any resources deployed by Skaffold
-  render            Perform all image builds, and output rendered Kubernetes manifests
+  render            Outputs rendered Kubernetes manifests
   apply             Apply hydrated manifests to a cluster
 
 Getting Started With a New Project:
@@ -883,7 +883,7 @@ The following options can be passed to any command:
 
 ### skaffold render
 
-Perform all image builds, and output rendered Kubernetes manifests
+Outputs rendered Kubernetes manifests
 
 ```
 
