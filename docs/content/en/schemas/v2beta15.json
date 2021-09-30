@@ -1339,7 +1339,14 @@
         "variant": {
           "type": "string",
           "description": "determines the behavior of the git tagger. Valid variants are: `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha. `TreeSha`: use the full tree hash of the artifact workingdir. `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.",
-          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are: <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir."
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are: <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir.",
+          "enum": [
+            "Tags",
+            "CommitSha",
+            "AbbrevCommitSha",
+            "TreeSha",
+            "AbbrevTreeSha"
+          ]
         }
       },
       "preferredOrder": [
@@ -1386,12 +1393,22 @@
         "logStreamingOption": {
           "type": "string",
           "description": "specifies the behavior when writing build logs to Google Cloud Storage. Valid options are: `STREAM_DEFAULT`: Service may automatically determine build log streaming behavior. `STREAM_ON`:  Build logs should be streamed to Google Cloud Storage. `STREAM_OFF`: Build logs should not be streamed to Google Cloud Storage; they will be written when the build is completed. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#logstreamingoption).",
-          "x-intellij-html-description": "specifies the behavior when writing build logs to Google Cloud Storage. Valid options are: <code>STREAM_DEFAULT</code>: Service may automatically determine build log streaming behavior. <code>STREAM_ON</code>:  Build logs should be streamed to Google Cloud Storage. <code>STREAM_OFF</code>: Build logs should not be streamed to Google Cloud Storage; they will be written when the build is completed. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#logstreamingoption\">Cloud Build Reference</a>."
+          "x-intellij-html-description": "specifies the behavior when writing build logs to Google Cloud Storage. Valid options are: <code>STREAM_DEFAULT</code>: Service may automatically determine build log streaming behavior. <code>STREAM_ON</code>:  Build logs should be streamed to Google Cloud Storage. <code>STREAM_OFF</code>: Build logs should not be streamed to Google Cloud Storage; they will be written when the build is completed. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#logstreamingoption\">Cloud Build Reference</a>.",
+          "enum": [
+            "STREAM_DEFAULT",
+            "STREAM_ON",
+            "STREAM_OFF"
+          ]
         },
         "logging": {
           "type": "string",
           "description": "specifies the logging mode. Valid modes are: `LOGGING_UNSPECIFIED`: The service determines the logging mode. `LEGACY`: Stackdriver logging and Cloud Storage logging are enabled (default). `GCS_ONLY`: Only Cloud Storage logging is enabled. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#loggingmode).",
-          "x-intellij-html-description": "specifies the logging mode. Valid modes are: <code>LOGGING_UNSPECIFIED</code>: The service determines the logging mode. <code>LEGACY</code>: Stackdriver logging and Cloud Storage logging are enabled (default). <code>GCS_ONLY</code>: Only Cloud Storage logging is enabled. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#loggingmode\">Cloud Build Reference</a>."
+          "x-intellij-html-description": "specifies the logging mode. Valid modes are: <code>LOGGING_UNSPECIFIED</code>: The service determines the logging mode. <code>LEGACY</code>: Stackdriver logging and Cloud Storage logging are enabled (default). <code>GCS_ONLY</code>: Only Cloud Storage logging is enabled. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#loggingmode\">Cloud Build Reference</a>.",
+          "enum": [
+            "LOGGING_UNSPECIFIED",
+            "LEGACY",
+            "GCS_ONLY"
+          ]
         },
         "machineType": {
           "type": "string",
