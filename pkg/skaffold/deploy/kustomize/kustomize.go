@@ -341,7 +341,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kustomize",
 	})
@@ -349,7 +349,12 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-
+	if dryRun {
+		for _, manifest := range manifests {
+			output.White.Fprintf(out, "---\n%s", manifest)
+		}
+		return nil
+	}
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return err
 	}

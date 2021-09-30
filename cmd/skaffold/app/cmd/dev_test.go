@@ -58,7 +58,7 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
 }
@@ -139,7 +139,7 @@ func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer) error {
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool) error {
 	return nil
 }
 

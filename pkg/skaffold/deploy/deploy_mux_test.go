@@ -88,7 +88,7 @@ func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
 
-func (m *MockDeployer) Cleanup(context.Context, io.Writer) error {
+func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool) error {
 	return m.cleanupErr
 }
 
