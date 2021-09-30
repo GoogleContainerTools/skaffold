@@ -35,6 +35,7 @@ const BuilderType_BUILDPACKS = enums.BuilderType_BUILDPACKS
 const BuilderType_CUSTOM = enums.BuilderType_CUSTOM
 const BuilderType_KANIKO = enums.BuilderType_KANIKO
 const BuilderType_DOCKER = enums.BuilderType_DOCKER
+const BuilderType_KO = enums.BuilderType_KO
 
 var BuilderType_name = enums.BuilderType_name
 var BuilderType_value = enums.BuilderType_value

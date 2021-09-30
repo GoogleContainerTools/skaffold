@@ -816,6 +816,7 @@ Enum indicating builders used
 | CUSTOM | 4 | Custom Builder |
 | KANIKO | 5 | Kaniko Builder |
 | DOCKER | 6 | Docker Builder |
+| KO | 7 | Ko Builder |
 
 
 
