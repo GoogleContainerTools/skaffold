@@ -13,8 +13,6 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.3
 	k8s.io/client-go => k8s.io/client-go v0.21.3
 	k8s.io/kubectl => k8s.io/kubectl v0.21.3
-
-	sigs.k8s.io/kustomize/kyaml => sigs.k8s.io/kustomize/kyaml v0.9.2
 )
 
 require (
@@ -98,6 +96,7 @@ require (
 	k8s.io/kubectl v0.22.2
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	knative.dev/pkg v0.0.0-20201119170152-e5e30edc364a // indirect
-	sigs.k8s.io/kustomize/kyaml v0.11.0
+	sigs.k8s.io/kustomize/api v0.10.0 // indirect
+	sigs.k8s.io/kustomize/kyaml v0.12.0
 	sigs.k8s.io/yaml v1.2.0
 )

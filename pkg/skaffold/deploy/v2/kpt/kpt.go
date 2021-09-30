@@ -28,6 +28,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
+	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -168,6 +169,20 @@ func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
 	k.localImages = images
 }
 
+type processor struct {
+	applyDir string
+}
+
+func (p processor) Process(rl *framework.ResourceList) error {
+	for i := range rl.Items {
+		_, err := rl.Items[i].String()
+		if err != nil {
+			return sourceErr(err, p.applyDir)
+		}
+	}
+	return nil
+}
+
 func (k *Deployer) getManifests(ctx context.Context) (manifest.ManifestList, error) {
 	cmd := exec.CommandContext(
 		ctx, "kpt", "fn", "source", k.applyDir)
@@ -175,26 +190,27 @@ func (k *Deployer) getManifests(ctx context.Context) (manifest.ManifestList, err
 	if err != nil {
 		return nil, sourceErr(err, k.applyDir)
 	}
+
 	input := bytes.NewBufferString(string(buf))
-	rl := framework.ResourceList{
+	var outBuf []byte
+	output := bytes.NewBuffer(outBuf)
+
+	rw := kio.ByteReadWriter{
 		Reader: input,
+		Writer: output,
 	}
-	// Manipulate the kustomize "Rnode"(Kustomize term) and pulls out the "Items"
-	// from ResourceLists.
-	if err := rl.Read(); err != nil {
-		return nil, sourceErr(err, k.applyDir)
+
+	p := processor{
+		applyDir: k.applyDir,
 	}
-	var newBuf []byte
-	for i := range rl.Items {
-		item, err := rl.Items[i].String()
-		if err != nil {
-			return nil, sourceErr(err, k.applyDir)
-		}
-		newBuf = append(newBuf, []byte(item)...)
+
+	if err = framework.Execute(p, &rw); err != nil {
+		return nil, err
 	}
+
 	manifests := manifest.ManifestList{}
 	if len(buf) > 0 {
-		manifests.Append(newBuf)
+		manifests.Append(buf)
 	}
 	return manifests, nil
 }
@@ -358,5 +374,6 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func (k *Deployer) trackNamespaces(namespaces []string) {
+	fmt.Fprintf(os.Stdout, "tracking namespaces: %+v\n", namespaces)
 	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
 }

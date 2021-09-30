@@ -168,13 +168,6 @@ func TestDeploy(t *testing.T) {
 				CmdRunOut("kpt fn source .", manifests).
 				AndRun("kpt live apply ."),
 		},
-		{
-			description: "deploy succeeds",
-			kpt:         latestV2.KptV2Deploy{Dir: "."},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", manifests).
-				AndRun("kpt live apply ."),
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -185,6 +178,7 @@ func TestDeploy(t *testing.T) {
 			t.CheckNoError(err)
 			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckNoError(err)
+			fmt.Fprintf(os.Stdout, "deployer namespaces: %+v\n", *k.namespaces)
 			t.CheckDeepEqual(*k.namespaces, []string{"test-kptv2"})
 		})
 	}
