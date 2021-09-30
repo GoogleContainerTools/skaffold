@@ -96,30 +96,7 @@ spec:
       - name: kustomize-test
         image: not/a/valid/image
 `
-	// The kustomize build result from kustomizeYaml file.
-	kustomizePatchedOutput = `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: kustomize-test
-  name: kustomize-test
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kustomize-test
-  template:
-    metadata:
-      labels:
-        app: kustomize-test
-    spec:
-      containers:
-      - command:
-        - sleep
-        - "3600"
-        image: index.docker.io/library/busybox
-        name: kustomize-test
-`
+
 	// Test file under <tmp>/base/kustomization.yaml
 	kustomizeYaml = `resources:
   - deployment.yaml

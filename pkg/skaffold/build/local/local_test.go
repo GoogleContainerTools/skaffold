@@ -264,7 +264,6 @@ func TestNewBuilder(t *testing.T) {
 		shouldErr     bool
 		expectedPush  bool
 		cluster       config.Cluster
-		localBuild    latestV2.LocalBuild
 		pushFlag      config.BoolOrUndefined
 		localBuild    latestV2.LocalBuild
 		localDockerFn func(context.Context, docker.Config) (docker.LocalDaemon, error)
