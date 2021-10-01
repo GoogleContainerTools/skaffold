@@ -1218,9 +1218,8 @@ type DockerArtifact struct {
 	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
 	Squash bool `yaml:"squash,omitempty"`
 
-	// Secret contains information about a local secret passed to `docker build`,
-	// along with optional destination information.
-	Secret *DockerSecret `yaml:"secret,omitempty"`
+	// Secrets is used to pass in --secret to docker build, `useBuildKit: true` is required.
+	Secrets []*DockerSecret `yaml:"secrets,omitempty"`
 
 	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
 	SSH string `yaml:"ssh,omitempty"`
@@ -1328,6 +1327,16 @@ type NamedContainerHook struct {
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.
 	ContainerName string `yaml:"containerName,omitempty"`
+}
+
+// ResourceFilter contains definition to filter which resource to transform.
+type ResourceFilter struct {
+	// Type is the compact format of a resource type.
+	Type string `yaml:"type" yamltags:"required"`
+	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
+	Image []string `yaml:"image,omitempty"`
+	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
+	Labels []string `yaml:"labels,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

@@ -16,10 +16,14 @@ limitations under the License.
 
 package ko
 
+// TODO(halvards)[08/31/2021]: Replace the latestV1 import path with the
+// real schema import path once the contents of ./schema has been added to
+// the real schema in pkg/skaffold/schema/latest/v1.
 import (
 	"path/filepath"
 	"testing"
 
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -27,50 +31,87 @@ import (
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
 		description          string
-		baseImage            string
-		platforms            []string
-		workspace            string
-		sourceDir            string
+		artifact             latestV1.Artifact
 		wantPlatform         string
 		wantWorkingDirectory string
 	}{
 		{
 			description: "all zero value",
-		},
-		{
-			description: "empty platforms",
-			platforms:   []string{},
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{},
+				},
+			},
 		},
 		{
 			description: "base image",
-			baseImage:   "gcr.io/distroless/static:nonroot",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						BaseImage: "gcr.io/distroless/base:nonroot",
+					},
+				},
+			},
 		},
 		{
-			description:  "multiple platforms",
-			platforms:    []string{"linux/amd64", "linux/arm64"},
+			description: "empty platforms",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Platforms: []string{},
+					},
+				},
+			},
+		},
+		{
+			description: "multiple platforms",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Platforms: []string{"linux/amd64", "linux/arm64"},
+					},
+				},
+			},
 			wantPlatform: "linux/amd64,linux/arm64",
 		},
 		{
-			description:          "workspace",
-			workspace:            "my-app-subdirectory",
+			description: "workspace",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{},
+				},
+				Workspace: "my-app-subdirectory",
+			},
 			wantWorkingDirectory: "my-app-subdirectory",
 		},
 		{
-			description:          "source dir",
-			sourceDir:            "my-go-mod-is-here",
+			description: "source dir",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Dir: "my-go-mod-is-here",
+					},
+				},
+			},
 			wantWorkingDirectory: "my-go-mod-is-here",
 		},
 		{
-			description:          "workspace and source dir",
-			workspace:            "my-app-subdirectory",
-			sourceDir:            "my-go-mod-is-here",
+			description: "workspace and source dir",
+			artifact: latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{
+						Dir: "my-go-mod-is-here",
+					},
+				},
+				Workspace: "my-app-subdirectory",
+			},
 			wantWorkingDirectory: "my-app-subdirectory" + string(filepath.Separator) + "my-go-mod-is-here",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			bo := buildOptions(test.baseImage, test.platforms, test.workspace, test.sourceDir)
-			t.CheckDeepEqual(test.baseImage, bo.BaseImage)
+			bo := buildOptions(&test.artifact)
+			t.CheckDeepEqual(test.artifact.KoArtifact.BaseImage, bo.BaseImage)
 			if bo.ConcurrentBuilds < 1 {
 				t.Errorf("ConcurrentBuilds must always be >= 1 for the ko builder")
 			}

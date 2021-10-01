@@ -26,7 +26,7 @@ import (
 )
 
 // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta22"
+const Version string = "skaffold/v2beta23"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -517,6 +517,9 @@ type DeployConfig struct {
 
 	// Logs configures how container logs are printed as a result of a deployment.
 	Logs LogsConfig `yaml:"logs,omitempty"`
+
+	// TransformableAllowList configures an allowlist for transforming manifests.
+	TransformableAllowList []ResourceFilter `yaml:"-"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -524,7 +527,7 @@ type DeployConfig struct {
 // time for hybrid workflows.
 type DeployType struct {
 	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
-	DockerDeploy *DockerDeploy `yaml:"-,omitempty"`
+	DockerDeploy *DockerDeploy `yaml:"docker,omitempty"`
 
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
@@ -1299,16 +1302,14 @@ type DockerArtifact struct {
 	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
 	Squash bool `yaml:"squash,omitempty"`
 
-	// Secret contains information about a local secret passed to `docker build`,
-	// along with optional destination information.
-	Secret *DockerSecret `yaml:"secret,omitempty"`
+	// Secrets is used to pass in --secret to docker build, `useBuildKit: true` is required.
+	Secrets []*DockerSecret `yaml:"secrets,omitempty"`
 
 	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
 	SSH string `yaml:"ssh,omitempty"`
 }
 
-// DockerSecret contains information about a local secret passed to `docker build`,
-// along with optional destination information.
+// DockerSecret is used to pass in --secret to docker build, `useBuildKit: true` is required.
 type DockerSecret struct {
 	// ID is the id of the secret.
 	ID string `yaml:"id,omitempty" yamltags:"required"`
@@ -1409,6 +1410,16 @@ type NamedContainerHook struct {
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.
 	ContainerName string `yaml:"containerName,omitempty"`
+}
+
+// ResourceFilter contains definition to filter which resource to transform.
+type ResourceFilter struct {
+	// Type is the compact format of a resource type.
+	Type string `yaml:"type" yamltags:"required"`
+	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
+	Image []string `yaml:"image,omitempty"`
+	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
+	Labels []string `yaml:"labels,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

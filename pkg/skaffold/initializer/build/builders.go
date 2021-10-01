@@ -48,11 +48,36 @@ type InitBuilder interface {
 	Path() string
 }
 
+type NoneBuilder struct{}
+
+const NoneBuilderName = "none"
+
+func (b NoneBuilder) Name() string {
+	return NoneBuilderName
+}
+
+func (b NoneBuilder) Describe() string {
+	return ""
+}
+
+func (b NoneBuilder) ArtifactType(string) latestV1.ArtifactType {
+	return latestV1.ArtifactType{}
+}
+
+func (b NoneBuilder) ConfiguredImage() string {
+	return ""
+}
+
+func (b NoneBuilder) Path() string {
+	return ""
+}
+
 // ArtifactInfo defines a builder and the image it builds
 type ArtifactInfo struct {
 	Builder   InitBuilder
 	ImageName string
 	Workspace string
+	Manifest  ManifestInfo
 }
 
 // GeneratedArtifactInfo pairs a discovered builder with a
@@ -60,6 +85,11 @@ type ArtifactInfo struct {
 type GeneratedArtifactInfo struct {
 	ArtifactInfo
 	ManifestPath string
+}
+
+type ManifestInfo struct {
+	Generate bool
+	Port     int
 }
 
 type Initializer interface {
@@ -71,7 +101,7 @@ type Initializer interface {
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
-	GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error)
+	GenerateManifests(out io.Writer, force, enableManifestGeneration bool) (map[GeneratedArtifactInfo][]byte, error)
 }
 
 type emptyBuildInitializer struct {
@@ -89,7 +119,7 @@ func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error) {
+func (e *emptyBuildInitializer) GenerateManifests(io.Writer, bool, bool) (map[GeneratedArtifactInfo][]byte, error) {
 	return nil, nil
 }
 

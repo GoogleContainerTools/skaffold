@@ -67,6 +67,8 @@ func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, p
 		} else {
 			k8sAccessor[kubeContext] = m
 		}
+	} else if accessor, ok := k8sAccessor[kubeContext].(*portforward.ForwarderManager); ok {
+		accessor.AddPodForwarder(cli, podSelector, cfg.Mode(), cfg.PortForwardOptions())
 	}
 
 	return k8sAccessor[kubeContext]

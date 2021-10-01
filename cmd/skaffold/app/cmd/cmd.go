@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -198,7 +197,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdInspect())
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), fmt.Sprintf("Log level: one of %v", logrus.AllLevels))
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.DefaultLogLevel.String(), fmt.Sprintf("Log level: one of %v", log.AllLevels))
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(output.DefaultColorCode), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().BoolVar(&interactive, "interactive", true, "Allow user prompts for more information")
@@ -254,17 +253,7 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 }
 
 func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
-	logrus.SetOutput(stdErr)
-	lvl, err := logrus.ParseLevel(level)
-	if err != nil {
-		return fmt.Errorf("parsing log level: %w", err)
-	}
-	logrus.SetLevel(lvl)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: timestamp,
-	})
-	logrus.AddHook(event.NewLogHook())
-	return nil
+	return log.SetupLogs(stdErr, level, timestamp, event.NewLogHook())
 }
 
 // alwaysSucceedWhenCancelled returns nil if the context was cancelled.

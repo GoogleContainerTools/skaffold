@@ -42,23 +42,23 @@ func TestPrintTestsList(t *testing.T) {
 	}{
 		{
 			description: "print all tests",
-			expected:    `{"tests":[{"structureTest":"structure-test-i0","structureTestArgs":null},{"Command":"custom-test-i0","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
+			expected:    `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null},{"testType":"custom-test","Command":"custom-test-i0","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
 		},
 		{
 			description: "print all tests for one module",
-			expected:    `{"tests":[{"structureTest":"structure-test-i0","structureTestArgs":null}]}` + "\n",
+			expected:    `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null}]}` + "\n",
 			module:      []string{"cfg1"},
 		},
 		{
 			description: "print all tests for two activated profiles",
 
-			expected: `{"tests":[{"structureTest":"structure-test-i0","structureTestArgs":null},{"Command":"custom-test-i0","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
+			expected: `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null},{"testType":"custom-test","Command":"custom-test-i0","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
 			profiles: []string{"custom-test", "structure-test"},
 		},
 		{
 			description: "print all tests for one module and an activated profile",
 
-			expected: `{"tests":[{"structureTest":"structure-test-i0","structureTestArgs":null}]}` + "\n",
+			expected: `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null}]}` + "\n",
 			module:   []string{"cfg1"},
 			profiles: []string{"custom-test"},
 		},

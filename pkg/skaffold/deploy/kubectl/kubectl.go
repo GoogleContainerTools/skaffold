@@ -243,6 +243,10 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	return nil
 }
 
+func (k *Deployer) HasRunnableHooks() bool {
+	return len(k.KubectlDeploy.LifecycleHooks.PreHooks) > 0 || len(k.KubectlDeploy.LifecycleHooks.PostHooks) > 0
+}
+
 func (k *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
 	if err := k.hookRunner.RunPreHooks(childCtx, out); err != nil {

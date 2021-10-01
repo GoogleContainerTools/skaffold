@@ -110,8 +110,8 @@ func TestDockerBuildSpec(t *testing.T) {
 				ArtifactType: latestV2.ArtifactType{
 					DockerArtifact: &latestV2.DockerArtifact{
 						DockerfilePath: "Dockerfile",
-						Secret: &latestV2.DockerSecret{
-							ID: "secret",
+						Secrets: []*latestV2.DockerSecret{
+							{ID: "secret"},
 						},
 					},
 				},

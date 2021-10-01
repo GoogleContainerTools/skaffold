@@ -17,7 +17,7 @@ test:
           - <paths glob>
 ```
 
-As tests take time, you might prefer to configure tests using [profiles](https://skaffold.dev/docs/https://skaffold.dev/docs/environment/profiles/) so that they can be automatically enabled or disabled, e.g.
+As tests take time, you might prefer to configure tests using [profiles](https://skaffold.dev/docs/environment/profiles/) so that they can be automatically enabled or disabled, e.g.
 If the `command` exits with a non-zero return code then the test will have failed, and deployment will not continue.
 
 ```yaml

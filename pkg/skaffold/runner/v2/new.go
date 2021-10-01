@@ -60,14 +60,6 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	g := graph.ToArtifactGraph(runCtx.Artifacts())
 	sourceDependencies := graph.NewSourceDependenciesCache(runCtx, store, g)
 
-	var builder build.Builder
-	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV2.Pipeline) (build.PipelineBuilder, error) {
-		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
-	})
-	if err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return nil, fmt.Errorf("creating builder: %w", err)
-	}
 	isLocalImage := func(imageName string) (bool, error) {
 		return isImageLocal(runCtx, imageName)
 	}
@@ -97,6 +89,17 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
+	}
+
+	// The Builder must be instantiated AFTER the Deployer, because the Deploy target influences
+	// the Cluster object on the RunContext, which in turn influences whether or not we will push images.
+	var builder build.Builder
+	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV2.Pipeline) (build.PipelineBuilder, error) {
+		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
+	})
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
 	depLister := func(ctx context.Context, artifact *latestV2.Artifact) ([]string, error) {
@@ -197,6 +200,11 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 	}
 	if pipeline.Build.GoogleCloudBuild != nil || pipeline.Build.Cluster != nil {
 		return false, nil
+	}
+
+	// if we're deploying to local Docker, all images must be local
+	if pipeline.Deploy.DockerDeploy != nil {
+		return true, nil
 	}
 
 	cl := runCtx.GetCluster()

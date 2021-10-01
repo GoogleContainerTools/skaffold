@@ -19,7 +19,7 @@ package v2beta21
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta22"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )

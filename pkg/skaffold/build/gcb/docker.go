@@ -68,7 +68,7 @@ func (b *Builder) cacheFromSteps(artifact *latestV2.DockerArtifact) []*cloudbuil
 func (b *Builder) dockerBuildArgs(a *latestV2.Artifact, tag string, deps []*latestV2.ArtifactDependency) ([]string, error) {
 	d := a.DockerArtifact
 	// TODO(nkubala): remove when buildkit is supported in GCB (#4773)
-	if d.Secret != nil || d.SSH != "" {
+	if len(d.Secrets) > 0 || d.SSH != "" {
 		return nil, errors.New("docker build options, secrets and ssh, are not currently supported in GCB builds")
 	}
 	requiredImages := docker.ResolveDependencyImages(deps, b.artifactStore, true)

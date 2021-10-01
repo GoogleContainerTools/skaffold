@@ -479,6 +479,27 @@ func TestNewForConfig(t *testing.T) {
 			cacheArtifacts:   true,
 		},
 		{
+			description: "transformableAllowList",
+			pipeline: latestV1.Pipeline{
+				Build: latestV1.BuildConfig{
+					TagPolicy: latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}},
+					BuildType: latestV1.BuildType{
+						LocalBuild: &latestV1.LocalBuild{},
+					},
+				},
+				Deploy: latestV1.DeployConfig{
+					DeployType: latestV1.DeployType{
+						KubectlDeploy: &latestV1.KubectlDeploy{},
+					},
+					TransformableAllowList: []latestV1.ResourceFilter{
+						{Type: "example.com/Application"},
+					},
+				},
+			},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &kubectl.Deployer{},
+		},
+		{
 			description: "multiple deployers",
 			pipeline: latestV2.Pipeline{
 				Build: latestV2.BuildConfig{
@@ -520,6 +541,13 @@ func TestNewForConfig(t *testing.T) {
 					Trigger: "polling",
 				},
 				WorkingDir: tmpDir.Root(),
+			}
+			// Test transformableAllowList
+			filters := runCtx.TransformableAllowList()
+			if test.pipeline.Deploy.TransformableAllowList != nil {
+				t.CheckDeepEqual(test.pipeline.Deploy.TransformableAllowList, filters)
+			} else {
+				t.CheckEmpty(filters)
 			}
 
 			cfg, err := NewForConfig(context.Background(), runCtx)

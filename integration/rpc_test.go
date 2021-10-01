@@ -44,6 +44,19 @@ var (
 	waitTime          = 1 * time.Second
 )
 
+func TestEnableRPCFlagDeprecation(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	rpcPort := randomPort()
+	out, err := skaffold.Build("--enable-rpc", "--rpc-port", rpcPort).InDir("testdata/build").RunWithCombinedOutput(t)
+	testutil.CheckError(t, false, err)
+	testutil.CheckContains(t, "Flag --enable-rpc has been deprecated", string(out))
+
+	rpcPort = randomPort()
+	out, err = skaffold.Build("--rpc-port", rpcPort).InDir("testdata/build").RunWithCombinedOutput(t)
+	testutil.CheckError(t, false, err)
+	testutil.CheckNotContains(t, "Flag --enable-rpc has been deprecated", string(out))
+}
+
 func TestEventsRPC(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
 	t.SkipNow()

@@ -22,6 +22,7 @@ import (
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/docker/docker/api/types/container"
 )
 
 func TestGetPorts(t *testing.T) {
@@ -68,8 +69,9 @@ func TestGetPorts(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			pm := NewPortManager()
-			s, m, err := pm.getPorts(test.name, collectResources(test.resources))
-			for port := range s { // the PortSet contains the local ports, so we grab the bindings keyed off these
+			cfg := container.Config{}
+			m, err := pm.getPorts(test.name, collectResources(test.resources), &cfg)
+			for port := range cfg.ExposedPorts { // the image config's PortSet contains the local ports, so we grab the bindings keyed off these
 				bindings := m[port]
 				t.CheckDeepEqual(len(bindings), 1) // we always have a 1-1 mapping of resource to binding
 				t.CheckError(false, err)           // shouldn't error, unless GetAvailablePort is broken

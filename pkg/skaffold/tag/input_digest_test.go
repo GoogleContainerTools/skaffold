@@ -18,26 +18,67 @@ package tag
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestInputDigest_GenerateCorrectChecksumForSingleFile(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
+func TestInputDigest(t *testing.T) {
+	fileContents1, fileContents2 := []byte("hello\ngo\n"), []byte("bye\ngo\n")
+
+	testutil.Run(t, "SameDigestForRelAndAbsPath", func(t *testutil.T) {
 		dir := t.TempDir()
-		d1 := []byte("hello\ngo\n")
-		filePath := filepath.Join(dir, "temp.file")
-		ioutil.WriteFile(filePath, d1, 0644)
+		cwdBackup, err := os.Getwd()
+		t.RequireNoError(err)
+		t.RequireNoError(os.Chdir(dir))
+		defer func() { t.RequireNoError(os.Chdir(cwdBackup)) }()
 
-		hash, _ := fileHasher(filePath)
+		file := "temp.file"
+		t.RequireNoError(ioutil.WriteFile(file, fileContents1, 0644))
 
-		// because we are hashing content of file and it's path
-		// we can't get a stable hash in testing because call t.TempDir()
-		// will return a folder to a random name
-		re := regexp.MustCompile(`^[a-fA-F0-9]{32}$`)
-		t.CheckTrue(re.MatchString(hash))
+		relPathHash, err := fileHasher(file, ".")
+		t.CheckErrorAndDeepEqual(false, err, "3cced2dec96a8b41b22875686d8941a9", relPathHash)
+		absPathHash, err := fileHasher(filepath.Join(dir, file), dir)
+		t.CheckErrorAndDeepEqual(false, err, relPathHash, absPathHash)
+	})
+
+	testutil.Run(t, "SameDigestForTwoDifferentAbsPaths", func(t *testutil.T) {
+		dir1, dir2 := t.TempDir(), t.TempDir()
+		file1, file2 := filepath.Join(dir1, "temp.file"), filepath.Join(dir2, "temp.file")
+		t.RequireNoError(ioutil.WriteFile(file1, fileContents1, 0644))
+		t.RequireNoError(ioutil.WriteFile(file2, fileContents1, 0644))
+
+		hash1, err := fileHasher(file1, dir1)
+		t.CheckErrorAndDeepEqual(false, err, "3cced2dec96a8b41b22875686d8941a9", hash1)
+		hash2, err := fileHasher(file2, dir2)
+		t.CheckErrorAndDeepEqual(false, err, hash1, hash2)
+	})
+
+	testutil.Run(t, "DifferentDigestForDifferentFilenames", func(t *testutil.T) {
+		dir1, dir2 := t.TempDir(), t.TempDir()
+		file1, file2 := filepath.Join(dir1, "temp1.file"), filepath.Join(dir2, "temp2.file")
+		t.RequireNoError(ioutil.WriteFile(file1, fileContents1, 0644))
+		t.RequireNoError(ioutil.WriteFile(file2, fileContents1, 0644))
+
+		hash1, err := fileHasher(file1, dir1)
+		t.CheckNoError(err)
+		hash2, err := fileHasher(file2, dir2)
+		t.CheckNoError(err)
+		t.CheckFalse(hash1 == hash2)
+	})
+
+	testutil.Run(t, "DifferentDigestForDifferentContent", func(t *testutil.T) {
+		dir1, dir2 := t.TempDir(), t.TempDir()
+		file1, file2 := filepath.Join(dir1, "temp.file"), filepath.Join(dir2, "temp.file")
+		t.RequireNoError(ioutil.WriteFile(file1, fileContents1, 0644))
+		t.RequireNoError(ioutil.WriteFile(file2, fileContents2, 0644))
+
+		hash1, err := fileHasher(file1, dir1)
+		t.CheckNoError(err)
+		hash2, err := fileHasher(file2, dir2)
+		t.CheckNoError(err)
+		t.CheckFalse(hash1 == hash2)
 	})
 }

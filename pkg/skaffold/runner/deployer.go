@@ -22,8 +22,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
@@ -32,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -99,6 +99,14 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 			if err != nil {
 				return nil, err
 			}
+			// Override the cluster on the runcontext.
+			// This is used to determine whether we should push images, and we want to avoid that unless explicitly asked for.
+			// Safe to do because we explicitly disallow simultaneous remote and local deployments.
+			runCtx.Cluster = config.Cluster{
+				Local:      true,
+				PushImages: false,
+				LoadImages: false,
+			}
 			deployers = append(deployers, d)
 		}
 
@@ -122,7 +130,7 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 
 		if d.KptV2Deploy != nil {
 			if d.KptV2Deploy.Dir == "" {
-				logrus.Infof("manifests are deployed from render path %v\n", hydrationDir)
+				log.Entry(context.TODO()).Infof("manifests are deployed from render path %v\n", hydrationDir)
 				d.KptV2Deploy.Dir = hydrationDir
 			}
 			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptV2Deploy, runCtx.Opts)

@@ -772,6 +772,41 @@ spec:
 	}
 }
 
+func TestHasRunnableHooks(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         latestV1.KustomizeDeploy
+		expected    bool
+	}{
+		{
+			description: "no hooks defined",
+			cfg:         latestV1.KustomizeDeploy{},
+		},
+		{
+			description: "has pre-deploy hook defined",
+			cfg: latestV1.KustomizeDeploy{
+				LifecycleHooks: latestV1.DeployHooks{PreHooks: []latestV1.DeployHookItem{{}}},
+			},
+			expected: true,
+		},
+		{
+			description: "has post-deploy hook defined",
+			cfg: latestV1.KustomizeDeploy{
+				LifecycleHooks: latestV1.DeployHooks{PostHooks: []latestV1.DeployHookItem{{}}},
+			},
+			expected: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			t.RequireNoError(err)
+			actual := k.HasRunnableHooks()
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
 type kustomizeConfig struct {
 	v2.RunContext    // Embedded to provide the default values.
 	force            bool

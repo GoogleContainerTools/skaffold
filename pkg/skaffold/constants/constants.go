@@ -17,8 +17,6 @@ limitations under the License.
 package constants
 
 import (
-	"github.com/sirupsen/logrus"
-
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
@@ -35,9 +33,6 @@ const (
 	Sync        = Phase("Sync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
-
-	// DefaultLogLevel is the default global verbosity
-	DefaultLogLevel = logrus.WarnLevel
 
 	// DefaultDockerfilePath is the dockerfile path is given relative to the
 	// context directory
@@ -60,9 +55,6 @@ const (
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
 	DefaultMetricFile  = "metrics"
-
-	DefaultRPCPort     = 50051
-	DefaultRPCHTTPPort = 50052
 
 	DefaultPortForwardAddress = "127.0.0.1"
 

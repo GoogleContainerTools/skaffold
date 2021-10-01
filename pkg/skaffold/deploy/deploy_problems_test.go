@@ -106,15 +106,17 @@ type mockConfig struct {
 	kubeContext string
 }
 
-func (m mockConfig) MinikubeProfile() string                { return m.minikube }
-func (m mockConfig) GetPipelines() []latestV2.Pipeline      { return []latestV2.Pipeline{} }
-func (m mockConfig) GetWorkingDir() string                  { return "" }
-func (m mockConfig) GetNamespace() string                   { return "" }
-func (m mockConfig) GlobalConfig() string                   { return "" }
-func (m mockConfig) ConfigurationFile() string              { return "" }
-func (m mockConfig) DefaultRepo() *string                   { return &m.minikube }
-func (m mockConfig) SkipRender() bool                       { return true }
-func (m mockConfig) Prune() bool                            { return true }
-func (m mockConfig) GetKubeContext() string                 { return m.kubeContext }
-func (m mockConfig) GetInsecureRegistries() map[string]bool { return map[string]bool{} }
-func (m mockConfig) Mode() config.RunMode                   { return config.RunModes.Dev }
+func (m mockConfig) MinikubeProfile() string                           { return m.minikube }
+func (m mockConfig) GetPipelines() []latestV2.Pipeline                 { return []latestV2.Pipeline{} }
+func (m mockConfig) GetWorkingDir() string                             { return "" }
+func (m mockConfig) GetNamespace() string                              { return "" }
+func (m mockConfig) GlobalConfig() string                              { return "" }
+func (m mockConfig) ConfigurationFile() string                         { return "" }
+func (m mockConfig) DefaultRepo() *string                              { return &m.minikube }
+func (m mockConfig) SkipRender() bool                                  { return true }
+func (m mockConfig) Prune() bool                                       { return true }
+func (m mockConfig) ContainerDebugging() bool                          { return false }
+func (m mockConfig) GetKubeContext() string                            { return m.kubeContext }
+func (m mockConfig) GetInsecureRegistries() map[string]bool            { return map[string]bool{} }
+func (m mockConfig) Mode() config.RunMode                              { return config.RunModes.Dev }
+func (m mockConfig) TransformableAllowList() []latestV2.ResourceFilter { return nil }

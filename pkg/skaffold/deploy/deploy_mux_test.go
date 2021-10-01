@@ -48,6 +48,18 @@ type MockDeployer struct {
 	renderErr       error
 }
 
+func (m *MockDeployer) HasRunnableHooks() bool {
+	return true
+}
+
+func (m *MockDeployer) PreDeployHooks(context.Context, io.Writer) error {
+	return nil
+}
+
+func (m *MockDeployer) PostDeployHooks(context.Context, io.Writer) error {
+	return nil
+}
+
 func (m *MockDeployer) GetAccessor() access.Accessor {
 	return &access.NoopAccessor{}
 }

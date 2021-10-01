@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -84,7 +85,7 @@ func (d *ContainerManager) Start(ctx context.Context) error {
 					return
 				}
 
-				d.checkPod(evt.Pod)
+				d.checkPod(evt.Type, evt.Pod)
 			}
 		}
 	}()
@@ -104,7 +105,7 @@ func (d *ContainerManager) Name() string {
 	return "Debug Manager"
 }
 
-func (d *ContainerManager) checkPod(pod *v1.Pod) {
+func (d *ContainerManager) checkPod(evtType watch.EventType, pod *v1.Pod) {
 	debugConfigString, found := pod.Annotations[types.DebugConfig]
 	if !found {
 		return
@@ -121,7 +122,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 			// only notify of first appearance or disappearance
 			_, seen := d.active[key]
 			switch {
-			case c.State.Running != nil && !seen:
+			case evtType != watch.Deleted && c.State.Running != nil && !seen:
 				d.active[key] = key
 				notifyDebuggingContainerStarted(
 					pod.Name,
@@ -133,7 +134,7 @@ func (d *ContainerManager) checkPod(pod *v1.Pod) {
 					config.Ports)
 				debuggingContainerStartedV2(pod.Name, c.Name, pod.Namespace, config.Artifact, config.Runtime, config.WorkingDir, config.Ports)
 
-			case c.State.Terminated != nil && seen:
+			case (evtType == watch.Deleted || c.State.Terminated != nil) && seen:
 				delete(d.active, key)
 				notifyDebuggingContainerTerminated(pod.Name, c.Name, pod.Namespace,
 					config.Artifact,

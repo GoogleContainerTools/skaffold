@@ -33,6 +33,7 @@ type WaitForDeletions struct {
 // SkaffoldOptions are options that are set by command line arguments not included in the config file itself
 type SkaffoldOptions struct {
 	Apply                 bool
+	ContainerDebugging    bool
 	Cleanup               bool
 	Notification          bool
 	Tail                  bool
@@ -60,13 +61,7 @@ type SkaffoldOptions struct {
 	AddSkaffoldLabels    bool
 	DetectMinikube       bool
 	IterativeStatusCheck bool
-	RPCPort              int
-	RPCHTTPPort          int
-	BuildConcurrency     int
-	WatchPollInterval    int
 	ConfigurationFile    string
-	ConfigurationFilter  []string
-	HydratedManifests    []string
 	HydrationDir         string
 	InventoryNamespace   string
 	InventoryID          string
@@ -86,22 +81,29 @@ type SkaffoldOptions struct {
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	MinikubeProfile    string
-	RepoCacheDir       string
-	CustomLabels       []string
-	TargetImages       []string
-	Profiles           []string
-	InsecureRegistries []string
-	MakePathsAbsolute  *bool
-	PortForward        PortForwardOptions
-	DefaultRepo        StringOrUndefined
-	PushImages         BoolOrUndefined
-	StatusCheck        BoolOrUndefined
-	Muted              Muted
-	WaitForDeletions   WaitForDeletions
-	SyncRemoteCache    SyncRemoteCacheOption
-	ForceLoadImages    bool
-	WaitForConnection  bool
+	MinikubeProfile     string
+	RepoCacheDir        string
+	ForceLoadImages     bool
+	WaitForConnection   bool
+	MakePathsAbsolute   *bool
+	StatusCheck         BoolOrUndefined
+	PortForward         PortForwardOptions
+	DefaultRepo         StringOrUndefined
+	PushImages          BoolOrUndefined
+	CustomLabels        []string
+	TargetImages        []string
+	Profiles            []string
+	InsecureRegistries  []string
+	ConfigurationFilter []string
+	HydratedManifests   []string
+	Muted               Muted
+	BuildConcurrency    int
+	WatchPollInterval   int
+	RPCPort             IntOrUndefined
+	RPCHTTPPort         IntOrUndefined
+
+	SyncRemoteCache  SyncRemoteCacheOption
+	WaitForDeletions WaitForDeletions
 }
 
 type RunMode string

@@ -64,11 +64,16 @@ func isLaunchingDlv(args []string) bool {
 }
 
 func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
-	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK"} {
+	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK", "KO_DATA_PATH"} {
 		if _, found := config.Env[name]; found {
 			log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has env %q", config.Artifact, name)
 			return true
 		}
+	}
+	// Detect ko image by author, see https://github.com/google/ko/blob/v0.8.3/pkg/build/gobuild.go#L610
+	if config.Author == "github.com/google/ko" {
+		log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has author %q", config.Artifact, config.Author)
+		return true
 	}
 
 	// FIXME: as there is currently no way to identify a buildpacks-produced image as holding a Go binary,
