@@ -47,6 +47,7 @@ var (
 	validateYamltags       = yamltags.ValidateStruct
 	DefaultConfig          = Options{CheckDeploySource: true}
 	dependencyAliasPattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+	gcbWorkerPoolPattern   = regexp.MustCompile(`projects/[^\/]*/locations/[^\/]*/workerPools/[^\/]*`)
 )
 
 type Options struct {
@@ -77,6 +78,8 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 		cfgErrs = append(cfgErrs, validateArtifactTypes(config.Build)...)
 		cfgErrs = append(cfgErrs, validateTaggingPolicy(config.Build)...)
 		cfgErrs = append(cfgErrs, validateCustomTest(config.Test)...)
+		cfgErrs = append(cfgErrs, validateGCBConfig(config.Build)...)
+
 		errs = append(errs, wrapWithContext(config, cfgErrs...)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
@@ -537,6 +540,17 @@ func validateArtifactTypes(bc latestV1.BuildConfig) (errs []error) {
 			if misc.ArtifactType(a) != misc.Kaniko && misc.ArtifactType(a) != misc.Custom {
 				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'cluster' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'cluster' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
 			}
+		}
+	}
+	return
+}
+
+// validateGCBConfig checks if GCB config is valid.
+func validateGCBConfig(bc latestV1.BuildConfig) (errs []error) {
+	switch {
+	case bc.GoogleCloudBuild != nil:
+		if !gcbWorkerPoolPattern.MatchString(bc.GoogleCloudBuild.WorkerPool) {
+			return []error{fmt.Errorf("invalid value for worker pool. Valid must match pattern projects/{project}/locations/{location}/workerPools/{worker_pool}")}
 		}
 	}
 	return

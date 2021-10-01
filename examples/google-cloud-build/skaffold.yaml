@@ -2,7 +2,7 @@ apiVersion: skaffold/v2beta23
 kind: Config
 build:
   googleCloudBuild:
-    projectId: k8s-skaffold
+    projectId: tejal-gke1
   artifacts:
   - image: skaffold-example
 deploy:
