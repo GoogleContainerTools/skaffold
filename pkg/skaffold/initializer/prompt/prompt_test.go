@@ -79,36 +79,27 @@ func TestChooseBuilders(t *testing.T) {
 	tests := []struct {
 		description    string
 		choices        []string
-		promptResponse []string
-		expected       []string
+		promptResponse string
+		expected       string
 		shouldErr      bool
 	}{
 		{
-			description:    "couple chosen",
+			description:    "last chosen",
 			choices:        []string{"a", "b", "c"},
-			promptResponse: []string{"a", "c"},
-			expected:       []string{"a", "c"},
+			promptResponse: "c",
+			expected:       "c",
 			shouldErr:      false,
 		},
 		{
-			description:    "none chosen",
-			choices:        []string{"a", "b", "c"},
-			promptResponse: []string{},
-			expected:       []string{},
-			shouldErr:      false,
-		},
-		{
-			description:    "error",
-			choices:        []string{"a", "b", "c"},
-			promptResponse: []string{"a", "b"},
-			expected:       []string{},
-			shouldErr:      true,
+			description: "error",
+			choices:     []string{"a", "b", "c"},
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&askOne, func(_ survey.Prompt, response interface{}, _ ...survey.AskOpt) error {
-				r := response.(*[]string)
+				r := response.(*string)
 				*r = test.promptResponse
 
 				if test.shouldErr {
@@ -117,8 +108,8 @@ func TestChooseBuilders(t *testing.T) {
 				return nil
 			})
 
-			chosen, err := ChooseBuildersFunc(test.choices)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, chosen)
+			choice, err := ChooseBuilderFunc(test.choices)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, choice)
 		})
 	}
 }
