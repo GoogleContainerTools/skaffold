@@ -109,6 +109,9 @@ func (l *logAggregatorImpl) writeToChannel(r io.Reader, lines chan string) {
 	for scanner.Scan() {
 		lines <- scanner.Text()
 	}
+	if scanner.Err() != nil {
+		log.Entry(context.TODO()).Error("error occurred retrieving build logs: %v", scanner.Err())
+	}
 	close(lines)
 }
 
