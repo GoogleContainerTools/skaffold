@@ -1149,6 +1149,12 @@ func TestValidateGCBConfig(t *testing.T) {
 					}}},
 			shouldErr: true,
 		},
+		{
+			desc: "empty worker pool",
+			cfg: latestV1.BuildConfig{
+				BuildType: latestV1.BuildType{
+					GoogleCloudBuild: &latestV1.GoogleCloudBuild{}}},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.desc, func(t *testutil.T) {

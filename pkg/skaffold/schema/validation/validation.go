@@ -548,7 +548,7 @@ func validateArtifactTypes(bc latestV1.BuildConfig) (errs []error) {
 // validateGCBConfig checks if GCB config is valid.
 func validateGCBConfig(bc latestV1.BuildConfig) (errs []error) {
 	switch {
-	case bc.GoogleCloudBuild != nil:
+	case bc.GoogleCloudBuild != nil && bc.GoogleCloudBuild.WorkerPool != "":
 		if !gcbWorkerPoolPattern.MatchString(bc.GoogleCloudBuild.WorkerPool) {
 			return []error{fmt.Errorf("invalid value for worker pool. Valid must match pattern projects/{project}/locations/{location}/workerPools/{worker_pool}")}
 		}
