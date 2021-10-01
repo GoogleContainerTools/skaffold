@@ -182,6 +182,12 @@ func (b *RunBuilder) WithProfiles(profiles []string) *RunBuilder {
 	return b
 }
 
+// WithVerbosity sets verbosity level.
+func (b *RunBuilder) WithVerbosity(level string) *RunBuilder {
+	b.args = append(b.args, "--verbosity="+level)
+	return b
+}
+
 // RunBackground runs the skaffold command in the background.  The Skaffold output
 // is accumulated and logged on test failure.
 func (b *RunBuilder) RunBackground(t *testing.T) {

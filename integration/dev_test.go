@@ -115,9 +115,10 @@ func TestDevGracefulCancel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
-			p, _ := skaffold.Dev().InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
+			p, _ := skaffold.Dev().WithVerbosity("trace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
+			logrus.Info("Pods and deployments should be stable")
 
 			defer func() {
 				state, _ := p.Wait()
@@ -131,7 +132,9 @@ func TestDevGracefulCancel(t *testing.T) {
 			}()
 
 			// once deployments are stable, send a SIGINT and make sure things cleanup correctly
+			logrus.Info("Signalling SIGINT")
 			p.Signal(syscall.SIGINT)
+			logrus.Info("Signalled SIGINT")
 		})
 	}
 }
