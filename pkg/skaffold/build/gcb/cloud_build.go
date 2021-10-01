@@ -27,8 +27,6 @@ import (
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/google/uuid"
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
@@ -38,12 +36,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
@@ -154,7 +154,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	buildSpec, err := b.buildSpec(ctx, artifact, tag, cbBucket, buildObject)
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
-			ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_DESCRIPTOR_ERR,
+			ErrCode: proto.StatusCode_BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR,
 			Message: fmt.Sprintf("could not create build description: %s", err),
 		})
 	}

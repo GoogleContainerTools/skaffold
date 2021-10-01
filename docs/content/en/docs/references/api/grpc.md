@@ -935,7 +935,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | BUILD_GCB_BUILD_FAILED | 134 | GCB error indicating build failure. |
 | BUILD_GCB_BUILD_INTERNAL_ERR | 135 | GCB error indicating build failure due to internal errror. |
 | BUILD_GCB_BUILD_TIMEOUT | 136 | GCB error indicating build failure due to timeout. |
-| BUILD_GCB_GET_BUILD_DESCRIPTOR_ERR | 137 | GCB error to get the build descriptor. |
+| BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR | 137 | GCB error to generate the build descriptor. |
 | BUILD_GCB_UPLOAD_TO_GCS_ERR | 138 | GCB error to upload to GCS. |
 | BUILD_GCB_JIB_DEPENDENCY_ERR | 139 | GCB error to fetch jib artifact dependency. |
 | BUILD_GCB_GET_DEPENDENCY_ERR | 140 | GCB error to fetch artifact dependency. |
