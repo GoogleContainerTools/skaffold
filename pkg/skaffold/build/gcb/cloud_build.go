@@ -158,24 +158,10 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 			Message: fmt.Sprintf("could not create build description: %s", err),
 		})
 	}
-	call := cbclient.Projects.Builds.Create(projectID, &buildSpec)
-	op, err := call.Context(ctx).Do()
-
+	remoteID, getBuildFunc, err := b.createCloudBuild(ctx, cbclient, projectID, buildSpec)
 	if err != nil {
-		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
-			ErrCode: proto.StatusCode_BUILD_GCB_CREATE_BUILD_ERR,
-			Message: fmt.Sprintf("error creating build: %s", err),
-		})
+		return "", err
 	}
-
-	remoteID, err := getBuildID(op)
-	if err != nil {
-		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
-			ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_ID_ERR,
-			Message: err.Error(),
-		})
-	}
-
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
 	output.Default.Fprintf(out, "Logs are available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
 
@@ -184,27 +170,29 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 watch:
 	for {
 		var cb *cloudbuild.Build
-		var err error
+		var errE error
 		log.Entry(ctx).Debugf("current offset %d", offset)
 		backoff := NewStatusBackoff()
 		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
-			time.Sleep(backoff.Step())
-			cb, err = cbclient.Projects.Builds.Get(projectID, remoteID).Do()
-			if err == nil {
+			step := backoff.Step()
+			log.Entry(ctx).Debugf("backing off for %s", step)
+			time.Sleep(step)
+			cb, errE = getBuildFunc()
+			if errE == nil {
 				return true, nil
 			}
-			if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
+			if strings.Contains(errE.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
 				// if we hit the rate limit, continue to retry
 				return false, nil
 			}
-			return false, err
+			return false, errE
 		}); waitErr != nil {
 			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_STATUS_ERR,
-				Message: fmt.Sprintf("error getting build status: %s", waitErr),
+				Message: fmt.Sprintf("wait error getting build status: %s", waitErr),
 			})
 		}
-		if err != nil {
+		if errE != nil {
 			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_STATUS_ERR,
 				Message: fmt.Sprintf("error getting build status %s", err),
@@ -380,4 +368,45 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 	}
 	log.Entry(ctx).Debugf("Created bucket %s in %s", bucket, projectID)
 	return nil
+}
+
+func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Service, projectID string, buildSpec cloudbuild.Build) (
+	string, func(opts ...googleapi.CallOption) (*cloudbuild.Build, error), error) {
+	var op *cloudbuild.Operation
+	var err error
+	if b.WorkerPool == "" {
+		op, err = cbclient.Projects.Builds.Create(projectID, &buildSpec).Context(ctx).Do()
+		if err != nil {
+			return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_CREATE_BUILD_ERR,
+				Message: fmt.Sprintf("error creating build: %s", err),
+			})
+		}
+		remoteID, errB := getBuildID(op)
+		if errB != nil {
+			return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_ID_ERR,
+				Message: err.Error(),
+			})
+		}
+		return remoteID, cbclient.Projects.Builds.Get(projectID, remoteID).Do, nil
+	}
+	location := strings.Split(b.WorkerPool, "/workerPools/")[0]
+	log.Entry(ctx).Debugf("location: %s", location)
+	op, err = cbclient.Projects.Locations.Builds.Create(location, &buildSpec).Context(ctx).Do()
+	if err != nil {
+		return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_CREATE_BUILD_ERR,
+			Message: fmt.Sprintf("error creating build: %s", err),
+		})
+	}
+	remoteID, err := getBuildID(op)
+	if err != nil {
+		return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_ID_ERR,
+			Message: err.Error(),
+		})
+	}
+	buildID := fmt.Sprintf("%s/builds/%s", location, remoteID)
+	return remoteID, cbclient.Projects.Locations.Builds.Get(buildID).Do, nil
 }
