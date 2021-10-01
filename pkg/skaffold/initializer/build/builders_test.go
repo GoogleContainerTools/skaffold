@@ -139,8 +139,8 @@ func TestResolveBuilderImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&prompt.ChooseBuildersFunc, func(choices []string) ([]string, error) {
-				return choices, nil
+			t.Override(&prompt.ChooseBuilderFunc, func(choices []string) (string, error) {
+				return choices[0], nil
 			})
 			// Overrides prompt.BuildConfigFunc to choose first option rather than using the interactive menu
 			t.Override(&prompt.BuildConfigFunc, func(image string, choices []string) (string, error) {
