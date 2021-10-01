@@ -1695,24 +1695,24 @@ MANIFEST:
 func TestHasRunnableHooks(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         latestV1.HelmDeploy
+		cfg         latestV2.HelmDeploy
 		expected    bool
 	}{
 		{
 			description: "no hooks defined",
-			cfg:         latestV1.HelmDeploy{},
+			cfg:         latestV2.HelmDeploy{},
 		},
 		{
 			description: "has pre-deploy hook defined",
-			cfg: latestV1.HelmDeploy{
-				LifecycleHooks: latestV1.DeployHooks{PreHooks: []latestV1.DeployHookItem{{}}},
+			cfg: latestV2.HelmDeploy{
+				LifecycleHooks: latestV2.DeployHooks{PreHooks: []latestV2.DeployHookItem{{}}},
 			},
 			expected: true,
 		},
 		{
 			description: "has post-deploy hook defined",
-			cfg: latestV1.HelmDeploy{
-				LifecycleHooks: latestV1.DeployHooks{PostHooks: []latestV1.DeployHookItem{{}}},
+			cfg: latestV2.HelmDeploy{
+				LifecycleHooks: latestV2.DeployHooks{PostHooks: []latestV2.DeployHookItem{{}}},
 			},
 			expected: true,
 		},

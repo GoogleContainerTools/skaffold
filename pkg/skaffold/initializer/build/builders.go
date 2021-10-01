@@ -60,8 +60,8 @@ func (b NoneBuilder) Describe() string {
 	return ""
 }
 
-func (b NoneBuilder) ArtifactType(string) latestV1.ArtifactType {
-	return latestV1.ArtifactType{}
+func (b NoneBuilder) ArtifactType(string) latestV2.ArtifactType {
+	return latestV2.ArtifactType{}
 }
 
 func (b NoneBuilder) ConfiguredImage() string {

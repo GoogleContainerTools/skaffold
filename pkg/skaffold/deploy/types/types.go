@@ -33,7 +33,7 @@ type Config interface {
 	ConfigurationFile() string
 	DefaultRepo() *string
 	SkipRender() bool
-	TransformableAllowList() []latestV1.ResourceFilter
+	TransformableAllowList() []latestV2.ResourceFilter
 }
 
 // Artifact contains all information about a completed deployment

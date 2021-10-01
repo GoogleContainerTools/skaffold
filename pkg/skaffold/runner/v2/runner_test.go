@@ -480,18 +480,18 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "transformableAllowList",
-			pipeline: latestV1.Pipeline{
-				Build: latestV1.BuildConfig{
-					TagPolicy: latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}},
-					BuildType: latestV1.BuildType{
-						LocalBuild: &latestV1.LocalBuild{},
+			pipeline: latestV2.Pipeline{
+				Build: latestV2.BuildConfig{
+					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
+					BuildType: latestV2.BuildType{
+						LocalBuild: &latestV2.LocalBuild{},
 					},
 				},
-				Deploy: latestV1.DeployConfig{
-					DeployType: latestV1.DeployType{
-						KubectlDeploy: &latestV1.KubectlDeploy{},
+				Deploy: latestV2.DeployConfig{
+					DeployType: latestV2.DeployType{
+						KubectlDeploy: &latestV2.KubectlDeploy{},
 					},
-					TransformableAllowList: []latestV1.ResourceFilter{
+					TransformableAllowList: []latestV2.ResourceFilter{
 						{Type: "example.com/Application"},
 					},
 				},
@@ -544,8 +544,8 @@ func TestNewForConfig(t *testing.T) {
 			}
 			// Test transformableAllowList
 			filters := runCtx.TransformableAllowList()
-			if test.pipeline.Deploy.TransformableAllowList != nil {
-				t.CheckDeepEqual(test.pipeline.Deploy.TransformableAllowList, filters)
+			if tt.pipeline.Deploy.TransformableAllowList != nil {
+				t.CheckDeepEqual(tt.pipeline.Deploy.TransformableAllowList, filters)
 			} else {
 				t.CheckEmpty(filters)
 			}

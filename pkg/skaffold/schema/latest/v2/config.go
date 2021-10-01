@@ -597,6 +597,9 @@ type DeployConfig struct {
 
 	// Logs configures how container logs are printed as a result of a deployment.
 	Logs LogsConfig `yaml:"logs,omitempty"`
+
+	// TransformableAllowList configures an allowlist for transforming manifests.
+	TransformableAllowList []ResourceFilter `yaml:"-"`
 }
 
 // DeployType contains the specific implementation and parameters needed

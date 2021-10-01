@@ -109,8 +109,8 @@ func (ps Pipelines) TestCases() []*latestV2.TestCase {
 }
 
 // TransformableAllowList returns combined allowlist from pipelines
-func (ps Pipelines) TransformableAllowList() []latestV1.ResourceFilter {
-	var allowList []latestV1.ResourceFilter
+func (ps Pipelines) TransformableAllowList() []latestV2.ResourceFilter {
+	var allowList []latestV2.ResourceFilter
 	for _, p := range ps.pipelines {
 		if p.Deploy.TransformableAllowList != nil {
 			allowList = append(allowList, p.Deploy.TransformableAllowList...)
