@@ -185,6 +185,43 @@ enum StatusCode {
     // Error parsing Docker Network mode
     INIT_DOCKER_NETWORK_PARSE_ERR = 126;
 
+    // GCB Create Build Error
+    BUILD_GCB_CREATE_BUILD_ERR = 128;
+    // GCB error indicating an error to fetch build id.
+    BUILD_GCB_GET_BUILD_ID_ERR = 129;
+    // GCB error indicating an error to fetch build status.
+    BUILD_GCB_GET_BUILD_STATUS_ERR = 130;
+    // GCB error indicating an error to fetch build logs.
+    BUILD_GCB_GET_BUILD_LOG_ERR = 131;
+    // GCB error indicating an error to fetch build status.
+    BUILD_GCB_COPY_BUILD_LOG_ERR = 132;
+    // GCB error indicating an error retrieving the built image id.
+    BUILD_GCB_GET_BUILT_IMAGE_ERR = 133;
+    // GCB error indicating build failure.
+    BUILD_GCB_BUILD_FAILED = 134;
+    // GCB error indicating build failure due to internal errror.
+    BUILD_GCB_BUILD_INTERNAL_ERR = 135;
+    // GCB error indicating build failure due to timeout.
+    BUILD_GCB_BUILD_TIMEOUT = 136;
+    // GCB error to get the build descriptor.
+    BUILD_GCB_GET_BUILD_DESCRIPTOR_ERR = 137;
+    // GCB error to upload to GCS.
+    BUILD_GCB_UPLOAD_TO_GCS_ERR = 138;
+    // GCB error to fetch jib artifact dependency.
+    BUILD_GCB_JIB_DEPENDENCY_ERR = 139;
+    // GCB error to fetch artifact dependency.
+    BUILD_GCB_GET_DEPENDENCY_ERR = 140;
+    // GCB error to get GCS bucket.
+    BUILD_GCB_GET_GCS_BUCKET_ERR = 141;
+    // GCB error to create a GCS bucket.
+    BUILD_GCB_CREATE_BUCKET_ERR = 142;
+    // GCB error to extract Project ID.
+    BUILD_GCB_EXTRACT_PROJECT_ID = 143;
+    // GCB error to get cloud storage client to perform GCS operation.
+    BUILD_GET_CLOUD_STORAGE_CLIENT_ERR= 144;
+    // GCB error to get cloud build client to perform GCB operations.
+    BUILD_GET_CLOUD_BUILD_CLIENT_ERR = 145;
+
 
     // Container errors
 
@@ -268,6 +305,8 @@ enum StatusCode {
     BUILD_DOCKER_UNKNOWN = 511;
     // Test failed due to unknown reason
     TEST_UNKNOWN = 512;
+    // GCB error indicating build failed due to unknown status.
+    BUILD_GCB_BUILD_UNKNOWN_STATUS = 513;
 
 
     // FILE_SYNC Failures
@@ -303,6 +342,8 @@ enum StatusCode {
     BUILD_DOCKER_CANCELLED = 804;
     // Build error due to docker deadline was reached before the docker action completed
     BUILD_DOCKER_DEADLINE = 805;
+    // GCB Build cancelled.
+    BUILD_GCB_BUILD_CANCELLED = 806;
 
     // Skaffold Initialization Phase session errors
 
