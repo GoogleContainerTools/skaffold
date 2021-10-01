@@ -115,7 +115,7 @@ func TestDevGracefulCancel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
-			p, _ := skaffold.Dev().InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
+			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
