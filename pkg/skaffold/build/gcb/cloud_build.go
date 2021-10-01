@@ -77,7 +77,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_GET_CLOUD_BUILD_CLIENT_ERR,
-			Message: fmt.Sprintf("getting cloudbuild client: %w", err),
+			Message: fmt.Sprintf("getting cloudbuild client: %s", err),
 		})
 	}
 
