@@ -26,8 +26,7 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -52,11 +51,10 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description: "default is to watch **/*.go",
 			expected: []string{
-				// TODO(halvards)[10/01/2021]: Uncomment all files below when #6605 is merged
-				// "cmd/foo/root.go",
+				"cmd/foo/foo.go",
 				"cmd/run.go",
-				// "main.go",
-				// "pkg/bar/bar.go",
+				"main.go",
+				"pkg/bar/bar.go",
 			},
 		},
 		{

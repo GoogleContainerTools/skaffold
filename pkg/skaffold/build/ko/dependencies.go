@@ -22,9 +22,8 @@ package ko
 import (
 	"context"
 
-	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // GetDependencies returns a list of files to watch for changes to rebuild.
