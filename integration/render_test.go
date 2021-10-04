@@ -246,9 +246,7 @@ spec:
 						},
 					},
 				}}),
-				Opts: config.SkaffoldOptions{
-					AddSkaffoldLabels: true,
-				},
+				Opts: config.SkaffoldOptions{},
 			}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})

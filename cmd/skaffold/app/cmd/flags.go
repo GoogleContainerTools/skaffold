@@ -471,19 +471,6 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "debug"},
 	},
 	{
-		Name:     "add-skaffold-labels",
-		Usage:    "Add Skaffold-specific labels to rendered manifest. Custom labels will still be applied. Helpful for GitOps model where Skaffold is not the deployer.",
-		Value:    &opts.AddSkaffoldLabels,
-		DefValue: true,
-		DefValuePerCommand: map[string]interface{}{
-			"render": false,
-		},
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug", "render", "run"},
-		IsEnum:        true,
-		Deprecated:    "Adding Skaffold-specific labels in `render` is deprecated.",
-	},
-	{
 		Name:          "mute-logs",
 		Usage:         "mute logs for specified stages in pipeline (build, deploy, status-check, none, all)",
 		Value:         &opts.Muted.Phases,

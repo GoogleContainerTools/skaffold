@@ -75,3 +75,12 @@ func TestRenderApplyHelmDeployment(t *testing.T) {
 		t.CheckNotNil(depApp)
 	})
 }
+
+// Ensure that an intentionally broken deployment fails the status check in `skaffold apply`.
+func TestApplyStatusCheckFailure(t *testing.T) {
+	testutil.Run(t, "ApplyStatusCheckFailure", func(t *testutil.T) {
+		err := skaffold.Apply("deployment.yaml").InDir("testdata/apply").Run(t.T)
+
+		t.CheckError(true, err)
+	})
+}
