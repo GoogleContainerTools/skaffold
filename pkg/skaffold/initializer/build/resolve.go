@@ -124,12 +124,14 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 		d.unresolvedImages = util.RemoveFromSlice(d.unresolvedImages, image)
 	}
 	if len(choices) > 0 {
-		choice, err := prompt.ChooseBuilderFunc(choices)
+		chosen, err := prompt.ChooseBuildersFunc(choices)
 		if err != nil {
 			return err
 		}
 
-		d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedArtifactInfo(choiceMap[choice]))
+		for _, choice := range chosen {
+			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedArtifactInfo(choiceMap[choice]))
+		}
 	}
 	return nil
 }
