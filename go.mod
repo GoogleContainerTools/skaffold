@@ -10,14 +10,17 @@ replace (
 	// Avoid indenting sequences.
 	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 
-	// TODO(halvards)[08/31/2021] Temporarily override version since ko is now on v0.22.0.
+	// TODO(halvards)[08/31/2021] Temporarily override version since ko is now on v0.22.2.
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.3
 )
 
 require (
 	4d63.com/tz v1.2.0
-	cloud.google.com/go v0.88.0
+	cloud.google.com/go/container v1.0.0 // indirect
+	cloud.google.com/go/monitoring v1.0.0
+	cloud.google.com/go/profiler v0.1.0
 	cloud.google.com/go/storage v1.16.0
+	cloud.google.com/go/trace v1.0.0 // indirect
 	github.com/AlecAivazis/survey/v2 v2.2.15
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
@@ -40,12 +43,13 @@ require (
 	github.com/golang/glog v0.0.0-20210429001901-424d2337a529
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.5.2
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-containerregistry v0.6.0
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210216200643-d81088d9983e // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/ko v0.8.4-0.20210830114108-a965b407b218
+	github.com/google/ko v0.9.3
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0
 	github.com/heroku/color v0.0.6
@@ -80,21 +84,20 @@ require (
 	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
-	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e // indirect
 	golang.org/x/mod v0.4.2
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
-	golang.org/x/oauth2 v0.0.0-20210810183815-faf39c7919d5
+	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e
+	golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
-	google.golang.org/api v0.51.0
-	google.golang.org/genproto v0.0.0-20210721163202-f1cecdd8b78a
-	google.golang.org/grpc v1.39.0
+	google.golang.org/api v0.57.0
+	google.golang.org/genproto v0.0.0-20210921142501-181ce0d877f6
+	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.21.3
-	k8s.io/apimachinery v0.22.0
+	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.21.3
 	k8s.io/kubectl v0.21.3
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
