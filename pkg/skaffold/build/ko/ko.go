@@ -40,6 +40,7 @@ type Builder struct {
 }
 
 // NewArtifactBuilder returns a new ko artifact builder
+// TODO(halvards)[09/17/2021]: Call this function from newPerArtifactBuilder() in pkg/skaffold/build/local/types.go
 func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, runMode config.RunMode, insecureRegistries map[string]bool) *Builder {
 	return &Builder{
 		localDocker:        localDocker,
