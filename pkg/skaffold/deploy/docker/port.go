@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -76,7 +77,7 @@ func (pm *PortManager) Stop() {
 // These ports are added to the provided container configuration's port set, and the bindings
 // are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
 // It also returns a list of containerPortForwardEntry, to be passed to the event handler
-func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config) (nat.PortMap, error) {
+func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	m := make(nat.PortMap)
@@ -107,6 +108,33 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 			localPort:       int32(localPort),
 			remotePort:      p.Port,
 		})
+	}
+	for port, bindings := range debugBindings {
+		for _, binding := range bindings {
+			hostPort, err := strconv.Atoi(binding.HostPort)
+			if err != nil {
+				return nil, err
+			}
+			localPort := GetAvailablePort(binding.HostIP, hostPort, &pm.portSet)
+			if localPort != hostPort {
+				binding.HostPort = strconv.Itoa(localPort)
+			}
+			ports = append(ports, localPort)
+			if cfg.ExposedPorts == nil {
+				cfg.ExposedPorts = nat.PortSet{}
+			}
+			cfg.ExposedPorts[port] = struct{}{}
+			entries = append(entries, containerPortForwardEntry{
+				container:       containerName,
+				resourceAddress: binding.HostIP,
+				localPort:       int32(localPort),
+				remotePort: schemautil.IntOrString{
+					Type:   schemautil.Int,
+					IntVal: port.Int(),
+				},
+			})
+		}
+		m[port] = bindings
 	}
 	pm.containerPorts[containerName] = ports
 	pm.entries = append(pm.entries, entries...)

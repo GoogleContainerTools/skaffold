@@ -24,6 +24,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -154,19 +155,14 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		return err
 	}
 
-	bindings, err := d.portManager.getPorts(artifact.ImageName, d.resources, containerCfg)
-	if err != nil {
-		return err
-	}
-
 	containerName := d.getContainerName(ctx, artifact.ImageName)
 	opts := dockerutil.ContainerCreateOpts{
 		Name:            containerName,
 		Network:         d.network,
-		Bindings:        bindings,
 		ContainerConfig: containerCfg,
 	}
 
+	var debugBindings nat.PortMap
 	if d.debugger != nil {
 		if err := d.setupDebugging(ctx, out, artifact, containerCfg); err != nil {
 			return errors.Wrap(err, "setting up debugger")
@@ -178,7 +174,21 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 			mounts = append(mounts, m)
 		}
 		opts.Mounts = mounts
+
+		debugBindings, err = d.debugger.DebugPortBindings()
+		if err != nil {
+			return errors.Wrap(err, "setting up debug port bindings")
+		}
+		if err != nil {
+			return errors.Wrap(err, "merging host port bindings")
+		}
 	}
+
+	bindings, err := d.portManager.getPorts(artifact.ImageName, d.resources, containerCfg, debugBindings)
+	if err != nil {
+		return err
+	}
+	opts.Bindings = bindings
 
 	id, err := d.client.Run(ctx, out, opts)
 	if err != nil {

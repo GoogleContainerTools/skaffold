@@ -18,10 +18,12 @@ package debugger
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/go-connections/nat"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -136,4 +138,21 @@ func (d *DebugManager) TransformImage(ctx context.Context, artifact graph.Artifa
 	}
 
 	return initContainers, nil
+}
+
+func (d *DebugManager) DebugPortBindings() (nat.PortMap, error) {
+	bindings := make(nat.PortMap)
+	for _, image := range d.images {
+		config := d.configurations[image]
+		for _, port := range config.Ports {
+			p, err := nat.NewPort("tcp", fmt.Sprint(port))
+			if err != nil {
+				return nil, err
+			}
+			bindings[p] = []nat.PortBinding{
+				{HostIP: "127.0.0.1", HostPort: fmt.Sprint(port)},
+			}
+		}
+	}
+	return bindings, nil
 }

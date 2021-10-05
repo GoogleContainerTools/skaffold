@@ -57,10 +57,10 @@ func ExecutableContainerForConfig(cfg *container.Config) *types.ExecutableContai
 // Apply transfers the configuration changes from the intermediate container
 // to the underlying container config.
 // Since container.Config doesn't have an Args field, we combine the ExecutableContainer
-// Args with the Cmd and slot them in there.
+// Args with the Cmd and slot them into the entrypoint.
 func (d *DockerAdapter) Apply() {
-	d.cfg.Cmd = d.executable.Command
-	d.cfg.Cmd = append(d.cfg.Cmd, d.executable.Args...)
+	d.cfg.Entrypoint = d.executable.Command
+	d.cfg.Entrypoint = append(d.cfg.Entrypoint, d.executable.Args...)
 	d.cfg.Env = containerEnvToDockerEnv(d.executable.Env)
 	d.cfg.ExposedPorts = containerPortsToDockerPorts(d.executable.Ports)
 }
