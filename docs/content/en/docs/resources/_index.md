@@ -34,13 +34,4 @@ See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/main/C
 
 ## Roadmap
 
-<<<<<<< HEAD
-You can join the Skaffold community and discuss the project at:
-
-* [Skaffold Mailing List](https://groups.google.com/forum#!forum/skaffold-users)
-* [Skaffold Topic on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
-* [Give us feedback](feedback)
-
-=======
->>>>>>> v1.29.0
 See our roadmap [in GitHub](https://github.com/GoogleContainerTools/skaffold/blob/main/ROADMAP.md).
