@@ -105,6 +105,7 @@ func TestContainerManager(t *testing.T) {
 		testutil.Run(t, tc.description, func(t *testutil.T) {
 			ev1StartCount, ev1TerminatedCount := 0, 0
 			ev2StartCount, ev2TerminatedCount := 0, 0
+			ev3StartCount, ev3TerminatedCount := 0, 0
 			// Override event v1 funcs to do nothing to avoid additional overhead
 			t.Override(&notifyDebuggingContainerStarted, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
 				ev1StartCount++
@@ -117,6 +118,12 @@ func TestContainerManager(t *testing.T) {
 			})
 			t.Override(&debuggingContainerTerminatedV2, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
 				ev2TerminatedCount++
+			})
+			t.Override(&debuggingContainerStartedV3, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
+				ev3StartCount++
+			})
+			t.Override(&debuggingContainerTerminatedV3, func(podName string, containerName string, namespace string, artifactImage string, runtime string, workingDir string, debugPorts map[string]uint32) {
+				ev3TerminatedCount++
 			})
 
 			m := &ContainerManager{active: make(map[string]string)}
