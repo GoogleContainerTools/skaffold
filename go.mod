@@ -11,10 +11,7 @@ replace (
 	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 
 	// TODO(halvards)[08/31/2021] Temporarily override version since ko is now on v0.22.0.
-	k8s.io/api => k8s.io/api v0.21.3
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.3
-	k8s.io/client-go => k8s.io/client-go v0.21.3
-	k8s.io/kubectl => k8s.io/kubectl v0.21.3
 )
 
 require (
@@ -58,7 +55,6 @@ require (
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mitchellh/go-homedir v1.1.0
-	// github.com/moby/buildkit v0.7.1
 	github.com/moby/buildkit v0.8.0
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.15.0 // indirect
@@ -100,6 +96,6 @@ require (
 	k8s.io/kubectl v0.21.3
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 	knative.dev/pkg v0.0.0-20201119170152-e5e30edc364a // indirect
-	sigs.k8s.io/kustomize/kyaml v0.12.0
+	sigs.k8s.io/kustomize/kyaml v0.10.17
 	sigs.k8s.io/yaml v1.2.0
 )
