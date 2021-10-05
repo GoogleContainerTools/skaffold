@@ -153,6 +153,8 @@ func (i *Intents) GetIntents() (bool, bool, bool) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	if i.devloop {
+		// reset Devloop intent
+		i.devloop = false
 		return true, true, true
 	}
 	return i.build, i.sync, i.deploy
