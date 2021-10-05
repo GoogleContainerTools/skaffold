@@ -31,7 +31,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/watch"
-
 	fake_testing "k8s.io/client-go/testing"
 )
 
