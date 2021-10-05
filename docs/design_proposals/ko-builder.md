@@ -350,13 +350,13 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     ```go
     // KoDependencies is used to specify dependencies for an artifact built by ko.
     type KoDependencies struct {
-	  	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
-	  	// Defaults to {"go.mod", "**.go"}
-	  	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+    	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+    	// Defaults to ["."].
+    	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
-	  	// Ignore specifies the paths that should be ignored by skaffold's file watcher.
+    	// Ignore specifies the paths that should be ignored by skaffold's file watcher.
     	// If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
-	  	Ignore []string `yaml:"ignore,omitempty"`
+    	Ignore []string `yaml:"ignore,omitempty"`
     }
     ```
 
@@ -409,7 +409,7 @@ apiVersion: skaffold/v2beta19
 kind: Config
 build:
   artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko-complete
+  - image: skaffold-example-ko-comprehensive
     ko:
       asmflags: []
       fromImage: gcr.io/distroless/base:nonroot

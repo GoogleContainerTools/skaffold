@@ -32,7 +32,7 @@ import (
 // For testing
 var (
 	BuildConfigFunc         = buildConfig
-	ChooseBuilderFunc       = chooseBuilder
+	ChooseBuildersFunc      = chooseBuilders
 	PortForwardResourceFunc = portForwardResource
 	askOne                  = survey.AskOne
 	ask                     = survey.Ask
@@ -77,16 +77,16 @@ func WriteSkaffoldConfig(out io.Writer, pipeline []byte, generatedManifests map[
 	return !response, nil
 }
 
-// chooseBuilder prompts the user to select which builders they'd like to create associated kubernetes manifests for
-func chooseBuilder(builders []string) (string, error) {
-	var chosen string
-	prompt := &survey.Select{
+// chooseBuilders prompts the user to select which builders they'd like to create associated kubernetes manifests for
+func chooseBuilders(builders []string) ([]string, error) {
+	chosen := []string{}
+	prompt := &survey.MultiSelect{
 		Message: "Which builders would you like to create kubernetes resources for?",
 		Options: builders,
 	}
 	err := askOne(prompt, &chosen)
 	if err != nil {
-		return "", fmt.Errorf("getting user choices: %w", err)
+		return []string{}, fmt.Errorf("getting user choices")
 	}
 
 	return chosen, err
