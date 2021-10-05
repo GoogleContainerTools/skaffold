@@ -41,7 +41,7 @@ func TestDiagnoseRenderApply(t *testing.T) {
 
 		tmpDir.Write("skaffold-diagnose.yaml", string(out))
 
-		out = skaffold.Render("--digest-source=local", "--add-skaffold-labels=false", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
+		out = skaffold.Render("--digest-source=local", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
 		tmpDir.Write("render.yaml", string(out))
 
 		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
@@ -66,12 +66,21 @@ func TestRenderApplyHelmDeployment(t *testing.T) {
 
 		tmpDir.Write("skaffold-diagnose.yaml", string(out))
 
-		out = skaffold.Render("--digest-source=local", "--add-skaffold-labels=false", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
+		out = skaffold.Render("--digest-source=local", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
 		tmpDir.Write("render.yaml", string(out))
 
 		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
 
 		depApp := client.GetDeployment("skaffold-helm")
 		t.CheckNotNil(depApp)
+	})
+}
+
+// Ensure that an intentionally broken deployment fails the status check in `skaffold apply`.
+func TestApplyStatusCheckFailure(t *testing.T) {
+	testutil.Run(t, "ApplyStatusCheckFailure", func(t *testutil.T) {
+		err := skaffold.Apply("deployment.yaml").InDir("testdata/apply").Run(t.T)
+
+		t.CheckError(true, err)
 	})
 }

@@ -23,7 +23,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"strconv"
 	"testing"
 
 	yaml "gopkg.in/yaml.v2"
@@ -246,9 +245,7 @@ spec:
 						},
 					},
 				}}),
-				Opts: config.SkaffoldOptions{
-					AddSkaffoldLabels: true,
-				},
+				Opts: config.SkaffoldOptions{},
 			}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
@@ -456,7 +453,6 @@ func TestRenderFromBuildOutput(t *testing.T) {
 		config              string
 		buildOutputFilePath string
 		offline             bool
-		addSkaffoldLabels   bool
 		input               map[string]string // file path => content
 		expectedOut         string
 	}{
@@ -477,7 +473,6 @@ deploy:
 `,
 			buildOutputFilePath: "testdata/render/build-output.json",
 			offline:             false,
-			addSkaffoldLabels:   false,
 			input: map[string]string{"deployment.yaml": `
 apiVersion: v1
 kind: Pod
@@ -522,7 +517,6 @@ deploy:
 `,
 			buildOutputFilePath: "testdata/render/build-output.json",
 			offline:             true,
-			addSkaffoldLabels:   false,
 			input: map[string]string{"deployment.yaml": `
 apiVersion: v1
 kind: Pod
@@ -566,7 +560,6 @@ deploy:
 `,
 			buildOutputFilePath: "testdata/render/build-output.json",
 			offline:             true,
-			addSkaffoldLabels:   true,
 			input: map[string]string{"deployment.yaml": `
 apiVersion: v1
 kind: Pod
@@ -583,8 +576,6 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/run-id: SOMEDYNAMICVALUE
   name: my-pod-123
 spec:
   containers:
@@ -610,7 +601,6 @@ deploy:
 `,
 			buildOutputFilePath: "testdata/render/build-output.json",
 			offline:             true,
-			addSkaffoldLabels:   false,
 			input: map[string]string{"deployment.yaml": `
 apiVersion: v1
 kind: Pod
@@ -661,7 +651,6 @@ deploy:
 `,
 			buildOutputFilePath: "testdata/render/build-output.json",
 			offline:             true,
-			addSkaffoldLabels:   true,
 			input: map[string]string{"deployment.yaml": `
 apiVersion: v1
 kind: Pod
@@ -686,7 +675,6 @@ resources:
 kind: Pod
 metadata:
   labels:
-    skaffold.dev/run-id: SOMEDYNAMICVALUE
     this-is-from: kustomization.yaml
   name: my-pod-123
 spec:
@@ -715,7 +703,7 @@ spec:
 
 			tmpDir.Chdir()
 
-			args := []string{"--digest-source=local", "--build-artifacts=" + path.Join(testDir, test.buildOutputFilePath), "--add-skaffold-labels=" + strconv.FormatBool(test.addSkaffoldLabels), "--output", "rendered.yaml"}
+			args := []string{"--digest-source=local", "--build-artifacts=" + path.Join(testDir, test.buildOutputFilePath), "--output", "rendered.yaml"}
 
 			if test.offline {
 				env := []string{"KUBECONFIG=not-supposed-to-be-used-in-offline-mode"}

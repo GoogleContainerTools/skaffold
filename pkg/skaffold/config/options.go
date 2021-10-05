@@ -73,31 +73,26 @@ type SkaffoldOptions struct {
 	SkipRender            bool
 	SkipConfigDefaults    bool
 	PropagateProfiles     bool
-	// Add Skaffold-specific labels including runID, deployer labels, etc.
-	// `CustomLabels` are still applied if this is false. Must only be used in
-	// commands which don't deploy (e.g. `skaffold render`) since the runID
-	// label isn't available.
-	AddSkaffoldLabels    bool
-	DetectMinikube       bool
-	IterativeStatusCheck bool
-	ForceLoadImages      bool
-	WaitForConnection    bool
-	MakePathsAbsolute    *bool
-	StatusCheck          BoolOrUndefined
-	PortForward          PortForwardOptions
-	DefaultRepo          StringOrUndefined
-	PushImages           BoolOrUndefined
-	CustomLabels         []string
-	TargetImages         []string
-	Profiles             []string
-	InsecureRegistries   []string
-	ConfigurationFilter  []string
-	HydratedManifests    []string
-	Muted                Muted
-	BuildConcurrency     int
-	WatchPollInterval    int
-	RPCPort              IntOrUndefined
-	RPCHTTPPort          IntOrUndefined
+	DetectMinikube        bool
+	IterativeStatusCheck  bool
+	ForceLoadImages       bool
+	WaitForConnection     bool
+	MakePathsAbsolute     *bool
+	StatusCheck           BoolOrUndefined
+	PortForward           PortForwardOptions
+	DefaultRepo           StringOrUndefined
+	PushImages            BoolOrUndefined
+	CustomLabels          []string
+	TargetImages          []string
+	Profiles              []string
+	InsecureRegistries    []string
+	ConfigurationFilter   []string
+	HydratedManifests     []string
+	Muted                 Muted
+	BuildConcurrency      int
+	WatchPollInterval     int
+	RPCPort               IntOrUndefined
+	RPCHTTPPort           IntOrUndefined
 
 	SyncRemoteCache  SyncRemoteCacheOption
 	WaitForDeletions WaitForDeletions

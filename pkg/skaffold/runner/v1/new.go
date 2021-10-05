@@ -61,6 +61,8 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	isLocalImage := func(imageName string) (bool, error) {
 		return isImageLocal(runCtx, imageName)
 	}
+
+	// Always add skaffold-specific labels, except during `skaffold render`
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels(), runCtx.GetRunID())
 	tester, err := getTester(ctx, runCtx, isLocalImage)
 	if err != nil {

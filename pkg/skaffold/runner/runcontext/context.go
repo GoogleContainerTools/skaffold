@@ -166,6 +166,12 @@ func (rc *RunContext) TransformableAllowList() []latestV1.ResourceFilter {
 	return rc.Pipelines.TransformableAllowList()
 }
 
+// AddSkaffoldLabels tells the Runner whether to add skaffold-specific labels.
+// We only ever skip adding labels during a `skaffold render`.
+func (rc *RunContext) AddSkaffoldLabels() bool {
+	return rc.Opts.Mode() != config.RunModes.Render
+}
+
 func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
 func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc.Pipelines.All() }
@@ -173,7 +179,6 @@ func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
 func (rc *RunContext) GetNamespace() string                          { return rc.Opts.Namespace }
-func (rc *RunContext) AddSkaffoldLabels() bool                       { return rc.Opts.AddSkaffoldLabels }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
 func (rc *RunContext) AutoSync() bool                                { return rc.Opts.AutoSync }
