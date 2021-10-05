@@ -72,6 +72,24 @@ func ActionableErrV2(cfg interface{}, phase constants.Phase, err error) *protoV2
 	}
 }
 
+// ActionableErrV3 returns an actionable error message with suggestions
+func ActionableErrV3(cfg interface{}, phase constants.Phase, err error) *protoV3.ActionableErr {
+	errCode, suggestions := getErrorCodeFromError(cfg, phase, err)
+	suggestionsV3 := make([]*protoV3.Suggestion, len(suggestions))
+	for i, suggestion := range suggestions {
+		var suggestions3 protoV3.Suggestion
+		suggestions3.Action = suggestion.Action
+		suggestions3.SuggestionCode = suggestion.SuggestionCode
+		suggestions3.Action = suggestion.Action
+		suggestionsV3[i] = &suggestions3
+	}
+	return &protoV3.ActionableErr{
+		ErrCode:     errCode,
+		Message:     err.Error(),
+		Suggestions: suggestionsV3,
+	}
+}
+
 func V2fromV1(ae *proto.ActionableErr) *protoV2.ActionableErr {
 	suggestionsV2 := make([]*protoV2.Suggestion, len(ae.Suggestions))
 	for i, suggestion := range ae.Suggestions {
@@ -82,6 +100,22 @@ func V2fromV1(ae *proto.ActionableErr) *protoV2.ActionableErr {
 		suggestionsV2[i] = &suggestions2
 	}
 	return &protoV2.ActionableErr{
+		ErrCode:     ae.ErrCode,
+		Message:     ae.Message,
+		Suggestions: suggestionsV2,
+	}
+}
+
+func V3fromV1(ae *proto.ActionableErr) *protoV3.ActionableErr {
+	suggestionsV2 := make([]*protoV3.Suggestion, len(ae.Suggestions))
+	for i, suggestion := range ae.Suggestions {
+		var suggestions3 protoV3.Suggestion
+		suggestions3.Action = suggestion.Action
+		suggestions3.SuggestionCode = suggestion.SuggestionCode
+		suggestions3.Action = suggestion.Action
+		suggestionsV2[i] = &suggestions3
+	}
+	return &protoV3.ActionableErr{
 		ErrCode:     ae.ErrCode,
 		Message:     ae.Message,
 		Suggestions: suggestionsV2,
