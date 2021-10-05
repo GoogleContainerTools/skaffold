@@ -48,7 +48,7 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 	if intent.GetIntent().GetDevloop() {
 		event.ResetStateOnBuild()
 		go func() {
-			s.buildIntentCallback()
+			s.devloopIntentCallback()
 		}()
 		return &empty.Empty{}, nil
 	}

@@ -149,7 +149,7 @@ func setupIntents(runCtx *runcontext.RunContext) (*runner.Intents, chan bool) {
 	setupTrigger("sync", intents.SetSync, intents.SetAutoSync, intents.GetAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
 	setupTrigger("deploy", intents.SetDeploy, intents.SetAutoDeploy, intents.GetAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
 	// Setup callback function to buildCallback since build is the start of the devloop.
-	setupTrigger("devloop", intents.SetDevloop, intents.SetAutoDevloop, intents.GetAutoDevloop, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
+	setupTrigger("devloop", intents.SetDevloop, intents.SetAutoDevloop, intents.GetAutoDevloop, server.SetDevloopCallback, server.SetAutoDevloopCallback, intentChan)
 
 	return intents, intentChan
 }
