@@ -29,6 +29,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	proto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -150,7 +151,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &protoV3.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &protoV3.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
@@ -184,7 +185,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 			Resources: map[string]string{},
 		},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestEmptyStateCheckState(t *testing.T) {
@@ -192,7 +193,7 @@ func TestEmptyStateCheckState(t *testing.T) {
 	expected := &protoV3.StatusCheckState{Status: NotStarted,
 		Resources: map[string]string{},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, actual, cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestUpdateStateAutoTriggers(t *testing.T) {
@@ -244,7 +245,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 			AutoTrigger: true,
 		},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestTaskFailed(t *testing.T) {
