@@ -232,6 +232,7 @@ func newHTTPServer(preferredPort, proxyPort int) (func() error, error) {
 				},
 			},
 		}),
+		runtime.WithForwardResponseOption(messageMutationFilter),
 	)
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := protoV1.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, net.JoinHostPort(util.Loopback, strconv.Itoa(proxyPort)), opts)
