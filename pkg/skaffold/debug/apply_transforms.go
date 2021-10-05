@@ -29,7 +29,7 @@ import (
 
 var ConfigRetriever = func(ctx context.Context, image string, builds []graph.Artifact, registries map[string]bool) (ImageConfiguration, error) {
 	if artifact := findArtifact(image, builds); artifact != nil {
-		return retrieveImageConfiguration(ctx, artifact, registries)
+		return RetrieveImageConfiguration(ctx, artifact, registries)
 	}
 	return ImageConfiguration{}, fmt.Errorf("no build artifact for %q", image)
 }
@@ -50,9 +50,9 @@ func findArtifact(image string, builds []graph.Artifact) *graph.Artifact {
 	return nil
 }
 
-// retrieveImageConfiguration retrieves the image container configuration for
+// RetrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
-func retrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, insecureRegistries map[string]bool) (ImageConfiguration, error) {
+func RetrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, insecureRegistries map[string]bool) (ImageConfiguration, error) {
 	// TODO: use the proper RunContext
 	apiClient, err := docker.NewAPIClient(ctx, &runcontext.RunContext{
 		InsecureRegistries: insecureRegistries,
@@ -73,6 +73,7 @@ func retrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, i
 	// need to duplicate slices as apiClient caches requests
 	return ImageConfiguration{
 		Artifact:   artifact.ImageName,
+		Author:     manifest.Author,
 		Env:        envAsMap(config.Env),
 		Entrypoint: dupArray(config.Entrypoint),
 		Arguments:  dupArray(config.Cmd),

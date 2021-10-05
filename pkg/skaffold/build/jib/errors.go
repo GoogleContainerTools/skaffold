@@ -27,7 +27,7 @@ import (
 
 func unknownPluginType(ws string) error {
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("Unknown Jib builder type for workspace %s", ws),
 			ErrCode: proto.StatusCode_BUILD_UNKNOWN_JIB_PLUGIN_TYPE,
 			Suggestions: []*proto.Suggestion{
@@ -41,7 +41,7 @@ func unknownPluginType(ws string) error {
 
 func unableToDeterminePluginType(ws string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to determine Jib builder type for workspace %s due to %s", ws, err),
 			ErrCode: proto.StatusCode_BUILD_UNKNOWN_JIB_PLUGIN_TYPE,
 			Suggestions: []*proto.Suggestion{
@@ -64,7 +64,7 @@ func dependencyErr(pType PluginType, workspace string, err error) error {
 		log.Entry(context.TODO()).Fatal("Unknown jib build type", pType)
 	}
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("could not fetch dependencies for workspace %s: %s", workspace, err.Error()),
 			ErrCode: code,
 		})
@@ -72,7 +72,7 @@ func dependencyErr(pType PluginType, workspace string, err error) error {
 
 func jibToolErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_USER_ERROR,
 			Suggestions: []*proto.Suggestion{

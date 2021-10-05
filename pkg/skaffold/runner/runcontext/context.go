@@ -107,6 +107,17 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 	return tests
 }
 
+// TransformableAllowList returns combined allowlist from pipelines
+func (ps Pipelines) TransformableAllowList() []latestV1.ResourceFilter {
+	var allowList []latestV1.ResourceFilter
+	for _, p := range ps.pipelines {
+		if p.Deploy.TransformableAllowList != nil {
+			allowList = append(allowList, p.Deploy.TransformableAllowList...)
+		}
+	}
+	return allowList
+}
+
 func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	c := 0
 	// set the group status check deadline to maximum of any individually specified value
@@ -151,6 +162,10 @@ func (rc *RunContext) SkipTests() bool {
 	return rc.Opts.SkipTests || len(rc.TestCases()) == 0
 }
 
+func (rc *RunContext) TransformableAllowList() []latestV1.ResourceFilter {
+	return rc.Pipelines.TransformableAllowList()
+}
+
 func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
 func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc.Pipelines.All() }
@@ -162,6 +177,7 @@ func (rc *RunContext) AddSkaffoldLabels() bool                       { return rc
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
 func (rc *RunContext) AutoSync() bool                                { return rc.Opts.AutoSync }
+func (rc *RunContext) ContainerDebugging() bool                      { return rc.Opts.ContainerDebugging }
 func (rc *RunContext) CacheArtifacts() bool                          { return rc.Opts.CacheArtifacts }
 func (rc *RunContext) CacheFile() string                             { return rc.Opts.CacheFile }
 func (rc *RunContext) ConfigurationFile() string                     { return rc.Opts.ConfigurationFile }
@@ -198,8 +214,8 @@ func (rc *RunContext) BuildConcurrency() int                         { return rc
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
 func (rc *RunContext) IsDefaultKubeContext() bool                    { return rc.Opts.KubeContext == "" }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
-func (rc *RunContext) RPCPort() int                                  { return rc.Opts.RPCPort }
-func (rc *RunContext) RPCHTTPPort() int                              { return rc.Opts.RPCHTTPPort }
+func (rc *RunContext) RPCPort() *int                                 { return rc.Opts.RPCPort.Value() }
+func (rc *RunContext) RPCHTTPPort() *int                             { return rc.Opts.RPCHTTPPort.Value() }
 func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
 
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {

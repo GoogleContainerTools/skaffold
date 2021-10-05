@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/testing/protocmp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -43,7 +44,7 @@ func TestNewResource(t *testing.T) {
 					Name:      "foo",
 				},
 			},
-			expected:     Resource{"default", "pod", "foo", nil, Status(""), proto.ActionableErr{}},
+			expected:     Resource{"default", "pod", "foo", nil, Status(""), &proto.ActionableErr{}},
 			expectedName: "pod/foo",
 		},
 		{
@@ -55,15 +56,15 @@ func TestNewResource(t *testing.T) {
 					Name:      "bar",
 				},
 			},
-			expected:     Resource{"test", "pod", "bar", nil, Status(""), proto.ActionableErr{}},
+			expected:     Resource{"test", "pod", "bar", nil, Status(""), &proto.ActionableErr{}},
 			expectedName: "test:pod/bar",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := NewResourceFromObject(test.resource, Status(""), proto.ActionableErr{}, nil)
-			t.CheckDeepEqualProtoMessage(test.expected, actual, cmp.AllowUnexported(Resource{}))
-			t.CheckDeepEqualProtoMessage(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}))
+			actual := NewResourceFromObject(test.resource, Status(""), &proto.ActionableErr{}, nil)
+			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), protocmp.Transform())
+			t.CheckDeepEqual(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}), protocmp.Transform())
 		})
 	}
 }

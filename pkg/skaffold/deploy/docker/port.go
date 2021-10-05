@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -34,6 +35,8 @@ import (
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
+
+var GetAvailablePort = util.GetAvailablePort // For testing
 
 type containerPortForwardEntry struct {
 	container       string
@@ -71,12 +74,12 @@ func (pm *PortManager) Stop() {
 }
 
 // getPorts converts PortForwardResources into docker.PortSet/PortMap objects.
-// These are passed to ContainerCreate on Deploy to expose container ports on the host.
+// These ports are added to the provided container configuration's port set, and the bindings
+// are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
 // It also returns a list of containerPortForwardEntry, to be passed to the event handler
-func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource) (nat.PortSet, nat.PortMap, error) {
+func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config) (nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
-	s := make(nat.PortSet)
 	m := make(nat.PortMap)
 	var entries []containerPortForwardEntry
 	var ports []int
@@ -85,13 +88,16 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 			log.Entry(context.TODO()).Debugf("skipping non-container port forward resource in Docker deploy: %s\n", p.Name)
 			continue
 		}
-		localPort := util.GetAvailablePort(p.Address, p.LocalPort, &pm.portSet)
+		localPort := GetAvailablePort(p.Address, p.LocalPort, &pm.portSet)
 		ports = append(ports, localPort)
 		port, err := nat.NewPort("tcp", p.Port.String())
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		s[port] = struct{}{}
+		if cfg.ExposedPorts == nil {
+			cfg.ExposedPorts = nat.PortSet{}
+		}
+		cfg.ExposedPorts[port] = struct{}{}
 		m[port] = []nat.PortBinding{
 			{HostIP: p.Address, HostPort: fmt.Sprintf("%d", localPort)},
 		}
@@ -105,7 +111,7 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 	}
 	pm.containerPorts[containerName] = ports
 	pm.entries = append(pm.entries, entries...)
-	return s, m, nil
+	return m, nil
 }
 
 func (pm *PortManager) relinquishPorts(containerName string) {

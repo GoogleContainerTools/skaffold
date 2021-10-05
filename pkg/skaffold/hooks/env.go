@@ -28,8 +28,8 @@ var staticEnvOpts StaticEnvOpts
 // StaticEnvOpts contains the environment variables to be set in a lifecycle hook executor that don't change during the lifetime of the process.
 type StaticEnvOpts struct {
 	DefaultRepo *string
-	RPCPort     int
-	HTTPPort    int
+	RPCPort     *int
+	HTTPPort    *int
 	WorkDir     string
 }
 
@@ -62,8 +62,8 @@ type DeployEnvOpts struct {
 type Config interface {
 	DefaultRepo() *string
 	GetWorkingDir() string
-	RPCPort() int
-	RPCHTTPPort() int
+	RPCPort() *int
+	RPCHTTPPort() *int
 }
 
 func SetupStaticEnvOptions(cfg Config) {

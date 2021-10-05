@@ -53,6 +53,8 @@ var (
 
 type Config interface {
 	Prune() bool
+	ContainerDebugging() bool
+	GlobalConfig() string
 	GetKubeContext() string
 	MinikubeProfile() string
 	GetInsecureRegistries() map[string]bool

@@ -17,17 +17,18 @@ limitations under the License.
 package warnings
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
-	"github.com/sirupsen/logrus"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // Warner prints warnings
 type Warner func(format string, args ...interface{})
 
 // Printf can be overridden for testing
-var Printf = logrus.Warnf
+var Printf = olog.Entry(context.TODO()).Warnf
 
 // Collect is used for testing to collect warnings
 // instead of printing them

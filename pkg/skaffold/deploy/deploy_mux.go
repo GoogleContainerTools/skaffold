@@ -47,6 +47,7 @@ type DeployerMux struct {
 }
 
 type deployerWithHooks interface {
+	HasRunnableHooks() bool
 	PreDeployHooks(context.Context, io.Writer) error
 	PostDeployHooks(context.Context, io.Writer) error
 }
@@ -111,8 +112,12 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 		eventV3.DeployInProgress(i)
 		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
+		runHooks := false
 		deployHooks, ok := deployer.(deployerWithHooks)
 		if ok {
+			runHooks = deployHooks.HasRunnableHooks()
+		}
+		if runHooks {
 			if err := deployHooks.PreDeployHooks(ctx, w); err != nil {
 				return err
 			}
@@ -125,7 +130,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 		}
 		// Always run iterative status check if there are deploy hooks.
 		// This is required otherwise the deploy hooks can get erreneously executed on older pods from a previous deployment.
-		if ok || m.iterativeStatusCheck {
+		if runHooks || m.iterativeStatusCheck {
 			if err := deployer.GetStatusMonitor().Check(ctx, w); err != nil {
 				eventV2.DeployFailed(i, err)
 				eventV3.DeployFailed(i, err)
@@ -133,7 +138,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 				return err
 			}
 		}
-		if ok {
+		if runHooks {
 			if err := deployHooks.PostDeployHooks(ctx, w); err != nil {
 				return err
 			}

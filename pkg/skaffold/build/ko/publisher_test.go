@@ -25,31 +25,51 @@ import (
 
 func TestPublishOptions(t *testing.T) {
 	tests := []struct {
-		description string
-		ref         string
-		pushImages  bool
-		repo        string
-		tag         string
+		description          string
+		ref                  string
+		repo                 string
+		insecureRegistries   map[string]bool
+		pushImages           bool
+		wantInsecureRegistry bool
+		wantTag              string
 	}{
 		{
 			description: "sideloaded image",
 			ref:         "registry.example.com/repository/myapp1:tag1",
-			pushImages:  false,
 			repo:        "registry.example.com/repository/myapp1",
-			tag:         "tag",
+			pushImages:  false,
+			wantTag:     "tag1",
 		},
 		{
 			description: "published image",
 			ref:         "registry.example.com/repository/myapp2:tag2",
-			pushImages:  true,
 			repo:        "registry.example.com/repository/myapp2",
-			tag:         "tag",
+			pushImages:  true,
+			wantTag:     "tag2",
+		},
+		{
+			description:          "insecure registry",
+			ref:                  "insecure.registry.example.com/repository/myapp3:tag3",
+			repo:                 "insecure.registry.example.com/repository/myapp3",
+			insecureRegistries:   map[string]bool{"insecure.registry.example.com": true},
+			pushImages:           true,
+			wantInsecureRegistry: true,
+			wantTag:              "tag3",
+		},
+		{
+			description:          "secure registry",
+			ref:                  "secure.registry.example.com/repository/myapp4:tag4",
+			repo:                 "secure.registry.example.com/repository/myapp4",
+			insecureRegistries:   map[string]bool{"insecure.registry.example.com": true},
+			pushImages:           true,
+			wantInsecureRegistry: false,
+			wantTag:              "tag4",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dockerClient := fakeDockerAPIClient(test.ref, "imageID")
-			po, err := publishOptions(test.ref, test.pushImages, dockerClient)
+			po, err := publishOptions(test.ref, test.pushImages, dockerClient, test.insecureRegistries)
 			t.CheckNoError(err)
 			if !po.Bare || po.BaseImportPaths || po.PreserveImportPaths {
 				t.Errorf("use ko's Bare naming option as it allow for arbitrary image names")
@@ -60,6 +80,9 @@ func TestPublishOptions(t *testing.T) {
 			if test.pushImages && po.DockerRepo != test.repo {
 				t.Errorf("wanted DockerRepo (%q), got (%q)", test.repo, po.DockerRepo)
 			}
+			if test.wantInsecureRegistry != po.InsecureRegistry {
+				t.Errorf("wanted InsecureRegistry (%v), got (%v)", test.wantInsecureRegistry, po.InsecureRegistry)
+			}
 			if !test.pushImages && po.LocalDomain != test.repo {
 				t.Errorf("wanted LocalDomain (%q), got (%q)", test.repo, po.DockerRepo)
 			}
@@ -69,8 +92,8 @@ func TestPublishOptions(t *testing.T) {
 			if test.pushImages != po.Push {
 				t.Errorf("Push (%v) should match pushImages (%v)", po.Push, test.pushImages)
 			}
-			if len(po.Tags) != 1 && po.Tags[0] != test.tag {
-				t.Errorf("wanted Tags (%+v), got (%+v)", []string{test.tag}, po.Tags)
+			if po.Tags[0] != test.wantTag {
+				t.Errorf("wanted Tags (%+v), got (%+v)", []string{test.wantTag}, po.Tags)
 			}
 			if po.UserAgent != version.UserAgentWithClient() {
 				t.Errorf("wanted UserAgent (%s), got (%s)", version.UserAgentWithClient(), po.UserAgent)

@@ -58,7 +58,7 @@ func TestUserError(t *testing.T) {
 			})
 			actual := UserError(test.err, test.statusCode)
 			switch actualType := actual.(type) {
-			case sErrors.ErrDef:
+			case *sErrors.ErrDef:
 				t.CheckDeepEqual(test.expected, actualType.StatusCode())
 			case sErrors.Problem:
 				t.CheckDeepEqual(test.expected, actualType.ErrCode)

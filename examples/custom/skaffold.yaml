@@ -1,8 +1,8 @@
-apiVersion: skaffold/v2beta21
+apiVersion: skaffold/v2beta23
 kind: Config
 build:
   artifacts:
-  - image: github.com/googlecontainertools/skaffold/examples/custom
+  - image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
     custom:
       buildCommand: ./build.sh
       dependencies:

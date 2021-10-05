@@ -23,7 +23,7 @@ import (
 )
 
 type Status struct {
-	ae       proto.ActionableErr
+	ae       *proto.ActionableErr
 	changed  bool
 	reported bool
 }
@@ -35,7 +35,7 @@ func (rs Status) Error() error {
 	return fmt.Errorf(rs.ae.Message)
 }
 
-func (rs Status) ActionableError() proto.ActionableErr {
+func (rs Status) ActionableError() *proto.ActionableErr {
 	return rs.ae
 }
 
@@ -47,7 +47,7 @@ func (rs Status) Equal(other Status) bool {
 	return rs.ae.Message == other.ae.Message && rs.ae.ErrCode == other.ae.ErrCode
 }
 
-func newStatus(ae proto.ActionableErr) Status {
+func newStatus(ae *proto.ActionableErr) Status {
 	return Status{
 		ae:      ae,
 		changed: true,

@@ -104,17 +104,12 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy_Deploying")
 	defer endTrace()
 
-	// we only want to register images that are local AND were built by this runner
+	// we only want to register images that are local AND were built by this runner OR forced to load via flag
 	var localAndBuiltImages []graph.Artifact
 	for _, image := range localImages {
-		if r.wasBuilt(image.Tag) {
+		if r.runCtx.ForceLoadImages() || r.wasBuilt(image.Tag) {
 			localAndBuiltImages = append(localAndBuiltImages, image)
 		}
-	}
-
-	// if --load-images=true, load all images into cluster
-	if r.runCtx.ForceLoadImages() {
-		localAndBuiltImages = artifacts
 	}
 
 	r.deployer.RegisterLocalImages(localAndBuiltImages)

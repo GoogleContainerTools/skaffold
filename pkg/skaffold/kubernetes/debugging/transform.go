@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -41,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging/adapter"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var (
@@ -80,7 +80,7 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever debug.Configura
 			if err != nil {
 				return nil, fmt.Errorf("marshalling yaml: %w", err)
 			}
-			if logrus.IsLevelEnabled(logrus.DebugLevel) {
+			if log.IsDebugLevelEnabled() {
 				log.Entry(context.Background()).Debugln("Applied debugging transform:\n", string(manifest))
 			}
 		}
@@ -109,28 +109,6 @@ func describe(obj runtime.Object) (group, version, kind, description string) {
 		description = fmt.Sprintf("%s.%s/%s", strings.ToLower(kind), group, name)
 	}
 	return
-}
-
-// allocatePort walks the podSpec's containers looking for an available port that is close to desiredPort.
-// We deal with wrapping and avoid allocating ports < 1024
-func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
-	var maxPort int32 = 65535 // ports are normally [1-65535]
-	if desiredPort < 1024 || desiredPort > maxPort {
-		desiredPort = 1024 // skip reserved ports
-	}
-	// We assume ports are rather sparsely allocated, so even if desiredPort
-	// is allocated, desiredPort+1 or desiredPort+2 are likely to be free
-	for port := desiredPort; port < maxPort; port++ {
-		if isPortAvailable(podSpec, port) {
-			return port
-		}
-	}
-	for port := desiredPort; port > 1024; port-- {
-		if isPortAvailable(podSpec, port) {
-			return port
-		}
-	}
-	panic("cannot find available port") // exceedingly unlikely
 }
 
 // isPortAvailable returns true if none of the pod's containers specify the given port.
@@ -266,8 +244,11 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		return false
 	}
 
+	portAvailable := func(port int32) bool {
+		return isPortAvailable(podSpec, port)
+	}
 	portAlloc := func(desiredPort int32) int32 {
-		return allocatePort(podSpec, desiredPort)
+		return util.AllocatePort(portAvailable, desiredPort)
 	}
 	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
 	configurations := make(map[string]types.ContainerDebugConfiguration)

@@ -24,23 +24,29 @@ import (
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/publish"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 // Builder is an artifact builder that uses ko
 type Builder struct {
-	localDocker docker.LocalDaemon
-	pushImages  bool
+	localDocker        docker.LocalDaemon
+	pushImages         bool
+	runMode            config.RunMode
+	insecureRegistries map[string]bool
 
 	// publishImages can be overridden for unit testing purposes.
 	publishImages func(context.Context, []string, publish.Interface, build.Interface) (map[string]name.Reference, error)
 }
 
 // NewArtifactBuilder returns a new ko artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool) *Builder {
+// TODO(halvards)[09/17/2021]: Call this function from newPerArtifactBuilder() in pkg/skaffold/build/local/types.go
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, runMode config.RunMode, insecureRegistries map[string]bool) *Builder {
 	return &Builder{
-		localDocker:   localDocker,
-		pushImages:    pushImages,
-		publishImages: commands.PublishImages,
+		localDocker:        localDocker,
+		pushImages:         pushImages,
+		runMode:            runMode,
+		insecureRegistries: insecureRegistries,
+		publishImages:      commands.PublishImages,
 	}
 }

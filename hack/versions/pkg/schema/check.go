@@ -109,7 +109,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		fmt.Printf(" + Check if a new unreleased version has been created:\n")
 		fmt.Printf("     - Ensure that your branch is up-to-date with the %q branch.\n", baseRef)
 		fmt.Printf("     - Check for a pending PR to create a new version.\n")
-		fmt.Printf(" + Create a separate PR with just the result of running the 'hack/new_version.sh' script.\n")
+		fmt.Printf(" + Create a separate PR with just the result of running the 'hack/new-version.sh' script.\n")
 
 		filesInError = append(filesInError, configFile)
 	}

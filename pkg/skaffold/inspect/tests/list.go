@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type testList struct {
@@ -30,8 +31,14 @@ type testList struct {
 
 // CustomTest entries are handled by CustomTest struct, there is no StructureTest so structureTestEntry is required
 type structureTestEntry struct {
+	TestType          string   `json:"testType"`
 	StructureTest     string   `json:"structureTest"`
 	StructureTestArgs []string `json:"structureTestArgs"`
+}
+
+type customTestEntry struct {
+	TestType string `json:"testType"`
+	latestV1.CustomTest
 }
 
 func PrintTestsList(ctx context.Context, out io.Writer, opts inspect.Options) error {
@@ -46,14 +53,15 @@ func PrintTestsList(ctx context.Context, out io.Writer, opts inspect.Options) er
 		return formatter.WriteErr(err)
 	}
 
+	// TODO(aaron-prindle) add a field 'testType' to both objects
 	l := &testList{Tests: []interface{}{}}
 	for _, c := range cfgs {
 		for _, t := range c.Test {
 			for _, ct := range t.CustomTests {
-				l.Tests = append(l.Tests, ct)
+				l.Tests = append(l.Tests, customTestEntry{"custom-test", ct})
 			}
 			for _, st := range t.StructureTests {
-				l.Tests = append(l.Tests, structureTestEntry{StructureTest: st, StructureTestArgs: t.StructureTestArgs})
+				l.Tests = append(l.Tests, structureTestEntry{"structure-test", st, t.StructureTestArgs})
 			}
 		}
 	}

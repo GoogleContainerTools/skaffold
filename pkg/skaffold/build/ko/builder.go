@@ -18,6 +18,7 @@ package ko
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -25,22 +26,43 @@ import (
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/commands/options"
 
-	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact) (build.Interface, error) {
-	bo := buildOptions(a.KoArtifact.BaseImage, a.KoArtifact.Platforms, a.Workspace, a.KoArtifact.Dir)
+	bo := buildOptions(a, b.runMode)
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(baseImage string, platforms []string, workspace string, sourceDir string) *options.BuildOptions {
+func buildOptions(a *latestV1.Artifact, runMode config.RunMode) *options.BuildOptions {
+	workingDirectory := filepath.Join(a.Workspace, a.KoArtifact.Dir)
 	return &options.BuildOptions{
-		BaseImage:        baseImage,
-		ConcurrentBuilds: 1,
-		Platform:         strings.Join(platforms, ","),
-		UserAgent:        version.UserAgentWithClient(),
-		WorkingDirectory: filepath.Join(workspace, sourceDir),
+		BaseImage: a.KoArtifact.BaseImage,
+		BuildConfigs: map[string]build.Config{
+			a.Workspace: {
+				ID:      a.ImageName,
+				Dir:     workingDirectory,
+				Env:     a.KoArtifact.Env,
+				Flags:   a.KoArtifact.Flags,
+				Ldflags: a.KoArtifact.Ldflags,
+				Main:    a.KoArtifact.Main,
+			},
+		},
+		ConcurrentBuilds:     1,
+		DisableOptimizations: runMode == config.RunModes.Debug,
+		Labels:               labels(a),
+		Platform:             strings.Join(a.KoArtifact.Platforms, ","),
+		UserAgent:            version.UserAgentWithClient(),
+		WorkingDirectory:     workingDirectory,
 	}
+}
+
+func labels(a *latestV1.Artifact) []string {
+	labels := []string{}
+	for k, v := range a.KoArtifact.Labels {
+		labels = append(labels, fmt.Sprintf("%s=%s", k, v))
+	}
+	return labels
 }

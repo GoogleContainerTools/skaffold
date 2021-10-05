@@ -32,7 +32,7 @@ func BuildEnvAlreadyExists(b BuildEnv, filename string, profile string) error {
 		msg = fmt.Sprintf("trying to create a %q build environment definition that already exists, in profile %q in file %s", b, profile, filename)
 	}
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -53,7 +53,7 @@ func BuildEnvNotFound(b BuildEnv, filename string, profile string) error {
 		msg = fmt.Sprintf("trying to modify a %q build environment definition that doesn't exist, in profile %q in file %s", b, profile, filename)
 	}
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -69,7 +69,7 @@ func BuildEnvNotFound(b BuildEnv, filename string, profile string) error {
 func ProfileNotFound(profile string) error {
 	msg := fmt.Sprintf("trying to modify a profile %q that doesn't exist", profile)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR,
 			Suggestions: []*proto.Suggestion{

@@ -49,7 +49,7 @@ var (
 
 	// patterns for enum-type values
 	enumValuePattern     = "^[ \t]*`(?P<name>[^`]+)`([ \t]*\\(default\\))?: .*$"
-	regexpEnumDefinition = regexp.MustCompile("(?m).*Valid [a-z]+ are((\\n" + enumValuePattern + ")*)")
+	regexpEnumDefinition = regexp.MustCompile("(?m).*Valid [a-z]+ are:?((\\n" + enumValuePattern + ")*)")
 	regexpEnumValues     = regexp.MustCompile("(?m)" + enumValuePattern)
 )
 

@@ -29,6 +29,7 @@ import (
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -44,10 +45,10 @@ func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
 		ev := newHandler()
 
-		ev.logEvent(proto.LogEntry{Entry: "OLD"})
+		ev.logEvent(&proto.LogEntry{Entry: "OLD"})
 		go func() {
-			ev.logEvent(proto.LogEntry{Entry: "FRESH"})
-			ev.logEvent(proto.LogEntry{Entry: "POISON PILL"})
+			ev.logEvent(&proto.LogEntry{Entry: "FRESH"})
+			ev.logEvent(&proto.LogEntry{Entry: "POISON PILL"})
 		}()
 
 		var received int32
@@ -290,7 +291,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventUpdated("ns:pod/foo", proto.ActionableErr{
+	ResourceStatusCheckEventUpdated("ns:pod/foo", &proto.ActionableErr{
 		ErrCode: 509,
 		Message: "image pull error",
 	})
@@ -315,7 +316,7 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	resourceStatusCheckEventFailed("ns:pod/foo", proto.ActionableErr{
+	resourceStatusCheckEventFailed("ns:pod/foo", &proto.ActionableErr{
 		ErrCode: 309,
 		Message: "one or more deployments failed",
 	})
@@ -400,7 +401,7 @@ func wait(t *testing.T, condition func() bool) {
 func TestResetStateOnBuild(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = proto.State{
+	handler.state = &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -431,13 +432,13 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, &expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = proto.State{
+	handler.state = &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -455,7 +456,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
 	}
 	ResetStateOnDeploy()
-	expected := proto.State{
+	expected := &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -466,7 +467,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 			Resources: map[string]string{},
 		},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestEmptyStateCheckState(t *testing.T) {
@@ -474,13 +475,13 @@ func TestEmptyStateCheckState(t *testing.T) {
 	expected := &proto.StatusCheckState{Status: NotStarted,
 		Resources: map[string]string{},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, actual, cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestUpdateStateAutoTriggers(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = proto.State{
+	handler.state = &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -528,19 +529,19 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 			AutoTrigger: true,
 		},
 	}
-	testutil.CheckDeepEqualProtoMessage(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, &expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestDevLoopFailedInPhase(t *testing.T) {
 	tcs := []struct {
 		description string
-		state       proto.State
+		state       *proto.State
 		phase       constants.Phase
 		waitFn      func() bool
 	}{
 		{
 			description: "build failed",
-			state: proto.State{
+			state: &proto.State{
 				BuildState: &proto.BuildState{StatusCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED},
 			},
 			phase: constants.Build,
@@ -553,7 +554,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 		},
 		{
 			description: "test failed",
-			state: proto.State{
+			state: &proto.State{
 				BuildState: &proto.BuildState{},
 				TestState:  &proto.TestState{StatusCode: proto.StatusCode_TEST_UNKNOWN},
 			},
@@ -567,7 +568,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 		},
 		{
 			description: "deploy failed",
-			state: proto.State{
+			state: &proto.State{
 				BuildState:  &proto.BuildState{},
 				DeployState: &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_UNKNOWN},
 			},
@@ -581,7 +582,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 		},
 		{
 			description: "status check failed",
-			state: proto.State{
+			state: &proto.State{
 				BuildState:       &proto.BuildState{},
 				TestState:        &proto.TestState{StatusCode: proto.StatusCode_TEST_SUCCESS},
 				DeployState:      &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_SUCCESS},
@@ -616,7 +617,7 @@ func TestSaveEventsToFile(t *testing.T) {
 	}
 
 	// add some events to the event log
-	handler.eventLog = []proto.LogEntry{
+	handler.eventLog = []*proto.LogEntry{
 		{
 			Event: &proto.Event{EventType: &proto.Event_BuildEvent{}},
 		}, {
@@ -635,7 +636,7 @@ func TestSaveEventsToFile(t *testing.T) {
 		t.Fatalf("reading tmp file: %v", err)
 	}
 
-	var logEntries []proto.LogEntry
+	var logEntries []*proto.LogEntry
 	entries := strings.Split(string(contents), "\n")
 	for _, e := range entries {
 		if e == "" {
@@ -645,7 +646,7 @@ func TestSaveEventsToFile(t *testing.T) {
 		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
 			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
 		}
-		logEntries = append(logEntries, logEntry)
+		logEntries = append(logEntries, &logEntry)
 	}
 
 	buildCompleteEvent, devLoopCompleteEvent := 0, 0

@@ -18,13 +18,13 @@ package v2
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
+	pbuf "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -52,6 +52,7 @@ func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan *proto.Event),
 		wait:      make(chan bool, 1),
+		state:     &proto.State{},
 	}
 	go func() {
 		for {
@@ -66,16 +67,16 @@ func newHandler() *eventHandler {
 }
 
 type eventHandler struct {
-	eventLog            []proto.Event
+	eventLog            []*proto.Event
 	logLock             sync.Mutex
-	applicationLogs     []proto.Event
+	applicationLogs     []*proto.Event
 	applicationLogsLock sync.Mutex
 	cfg                 Config
 
 	iteration               int
 	errorOnce               sync.Once
 	wait                    chan bool
-	state                   proto.State
+	state                   *proto.State
 	stateLock               sync.Mutex
 	eventChan               chan *proto.Event
 	eventListeners          []*listener
@@ -94,7 +95,7 @@ func GetIteration() int {
 
 func GetState() (*proto.State, error) {
 	state := handler.getState()
-	return &state, nil
+	return state, nil
 }
 
 func ForEachEvent(callback func(*proto.Event) error) error {
@@ -117,19 +118,16 @@ func WaitForConnection() {
 	<-handler.wait
 }
 
-func (ev *eventHandler) getState() proto.State {
+func (ev *eventHandler) getState() *proto.State {
 	ev.stateLock.Lock()
 	// Deep copy
-	buf, _ := json.Marshal(ev.state)
+	state := pbuf.Clone(ev.state).(*proto.State)
 	ev.stateLock.Unlock()
-
-	var state proto.State
-	json.Unmarshal(buf, &state)
 
 	return state
 }
 
-func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]proto.Event, lock sync.Locker) {
+func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]*proto.Event, lock sync.Locker) {
 	lock.Lock()
 
 	for _, listener := range *listeners {
@@ -142,7 +140,7 @@ func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]p
 			listener.closed = true
 		}
 	}
-	*log = append(*log, *event)
+	*log = append(*log, event)
 
 	lock.Unlock()
 }
@@ -155,7 +153,7 @@ func (ev *eventHandler) logApplicationLog(event *proto.Event) {
 	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
 }
 
-func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
+func (ev *eventHandler) forEach(listeners *[]*listener, log *[]*proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
 	listener := &listener{
 		callback: callback,
 		errors:   make(chan error),
@@ -163,14 +161,14 @@ func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock
 
 	lock.Lock()
 
-	oldEvents := make([]proto.Event, len(*log))
+	oldEvents := make([]*proto.Event, len(*log))
 	copy(oldEvents, *log)
 	*listeners = append(*listeners, listener)
 
 	lock.Unlock()
 
 	for i := range oldEvents {
-		if err := callback(&oldEvents[i]); err != nil {
+		if err := callback(oldEvents[i]); err != nil {
 			// listener should maybe be closed
 			return err
 		}
@@ -191,7 +189,7 @@ func (ev *eventHandler) forEachApplicationLog(callback func(*proto.Event) error)
 	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
 }
 
-func emptyState(cfg Config) proto.State {
+func emptyState(cfg Config) *proto.State {
 	builds := map[string]string{}
 	for _, p := range cfg.GetPipelines() {
 		for _, a := range p.Build.Artifacts {
@@ -202,8 +200,8 @@ func emptyState(cfg Config) proto.State {
 	return emptyStateWithArtifacts(builds, metadata, cfg.AutoBuild(), cfg.AutoDeploy(), cfg.AutoSync())
 }
 
-func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) proto.State {
-	return proto.State{
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) *proto.State {
+	return &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts:   builds,
 			AutoTrigger: autoBuild,
@@ -311,7 +309,7 @@ func TaskInProgress(task constants.Phase, description string) {
 	if task == constants.DevLoop {
 		handler.iteration++
 
-		handler.applicationLogs = []proto.Event{}
+		handler.applicationLogs = []*proto.Event{}
 	}
 
 	handler.handleTaskEvent(&proto.TaskEvent{
@@ -386,7 +384,7 @@ func (ev *eventHandler) sendErrorMessage(task constants.Phase, subtask string, e
 	})
 }
 
-func (ev *eventHandler) setState(state proto.State) {
+func (ev *eventHandler) setState(state *proto.State) {
 	ev.stateLock.Lock()
 	ev.state = state
 	ev.stateLock.Unlock()
@@ -487,7 +485,7 @@ func SaveEventsToFile(fp string) error {
 	marshaller := jsonpb.Marshaler{}
 	for _, ev := range handler.eventLog {
 		contents := bytes.NewBuffer([]byte{})
-		if err := marshaller.Marshal(contents, &ev); err != nil {
+		if err := marshaller.Marshal(contents, ev); err != nil {
 			return fmt.Errorf("marshalling event: %w", err)
 		}
 		if _, err := f.WriteString(contents.String() + "\n"); err != nil {

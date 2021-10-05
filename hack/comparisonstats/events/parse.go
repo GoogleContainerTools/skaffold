@@ -41,7 +41,7 @@ func ParseEventDuration(ctx context.Context, eventsFileAbsPath string) (*types.D
 	return splitEntriesByDevLoop(logEntries), nil
 }
 
-func splitEntriesByDevLoop(logEntries []v1.LogEntry) *types.DevLoopTimes {
+func splitEntriesByDevLoop(logEntries []*v1.LogEntry) *types.DevLoopTimes {
 	devLoopTimes := types.DevLoopTimes{
 		InnerBuildTimes:       []time.Duration{},
 		InnerDeployTimes:      []time.Duration{},
@@ -101,17 +101,17 @@ func splitEntriesByDevLoop(logEntries []v1.LogEntry) *types.DevLoopTimes {
 	return &devLoopTimes
 }
 
-func get(contents []byte) ([]v1.LogEntry, error) {
+func get(contents []byte) ([]*v1.LogEntry, error) {
 	entries := strings.Split(string(contents), "\n")
-	var logEntries []v1.LogEntry
+	var logEntries []*v1.LogEntry
 	unmarshaller := jsonpb.Unmarshaler{}
 	for _, entry := range entries {
 		if entry == "" {
 			continue
 		}
-		var logEntry v1.LogEntry
+		logEntry := new(v1.LogEntry)
 		buf := bytes.NewBuffer([]byte(entry))
-		if err := unmarshaller.Unmarshal(buf, &logEntry); err != nil {
+		if err := unmarshaller.Unmarshal(buf, logEntry); err != nil {
 			return nil, errors.Wrap(err, "unmarshalling")
 		}
 		logEntries = append(logEntries, logEntry)
@@ -119,7 +119,7 @@ func get(contents []byte) ([]v1.LogEntry, error) {
 	return logEntries, nil
 }
 
-func getFromFile(fp string) ([]v1.LogEntry, error) {
+func getFromFile(fp string) ([]*v1.LogEntry, error) {
 	contents, err := ioutil.ReadFile(fp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading %s", fp)

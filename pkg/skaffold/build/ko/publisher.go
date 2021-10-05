@@ -17,6 +17,8 @@ limitations under the License.
 package ko
 
 import (
+	"strings"
+
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/ko/pkg/commands"
@@ -27,27 +29,38 @@ import (
 )
 
 func (b *Builder) newKoPublisher(ref string) (publish.Interface, error) {
-	po, err := publishOptions(ref, b.pushImages, b.localDocker.RawClient())
+	po, err := publishOptions(ref, b.pushImages, b.localDocker.RawClient(), b.insecureRegistries)
 	if err != nil {
 		return nil, err
 	}
 	return commands.NewPublisher(po)
 }
 
-func publishOptions(ref string, pushImages bool, dockerClient daemon.Client) (*options.PublishOptions, error) {
+func publishOptions(ref string, pushImages bool, dockerClient daemon.Client, insecureRegistries map[string]bool) (*options.PublishOptions, error) {
 	imageRef, err := name.ParseReference(ref)
 	if err != nil {
 		return nil, err
 	}
 	imageNameWithoutTag := imageRef.Context().Name()
+
 	return &options.PublishOptions{
-		Bare:         true,
-		DockerClient: dockerClient,
-		DockerRepo:   imageNameWithoutTag,
-		Local:        !pushImages,
-		LocalDomain:  imageNameWithoutTag,
-		Push:         pushImages,
-		Tags:         []string{imageRef.Identifier()},
-		UserAgent:    version.UserAgentWithClient(),
+		Bare:             true,
+		DockerClient:     dockerClient,
+		DockerRepo:       imageNameWithoutTag,
+		InsecureRegistry: useInsecureRegistry(imageNameWithoutTag, insecureRegistries),
+		Local:            !pushImages,
+		LocalDomain:      imageNameWithoutTag,
+		Push:             pushImages,
+		Tags:             []string{imageRef.Identifier()},
+		UserAgent:        version.UserAgentWithClient(),
 	}, nil
+}
+
+func useInsecureRegistry(imageName string, insecureRegistries map[string]bool) bool {
+	for registry := range insecureRegistries {
+		if strings.HasPrefix(imageName, registry) {
+			return true
+		}
+	}
+	return false
 }

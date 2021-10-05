@@ -9,9 +9,8 @@
 {{ if in .Permalink "/docs/references/yaml"}}
     <br>
     <div>Schema Versions</div>
-    <div id="schema_links">
-
-    </div>
+    <select id="schema_links" onchange="selectSchema(this)">
+    </select>
     <ul id="schema_list" hidden>
     {{ range (readDir "/content/en/schemas") }}
         <li>{{ trim .Name ".json" }}</li>

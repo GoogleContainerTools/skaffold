@@ -232,12 +232,12 @@ func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.D
 		case <-timeoutContext.Done():
 			switch c := timeoutContext.Err(); c {
 			case context.Canceled:
-				r.UpdateStatus(proto.ActionableErr{
+				r.UpdateStatus(&proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 					Message: "check cancelled\n",
 				})
 			case context.DeadlineExceeded:
-				r.UpdateStatus(proto.ActionableErr{
+				r.UpdateStatus(&proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
 					Message: fmt.Sprintf("could not stabilize within %v\n", r.Deadline()),
 				})
@@ -289,6 +289,8 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Deployment,
 		// another deployment failed
 		return
 	}
+	event.ResourceStatusCheckEventCompleted(r.String(), ae)
+	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
 	out, _ = output.WithEventContext(context.Background(), out, constants.Deploy, r.String())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {

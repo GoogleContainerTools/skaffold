@@ -24,7 +24,7 @@ import sys
 
 
 SKIPPED_DIRS = ["Godeps", "third_party", ".git", "vendor", "examples", "testdata", "node_modules", "codelab"]
-SKIPPED_FILES = ["install_golint.sh", "skaffold.pb.go", "skaffold.pb.gw.go", "enums.pb.go", "build.sh", "statik.go", "gitutil.go"]
+SKIPPED_FILES = ["install-golint.sh", "skaffold.pb.go", "skaffold.pb.gw.go", "skaffold_grpc.pb.go", "enums.pb.go", "build.sh", "statik.go", "gitutil.go"]
 
 parser = argparse.ArgumentParser()
 parser.add_argument("filenames", help="list of files to check, all files if unspecified", nargs='*')
@@ -69,6 +69,8 @@ def file_passes(filename, refs, regexs):
 
     # remove build tags from the top of Go files
     if extension == "go":
+        p = regexs["go117_build_constraints"]
+        (data, found) = p.subn("", data, 1)
         p = regexs["go_build_constraints"]
         (data, found) = p.subn("", data, 1)
 
@@ -146,6 +148,8 @@ def get_regexs():
     regexs["date"] = re.compile( '(2019|2020|2021)' )
     # strip // +build \n\n build constraints
     regexs["go_build_constraints"] = re.compile(r"^(// \+build.*\n)+\n", re.MULTILINE)
+    # strip //go:build \n build constraints (for go1.17 and higher)
+    regexs["go117_build_constraints"] = re.compile(r"^(//go:build.*\n)", re.MULTILINE)
     # strip #!.* from shell scripts
     regexs["shebang"] = re.compile(r"^(#!.*\n)\n*", re.MULTILINE)
     return regexs

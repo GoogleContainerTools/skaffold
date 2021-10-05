@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta22
+apiVersion: skaffold/v2beta24
 kind: Config
 build:
   artifacts:
@@ -12,5 +12,4 @@ profiles:
     local:
       concurrency: 1
       tryImportMissing: false
-      useBuildkit: false
       useDockerCLI: false

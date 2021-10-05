@@ -58,7 +58,7 @@ func TestRunPortForward(t *testing.T) {
 	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	skaffold.Run("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
 	_, entries := apiEvents(t, rpcAddr)
 
@@ -72,7 +72,7 @@ func TestRunUserPortForwardResource(t *testing.T) {
 	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	skaffold.Run("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
 	_, entries := apiEvents(t, rpcAddr)
 
@@ -86,7 +86,7 @@ func TestRunPortForwardByPortName(t *testing.T) {
 	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	skaffold.Run("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
 	_, entries := apiEvents(t, rpcAddr)
 

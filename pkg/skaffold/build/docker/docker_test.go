@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/errdefs"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -44,6 +45,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		expectedEnv     []string
 		err             error
 		expectedErr     error
+		wantDockerCLI   bool
 		expectedErrCode proto.StatusCode
 	}{
 		{
@@ -59,20 +61,23 @@ func TestDockerCLIBuild(t *testing.T) {
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE"},
 		},
 		{
-			description: "buildkit",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
-			expectedEnv: []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
+			description:   "buildkit",
+			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			wantDockerCLI: true,
+			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
-			description: "buildkit and extra env",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
-			extraEnv:    []string{"OTHER=VALUE"},
-			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
+			description:   "buildkit and extra env",
+			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			wantDockerCLI: true,
+			extraEnv:      []string{"OTHER=VALUE"},
+			expectedEnv:   []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
-			description: "env var collisions",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
-			extraEnv:    []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
+			description:   "env var collisions",
+			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			wantDockerCLI: true,
+			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// env var collisions are handled by cmd.Run(). Last one wins.
 			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
 		},
@@ -135,7 +140,8 @@ func TestDockerCLIBuild(t *testing.T) {
 					test.err,
 				)
 				t.Override(&util.DefaultExecCommand, mockCmd)
-			} else if test.localBuild.UseBuildkit || test.localBuild.UseDockerCLI {
+			}
+			if test.wantDockerCLI {
 				mockCmd = testutil.CmdRunEnv(
 					"docker build . --file "+dockerfilePath+" -t tag",
 					test.expectedEnv,
@@ -161,8 +167,8 @@ func TestDockerCLIBuild(t *testing.T) {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
 			}
 			if test.err != nil && test.expectedErrCode != 0 {
-				if ae, ok := err.(sErrors.ErrDef); ok {
-					t.CheckDeepEqualProtoMessage(test.expectedErrCode, ae.StatusCode())
+				if ae, ok := err.(*sErrors.ErrDef); ok {
+					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode(), protocmp.Transform())
 					t.CheckErrorContains(test.expectedErr.Error(), ae)
 				} else {
 					t.Fatalf("expected to find an actionable error. not found")
@@ -206,6 +212,10 @@ func (m mockConfig) GetKubeContext() string {
 	return ""
 }
 
+func (m mockConfig) GlobalConfig() string {
+	return ""
+}
+
 func (m mockConfig) MinikubeProfile() string {
 	return ""
 }
@@ -220,4 +230,8 @@ func (m mockConfig) Mode() config.RunMode {
 
 func (m mockConfig) Prune() bool {
 	return m.prune
+}
+
+func (m mockConfig) ContainerDebugging() bool {
+	return false
 }

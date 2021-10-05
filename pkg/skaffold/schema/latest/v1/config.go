@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta22"
+const Version string = "skaffold/v2beta24"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -280,8 +280,8 @@ type LocalBuild struct {
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
 	UseDockerCLI bool `yaml:"useDockerCLI,omitempty"`
 
-	// UseBuildkit use BuildKit to build Docker images.
-	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
+	// UseBuildkit use BuildKit to build Docker images. If unspecified, uses the Docker default.
+	UseBuildkit *bool `yaml:"useBuildkit,omitempty"`
 
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `1`.
@@ -517,6 +517,9 @@ type DeployConfig struct {
 
 	// Logs configures how container logs are printed as a result of a deployment.
 	Logs LogsConfig `yaml:"logs,omitempty"`
+
+	// TransformableAllowList configures an allowlist for transforming manifests.
+	TransformableAllowList []ResourceFilter `yaml:"-"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -524,7 +527,7 @@ type DeployConfig struct {
 // time for hybrid workflows.
 type DeployType struct {
 	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
-	DockerDeploy *DockerDeploy `yaml:"-,omitempty"`
+	DockerDeploy *DockerDeploy `yaml:"docker,omitempty"`
 
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
@@ -980,6 +983,10 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
+	// TODO(halvards)[09/29/2021]: Use `ko` as the yaml tag in place of `-` when we are ready to expose the ko builder in the docs.
+	// KoArtifact builds images using [ko](https://github.com/google/ko).
+	KoArtifact *KoArtifact `yaml:"-,omitempty" yamltags:"oneOf=artifact"`
+
 	// JibArtifact builds images using the
 	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
 	JibArtifact *JibArtifact `yaml:"jib,omitempty" yamltags:"oneOf=artifact"`
@@ -1299,22 +1306,23 @@ type DockerArtifact struct {
 	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
 	Squash bool `yaml:"squash,omitempty"`
 
-	// Secret contains information about a local secret passed to `docker build`,
-	// along with optional destination information.
-	Secret *DockerSecret `yaml:"secret,omitempty"`
+	// Secrets is used to pass in --secret to docker build, `useBuildKit: true` is required.
+	Secrets []*DockerSecret `yaml:"secrets,omitempty"`
 
 	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
 	SSH string `yaml:"ssh,omitempty"`
 }
 
-// DockerSecret contains information about a local secret passed to `docker build`,
-// along with optional destination information.
+// DockerSecret is used to pass in --secret to docker build, `useBuildKit: true` is required.
 type DockerSecret struct {
 	// ID is the id of the secret.
 	ID string `yaml:"id,omitempty" yamltags:"required"`
 
 	// Source is the path to the secret on the host machine.
-	Source string `yaml:"src,omitempty"`
+	Source string `yaml:"src,omitempty" yamltags:"oneOf=secretSource"`
+
+	// Env is the environment variable name containing the secret value.
+	Env string `yaml:"env,omitempty" yamltags:"oneOf=secretSource"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
@@ -1326,6 +1334,66 @@ type BazelArtifact struct {
 	// BuildArgs are additional args to pass to `bazel build`.
 	// For example: `["-flag", "--otherflag"]`.
 	BuildArgs []string `yaml:"args,omitempty"`
+}
+
+// KoArtifact builds images using [ko](https://github.com/google/ko).
+type KoArtifact struct {
+	// BaseImage overrides the default ko base image (`gcr.io/distroless/static:nonroot`).
+	// Corresponds to, and overrides, the `defaultBaseImage` in `.ko.yaml`.
+	BaseImage string `yaml:"fromImage,omitempty"`
+
+	// Dependencies are the file dependencies that Skaffold should watch for both rebuilding and file syncing for this artifact.
+	Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
+
+	// Dir is the directory where the `go` tool will be run.
+	// The value is a directory path relative to the `context` directory.
+	// If empty, the `go` tool will run in the `context` directory.
+	// Example: `./my-app-sources`.
+	Dir string `yaml:"dir,omitempty"`
+
+	// Env are environment variables, in the `key=value` form, passed to the build.
+	// These environment variables are only used at build time.
+	// They are _not_ set in the resulting container image.
+	// For example: `["GOPRIVATE=source.developers.google.com", "GOCACHE=/workspace/.gocache"]`.
+	Env []string `yaml:"env,omitempty"`
+
+	// Flags are additional build flags passed to the builder.
+	// For example: `["-trimpath", "-v"]`.
+	Flags []string `yaml:"args,omitempty"`
+
+	// Labels are key-value string pairs to add to the image config.
+	// For example: `{"org.opencontainers.image.source":"https://github.com/GoogleContainerTools/skaffold"}`.
+	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Ldflags are linker flags passed to the builder.
+	// For example: `["-buildid=", "-s", "-w"]`.
+	Ldflags []string `yaml:"ldflags,omitempty"`
+
+	// Main is the location of the main package. It is the pattern passed to `go build`.
+	// If main is specified as a relative path, it is relative to the `context` directory.
+	// If main is empty, the ko builder uses a default value of `.`.
+	// If main is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
+	// Main is ignored if the `ImageName` starts with `ko://`.
+	// Example: `./cmd/foo`.
+	Main string `yaml:"main,omitempty"`
+
+	// Platforms is the list of platforms to build images for.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Use `["all"]` to build for all platforms supported by the base image.
+	// If empty, the builder uses the ko default (`["linux/amd64"]`).
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
+}
+
+// KoDependencies is used to specify dependencies for an artifact built by ko.
+type KoDependencies struct {
+	// Paths should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.
+	// Defaults to `["."]`.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+
+	// Ignore specifies the paths that should be ignored by Skaffold's file watcher.
+	// If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	Ignore []string `yaml:"ignore,omitempty"`
 }
 
 // JibArtifact builds images using the
@@ -1409,6 +1477,16 @@ type NamedContainerHook struct {
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.
 	ContainerName string `yaml:"containerName,omitempty"`
+}
+
+// ResourceFilter contains definition to filter which resource to transform.
+type ResourceFilter struct {
+	// Type is the compact format of a resource type.
+	Type string `yaml:"type" yamltags:"required"`
+	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
+	Image []string `yaml:"image,omitempty"`
+	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
+	Labels []string `yaml:"labels,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

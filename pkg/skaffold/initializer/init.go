@@ -103,16 +103,15 @@ func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*la
 
 func generateManifests(out io.Writer, c config.Config, bInitializer build.Initializer, dInitializer deploy.Initializer) (map[string][]byte, error) {
 	var generatedManifests map[string][]byte
-	if c.EnableManifestGeneration {
-		generatedManifestPairs, err := bInitializer.GenerateManifests(out, c.Force)
-		if err != nil {
-			return nil, err
-		}
-		generatedManifests = make(map[string][]byte, len(generatedManifestPairs))
-		for pair, manifest := range generatedManifestPairs {
-			dInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
-			generatedManifests[pair.ManifestPath] = manifest
-		}
+
+	generatedManifestPairs, err := bInitializer.GenerateManifests(out, c.Force, c.EnableManifestGeneration)
+	if err != nil {
+		return nil, err
+	}
+	generatedManifests = make(map[string][]byte, len(generatedManifestPairs))
+	for pair, manifest := range generatedManifestPairs {
+		dInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
+		generatedManifests[pair.ManifestPath] = manifest
 	}
 
 	return generatedManifests, nil

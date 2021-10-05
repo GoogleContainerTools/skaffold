@@ -25,7 +25,7 @@ import (
 
 func remoteDigestGetErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_REGISTRY_GET_DIGEST_ERR,
 		})
@@ -34,7 +34,7 @@ func remoteDigestGetErr(err error) error {
 func localDigestGetErr(tag string, err error) error {
 	err = fmt.Errorf("getting imageID for %s: %s", tag, err)
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_DOCKER_GET_DIGEST_ERR,
 		})

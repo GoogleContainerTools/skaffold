@@ -17,10 +17,13 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
 	"time"
+
+	dockertypes "github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
@@ -111,6 +114,78 @@ func TestDebug(t *testing.T) {
 	}
 }
 
+func TestDockerDebug(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	t.Run("debug docker deployment", func(t *testing.T) {
+		skaffold.Build("-p", "docker").InDir("testdata/debug").RunOrFail(t)
+
+		skaffold.Debug("-p", "docker").InDir("testdata/debug").RunBackground(t)
+		defer skaffold.Delete("-p", "docker").InDir("testdata/debug").RunBackground(t)
+
+		// use docker client to verify container has been created properly
+		// check this container and verify entrypoint has been rewritten
+		client := SetupDockerClient(t)
+		var (
+			verifyEntrypointRewrite bool
+			verifySupportContainer  bool
+			tries                   = 0
+			sleepTime               = 2 * time.Second // retrieve containers every two seconds
+			maxTries                = 15              // try for 30 seconds max
+		)
+		for {
+			containers, err := client.ContainerList(context.Background(), dockertypes.ContainerListOptions{All: true})
+			if err != nil {
+				t.Fail()
+			}
+			time.Sleep(sleepTime)
+			if len(containers) == 0 {
+				continue
+			}
+
+			checkEntrypointRewrite(containers, &verifyEntrypointRewrite)
+			checkSupportContainer(containers, &verifySupportContainer)
+
+			if verifyEntrypointRewrite && verifySupportContainer {
+				break
+			}
+			tries++
+			if tries == maxTries {
+				break
+			}
+		}
+
+		if !verifyEntrypointRewrite {
+			t.Error("couldn't verify rewritten container")
+		}
+		if !verifySupportContainer {
+			t.Error("couldn't verify support container was created")
+		}
+	})
+}
+
+func checkEntrypointRewrite(containers []dockertypes.Container, found *bool) {
+	if *found {
+		return
+	}
+	for _, c := range containers {
+		if strings.Contains(c.Command, "docker-entrypoint.sh") {
+			*found = true
+		}
+	}
+}
+
+func checkSupportContainer(containers []dockertypes.Container, found *bool) {
+	if *found {
+		return
+	}
+	for _, c := range containers {
+		if strings.Contains(c.Image, "gcr.io/k8s-skaffold/skaffold-debug-support") {
+			*found = true
+		}
+	}
+}
+
 func TestFilterWithDebugging(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `filter` currently expects to receive a digested yaml
@@ -143,7 +218,7 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+	skaffold.Debug("--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
 
 	waitForDebugEvent(t, client, rpcAddr)
 }
@@ -157,7 +232,7 @@ func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+	skaffold.Debug("--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
 
 	waitForDebugEvent(t, client, rpcAddr)
 }

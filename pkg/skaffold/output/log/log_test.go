@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -62,5 +64,28 @@ func TestEntry(t *testing.T) {
 			testutil.CheckDeepEqual(t, test.expectedTask, got.Data["task"])
 			testutil.CheckDeepEqual(t, test.expectedSubtask, got.Data["subtask"])
 		})
+	}
+}
+
+func TestKanikoLogLevel(t *testing.T) {
+	tests := []struct {
+		logrusLevel logrus.Level
+		expected    logrus.Level
+	}{
+		{logrusLevel: logrus.TraceLevel, expected: logrus.DebugLevel},
+		{logrusLevel: logrus.DebugLevel, expected: logrus.DebugLevel},
+		{logrusLevel: logrus.InfoLevel, expected: logrus.InfoLevel},
+		{logrusLevel: logrus.WarnLevel, expected: logrus.InfoLevel},
+		{logrusLevel: logrus.ErrorLevel, expected: logrus.InfoLevel},
+		{logrusLevel: logrus.FatalLevel, expected: logrus.InfoLevel},
+		{logrusLevel: logrus.PanicLevel, expected: logrus.InfoLevel},
+	}
+	for _, test := range tests {
+		defer func(l logrus.Level) { logrus.SetLevel(l) }(logrus.GetLevel())
+		logrus.SetLevel(test.logrusLevel)
+
+		kanikoLevel := KanikoLogLevel()
+
+		testutil.CheckDeepEqual(t, test.expected, kanikoLevel)
 	}
 }
