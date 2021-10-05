@@ -26,6 +26,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -152,5 +153,6 @@ func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifac
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
 	}
+	tag = docker.SanitizeImageName(tag)
 	return build(ctx, cw, artifact, tag)
 }

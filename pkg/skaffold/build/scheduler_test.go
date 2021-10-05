@@ -59,6 +59,18 @@ func TestGetBuild(t *testing.T) {
 			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
 		},
 		{
+			description: "tag with ko scheme prefix and Go import path with uppercase characters is sanitized",
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+				out.Write([]byte("build succeeds"))
+				return fmt.Sprintf("%s@sha256:abac", tag), nil
+			},
+			tags: tag.ImageTags{
+				"skaffold/image1": "ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold:v0.0.1",
+			},
+			expectedTag: "github.com/googlecontainertools/skaffold/cmd/skaffold:v0.0.1@sha256:abac",
+			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
+		},
+		{
 			description: "build fails",
 			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
 				return "", fmt.Errorf("build fails")
