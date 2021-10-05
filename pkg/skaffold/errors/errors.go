@@ -107,18 +107,18 @@ func V2fromV1(ae *proto.ActionableErr) *protoV2.ActionableErr {
 }
 
 func V3fromV1(ae *proto.ActionableErr) *protoV3.ActionableErr {
-	suggestionsV2 := make([]*protoV3.Suggestion, len(ae.Suggestions))
+	suggestionsV3 := make([]*protoV3.Suggestion, len(ae.Suggestions))
 	for i, suggestion := range ae.Suggestions {
 		var suggestions3 protoV3.Suggestion
 		suggestions3.Action = suggestion.Action
 		suggestions3.SuggestionCode = suggestion.SuggestionCode
 		suggestions3.Action = suggestion.Action
-		suggestionsV2[i] = &suggestions3
+		suggestionsV3[i] = &suggestions3
 	}
 	return &protoV3.ActionableErr{
 		ErrCode:     ae.ErrCode,
 		Message:     ae.Message,
-		Suggestions: suggestionsV2,
+		Suggestions: suggestionsV3,
 	}
 }
 
