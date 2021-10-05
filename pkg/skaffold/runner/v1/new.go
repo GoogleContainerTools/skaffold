@@ -22,7 +22,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -64,7 +63,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	}
 
 	// Always add skaffold-specific labels, except during `skaffold render`
-	labeller := label.NewLabeller(runCtx.Mode() != config.RunModes.Render, runCtx.CustomLabels(), runCtx.GetRunID())
+	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels(), runCtx.GetRunID())
 	tester, err := getTester(ctx, runCtx, isLocalImage)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
