@@ -119,7 +119,7 @@ func wait(t *testing.T, condition func() bool) {
 func TestResetStateOnBuild(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = protoV3.State{
+	handler.state = &protoV3.State{
 		BuildState: &protoV3.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -139,7 +139,7 @@ func TestResetStateOnBuild(t *testing.T) {
 	}
 
 	ResetStateOnBuild()
-	expected := protoV3.State{
+	expected := &protoV3.State{
 		BuildState: &protoV3.BuildState{
 			Artifacts: map[string]string{
 				"image1": NotStarted,
@@ -157,7 +157,7 @@ func TestResetStateOnBuild(t *testing.T) {
 func TestResetStateOnDeploy(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = protoV3.State{
+	handler.state = &protoV3.State{
 		BuildState: &protoV3.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -174,7 +174,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 		StatusCheckState: &protoV3.StatusCheckState{Status: Complete},
 	}
 	ResetStateOnDeploy()
-	expected := protoV3.State{
+	expected := &protoV3.State{
 		BuildState: &protoV3.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -199,7 +199,7 @@ func TestEmptyStateCheckState(t *testing.T) {
 func TestUpdateStateAutoTriggers(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = protoV3.State{
+	handler.state = &protoV3.State{
 		BuildState: &protoV3.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -224,7 +224,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 	UpdateStateAutoDeployTrigger(true)
 	UpdateStateAutoSyncTrigger(true)
 
-	expected := protoV3.State{
+	expected := &protoV3.State{
 		BuildState: &protoV3.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -251,7 +251,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 func TestTaskFailed(t *testing.T) {
 	tcs := []struct {
 		description string
-		state       protoV3.State
+		state       *protoV3.State
 		phase       constants.Phase
 		waitFn      func() bool
 	}{
@@ -314,7 +314,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 	tests := []struct {
 		description  string
 		phase        constants.Phase
-		handlerState protoV3.State
+		handlerState *protoV3.State
 		val          bool
 		expected     bool
 	}{
@@ -322,7 +322,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 			description: "build needs update",
 			phase:       constants.Build,
 			val:         true,
-			handlerState: protoV3.State{
+			handlerState: &protoV3.State{
 				BuildState: &protoV3.BuildState{
 					AutoTrigger: false,
 				},
@@ -333,7 +333,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 			description: "deploy doesn't need update",
 			phase:       constants.Deploy,
 			val:         true,
-			handlerState: protoV3.State{
+			handlerState: &protoV3.State{
 				BuildState: &protoV3.BuildState{
 					AutoTrigger: false,
 				},
@@ -347,7 +347,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 			description: "sync needs update",
 			phase:       constants.Sync,
 			val:         false,
-			handlerState: protoV3.State{
+			handlerState: &protoV3.State{
 				FileSyncState: &protoV3.FileSyncState{
 					AutoTrigger: true,
 				},
@@ -388,7 +388,7 @@ func TestSaveEventsToFile(t *testing.T) {
 	anypb.MarshalFrom(taskEvent, &protoV3.TaskCompletedEvent{}, proto.MarshalOptions{})
 
 	// add some events to the event log
-	handler.eventLog = []protoV3.Event{
+	handler.eventLog = []*protoV3.Event{
 		{
 			Data: buildEvent,
 			Type: BuildSucceededEvent,
@@ -409,7 +409,7 @@ func TestSaveEventsToFile(t *testing.T) {
 		t.Fatalf("reading tmp file: %v", err)
 	}
 
-	var logEntries []protoV3.Event
+	var logEntries []*protoV3.Event
 	entries := strings.Split(string(contents), "\n")
 	for _, e := range entries {
 		if e == "" {
@@ -420,7 +420,7 @@ func TestSaveEventsToFile(t *testing.T) {
 		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
 			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
 		}
-		logEntries = append(logEntries, logEntry)
+		logEntries = append(logEntries, &logEntry)
 	}
 
 	buildCompleteEvent, devLoopCompleteEvent := 0, 0

@@ -18,7 +18,6 @@ package v3
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -98,13 +97,13 @@ func newHandler() *eventHandler {
 }
 
 type eventHandler struct {
-	eventLog                []protoV3.Event
+	eventLog                []*protoV3.Event
 	logLock                 sync.Mutex
-	applicationLogs         []protoV3.Event
+	applicationLogs         []*protoV3.Event
 	applicationLogsLock     sync.Mutex
 	cfg                     Config
 	iteration               int
-	state                   protoV3.State
+	state                   *protoV3.State
 	stateLock               sync.Mutex
 	eventChan               chan *protoV3.Event
 	eventListeners          []*listener
@@ -123,7 +122,7 @@ func GetIteration() int {
 
 func GetState() (*protoV3.State, error) {
 	state := handler.getState()
-	return &state, nil
+	return state, nil
 }
 
 func ForEachEvent(callback func(*protoV3.Event) error) error {
@@ -141,19 +140,16 @@ func Handle(event *protoV3.Event) error {
 	return nil
 }
 
-func (ev *eventHandler) getState() protoV3.State {
+func (ev *eventHandler) getState() *protoV3.State {
 	ev.stateLock.Lock()
 	// Deep copy
-	buf, _ := json.Marshal(ev.state)
+	state := proto.Clone(ev.state).(*protoV3.State)
 	ev.stateLock.Unlock()
-
-	var state protoV3.State
-	json.Unmarshal(buf, &state)
 
 	return state
 }
 
-func (ev *eventHandler) log(event *protoV3.Event, listeners *[]*listener, log *[]protoV3.Event, lock sync.Locker) {
+func (ev *eventHandler) log(event *protoV3.Event, listeners *[]*listener, log *[]*protoV3.Event, lock sync.Locker) {
 	lock.Lock()
 
 	for _, listener := range *listeners {
@@ -166,7 +162,7 @@ func (ev *eventHandler) log(event *protoV3.Event, listeners *[]*listener, log *[
 			listener.closed = true
 		}
 	}
-	*log = append(*log, *event)
+	*log = append(*log, event)
 
 	lock.Unlock()
 }
@@ -179,7 +175,7 @@ func (ev *eventHandler) logApplicationLog(event *protoV3.Event) {
 	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
 }
 
-func (ev *eventHandler) forEach(listeners *[]*listener, log *[]protoV3.Event, lock sync.Locker, callback func(*protoV3.Event) error) error {
+func (ev *eventHandler) forEach(listeners *[]*listener, log *[]*protoV3.Event, lock sync.Locker, callback func(*protoV3.Event) error) error {
 	listener := &listener{
 		callback: callback,
 		errors:   make(chan error),
@@ -187,14 +183,14 @@ func (ev *eventHandler) forEach(listeners *[]*listener, log *[]protoV3.Event, lo
 
 	lock.Lock()
 
-	oldEvents := make([]protoV3.Event, len(*log))
+	oldEvents := make([]*protoV3.Event, len(*log))
 	copy(oldEvents, *log)
 	*listeners = append(*listeners, listener)
 
 	lock.Unlock()
 
 	for i := range oldEvents {
-		if err := callback(&oldEvents[i]); err != nil {
+		if err := callback(oldEvents[i]); err != nil {
 			// listener should maybe be closed
 			return err
 		}
@@ -211,7 +207,7 @@ func (ev *eventHandler) forEachApplicationLog(callback func(*protoV3.Event) erro
 	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
 }
 
-func emptyState(cfg Config) protoV3.State {
+func emptyState(cfg Config) *protoV3.State {
 	builds := map[string]string{}
 	for _, p := range cfg.GetPipelines() {
 		for _, a := range p.Build.Artifacts {
@@ -222,8 +218,8 @@ func emptyState(cfg Config) protoV3.State {
 	return emptyStateWithArtifacts(builds, metadata, cfg.AutoBuild(), cfg.AutoDeploy(), cfg.AutoSync())
 }
 
-func emptyStateWithArtifacts(builds map[string]string, metadata *protoV3.Metadata, autoBuild, autoDeploy, autoSync bool) protoV3.State {
-	return protoV3.State{
+func emptyStateWithArtifacts(builds map[string]string, metadata *protoV3.Metadata, autoBuild, autoDeploy, autoSync bool) *protoV3.State {
+	return &protoV3.State{
 		BuildState: &protoV3.BuildState{
 			Artifacts:   builds,
 			AutoTrigger: autoBuild,
@@ -331,7 +327,7 @@ func TaskInProgress(task constants.Phase, description string) {
 	if task == constants.DevLoop {
 		handler.iteration++
 
-		handler.applicationLogs = []protoV3.Event{}
+		handler.applicationLogs = []*protoV3.Event{}
 	}
 
 	event := &protoV3.TaskStartedEvent{
@@ -395,7 +391,7 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 	handler.handle(event, PortForwardedEvent)
 }
 
-func (ev *eventHandler) setState(state protoV3.State) {
+func (ev *eventHandler) setState(state *protoV3.State) {
 	ev.stateLock.Lock()
 	ev.state = state
 	ev.stateLock.Unlock()
@@ -446,7 +442,7 @@ func SaveEventsToFile(fp string) error {
 	marshaller := jsonpb.Marshaler{}
 	for _, ev := range handler.eventLog {
 		contents := bytes.NewBuffer([]byte{})
-		if err := marshaller.Marshal(contents, &ev); err != nil {
+		if err := marshaller.Marshal(contents, ev); err != nil {
 			return fmt.Errorf("marshalling event: %w", err)
 		}
 		if _, err := f.WriteString(contents.String() + "\n"); err != nil {
