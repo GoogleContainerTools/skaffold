@@ -2422,12 +2422,18 @@
           "type": "string",
           "description": "Cache timeout in hours.",
           "x-intellij-html-description": "Cache timeout in hours."
+        },
+        "cacheCopyLayers": {
+          "type": "string",
+          "description": "caches copy layers.",
+          "x-intellij-html-description": "caches copy layers."
         }
       },
       "preferredOrder": [
         "repo",
         "hostPath",
-        "ttl"
+        "ttl",
+        "cacheCopyLayers"
       ],
       "additionalProperties": false,
       "type": "object",
