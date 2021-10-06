@@ -31,7 +31,7 @@ func TestInspectBuildEnv(t *testing.T) {
 
 	gcbParams := []string{
 		"--projectId", "proj2",
-		"--workerPool", "pool2",
+		"--workerPool", "projects/test/locations/asia-east1/workerPools/pool2",
 		"--timeout", "180s",
 		"--machineType", "vm2",
 		"--logStreamingOption", "STREAM_ON",
