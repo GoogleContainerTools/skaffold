@@ -49,6 +49,7 @@ var (
 	validateYamltags       = yamltags.ValidateStruct
 	DefaultConfig          = Options{CheckDeploySource: true}
 	dependencyAliasPattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+	gcbWorkerPoolPattern   = regexp.MustCompile(`projects/[^\/]*/locations/[^\/]*/workerPools/[^\/]*`)
 )
 
 type Options struct {
@@ -83,6 +84,7 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		errs = append(errs, validateArtifactTypes(config, config.Build)...)
 		errs = append(errs, validateTaggingPolicy(config, config.Build)...)
 		errs = append(errs, validateCustomTest(config, config.Test)...)
+		errs = append(errs, validateGCBConfig(config, config.Build)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
 	if validateConfig.CheckDeploySource {
@@ -103,6 +105,11 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 	}
 	var messages []string
 	for _, err := range errs {
+
+		if err.Error == nil {
+			fmt.Println("err is nil")
+		}
+		//err
 		messages = append(messages, err.Error.Error())
 	}
 	if len(messages) != 0 {
@@ -624,6 +631,19 @@ func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfi
 					Location: cfg.YAMLInfos.Locate(&cfg.Build.Artifacts[i].ArtifactType),
 				})
 			}
+		}
+	}
+	return cfgErrs
+}
+
+// validateGCBConfig checks if GCB config is valid.
+func validateGCBConfig(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfig) (cfgErrs []ErrorWithLocation) {
+	if bc.GoogleCloudBuild != nil && bc.GoogleCloudBuild.WorkerPool != "" {
+		if !gcbWorkerPoolPattern.MatchString(bc.GoogleCloudBuild.WorkerPool) {
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    fmt.Errorf("invalid value for worker pool. Must match pattern projects/{project}/locations/{location}/workerPools/{worker_pool}"),
+				Location: cfg.YAMLInfos.Locate(&cfg.Build.GoogleCloudBuild.WorkerPool),
+			})
 		}
 	}
 	return cfgErrs
