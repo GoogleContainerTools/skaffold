@@ -799,7 +799,7 @@ func TestRun(t *testing.T) {
 // testPodValidator initializes a PodValidator like NewPodValidator except for loading custom rules
 func testPodValidator(k kubernetes.Interface) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &PodValidator{k: k, recos: rs}
+	return &PodValidator{k: k, recos: rs, podSelector: NewDeploymentPodsSelector(k, appsv1.Deployment{})}
 }
 
 func TestPodConditionChecks(t *testing.T) {
