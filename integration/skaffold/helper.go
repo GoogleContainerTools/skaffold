@@ -203,7 +203,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 // RunLive runs the skaffold command in the background with live output.
 // !!Warning!! RunLive blocks the skaffold command until the caller reads from
 // the returned `PipeReader`. Please use `WaitForLogs` or similar to read
-// continously from the returned `PipeReader`.
+// continuously from the returned `PipeReader`.
 func (b *RunBuilder) RunLive(t *testing.T) io.ReadCloser {
 	t.Helper()
 	pr, pw := io.Pipe()
