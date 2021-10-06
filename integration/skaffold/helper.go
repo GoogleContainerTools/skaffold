@@ -137,7 +137,11 @@ func GeneratePipeline(args ...string) *RunBuilder {
 }
 
 func withDefaults(command string, args []string) *RunBuilder {
-	return &RunBuilder{command: command, args: args, repo: "gcr.io/k8s-skaffold"}
+	repo := os.Getenv("DEFAULT_REPO")
+	if repo == "" {
+		repo = "gcr.io/k8s-skaffold"
+	}
+	return &RunBuilder{command: command, args: args, repo: repo}
 }
 
 // InDir sets the directory in which skaffold is running.
@@ -197,6 +201,9 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 }
 
 // RunLive runs the skaffold command in the background with live output.
+// !!Warning!! RunLive blocks the skaffold command until the caller reads from
+// the returned `PipeReader`. Please use `WaitForLogs` or similar to read
+// continously from the returned `PipeReader`.
 func (b *RunBuilder) RunLive(t *testing.T) io.ReadCloser {
 	t.Helper()
 	pr, pw := io.Pipe()
@@ -205,6 +212,12 @@ func (b *RunBuilder) RunLive(t *testing.T) io.ReadCloser {
 		pr.Close()
 	})
 	return pr
+}
+
+// RunInBackgroundWithOutput runs the skaffold command in the background.
+func (b *RunBuilder) RunInBackgroundWithOutput(t *testing.T, out io.Writer) {
+	t.Helper()
+	b.runForked(t, out)
 }
 
 // runForked runs the skaffold command in the background with stdout sent to the provided writer.

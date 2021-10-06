@@ -17,7 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,9 +41,9 @@ func TestControlAPIManualTriggers(t *testing.T) {
 	defer Run(t, "testdata/dev", "rm", "foo")
 
 	ns, client := SetupNamespace(t)
-
+	out := bytes.Buffer{}
 	rpcAddr := randomPort()
-	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunWithCombinedOutput(t)
+	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunInBackgroundWithOutput(t, &out)
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
 
@@ -49,7 +52,7 @@ func TestControlAPIManualTriggers(t *testing.T) {
 		<-entries
 	}
 
-	dep := client.GetDeployment("test-dev")
+	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -71,13 +74,10 @@ func TestControlAPIManualTriggers(t *testing.T) {
 
 	// Make another change to foo and we should not see any event log.
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
-	// Ensure we dont see a build triggered in the event log.
-	err = wait.Poll(time.Millisecond*500, 1*time.Second, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent() != nil, nil
-	})
-	if err == nil {
-		t.Error("expected no events saw one.")
-	}
 
+	// Give skaffold some time to register a file change.
+	time.Sleep(1 * time.Second)
+	if c := strings.Count(out.String(), "Generating tags"); c != 2 {
+		failNowIfError(t, fmt.Errorf("expected to see tags generated twice (1st build and 1 trigger), saw %d times", c))
+	}
 }
