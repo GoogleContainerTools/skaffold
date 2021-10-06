@@ -949,6 +949,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
 | STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
+| STATUSCHECK_STANDALONE_PODS_PENDING | 305 | Standalone pods pending to stabilize |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
 | STATUSCHECK_UNHEALTHY | 357 | Readiness probe failed |
 | STATUSCHECK_CONTAINER_EXEC_ERROR | 358 | Executable binary format error |
@@ -964,6 +965,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR | 411 | Kubectl client fetch err |
 | STATUSCHECK_DEPLOYMENT_FETCH_ERR | 412 |  |
+| STATUSCHECK_STANDALONE_PODS_FETCH_ERR | 413 |  |
 | STATUSCHECK_POD_INITIALIZING | 451 | Pod Initializing |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
