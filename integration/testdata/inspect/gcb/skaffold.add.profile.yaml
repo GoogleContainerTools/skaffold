@@ -11,7 +11,6 @@ build:
     logging: GCS_ONLY
     logStreamingOption: STREAM_DEFAULT
     concurrency: 3
-    workerPool: projects/test/locations/asia-east1/workerPools/pool1
 profiles:
 - name: local
   build:
