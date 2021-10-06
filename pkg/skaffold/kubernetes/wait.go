@@ -44,13 +44,17 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 	for {
 		select {
 		case <-ctx.Done():
+			log.Entry(ctx).Debugf("watchUntilTimeout(): context cancelled, returning")
 			return ctx.Err()
 		case event := <-w.ResultChan():
+			log.Entry(ctx).Debugf("watchUntilTimeout(): got an event: %+v", event)
 			done, err := condition(&event)
 			if err != nil {
+				log.Entry(ctx).Debugf("watchUntilTimeout(): condition function returned an error, returning: %+v", err)
 				return err
 			}
 			if done {
+				log.Entry(ctx).Debugf("watchUntilTimeout(): condition function returned true, returning nil")
 				return nil
 			}
 		}
@@ -72,6 +76,7 @@ func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName 
 
 func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 	return func(event *watch.Event) (bool, error) {
+		log.Entry(context.Background()).Debugf("isPodSucceeded(): Got event: %+v", event)
 		if event.Object == nil {
 			return false, nil
 		}
@@ -136,6 +141,7 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 
 	return watchUntilTimeout(ctx, timeout, w, func(event *watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
+			log.Entry(ctx).Debugf("watchUntilTimeout condition func(): event.Type == watch.Deleted, returning error")
 			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}
 

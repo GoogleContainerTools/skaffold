@@ -73,6 +73,7 @@ func NewCLI(cfg Config, flags latestV1.KubectlFlags, defaultNamespace string) CL
 
 // Delete runs `kubectl delete` on a list of manifests.
 func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
+	log.Entry(ctx).Debugf("Delete(): deleting manifests: %+v", manifests)
 	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "--wait=false", "-f", "-")
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
 		return deployerr.CleanupErr(fmt.Errorf("kubectl delete: %w", err))
@@ -129,7 +130,9 @@ type getResult struct {
 
 // WaitForDeletions waits for resource marked for deletion to complete their deletion.
 func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
+	log.Entry(ctx).Debugf("WaitForDeletions(): called")
 	if !c.waitForDeletions.Enabled {
+		log.Entry(ctx).Debugf("WaitForDeletions(): not enabled, returning")
 		return nil
 	}
 
@@ -142,6 +145,7 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests man
 	for {
 		select {
 		case <-ctx.Done():
+			log.Entry(ctx).Debugf("WaitForDeletions(): context canceled, returning waitForDeletionErr()")
 			return waitForDeletionErr(fmt.Errorf("%d resources failed to complete their deletion before a new deployment: %s", previousCount, previousList))
 		default:
 			// List resources in json format.
@@ -186,7 +190,9 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests man
 
 			select {
 			case <-ctx.Done():
+				log.Entry(ctx).Debugf("WaitForDeletions(): context cancelled, doing nothing")
 			case <-time.After(c.waitForDeletions.Delay):
+				log.Entry(ctx).Debugf("WaitForDeletions(): waited delay, doing nothing")
 			}
 		}
 	}

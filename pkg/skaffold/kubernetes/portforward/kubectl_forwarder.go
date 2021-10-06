@@ -209,6 +209,7 @@ func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *k
 	for {
 		select {
 		case <-ctx.Done():
+			log.Entry(ctx).Debugf("KubectlForwarder.monitorLogs(): context canceled, returning")
 			return
 		case <-ticker.C:
 			s, _ := r.ReadString('\n')

@@ -43,6 +43,7 @@ func HandleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 
 		select {
 		case <-ctx.Done():
+			log.Entry(ctx).Debugf("HandleGracefulTermination(): context canceled")
 			// On windows we can't send specific signals to processes, so we kill the process immediately
 			if runtime.GOOS == "windows" {
 				cmd.Process.Kill()
@@ -70,8 +71,12 @@ func HandleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 		}
 	}()
 
+	log.Entry(ctx).Debugf("HandleGracefulTermination(): waiting for command to finish")
 	err := cmd.Wait()
+	log.Entry(ctx).Debugf("HandleGracefulTermination(): sending true on done channel")
 	done <- true
+	log.Entry(ctx).Debugf("HandleGracefulTermination(): waiting for all goroutines to finish")
 	wg.Wait()
+	log.Entry(ctx).Debugf("HandleGracefulTermination(): returning error: %+v", err)
 	return err
 }

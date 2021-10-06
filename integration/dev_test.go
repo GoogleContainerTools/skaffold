@@ -131,7 +131,9 @@ func TestDevGracefulCancel(t *testing.T) {
 			}()
 
 			// once deployments are stable, send a SIGINT and make sure things cleanup correctly
+			logrus.Info("Signalling SIGINT")
 			p.Signal(syscall.SIGINT)
+			logrus.Info("Signalled SIGINT")
 		})
 	}
 }
