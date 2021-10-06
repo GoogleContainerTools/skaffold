@@ -21,6 +21,8 @@ import (
 	"io"
 
 	"golang.org/x/sync/errgroup"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type MonitorMux []Monitor
@@ -36,6 +38,7 @@ func (c MonitorMux) Check(ctx context.Context, out io.Writer) error {
 			return monitor.Check(gCtx, out)
 		})
 	}
+	log.Entry(ctx).Debugf("MonitorMux.Check(): waiting for all status monitor checks to complete")
 	return g.Wait()
 }
 

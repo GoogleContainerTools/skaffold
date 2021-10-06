@@ -81,7 +81,10 @@ func (k *KubectlForwarder) Start(out io.Writer) {
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
 	errChan := make(chan error, 1)
 	go k.forward(parentCtx, pfe, errChan)
-	return <-errChan
+	log.Entry(parentCtx).Debugf("KubectlForwarder.Forward(): waiting on errChan")
+	err := <-errChan
+	log.Entry(parentCtx).Debugf("KubectlForwarder.Forward(): done waiting on errChan, got %+v", err)
+	return err
 }
 
 func (k *KubectlForwarder) forward(ctx context.Context, pfe *portForwardEntry, errChan chan error) {

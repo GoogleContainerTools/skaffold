@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -103,11 +104,13 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Write
 
 // Start ensures the underlying entryForwarder is ready to forward.
 func (b *EntryManager) Start(out io.Writer) {
+	log.Entry(context.Background()).Debugf("EntryManager.Start() called")
 	b.entryForwarder.Start(out)
 }
 
 // Stop terminates all kubectl port-forward commands.
 func (b *EntryManager) Stop() {
+	log.Entry(context.Background()).Debugf("EntryManager.Stop() called")
 	b.forwardedResources.Range(func(_, value interface{}) bool {
 		pfe := value.(*portForwardEntry)
 		b.Terminate(pfe)
@@ -117,6 +120,7 @@ func (b *EntryManager) Stop() {
 
 // Terminate terminates a single port forward entry
 func (b *EntryManager) Terminate(p *portForwardEntry) {
+	log.Entry(context.Background()).Debugf("EntryManager.Terminate() called for %+v", p)
 	b.forwardedResources.Delete(p.key())
 	b.forwardedPorts.Delete(p.localPort)
 	b.entryForwarder.Terminate(p)

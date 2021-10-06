@@ -229,6 +229,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		select {
 		case <-ctx.Done():
+			log.Entry(ctx).Debugf("SkaffoldRunner.Dev(): context canceled, returning context.Canceled")
 			return context.Canceled
 		default:
 			if err := r.monitor.Register(

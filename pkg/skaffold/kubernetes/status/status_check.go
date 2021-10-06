@@ -183,8 +183,11 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	}()
 
 	// Wait for all deployment statuses to be fetched
+	log.Entry(ctx).Debugf("Monitor.statusCheck(): waiting for all deployment statuses to be fetched")
 	wg.Wait()
+	log.Entry(ctx).Debugf("Monitor.statusCheck(): done waiting for all deployment statuses to be fetched, cancelling the context")
 	cancel()
+	log.Entry(ctx).Debugf("Monitor.statusCheck(): context cancelled")
 	return getSkaffoldDeployStatus(c, deployments)
 }
 

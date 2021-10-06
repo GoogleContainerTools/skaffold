@@ -138,7 +138,9 @@ func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources 
 			p.portForwardResource(ctx, r)
 		}(*r)
 	}
+	log.Entry(ctx).Debugf("ResourceForwarder.portForwardResources(): start waiting")
 	wg.Wait()
+	log.Entry(ctx).Debugf("ResourceForwarder.portForwardResources(): done waiting")
 }
 
 func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latestV1.PortForwardResource) {

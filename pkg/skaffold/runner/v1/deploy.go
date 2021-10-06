@@ -57,6 +57,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	if r.runCtx.Tail() || r.runCtx.PortForward() {
 		output.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 		<-ctx.Done()
+		log.Entry(ctx).Debugf("SkaffoldRunner.DeployAndLog(): sent ctx.Done()")
 	}
 
 	return nil
