@@ -14,7 +14,7 @@
 
 FROM golang:1.15 AS generate-files
 RUN apt-get update && apt-get install -y unzip moreutils
- 
+
 WORKDIR /protoc
 ENV PROTOC_VERSION=3.17.3
 RUN plat=$(case $(uname -s)-$(uname -m) in Linux-x86_64) echo linux-x86_64;; Linux-aarch64) echo linux-aarch_64;; *) echo UNKNOWN;; esac); \
