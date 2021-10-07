@@ -29,6 +29,7 @@ var ignoreFileSuffixes = []string{
 	"_test.go",
 	"pkg/skaffold/output/log/log.go",
 	"pkg/skaffold/event/v2/logger.go",
+	"pkg/skaffold/event/v3/logger.go",
 	"pkg/skaffold/build/buildpacks/logger.go",
 }
 var LogrusAnalyzer = &analysis.Analyzer{
