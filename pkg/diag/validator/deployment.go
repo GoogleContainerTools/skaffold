@@ -19,28 +19,40 @@ package validator
 import (
 	"context"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
-type standalonePodsSelector struct {
-	k kubernetes.Interface
+type deploymentPodsSelector struct {
+	k      kubernetes.Interface
+	depObj appsv1.Deployment
 }
 
-func NewStandalonePodsSelector(k kubernetes.Interface) PodSelector {
-	return &standalonePodsSelector{k}
+func NewDeploymentPodsSelector(k kubernetes.Interface, d appsv1.Deployment) PodSelector {
+	return &deploymentPodsSelector{k, d}
 }
 
-func (s *standalonePodsSelector) Select(ctx context.Context, ns string, opts metav1.ListOptions) ([]v1.Pod, error) {
+func (s *deploymentPodsSelector) Select(ctx context.Context, ns string, opts metav1.ListOptions) ([]v1.Pod, error) {
+	_, _, controller, err := getReplicaSet(&s.depObj, s.k.AppsV1())
+	if err != nil {
+		log.Entry(ctx).Debugf("could not fetch deployment replica set %s", err)
+		return nil, err
+	} else if controller == nil {
+		log.Entry(ctx).Debugf("deployment replica set not created yet.")
+		return nil, nil
+	}
+
 	pods, err := s.k.CoreV1().Pods(ns).List(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 	var filtered []v1.Pod
 	for _, po := range pods.Items {
-		// deployments defining pods directly don't have owner references
-		if metav1.GetControllerOfNoCopy(&po) == nil {
+		if isPodOwnedBy(po, controller) {
 			filtered = append(filtered, po)
 		}
 	}

@@ -20,15 +20,18 @@ import (
 	"context"
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestStandalonePodsSelector(t *testing.T) {
+func TestDeploymentPodsSelector(t *testing.T) {
 	tests := []struct {
 		description  string
 		allPods      []v1.Pod
@@ -38,8 +41,9 @@ func TestStandalonePodsSelector(t *testing.T) {
 			description: "pod don't exist in test namespace",
 			allPods: []v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "foo-ns",
+					Name:            "foo",
+					Namespace:       "foo-ns",
+					OwnerReferences: []metav1.OwnerReference{{UID: "", Controller: truePtr()}},
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "Pod"}},
 			},
@@ -55,7 +59,14 @@ func TestStandalonePodsSelector(t *testing.T) {
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 			}},
-			expectedPods: nil,
+			expectedPods: []v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "foo",
+					Namespace:       "test",
+					OwnerReferences: []metav1.OwnerReference{{UID: "", Controller: truePtr()}},
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+			}},
 		},
 		{
 			description: "only standalone pods",
@@ -66,13 +77,7 @@ func TestStandalonePodsSelector(t *testing.T) {
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 			}},
-			expectedPods: []v1.Pod{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "test",
-				},
-				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
-			}},
+			expectedPods: nil,
 		},
 		{
 			description: "standalone pods and deployment pods",
@@ -92,8 +97,9 @@ func TestStandalonePodsSelector(t *testing.T) {
 			}},
 			expectedPods: []v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo1",
-					Namespace: "test",
+					Name:            "foo2",
+					Namespace:       "test",
+					OwnerReferences: []metav1.OwnerReference{{UID: "", Controller: truePtr()}},
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 			}},
@@ -102,13 +108,20 @@ func TestStandalonePodsSelector(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&getReplicaSet, func(_ *appsv1.Deployment, _ appsclient.AppsV1Interface) ([]*appsv1.ReplicaSet, []*appsv1.ReplicaSet, *appsv1.ReplicaSet, error) {
+				return nil, nil, &appsv1.ReplicaSet{
+					ObjectMeta: metav1.ObjectMeta{
+						UID: types.UID(""),
+					},
+				}, nil
+			})
 			var rs []runtime.Object
 			for i := range test.allPods {
 				p := test.allPods[i]
 				rs = append(rs, &p)
 			}
 			f := fakekubeclientset.NewSimpleClientset(rs...)
-			s := NewStandalonePodsSelector(f)
+			s := NewDeploymentPodsSelector(f, appsv1.Deployment{})
 			actualPods, err := s.Select(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedPods, actualPods)

@@ -107,7 +107,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
-			r := NewDeployment("graph", "test", 0)
+			r := NewResource("graph", ResourceTypes.Deployment, "test", 0)
 			r.CheckStatus(context.Background(), &statusConfig{})
 
 			if test.cancelled {
@@ -287,7 +287,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dep := NewDeployment("test", "test-ns", 1)
+			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1)
 			dep.pods = map[string]validator.Resource{
 				"foo": validator.NewResource(
 					"test",
@@ -342,7 +342,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dep := NewDeployment("test", "test-ns", 1)
+			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1)
 			var actual string
 			for i, status := range test.podStatuses {
 				dep.UpdateStatus(&proto.ActionableErr{

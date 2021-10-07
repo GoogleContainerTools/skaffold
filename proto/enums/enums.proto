@@ -235,6 +235,8 @@ enum StatusCode {
     STATUSCHECK_CONTAINER_TERMINATED = 303;
     // Deployment waiting for rollout
     STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 304;
+    // Standalone pods pending to stabilize
+    STATUSCHECK_STANDALONE_PODS_PENDING = 305;
     // Container restarting error
     STATUSCHECK_CONTAINER_RESTARTING = 356;
     // Readiness probe failed
@@ -270,6 +272,7 @@ enum StatusCode {
     // Kubectl client fetch err
     STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR = 411;
     STATUSCHECK_DEPLOYMENT_FETCH_ERR = 412;
+    STATUSCHECK_STANDALONE_PODS_FETCH_ERR = 413;
 
     // Pod States
 
