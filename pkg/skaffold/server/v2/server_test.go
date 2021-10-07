@@ -120,6 +120,18 @@ func TestServer_Execute(t *testing.T) {
 				Deploy: true,
 			},
 		},
+		{
+			description: "devloop intent",
+			request: &proto.UserIntentRequest{
+				Intent: &proto.Intent{
+					Devloop: true,
+				},
+			},
+			numCallBacks: 1,
+			expected: mockData{
+				Build: true,
+			},
+		},
 	}
 
 	for _, test := range tests {

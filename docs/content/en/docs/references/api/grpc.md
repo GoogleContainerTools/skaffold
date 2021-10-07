@@ -384,6 +384,7 @@ Intent represents user intents for a given phase.
 | build | [bool](#bool) |  | in case skaffold dev is ran with autoBuild=false, a build intent enables building once |
 | sync | [bool](#bool) |  | in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once |
 | deploy | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once |
+| devloop | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, autoSync=false and autoBuild=false a devloop intent enables the entire dev loop once |
 
 
 
