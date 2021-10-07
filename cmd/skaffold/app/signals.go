@@ -48,10 +48,11 @@ func catchSIGUSR1() {
 
 	go func() {
 		<-signals
-		buf := make([]byte, 1<<20)
-		runtime.Stack(buf, true)
-		os.Stderr.Write([]byte("Dumping stack traces:"))
-		os.Stderr.Write(buf)
+		buf := make([]byte, 1<<16)
+		len := runtime.Stack(buf, true)
+		traces := string(buf[:len])
+		os.Stderr.Write([]byte("Dumping stack traces:\n"))
+		os.Stderr.Write([]byte(traces))
 		os.Stderr.Write([]byte("Done dumping stack traces"))
 	}()
 }

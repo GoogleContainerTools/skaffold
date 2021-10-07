@@ -149,7 +149,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 30m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 5m -run=TestDevGracefulCancel/multi-config-microservices -count=1
 
 .PHONY: integration
 integration: install integration-tests
