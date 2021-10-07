@@ -137,7 +137,11 @@ func GeneratePipeline(args ...string) *RunBuilder {
 }
 
 func withDefaults(command string, args []string) *RunBuilder {
-	return &RunBuilder{command: command, args: args, repo: "gcr.io/k8s-skaffold"}
+	repo := os.Getenv("DOCKER_NAMESPACE")
+	if repo == "" {
+		repo = "gcr.io/k8s-skaffold"
+	}
+	return &RunBuilder{command: command, args: args, repo: repo}
 }
 
 // InDir sets the directory in which skaffold is running.

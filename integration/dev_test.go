@@ -115,6 +115,7 @@ func TestDevGracefulCancel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
+			// os.Setenv("GODEBUG", "scheddetail=1,schedtrace=60000")
 			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
@@ -130,10 +131,17 @@ func TestDevGracefulCancel(t *testing.T) {
 				}
 			}()
 
-			// once deployments are stable, send a SIGINT and make sure things cleanup correctly
 			logrus.Info("Signalling SIGINT")
 			p.Signal(syscall.SIGINT)
 			logrus.Info("Signalled SIGINT")
+
+			go func() {
+				logrus.Info("Waiting 20 seconds before sending SIGUSR1")
+				time.Sleep(20 * time.Second)
+				logrus.Info("Signalling SIGUSR1")
+				p.Signal(syscall.SIGUSR1)
+				logrus.Info("Signalled SIGUSR1")
+			}()
 		})
 	}
 }

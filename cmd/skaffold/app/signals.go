@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 )
 
@@ -36,5 +37,21 @@ func catchCtrlC(cancel context.CancelFunc) {
 		<-signals
 		signal.Stop(signals)
 		cancel()
+	}()
+}
+
+func catchSIGUSR1() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals,
+		syscall.SIGUSR1,
+	)
+
+	go func() {
+		<-signals
+		buf := make([]byte, 1<<20)
+		runtime.Stack(buf, true)
+		os.Stderr.Write([]byte("Dumping stack traces:"))
+		os.Stderr.Write(buf)
+		os.Stderr.Write([]byte("Done dumping stack traces"))
 	}()
 }

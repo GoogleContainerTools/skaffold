@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export DOCKER_NAMESPACE=gcr.io/k8s-skaffold
+export DOCKER_NAMESPACE=${DOCKER_NAMESPACE:-gcr.io/k8s-skaffold}
 source $KOKORO_GFILE_DIR/common.sh
 
 pushd $KOKORO_ARTIFACTS_DIR/github/skaffold >/dev/null

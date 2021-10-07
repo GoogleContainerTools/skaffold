@@ -62,7 +62,7 @@ GO_BUILD_TAGS_windows = release
 
 # darwin/arm64 requires Go 1.16beta1 or later; dockercore/golang-cross
 # doesn't have a recent macOS toolchain so disable CGO and use
-# github.com/rjeczalik/notify's kqueue support. 
+# github.com/rjeczalik/notify's kqueue support.
 GO_VERSION_darwin_arm64 = 1.16beta1
 CGO_ENABLED_darwin_arm64 = 0
 GO_BUILD_TAGS_darwin = release
@@ -149,7 +149,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 30m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: integration
 integration: install integration-tests
