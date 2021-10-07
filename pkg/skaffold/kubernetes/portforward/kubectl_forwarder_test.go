@@ -481,3 +481,25 @@ func TestStartAndForward(t *testing.T) {
 		})
 	}
 }
+
+func TestForwardReturnsNilOnContextCancelled(t *testing.T) {
+	k := NewKubectlForwarder(&kubectl.CLI{})
+	k.Start(ioutil.Discard)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{}, 1)
+	go func() {
+		pfe := newPortForwardEntry(0, latestV1.PortForwardResource{}, "", "", "", "", 8080, false)
+		err := k.Forward(ctx, pfe)
+		if err != nil {
+			t.Errorf("expected nil error, got %+v", err)
+		}
+		close(done)
+	}()
+	cancel()
+	select {
+	case <-done:
+		// expected
+	case <-time.After(3 * time.Second):
+		t.Fatalf("forwarder did not return on context cancel")
+	}
+}
