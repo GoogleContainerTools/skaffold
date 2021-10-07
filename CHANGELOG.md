@@ -1,3 +1,78 @@
+# v1.33.0 Release - 10/07/2021
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.33.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.33.0`
+
+Note: This release comes with a new config version, `v2beta24`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Skaffold healthcheck now monitors standalone pods.
+
+New Features and Additions:
+* feat: status-check for standalone pods [#6697](https://github.com/GoogleContainerTools/skaffold/pull/6697)
+* feat: prototype control api devloop intent [#6636](https://github.com/GoogleContainerTools/skaffold/pull/6636)
+* feat: use cloud build location service to create builds in workerpool across regions [#6666](https://github.com/GoogleContainerTools/skaffold/pull/6666)
+* feat: Add distinct error codes for GCB failures [#6664](https://github.com/GoogleContainerTools/skaffold/pull/6664)
+* feat: add preliminary support for Config Connector service KRM [#6645](https://github.com/GoogleContainerTools/skaffold/pull/6645)
+* feat:(build/docker): support env as secret source [#6632](https://github.com/GoogleContainerTools/skaffold/pull/6632)
+* Update to grpc-gateway v2 [#6567](https://github.com/GoogleContainerTools/skaffold/pull/6567)
+
+Fixes:
+* fix: Kubectl port fwd returns on context canceled [#6700](https://github.com/GoogleContainerTools/skaffold/pull/6700)
+* fix: Sanitize image names when default repo unset [#6678](https://github.com/GoogleContainerTools/skaffold/pull/6678)
+* fix: ensure run-id is added to resources in skaffold apply [#6674](https://github.com/GoogleContainerTools/skaffold/pull/6674)
+* fix: correct ko package imports and logging function call [#6673](https://github.com/GoogleContainerTools/skaffold/pull/6673)
+* fix: Use gcloud spec pool instead of deprecated WorkerPool [#6658](https://github.com/GoogleContainerTools/skaffold/pull/6658)
+* fix: fix unit test for skaffold inspect tests list [#6656](https://github.com/GoogleContainerTools/skaffold/pull/6656)
+* fix: Wait for context cancel in k8s pod watcher [#6643](https://github.com/GoogleContainerTools/skaffold/pull/6643)
+* Create port map on container config if empty [#6621](https://github.com/GoogleContainerTools/skaffold/pull/6621)
+* fix: remove "managed-by" fixing helm conflict (fixes #6421) [#6618](https://github.com/GoogleContainerTools/skaffold/pull/6618)
+* Check for nil when retrieving docker support mounts [#6620](https://github.com/GoogleContainerTools/skaffold/pull/6620)
+* fix: make `useBuildkit` field nullable across all config versions [#6612](https://github.com/GoogleContainerTools/skaffold/pull/6612)
+
+Updates and Refactors:
+* Support globstar in dependencies for file watching [#6605](https://github.com/GoogleContainerTools/skaffold/pull/6605)
+* chore: log errors when retrieving build logs [#6663](https://github.com/GoogleContainerTools/skaffold/pull/6663)
+* chore(deps): bump flask from 2.0.1 to 2.0.2 in /integration/examples [#6677](https://github.com/GoogleContainerTools/skaffold/pull/6677)
+* chore(deps): bump flask from 2.0.1 to 2.0.2 in /examples [#6676](https://github.com/GoogleContainerTools/skaffold/pull/6676)
+* introduce schema v2beta24 [#6628](https://github.com/GoogleContainerTools/skaffold/pull/6628)
+* Update pack image to v0.21.1 [#6630](https://github.com/GoogleContainerTools/skaffold/pull/6630)
+* Add image label support to ko builder [#6597](https://github.com/GoogleContainerTools/skaffold/pull/6597)
+* Clean up deps [#6611](https://github.com/GoogleContainerTools/skaffold/pull/6611)
+
+Docs, Test, and Release Updates:
+* Add initial docs for Docker deployer [#6613](https://github.com/GoogleContainerTools/skaffold/pull/6613)
+* doc: document Helm deployer's IMAGE_NAME<N>, IMAGE_TAG<N>, IMAGE_DIGEST<N> [#6649](https://github.com/GoogleContainerTools/skaffold/pull/6649)
+* docs: update skaffold development guide to include information about commit messages [#6670](https://github.com/GoogleContainerTools/skaffold/pull/6670)
+* Validate changed examples with "local" builder [#6133](https://github.com/GoogleContainerTools/skaffold/pull/6133)
+* fix: properly generate enums for config schemas when running `make generate-schemas` [#6651](https://github.com/GoogleContainerTools/skaffold/pull/6651)
+* refactor: Rename a couple of scripts for consistency [#6625](https://github.com/GoogleContainerTools/skaffold/pull/6625)
+* chore: update skaffold Q4 planning board [#6631](https://github.com/GoogleContainerTools/skaffold/pull/6631)
+* Remove `hack/release-notes` binary and update script to remove after running [#6610](https://github.com/GoogleContainerTools/skaffold/pull/6610)
+* Drop codecov threshold to 30% [#6608](https://github.com/GoogleContainerTools/skaffold/pull/6608)
+* build: 30 min timeout for integration tests [#6684](https://github.com/GoogleContainerTools/skaffold/pull/6684)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Ahmet Alp Balkan
+- Brian de Alwis
+- Gaurav
+- Glenn Pratt
+- Halvard Skogsrud
+- Marlon Gamez
+- Nick Kubala
+- Seth Nickell
+- Tejal Desai
+
 # v1.32.0 Release - 09/15/2021
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.32.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
