@@ -14,6 +14,10 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.3
 )
 
+// TODO(bdealwis)[10/07/2021] CVE-2021-41103: pin github.com/containerd/containerd v1.5.7
+// TODO(bdealwis)[10/07/2021] CVE-2021-30465: pin github.com/opencontainers/runc v1.0.2
+// TODO(bdealwis)[10/07/2021] GO-2021-0113: pin golang.org/x/text v0.3.7
+
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/container v1.0.0 // indirect
@@ -33,6 +37,7 @@ require (
 	github.com/buildpacks/lifecycle v0.10.2
 	github.com/buildpacks/pack v0.18.1
 	github.com/cenkalti/backoff/v4 v4.1.1
+	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/docker/cli v20.10.7+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v20.10.8+incompatible
@@ -65,6 +70,7 @@ require (
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20210730191737-8e42a01fb1b7
+	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/otiai10/copy v1.6.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
@@ -90,6 +96,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/api v0.57.0
 	google.golang.org/genproto v0.0.0-20210921142501-181ce0d877f6
 	google.golang.org/grpc v1.40.0
