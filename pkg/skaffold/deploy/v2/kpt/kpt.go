@@ -26,7 +26,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
@@ -91,15 +90,22 @@ type Config interface {
 func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV2.KptV2Deploy,
 	opts config.SkaffoldOptions) *Deployer {
 	podSelector := kubernetes.NewImageList()
-	if opts.InventoryNamespace != "" {
-		d.InventoryNamespace = opts.InventoryNamespace
+	// Process flags "inventory-namespace", "inventory-id", and "inventory-name". These flags will be ignored
+	// if skaffold.yaml has `deploy.kpt.namespace`, `deploy.kpt.inventoryID`, `deploy.kpt.name` are specified.
+	if d.InventoryNamespace == "" {
+		if opts.InventoryNamespace != "" {
+			d.InventoryNamespace = opts.InventoryNamespace
+		} else {
+			d.InventoryNamespace = defaultNs
+		}
 	}
-	if opts.InventoryID != "" {
+	if d.InventoryID == "" && opts.InventoryID != "" {
 		d.InventoryID = opts.InventoryID
 	}
-	if opts.InventoryName != "" {
+	if d.Name == "" && opts.InventoryName != "" {
 		d.Name = opts.InventoryName
 	}
+
 	return &Deployer{
 		KptV2Deploy: d,
 		applyDir:    d.Dir,
@@ -205,16 +211,14 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_InitKptfileInventory")
 		args := []string{"live", "init", k.applyDir}
 		args = append(args, k.KptV2Deploy.Flags...)
-		if k.Name != "" {
-			args = append(args, "--name", k.Name)
+		if k.KptV2Deploy.Name != "" {
+			args = append(args, "--name", k.KptV2Deploy.Name)
 		}
-		if k.InventoryID != "" {
-			args = append(args, "--inventory-id", k.InventoryID)
+		if k.KptV2Deploy.InventoryID != "" {
+			args = append(args, "--inventory-id", k.KptV2Deploy.InventoryID)
 		}
-		if k.namespace != "" {
-			args = append(args, "--namespace", k.namespace)
-		} else if k.InventoryNamespace != "" {
-			args = append(args, "--namespace", k.InventoryNamespace)
+		if k.KptV2Deploy.InventoryNamespace != defaultNs {
+			args = append(args, "--namespace", k.KptV2Deploy.InventoryNamespace)
 		}
 		if k.Force {
 			args = append(args, "--force", "true")
@@ -227,28 +231,9 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 			return liveInitErr(err, k.applyDir)
 		}
 	} else {
-		if k.InventoryID != "" && k.InventoryID != kfConfig.Inventory.InventoryID {
-			logrus.Warnf("Updating Kptfile inventory from %v to %v", kfConfig.Inventory.InventoryID, k.InventoryID)
-			kfConfig.Inventory.InventoryID = k.InventoryID
-		}
-		if k.Name != "" && k.Name != kfConfig.Inventory.Name {
-			logrus.Warnf("Updating Kptfile name from %v to %v", kfConfig.Inventory.Name, k.Name)
-			kfConfig.Inventory.Name = k.Name
-		}
-		// Set the namespace to be a valid kubernetes namespace value. If not specified, the value shall be "default".
-		if k.namespace == "" {
-			k.namespace = defaultNs
-		}
-		if k.InventoryNamespace == "" {
-			k.InventoryNamespace = defaultNs
-		}
-		if k.namespace != kfConfig.Inventory.Namespace {
-			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.namespace)
-			kfConfig.Inventory.Namespace = k.namespace
-		} else if k.InventoryNamespace != kfConfig.Inventory.Namespace {
-			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.InventoryNamespace)
-			kfConfig.Inventory.Namespace = k.InventoryNamespace
-		}
+		kfConfig.Inventory.InventoryID = k.KptV2Deploy.InventoryID
+		kfConfig.Inventory.Name = k.KptV2Deploy.Name
+		kfConfig.Inventory.Namespace = k.KptV2Deploy.InventoryNamespace
 		configByte, err := yaml.Marshal(kfConfig)
 		if err != nil {
 			return err
