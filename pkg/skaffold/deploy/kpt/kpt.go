@@ -68,7 +68,7 @@ const (
 
 	kptDownloadLink        = "https://googlecontainertools.github.io/kpt/installation/"
 	kptMinVersionInclusive = "v0.38.1"
-	kptMaxVersionExclusive = "v1.0.0"
+	kptMaxVersionExclusive = "v1.0.0-alpha.1"
 
 	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
 	kustomizeMinVersion    = "v3.2.3"
