@@ -175,12 +175,9 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		}
 		opts.Mounts = mounts
 
-		debugBindings, err = d.debugger.DebugPortBindings()
+		debugBindings, err = d.debugger.DebugPortBindings(containerCfg)
 		if err != nil {
 			return errors.Wrap(err, "setting up debug port bindings")
-		}
-		if err != nil {
-			return errors.Wrap(err, "merging host port bindings")
 		}
 	}
 

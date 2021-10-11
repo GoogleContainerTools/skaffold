@@ -82,6 +82,9 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 	defer pm.lock.Unlock()
 	m := make(nat.PortMap)
 	var entries []containerPortForwardEntry
+	if cfg.ExposedPorts == nil {
+		cfg.ExposedPorts = nat.PortSet{}
+	}
 	var ports []int
 	for _, p := range pf {
 		if strings.ToLower(string(p.Type)) != "container" {
@@ -93,9 +96,6 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 		port, err := nat.NewPort("tcp", p.Port.String())
 		if err != nil {
 			return nil, err
-		}
-		if cfg.ExposedPorts == nil {
-			cfg.ExposedPorts = nat.PortSet{}
 		}
 		cfg.ExposedPorts[port] = struct{}{}
 		m[port] = []nat.PortBinding{
@@ -120,9 +120,6 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 				binding.HostPort = strconv.Itoa(localPort)
 			}
 			ports = append(ports, localPort)
-			if cfg.ExposedPorts == nil {
-				cfg.ExposedPorts = nat.PortSet{}
-			}
 			cfg.ExposedPorts[port] = struct{}{}
 			entries = append(entries, containerPortForwardEntry{
 				container:       containerName,
