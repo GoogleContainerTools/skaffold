@@ -107,7 +107,6 @@ func (p *WatchingPodForwarder) Start(ctx context.Context, out io.Writer, namespa
 func (p *WatchingPodForwarder) Stop() {
 	p.entryManager.Stop()
 	p.podWatcher.Deregister(p.events)
-	close(p.events) // the receiver shouldn't really be the one to close the channel
 }
 
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
