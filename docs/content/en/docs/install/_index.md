@@ -19,8 +19,16 @@ Your use of this software is subject to the [Google Privacy Policy](https://poli
 
 {{< /alert >}}
 
+### Managed IDE
 
 {{% tabs %}}
+
+{{% tab "CLOUD CODE" %}}
+
+[Cloud Code](https://cloud.google.com/code) provides a managed experience of using Skaffold in supported IDEs. You can install the `Cloud Code` extension for [Visual Studio Code](https://cloud.google.com/code/docs/vscode/quickstart-k8s#installing) or the plugin for [JetBrains IDEs](https://cloud.google.com/code/docs/intellij/quickstart-k8s#installing_the_plugin). It manages and keeps Skaffold  up-to-date, along with other common dependencies, and works with any kubernetes cluster.
+
+{{% /tab %}}
+
 {{% tab "GOOGLE CLOUD SHELL" %}}
 
 Google Cloud Platform's [_Cloud Shell_](http://cloud.google.com/shell)
@@ -33,6 +41,12 @@ Cloud Shell is a great way to try Skaffold out.
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_git_repo=https%3A%2F%2Fgithub.com%2FGoogleContainerTools%2Fskaffold&cloudshell_working_dir=examples%2Fgetting-started)
 
 {{% /tab %}}
+
+{{% /tabs %}}
+
+### Standalone binary
+
+{{% tabs %}}
 
 {{% tab "LINUX" %}}
 The latest **stable** binaries can be found here:
@@ -170,6 +184,20 @@ choco install -y skaffold
 ```
 {{% /tab %}}
 
+{{% tab "GCLOUD" %}}
+
+If you have the Google Cloud SDK installed on your machine, you can quickly install Skaffold as a bundled component.
+
+Make sure your gcloud installation and the components are up to date:
+
+`gcloud components update`
+
+Then, install Skaffold:
+
+`gcloud components install skaffold`
+
+{{% /tab %}}
+
 {{% tab "DOCKER" %}}
 
 ### Stable binary
@@ -183,20 +211,6 @@ For the latest **stable** release, you can use:
 For the latest **bleeding edge** build:
 
 `docker run gcr.io/k8s-skaffold/skaffold:edge skaffold <command>`
-
-{{% /tab %}}
-
-{{% tab "GCLOUD" %}}
-
-If you have the Google Cloud SDK installed on your machine, you can quickly install Skaffold as a bundled component.
-
-Make sure your gcloud installation and the components are up to date:
-
-`gcloud components update`
-
-Then, install Skaffold:
-
-`gcloud components install skaffold`
 
 {{% /tab %}}
 
