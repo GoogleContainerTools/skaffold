@@ -109,29 +109,35 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 			remotePort:      p.Port,
 		})
 	}
+
+	// we can't modify the existing debug bindings in place, since they are not passed by reference.
+	// instead, copy each binding and modify the copy, then insert into a new map and return that.
 	for port, bindings := range debugBindings {
-		for _, binding := range bindings {
-			hostPort, err := strconv.Atoi(binding.HostPort)
+		modifiedBindings := make([]nat.PortBinding, len(bindings))
+		for i, b := range bindings {
+			newBinding := nat.PortBinding{HostIP: b.HostIP, HostPort: b.HostPort}
+			hostPort, err := strconv.Atoi(newBinding.HostPort)
 			if err != nil {
 				return nil, err
 			}
-			localPort := GetAvailablePort(binding.HostIP, hostPort, &pm.portSet)
+			localPort := GetAvailablePort(newBinding.HostIP, hostPort, &pm.portSet)
 			if localPort != hostPort {
-				binding.HostPort = strconv.Itoa(localPort)
+				newBinding.HostPort = strconv.Itoa(localPort)
 			}
 			ports = append(ports, localPort)
 			cfg.ExposedPorts[port] = struct{}{}
 			entries = append(entries, containerPortForwardEntry{
 				container:       containerName,
-				resourceAddress: binding.HostIP,
+				resourceAddress: newBinding.HostIP,
 				localPort:       int32(localPort),
 				remotePort: schemautil.IntOrString{
 					Type:   schemautil.Int,
 					IntVal: port.Int(),
 				},
 			})
+			modifiedBindings[i] = newBinding
 		}
-		m[port] = bindings
+		m[port] = modifiedBindings
 	}
 	pm.containerPorts[containerName] = ports
 	pm.entries = append(pm.entries, entries...)
