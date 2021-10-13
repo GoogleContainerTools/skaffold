@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 type dlvTransformer struct{}
@@ -188,7 +188,7 @@ func rewriteDlvCommandLine(commandLine []string, spec dlvSpec, args []string) []
 	// todo: parse off dlv commands if present?
 	if len(commandLine) > 1 || len(args) > 0 {
 		// insert "--" after app binary to indicate end of Delve arguments
-		commandLine = util.StrSliceInsert(commandLine, 1, []string{"--"})
+		commandLine = stringslice.Insert(commandLine, 1, []string{"--"})
 	}
 	return append(spec.asArguments(), commandLine...)
 }

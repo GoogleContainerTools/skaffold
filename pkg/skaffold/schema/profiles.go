@@ -31,6 +31,7 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
@@ -125,7 +126,7 @@ func activatedProfiles(profiles []latestV1.Profile, opts cfg.SkaffoldOptions, na
 	for _, profile := range namedProfiles {
 		if strings.HasPrefix(profile, "-") {
 			activated = removeValue(activated, strings.TrimPrefix(profile, "-"))
-		} else if skutil.StrSliceContains(allProfileNames, profile) && !skutil.StrSliceContains(activated, profile) {
+		} else if stringslice.Contains(allProfileNames, profile) && !stringslice.Contains(activated, profile) {
 			activated = append(activated, profile)
 		}
 	}

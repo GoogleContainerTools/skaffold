@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // NewGenerator instantiates a Generator object.
@@ -106,7 +107,7 @@ func (g *Generator) Generate(ctx context.Context) (manifest.ManifestList, error)
 	}
 	for _, nkPath := range nonKustomizePaths {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
-			if !util.StrSliceContains(g.config.RawK8s, nkPath) {
+			if !stringslice.Contains(g.config.RawK8s, nkPath) {
 				log.Entry(ctx).Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
 				log.Entry(ctx).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue

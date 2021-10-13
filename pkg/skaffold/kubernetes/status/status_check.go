@@ -43,7 +43,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -127,7 +127,7 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	output.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
+	output.Default.Fprintln(out, "Deployments stabilized in", timeutil.Humanize(time.Since(start)))
 	return nil
 }
 

@@ -19,7 +19,7 @@ package util
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
@@ -29,7 +29,7 @@ func ListBuilders(build *latestV1.BuildConfig) []string {
 		return []string{}
 	}
 
-	results := util.NewStringSet()
+	results := stringset.New()
 	for _, artifact := range build.Artifacts {
 		results.Insert(misc.ArtifactType(artifact))
 	}
