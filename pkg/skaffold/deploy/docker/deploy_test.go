@@ -20,14 +20,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/debugger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
 )
 
 type debugArtifact struct {
@@ -122,8 +123,8 @@ func TestDebugBindings(t *testing.T) {
 				configs := make(map[string]types.ContainerDebugConfiguration)
 				ports := make(map[string]uint32)
 				// tie the provided debug port to the artifact's image name to emulate this image being configured for debugging
-				// the debug runtime is not relevant for this test
-				ports[artifact.ImageName] = testDebugPorts[artifact.ImageName]
+				// the debug runtime is not relevant for this test, and neither is the port key.
+				ports["ignored"] = testDebugPorts[artifact.ImageName]
 				configs[artifact.ImageName] = types.ContainerDebugConfiguration{
 					Ports: ports,
 				}
@@ -135,13 +136,17 @@ func TestDebugBindings(t *testing.T) {
 				config := container.Config{
 					Image: a.image,
 				}
+				var (
+					debugBindings nat.PortMap
+					err           error
+				)
+
 				if a.debug {
-					d.setupDebugging(context.TODO(), nil, graph.Artifact{ImageName: a.image}, &config)
+					debugBindings, err = d.setupDebugging(context.TODO(), nil, graph.Artifact{ImageName: a.image}, &config)
 				}
-				debugBindings, err := d.debugger.DebugPortBindings(&config)
 				testutil.CheckErrorAndFailNow(t, false, err)
 
-				bindings, err := d.portManager.getPorts(a.image, d.resources, &config, debugBindings)
+				bindings, err := d.portManager.allocatePorts(a.image, d.resources, &config, debugBindings)
 				testutil.CheckErrorAndFailNow(t, false, err)
 
 				// CheckDeepEqual unfortunately doesn't work when the map elements are slices

@@ -164,7 +164,8 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 
 	var debugBindings nat.PortMap
 	if d.debugger != nil {
-		if err := d.setupDebugging(ctx, out, artifact, containerCfg); err != nil {
+		debugBindings, err = d.setupDebugging(ctx, out, artifact, containerCfg)
+		if err != nil {
 			return errors.Wrap(err, "setting up debugger")
 		}
 
@@ -174,14 +175,9 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 			mounts = append(mounts, m)
 		}
 		opts.Mounts = mounts
-
-		debugBindings, err = d.debugger.DebugPortBindings(containerCfg)
-		if err != nil {
-			return errors.Wrap(err, "setting up debug port bindings")
-		}
 	}
 
-	bindings, err := d.portManager.getPorts(artifact.ImageName, d.resources, containerCfg, debugBindings)
+	bindings, err := d.portManager.allocatePorts(artifact.ImageName, d.resources, containerCfg, debugBindings)
 	if err != nil {
 		return err
 	}
@@ -195,10 +191,15 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 	return nil
 }
 
-func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact graph.Artifact, containerCfg *container.Config) error {
+// setupDebugging configures the provided artifact's image for debugging (if applicable).
+// The provided container configuration receives any relevant modifications (e.g. ENTRYPOINT, CMD),
+// and any init containers for populating the shared debug volume will be created.
+// A list of port bindings for the exposed debuggers is returned to be processed alongside other port
+// forwarding resources.
+func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact graph.Artifact, containerCfg *container.Config) (nat.PortMap, error) {
 	initContainers, err := d.debugger.TransformImage(ctx, artifact, containerCfg)
 	if err != nil {
-		return errors.Wrap(err, "transforming image for debugging")
+		return nil, errors.Wrap(err, "transforming image for debugging")
 	}
 
 	/*
@@ -219,18 +220,18 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		}
 		// pull the debug support image into the local daemon
 		if err := d.client.Pull(ctx, out, c.Image); err != nil {
-			return errors.Wrap(err, "pulling init container image")
+			return nil, errors.Wrap(err, "pulling init container image")
 		}
 		// create the init container
 		id, err := d.client.Run(ctx, out, dockerutil.ContainerCreateOpts{
 			ContainerConfig: c,
 		})
 		if err != nil {
-			return errors.Wrap(err, "creating container in local docker")
+			return nil, errors.Wrap(err, "creating container in local docker")
 		}
 		r, err := d.client.ContainerInspect(ctx, id)
 		if err != nil {
-			return errors.Wrap(err, "inspecting init container")
+			return nil, errors.Wrap(err, "inspecting init container")
 		}
 		if len(r.Mounts) != 1 {
 			olog.Entry(ctx).Warnf("unable to retrieve mount from debug init container: debugging may not work correctly!")
@@ -238,7 +239,19 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		// we know there is only one mount point, since we generated the init container config ourselves
 		d.debugger.AddSupportMount(c.Image, r.Mounts[0].Name)
 	}
-	return nil
+
+	bindings := make(nat.PortMap)
+	config := d.debugger.ConfigurationForImage(containerCfg.Image)
+	for _, port := range config.Ports {
+		p, err := nat.NewPort("tcp", fmt.Sprint(port))
+		if err != nil {
+			return nil, err
+		}
+		bindings[p] = []nat.PortBinding{
+			{HostIP: "127.0.0.1", HostPort: fmt.Sprint(port)},
+		}
+	}
+	return bindings, nil
 }
 
 func (d *Deployer) containerConfigFromImage(ctx context.Context, taggedImage string) (*container.Config, error) {

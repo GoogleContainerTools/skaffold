@@ -73,11 +73,15 @@ func (pm *PortManager) Stop() {
 	pm.entries = nil
 }
 
-// getPorts converts PortForwardResources into docker.PortSet/PortMap objects.
-// These ports are added to the provided container configuration's port set, and the bindings
-// are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
-// It also returns a list of containerPortForwardEntry, to be passed to the event handler
-func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
+/*
+	allocatePorts converts PortForwardResources into docker.PortSet objects, and combines them with
+	pre-configured debug bindings into one docker.PortMap. The debug bindings will have their
+	requested host ports validated against the port tracker, and modified if a port collision is found.
+
+	These ports are added to the provided container configuration's port set, and the bindings
+	are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
+*/
+func (pm *PortManager) allocatePorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	m := make(nat.PortMap)
@@ -140,6 +144,8 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 		m[port] = modifiedBindings
 	}
 	pm.containerPorts[containerName] = ports
+
+	// register entries on the port manager, to be issued by the event handler later
 	pm.entries = append(pm.entries, entries...)
 	return m, nil
 }
