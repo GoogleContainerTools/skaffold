@@ -59,7 +59,7 @@ type plainTextOutput struct {
 
 func genColPointerLine(colIdx int) string {
 	s := ""
-	for i := 0; i < colIdx; i++ {
+	for i := 1; i < colIdx; i++ {
 		s += " "
 	}
 	s += "^"
@@ -76,7 +76,7 @@ func generatePlainTextOutput(res *Result) (string, error) {
 		LineNumber:     res.Line,
 		ColumnNumber:   res.Column,
 		RuleID:         res.Rule.RuleID.String(),
-		Explanation:    res.Rule.Explanation,
+		Explanation:    res.Explanation,
 		RuleType:       res.Rule.RuleType.String(),
 		FlaggedText:    strings.Split(string(text), "\n")[res.Line-1],
 		ColPointerLine: genColPointerLine(res.Column),
