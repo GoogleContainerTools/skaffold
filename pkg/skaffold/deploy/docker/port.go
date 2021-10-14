@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -72,15 +73,22 @@ func (pm *PortManager) Stop() {
 	pm.entries = nil
 }
 
-// getPorts converts PortForwardResources into docker.PortSet/PortMap objects.
-// These ports are added to the provided container configuration's port set, and the bindings
-// are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
-// It also returns a list of containerPortForwardEntry, to be passed to the event handler
-func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config) (nat.PortMap, error) {
+/*
+	allocatePorts converts PortForwardResources into docker.PortSet objects, and combines them with
+	pre-configured debug bindings into one docker.PortMap. The debug bindings will have their
+	requested host ports validated against the port tracker, and modified if a port collision is found.
+
+	These ports are added to the provided container configuration's port set, and the bindings
+	are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
+*/
+func (pm *PortManager) allocatePorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	m := make(nat.PortMap)
 	var entries []containerPortForwardEntry
+	if cfg.ExposedPorts == nil {
+		cfg.ExposedPorts = nat.PortSet{}
+	}
 	var ports []int
 	for _, p := range pf {
 		if strings.ToLower(string(p.Type)) != "container" {
@@ -92,9 +100,6 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 		port, err := nat.NewPort("tcp", p.Port.String())
 		if err != nil {
 			return nil, err
-		}
-		if cfg.ExposedPorts == nil {
-			cfg.ExposedPorts = nat.PortSet{}
 		}
 		cfg.ExposedPorts[port] = struct{}{}
 		m[port] = []nat.PortBinding{
@@ -108,7 +113,39 @@ func (pm *PortManager) getPorts(containerName string, pf []*v1.PortForwardResour
 			remotePort:      p.Port,
 		})
 	}
+
+	// we can't modify the existing debug bindings in place, since they are not passed by reference.
+	// instead, copy each binding and modify the copy, then insert into a new map and return that.
+	for port, bindings := range debugBindings {
+		modifiedBindings := make([]nat.PortBinding, len(bindings))
+		for i, b := range bindings {
+			newBinding := nat.PortBinding{HostIP: b.HostIP, HostPort: b.HostPort}
+			hostPort, err := strconv.Atoi(newBinding.HostPort)
+			if err != nil {
+				return nil, err
+			}
+			localPort := GetAvailablePort(newBinding.HostIP, hostPort, &pm.portSet)
+			if localPort != hostPort {
+				newBinding.HostPort = strconv.Itoa(localPort)
+			}
+			ports = append(ports, localPort)
+			cfg.ExposedPorts[port] = struct{}{}
+			entries = append(entries, containerPortForwardEntry{
+				container:       containerName,
+				resourceAddress: newBinding.HostIP,
+				localPort:       int32(localPort),
+				remotePort: schemautil.IntOrString{
+					Type:   schemautil.Int,
+					IntVal: port.Int(),
+				},
+			})
+			modifiedBindings[i] = newBinding
+		}
+		m[port] = modifiedBindings
+	}
 	pm.containerPorts[containerName] = ports
+
+	// register entries on the port manager, to be issued by the event handler later
 	pm.entries = append(pm.entries, entries...)
 	return m, nil
 }

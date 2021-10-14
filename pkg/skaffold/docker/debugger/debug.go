@@ -57,6 +57,13 @@ func NewDebugManager(insecureRegistries map[string]bool, debugHelpersRegistry st
 	}
 }
 
+func (d *DebugManager) ConfigurationForImage(image string) types.ContainerDebugConfiguration {
+	if d == nil {
+		return types.ContainerDebugConfiguration{}
+	}
+	return d.configurations[image]
+}
+
 func (d *DebugManager) AddSupportMount(image, mountID string) {
 	d.mountLock.Lock()
 	defer d.mountLock.Unlock()
