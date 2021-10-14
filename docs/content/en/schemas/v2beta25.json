@@ -2408,6 +2408,12 @@
     },
     "KanikoCache": {
       "properties": {
+        "cacheCopyLayers": {
+          "type": "boolean",
+          "description": "enables caching of copy layers.",
+          "x-intellij-html-description": "enables caching of copy layers.",
+          "default": "false"
+        },
         "hostPath": {
           "type": "string",
           "description": "specifies a path on the host that is mounted to each pod as read only cache volume containing base images. If set, must exist on each node and prepopulated with kaniko-warmer.",
@@ -2422,11 +2428,6 @@
           "type": "string",
           "description": "Cache timeout in hours.",
           "x-intellij-html-description": "Cache timeout in hours."
-        },
-        "cacheCopyLayers": {
-          "type": "string",
-          "description": "caches copy layers.",
-          "x-intellij-html-description": "caches copy layers."
         }
       },
       "preferredOrder": [
