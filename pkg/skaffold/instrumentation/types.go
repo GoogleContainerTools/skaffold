@@ -89,6 +89,9 @@ type skaffoldMeter struct {
 	// ErrorCode Skaffold reports [error codes](/docs/references/api/grpc/#statuscode)
 	// and these are monitored in order to determine the most frequent errors.
 	ErrorCode proto.StatusCode
+
+	// ClusterType reports if user cluster is a GKE cluster or not.
+	ClusterType string
 }
 
 // devIteration describes how an iteration and started and if an error happened.

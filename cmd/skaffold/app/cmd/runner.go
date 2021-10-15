@@ -68,7 +68,7 @@ func createNewRunner(ctx context.Context, out io.Writer, opts config.SkaffoldOpt
 	for _, c := range configs {
 		v1Configs = append(v1Configs, c.(*latestV1.SkaffoldConfig))
 	}
-	instrumentation.Init(v1Configs, opts.User)
+	instrumentation.Init(v1Configs, opts.User, runCtx.GetKubeContext())
 	hooks.SetupStaticEnvOptions(runCtx)
 	runner, err := v1.NewForConfig(ctx, runCtx)
 	if err != nil {
