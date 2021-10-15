@@ -31,6 +31,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+const (
+	gke    = "gke"
+	local  = "local"
+	others = "others"
+)
+
 var (
 	meter = skaffoldMeter{
 		OS:                runtime.GOOS,
@@ -75,7 +81,7 @@ func SetOnlineStatus() {
 	}()
 }
 
-func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user string) {
+func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user, deployCtx string) {
 	var platforms []string
 	for _, config := range configs {
 		pl := yamltags.GetYamlTag(config.Build.BuildType)
@@ -109,6 +115,7 @@ func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user string) {
 	meter.PlatformType = strings.Join(platforms, ":")
 	meter.ConfigCount = len(configs)
 	meter.User = strings.ToLower(user)
+	meter.ClusterType = getClusterType(deployCtx)
 }
 
 func SetCommand(cmd string) {
@@ -136,4 +143,12 @@ func AddFlag(flag *flag.Flag) {
 	if flag.Changed {
 		meter.EnumFlags[flag.Name] = flag.Value.String()
 	}
+}
+
+func getClusterType(deployCtx string) string {
+	if strings.HasPrefix(deployCtx, "gke_") {
+		return gke
+	}
+	// TODO (tejaldesai): Add minikube detection.
+	return others
 }
