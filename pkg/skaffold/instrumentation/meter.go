@@ -33,7 +33,6 @@ import (
 
 const (
 	gke    = "gke"
-	local  = "local"
 	others = "others"
 )
 
