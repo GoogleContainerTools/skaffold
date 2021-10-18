@@ -162,7 +162,24 @@ This package is not maintained by the Skaffold team.
 
 ```powershell
 scoop install skaffold
+
 ```
+
+When installing with scoop, you might get an error that says **
+Couldn't find manifest for 'skaffold' **
+
+If you encountered the error above, follow below process to fix it
+
+Run 
+```powershell
+scoop bucket add extras
+```
+
+After running the above command and the extras bucket has been added successfully.
+
+Re run the scoop install skaffold 
+
+The above should solve the issue
 
 ### Chocolatey
 
