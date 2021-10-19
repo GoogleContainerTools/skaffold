@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package stringset
 
 import "sort"
 
@@ -23,8 +23,8 @@ type unit struct{}
 // StringSet helps to de-duplicate a set of strings.
 type StringSet map[string]unit
 
-// NewStringSet returns a new StringSet object.
-func NewStringSet() StringSet {
+// New returns a new StringSet object.
+func New() StringSet {
 	return make(map[string]unit)
 }
 

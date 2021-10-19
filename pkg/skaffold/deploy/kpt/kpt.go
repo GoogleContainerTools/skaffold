@@ -57,6 +57,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
 const (
@@ -301,7 +302,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 // Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.
 // In dev mode, a redeploy will be triggered if one of these files is updated.
 func (k *Deployer) Dependencies() ([]string, error) {
-	deps := util.NewStringSet()
+	deps := stringset.New()
 
 	// Add the app configuration manifests. It may already include kpt functions and kustomize
 	// config files.

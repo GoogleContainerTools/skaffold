@@ -25,7 +25,8 @@ import (
 	flag "github.com/spf13/pflag"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -51,9 +52,9 @@ var (
 		ExitCode:          0,
 		ErrorCode:         proto.StatusCode_OK,
 	}
-	MeteredCommands     = util.NewStringSet()
-	doesBuild           = util.NewStringSet()
-	doesDeploy          = util.NewStringSet()
+	MeteredCommands     = stringset.New()
+	doesBuild           = stringset.New()
+	doesDeploy          = stringset.New()
 	initExporter        = initCloudMonitoringExporterMetrics
 	isOnline            bool
 	ShouldExportMetrics bool
@@ -84,7 +85,7 @@ func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user, deployCtx str
 	var platforms []string
 	for _, config := range configs {
 		pl := yamltags.GetYamlTag(config.Build.BuildType)
-		if !util.StrSliceContains(platforms, pl) {
+		if !stringslice.Contains(platforms, pl) {
 			platforms = append(platforms, pl)
 		}
 		for _, artifact := range config.Pipeline.Build.Artifacts {

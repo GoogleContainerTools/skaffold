@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package timeutil
+package time
 
 import (
 	"testing"
@@ -50,6 +50,39 @@ func TestLessThan(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.CheckDeepEqual(test.expected, LessThan(test.date, test.duration))
+		})
+	}
+}
+
+func TestHumanize(t *testing.T) {
+	duration1, err := time.ParseDuration("1h58m30.918273645s")
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	duration2, err := time.ParseDuration("5.23494327s")
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	tests := []struct {
+		description string
+		value       time.Duration
+		expected    string
+	}{
+		{
+			description: "Case for 1h58m30.918273645s",
+			value:       duration1,
+			expected:    "1 hour 58 minutes 30.918 seconds",
+		},
+		{
+			description: "Case for 5.23494327s",
+			value:       duration2,
+			expected:    "5.234 seconds",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			humanizedValue := Humanize(test.value)
+			t.CheckDeepEqual(test.expected, humanizedValue)
 		})
 	}
 }

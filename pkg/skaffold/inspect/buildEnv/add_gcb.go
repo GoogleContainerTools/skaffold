@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
@@ -116,7 +117,7 @@ func addProfileActivationStanza(cfg *parser.SkaffoldConfigEntry, profileName str
 		}
 		for j := range cfg.Dependencies[i].ActiveProfiles {
 			if cfg.Dependencies[i].ActiveProfiles[j].Name == profileName {
-				if !util.StrSliceContains(cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy, profileName) {
+				if !stringslice.Contains(cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy, profileName) {
 					cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy = append(cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy, profileName)
 				}
 				return

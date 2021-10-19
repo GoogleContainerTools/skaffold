@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package term
 
 import (
 	"bytes"
@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -69,9 +70,9 @@ func TestSupportsColor(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			if test.shouldErr {
-				t.Override(&DefaultExecCommand, testutil.CmdRunOutErr("tput colors", test.colorsOutput, errors.New("error")))
+				t.Override(&util.DefaultExecCommand, testutil.CmdRunOutErr("tput colors", test.colorsOutput, errors.New("error")))
 			} else {
-				t.Override(&DefaultExecCommand, testutil.CmdRunOut("tput colors", test.colorsOutput))
+				t.Override(&util.DefaultExecCommand, testutil.CmdRunOut("tput colors", test.colorsOutput))
 			}
 			if runtime.GOOS == constants.Windows {
 				test.expected = true
