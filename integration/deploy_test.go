@@ -115,7 +115,7 @@ func TestDeployWithImages(t *testing.T) {
 	var artifacts flags.BuildOutput
 	if ba, err := ioutil.ReadFile("examples/getting-started/artifacts.json"); err != nil {
 		t.Fatal("could not read artifacts.json", err)
-	} else if err := json.Unmarshal([]byte(ba), &artifacts); err != nil {
+	} else if err := json.Unmarshal(ba, &artifacts); err != nil {
 		t.Fatal("could not decode artifacts.json", err)
 	}
 
