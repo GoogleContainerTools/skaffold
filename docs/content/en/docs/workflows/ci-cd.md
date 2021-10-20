@@ -168,7 +168,8 @@ Starting deploy...
 Skaffold separates rendering and deployment, using the `skaffold render` and
 `skaffold apply` commands.
 
-`skaffold render` builds all application images from your artifacts, templates the newly-generated image tags into your Kubernetes manifests (based on your project's deployment configuration), and then prints out the final hydrated manifests to a file or your terminal. This allows you to capture the full, declarative state of your application in configuration rather than actually applying changes to your cluster, and use this configuration in a GitOps pipeline by committing it to a separate Git repository.
+`skaffold render` builds all application images from your artifacts, templates the newly-generated image tags into your Kubernetes manifests (based on your project's deployment configuration), and then prints out the final hydrated manifests to a file or your terminal.
+This allows you to capture the full, declarative state of your application in configuration rather than actually applying changes to your cluster.
 
 `skaffold apply` consumes one or more fully-hydrated Kubernetes manifests, and then sends the results directly to the Kubernetes control plane via `kubectl` to create resources on the target cluster. After creating the resources on your cluster, `skaffold apply` uses Skaffold's built-in health checking to monitor the created resources for readiness. See [resource health checks]({{<relref "/docs/workflows/ci-cd#waiting-for-skaffold-deployments-using-healthcheck">}}) for more information on how Skaffold's resource health checking works.
 
