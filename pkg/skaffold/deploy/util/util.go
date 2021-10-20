@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
@@ -65,7 +65,7 @@ func ConsolidateNamespaces(original, new []string) []string {
 	if len(new) == 0 {
 		return original
 	}
-	namespaces := util.NewStringSet()
+	namespaces := stringset.New()
 	namespaces.Insert(append(original, new...)...)
 	namespaces.Delete("") // if we have provided namespaces, remove the empty "default" namespace
 	return namespaces.ToList()

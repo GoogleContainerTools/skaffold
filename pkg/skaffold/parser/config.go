@@ -35,6 +35,7 @@ import (
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 type configOpts struct {
@@ -155,13 +156,13 @@ func processEachConfig(ctx context.Context, config *latestV1.SkaffoldConfig, cfg
 	}
 
 	// configSelection specifies the exact required configs in this file. Empty configSelection means that all configs are required.
-	if len(cfgOpts.selection) > 0 && !util.StrSliceContains(cfgOpts.selection, config.Metadata.Name) {
+	if len(cfgOpts.selection) > 0 && !stringslice.Contains(cfgOpts.selection, config.Metadata.Name) {
 		return nil, nil
 	}
 
 	// if config names are explicitly specified via the configuration flag, we need to include the dependency tree of configs starting at that named config.
 	// `requiredConfigs` specifies if we are already in the dependency-tree of a required config, so all selected configs are required even if they are not explicitly named via the configuration flag.
-	required := cfgOpts.isRequired || len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, config.Metadata.Name)
+	required := cfgOpts.isRequired || len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, config.Metadata.Name)
 
 	profiles, err := schema.ApplyProfiles(config, opts, cfgOpts.profiles)
 	if err != nil {
@@ -197,7 +198,7 @@ func processEachConfig(ctx context.Context, config *latestV1.SkaffoldConfig, cfg
 		if opts.PropagateProfiles {
 			// propagate all profiles supplied as command line input to the imported configs
 			for _, p := range opts.Profiles {
-				if !util.StrSliceContains(depProfiles, p) {
+				if !stringslice.Contains(depProfiles, p) {
 					depProfiles = append(depProfiles, p)
 				}
 			}
@@ -235,7 +236,7 @@ func filterActiveProfiles(d latestV1.ConfigDependency, profiles []string) []stri
 			continue
 		}
 		for _, p := range profiles {
-			if util.StrSliceContains(ap.ActivatedBy, p) {
+			if stringslice.Contains(ap.ActivatedBy, p) {
 				depProfiles = append(depProfiles, ap.Name)
 				break
 			}
@@ -336,7 +337,7 @@ func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string
 	}
 	var unmatched []string
 	for _, p := range allProfiles {
-		if !util.StrSliceContains(allActivated, p) {
+		if !stringslice.Contains(allActivated, p) {
 			unmatched = append(unmatched, p)
 		}
 	}

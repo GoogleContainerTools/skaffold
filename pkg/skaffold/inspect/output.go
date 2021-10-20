@@ -17,44 +17,12 @@ limitations under the License.
 package inspect
 
 import (
-	"encoding/json"
-	"errors"
 	"io"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/format"
 )
 
-type Formatter interface {
-	Write(interface{}) error
-	WriteErr(error) error
-}
-
-func OutputFormatter(out io.Writer, _ string) Formatter {
+func OutputFormatter(out io.Writer, _ string) format.Formatter {
 	// TODO: implement other output formatters. Currently only JSON is implemented
-	return jsonFormatter{out: out}
-}
-
-type jsonFormatter struct {
-	out io.Writer
-}
-
-func (j jsonFormatter) Write(data interface{}) error {
-	return json.NewEncoder(j.out).Encode(data)
-}
-
-type jsonErrorOutput struct {
-	ErrorCode    string `json:"errorCode"`
-	ErrorMessage string `json:"errorMessage"`
-}
-
-func (j jsonFormatter) WriteErr(err error) error {
-	var sErr sErrors.Error
-	var jsonErr jsonErrorOutput
-	if errors.As(err, &sErr) {
-		jsonErr = jsonErrorOutput{ErrorCode: sErr.StatusCode().String(), ErrorMessage: sErr.Error()}
-	} else {
-		jsonErr = jsonErrorOutput{ErrorCode: proto.StatusCode_INSPECT_UNKNOWN_ERR.String(), ErrorMessage: err.Error()}
-	}
-	return json.NewEncoder(j.out).Encode(jsonErr)
+	return format.JSONFormatter{Out: out}
 }

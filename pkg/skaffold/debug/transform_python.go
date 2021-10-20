@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 type pythonTransformer struct{}
@@ -247,7 +247,7 @@ func extractDebugpySpec(args []string) *pythonSpec {
 }
 
 func hasPyModule(module string, args []string) bool {
-	if index := util.StrSliceIndex(args, "-m"+module); index >= 0 {
+	if index := stringslice.Index(args, "-m"+module); index >= 0 {
 		return true
 	}
 	seenDashM := false
@@ -267,7 +267,7 @@ func hasPyModule(module string, args []string) bool {
 // rewritePythonCommandLine rewrites a python command-line to use the debug-support's launcher.
 func rewritePythonCommandLine(commandLine []string, spec pythonSpec) []string {
 	// Assumes that commandLine[0] is "python" or "python3" etc
-	return util.StrSliceInsert(commandLine, 0, spec.asArguments())
+	return stringslice.Insert(commandLine, 0, spec.asArguments())
 }
 
 func (spec pythonSpec) asArguments() []string {

@@ -14,15 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package timeutil
+package time
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
+// LessThan returns true if the time since the given date is less than the given duration
 func LessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
@@ -30,4 +32,29 @@ func LessThan(date string, duration time.Duration) bool {
 		return false
 	}
 	return time.Since(t) < duration
+}
+
+// Humanize returns time in human readable format
+func Humanize(start time.Duration) string {
+	shortTime := start.Truncate(time.Millisecond)
+	longTime := shortTime.String()
+	out := time.Time{}.Add(shortTime)
+
+	if start.Seconds() < 1 {
+		return start.String()
+	}
+
+	longTime = strings.ReplaceAll(longTime, "h", " hour ")
+	longTime = strings.ReplaceAll(longTime, "m", " minute ")
+	longTime = strings.ReplaceAll(longTime, "s", " second")
+	if out.Hour() > 1 {
+		longTime = strings.ReplaceAll(longTime, "hour", "hours")
+	}
+	if out.Minute() > 1 {
+		longTime = strings.ReplaceAll(longTime, "minute", "minutes")
+	}
+	if out.Second() > 1 {
+		longTime = strings.ReplaceAll(longTime, "second", "seconds")
+	}
+	return longTime
 }

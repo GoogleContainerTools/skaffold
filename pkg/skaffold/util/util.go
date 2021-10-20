@@ -28,7 +28,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -46,27 +45,6 @@ func RandomID() string {
 		panic(err)
 	}
 	return fmt.Sprintf("%x", b)
-}
-
-func StrSliceContains(sl []string, s string) bool {
-	return StrSliceIndex(sl, s) >= 0
-}
-
-func StrSliceIndex(sl []string, s string) int {
-	for i, a := range sl {
-		if a == s {
-			return i
-		}
-	}
-	return -1
-}
-
-func StrSliceInsert(sl []string, index int, insert []string) []string {
-	newSlice := make([]string, len(sl)+len(insert))
-	copy(newSlice[0:index], sl[0:index])
-	copy(newSlice[index:index+len(insert)], insert)
-	copy(newSlice[index+len(insert):], sl[index:])
-	return newSlice
 }
 
 // orderedFileSet holds an ordered set of file paths.
@@ -167,16 +145,6 @@ func VerifyOrCreateFile(path string) error {
 		return nil
 	}
 	return err
-}
-
-// RemoveFromSlice removes a string from a slice of strings
-func RemoveFromSlice(s []string, target string) []string {
-	for i := len(s) - 1; i >= 0; i-- {
-		if s[i] == target {
-			s = append(s[:i], s[i+1:]...)
-		}
-	}
-	return s
 }
 
 // Expand replaces placeholders for a given key with a given value.
@@ -345,29 +313,4 @@ func IsSubPath(basepath string, targetpath string) bool {
 
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
-}
-
-// ShowHumanizeTime returns time in human readable format
-func ShowHumanizeTime(start time.Duration) string {
-	shortTime := start.Truncate(time.Millisecond)
-	longTime := shortTime.String()
-	out := time.Time{}.Add(shortTime)
-
-	if start.Seconds() < 1 {
-		return start.String()
-	}
-
-	longTime = strings.ReplaceAll(longTime, "h", " hour ")
-	longTime = strings.ReplaceAll(longTime, "m", " minute ")
-	longTime = strings.ReplaceAll(longTime, "s", " second")
-	if out.Hour() > 1 {
-		longTime = strings.ReplaceAll(longTime, "hour", "hours")
-	}
-	if out.Minute() > 1 {
-		longTime = strings.ReplaceAll(longTime, "minute", "minutes")
-	}
-	if out.Second() > 1 {
-		longTime = strings.ReplaceAll(longTime, "second", "seconds")
-	}
-	return longTime
 }

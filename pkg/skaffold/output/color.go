@@ -26,7 +26,7 @@ import (
 	"github.com/mattn/go-colorable"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/term"
 )
 
 // Maintain compatibility with the old color coding.
@@ -53,8 +53,8 @@ var DefaultColorCodes = []Color{
 
 // SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
 func SetupColors(ctx context.Context, out io.Writer, defaultColor int, forceColors bool) io.Writer {
-	_, isTerm := util.IsTerminal(out)
-	supportsColor, err := util.SupportsColor(ctx)
+	_, isTerm := term.IsTerminal(out)
+	supportsColor, err := term.SupportsColor(ctx)
 	if err != nil {
 		log.Entry(context.TODO()).Debugf("error checking for color support: %v", err)
 	}

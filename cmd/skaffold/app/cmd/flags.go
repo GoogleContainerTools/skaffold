@@ -569,7 +569,8 @@ var flagRegistry = []Flag{
 			"run": true,
 		},
 		IsEnum: true,
-	}, {
+	},
+	{
 		Name:          "load-images",
 		Usage:         "If true, skaffold will force load the container images into the local cluster.",
 		Value:         &opts.ForceLoadImages,

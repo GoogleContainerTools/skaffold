@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
 func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, runCtx *runcontext.RunContext) *Builder {
@@ -206,7 +206,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 		output.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
-	log.Entry(ctx).Infoln("Tags generated in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Tags generated in", timeutil.Humanize(time.Since(start)))
 	return imageTags, nil
 }
 

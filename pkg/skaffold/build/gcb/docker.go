@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
@@ -96,7 +96,7 @@ func adjustCacheFrom(a *latestV1.Artifact, artifactTag string) *latestV1.Artifac
 		return a
 	}
 
-	if !util.StrSliceContains(a.DockerArtifact.CacheFrom, a.ImageName) {
+	if !stringslice.Contains(a.DockerArtifact.CacheFrom, a.ImageName) {
 		return a
 	}
 
