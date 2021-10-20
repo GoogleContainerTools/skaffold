@@ -747,7 +747,8 @@ spec:
 
 			tmpDir.Chdir()
 
-			args := []string{"--digest-source=local", "--output", "rendered.yaml"}
+			// `--default-repo=` is used to cancel the default repo that is set by default.
+			args := []string{"--default-repo=", "--digest-source=local", "--output", "rendered.yaml"}
 			if test.buildOutputFilePath != "" {
 				args = append(args, "--build-artifacts="+path.Join(testDir, test.buildOutputFilePath))
 			} else {
