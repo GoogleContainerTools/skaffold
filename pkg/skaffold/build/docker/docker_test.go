@@ -78,8 +78,8 @@ func TestDockerCLIBuild(t *testing.T) {
 			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			wantDockerCLI: true,
 			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
-			// env var collisions are handled by cmd.Run(). Last one wins.
-			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
+			// DOCKER_BUILDKIT should be overridden
+			expectedEnv: []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "docker build internal error",
