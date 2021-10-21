@@ -51,9 +51,9 @@ func catchSIGUSR1() {
 			<-signals
 			buf := make([]byte, 1<<20)
 			runtime.Stack(buf, true)
-			os.Stderr.Write([]byte("Dumping stack traces:"))
+			os.Stderr.Write([]byte("---dumping stacktraces: begin---\n"))
 			os.Stderr.Write(buf)
-			os.Stderr.Write([]byte("Done dumping stack traces"))
+			os.Stderr.Write([]byte("---dumping stacktraces: end---\n"))
 		}
 	}()
 }
