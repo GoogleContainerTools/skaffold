@@ -101,7 +101,6 @@ func (d *ContainerManager) Stop() {
 		return
 	}
 	d.podWatcher.Deregister(d.events)
-	close(d.events) // the receiver shouldn't really be the one to close the channel
 }
 
 func (d *ContainerManager) Name() string {
