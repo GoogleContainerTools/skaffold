@@ -1,3 +1,53 @@
+# v1.33.1 Release - 10/20/2021
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.33.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.33.1`
+
+Note: This release comes with a new config version, `v2beta25`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+###This point release is primarily to release [#6714](https://github.com/GoogleContainerTools/skaffold/pull/6714), which fixes a bug that was breaking crucial functionality of Skaffold's event API.
+
+Fixes:
+* fix: use new stringslice lib [#6752](https://github.com/GoogleContainerTools/skaffold/pull/6752)
+* fix: correctly rewrite debug container entrypoint and bind host port [#6682](https://github.com/GoogleContainerTools/skaffold/pull/6682)
+* fix: panic caused by multiple channel closes [#6714](https://github.com/GoogleContainerTools/skaffold/pull/6714)
+* fix: sanity check kpt deployer versions [#6711](https://github.com/GoogleContainerTools/skaffold/pull/6711)
+
+Updates and Refactors:
+* refactor: move some of `pkg/skaffold/util` into into packages [#6731](https://github.com/GoogleContainerTools/skaffold/pull/6731)
+
+Docs, Test, and Release Updates:
+* chore: update image dependencies [#6736](https://github.com/GoogleContainerTools/skaffold/pull/6736)
+* chore: use ad-hoc signing on darwin to avoid network popups [#6738](https://github.com/GoogleContainerTools/skaffold/pull/6738)
+* chore: add cluster type to the instrumentation meter [#6734](https://github.com/GoogleContainerTools/skaffold/pull/6734)
+* chore: Bump config to v2beta25 [#6730](https://github.com/GoogleContainerTools/skaffold/pull/6730)
+* Fix new version generation [#6616](https://github.com/GoogleContainerTools/skaffold/pull/6616)
+* chore: Update globstar syntax in examples dependencies [#6614](https://github.com/GoogleContainerTools/skaffold/pull/6614)
+* chore(deps): bump puma from 4.3.8 to 4.3.9 in /examples/ruby/backend [#6719](https://github.com/GoogleContainerTools/skaffold/pull/6719)
+* docs: add Cloud Code install instructions [#6716](https://github.com/GoogleContainerTools/skaffold/pull/6716)
+* chore: pin to newer subdependencies [#6705](https://github.com/GoogleContainerTools/skaffold/pull/6705)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Brian de Alwis
+- Conor A. Callahan
+- Gaurav
+- Halvard Skogsrud
+- Marlon Gamez
+- Mike Verbanic
+- Nick Kubala
+- Tejal Desai
+- Yuwen Ma
+
 # v1.33.0 Release - 10/07/2021
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
