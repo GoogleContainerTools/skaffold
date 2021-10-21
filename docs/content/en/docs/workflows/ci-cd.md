@@ -22,7 +22,7 @@ For more sophisticated Continuous Delivery pipelines, Skaffold offers building b
 wait for `deployments` to stabilize and succeed only if all deployments are successful
 - [`skaffold build`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}}) - build, tag and push artifacts to a registry
 - [`skaffold deploy`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}})  - deploy built artifacts to a cluster
-- [`skaffold render`]({{<relref "/docs/workflows/ci-cd#skaffold-render-skaffold-apply">}})  - export the transformed Kubernetes manifests for GitOps workflows
+- [`skaffold render`]({{<relref "/docs/workflows/ci-cd#skaffold-render-skaffold-apply">}})  - export the transformed Kubernetes manifests
 - [`skaffold apply`]({{<relref "/docs/workflows/ci-cd#skaffold-render-skaffold-apply">}}) - send hydrated Kubernetes manifests to the API server to create resources on the target cluster
 
 ## Waiting for Skaffold deployments
