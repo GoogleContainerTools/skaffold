@@ -1,5 +1,8 @@
+//go:build !windows
+// +build !windows
+
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,24 +20,27 @@ limitations under the License.
 package app
 
 import (
-	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 )
 
-func catchCtrlC(cancel context.CancelFunc) {
+func catchStackdumpRequests() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals,
-		os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-		syscall.SIGPIPE,
+		syscall.SIGUSR1,
 	)
 
 	go func() {
-		<-signals
-		signal.Stop(signals)
-		cancel()
+		for {
+			<-signals
+			buf := make([]byte, 1<<20)
+			runtime.Stack(buf, true)
+			os.Stderr.Write([]byte(fmt.Sprintf("---stacktraces begin: %v---\n", os.Args)))
+			os.Stderr.Write(buf)
+			os.Stderr.Write([]byte(fmt.Sprintf("---stacktraces end: %v---\n", os.Args)))
+		}
 	}()
 }

@@ -1,5 +1,8 @@
+//go:build windows
+// +build windows
+
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,25 +19,6 @@ limitations under the License.
 
 package app
 
-import (
-	"context"
-	"os"
-	"os/signal"
-	"syscall"
-)
-
-func catchCtrlC(cancel context.CancelFunc) {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals,
-		os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-		syscall.SIGPIPE,
-	)
-
-	go func() {
-		<-signals
-		signal.Stop(signals)
-		cancel()
-	}()
+func catchStackdumpRequests() {
+	// ignored on Windows
 }
