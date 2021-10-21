@@ -165,8 +165,8 @@ Starting deploy...
 ## Separation of rendering and deployment
 {{< maturity "apply" >}}
 
-Skaffold separates rendering and deployment, using the `skaffold render` and
-`skaffold apply` commands.
+Skaffold allows separating the generation of fully-hydrated Kubernetes manifests from the actual deployment of those manifests, using the `skaffold render` and
+`skaffold apply` commands. 
 
 `skaffold render` builds all application images from your artifacts, templates the newly-generated image tags into your Kubernetes manifests (based on your project's deployment configuration), and then prints out the final hydrated manifests to a file or your terminal.
 This allows you to capture the full, declarative state of your application in configuration rather than actually applying changes to your cluster.
