@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -242,17 +241,7 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 		logrus.Infof("Ran %s in %v", cmd.Args, timeutil.Humanize(time.Since(start)))
 	}()
 
-	go func() {
-		// trigger stacktrace dump when skaffold process runs too long
-		var d time.Duration = 2 * time.Minute
-		select {
-		case <-ctx.Done():
-			break
-		case <-time.After(d):
-			t.Logf("triggered skaffold stacktrace request at %v", timeutil.Humanize(time.Since(start)))
-			cmd.Process.Signal(syscall.SIGUSR1)
-		}
-	}()
+	waitAndTriggerStacktrace(t, ctx, cmd.Process)
 
 	t.Cleanup(func() {
 		cancel()
