@@ -1,3 +1,18 @@
+# v1.33.1 Release - 10/21/2021
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.33.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.33.1`
+
+Note: This is a patch release only including [#6714](https://github.com/GoogleContainerTools/skaffold/pull/6714) for the bug introduced in v1.33.0 release.
+
 # v1.33.0 Release - 10/07/2021
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.33.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
