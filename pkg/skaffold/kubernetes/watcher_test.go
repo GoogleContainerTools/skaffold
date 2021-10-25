@@ -61,7 +61,7 @@ func (h *hasName) Select(pod *v1.Pod) bool {
 func TestPodWatcher(t *testing.T) {
 	testutil.Run(t, "need to register first", func(t *testutil.T) {
 		watcher := NewPodWatcher(&anyPod{})
-		cleanup, err := watcher.Start("", []string{"ns"})
+		cleanup, err := watcher.Start(context.Background(), "", []string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("no receiver was registered", err)
@@ -72,7 +72,7 @@ func TestPodWatcher(t *testing.T) {
 
 		watcher := NewPodWatcher(&anyPod{})
 		watcher.Register(make(chan PodEvent))
-		cleanup, err := watcher.Start("", []string{"ns"})
+		cleanup, err := watcher.Start(context.Background(), "", []string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("unable to get client", err)
@@ -88,7 +88,7 @@ func TestPodWatcher(t *testing.T) {
 
 		watcher := NewPodWatcher(&anyPod{})
 		watcher.Register(make(chan PodEvent))
-		cleanup, err := watcher.Start("", []string{"ns"})
+		cleanup, err := watcher.Start(context.Background(), "", []string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("unable to watch", err)
@@ -104,7 +104,7 @@ func TestPodWatcher(t *testing.T) {
 		events := make(chan PodEvent)
 		watcher := NewPodWatcher(podSelector)
 		watcher.Register(events)
-		cleanup, err := watcher.Start("", []string{"ns1", "ns2"})
+		cleanup, err := watcher.Start(context.Background(), "", []string{"ns1", "ns2"})
 		defer cleanup()
 		t.CheckNoError(err)
 

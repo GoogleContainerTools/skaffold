@@ -31,39 +31,41 @@ type Error interface {
 
 type ErrDef struct {
 	err error
-	ae  proto.ActionableErr
+	ae  *proto.ActionableErr
 }
 
-func (e ErrDef) Error() string {
+var _ error = (*ErrDef)(nil)
+
+func (e *ErrDef) Error() string {
 	if s := concatSuggestions(e.Suggestions()); s != "" {
 		return fmt.Sprintf("%s. %s", e.ae.Message, concatSuggestions(e.Suggestions()))
 	}
 	return e.ae.Message
 }
 
-func (e ErrDef) Unwrap() error {
+func (e *ErrDef) Unwrap() error {
 	return e.err
 }
 
-func (e ErrDef) StatusCode() proto.StatusCode {
+func (e *ErrDef) StatusCode() proto.StatusCode {
 	return e.ae.ErrCode
 }
 
-func (e ErrDef) Suggestions() []*proto.Suggestion {
+func (e *ErrDef) Suggestions() []*proto.Suggestion {
 	return e.ae.Suggestions
 }
 
 // NewError creates an actionable error message preserving the actual error.
-func NewError(err error, ae proto.ActionableErr) ErrDef {
-	return ErrDef{
+func NewError(err error, ae *proto.ActionableErr) *ErrDef {
+	return &ErrDef{
 		err: err,
 		ae:  ae,
 	}
 }
 
 // NewError creates an actionable error message.
-func NewErrorWithStatusCode(ae proto.ActionableErr) ErrDef {
-	return ErrDef{
+func NewErrorWithStatusCode(ae *proto.ActionableErr) *ErrDef {
+	return &ErrDef{
 		ae: ae,
 	}
 }

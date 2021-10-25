@@ -63,6 +63,8 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	isLocalImage := func(imageName string) (bool, error) {
 		return isImageLocal(runCtx, imageName)
 	}
+
+	// Always add skaffold-specific labels, except during `skaffold render`
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels(), runCtx.GetRunID())
 	tester, err := getTester(ctx, runCtx, isLocalImage)
 	if err != nil {
@@ -166,6 +168,8 @@ func setupIntents(runCtx *runcontext.RunContext) (*runner.Intents, chan bool) {
 	setupTrigger("build", intents.SetBuild, intents.SetAutoBuild, intents.GetAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
 	setupTrigger("sync", intents.SetSync, intents.SetAutoSync, intents.GetAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
 	setupTrigger("deploy", intents.SetDeploy, intents.SetAutoDeploy, intents.GetAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
+	// Setup callback function to buildCallback since build is the start of the devloop.
+	setupTrigger("devloop", intents.SetDevloop, intents.SetAutoDevloop, intents.GetAutoDevloop, server.SetDevloopCallback, server.SetAutoDevloopCallback, intentChan)
 
 	return intents, intentChan
 }

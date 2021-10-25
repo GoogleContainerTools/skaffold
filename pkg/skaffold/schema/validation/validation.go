@@ -253,7 +253,7 @@ func extractContainerNameFromNetworkMode(mode string) (string, error) {
 		id, err := util.ExpandEnvTemplate(maybeID, map[string]string{})
 		if err != nil {
 			return "", sErrors.NewError(err,
-				proto.ActionableErr{
+				&proto.ActionableErr{
 					Message: fmt.Sprintf("unable to parse container name %s: %s", mode, err),
 					ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_PARSE_ERR,
 					Suggestions: []*proto.Suggestion{
@@ -268,7 +268,7 @@ func extractContainerNameFromNetworkMode(mode string) (string, error) {
 	}
 	errMsg := fmt.Sprintf("extracting container name from a non valid container network mode '%s'", mode)
 	return "", sErrors.NewError(fmt.Errorf(errMsg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: errMsg,
 			ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_MODE,
 			Suggestions: []*proto.Suggestion{
@@ -295,7 +295,7 @@ func validateDockerContainerExpression(image string, id string) error {
 	if !containerRegExp.MatchString(id) {
 		errMsg := fmt.Sprintf("artifact %s has invalid container name '%s'", image, id)
 		return sErrors.NewError(fmt.Errorf(errMsg),
-			proto.ActionableErr{
+			&proto.ActionableErr{
 				Message: errMsg,
 				ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
 				Suggestions: []*proto.Suggestion{
@@ -358,7 +358,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 			containers, err := client.ContainerList(ctx, types.ContainerListOptions{})
 			if err != nil {
 				errs = append(errs, sErrors.NewError(err,
-					proto.ActionableErr{
+					&proto.ActionableErr{
 						Message: "error retrieving docker containers list",
 						ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_LISTING_CONTAINERS,
 						Suggestions: []*proto.Suggestion{
@@ -384,7 +384,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 			}
 			errMsg := fmt.Sprintf("container '%s' not found, required by image '%s' for docker network stack sharing", id, a.ImageName)
 			errs = append(errs, sErrors.NewError(fmt.Errorf(errMsg),
-				proto.ActionableErr{
+				&proto.ActionableErr{
 					Message: errMsg,
 					ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST,
 					Suggestions: []*proto.Suggestion{
@@ -619,7 +619,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 			if len(expanded) == 0 {
 				msg := fmt.Sprintf("skaffold config file %q referenced file %q that could not be found", c.SourceFile, pattern)
 				errs = append(errs, sErrors.NewError(fmt.Errorf(msg),
-					proto.ActionableErr{
+					&proto.ActionableErr{
 						Message: msg,
 						ErrCode: proto.StatusCode_CONFIG_MISSING_MANIFEST_FILE_ERR,
 						Suggestions: []*proto.Suggestion{

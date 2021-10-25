@@ -28,7 +28,7 @@ import (
 // different reasons and need users to take an action.
 func sourceErr(err error, path string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to read the manifests as kpt fn source: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_KPT_SOURCE_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -44,7 +44,7 @@ func sourceErr(err error, path string) error {
 // pkgInitErr raises when skaffold fails to run `kpt pkg init` which creates the Kptfile under the given dir.
 func pkgInitErr(err error, path string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("fail to run `kpt pkg init`: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_KPTFILE_INIT_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -60,7 +60,7 @@ func pkgInitErr(err error, path string) error {
 // The Kptfile should have already exist.
 func liveInitErr(err error, path string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("fail to run `kpt live init`: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_KPTFILE_INIT_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -77,7 +77,7 @@ func liveInitErr(err error, path string) error {
 // for a very common case for new kpt users.
 func liveApplyErr(err error, path string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("fail to run `kpt live apply %v`: %s", path, err),
 			ErrCode: proto.StatusCode_DEPLOY_KPT_APPLY_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -100,7 +100,7 @@ func liveApplyErr(err error, path string) error {
 // the cluster side.
 func liveDestroyErr(err error, path string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("fail to run `kpt live destroy`: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_CLEANUP_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -121,7 +121,7 @@ func openFileErr(err error, path string) error {
 // parseFileErr raises when the Kptfile is invalid.
 func parseFileErr(err error, path string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to parse Kptfile %v: %s", path, err),
 			ErrCode: proto.StatusCode_DEPLOY_KPTFILE_INVALID_YAML_ERR,
 			Suggestions: []*proto.Suggestion{

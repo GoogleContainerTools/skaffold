@@ -384,6 +384,7 @@ Intent represents user intents for a given phase.
 | build | [bool](#bool) |  | in case skaffold dev is ran with autoBuild=false, a build intent enables building once |
 | sync | [bool](#bool) |  | in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once |
 | deploy | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once |
+| devloop | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, autoSync=false and autoBuild=false a devloop intent enables the entire dev loop once |
 
 
 
@@ -926,11 +927,30 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST | 124 | Docker build error indicating the container referenced does not exists in the docker context used. |
 | INIT_DOCKER_NETWORK_INVALID_MODE | 125 | Docker Network invalid mode |
 | INIT_DOCKER_NETWORK_PARSE_ERR | 126 | Error parsing Docker Network mode |
+| BUILD_GCB_CREATE_BUILD_ERR | 128 | GCB Create Build Error |
+| BUILD_GCB_GET_BUILD_ID_ERR | 129 | GCB error indicating an error to fetch build id. |
+| BUILD_GCB_GET_BUILD_STATUS_ERR | 130 | GCB error indicating an error to fetch build status. |
+| BUILD_GCB_GET_BUILD_LOG_ERR | 131 | GCB error indicating an error to fetch build logs. |
+| BUILD_GCB_COPY_BUILD_LOG_ERR | 132 | GCB error indicating an error to fetch build status. |
+| BUILD_GCB_GET_BUILT_IMAGE_ERR | 133 | GCB error indicating an error retrieving the built image id. |
+| BUILD_GCB_BUILD_FAILED | 134 | GCB error indicating build failure. |
+| BUILD_GCB_BUILD_INTERNAL_ERR | 135 | GCB error indicating build failure due to internal errror. |
+| BUILD_GCB_BUILD_TIMEOUT | 136 | GCB error indicating build failure due to timeout. |
+| BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR | 137 | GCB error to generate the build descriptor. |
+| BUILD_GCB_UPLOAD_TO_GCS_ERR | 138 | GCB error to upload to GCS. |
+| BUILD_GCB_JIB_DEPENDENCY_ERR | 139 | GCB error to fetch jib artifact dependency. |
+| BUILD_GCB_GET_DEPENDENCY_ERR | 140 | GCB error to fetch artifact dependency. |
+| BUILD_GCB_GET_GCS_BUCKET_ERR | 141 | GCB error to get GCS bucket. |
+| BUILD_GCB_CREATE_BUCKET_ERR | 142 | GCB error to create a GCS bucket. |
+| BUILD_GCB_EXTRACT_PROJECT_ID | 143 | GCB error to extract Project ID. |
+| BUILD_GET_CLOUD_STORAGE_CLIENT_ERR | 144 | GCB error to get cloud storage client to perform GCS operation. |
+| BUILD_GET_CLOUD_BUILD_CLIENT_ERR | 145 | GCB error to get cloud build client to perform GCB operations. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
 | STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
+| STATUSCHECK_STANDALONE_PODS_PENDING | 305 | Standalone pods pending to stabilize |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
 | STATUSCHECK_UNHEALTHY | 357 | Readiness probe failed |
 | STATUSCHECK_CONTAINER_EXEC_ERROR | 358 | Executable binary format error |
@@ -946,6 +966,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR | 411 | Kubectl client fetch err |
 | STATUSCHECK_DEPLOYMENT_FETCH_ERR | 412 |  |
+| STATUSCHECK_STANDALONE_PODS_FETCH_ERR | 413 |  |
 | STATUSCHECK_POD_INITIALIZING | 451 | Pod Initializing |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
@@ -960,6 +981,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INIT_UNKNOWN | 510 | Initialization of the Skaffold session failed due to unknown reason(s) |
 | BUILD_DOCKER_UNKNOWN | 511 | Build failed due to docker unknown error |
 | TEST_UNKNOWN | 512 | Test failed due to unknown reason |
+| BUILD_GCB_BUILD_UNKNOWN_STATUS | 513 | GCB error indicating build failed due to unknown status. |
 | SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
 | DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
@@ -973,6 +995,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
 | BUILD_DOCKER_CANCELLED | 804 | Docker build cancelled. |
 | BUILD_DOCKER_DEADLINE | 805 | Build error due to docker deadline was reached before the docker action completed |
+| BUILD_GCB_BUILD_CANCELLED | 806 | GCB Build cancelled. |
 | INIT_CREATE_TAGGER_ERROR | 901 | Skaffold was unable to create the configured tagger |
 | INIT_MINIKUBE_PAUSED_ERROR | 902 | Skaffold was unable to start as Minikube appears to be paused |
 | INIT_MINIKUBE_NOT_RUNNING_ERROR | 903 | Skaffold was unable to start as Minikube appears to be stopped |

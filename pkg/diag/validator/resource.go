@@ -31,7 +31,7 @@ type Resource struct {
 	name      string
 	logs      []string
 	status    Status
-	ae        proto.ActionableErr
+	ae        *proto.ActionableErr
 }
 
 func (r Resource) Kind() string      { return r.kind }
@@ -45,7 +45,7 @@ func (r Resource) String() string {
 	}
 	return fmt.Sprintf("%s:%s/%s", r.namespace, r.kind, r.name)
 }
-func (r Resource) ActionableError() proto.ActionableErr {
+func (r Resource) ActionableError() *proto.ActionableErr {
 	return r.ae
 }
 func (r Resource) StatusUpdated(another Resource) bool {
@@ -53,7 +53,7 @@ func (r Resource) StatusUpdated(another Resource) bool {
 }
 
 // NewResource creates new Resource of kind
-func NewResource(namespace, kind, name string, status Status, ae proto.ActionableErr, logs []string) Resource {
+func NewResource(namespace, kind, name string, status Status, ae *proto.ActionableErr, logs []string) Resource {
 	return Resource{namespace: namespace, kind: kind, name: name, status: status, ae: ae, logs: logs}
 }
 
@@ -64,6 +64,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, ae proto.ActionableErr, logs []string) Resource {
+func NewResourceFromObject(object objectWithMetadata, status Status, ae *proto.ActionableErr, logs []string) Resource {
 	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, ae, logs)
 }

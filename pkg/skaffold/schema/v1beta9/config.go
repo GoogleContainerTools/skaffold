@@ -153,8 +153,8 @@ type LocalBuild struct {
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
 	UseDockerCLI bool `yaml:"useDockerCLI,omitempty"`
 
-	// UseBuildkit use BuildKit to build Docker images.
-	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
+	// UseBuildkit use BuildKit to build Docker images. If unspecified, uses the Docker default.
+	UseBuildkit *bool `yaml:"useBuildkit,omitempty"`
 }
 
 // GoogleCloudBuild *beta* describes how to do a remote build on

@@ -85,8 +85,6 @@ func constructLocalDefinition(existing *latestV2.LocalBuild, opts inspect.BuildE
 	if opts.UseDockerCLI != nil {
 		b.UseDockerCLI = *opts.UseDockerCLI
 	}
-	if opts.UseBuildkit != nil {
-		b.UseBuildkit = *opts.UseBuildkit
-	}
+	b.UseBuildkit = opts.UseBuildkit
 	return &b
 }

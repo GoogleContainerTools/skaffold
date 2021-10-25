@@ -26,6 +26,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -36,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 const (
@@ -103,9 +105,18 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 			return err
 		}
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
-		if err := util.RunCmd(ctx, cmd); err != nil {
-			endTrace(instrumentation.TraceEndError(fmt.Errorf("`kpt pkg init %v`:%w", r.hydrationDir, err)))
-			return err
+		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
+			return sErrors.NewError(err,
+				&proto.ActionableErr{
+					Message: fmt.Sprintf("unable to initialize Kptfile in %v", r.hydrationDir),
+					ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_KPTFILE_MANUAL_INIT,
+							Action:         fmt.Sprintf("please manually run `kpt pkg init %v`", r.hydrationDir),
+						},
+					},
+				})
 		}
 	}
 	endTrace()
@@ -157,8 +168,21 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 	endTrace()
 
-	// Refresh the Kptfile.
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_refreshKptfile")
+	// Read the existing Kptfile content. Kptfile is guaranteed to be exist in prepareHydrationDir.
+	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
+		return sErrors.NewError(err,
+			&proto.ActionableErr{
+				Message: fmt.Sprintf("unable to parse Kptfile in %v", r.hydrationDir),
+				ErrCode: proto.StatusCode_RENDER_KPTFILE_INVALID_YAML_ERR,
+				Suggestions: []*proto.Suggestion{
+					{
+						SuggestionCode: proto.SuggestionCode_KPTFILE_CHECK_YAML,
+						Action: fmt.Sprintf("please check if the Kptfile is correct and " +
+							"the `apiVersion` is greater than `v1alpha2`"),
+					},
+				},
+			})
+	}
 	if kfConfig.Pipeline == nil {
 		kfConfig.Pipeline = &kptfile.Pipeline{}
 	}

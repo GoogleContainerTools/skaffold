@@ -16,9 +16,12 @@ limitations under the License.
 package validate
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
+	"fmt"
+
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 var (
@@ -35,7 +38,20 @@ func NewValidator(config []latestV2.Validator) (*Validator, error) {
 	for _, c := range config {
 		fn, ok := validatorAllowlist[c.Name]
 		if !ok {
-			return nil, errors.UnknownValidatorError(c.Name, allowListedValidators)
+			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
+			return nil, sErrors.NewErrorWithStatusCode(
+				&proto.ActionableErr{
+					Message: fmt.Sprintf("unsupported validator %q", c.Name),
+					ErrCode: proto.StatusCode_CONFIG_UNKNOWN_VALIDATOR,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS,
+							Action: fmt.Sprintf(
+								"please only use the following validators in skaffold-managed mode: %v. "+
+									"to use custom validators, please use kpt-managed mode.", allowListedValidators),
+						},
+					},
+				})
 		}
 		fns = append(fns, fn)
 	}

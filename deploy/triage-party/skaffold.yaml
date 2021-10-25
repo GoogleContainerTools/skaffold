@@ -147,7 +147,7 @@ collections:
       This board is used by Skaffold team to plan upcoming releases.
       The timeline and priority of issues listed here are subject to change.
 
-      Please add label planning/Q3-21 for an issue to appear on this board.
+      Please add label planning/Q4-21 for an issue to appear on this board.
 
     display: planning
     rules:
@@ -708,7 +708,7 @@ rules:
       Use Label - area/onboarding
     type: issue
     filters:
-      - label: "planning/Q3-21"
+      - label: "planning/Q4-21"
       - label: "area/onboarding"
 
   extensibility:
@@ -717,7 +717,7 @@ rules:
       Use Label area/extensibility
     type: issue
     filters:
-      - label: "planning/Q3-21"
+      - label: "planning/Q4-21"
       - label: "area/extensibility"
 
   skaffold-v2:
@@ -726,7 +726,7 @@ rules:
       Use Label area/V2
     type: issue
     filters:
-    - label: "planning/Q3-21"
+    - label: "planning/Q4-21"
     - label: "area/extensibility"
 
   partner-requests:
@@ -735,7 +735,7 @@ rules:
       Use Label source/partnerships
     type: issue
     filters:
-      - label: "planning/Q3-21"
+      - label: "planning/Q4-21"
       - label: "source/partnerships"
 
   docs:
@@ -744,14 +744,14 @@ rules:
       Use label area/docs
     type: issue
     filters:
-    - label: "planning/Q3-21"
+    - label: "planning/Q4-21"
     - label: "area/docs"
 
   all-other-requests:
     name: "Others"
     type: issue
     filters:
-      - label: "planning/Q3-21"
+      - label: "planning/Q4-21"
 
   # Fix-It
   fixit-prs:

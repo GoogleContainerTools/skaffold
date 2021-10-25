@@ -54,7 +54,9 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact
 
 	var imageID string
 
-	if b.useCLI || b.useBuildKit {
+	// ignore useCLI boolean if buildkit is enabled since buildkit is only implemented for docker CLI at the moment in skaffold.
+	// we might consider a different approach in the future.
+	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) {
 		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
@@ -91,8 +93,12 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
-	if b.useBuildKit {
-		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
+	if b.useBuildKit != nil {
+		if *b.useBuildKit {
+			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
+		} else {
+			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=0")
+		}
 	}
 	cmd.Stdout = out
 	cmd.Stderr = out

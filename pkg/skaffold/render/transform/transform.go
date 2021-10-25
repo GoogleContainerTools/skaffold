@@ -16,11 +16,13 @@ limitations under the License.
 package transform
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 var (
@@ -91,13 +93,37 @@ func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, er
 	for _, c := range config {
 		newFunc, ok := transformerAllowlist[c.Name]
 		if !ok {
-			return nil, errors.UnknownTransformerError(c.Name, AllowListedTransformer)
+			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
+			return nil, sErrors.NewErrorWithStatusCode(
+				&proto.ActionableErr{
+					Message: fmt.Sprintf("unsupported transformer %q", c.Name),
+					ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_transformers,
+							Action: fmt.Sprintf(
+								"please only use the following transformers in skaffold-managed mode: %v. "+
+									"to use custom transformers, please use kpt-managed mode.", allowListedTransformer),
+						},
+					},
+				})
 		}
 		if c.ConfigMap != nil {
 			for _, stringifiedData := range c.ConfigMap {
 				items := strings.Split(stringifiedData, ":")
 				if len(items) != 2 {
-					return nil, errors.BadTransformerParamsError(c.Name)
+					return nil, sErrors.NewErrorWithStatusCode(
+						&proto.ActionableErr{
+							Message: fmt.Sprintf("unknown arguments for transformer %v", c.Name),
+							ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
+							Suggestions: []*proto.Suggestion{
+								{
+									SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_transformers,
+									Action: fmt.Sprintf("please check if the .transformer field and " +
+										"make sure `configMapData` is a list of data in the form of `${KEY}=${VALUE}`"),
+								},
+							},
+						})
 				}
 				newFunc.ConfigMap[items[0]] = items[1]
 			}

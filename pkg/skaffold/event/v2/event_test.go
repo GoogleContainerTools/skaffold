@@ -28,6 +28,7 @@ import (
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -111,7 +112,7 @@ func wait(t *testing.T, condition func() bool) {
 func TestResetStateOnBuild(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = proto.State{
+	handler.state = &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -131,7 +132,7 @@ func TestResetStateOnBuild(t *testing.T) {
 	}
 
 	ResetStateOnBuild()
-	expected := proto.State{
+	expected := &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": NotStarted,
@@ -143,13 +144,13 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = proto.State{
+	handler.state = &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -166,7 +167,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
 	}
 	ResetStateOnDeploy()
-	expected := proto.State{
+	expected := &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -177,7 +178,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 			Resources: map[string]string{},
 		},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestEmptyStateCheckState(t *testing.T) {
@@ -185,13 +186,13 @@ func TestEmptyStateCheckState(t *testing.T) {
 	expected := &proto.StatusCheckState{Status: NotStarted,
 		Resources: map[string]string{},
 	}
-	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestUpdateStateAutoTriggers(t *testing.T) {
 	defer func() { handler = newHandler() }()
 	handler = newHandler()
-	handler.state = proto.State{
+	handler.state = &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -216,7 +217,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 	UpdateStateAutoDeployTrigger(true)
 	UpdateStateAutoSyncTrigger(true)
 
-	expected := proto.State{
+	expected := &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
 				"image1": Complete,
@@ -237,13 +238,13 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 			AutoTrigger: true,
 		},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
 
 func TestTaskFailed(t *testing.T) {
 	tcs := []struct {
 		description string
-		state       proto.State
+		state       *proto.State
 		phase       constants.Phase
 		waitFn      func() bool
 	}{
@@ -293,7 +294,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 	tests := []struct {
 		description  string
 		phase        constants.Phase
-		handlerState proto.State
+		handlerState *proto.State
 		val          bool
 		expected     bool
 	}{
@@ -301,7 +302,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 			description: "build needs update",
 			phase:       constants.Build,
 			val:         true,
-			handlerState: proto.State{
+			handlerState: &proto.State{
 				BuildState: &proto.BuildState{
 					AutoTrigger: false,
 				},
@@ -312,7 +313,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 			description: "deploy doesn't need update",
 			phase:       constants.Deploy,
 			val:         true,
-			handlerState: proto.State{
+			handlerState: &proto.State{
 				BuildState: &proto.BuildState{
 					AutoTrigger: false,
 				},
@@ -326,7 +327,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 			description: "sync needs update",
 			phase:       constants.Sync,
 			val:         false,
-			handlerState: proto.State{
+			handlerState: &proto.State{
 				FileSyncState: &proto.FileSyncState{
 					AutoTrigger: true,
 				},
@@ -361,7 +362,7 @@ func TestSaveEventsToFile(t *testing.T) {
 	}
 
 	// add some events to the event log
-	handler.eventLog = []proto.Event{
+	handler.eventLog = []*proto.Event{
 		{
 			EventType: &proto.Event_BuildSubtaskEvent{},
 		}, {
@@ -380,7 +381,7 @@ func TestSaveEventsToFile(t *testing.T) {
 		t.Fatalf("reading tmp file: %v", err)
 	}
 
-	var logEntries []proto.Event
+	var logEntries []*proto.Event
 	entries := strings.Split(string(contents), "\n")
 	for _, e := range entries {
 		if e == "" {
@@ -390,7 +391,7 @@ func TestSaveEventsToFile(t *testing.T) {
 		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
 			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
 		}
-		logEntries = append(logEntries, logEntry)
+		logEntries = append(logEntries, &logEntry)
 	}
 
 	buildCompleteEvent, devLoopCompleteEvent := 0, 0

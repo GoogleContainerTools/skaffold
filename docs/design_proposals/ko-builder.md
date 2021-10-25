@@ -152,13 +152,13 @@ is `skaffold`, the resulting image name will be `gcr.io/k8s-skaffold/skaffold`.
 
 It is still necessary to resolve the Go import path for the underlying ko
 implementation. To do so, the ko builder determines the import path based on
-the value of the `target` config field. The `target` config field refers to the
-location of a main package and corresponds to a `go build` target, e.g.,
-`go build ./cmd/skaffold`. Using the `target` field results in deterministic
+the value of the `main` config field. The `main` config field refers to the
+location of a main package and corresponds to a `go build` pattern, e.g.,
+`go build ./cmd/skaffold`. Using the `main` field results in deterministic
 behavior even in cases where there are multiple main packages in different
 directories.
 
-If `target` is a relative path (and it will be most of the time), it is
+If `main` is a relative path (and it will be most of the time), it is
 relative to the current
 [`context`](https://skaffold.dev/docs/references/yaml/#build-artifacts-context)
 (a.k.a.
@@ -176,14 +176,15 @@ build:
   - image: skaffold
     context: .
     ko:
-      target: ./cmd/skaffold
+      main: ./cmd/skaffold
 ```
 
-Users can specify `./...` as a target to make ko locate the main package. If
-there are multiple main packages,
+Users can specify a `main` value using a pattern with the `...` wildcard, such
+as `./...`. In this case, ko locates the main package. If there are multiple
+main packages,
 [ko fails](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/build/gobuild.go#L270).
 
-Implementation note: The value of `target` will be the input when invoking
+Implementation note: The value of `main` will be the input when invoking
 [`QualifyImport()`](https://github.com/GoogleContainerTools/skaffold/blob/953594000be68fa8fad0ec4636ab03f8153a1c08/pkg/skaffold/build/ko/build.go#L93).
 
 If the Go sources and the `go.mod` file are in a subdirectory of the `context`
@@ -241,7 +242,7 @@ build:
     ko: {}
 ```
 
-The `target` field is ignored if the `image` field starts with the `ko://`
+The `main` field is ignored if the `image` field starts with the `ko://`
 scheme prefix.
 
 ## Debugging ko images using Skaffold
@@ -250,7 +251,7 @@ Ko provides the
 [`DisableOptimizations`](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/commands/options/build.go#L34)
 build option to
 [set `gcflags` to disable optimizations and inlining](https://github.com/google/ko/blob/335c1ac8a6fdcc5eb0bb26579e4b44b4c62a9565/pkg/build/gobuild.go#L709-L712).
-The ko builder will set `DisableOptimizations` to `true` when the Skaffold
+The ko builder sets `DisableOptimizations` to `true` when the Skaffold
 `runMode` is `Debug`.
 
 Skaffold can
@@ -312,6 +313,14 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     	// For example: `["-buildid=", "-s", "-w"]`.
     	Ldflags []string `yaml:"ldflags,omitempty"`
 
+      // Main is the location of the main package. It is the pattern passed to `go build`.
+      // If main is specified as a relative path, it is relative to the `context` directory.
+      // If main is empty, the ko builder uses a default value of `.`.
+      // If main is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
+      // Main is ignored if the `ImageName` starts with `ko://`.
+      // Example: `./cmd/foo`
+      Main string `yaml:"main,omitempty"`
+
     	// Platforms is the list of platforms to build images for. Each platform
     	// is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
     	// By default, the ko builder builds for `all` platforms supported by the
@@ -323,14 +332,6 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     	// You can override this value by setting the `SOURCE_DATE_EPOCH`
     	// environment variable.
     	SourceDateEpoch uint64 `yaml:"sourceDateEpoch,omitempty"`
-
-      // Target is the location of the main package.
-      // If target is specified as a relative path, it is relative to the `context` directory.
-      // If target is empty, the ko builder looks for the main package in the `context` directory only, but not in any subdirectories.
-      // If target is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
-      // Target is ignored if the `ImageName` starts with `ko://`.
-      // Example: `./cmd/foo`
-      Target string `yaml:"target,omitempty"`
     }
     ```
 
@@ -349,13 +350,13 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     ```go
     // KoDependencies is used to specify dependencies for an artifact built by ko.
     type KoDependencies struct {
-	  	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
-	  	// Defaults to {"go.mod", "**.go"}
-	  	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+    	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+    	// Defaults to ["."].
+    	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
-	  	// Ignore specifies the paths that should be ignored by skaffold's file watcher.
+    	// Ignore specifies the paths that should be ignored by skaffold's file watcher.
     	// If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
-	  	Ignore []string `yaml:"ignore,omitempty"`
+    	Ignore []string `yaml:"ignore,omitempty"`
     }
     ```
 
@@ -408,7 +409,7 @@ apiVersion: skaffold/v2beta19
 kind: Config
 build:
   artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko-complete
+  - image: skaffold-example-ko-comprehensive
     ko:
       asmflags: []
       fromImage: gcr.io/distroless/base:nonroot
@@ -431,10 +432,10 @@ build:
       - -buildid=
       - -s
       - -w
+      main: ./cmd/foo
       platforms:
       - linux/amd64
       - linux/arm64
-      target: ./cmd/foo
 ```
 
 ko requires setting a
@@ -696,10 +697,10 @@ The steps roughly outlined:
             baz: frob
           ldflags:
           - -s
+          main: ./cmd/foo
           platforms:
           - linux/amd64
           - linux/arm64
-          target: ./cmd/foo
     ```
 
 3.  Implement Skaffold config support for additional ko config options not

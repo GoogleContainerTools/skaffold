@@ -22,7 +22,7 @@ VERSION=1.37.1
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
-  ${DIR}/install_golint.sh -b ${BIN} v$VERSION
+  ${DIR}/install-golint.sh -b ${BIN} v$VERSION
 }
 
 if ! [ -x "$(command -v ${BIN}/golangci-lint)" ] ; then
@@ -56,5 +56,4 @@ if ! [ -x "$(command -v ${BIN}/logrus-analyzer)" ] ; then
 fi
 # This analyzer doesn't support any flags currently, so we don't include ${FLAGS}
 ${BIN}/logrus-analyzer github.com/GoogleContainerTools/skaffold{/pkg,/cmd,/diag}...
-
 

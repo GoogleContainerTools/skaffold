@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/protobuf/testing/protocmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,7 +51,7 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		expected    []*resource.Deployment
+		expected    []*resource.Resource
 		shouldErr   bool
 	}{
 		{
@@ -78,9 +79,9 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
-			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 10*time.Second),
-				resource.NewDeployment("dep2", "test", 20*time.Second),
+			expected: []*resource.Resource{
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 10*time.Second),
+				resource.NewResource("dep2", resource.ResourceTypes.Deployment, "test", 20*time.Second),
 			},
 		},
 		{
@@ -98,8 +99,8 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
 				},
 			},
-			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 300*time.Second),
+			expected: []*resource.Resource{
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 300*time.Second),
 			},
 		},
 		{
@@ -125,9 +126,9 @@ func TestGetDeployments(t *testing.T) {
 					},
 				},
 			},
-			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 100*time.Second),
-				resource.NewDeployment("dep2", "test", 200*time.Second),
+			expected: []*resource.Resource{
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 100*time.Second),
+				resource.NewResource("dep2", resource.ResourceTypes.Deployment, "test", 200*time.Second),
 			},
 		},
 		{
@@ -144,13 +145,13 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(600)},
 				},
 			},
-			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 200*time.Second),
+			expected: []*resource.Resource{
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 200*time.Second),
 			},
 		},
 		{
 			description: "no deployments",
-			expected:    []*resource.Deployment{},
+			expected:    []*resource.Resource{},
 		},
 		{
 			description: "multiple deployments in different namespaces",
@@ -176,8 +177,8 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 100*time.Second),
+			expected: []*resource.Resource{
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 100*time.Second),
 			},
 		},
 		{
@@ -194,7 +195,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: []*resource.Deployment{},
+			expected: []*resource.Resource{},
 		},
 		{
 			description: "deployment in correct namespace deployed by skaffold but different run",
@@ -210,7 +211,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: []*resource.Deployment{},
+			expected: []*resource.Resource{},
 		},
 	}
 
@@ -223,7 +224,7 @@ func TestGetDeployments(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(context.Background(), client, "test", labeller, 200*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
-				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}),
+				cmp.AllowUnexported(resource.Resource{}, resource.Status{}),
 				cmpopts.IgnoreInterfaces(struct{ diag.Diagnose }{}))
 		})
 	}
@@ -233,7 +234,7 @@ func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
 		description  string
 		counter      *counter
-		deployments  []*resource.Deployment
+		deployments  []*resource.Resource
 		expected     string
 		expectedCode proto.StatusCode
 		shouldErr    bool
@@ -241,8 +242,8 @@ func TestGetDeployStatus(t *testing.T) {
 		{
 			description: "one error",
 			counter:     &counter{total: 2, failed: 1},
-			deployments: []*resource.Deployment{
-				resource.NewDeployment("foo", "test", time.Second).
+			deployments: []*resource.Resource{
+				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
 					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
 			},
 			expected:     "1/2 deployment(s) failed",
@@ -252,14 +253,14 @@ func TestGetDeployStatus(t *testing.T) {
 		{
 			description: "no error",
 			counter:     &counter{total: 2},
-			deployments: []*resource.Deployment{
+			deployments: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
 		},
@@ -267,8 +268,8 @@ func TestGetDeployStatus(t *testing.T) {
 			description: "multiple errors",
 			counter:     &counter{total: 3, failed: 2},
 			expected:    "2/3 deployment(s) failed",
-			deployments: []*resource.Deployment{
-				resource.NewDeployment("foo", "test", time.Second).
+			deployments: []*resource.Resource{
+				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
 					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
 			},
 			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
@@ -281,10 +282,10 @@ func TestGetDeployStatus(t *testing.T) {
 		{
 			description: "unable to retrieve pods for deployment",
 			counter:     &counter{total: 1, failed: 1},
-			deployments: []*resource.Deployment{
+			deployments: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("deployment", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
+					resource.NewResource("deployment", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
 				),
 			},
 			shouldErr:    true,
@@ -293,18 +294,18 @@ func TestGetDeployStatus(t *testing.T) {
 		{
 			description: "one deployment failed and others cancelled and or succeeded",
 			counter:     &counter{total: 3, failed: 2},
-			deployments: []*resource.Deployment{
+			deployments: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("deployment-cancelled", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+					resource.NewResource("deployment-cancelled", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 				),
 				withStatus(
-					resource.NewDeployment("deployment-success", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					resource.NewResource("deployment-success", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("deployment", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
+					resource.NewResource("deployment", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
 				),
 			},
 			shouldErr:    true,
@@ -332,7 +333,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 		namespace   string
 		deployment  string
 		pending     int32
-		ae          proto.ActionableErr
+		ae          *proto.ActionableErr
 		expected    string
 	}{
 		{
@@ -340,7 +341,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     0,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - test:deployment/dep is ready.\n",
 		},
 		{
@@ -348,7 +349,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "default",
 			deployment:  "dep",
 			pending:     0,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - deployment/dep is ready.\n",
 		},
 		{
@@ -356,7 +357,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     0,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
@@ -364,7 +365,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     4,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - test:deployment/dep is ready. [4/10 deployment(s) still pending]\n",
 		},
 		{
@@ -372,7 +373,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     8,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
@@ -380,7 +381,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     4,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+			ae:          &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 			expected:    "",
 		},
 	}
@@ -392,7 +393,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			rc := newCounter(10)
 			rc.pending = test.pending
 			testEvent.InitializeState([]latestV2.Pipeline{{}})
-			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
+			r := withStatus(resource.NewResource(test.deployment, resource.ResourceTypes.Deployment, test.namespace, 0), test.ae)
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
 			r.UpdateStatus(test.ae)
@@ -406,41 +407,41 @@ func TestPrintStatus(t *testing.T) {
 	labeller := label.NewLabeller(true, nil, "run-id")
 	tests := []struct {
 		description string
-		rs          []*resource.Deployment
+		rs          []*resource.Resource
 		expectedOut string
 		expected    bool
 	}{
 		{
 			description: "single resource successful marked complete - skip print",
-			rs: []*resource.Deployment{
+			rs: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
 			expected: true,
 		},
 		{
 			description: "single resource in error marked complete -skip print",
-			rs: []*resource.Deployment{
+			rs: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "error"},
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "error"},
 				),
 			},
 			expected: true,
 		},
 		{
 			description: "multiple resources 1 not complete",
-			rs: []*resource.Deployment{
+			rs: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1).
+					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1).
 						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 						Message: "pending\n"},
 				),
 			},
@@ -450,14 +451,14 @@ func TestPrintStatus(t *testing.T) {
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
-			rs: []*resource.Deployment{
+			rs: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1),
-					proto.ActionableErr{
+					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{
 						ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 						Message: resource.MsgKubectlConnection},
 				),
@@ -467,10 +468,10 @@ func TestPrintStatus(t *testing.T) {
 		},
 		{
 			description: "skip printing if status check is cancelled",
-			rs: []*resource.Deployment{
+			rs: []*resource.Resource{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 				),
 			},
 			expected:    true,
@@ -490,7 +491,7 @@ func TestPrintStatus(t *testing.T) {
 	}
 }
 
-func withStatus(d *resource.Deployment, ae proto.ActionableErr) *resource.Deployment {
+func withStatus(d *resource.Resource, ae *proto.ActionableErr) *resource.Resource {
 	d.UpdateStatus(ae)
 	return d
 }
@@ -559,14 +560,14 @@ func TestPollDeployment(t *testing.T) {
 	rolloutCmd := "kubectl --context kubecontext rollout status deployment dep --namespace test --watch=false"
 	tests := []struct {
 		description string
-		dep         *resource.Deployment
+		dep         *resource.Resource
 		runs        [][]validator.Resource
 		command     util.Command
 		expected    proto.StatusCode
 	}{
 		{
 			description: "pollDeploymentStatus errors out immediately when container error can't recover",
-			dep:         resource.NewDeployment("dep", "test", time.Second),
+			dep:         resource.NewResource("dep", resource.ResourceTypes.Deployment, "test", time.Second),
 			command:     testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available"),
 			runs: [][]validator.Resource{
 				{validator.NewResource(
@@ -574,14 +575,14 @@ func TestPollDeployment(t *testing.T) {
 					"pod",
 					"dep-pod",
 					"Pending",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
 					[]string{"err"})},
 			},
 			expected: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 		},
 		{
 			description: "pollDeploymentStatus waits when a container can recover and eventually succeeds",
-			dep:         resource.NewDeployment("dep", "test", time.Second),
+			dep:         resource.NewResource("dep", resource.ResourceTypes.Deployment, "test", time.Second),
 			command: testutil.CmdRunOutErr(
 				// pending due to recoverable error
 				rolloutCmd, "", errors.New("Unable to connect to the server")).
@@ -594,7 +595,7 @@ func TestPollDeployment(t *testing.T) {
 					"pod",
 					"dep-pod",
 					"Pending",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
+					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
 					[]string{"err"})},
 			},
 			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
@@ -608,9 +609,9 @@ func TestPollDeployment(t *testing.T) {
 			mockVal := mockValidator{runs: test.runs}
 			dep := test.dep.WithValidator(mockVal)
 
-			pollDeploymentStatus(context.Background(), &statusConfig{}, dep)
+			pollResourceStatus(context.Background(), &statusConfig{}, dep)
 
-			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
+			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode, protocmp.Transform())
 		})
 	}
 }

@@ -81,7 +81,20 @@ func (k *KubectlForwarder) Start(out io.Writer) {
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
 	errChan := make(chan error, 1)
 	go k.forward(parentCtx, pfe, errChan)
-	return <-errChan
+	l := log.Entry(parentCtx)
+	resourceName := ""
+	if pfe != nil {
+		resourceName = pfe.resource.Name
+	}
+	l.Tracef("KubectlForwarder.Forward(%s): waiting on errChan", resourceName)
+	select {
+	case <-parentCtx.Done():
+		l.Tracef("KubectlForwarder.Forward(%s): parentCtx canceled, returning nil error", resourceName)
+		return nil
+	case err := <-errChan:
+		l.Tracef("KubectlForwarder.Forward(%s): got error on errChan, returning: %+v", resourceName, err)
+		return err
+	}
 }
 
 func (k *KubectlForwarder) forward(ctx context.Context, pfe *portForwardEntry, errChan chan error) {

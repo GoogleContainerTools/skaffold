@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"google.golang.org/protobuf/testing/protocmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -31,19 +33,19 @@ func TestMakeAuthSuggestionsForRepo(t *testing.T) {
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `docker login`",
-	}, makeAuthSuggestionsForRepo(""))
+	}, makeAuthSuggestionsForRepo(""), protocmp.Transform())
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
-	}, makeAuthSuggestionsForRepo("gcr.io/test"))
+	}, makeAuthSuggestionsForRepo("gcr.io/test"), protocmp.Transform())
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
-	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"))
+	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"), protocmp.Transform())
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
-	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"))
+	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"), protocmp.Transform())
 }
 
 func TestBuildProblems(t *testing.T) {
@@ -190,7 +192,7 @@ func TestBuildProblems(t *testing.T) {
 			actual := sErrors.ShowAIError(&cfg, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(&cfg, constants.Build, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqual(test.expectedAE, actualAE, protocmp.Transform())
 		})
 	}
 }

@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"google.golang.org/protobuf/testing/protocmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -127,7 +129,7 @@ func TestShowAIError(t *testing.T) {
 			actual := ShowAIError(runCtx, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := ActionableErr(runCtx, test.phase, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqual(test.expectedAE, actualAE, protocmp.Transform())
 		})
 	}
 }

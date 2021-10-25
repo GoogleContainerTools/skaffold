@@ -19,6 +19,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,15 +35,18 @@ import (
 )
 
 const (
-	deploymentType          = "deployment"
-	rollOutSuccess          = "successfully rolled out"
-	connectionErrMsg        = "Unable to connect to the server"
-	killedErrMsg            = "signal: killed"
-	defaultPodCheckDeadline = 30 * time.Second
-	tabHeader               = " -"
-	tab                     = "  "
-	maxLogLines             = 3
+	deploymentRolloutSuccess  = "successfully rolled out"
+	statefulsetRolloutSuccess = "rolling update complete"
+	connectionErrMsg          = "Unable to connect to the server"
+	killedErrMsg              = "signal: killed"
+	defaultPodCheckDeadline   = 30 * time.Second
+	tabHeader                 = " -"
+	tab                       = "  "
+	maxLogLines               = 3
 )
+
+// Type represents a kubernetes resource type to health check.
+type Type string
 
 var (
 	msgKubectlKilled     = "kubectl rollout status command interrupted\n"
@@ -54,15 +58,23 @@ var (
 		proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED: {},
 		proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING: {},
 	}
+
+	ResourceTypes = struct {
+		StandalonePods Type
+		Deployment     Type
+	}{
+		StandalonePods: "standalone pods",
+		Deployment:     "deployment",
+	}
 )
 
-type Group map[string]*Deployment
+type Group map[string]*Resource
 
-func (r Group) Add(d *Deployment) {
+func (r Group) Add(d *Resource) {
 	r[d.ID()] = d
 }
 
-func (r Group) Contains(d *Deployment) bool {
+func (r Group) Contains(d *Resource) bool {
 	_, found := r[d.ID()]
 	return found
 }
@@ -73,10 +85,10 @@ func (r Group) Reset() {
 	}
 }
 
-type Deployment struct {
+type Resource struct {
 	name         string
 	namespace    string
-	rType        string
+	rType        Type
 	status       Status
 	statusCode   proto.StatusCode
 	done         bool
@@ -85,127 +97,173 @@ type Deployment struct {
 	podValidator diag.Diagnose
 }
 
-func (d *Deployment) ID() string {
-	return fmt.Sprintf("%s:%s:%s", d.name, d.namespace, d.rType)
+func (r *Resource) ID() string {
+	return fmt.Sprintf("%s:%s:%s", r.name, r.namespace, r.rType)
 }
 
-func (d *Deployment) Deadline() time.Duration {
-	return d.deadline
+func (r *Resource) Deadline() time.Duration {
+	return r.deadline
 }
 
-func (d *Deployment) UpdateStatus(ae proto.ActionableErr) {
+func (r *Resource) UpdateStatus(ae *proto.ActionableErr) {
 	updated := newStatus(ae)
-	if d.status.Equal(updated) {
-		d.status.changed = false
+	if r.status.Equal(updated) {
+		r.status.changed = false
 		return
 	}
-	d.status = updated
-	d.statusCode = updated.ActionableError().ErrCode
-	d.status.changed = true
+	r.status = updated
+	r.statusCode = updated.ActionableError().ErrCode
+	r.status.changed = true
 	if ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS || isErrAndNotRetryAble(ae.ErrCode) {
-		d.done = true
+		r.done = true
 	}
 }
 
-func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
-	return &Deployment{
+func NewResource(name string, rType Type, ns string, deadline time.Duration) *Resource {
+	return &Resource{
 		name:         name,
 		namespace:    ns,
-		rType:        deploymentType,
-		status:       newStatus(proto.ActionableErr{}),
+		rType:        rType,
+		status:       newStatus(&proto.ActionableErr{}),
 		deadline:     deadline,
 		podValidator: diag.New(nil),
 	}
 }
 
-func (d *Deployment) WithValidator(pd diag.Diagnose) *Deployment {
-	d.podValidator = pd
-	return d
+func (r *Resource) WithValidator(pd diag.Diagnose) *Resource {
+	r.podValidator = pd
+	return r
 }
 
-func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
+func (r *Resource) checkStandalonePodsStatus(ctx context.Context, cfg kubectl.Config) *proto.ActionableErr {
+	if len(r.pods) == 0 {
+		return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING}
+	}
+	kubeCtl := kubectl.NewCLI(cfg, "")
+	var pendingPods []string
+	for _, pod := range r.pods {
+		switch pod.Status() {
+		case "Failed":
+			return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: fmt.Sprintf("pod %s failed", pod.Name())}
+		case "Running":
+			b, _ := kubeCtl.RunOut(ctx, "get", "pod", pod.Name(), "-o", `jsonpath={..status.conditions[?(@.type=="Ready")].status}`, "--namespace", pod.Namespace())
+			if ctx.Err() != nil {
+				return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED}
+			}
+			if podReady, _ := strconv.ParseBool(string(b)); !podReady {
+				pendingPods = append(pendingPods, pod.Name())
+			}
+		default:
+			pendingPods = append(pendingPods, pod.Name())
+		}
+	}
+	if len(pendingPods) > 0 {
+		return &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING,
+			Message: fmt.Sprintf("pods not ready: %v", pendingPods),
+		}
+	}
+	return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
+}
+
+func (r *Resource) checkRolloutStatus(ctx context.Context, cfg kubectl.Config) *proto.ActionableErr {
 	kubeCtl := kubectl.NewCLI(cfg, "")
 
-	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
+	b, err := kubeCtl.RunOut(ctx, "rollout", "status", string(r.rType), r.name, "--namespace", r.namespace, "--watch=false")
 	if ctx.Err() != nil {
-		return
+		return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED}
 	}
 
-	details := d.cleanupStatus(string(b))
+	details := r.cleanupStatus(string(b))
+	return parseKubectlRolloutError(details, r.deadline, err)
+}
 
-	ae := parseKubectlRolloutError(details, d.deadline, err)
-	d.UpdateStatus(ae)
+func (r *Resource) CheckStatus(ctx context.Context, cfg kubectl.Config) {
+	var ae *proto.ActionableErr
+	switch r.rType {
+	case ResourceTypes.StandalonePods:
+		ae = r.checkStandalonePodsStatus(ctx, cfg)
+	default:
+		ae = r.checkRolloutStatus(ctx, cfg)
+	}
+
+	r.UpdateStatus(ae)
 	// send event update in check status.
 	// if deployment is successfully rolled out, send pod success event to make sure
 	// all pod are marked as success in V2
 	// See https://github.com/GoogleCloudPlatform/cloud-code-vscode-internal/issues/5277
 	if ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS {
-		for _, pod := range d.pods {
+		for _, pod := range r.pods {
 			eventV2.ResourceStatusCheckEventCompletedMessage(
 				pod.String(),
 				fmt.Sprintf("%s %s: running.\n", tabHeader, pod.String()),
-				protoV2.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+				&protoV2.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			)
 		}
 		return
 	}
-	if err := d.fetchPods(ctx); err != nil {
+	if err := r.fetchPods(ctx); err != nil {
 		log.Entry(ctx).Debugf("pod statuses could not be fetched this time due to %s", err)
 	}
 }
 
-func (d *Deployment) String() string {
-	if d.namespace == "default" {
-		return fmt.Sprintf("%s/%s", d.rType, d.name)
+func (r *Resource) String() string {
+	switch r.rType {
+	case ResourceTypes.StandalonePods:
+		return "pods"
+	default:
+		if r.namespace == "default" {
+			return fmt.Sprintf("%s/%s", r.rType, r.name)
+		}
+
+		return fmt.Sprintf("%s:%s/%s", r.namespace, r.rType, r.name)
 	}
-
-	return fmt.Sprintf("%s:%s/%s", d.namespace, d.rType, d.name)
 }
 
-func (d *Deployment) Name() string {
-	return d.name
+func (r *Resource) Name() string {
+	return r.name
 }
 
-func (d *Deployment) Status() Status {
-	return d.status
+func (r *Resource) Status() Status {
+	return r.status
 }
 
-func (d *Deployment) IsStatusCheckCompleteOrCancelled() bool {
-	return d.done || d.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED
+func (r *Resource) IsStatusCheckCompleteOrCancelled() bool {
+	return r.done || r.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED
 }
 
-func (d *Deployment) StatusMessage() string {
-	for _, p := range d.pods {
+func (r *Resource) StatusMessage() string {
+	for _, p := range r.pods {
 		if s := p.ActionableError(); s.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 			return fmt.Sprintf("%s\n", s.Message)
 		}
 	}
-	return d.status.String()
+	return r.status.String()
 }
 
-func (d *Deployment) MarkComplete() {
-	d.done = true
+func (r *Resource) MarkComplete() {
+	r.done = true
 }
 
-// ReportSinceLastUpdated returns a string representing deployment status along with tab header
+// ReportSinceLastUpdated returns a string representing rollout status along with tab header
 // e.g.
 //  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
 //      - testNs:pod/leeroy-app-xvbg : error pulling container image
-func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
-	if d.status.reported && !d.status.changed {
+func (r *Resource) ReportSinceLastUpdated(isMuted bool) string {
+	if r.status.reported && !r.status.changed {
 		return ""
 	}
-	d.status.reported = true
-	if d.status.String() == "" {
+	r.status.reported = true
+	if r.status.String() == "" {
 		return ""
 	}
 	var result strings.Builder
 	// Pod container statuses can be empty.
 	// This can happen when
-	// 1. No pods have been scheduled for the deployment
+	// 1. No pods have been scheduled for the rollout
 	// 2. All containers are in running phase with no errors.
-	// In such case, avoid printing any status update for the deployment.
-	for _, p := range d.pods {
+	// In such case, avoid printing any status update for the rollout.
+	for _, p := range r.pods {
 		if s := p.ActionableError().Message; s != "" {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, s))
 			// if logs are muted, write container logs to file and last 3 lines to
@@ -225,15 +283,20 @@ func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
 			writeTrimLines(trimLines)
 		}
 	}
-	return fmt.Sprintf("%s %s: %s%s", tabHeader, d, d.StatusMessage(), result.String())
+	return fmt.Sprintf("%s %s: %s%s", tabHeader, r, r.StatusMessage(), result.String())
 }
 
-func (d *Deployment) cleanupStatus(msg string) string {
-	clean := strings.ReplaceAll(msg, `deployment "`+d.Name()+`" `, "")
-	if len(clean) > 0 {
-		clean = strings.ToLower(clean[0:1]) + clean[1:]
+func (r *Resource) cleanupStatus(msg string) string {
+	switch r.rType {
+	case ResourceTypes.Deployment:
+		clean := strings.ReplaceAll(msg, `deployment "`+r.Name()+`" `, "")
+		if len(clean) > 0 {
+			clean = strings.ToLower(clean[0:1]) + clean[1:]
+		}
+		return clean
+	default:
+		return msg
 	}
-	return clean
 }
 
 // parses out connection error
@@ -244,30 +307,37 @@ func (d *Deployment) cleanupStatus(msg string) string {
 // $kubectl logs testPod  -f
 // 2020/06/18 17:28:31 service is running
 // Killed: 9
-func parseKubectlRolloutError(details string, deadline time.Duration, err error) proto.ActionableErr {
+func parseKubectlRolloutError(details string, deadline time.Duration, err error) *proto.ActionableErr {
 	switch {
-	case err == nil && strings.Contains(details, rollOutSuccess):
-		return proto.ActionableErr{
+	// deployment rollouts have success messages like `deployment "skaffold-foo" successfully rolled out`
+	case err == nil && strings.Contains(details, deploymentRolloutSuccess):
+		return &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+			Message: details,
+		}
+	// statefulset rollouts have success messages like `statefulset rolling update complete 2 pods at revision skaffold-foo`
+	case err == nil && strings.Contains(details, statefulsetRolloutSuccess):
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 			Message: details,
 		}
 	case err == nil:
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 			Message: details,
 		}
 	case strings.Contains(err.Error(), connectionErrMsg):
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 			Message: MsgKubectlConnection,
 		}
 	case strings.Contains(err.Error(), killedErrMsg):
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
 			Message: fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v: %s", deadline, msgKubectlKilled),
 		}
 	default:
-		return proto.ActionableErr{
+		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
 			Message: err.Error(),
 		}
@@ -276,13 +346,14 @@ func parseKubectlRolloutError(details string, deadline time.Duration, err error)
 
 func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
 	return statusCode != proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR &&
-		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING
+		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING &&
+		statusCode != proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING
 }
 
 // HasEncounteredUnrecoverableError goes through all pod statuses and return true
 // if any cannot be recovered
-func (d *Deployment) HasEncounteredUnrecoverableError() bool {
-	for _, p := range d.pods {
+func (r *Resource) HasEncounteredUnrecoverableError() bool {
+	for _, p := range r.pods {
 		if _, ok := nonRetryContainerErrors[p.ActionableError().ErrCode]; ok {
 			return true
 		}
@@ -290,20 +361,20 @@ func (d *Deployment) HasEncounteredUnrecoverableError() bool {
 	return false
 }
 
-func (d *Deployment) fetchPods(ctx context.Context) error {
+func (r *Resource) fetchPods(ctx context.Context) error {
 	timeoutContext, cancel := context.WithTimeout(ctx, defaultPodCheckDeadline)
 	defer cancel()
-	pods, err := d.podValidator.Run(timeoutContext)
+	pods, err := r.podValidator.Run(timeoutContext)
 	if err != nil {
 		return err
 	}
 
 	newPods := map[string]validator.Resource{}
-	d.status.changed = false
+	r.status.changed = false
 	for _, p := range pods {
-		originalPod, found := d.pods[p.String()]
+		originalPod, found := r.pods[p.String()]
 		if !found || originalPod.StatusUpdated(p) {
-			d.status.changed = true
+			r.status.changed = true
 			prefix := fmt.Sprintf("%s %s:", tabHeader, p.String())
 			if p.ActionableError().ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS &&
 				p.ActionableError().Message != "" {
@@ -316,33 +387,33 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 		}
 		newPods[p.String()] = p
 	}
-	d.pods = newPods
+	r.pods = newPods
 	return nil
 }
 
-// StatusCode() returns the deployment status code if the status check is cancelled
-// or if no pod data exists for this deployment.
+// StatusCode() returns the rollout status code if the status check is cancelled
+// or if no pod data exists for this rollout.
 // If pods are fetched, this function returns the error code a pod container encountered.
-func (d *Deployment) StatusCode() proto.StatusCode {
-	// do not process pod status codes if another deployment failed
+func (r *Resource) StatusCode() proto.StatusCode {
+	// do not process pod status codes if another rollout failed
 	// or the user aborted the run.
-	if d.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
-		return d.statusCode
+	if r.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+		return r.statusCode
 	}
-	for _, p := range d.pods {
+	for _, p := range r.pods {
 		if s := p.ActionableError().ErrCode; s != proto.StatusCode_STATUSCHECK_SUCCESS {
 			return s
 		}
 	}
-	return d.statusCode
+	return r.statusCode
 }
 
-func (d *Deployment) WithPodStatuses(scs []proto.StatusCode) *Deployment {
-	d.pods = map[string]validator.Resource{}
+func (r *Resource) WithPodStatuses(scs []proto.StatusCode) *Resource {
+	r.pods = map[string]validator.Resource{}
 	for i, s := range scs {
-		name := fmt.Sprintf("%s-%d", d.name, i)
-		d.pods[name] = validator.NewResource("test", "pod", "foo", validator.Status("failed"),
-			proto.ActionableErr{Message: "pod failed", ErrCode: s}, nil)
+		name := fmt.Sprintf("%s-%d", r.name, i)
+		r.pods[name] = validator.NewResource("test", "pod", "foo", validator.Status("failed"),
+			&proto.ActionableErr{Message: "pod failed", ErrCode: s}, nil)
 	}
-	return d
+	return r
 }

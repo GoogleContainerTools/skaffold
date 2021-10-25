@@ -70,14 +70,14 @@ func TestDevNotification(t *testing.T) {
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-			dep := client.GetDeployment("test-dev")
+			dep := client.GetDeployment(testDev)
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-				newDep := client.GetDeployment("test-dev")
+				newDep := client.GetDeployment(testDev)
 				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
@@ -120,7 +120,7 @@ func TestDevGracefulCancel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
-			p, _ := skaffold.Dev().InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
+			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
@@ -166,7 +166,7 @@ func TestDevAPITriggers(t *testing.T) {
 		<-entries
 	}
 
-	dep := client.GetDeployment("test-dev")
+	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -181,7 +181,7 @@ func TestDevAPITriggers(t *testing.T) {
 	// Ensure we see a build triggered in the event log
 	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
 	})
 	failNowIfError(t, err)
 
@@ -219,7 +219,7 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 		<-entries
 	}
 
-	dep := client.GetDeployment("test-dev")
+	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -235,7 +235,7 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	// Ensure we see a build triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
 	})
 	failNowIfError(t, err)
 
@@ -259,7 +259,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 
 	// Make sure the old Deployment and the new Deployment are different
 	err = wait.Poll(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		newDep := client.GetDeployment("test-dev")
+		newDep := client.GetDeployment(testDev)
 		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})

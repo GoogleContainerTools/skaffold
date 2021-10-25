@@ -25,7 +25,7 @@ import (
 
 func cmdRunRetrieveErr(command string, imageName string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("retrieving cmd %s: %s", command, err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RETRIEVE_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -40,7 +40,7 @@ func cmdRunRetrieveErr(command string, imageName string, err error) error {
 
 func cmdRunParsingErr(command string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to parse test command %s: %s", command, err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -55,7 +55,7 @@ func cmdRunParsingErr(command string, err error) error {
 
 func cmdRunNonZeroExitErr(command string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("command %s finished with non-0 exit code: %s", command, err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_NON_ZERO_EXIT_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -70,7 +70,7 @@ func cmdRunNonZeroExitErr(command string, err error) error {
 
 func cmdRunTimedoutErr(timeoutSeconds int, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("command timed out: %s", err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_TIMEDOUT_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -85,7 +85,7 @@ func cmdRunTimedoutErr(timeoutSeconds int, err error) error {
 
 func cmdRunCancelledErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("command cancelled: %s", err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_CANCELLED_ERR,
 		},
@@ -94,7 +94,7 @@ func cmdRunCancelledErr(err error) error {
 
 func cmdRunExecutionErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("command execution error: %s", err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_EXECUTION_ERR,
 		},
@@ -103,7 +103,7 @@ func cmdRunExecutionErr(err error) error {
 
 func cmdRunExited(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("command exited: %s", err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_EXITED_ERR,
 		},
@@ -112,7 +112,7 @@ func cmdRunExited(err error) error {
 
 func cmdRunErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("error running cmd: %s", err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_ERR,
 		},
@@ -121,7 +121,7 @@ func cmdRunErr(err error) error {
 
 func gettingDependenciesCommandErr(command string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("getting dependencies from command: %s: %s", command, err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPENDENCIES_CMD_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -136,7 +136,7 @@ func gettingDependenciesCommandErr(command string, err error) error {
 
 func dependencyOutputUnmarshallErr(paths []string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unmarshalling dependency output into string array: %s", err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR,
 			Suggestions: []*proto.Suggestion{

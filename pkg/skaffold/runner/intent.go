@@ -16,12 +16,15 @@ limitations under the License.
 
 package runner
 
-import "sync"
+import (
+	"sync"
+)
 
 type Intents struct {
 	build      bool
 	sync       bool
 	deploy     bool
+	devloop    bool
 	autoBuild  bool
 	autoSync   bool
 	autoDeploy bool
@@ -88,6 +91,12 @@ func (i *Intents) SetDeploy(val bool) {
 	i.lock.Unlock()
 }
 
+func (i *Intents) SetDevloop(val bool) {
+	i.lock.Lock()
+	i.devloop = val
+	i.lock.Unlock()
+}
+
 func (i *Intents) GetAutoBuild() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -104,6 +113,12 @@ func (i *Intents) GetAutoDeploy() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.autoDeploy
+}
+
+func (i *Intents) GetAutoDevloop() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.autoDeploy && i.autoBuild && i.autoSync
 }
 
 func (i *Intents) SetAutoBuild(val bool) {
@@ -124,10 +139,24 @@ func (i *Intents) SetAutoDeploy(val bool) {
 	i.lock.Unlock()
 }
 
-// returns build, sync, and deploy intents (in that order)
+func (i *Intents) SetAutoDevloop(val bool) {
+	i.lock.Lock()
+	i.autoDeploy = val
+	i.autoSync = val
+	i.autoBuild = val
+	i.lock.Unlock()
+}
+
+// GetIntents returns build, sync, and deploy intents (in that order)
+// If intent is devloop intent, all are returned true
 func (i *Intents) GetIntents() (bool, bool, bool) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
+	if i.devloop {
+		// reset Devloop intent
+		i.devloop = false
+		return true, true, true
+	}
 	return i.build, i.sync, i.deploy
 }
 

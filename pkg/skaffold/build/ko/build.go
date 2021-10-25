@@ -16,9 +16,6 @@ limitations under the License.
 
 package ko
 
-// TODO(halvards)[08/11/2021]: Replace the latestV1 import path with the
-// real schema import path once the contents of ./schema has been added to
-// the real schema in pkg/skaffold/schema/latest/v1.
 import (
 	"context"
 	"fmt"
@@ -29,8 +26,7 @@ import (
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/publish"
 
-	// latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/schema"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Build an artifact using ko, and either push it to an image registry, or
@@ -90,12 +86,12 @@ func getImportPath(a *latestV1.Artifact, koBuilder build.Interface) (string, err
 	if strings.HasPrefix(a.ImageName, build.StrictScheme) {
 		return a.ImageName, nil
 	}
-	target := a.KoArtifact.Target
-	if target == "" {
+	localImportPath := a.KoArtifact.Main
+	if localImportPath == "" {
 		// default to context directory
-		target = "."
+		localImportPath = "."
 	}
-	return koBuilder.QualifyImport(target)
+	return koBuilder.QualifyImport(localImportPath)
 }
 
 // getImageIdentifier returns the image tag or digest for published images (`pushImages=true`),

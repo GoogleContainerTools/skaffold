@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"google.golang.org/protobuf/testing/protocmp"
+
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -150,7 +152,7 @@ func TestEmptyState(t *testing.T) {
 
 			// sort and compare
 			sort.Slice(artifacts, func(i, j int) bool { return artifacts[i].Type < artifacts[j].Type })
-			t.CheckDeepEqual(metadata, test.expected)
+			t.CheckDeepEqual(metadata, test.expected, protocmp.Transform())
 		})
 	}
 }

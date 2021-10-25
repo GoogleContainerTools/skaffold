@@ -59,7 +59,7 @@ Refer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for deta
 				"docker build . --file "+dockerfilePath+" -t tag",
 			))
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
-			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, false, false, mockArtifactResolver{make(map[string]string)}, nil)
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, nil, false, mockArtifactResolver{make(map[string]string)}, nil)
 
 			artifact := &latestV2.Artifact{
 				ImageName: "test-image",

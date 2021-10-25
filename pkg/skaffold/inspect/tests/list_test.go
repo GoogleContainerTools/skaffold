@@ -42,25 +42,23 @@ func TestPrintTestsList(t *testing.T) {
 	}{
 		{
 			description: "print all tests",
-			expected:    `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null},{"testType":"custom-test","Command":"custom-test-i0","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
+			expected:    `{"tests":[{"testType":"structure-test","structureTest":"structure-test-default","structureTestArgs":null},{"testType":"custom-test","Command":"custom-test-default","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
 		},
 		{
 			description: "print all tests for one module",
-			expected:    `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null}]}` + "\n",
+			expected:    `{"tests":[{"testType":"structure-test","structureTest":"structure-test-default","structureTestArgs":null}]}` + "\n",
 			module:      []string{"cfg1"},
 		},
 		{
 			description: "print all tests for two activated profiles",
-
-			expected: `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null},{"testType":"custom-test","Command":"custom-test-i0","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
-			profiles: []string{"custom-test", "structure-test"},
+			expected:    `{"tests":[{"testType":"custom-test","Command":"custom-test-profile","TimeoutSeconds":0,"Dependencies":null},{"testType":"structure-test","structureTest":"structure-test-profile","structureTestArgs":null}]}` + "\n",
+			profiles:    []string{"custom-test", "structure-test"},
 		},
 		{
 			description: "print all tests for one module and an activated profile",
-
-			expected: `{"tests":[{"testType":"structure-test","structureTest":"structure-test-i0","structureTestArgs":null}]}` + "\n",
-			module:   []string{"cfg1"},
-			profiles: []string{"custom-test"},
+			expected:    `{"tests":[{"testType":"custom-test","Command":"custom-test-profile","TimeoutSeconds":0,"Dependencies":null}]}` + "\n",
+			module:      []string{"cfg1"},
+			profiles:    []string{"custom-test"},
 		},
 		{
 			description: "actionable error",
@@ -79,16 +77,16 @@ func TestPrintTestsList(t *testing.T) {
 			configSet := parser.SkaffoldConfigSet{
 				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
 					Metadata: v2.Metadata{Name: "cfg1"},
-					Pipeline: v2.Pipeline{Test: []*v2.TestCase{{StructureTests: []string{"structure-test-i0"}}}},
+					Pipeline: v2.Pipeline{Test: []*v2.TestCase{{StructureTests: []string{"structure-test-default"}}}},
 					Profiles: []v2.Profile{
-						{Name: "custom-test", Pipeline: v2.Pipeline{Test: []*v2.TestCase{{CustomTests: []v2.CustomTest{{Command: "custom-test-i0"}}}}}}},
+						{Name: "custom-test", Pipeline: v2.Pipeline{Test: []*v2.TestCase{{CustomTests: []v2.CustomTest{{Command: "custom-test-profile"}}}}}}},
 				}, SourceFile: "path/to/cfg1"},
 				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
 					Metadata: v2.Metadata{Name: "cfg2"},
-					Pipeline: v2.Pipeline{Test: []*v2.TestCase{{CustomTests: []v2.CustomTest{{Command: "custom-test-i0"}}}}},
+					Pipeline: v2.Pipeline{Test: []*v2.TestCase{{CustomTests: []v2.CustomTest{{Command: "custom-test-default"}}}}},
 					Profiles: []v2.Profile{
-						{Name: "structure-test", Pipeline: v2.Pipeline{Test: []*v2.TestCase{{StructureTests: []string{"structure-test-i0"}}}}}},
-				}, SourceFile: "path/to/cfg1"},
+						{Name: "structure-test", Pipeline: v2.Pipeline{Test: []*v2.TestCase{{StructureTests: []string{"structure-test-profile"}}}}}},
+				}, SourceFile: "path/to/cfg2"},
 			}
 			t.Override(&inspect.GetConfigSet, func(_ context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
@@ -110,7 +108,8 @@ func TestPrintTestsList(t *testing.T) {
 				return set, test.err
 			})
 			var buf bytes.Buffer
-			err := PrintTestsList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module})
+			err := PrintTestsList(context.Background(), &buf, inspect.Options{
+				OutFormat: "json", Modules: test.module, TestsOptions: inspect.TestsOptions{TestsProfiles: test.profiles}})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})

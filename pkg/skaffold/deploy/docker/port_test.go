@@ -17,10 +17,13 @@ limitations under the License.
 package docker
 
 import (
+	"strconv"
 	"testing"
 
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types/container"
 )
@@ -34,7 +37,8 @@ func TestGetPorts(t *testing.T) {
 			name: "one port, one resource",
 			resources: map[int]*v2.PortForwardResource{
 				9000: {
-					Port: util.IntOrString{
+					Type: "container",
+					Port: schemautil.IntOrString{
 						IntVal: 9000,
 						StrVal: "9000",
 					},
@@ -47,7 +51,8 @@ func TestGetPorts(t *testing.T) {
 			name: "two ports, two resources",
 			resources: map[int]*v2.PortForwardResource{
 				1234: {
-					Port: util.IntOrString{
+					Type: "container",
+					Port: schemautil.IntOrString{
 						IntVal: 20,
 						StrVal: "20",
 					},
@@ -55,7 +60,8 @@ func TestGetPorts(t *testing.T) {
 					LocalPort: 1234,
 				},
 				4321: {
-					Port: util.IntOrString{
+					Type: "container",
+					Port: schemautil.IntOrString{
 						IntVal: 8080,
 						StrVal: "8080",
 					},
@@ -68,15 +74,19 @@ func TestGetPorts(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Override(&GetAvailablePort, func(_ string, port int, _ *util.PortSet) int {
+				return port
+			})
 			pm := NewPortManager()
 			cfg := container.Config{}
 			m, err := pm.getPorts(test.name, collectResources(test.resources), &cfg)
-			for port := range cfg.ExposedPorts { // the image config's PortSet contains the local ports, so we grab the bindings keyed off these
-				bindings := m[port]
+			for containerPort := range cfg.ExposedPorts { // the image config's PortSet contains the local ports, so we grab the bindings keyed off these
+				bindings := m[containerPort]
 				t.CheckDeepEqual(len(bindings), 1) // we always have a 1-1 mapping of resource to binding
 				t.CheckError(false, err)           // shouldn't error, unless GetAvailablePort is broken
-				t.CheckDeepEqual(bindings[0].HostIP, test.resources[port.Int()].Address)
-				t.CheckDeepEqual(bindings[0].HostPort, test.resources[port.Int()].Port.StrVal)
+				resource := resourceFromContainerPort(test.resources, containerPort.Int())
+				t.CheckDeepEqual(bindings[0].HostIP, resource.Address)
+				t.CheckDeepEqual(bindings[0].HostPort, strconv.Itoa(resource.LocalPort))
 			}
 		})
 	}
@@ -88,4 +98,13 @@ func collectResources(resourceMap map[int]*v2.PortForwardResource) []*v2.PortFor
 		resources = append(resources, r)
 	}
 	return resources
+}
+
+func resourceFromContainerPort(resourceMap map[int]*v2.PortForwardResource, containerPort int) *v2.PortForwardResource {
+	for _, resource := range resourceMap {
+		if resource.Port.IntVal == containerPort {
+			return resource
+		}
+	}
+	return nil
 }

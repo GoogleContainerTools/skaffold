@@ -26,7 +26,7 @@ import (
 // DeleteKptfileError returns the error when unable to delete a Kptfile.
 func DeleteKptfileError(err error, hydrationDir string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to delete Kptfile in %v", hydrationDir),
 			ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -41,7 +41,7 @@ func DeleteKptfileError(err error, hydrationDir string) error {
 // ParseKptfileError returns the error when unable to parse the Kptfile.
 func ParseKptfileError(err error, hydrationDir string) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to parse Kptfile in %v", hydrationDir),
 			ErrCode: proto.StatusCode_RENDER_KPTFILE_INVALID_YAML_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -58,7 +58,7 @@ func ParseKptfileError(err error, hydrationDir string) error {
 func UnknownTransformerError(transformerName string, allowListedTransformer []string) error {
 	// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unsupported transformer %q", transformerName),
 			ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
 			Suggestions: []*proto.Suggestion{
@@ -76,7 +76,7 @@ func UnknownTransformerError(transformerName string, allowListedTransformer []st
 // BadTransformerParamsError returns the error when user provides incorrect ConfigMap to the transform function.
 func BadTransformerParamsError(transformerName string) error {
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unknown arguments for transformer %v", transformerName),
 			ErrCode: proto.StatusCode_CONFIG_UNKNOWN_TRANSFORMER,
 			Suggestions: []*proto.Suggestion{
@@ -93,7 +93,7 @@ func BadTransformerParamsError(transformerName string) error {
 func UnknownValidatorError(validatorName string, allowListedValidators []string) error {
 	// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unsupported validator %q", validatorName),
 			ErrCode: proto.StatusCode_CONFIG_UNKNOWN_VALIDATOR,
 			Suggestions: []*proto.Suggestion{

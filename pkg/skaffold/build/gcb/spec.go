@@ -46,7 +46,9 @@ func (b *Builder) buildSpec(ctx context.Context, artifact *latestV2.Artifact, ta
 	}
 	buildSpec.Options.DiskSizeGb = b.DiskSizeGb
 	buildSpec.Options.MachineType = b.MachineType
-	buildSpec.Options.WorkerPool = b.WorkerPool
+	if b.WorkerPool != "" {
+		buildSpec.Options.Pool = &cloudbuild.PoolOption{Name: b.WorkerPool}
+	}
 	buildSpec.Options.Logging = b.Logging
 	buildSpec.Options.LogStreamingOption = b.LogStreamingOption
 	buildSpec.Timeout = b.Timeout
