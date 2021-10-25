@@ -18,7 +18,6 @@ package manifest
 
 import (
 	"fmt"
-	"regexp"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -41,20 +40,6 @@ var transformableAllowlist = map[apimachinery.GroupKind]bool{
 	{Group: "agones.dev", Kind: "Fleet"}:            true,
 	{Group: "agones.dev", Kind: "GameServer"}:       true,
 	{Group: "argoproj.io", Kind: "Rollout"}:         true,
-}
-
-type wildcardGroupKind struct {
-	Group *regexp.Regexp
-	Kind  *regexp.Regexp
-}
-
-func (w *wildcardGroupKind) Matches(group, kind string) bool {
-	return (w.Group == nil || w.Group.Match([]byte(group))) && (w.Kind == nil || w.Kind.Match([]byte(kind)))
-}
-
-var wildcardedAllowlist = []wildcardGroupKind{
-	// add preliminary support for config connector services; group name is currently in flux
-	{Group: regexp.MustCompile(`([[:alpha:]]+\.)+cnrm\.cloud\.google\.com`), Kind: regexp.MustCompile("Service")},
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
@@ -125,7 +110,7 @@ func shouldTransformManifest(manifest map[string]interface{}) bool {
 	if result, found := transformableAllowlist[groupKind]; found {
 		return result
 	}
-	for _, w := range wildcardedAllowlist {
+	for _, w := range ConfigConnectorResourceSelector {
 		if w.Matches(gvk.Group, gvk.Kind) {
 			return true
 		}

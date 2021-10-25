@@ -288,7 +288,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1)
-			dep.pods = map[string]validator.Resource{
+			dep.resources = map[string]validator.Resource{
 				"foo": validator.NewResource(
 					"test",
 					"pod",
@@ -349,7 +349,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 					ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 					Message: status,
 				})
-				dep.pods = map[string]validator.Resource{
+				dep.resources = map[string]validator.Resource{
 					"foo": validator.NewResource(
 						"test",
 						"pod",

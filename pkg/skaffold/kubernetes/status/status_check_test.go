@@ -388,7 +388,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			monitor := Monitor{labeller: labeller}
+			monitor := monitor{labeller: labeller}
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
@@ -483,7 +483,7 @@ func TestPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
-			monitor := Monitor{labeller: labeller}
+			monitor := monitor{labeller: labeller}
 			actual := monitor.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)

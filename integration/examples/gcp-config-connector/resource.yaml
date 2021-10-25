@@ -1,0 +1,11 @@
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  namespace: config-control
+  annotations:
+    cnrm.cloud.google.com/force-destroy: "false"
+  labels:
+    label-one: "value-one"
+  name: random-xxljslierjlj-sample
+spec:
+  storageClass: abc

@@ -42,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	k8slogger "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -61,7 +62,7 @@ type Deployer struct {
 	imageLoader        loader.ImageLoader
 	logger             k8slogger.Logger
 	debugger           debug.Debugger
-	statusMonitor      status.Monitor
+	statusMonitor      kstatus.Monitor
 	syncer             sync.Syncer
 	hookRunner         hooks.Runner
 	originalImages     []graph.Artifact // the set of images marked as "local" by the Runner
@@ -235,6 +236,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	k.TrackBuildArtifacts(builds)
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 	k.trackNamespaces(namespaces)
 	return nil
@@ -389,6 +391,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")

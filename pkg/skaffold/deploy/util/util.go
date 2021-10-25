@@ -19,6 +19,8 @@ package util
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	k8s "k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
@@ -69,4 +71,24 @@ func ConsolidateNamespaces(original, new []string) []string {
 	namespaces.Insert(append(original, new...)...)
 	namespaces.Delete("") // if we have provided namespaces, remove the empty "default" namespace
 	return namespaces.ToList()
+}
+
+// GroupVersionResource returns the first `GroupVersionResource` for the given `GroupVersionKind`.
+func GroupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (bool, schema.GroupVersionResource, error) {
+	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
+	if err != nil {
+		return false, schema.GroupVersionResource{}, fmt.Errorf("getting server resources for group version: %w", err)
+	}
+
+	for _, r := range resources.APIResources {
+		if r.Kind == gvk.Kind {
+			return r.Namespaced, schema.GroupVersionResource{
+				Group:    gvk.Group,
+				Version:  gvk.Version,
+				Resource: r.Name,
+			}, nil
+		}
+	}
+
+	return false, schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
 }

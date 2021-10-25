@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
@@ -48,7 +47,7 @@ var (
 	k8sAccessor map[string]access.Accessor
 
 	monitorLock gosync.Mutex
-	k8sMonitor  map[string]status.Monitor
+	k8sMonitor  map[string]k8sstatus.Monitor
 )
 
 func newAccessor(cfg portforward.Config, kubeContext string, cli *kubectl.CLI, podSelector kubernetes.PodSelector, labeller label.Config, namespaces *[]string) access.Accessor {
@@ -93,16 +92,16 @@ func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes
 	return k8slogger.NewLogAggregator(cli, podSelector, namespaces, config)
 }
 
-func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller, namespaces *[]string) status.Monitor {
+func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller, namespaces *[]string) k8sstatus.Monitor {
 	monitorLock.Lock()
 	defer monitorLock.Unlock()
 	if k8sMonitor == nil {
-		k8sMonitor = make(map[string]status.Monitor)
+		k8sMonitor = make(map[string]k8sstatus.Monitor)
 	}
 	if k8sMonitor[kubeContext] == nil {
 		enabled := cfg.StatusCheck()
 		if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
-			k8sMonitor[kubeContext] = &status.NoopMonitor{}
+			k8sMonitor[kubeContext] = &k8sstatus.NoopMonitor{}
 		} else {
 			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller, namespaces)
 		}
