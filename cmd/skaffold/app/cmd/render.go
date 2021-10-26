@@ -62,7 +62,7 @@ func doRender(ctx context.Context, out io.Writer) error {
 		var err error
 
 		if fromBuildOutputFile.String() != "" || len(preBuiltImages.GetSlice()) > 0 {
-			// pass ``nil` as render shouldn't build if provided --build-artifacts or --images
+			// pass `nil` as render shouldn't build if provided --build-artifacts or --images
 			bRes, err = getBuildArtifactsAndSetTags(nil, r.ApplyDefaultRepo)
 			if err != nil {
 				return fmt.Errorf("loading artifacts: %w", err)
