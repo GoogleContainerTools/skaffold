@@ -180,7 +180,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "wait-for-connection",
-		Usage:         "Blocks execution until the /v2/events gRPC/HTTP endpoint is hit",
+		Usage:         "Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit",
 		Value:         &opts.WaitForConnection,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
