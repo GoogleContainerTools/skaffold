@@ -26,6 +26,6 @@ import (
 )
 
 // trigger stacktrace dump when skaffold process runs too long
-func waitAndTriggerStacktrace(_ *testing.T, _ context.Context, _ *os.Process) {
+func waitAndTriggerStacktrace(_ context.Context, _ *testing.T, _ *os.Process) {
 	// ignored on Windows
 }

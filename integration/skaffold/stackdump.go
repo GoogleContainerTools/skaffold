@@ -28,7 +28,7 @@ import (
 )
 
 // trigger stacktrace dump when skaffold process runs too long
-func waitAndTriggerStacktrace(t *testing.T, ctx context.Context, process *os.Process) {
+func waitAndTriggerStacktrace(ctx context.Context, t *testing.T, process *os.Process) {
 	go func() {
 		var d time.Duration = 2 * time.Minute
 		select {
