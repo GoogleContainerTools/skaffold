@@ -154,7 +154,13 @@ func syncMapForArtifact(ctx context.Context, a *latestV1.Artifact, cfg docker.Co
 	case a.DockerArtifact != nil:
 		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, cfg)
 
-	case a.CustomArtifact != nil && a.CustomArtifact.Dependencies != nil && a.CustomArtifact.Dependencies.Dockerfile != nil:
+	case a.CustomArtifact != nil:
+		if a.CustomArtifact.Dependencies == nil {
+			return nil, build.ErrCustomBuildNoDockerfile{}
+		}
+		if a.CustomArtifact.Dependencies.Dockerfile == nil {
+			return nil, build.ErrCustomBuildNoDockerfile{}
+		}
 		return docker.SyncMap(ctx, a.Workspace, a.CustomArtifact.Dependencies.Dockerfile.Path, a.CustomArtifact.Dependencies.Dockerfile.BuildArgs, cfg)
 
 	case a.KanikoArtifact != nil:
