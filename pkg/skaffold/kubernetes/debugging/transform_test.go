@@ -130,7 +130,7 @@ func TestDescribe(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, reflect.TypeOf(test.in).Name(), func(t *testutil.T) {
 			gvk := test.in.GetObjectKind().GroupVersionKind()
-			group, version, kind, description := describe(test.in)
+			group, version, kind, description := Describe(test.in)
 
 			t.CheckDeepEqual(gvk.Group, group)
 			t.CheckDeepEqual(gvk.Kind, kind)

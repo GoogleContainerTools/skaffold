@@ -74,26 +74,27 @@ func TestRegExpLinter(t *testing.T) {
 			configFile:  helloWorldTextFile,
 			rules: &[]Rule{
 				{
-					RuleID:      DummyRuleIDForTesting,
-					RuleType:    RegExpLintLintRule,
-					Explanation: "test explanation",
-					Severity:    protocol.DiagnosticSeverityError,
-					Filter:      "World",
+					RuleID:              DummyRuleIDForTesting,
+					RuleType:            RegExpLintLintRule,
+					ExplanationTemplate: "test explanation",
+					Severity:            protocol.DiagnosticSeverityError,
+					Filter:              "World",
 				},
 			},
 			expected: &[]Result{
 				{
 					Rule: &Rule{
-						RuleID:      DummyRuleIDForTesting,
-						RuleType:    RegExpLintLintRule,
-						Explanation: "test explanation",
-						Severity:    protocol.DiagnosticSeverityError,
-						Filter:      "World",
+						RuleID:              DummyRuleIDForTesting,
+						RuleType:            RegExpLintLintRule,
+						ExplanationTemplate: "test explanation",
+						Severity:            protocol.DiagnosticSeverityError,
+						Filter:              "World",
 					},
 					AbsFilePath: "/abs/rel/path",
 					RelFilePath: "rel/path",
 					Line:        1,
 					Column:      6,
+					Explanation: "test explanation",
 				},
 			},
 		},
@@ -117,11 +118,11 @@ func TestRegExpLinter(t *testing.T) {
 			configFile:  helloWorldTextFile,
 			rules: &[]Rule{
 				{
-					RuleID:      DummyRuleIDForTesting,
-					RuleType:    RegExpLintLintRule,
-					Explanation: "test explanation",
-					Severity:    protocol.DiagnosticSeverityError,
-					Filter:      yaml.Get("incorrect filter type"),
+					RuleID:              DummyRuleIDForTesting,
+					RuleType:            RegExpLintLintRule,
+					ExplanationTemplate: "test explanation",
+					Severity:            protocol.DiagnosticSeverityError,
+					Filter:              yaml.Get("incorrect filter type"),
 				},
 			},
 			shouldErr: true,
@@ -134,7 +135,7 @@ func TestRegExpLinter(t *testing.T) {
 				return "", nil
 			})
 			linter := &RegExpLinter{}
-			recs, err := linter.Lint(test.configFile, test.rules)
+			recs, err := linter.Lint(InputParams{ConfigFile: test.configFile}, test.rules)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, recs)
 		})
@@ -156,10 +157,10 @@ func TestYamlFieldLinter(t *testing.T) {
 			configFile:  k8sYamlFile,
 			rules: &[]Rule{
 				{
-					RuleID:      DummyRuleIDForTesting,
-					RuleType:    YamlFieldLintRule,
-					Explanation: "test explanation",
-					Severity:    protocol.DiagnosticSeverityError,
+					RuleID:              DummyRuleIDForTesting,
+					RuleType:            YamlFieldLintRule,
+					ExplanationTemplate: "test explanation",
+					Severity:            protocol.DiagnosticSeverityError,
 					Filter: YamlFieldFilter{
 						Filter: yaml.FieldMatcher{Name: "apiVersion", StringValue: "apps/v1"},
 					},
@@ -168,10 +169,10 @@ func TestYamlFieldLinter(t *testing.T) {
 			expected: &[]Result{
 				{
 					Rule: &Rule{
-						RuleID:      DummyRuleIDForTesting,
-						RuleType:    YamlFieldLintRule,
-						Explanation: "test explanation",
-						Severity:    protocol.DiagnosticSeverityError,
+						RuleID:              DummyRuleIDForTesting,
+						RuleType:            YamlFieldLintRule,
+						ExplanationTemplate: "test explanation",
+						Severity:            protocol.DiagnosticSeverityError,
 						Filter: YamlFieldFilter{
 							Filter: yaml.FieldMatcher{Name: "apiVersion", StringValue: "apps/v1"},
 						},
@@ -179,7 +180,8 @@ func TestYamlFieldLinter(t *testing.T) {
 					AbsFilePath: "/abs/rel/path",
 					RelFilePath: "rel/path",
 					Line:        1,
-					Column:      12,
+					Column:      13,
+					Explanation: "test explanation",
 				},
 			},
 		},
@@ -188,10 +190,10 @@ func TestYamlFieldLinter(t *testing.T) {
 			configFile:  k8sYamlFile,
 			rules: &[]Rule{
 				{
-					RuleID:      DummyRuleIDForTesting,
-					RuleType:    YamlFieldLintRule,
-					Explanation: "test explanation",
-					Severity:    protocol.DiagnosticSeverityError,
+					RuleID:              DummyRuleIDForTesting,
+					RuleType:            YamlFieldLintRule,
+					ExplanationTemplate: "test explanation",
+					Severity:            protocol.DiagnosticSeverityError,
 					Filter: YamlFieldFilter{
 						Filter: yaml.FieldMatcher{Name: "missingField"},
 					},
@@ -204,10 +206,10 @@ func TestYamlFieldLinter(t *testing.T) {
 			configFile:  k8sYamlFile,
 			rules: &[]Rule{
 				{
-					RuleID:      DummyRuleIDForTesting,
-					RuleType:    YamlFieldLintRule,
-					Explanation: "test explanation",
-					Severity:    protocol.DiagnosticSeverityError,
+					RuleID:              DummyRuleIDForTesting,
+					RuleType:            YamlFieldLintRule,
+					ExplanationTemplate: "test explanation",
+					Severity:            protocol.DiagnosticSeverityError,
 					Filter: YamlFieldFilter{
 						Filter:      yaml.FieldMatcher{Name: "missingField"},
 						InvertMatch: true,
@@ -217,10 +219,10 @@ func TestYamlFieldLinter(t *testing.T) {
 			expected: &[]Result{
 				{
 					Rule: &Rule{
-						RuleID:      DummyRuleIDForTesting,
-						RuleType:    YamlFieldLintRule,
-						Explanation: "test explanation",
-						Severity:    protocol.DiagnosticSeverityError,
+						RuleID:              DummyRuleIDForTesting,
+						RuleType:            YamlFieldLintRule,
+						ExplanationTemplate: "test explanation",
+						Severity:            protocol.DiagnosticSeverityError,
 						Filter: YamlFieldFilter{
 							Filter:      yaml.FieldMatcher{Name: "missingField"},
 							InvertMatch: true,
@@ -229,7 +231,8 @@ func TestYamlFieldLinter(t *testing.T) {
 					AbsFilePath: "/abs/rel/path",
 					RelFilePath: "rel/path",
 					Line:        23,
-					Column:      0,
+					Column:      1,
+					Explanation: "test explanation",
 				},
 			},
 		},
@@ -249,11 +252,11 @@ func TestYamlFieldLinter(t *testing.T) {
 			configFile:  k8sYamlFile,
 			rules: &[]Rule{
 				{
-					RuleID:      DummyRuleIDForTesting,
-					RuleType:    YamlFieldLintRule,
-					Explanation: "test explanation",
-					Severity:    protocol.DiagnosticSeverityError,
-					Filter:      "incorrect filter type",
+					RuleID:              DummyRuleIDForTesting,
+					RuleType:            YamlFieldLintRule,
+					ExplanationTemplate: "test explanation",
+					Severity:            protocol.DiagnosticSeverityError,
+					Filter:              "incorrect filter type",
 				},
 			},
 			shouldErr: true,
@@ -266,7 +269,7 @@ func TestYamlFieldLinter(t *testing.T) {
 				return "", nil
 			})
 			linter := &YamlFieldLinter{}
-			recs, err := linter.Lint(test.configFile, test.rules)
+			recs, err := linter.Lint(InputParams{ConfigFile: test.configFile}, test.rules)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, recs)
 		})

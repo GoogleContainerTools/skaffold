@@ -21,6 +21,8 @@ import (
 
 	"go.lsp.dev/protocol"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 )
 
 // Options holds flag values for the various `skaffold lint` commands
@@ -38,24 +40,32 @@ type Options struct {
 }
 
 type Rule struct {
-	RuleID         RuleID
-	RuleType       RuleType
-	Explanation    string
-	Severity       protocol.DiagnosticSeverity
-	Filter         interface{}
-	LintConditions []func(string) bool
+	RuleID               RuleID
+	RuleType             RuleType
+	ExplanationTemplate  string
+	Severity             protocol.DiagnosticSeverity
+	Filter               interface{}
+	ExplanationPopulator func(InputParams) (explanationInfo, error) `json:"-"`
+	LintConditions       []func(InputParams) bool                   `json:"-"`
+}
+
+type explanationInfo struct {
+	FieldMap map[string]interface{}
+	// FieldMap map[string]string
 }
 
 type Result struct {
 	Rule        *Rule
 	AbsFilePath string
 	RelFilePath string
+	Explanation string
 	Line        int
 	Column      int
 }
 
 type YamlFieldFilter struct {
 	Filter      yaml.Filter
+	FieldOnly   string
 	InvertMatch bool
 }
 
@@ -82,12 +92,20 @@ const (
 	DummyRuleIDForTesting RuleID = iota
 
 	SkaffoldYamlAPIVersionOutOfDate
+	SkaffoldYamlUseStaticPort
+	SkaffoldYamlSyncPython
 )
 
 func (a RuleID) String() string {
-	return fmt.Sprintf("ID%06d", a+1)
+	return fmt.Sprintf("ID%06d", a)
+}
+
+type InputParams struct {
+	ConfigFile         ConfigFile
+	DockerfileToDepMap map[string][]string
+	SkaffoldConfig     *parser.SkaffoldConfigEntry
 }
 
 type Linter interface {
-	Lint(ConfigFile, *[]Rule) (*[]Result, error)
+	Lint(InputParams, *[]Rule) (*[]Result, error)
 }

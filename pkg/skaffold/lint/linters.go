@@ -17,9 +17,11 @@ limitations under the License.
 package lint
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"regexp"
+	"text/template"
 
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
@@ -28,7 +30,7 @@ import (
 
 type RegExpLinter struct{}
 
-func (*RegExpLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
+func (*RegExpLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, error) {
 	results := &[]Result{}
 	for _, rule := range *rules {
 		if rule.RuleType != RegExpLintLintRule {
@@ -45,19 +47,12 @@ func (*RegExpLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
 		if err != nil {
 			return nil, err
 		}
-		matches := r.FindAllStringSubmatchIndex(cf.Text, -1)
+		matches := r.FindAllStringSubmatchIndex(lintInputs.ConfigFile.Text, -1)
 		for _, m := range matches {
 			log.Entry(context.TODO()).Infof("regexp match found for %s: %v\n", regexpFilter, m)
 			// TODO(aaron-prindle) support matches with more than 2 values for m?
-			line, col := convert1DFileIndexTo2D(cf.Text, m[0])
-			mr := Result{
-				Rule:        &rule,
-				AbsFilePath: cf.AbsPath,
-				RelFilePath: cf.RelPath,
-				Line:        line,
-				Column:      col,
-			}
-			*results = append(*results, mr)
+			line, col := convert1DFileIndexTo2D(lintInputs.ConfigFile.Text, m[0])
+			appendRuleIfLintConditionsPass(lintInputs, results, rule, line, col)
 		}
 	}
 	return results, nil
@@ -65,9 +60,9 @@ func (*RegExpLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
 
 type YamlFieldLinter struct{}
 
-func (*YamlFieldLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
+func (*YamlFieldLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, error) {
 	results := &[]Result{}
-	obj, err := yaml.Parse(cf.Text)
+	obj, err := yaml.Parse(lintInputs.ConfigFile.Text)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +75,7 @@ func (*YamlFieldLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
 		case YamlFieldFilter:
 			yamlFilter = v
 		default:
-			return nil, fmt.Errorf("unknown filter type found for YamlFieldLinter lint rule: %v", rule)
+			return nil, fmt.Errorf("unknown filter type found for YamlFieldLinter lint rule %v with type: %s", rule, rule.RuleType)
 		}
 		// TODO(aaron-prindle) - use Field property of kyaml where needed- https://github.com/kubernetes-sigs/kustomize/issues/4181
 		node, err := obj.Pipe(yamlFilter.Filter)
@@ -90,27 +85,65 @@ func (*YamlFieldLinter) Lint(cf ConfigFile, rules *[]Rule) (*[]Result, error) {
 		if (node == nil && !yamlFilter.InvertMatch) || node != nil && yamlFilter.InvertMatch {
 			continue
 		} else if node == nil && yamlFilter.InvertMatch {
-			line, col := getLastLineAndColOfFile(cf.Text)
-			*results = append(*results, yamlMatchToResult(rule, cf, line, col))
+			line, col := getLastLineAndColOfFile(lintInputs.ConfigFile.Text)
+			appendRuleIfLintConditionsPass(lintInputs, results, rule, line, col)
+			continue
+		}
+		if yamlFilter.FieldOnly != "" {
+			fieldNode := obj.Field(yamlFilter.FieldOnly)
+			appendRuleIfLintConditionsPass(lintInputs, results, rule, fieldNode.Key.YNode().Line, fieldNode.Key.YNode().Column)
 			continue
 		}
 		if node.YNode().Kind == yaml.ScalarNode {
-			*results = append(*results, yamlMatchToResult(rule, cf, node.Document().Line, node.Document().Column-1))
+			appendRuleIfLintConditionsPass(lintInputs, results, rule, node.Document().Line, node.Document().Column)
 		}
 		for _, n := range node.Content() {
-			*results = append(*results, yamlMatchToResult(rule, cf, n.Line, n.Column))
+			appendRuleIfLintConditionsPass(lintInputs, results, rule, n.Line, n.Column)
 		}
 	}
 	return results, nil
 }
 
-func yamlMatchToResult(rule Rule, cf ConfigFile, line, col int) Result {
-	return Result{
-		Rule:        &rule,
-		AbsFilePath: cf.AbsPath,
-		RelFilePath: cf.RelPath,
-		Line:        line,
-		Column:      col,
+func appendRuleIfLintConditionsPass(lintInputs InputParams, results *[]Result, rule Rule, line, col int) {
+	allPassed := true
+	explanation := rule.ExplanationTemplate
+	if rule.ExplanationPopulator != nil {
+		ei, err := rule.ExplanationPopulator(lintInputs)
+		if err != nil {
+			log.Entry(context.TODO()).Debugf("error attempting to populate explanation for rule %s with inputs %v: %v", rule.RuleID, lintInputs, err)
+			return
+		}
+		var b bytes.Buffer
+		tmpl, err := template.New("explanation").Parse(rule.ExplanationTemplate)
+		if err != nil {
+			log.Entry(context.TODO()).Debugf("error attempting to parse go template for rule %s with template %s: %v", rule.RuleID, rule.ExplanationTemplate, err)
+			return
+		}
+
+		err = tmpl.Execute(&b, ei)
+		if err != nil {
+			log.Entry(context.TODO()).Debugf("error attempting to execute go template for rule %s with inputs %v: %v", rule.RuleID, ei, err)
+			return
+		}
+		explanation = b.String()
+	}
+
+	for _, f := range rule.LintConditions {
+		if !f(lintInputs) {
+			allPassed = false
+			break
+		}
+	}
+	if allPassed {
+		mr := Result{
+			Rule:        &rule,
+			Explanation: explanation,
+			AbsFilePath: lintInputs.ConfigFile.AbsPath,
+			RelFilePath: lintInputs.ConfigFile.RelPath,
+			Line:        line,
+			Column:      col,
+		}
+		*results = append(*results, mr)
 	}
 }
 
@@ -129,12 +162,12 @@ func convert1DFileIndexTo2D(input string, idx int) (int, int) {
 
 func getLastLineAndColOfFile(input string) (int, int) {
 	line := 1
-	col := 0
+	col := 1
 	for i := 0; i < len(input); i++ {
 		col++
 		if input[i] == '\n' {
 			line++
-			col = 0
+			col = 1
 		}
 	}
 	return line, col

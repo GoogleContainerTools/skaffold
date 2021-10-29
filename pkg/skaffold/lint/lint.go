@@ -33,6 +33,13 @@ func Lint(ctx context.Context, out io.Writer, opts Options) error {
 	results := []Result{}
 	results = append(results, *skaffoldYamlRuleList...)
 	// output flattened list
+	if opts.OutFormat == JSONOutput {
+		// need to remove some fields that cannot be serialized in the Rules of the Results
+		for _, res := range results {
+			res.Rule.ExplanationPopulator = nil
+			res.Rule.LintConditions = nil
+		}
+	}
 	formatter := OutputFormatter(out, opts.OutFormat)
 	return formatter.Write(results)
 }
