@@ -241,6 +241,8 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 		logrus.Infof("Ran %s in %v", cmd.Args, timeutil.Humanize(time.Since(start)))
 	}()
 
+	waitAndTriggerStacktrace(ctx, t, cmd.Process)
+
 	t.Cleanup(func() {
 		cancel()
 		cmd.Wait()

@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -121,7 +121,10 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpdir := t.TempDir()
 			configSet := parser.SkaffoldConfigSet{}
-			for module, skaffoldyamlText := range test.moduleAndSkaffoldYamls {
+			// iteration done to enforce result order
+			for i := 0; i < len(test.moduleAndSkaffoldYamls); i++ {
+				module := fmt.Sprintf("cfg%d", i)
+				skaffoldyamlText := test.moduleAndSkaffoldYamls[module]
 				fp := filepath.Join(tmpdir, fmt.Sprintf("%s.yaml", module))
 				err := ioutil.WriteFile(fp, []byte(skaffoldyamlText), 0644)
 				if err != nil {
@@ -149,7 +152,7 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				// mock profile activation
 				var set parser.SkaffoldConfigSet
 				for _, c := range configSet {
-					if len(opts.ConfigurationFilter) > 0 && !util.StrSliceContains(opts.ConfigurationFilter, c.Metadata.Name) {
+					if len(opts.ConfigurationFilter) > 0 && !stringslice.Contains(opts.ConfigurationFilter, c.Metadata.Name) {
 						continue
 					}
 					for _, pName := range opts.Profiles {
