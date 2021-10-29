@@ -32,6 +32,7 @@ func Run(out, stderr io.Writer) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	catchStackdumpRequests()
 	catchCtrlC(cancel)
 
 	c := cmd.NewSkaffoldCommand(out, stderr)

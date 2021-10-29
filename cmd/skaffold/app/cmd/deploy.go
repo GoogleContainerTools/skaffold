@@ -22,16 +22,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-)
-
-var (
-	preBuiltImages flags.Images
 )
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
@@ -44,7 +39,6 @@ func NewCmdDeploy() *cobra.Command {
 		WithExample("Deploy without first rendering the manifests", "deploy --skip-render").
 		WithCommonFlags().
 		WithFlags([]*Flag{
-			{Value: &preBuiltImages, Name: "images", Shorthand: "i", DefValue: nil, Usage: "A list of pre-built images to deploy"},
 			{Value: &opts.SkipRender, Name: "skip-render", DefValue: false, Usage: "Don't render the manifests, just deploy them", IsEnum: true},
 		}).
 		WithHouseKeepingMessages().

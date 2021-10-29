@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // hostHook represents a lifecycle hook to be executed on the host machine
@@ -38,7 +39,7 @@ type hostHook struct {
 
 // run executes the lifecycle hook on the host machine
 func (h hostHook) run(ctx context.Context, out io.Writer) error {
-	if len(h.cfg.OS) > 0 && !util.StrSliceContains(h.cfg.OS, runtime.GOOS) {
+	if len(h.cfg.OS) > 0 && !stringslice.Contains(h.cfg.OS, runtime.GOOS) {
 		log.Entry(ctx).Infof("host hook execution skipped due to OS criteria %q not matched for commands:\n%q\n", strings.Join(h.cfg.OS, ","), strings.Join(h.cfg.Command, " "))
 		return nil
 	}

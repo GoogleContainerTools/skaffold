@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -546,7 +547,7 @@ func validateArtifactTypes(bc latestV1.BuildConfig) (errs []error) {
 func validateLogPrefix(lc latestV1.LogsConfig) []error {
 	validPrefixes := []string{"", "auto", "container", "podAndContainer", "none"}
 
-	if !util.StrSliceContains(validPrefixes, lc.Prefix) {
+	if !stringslice.Contains(validPrefixes, lc.Prefix) {
 		return []error{fmt.Errorf("invalid log prefix '%s'. Valid values are 'auto', 'container', 'podAndContainer' or 'none'", lc.Prefix)}
 	}
 

@@ -42,7 +42,7 @@ import (
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	pkgsync "github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 type Deployer struct {
@@ -133,7 +133,7 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 // deploy creates a container in the local docker daemon from a build artifact's image.
 func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Artifact) error {
-	if !util.StrSliceContains(d.cfg.Images, artifact.ImageName) {
+	if !stringslice.Contains(d.cfg.Images, artifact.ImageName) {
 		// TODO(nkubala)[07/20/21]: should we error out in this case?
 		olog.Entry(ctx).Warnf("skipping deploy for image %s since it was not built by Skaffold", artifact.ImageName)
 		return nil

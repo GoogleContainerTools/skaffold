@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
 // DeployerMux forwards all method calls to the deployers it contains.
@@ -147,7 +147,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {
-	deps := util.NewStringSet()
+	deps := stringset.New()
 	for _, deployer := range m.deployers {
 		result, err := deployer.Dependencies()
 		if err != nil {

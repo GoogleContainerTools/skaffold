@@ -34,6 +34,8 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
 type ImageLoader struct {
@@ -147,7 +149,7 @@ func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts [
 		if err != nil {
 			return err
 		}
-		if util.StrSliceContains(knownImages, normalizedImageRef.String()) {
+		if stringslice.Contains(knownImages, normalizedImageRef.String()) {
 			output.Green.Fprintln(out, "Found")
 			continue
 		}
@@ -161,7 +163,7 @@ func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts [
 		output.Green.Fprintln(out, "Loaded")
 	}
 
-	output.Default.Fprintln(out, "Images loaded in", util.ShowHumanizeTime(time.Since(start)))
+	output.Default.Fprintln(out, "Images loaded in", timeutil.Humanize(time.Since(start)))
 	return nil
 }
 

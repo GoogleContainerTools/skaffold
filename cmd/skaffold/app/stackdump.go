@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 /*
 Copyright 2021 The Skaffold Authors
 
@@ -14,20 +17,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package timeutil
+package app
 
 import (
-	"context"
-	"time"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"fmt"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
 )
 
-func LessThan(date string, duration time.Duration) bool {
-	t, err := time.Parse(time.RFC3339, date)
-	if err != nil {
-		log.Entry(context.TODO()).Debugf("could not parse date %q", date)
-		return false
-	}
-	return time.Since(t) < duration
+func catchStackdumpRequests() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals,
+		syscall.SIGUSR1,
+	)
+
+	go func() {
+		for {
+			<-signals
+			buf := make([]byte, 1<<20)
+			runtime.Stack(buf, true)
+			os.Stderr.Write([]byte(fmt.Sprintf("---stacktraces begin: %v---\n", os.Args)))
+			os.Stderr.Write(buf)
+			os.Stderr.Write([]byte(fmt.Sprintf("---stacktraces end: %v---\n", os.Args)))
+		}
+	}()
 }

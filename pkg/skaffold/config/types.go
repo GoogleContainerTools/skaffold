@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // StringOrUndefined holds the value of a flag of type `string`,
@@ -154,7 +155,7 @@ func (m Muted) MuteTest() bool        { return m.mute("test") }
 func (m Muted) MuteStatusCheck() bool { return m.mute("status-check") }
 func (m Muted) MuteDeploy() bool      { return m.mute("deploy") }
 func (m Muted) mute(phase string) bool {
-	return util.StrSliceContains(m.Phases, phase) || util.StrSliceContains(m.Phases, "all")
+	return stringslice.Contains(m.Phases, phase) || stringslice.Contains(m.Phases, "all")
 }
 
 type Cluster struct {

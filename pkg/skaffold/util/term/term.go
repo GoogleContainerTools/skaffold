@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package term
 
 import (
 	"context"
@@ -28,6 +28,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func IsTerminal(w io.Writer) (uintptr, bool) {
@@ -50,7 +51,7 @@ func SupportsColor(ctx context.Context) (bool, error) {
 	}
 
 	cmd := exec.Command("tput", "colors")
-	res, err := RunCmdOut(ctx, cmd)
+	res, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return false, fmt.Errorf("checking terminal colors: %w", err)
 	}

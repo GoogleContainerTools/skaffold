@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -341,13 +341,13 @@ profiles:
 					return nil, test.err
 				}
 				var sets parser.SkaffoldConfigSet
-				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg2") || util.StrSliceContains(opts.ConfigurationFilter, "cfg1_1") {
+				if len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, "cfg2") || stringslice.Contains(opts.ConfigurationFilter, "cfg1_1") {
 					sets = append(sets, configSet[2])
 				}
-				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg1_0") {
+				if len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, "cfg1_0") {
 					sets = append(sets, configSet[0])
 				}
-				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg1_1") {
+				if len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, "cfg1_1") {
 					sets = append(sets, configSet[1])
 				}
 				return sets, nil

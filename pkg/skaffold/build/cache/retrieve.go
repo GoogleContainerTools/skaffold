@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
 func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
@@ -138,7 +138,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		})
 	}
 
-	log.Entry(ctx).Infoln("Cache check completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Cache check completed in", timeutil.Humanize(time.Since(start)))
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {

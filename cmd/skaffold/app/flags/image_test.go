@@ -72,13 +72,26 @@ func TestImagesFlagSet(t *testing.T) {
 			},
 		},
 		{
-			description: "set errors with in-correct docker name",
+			description: "set with name=tag",
+			setValue:    "name=tag",
+			expectedArtifact: graph.Artifact{
+				ImageName: "name",
+				Tag:       "tag",
+			},
+		},
+		{
+			description: "set errors with invalid docker name",
 			setValue:    "docker_:!",
 			shouldErr:   true,
 		},
 		{
 			description: "set errors with empty image name",
 			setValue:    "",
+			shouldErr:   true,
+		},
+		{
+			description: "set errors with invalid docker name-tag pair",
+			setValue:    "name=docker_:!",
 			shouldErr:   true,
 		},
 	}
@@ -121,8 +134,8 @@ func TestImagesString(t *testing.T) {
 	flag.SetNil()
 	testutil.CheckDeepEqual(t, "", flag.String())
 
-	flag.Set("gcr.io/test/test-image:test,gcr.io/test/test-image-1:test")
-	testutil.CheckDeepEqual(t, "gcr.io/test/test-image:test,gcr.io/test/test-image-1:test", flag.String())
+	flag.Set("gcr.io/test/test-image:test,gcr.io/test/test-image-1:test,name=tag")
+	testutil.CheckDeepEqual(t, "gcr.io/test/test-image:test,gcr.io/test/test-image-1:test,name=tag", flag.String())
 }
 
 func TestImagesType(t *testing.T) {
