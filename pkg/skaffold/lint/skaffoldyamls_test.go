@@ -151,7 +151,7 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 						Line:   14,
 						Column: 1,
 						Explanation: "It is a skaffold best practice to specify a static port (vs skaffold dynamically choosing one) for port forwarding " +
-							"container based resources skaffold deploys.  This is helpful because wit this the local ports are predictable across dev sessions which " +
+							"container based resources skaffold deploys.  This is helpful because with this the local ports are predictable across dev sessions which " +
 							" makes testing/debugging easier. It is recommended to add the following stanza at the end of your skaffold.yaml for each shown deployed resource:\n" +
 							`portForward:
 - resourceType: deployment
@@ -176,7 +176,9 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				testRules = append(testRules, *(ruleIDToskaffoldYamlRule[ruleID]))
 			}
 			t.Override(skaffoldYamlRules, testRules)
-
+			t.Override(&realWorkDir, func() (string, error) {
+				return "", nil
+			})
 			tmpdir := t.TempDir()
 			configSet := parser.SkaffoldConfigSet{}
 			// iteration done to enforce result order
@@ -211,9 +213,6 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 					(*results)[i].RelFilePath = configSet[len(configSet)-1].SourceFile
 				}
 			}
-			t.Override(&realWorkDir, func() (string, error) {
-				return "", nil
-			})
 			t.Override(&getConfigSet, func(_ context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
 				var set parser.SkaffoldConfigSet
@@ -243,6 +242,10 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 					*expectedResults = append(*expectedResults, *test.expected[fmt.Sprintf("cfg%d", i)]...)
 					(*expectedResults)[0].Rule.ExplanationPopulator = nil
 					(*expectedResults)[0].Rule.LintConditions = nil
+				}
+				if results == nil {
+					t.CheckDeepEqual(expectedResults, results)
+					return
 				}
 				for i := 0; i < len(*results); i++ {
 					(*results)[i].Rule.ExplanationPopulator = nil

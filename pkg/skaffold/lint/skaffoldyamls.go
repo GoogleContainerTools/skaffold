@@ -73,7 +73,7 @@ var skaffoldYamlLintRules = []Rule{
 			InvertMatch: true,
 		},
 		ExplanationTemplate: "It is a skaffold best practice to specify a static port (vs skaffold dynamically choosing one) for port forwarding " +
-			"container based resources skaffold deploys.  This is helpful because wit this the local ports are predictable across dev sessions which " +
+			"container based resources skaffold deploys.  This is helpful because with this the local ports are predictable across dev sessions which " +
 			" makes testing/debugging easier. It is recommended to add the following stanza at the end of your skaffold.yaml for each shown deployed resource:\n" +
 			`portForward:{{range $k,$v := .FieldMap }}
 - resourceType: {{ $v.ResourceType }}
@@ -105,6 +105,9 @@ var skaffoldYamlLintRules = []Rule{
 		ExplanationPopulator: func(lintInputs InputParams) (explanationInfo, error) {
 			fieldMap := map[string]interface{}{}
 			forwardedPorts := util.PortSet{}
+			if lintInputs.SkaffoldConfig.Deploy.KubectlDeploy == nil {
+				return explanationInfo{}, fmt.Errorf("expected kubectl deploy information to be populated but it was nil")
+			}
 			for _, pattern := range lintInputs.SkaffoldConfig.Deploy.KubectlDeploy.Manifests {
 				// NOTE: pattern is a pattern that can have wildcards, eg: leeroy-app/kubernetes/*
 				if util.IsURL(pattern) {
@@ -172,7 +175,6 @@ func GetSkaffoldYamlsLintResults(ctx context.Context, opts Options) (*[]Result, 
 			RelPath: strings.TrimPrefix(c.SourceFile, workdir),
 			Text:    string(b),
 		}
-		results := []Result{}
 		for _, r := range SkaffoldYamlLinters {
 			recs, err := r.Lint(InputParams{
 				ConfigFile:     skaffoldyaml,
@@ -181,9 +183,8 @@ func GetSkaffoldYamlsLintResults(ctx context.Context, opts Options) (*[]Result, 
 			if err != nil {
 				return nil, err
 			}
-			results = append(results, *recs...)
+			l = append(l, *recs...)
 		}
-		l = append(l, results...)
 	}
 	return &l, nil
 }

@@ -20,18 +20,24 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var realWorkDir = util.RealWorkDir
 
-func Lint(ctx context.Context, out io.Writer, opts Options) error {
+func Lint(ctx context.Context, out io.Writer, opts Options, dockerCfg docker.Config) error {
 	skaffoldYamlRuleList, err := GetSkaffoldYamlsLintResults(ctx, opts)
+	if err != nil {
+		return err
+	}
+	dockerfileCommandRuleList, err := GetDockerfilesLintResults(ctx, opts, dockerCfg)
 	if err != nil {
 		return err
 	}
 	results := []Result{}
 	results = append(results, *skaffoldYamlRuleList...)
+	results = append(results, *dockerfileCommandRuleList...)
 	// output flattened list
 	if opts.OutFormat == JSONOutput {
 		// need to remove some fields that cannot be serialized in the Rules of the Results

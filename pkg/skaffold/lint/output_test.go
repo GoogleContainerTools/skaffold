@@ -54,7 +54,7 @@ func TestLintOutput(t *testing.T) {
 				},
 			},
 			text:     "first column of this line should be flagged in the result [1,1]",
-			expected: "rel/path:1:1: ID000000: test explanation: (RegExpLintLintRule)\nfirst column of this line should be flagged in the result [1,1]\n^\n",
+			expected: "rel/path:1:1: ID000000: RegExpLintLintRule: test explanation\nfirst column of this line should be flagged in the result [1,1]\n^\n",
 		},
 		{
 			description: "verify json lint output is as expected",
