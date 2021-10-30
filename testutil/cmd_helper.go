@@ -256,14 +256,24 @@ func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
 	}
 	c.t.Helper()
 
-	envs := make(map[string]struct{}, len(actualEnv))
+	envs := make(map[string]string, len(actualEnv))
 	for _, e := range actualEnv {
-		envs[e] = struct{}{}
+		kv := strings.SplitN(e, "=", 2)
+		if len(kv) != 2 {
+			c.t.Fatal("invalid environment: missing '=' in:", e)
+		}
+		envs[kv[0]] = kv[1]
 	}
 
 	for _, e := range requiredEnv {
-		if _, ok := envs[e]; !ok {
-			c.t.Errorf("expected env variable with value %q", e)
+		kv := strings.SplitN(e, "=", 2)
+		if len(kv) != 2 {
+			c.t.Fatal("invalid environment: missing '=' in:", e)
+		}
+		if found, ok := envs[kv[0]]; !ok {
+			c.t.Errorf("wanted env variable %q with value %q: env=%v", kv[0], kv[1], actualEnv)
+		} else if found != kv[1] {
+			c.t.Errorf("expected env variable %q to be %q but found %q", kv[0], kv[1], found)
 		}
 	}
 }
