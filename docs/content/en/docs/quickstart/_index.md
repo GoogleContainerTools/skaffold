@@ -43,6 +43,14 @@ This tutorial requires Skaffold, Minikube, and Kubectl.
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * [Install minikube](https://minikube.sigs.k8s.io/docs/start/)
 
+### Start Minikube
+
+```
+minikube start --profile custom
+skaffold config set --global local-cluster true
+eval $(minikube -p custom docker-env)
+```
+
 {{< alert title="Note">}}
 If you want to deploy against a different Kubernetes cluster then you will have to install Docker to build this app.
 Furthermore if you want to deploy to a remote cluster, such as GKE, then you need to set up a container
