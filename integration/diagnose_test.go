@@ -45,6 +45,10 @@ func TestDiagnose(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(dir, "skaffold.yaml")); os.IsNotExist(err) {
 				t.Skip("skipping diagnose in " + dir)
 			}
+			// TODO(halvards): Stop ignoring ko exmples once unmarshalling of ko config is enabled.
+			if filepath.Base(dir) == "ko" {
+				t.Skip("skipping diagnose in " + dir)
+			}
 
 			skaffold.Diagnose().InDir(dir).RunOrFail(t)
 		})
