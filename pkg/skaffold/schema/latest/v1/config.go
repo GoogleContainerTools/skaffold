@@ -372,6 +372,8 @@ type KanikoCache struct {
 	HostPath string `yaml:"hostPath,omitempty"`
 	// TTL Cache timeout in hours.
 	TTL string `yaml:"ttl,omitempty"`
+	// CacheCopyLayers enables caching of copy layers.
+	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.

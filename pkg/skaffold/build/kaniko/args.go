@@ -55,6 +55,9 @@ func Args(artifact *latestV1.KanikoArtifact, tag, context string) ([]string, err
 		if artifact.Cache.TTL != "" {
 			args = append(args, CacheTTLFlag, artifact.Cache.TTL)
 		}
+		if artifact.Cache.CacheCopyLayers {
+			args = append(args, CacheCopyLayersFlag)
+		}
 	}
 
 	if artifact.Target != "" {
