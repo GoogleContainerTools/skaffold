@@ -84,7 +84,7 @@ RUN chmod +x kind
 # Download k3d
 FROM alpine:3.10 as download-k3d
 ARG ARCH
-ENV K3D_VERSION v5.0.1
+ENV K3D_VERSION v5.0.3
 ENV K3D_URL https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
 COPY digests/k3d.${ARCH}.sha256 .
 RUN wget -O k3d "${K3D_URL}" && sha256sum -c k3d.${ARCH}.sha256
