@@ -16,9 +16,6 @@ limitations under the License.
 
 package ko
 
-// TODO(halvards)[09/14/2021]: Replace the latestV1 import path with the
-// real schema import path once the contents of ./schema has been added to
-// the real schema in pkg/skaffold/schema/latest/v1.
 import (
 	"context"
 
@@ -27,15 +24,14 @@ import (
 )
 
 // GetDependencies returns a list of files to watch for changes to rebuild.
-// TODO(halvards)[09/17/2021]: Call this function from sourceDependenciesForArtifact() in pkg/skaffold/graph/dependencies.go
-func GetDependencies(ctx context.Context, workspace string, a *latestV1.KoArtifact) ([]string, error) {
+func GetDependencies(_ context.Context, workspace string, a *latestV1.KoArtifact) ([]string, error) {
 	if a.Dependencies == nil || (a.Dependencies.Paths == nil && a.Dependencies.Ignore == nil) {
 		a.Dependencies = defaultKoDependencies()
 	}
 	return list.Files(workspace, a.Dependencies.Paths, a.Dependencies.Ignore)
 }
 
-// defaultKoDependencies behavior is to watch all files in the context directory
+// defaultKoDependencies behavior is to watch all Go files in the context directory and its subdirectories.
 func defaultKoDependencies() *latestV1.KoDependencies {
 	return &latestV1.KoDependencies{
 		Paths:  []string{"**/*.go"},

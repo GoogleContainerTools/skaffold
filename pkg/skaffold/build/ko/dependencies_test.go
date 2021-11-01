@@ -16,9 +16,6 @@ limitations under the License.
 
 package ko
 
-// TODO(halvards)[09/17/2021]: Replace the latestV1 import path with the
-// real schema import path once the contents of ./schema has been added to
-// the real schema in pkg/skaffold/schema/latest/v1.
 import (
 	"context"
 	"path/filepath"
