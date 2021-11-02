@@ -35,6 +35,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+var _ Validator = (*ConfigConnectorValidator)(nil)
+
 // ConfigConnectorValidator implements the Validator interface for Config Connector resources
 type ConfigConnectorValidator struct {
 	client           kubernetes.Interface
