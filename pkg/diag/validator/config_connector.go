@@ -18,7 +18,6 @@ package validator
 
 import (
 	"context"
-	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,58 +56,48 @@ func (ccv *ConfigConnectorValidator) Validate(ctx context.Context, ns string, op
 	eventsClient := ccv.client.CoreV1().Events(ns)
 	var rs []Resource
 	for _, r := range resources.Items {
-		resourceStatus := getResourceStatus(r)
-		// Update Pod status from Pod events if required
-		processResourceEvents(ctx, eventsClient, r, resourceStatus)
+		status, ae := getResourceStatus(r)
+		// Log resource events as Info level messages
+		processResourceEvents(ctx, eventsClient, r)
 		// TODO: add recommendations from error codes
 		// TODO: add resource logs
-		rs = append(rs, NewResourceFromObject(&r, Status(resourceStatus.result.Status), &resourceStatus.ae, nil))
+		rs = append(rs, NewResourceFromObject(&r, Status(status), ae, nil))
 	}
 	return rs, nil
 }
 
-func getResourceStatus(res unstructured.Unstructured) *configConnectorResourceStatus {
-	status := &configConnectorResourceStatus{
-		name:      res.GetName(),
-		namespace: res.GetNamespace(),
-		ae: proto.ActionableErr{
-			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
-		},
-	}
-
+func getResourceStatus(res unstructured.Unstructured) (kstatus.Status, *proto.ActionableErr) {
 	// config connector resource statuses follow the Kubernetes kstatus so we use the attached kstatus library
 	// https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus#the-ready-condition
 	result, err := kstatus.Compute(&res)
 	if err != nil || result == nil {
-		status.result = kstatus.Result{Status: kstatus.UnknownStatus}
-		status.updateAE(proto.StatusCode_STATUSCHECK_UNKNOWN, "unable to check resource status")
-		return status
+		return kstatus.UnknownStatus, &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "unable to check resource status"}
 	}
-	status.result = *result
+	var ae proto.ActionableErr
 	switch result.Status {
 	case kstatus.CurrentStatus:
-		return status
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
 	case kstatus.InProgressStatus:
 		if result.Message == "" {
-			status.updateAE(proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS, result.Message)
+			ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS, Message: result.Message}
 		} else {
-			// config connector status doesn't always correctly parse to failed, but shows InProgress with an error message
-			status.updateAE(proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, result.Message)
+			// TODO: config connector resource status doesn't distinguish between resource that is making progress towards reconciling from one that is doomed. This is tracked in b/187759279 internally. As such to avoid stalling the status check phase until timeout in case of a failed resource, we report an error if there's any message reported without the status being success. This can cause skaffold to fail even when resources are rightly in an InProgress state, say while adding new nodes.
+			ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, Message: result.Message}
 		}
 
 	case kstatus.FailedStatus:
-		status.updateAE(proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, result.Message)
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, Message: result.Message}
 	case kstatus.TerminatingStatus:
-		status.updateAE(proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_TERMINATING, result.Message)
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_TERMINATING, Message: result.Message}
 	case kstatus.NotFoundStatus:
-		status.updateAE(proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND, result.Message)
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND, Message: result.Message}
 	case kstatus.UnknownStatus:
-		status.updateAE(proto.StatusCode_STATUSCHECK_UNKNOWN, result.Message)
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: result.Message}
 	}
-	return status
+	return result.Status, &ae
 }
 
-func processResourceEvents(ctx context.Context, e corev1.EventInterface, res unstructured.Unstructured, rs *configConnectorResourceStatus) {
+func processResourceEvents(ctx context.Context, e corev1.EventInterface, res unstructured.Unstructured) {
 	log.Entry(ctx).Debugf("Fetching events for config connector resource %q", res.GetName())
 	// Get pod events.
 	scheme := runtime.NewScheme()
@@ -129,21 +118,6 @@ func processResourceEvents(ctx context.Context, e corev1.EventInterface, res uns
 	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
 		return
 	}
-	// TODO: Add unique error codes for reasons
-	rs.updateAE(
-		proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
-		fmt.Sprintf("%s: %s", recentEvent.Reason, recentEvent.Message),
-	)
-}
 
-type configConnectorResourceStatus struct {
-	name      string
-	namespace string
-	result    kstatus.Result
-	ae        proto.ActionableErr
-}
-
-func (s *configConnectorResourceStatus) updateAE(errCode proto.StatusCode, msg string) {
-	s.ae.ErrCode = errCode
-	s.ae.Message = msg
+	log.Entry(ctx).Infof("%s level event reported for resource %q. Reason: %s, message: %s", recentEvent.Type, res.GetName(), recentEvent.Reason, recentEvent.Message)
 }
