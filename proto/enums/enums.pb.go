@@ -608,11 +608,14 @@ const (
 	StatusCode_STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR StatusCode = 414
 	// Pod Initializing
 	StatusCode_STATUSCHECK_POD_INITIALIZING StatusCode = 451
-	// Config Connector States
+	// The actual state of the resource has not yet reached the desired state
 	StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS StatusCode = 452
-	StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED      StatusCode = 453
+	// The process of reconciling the actual state with the desired state has encountered an error
+	StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED StatusCode = 453
+	// The resource is in the process of being deleted
 	StatusCode_STATUSCHECK_CONFIG_CONNECTOR_TERMINATING StatusCode = 454
-	StatusCode_STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND   StatusCode = 455
+	// The resource does not exist
+	StatusCode_STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND StatusCode = 455
 	// Could not determine error and phase
 	StatusCode_UNKNOWN_ERROR StatusCode = 500
 	// Status Check error unknown

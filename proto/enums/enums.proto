@@ -280,10 +280,16 @@ enum StatusCode {
     // Pod Initializing
     STATUSCHECK_POD_INITIALIZING = 451;
 
-    // Config Connector States
+    // Config Connector resource states
+    // Maps to https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus#statuses
+
+    // The actual state of the resource has not yet reached the desired state
     STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS = 452;
+    // The process of reconciling the actual state with the desired state has encountered an error
     STATUSCHECK_CONFIG_CONNECTOR_FAILED = 453;
+    // The resource is in the process of being deleted
     STATUSCHECK_CONFIG_CONNECTOR_TERMINATING = 454;
+    // The resource does not exist
     STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND = 455;
 
     // Unknown Error Codes
