@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ func (ccv *ConfigConnectorValidator) Validate(ctx context.Context, ns string, op
 	for _, r := range resources.Items {
 		resourceStatus := getResourceStatus(r)
 		// Update Pod status from Pod events if required
-		processResourceEvents(eventsClient, r, resourceStatus)
+		processResourceEvents(ctx, eventsClient, r, resourceStatus)
 		// TODO: add recommendations from error codes
 		// TODO: add resource logs
 		rs = append(rs, NewResourceFromObject(&r, Status(resourceStatus.result.Status), &resourceStatus.ae, nil))
@@ -78,6 +78,8 @@ func getResourceStatus(res unstructured.Unstructured) *configConnectorResourceSt
 		},
 	}
 
+	// config connector resource statuses follow the Kubernetes kstatus so we use the attached kstatus library
+	// https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus#the-ready-condition
 	result, err := kstatus.Compute(&res)
 	if err != nil || result == nil {
 		status.result = kstatus.Result{Status: kstatus.UnknownStatus}
@@ -107,14 +109,15 @@ func getResourceStatus(res unstructured.Unstructured) *configConnectorResourceSt
 	}
 	return status
 }
-func processResourceEvents(e corev1.EventInterface, res unstructured.Unstructured, rs *configConnectorResourceStatus) {
-	log.Entry(context.TODO()).Debugf("Fetching events for config connector resource %q", res.GetName())
+
+func processResourceEvents(ctx context.Context, e corev1.EventInterface, res unstructured.Unstructured, rs *configConnectorResourceStatus) {
+	log.Entry(ctx).Debugf("Fetching events for config connector resource %q", res.GetName())
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &res)
 	events, err := e.Search(scheme, &res)
 	if err != nil {
-		log.Entry(context.TODO()).Debugf("Could not fetch events for resource %q due to %v", res.GetName(), err)
+		log.Entry(ctx).Debugf("Could not fetch events for resource %q: %v", res.GetName(), err)
 		return
 	}
 	// find the latest event.
