@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -153,15 +154,16 @@ func (s *configConnectorResourceStatus) updateAE(errCode proto.StatusCode, msg s
 type configConnectorSelector struct {
 	client    kubernetes.Interface
 	dynClient dynamic.Interface
-	uResource unstructured.Unstructured
+	resources schema.GroupVersionKind
 }
 
-func NewConfigConnectorSelector(client kubernetes.Interface, dynClient dynamic.Interface, uResource unstructured.Unstructured) CustomResourceSelector {
-	return &configConnectorSelector{client: client, dynClient: dynClient, uResource: uResource}
+func NewConfigConnectorSelector(client kubernetes.Interface, dynClient dynamic.Interface, gvk schema.GroupVersionKind) CustomResourceSelector {
+	return &configConnectorSelector{client: client, dynClient: dynClient, resources: gvk}
 }
 
+// Select returns the updated list of config connector resources for the given GroupVersionKind deployed by skaffold
 func (c *configConnectorSelector) Select(ctx context.Context, namespace string, opts metav1.ListOptions) (*unstructured.UnstructuredList, error) {
-	_, r, err := util.GroupVersionResource(c.client.Discovery(), c.uResource.GroupVersionKind())
+	_, r, err := util.GroupVersionResource(c.client.Discovery(), c.resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query config connector resources: %w", err)
 	}
