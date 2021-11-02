@@ -1,8 +1,0 @@
-apiVersion: skaffold/v2beta25
-kind: Config
-deploy:
-  kubectl:
-    manifests:
-      # - resource.yaml # will fail status check
-      - pubsub.service.yaml
-      - pubsub.topic.yaml
