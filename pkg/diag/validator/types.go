@@ -21,7 +21,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type Status string
@@ -34,9 +33,4 @@ type Validator interface {
 // PodSelector defines how to filter to targeted pods for running validation
 type PodSelector interface {
 	Select(ctx context.Context, namespace string, opts metav1.ListOptions) ([]v1.Pod, error)
-}
-
-// CustomResourceSelector defines how to filter to targeted custom resources for running validation
-type CustomResourceSelector interface {
-	Select(ctx context.Context, namespace string, opts metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }

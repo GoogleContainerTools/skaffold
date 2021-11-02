@@ -268,7 +268,7 @@ func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.
 		}
 		pd := diag.New([]string{ns}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, validator.NewConfigConnectorSelector(client, dynClient, r.GroupVersionKind()))})
+			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, validator.NewCustomResourceSelector(client, dynClient, r.GroupVersionKind()))})
 		result = append(result, resource.NewResource(resName, resource.ResourceTypes.ConfigConnector, ns, deadlineDuration).WithValidator(pd))
 	}
 

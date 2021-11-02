@@ -24,14 +24,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -41,12 +38,12 @@ var _ Validator = (*ConfigConnectorValidator)(nil)
 // ConfigConnectorValidator implements the Validator interface for Config Connector resources
 type ConfigConnectorValidator struct {
 	client           kubernetes.Interface
-	resourceSelector CustomResourceSelector
+	resourceSelector *CustomResourceSelector
 	recos            []Recommender
 }
 
 // NewConfigConnectorValidator initializes a ConfigConnectorValidator
-func NewConfigConnectorValidator(k kubernetes.Interface, s CustomResourceSelector) *ConfigConnectorValidator {
+func NewConfigConnectorValidator(k kubernetes.Interface, s *CustomResourceSelector) *ConfigConnectorValidator {
 	rs := []Recommender{recommender.ContainerError{}}
 	return &ConfigConnectorValidator{client: k, recos: rs, resourceSelector: s}
 }
@@ -149,27 +146,4 @@ type configConnectorResourceStatus struct {
 func (s *configConnectorResourceStatus) updateAE(errCode proto.StatusCode, msg string) {
 	s.ae.ErrCode = errCode
 	s.ae.Message = msg
-}
-
-type configConnectorSelector struct {
-	client    kubernetes.Interface
-	dynClient dynamic.Interface
-	resources schema.GroupVersionKind
-}
-
-func NewConfigConnectorSelector(client kubernetes.Interface, dynClient dynamic.Interface, gvk schema.GroupVersionKind) CustomResourceSelector {
-	return &configConnectorSelector{client: client, dynClient: dynClient, resources: gvk}
-}
-
-// Select returns the updated list of config connector resources for the given GroupVersionKind deployed by skaffold
-func (c *configConnectorSelector) Select(ctx context.Context, namespace string, opts metav1.ListOptions) (*unstructured.UnstructuredList, error) {
-	_, r, err := util.GroupVersionResource(c.client.Discovery(), c.resources)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query config connector resources: %w", err)
-	}
-	resList, err := c.dynClient.Resource(r).Namespace(namespace).List(ctx, opts)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query config connector resources: %w", err)
-	}
-	return resList, nil
 }
