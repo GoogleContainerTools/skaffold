@@ -10,6 +10,10 @@ on:
 
 permissions: read-all
 
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze

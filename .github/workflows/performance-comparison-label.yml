@@ -8,6 +8,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: true
+
 jobs:
   build:
     if: ${{ github.event.label.name == 'help:run-comparisonstats' }}
