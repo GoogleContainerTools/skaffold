@@ -96,7 +96,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		}
 
 		logrus.Warn("Detected changes to the latest config. Checking on Github if it's released...")
-		latestVersion, isReleased := GetLatestVersion()
+		latestVersion, isReleased := GetLatestV1Version()
 		if !isReleased {
 			logrus.Infof("Schema %q is not yet released. Changes are ok.", latestVersion)
 			continue

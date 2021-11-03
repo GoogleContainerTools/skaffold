@@ -19,11 +19,12 @@ package v2
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/sirupsen/logrus"
 )
 
 func TestHandleSkaffoldLogEvent(t *testing.T) {

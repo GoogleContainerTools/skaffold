@@ -29,6 +29,6 @@ import (
 func main() {
 	logrus.SetLevel(logrus.ErrorLevel)
 
-	current, _ := schema.GetLatestVersion()
+	current, _ := schema.GetLatestV1Version()
 	fmt.Println(current)
 }

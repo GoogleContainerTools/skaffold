@@ -31,7 +31,7 @@ import (
 func main() {
 	logrus.SetLevel(logrus.ErrorLevel)
 
-	current, latestIsReleased := hackschema.GetLatestVersion()
+	current, latestIsReleased := hackschema.GetLatestV1Version()
 
 	if latestIsReleased {
 		fmt.Println(current)

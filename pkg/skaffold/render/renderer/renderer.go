@@ -168,6 +168,8 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 	endTrace()
 
+	// Refresh the Kptfile.
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_refreshKptfile")
 	if kfConfig.Pipeline == nil {
 		kfConfig.Pipeline = &kptfile.Pipeline{}
 	}

@@ -37,11 +37,13 @@ const (
 	samplesRoot = "../../../../docs/content/en/samples"
 )
 
-var (
-	//nolint:golint,unused
-	ignoredSamples  = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
-	ignoredExamples = []string{"docker-deploy", "react-reload-docker"}
-)
+//nolint:golint,unused
+//lint:ignore unused samples need to be converted to v2
+var ignoredSamples = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
+
+//nolint:golint,unused
+//lint:ignore unused examples need to be converted to v2
+var ignoredExamples = []string{"docker-deploy", "react-reload-docker"}
 
 // Test that every example can be parsed and produces a valid
 // Skaffold configuration.
@@ -57,7 +59,7 @@ func TestParseExamples(t *testing.T) {
 // Samples are skaffold.yaml fragments that are used
 // in the documentation.
 func TestParseSamples(t *testing.T) {
-	// TODO: add sample for v2
+	// TODO(yuwenma): add sample for v2
 	t.SkipNow()
 
 	paths, err := walk.From(samplesRoot).WhenIsFile().CollectPaths()
