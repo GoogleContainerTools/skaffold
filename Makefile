@@ -77,6 +77,9 @@ $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 	$(eval tags = $(GO_BUILD_TAGS_$(GOOS)) $(GO_BUILD_TAGS_$(GOOS)_$(GOARCH)))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 \
 	    go build -gcflags="all=-N -l" -tags "$(tags)" -ldflags "$(ldflags)" -o $@ $(BUILD_PACKAGE)
+ifeq ($(GOOS),darwin)
+	codesign --force --deep --sign - $@
+endif
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)

@@ -440,7 +440,7 @@ spec:
 	}
 }
 
-func TestRenderFromBuildOutput(t *testing.T) {
+func TestRenderWithBuilds(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
 	t.SkipNow()
 
@@ -450,6 +450,7 @@ func TestRenderFromBuildOutput(t *testing.T) {
 		description         string
 		config              string
 		buildOutputFilePath string
+		images              string
 		offline             bool
 		input               map[string]string // file path => content
 		expectedOut         string
@@ -683,6 +684,49 @@ spec:
     name: b
 `,
 		},
+		{
+			description: "kubectl render with images",
+			config: `
+apiVersion: skaffold/v2alpha1
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+`,
+			images:  "12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf,gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc",
+			offline: false,
+			input: map[string]string{"deployment.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`},
+			// `metadata.namespace` is injected by `kubectl create` in non-offline mode
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+  namespace: default
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
 	}
 
 	testDir, err := os.Getwd()
@@ -701,7 +745,13 @@ spec:
 
 			tmpDir.Chdir()
 
-			args := []string{"--digest-source=local", "--build-artifacts=" + path.Join(testDir, test.buildOutputFilePath), "--output", "rendered.yaml"}
+			// `--default-repo=` is used to cancel the default repo that is set by default.
+			args := []string{"--default-repo=", "--digest-source=local", "--output", "rendered.yaml"}
+			if test.buildOutputFilePath != "" {
+				args = append(args, "--build-artifacts="+path.Join(testDir, test.buildOutputFilePath))
+			} else {
+				args = append(args, "--images="+test.images)
+			}
 
 			if test.offline {
 				env := []string{"KUBECONFIG=not-supposed-to-be-used-in-offline-mode"}

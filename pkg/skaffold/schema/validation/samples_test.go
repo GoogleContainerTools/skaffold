@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -71,7 +71,7 @@ func TestParseSamples(t *testing.T) {
 
 	for _, path := range paths {
 		name := filepath.Base(path)
-		if util.StrSliceContains(ignoredSamples, name) {
+		if stringslice.Contains(ignoredSamples, name) {
 			continue
 		}
 
@@ -112,7 +112,7 @@ func parseConfigFiles(t *testing.T, root string) {
 	}
 	for base, paths := range groupedPaths {
 		name := filepath.Base(base)
-		if util.StrSliceContains(ignoredExamples, name) {
+		if stringslice.Contains(ignoredExamples, name) {
 			continue
 		}
 		testutil.Run(t, name, func(t *testutil.T) {

@@ -24,16 +24,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 var (
-	showBuild                 bool
-	renderFromBuildOutputFile flags.BuildOutputFileFlag
-	offline                   bool
+	showBuild bool
+	offline   bool
 )
 
 // NewCmdRender describes the CLI command to build artifacts render Kubernetes manifests.
@@ -44,7 +42,6 @@ func NewCmdRender() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &showBuild, Name: "loud", DefValue: false, Usage: "Show the build logs and output", IsEnum: true},
-			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
 			{Value: &offline, Name: "offline", DefValue: false, Usage: `Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.`, IsEnum: true},
 			// This "--output" flag replaces the --render-output flag, which is deprecated.
 			{Value: &opts.RenderOutput, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write rendered manifests to"},
@@ -62,11 +59,15 @@ func doRender(ctx context.Context, out io.Writer) error {
 
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		var bRes []graph.Artifact
+		var err error
 
-		if renderFromBuildOutputFile.String() != "" {
-			bRes = renderFromBuildOutputFile.BuildArtifacts()
+		if fromBuildOutputFile.String() != "" || len(preBuiltImages.GetSlice()) > 0 {
+			// pass `nil` as render shouldn't build if provided --build-artifacts or --images
+			bRes, err = getBuildArtifactsAndSetTags(nil, r.ApplyDefaultRepo)
+			if err != nil {
+				return fmt.Errorf("loading artifacts: %w", err)
+			}
 		} else {
-			var err error
 			bRes, err = r.Build(ctx, buildOut, targetArtifacts(opts, configs))
 			if err != nil {
 				return fmt.Errorf("executing build: %w", err)

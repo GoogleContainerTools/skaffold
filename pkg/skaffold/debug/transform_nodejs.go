@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 type nodeTransformer struct{}
@@ -213,7 +213,7 @@ func rewriteNpmCommandLine(commandLine []string, spec inspectSpec) []string {
 	// Assumes that commandLine[0] is "npm"
 	newOption := "--node-options=" + spec.String()
 	// see if there is "--" for end of npm arguments
-	if index := util.StrSliceIndex(commandLine, "--"); index > 0 {
+	if index := stringslice.Index(commandLine, "--"); index > 0 {
 		commandLine = append(commandLine, "")
 		copy(commandLine[index+1:], commandLine[index:]) // shift
 		commandLine[index] = newOption

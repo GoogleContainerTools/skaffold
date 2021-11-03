@@ -26,7 +26,7 @@ import (
 )
 
 // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta24"
+const Version string = "skaffold/v2beta25"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {

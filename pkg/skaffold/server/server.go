@@ -129,6 +129,11 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		httpCallback, err = newHTTPServer(*opts.RPCHTTPPort.Value(), grpcPort)
 	}
 	callback := func() error {
+		// Optionally pause execution until endpoint hit
+		if opts.WaitForConnection {
+			eventV2.WaitForConnection()
+		}
+
 		httpErr := httpCallback()
 		grpcErr := grpcCallback()
 		errStr := ""
@@ -158,11 +163,6 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 
 	if opts.EnableRPC && opts.RPCPort.Value() == nil && opts.RPCHTTPPort.Value() == nil {
 		log.Entry(context.TODO()).Warnf("started skaffold gRPC API on random port %d", grpcPort)
-	}
-
-	// Optionally pause execution until endpoint hit
-	if opts.WaitForConnection {
-		eventV2.WaitForConnection()
 	}
 
 	return callback, nil

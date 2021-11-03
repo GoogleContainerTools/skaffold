@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
@@ -119,9 +119,9 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 
 		if choice != NoBuilder {
 			d.artifactInfos = append(d.artifactInfos, ArtifactInfo{Builder: choiceMap[choice], ImageName: image})
-			choices = util.RemoveFromSlice(choices, choice)
+			choices = stringslice.Remove(choices, choice)
 		}
-		d.unresolvedImages = util.RemoveFromSlice(d.unresolvedImages, image)
+		d.unresolvedImages = stringslice.Remove(d.unresolvedImages, image)
 	}
 	if len(choices) > 0 {
 		chosen, err := prompt.ChooseBuildersFunc(choices)

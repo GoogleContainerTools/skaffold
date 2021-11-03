@@ -33,6 +33,7 @@ import (
 
 var (
 	fromBuildOutputFile flags.BuildOutputFileFlag
+	preBuiltImages      flags.Images
 )
 
 // Nillable is used to reset objects that implement pflag's `Value` and `SliceValue`.
@@ -181,7 +182,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "wait-for-connection",
-		Usage:         "Blocks execution until the /v2/events gRPC/HTTP endpoint is hit",
+		Usage:         "Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit",
 		Value:         &opts.WaitForConnection,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
@@ -530,8 +531,19 @@ var flagRegistry = []Flag{
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"test", "deploy"},
+		DefinedOn:     []string{"deploy", "render", "test"},
 	},
+
+	{
+		Name:          "images",
+		Shorthand:     "i",
+		Usage:         "A list of pre-built images to deploy, either tagged images or NAME=TAG pairs",
+		Value:         &preBuiltImages,
+		DefValue:      nil,
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"deploy", "render", "test"},
+	},
+
 	{
 		Name:          "auto-create-config",
 		Usage:         "If true, skaffold will try to create a config for the user's run if it doesn't find one",
@@ -570,7 +582,8 @@ var flagRegistry = []Flag{
 			"run": true,
 		},
 		IsEnum: true,
-	}, {
+	},
+	{
 		Name:          "load-images",
 		Usage:         "If true, skaffold will force load the container images into the local cluster.",
 		Value:         &opts.ForceLoadImages,

@@ -1091,13 +1091,13 @@ func TestVersionCheck(t *testing.T) {
 				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
 		},
 		{
-			description: "kpt version is too new (>=1.0.0)",
+			description: "kpt version is too new (>=1.0.0-alpha)",
 			commands: testutil.
-				CmdRunOut("kpt version", `1.0.0`),
+				CmdRunOut("kpt version", `1.0.0-beta.4`),
 			kustomizations: map[string]string{"Kustomization": `resources:
 					- foo.yaml`},
 			shouldErr: true,
-			error: fmt.Errorf("you are using kpt \"v1.0.0\"\nPlease install "+
+			error: fmt.Errorf("you are using kpt \"v1.0.0-beta.4\"\nPlease install "+
 				"kpt %v <= version < %v\nSee kpt installation: %v",
 				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
 		},

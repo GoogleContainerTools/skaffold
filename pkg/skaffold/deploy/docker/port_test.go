@@ -28,7 +28,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 )
 
-func TestGetPorts(t *testing.T) {
+func TestAllocatePorts(t *testing.T) {
 	tests := []struct {
 		name      string
 		resources map[int]*v2.PortForwardResource // we map local port to resources for ease of testing
@@ -79,7 +79,7 @@ func TestGetPorts(t *testing.T) {
 			})
 			pm := NewPortManager()
 			cfg := container.Config{}
-			m, err := pm.getPorts(test.name, collectResources(test.resources), &cfg)
+			m, err := pm.allocatePorts(test.name, collectResources(test.resources), &cfg, nil)
 			for containerPort := range cfg.ExposedPorts { // the image config's PortSet contains the local ports, so we grab the bindings keyed off these
 				bindings := m[containerPort]
 				t.CheckDeepEqual(len(bindings), 1) // we always have a 1-1 mapping of resource to binding

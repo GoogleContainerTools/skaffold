@@ -24,8 +24,8 @@ import (
 )
 
 // Init initializes the skaffold metrics and trace tooling built on top of open-telemetry (otel)
-func Init(configs []*latestV2.SkaffoldConfig, user string, opts ...TraceExporterOption) {
-	InitMeterFromConfig(configs, user)
+func Init(configs []*latestV2.SkaffoldConfig, user, deployCtx string, opts ...TraceExporterOption) {
+	InitMeterFromConfig(configs, user, deployCtx)
 	InitTraceFromEnvVar()
 }
 

@@ -27,8 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -44,16 +44,16 @@ func TestPrintProfilesList(t *testing.T) {
 		{
 			description: "print all profiles",
 			configSet: parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}, Profiles: []v1.Profile{
-					{Name: "p1", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
-					{Name: "p2", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{Cluster: &v1.ClusterDetails{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg1"}, Profiles: []v2.Profile{
+					{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
+					{Name: "p2", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{Cluster: &v2.ClusterDetails{}}}}},
 				}}, SourceFile: "path/to/cfg1"},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}, Profiles: []v1.Profile{
-					{Name: "p3", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
-					{Name: "p4", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg2"}, Profiles: []v2.Profile{
+					{Name: "p3", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
+					{Name: "p4", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{GoogleCloudBuild: &v2.GoogleCloudBuild{}}}}},
 				}}, SourceFile: "path/to/cfg2"},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Profiles: []v1.Profile{
-					{Name: "p5", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Profiles: []v2.Profile{
+					{Name: "p5", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
 				}}, SourceFile: "path/to/cfg2"},
 			},
 			expected: `{"profiles":[` +
@@ -67,13 +67,13 @@ func TestPrintProfilesList(t *testing.T) {
 		{
 			description: "print all profiles for one module",
 			configSet: parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}, Profiles: []v1.Profile{
-					{Name: "p1", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
-					{Name: "p2", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{Cluster: &v1.ClusterDetails{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg1"}, Profiles: []v2.Profile{
+					{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
+					{Name: "p2", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{Cluster: &v2.ClusterDetails{}}}}},
 				}}, SourceFile: "path/to/cfg1"},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}, Profiles: []v1.Profile{
-					{Name: "p3", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
-					{Name: "p4", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg2"}, Profiles: []v2.Profile{
+					{Name: "p3", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
+					{Name: "p4", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{GoogleCloudBuild: &v2.GoogleCloudBuild{}}}}},
 				}}, SourceFile: "path/to/cfg2"},
 			},
 			expected: `{"profiles":[` +
@@ -85,13 +85,13 @@ func TestPrintProfilesList(t *testing.T) {
 		{
 			description: "print all profiles for one module and gcb build-env",
 			configSet: parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}, Profiles: []v1.Profile{
-					{Name: "p1", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
-					{Name: "p2", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{Cluster: &v1.ClusterDetails{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg1"}, Profiles: []v2.Profile{
+					{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
+					{Name: "p2", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{Cluster: &v2.ClusterDetails{}}}}},
 				}}, SourceFile: "path/to/cfg1"},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}, Profiles: []v1.Profile{
-					{Name: "p3", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
-					{Name: "p4", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg2"}, Profiles: []v2.Profile{
+					{Name: "p3", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
+					{Name: "p4", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{GoogleCloudBuild: &v2.GoogleCloudBuild{}}}}},
 				}}, SourceFile: "path/to/cfg2"},
 			},
 			expected: `{"profiles":[` +
@@ -119,10 +119,10 @@ func TestPrintProfilesList(t *testing.T) {
 					return test.configSet, test.err
 				}
 				var set parser.SkaffoldConfigSet
-				if util.StrSliceContains(opts.ConfigurationFilter, "cfg1") {
+				if stringslice.Contains(opts.ConfigurationFilter, "cfg1") {
 					set = append(set, test.configSet[0])
 				}
-				if util.StrSliceContains(opts.ConfigurationFilter, "cfg2") {
+				if stringslice.Contains(opts.ConfigurationFilter, "cfg2") {
 					set = append(set, test.configSet[1])
 				}
 				return set, test.err

@@ -61,14 +61,14 @@ func main() {
 	})
 
 	// Create code to upgrade from current to new
-	cp(path(prev, "upgrade.go"), path(current, "upgrade.go"))
-	sed(path(current, "upgrade.go"), current, next)
-	sed(path(current, "upgrade.go"), prev, current)
+	cp(template("upgrade.template"), path(current, "upgrade.go"))
+	sed(path(current, "upgrade.go"), "%NEXT_VERSION%", next)
+	sed(path(current, "upgrade.go"), "%PREV_VERSION%", current)
 
 	// Create a test for the upgrade from current to new
-	cp(path(prev, "upgrade_test.go"), path(current, "upgrade_test.go"))
-	sed(path(current, "upgrade_test.go"), current, next)
-	sed(path(current, "upgrade_test.go"), prev, current)
+	cp(template("upgrade_test.template"), path(current, "upgrade_test.go"))
+	sed(path(current, "upgrade_test.go"), "%NEXT_VERSION%", next)
+	sed(path(current, "upgrade_test.go"), "%PREV_VERSION%", current)
 
 	// Previous version now upgrades to current instead of latest
 	sed(path(prev, "upgrade.go"), "latest/v1", current)
@@ -155,6 +155,10 @@ func bumpVersion(version string) string {
 
 func path(elem ...string) string {
 	return filepath.Join(append([]string{"pkg", "skaffold", "schema"}, elem...)...)
+}
+
+func template(file string) string {
+	return filepath.Join(append([]string{"hack", "versions", "cmd", "new", "templates"}, file)...)
 }
 
 func read(path string) []byte {

@@ -49,6 +49,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -359,7 +360,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Dependencies lists all the files that describe what needs to be deployed.
 func (k *Deployer) Dependencies() ([]string, error) {
-	deps := util.NewStringSet()
+	deps := stringset.New()
 	for _, kustomizePath := range k.KustomizePaths {
 		depsForKustomization, err := DependenciesForKustomization(kustomizePath)
 		if err != nil {

@@ -34,6 +34,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // NewGenerator instantiates a Generator object.
@@ -144,7 +146,7 @@ func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manif
 	hydratedManifests := append(sourceManifests, kptManifests...)
 	for _, nkPath := range hydratedManifests {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
-			if !util.StrSliceContains(g.config.RawK8s, nkPath) {
+			if !stringslice.Contains(g.config.RawK8s, nkPath) {
 				log.Entry(ctx).Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
 				log.Entry(ctx).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
@@ -240,7 +242,7 @@ func (g *Generator) walkManifests() ([]string, error) {
 }
 
 func (g *Generator) ManifestDeps() ([]string, error) {
-	deps := util.NewStringSet()
+	deps := stringset.New()
 
 	dependencyPaths, err := g.walkManifests()
 	if err != nil {

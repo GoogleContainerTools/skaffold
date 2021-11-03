@@ -45,7 +45,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/term"
 )
 
 const (
@@ -380,7 +380,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 // streamDockerMessages streams formatted json output from the docker daemon
 func streamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(jsonmessage.JSONMessage)) error {
-	termFd, isTerm := util.IsTerminal(dst)
+	termFd, isTerm := term.IsTerminal(dst)
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, termFd, isTerm, auxCallback)
 }
 

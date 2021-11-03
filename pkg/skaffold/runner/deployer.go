@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // deployerCtx encapsulates a given skaffold run context along with additional deployer constructs.
@@ -240,17 +240,17 @@ func validateKubectlFlags(flags *latestV2.KubectlFlags, additional latestV2.Kube
 		return fmt.Errorf(errStr, strconv.FormatBool(additional.DisableValidation))
 	}
 	for _, flag := range additional.Apply {
-		if !util.StrSliceContains(flags.Apply, flag) {
+		if !stringslice.Contains(flags.Apply, flag) {
 			return fmt.Errorf(errStr, flag)
 		}
 	}
 	for _, flag := range additional.Delete {
-		if !util.StrSliceContains(flags.Delete, flag) {
+		if !stringslice.Contains(flags.Delete, flag) {
 			return fmt.Errorf(errStr, flag)
 		}
 	}
 	for _, flag := range additional.Global {
-		if !util.StrSliceContains(flags.Global, flag) {
+		if !stringslice.Contains(flags.Global, flag) {
 			return fmt.Errorf(errStr, flag)
 		}
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -31,9 +32,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/buildpacks/lifecycle/cmd"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -76,7 +77,7 @@ func ConsolidateNamespaces(original, new []string) []string {
 	if len(new) == 0 {
 		return original
 	}
-	namespaces := util.NewStringSet()
+	namespaces := stringset.New()
 	namespaces.Insert(append(original, new...)...)
 	namespaces.Delete("") // if we have provided namespaces, remove the empty "default" namespace
 	return namespaces.ToList()
@@ -98,7 +99,7 @@ func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeed
 	}
 
 	if _, err := os.Stat(hydratedDir); os.IsNotExist(err) {
-		logrus.Infof("hydrated-dir does not exist, creating %v\n", hydratedDir)
+		log.Entry(context.TODO()).Infof("hydrated-dir does not exist, creating %v\n", hydratedDir)
 		if err := os.MkdirAll(hydratedDir, os.ModePerm); err != nil {
 			return "", err
 		}
@@ -110,7 +111,7 @@ func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeed
 			}
 		}
 	}
-	logrus.Infof("manifests hydration will take place in %v\n", hydratedDir)
+	log.Entry(context.TODO()).Infof("manifests hydration will take place in %v\n", hydratedDir)
 	return hydratedDir, nil
 }
 

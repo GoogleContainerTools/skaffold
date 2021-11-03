@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
 type Config interface {
@@ -120,13 +120,13 @@ func timeToListDependencies(ctx context.Context, a *latestV2.Artifact, cfg Confi
 	g := graph.ToArtifactGraph(cfg.Artifacts())
 	sourceDependencies := graph.NewSourceDependenciesCache(cfg, nil, g)
 	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a)
-	return util.ShowHumanizeTime(time.Since(start)), paths, err
+	return timeutil.Humanize(time.Since(start)), paths, err
 }
 
 func timeToConstructSyncMap(ctx context.Context, a *latestV2.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
 	_, err := sync.SyncMap(ctx, a, cfg)
-	return util.ShowHumanizeTime(time.Since(start)), err
+	return timeutil.Humanize(time.Since(start)), err
 }
 
 func timeToComputeMTimes(deps []string) (string, error) {
@@ -135,7 +135,7 @@ func timeToComputeMTimes(deps []string) (string, error) {
 	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
 		return "nil", fmt.Errorf("computing modTimes: %w", err)
 	}
-	return util.ShowHumanizeTime(time.Since(start)), nil
+	return timeutil.Humanize(time.Since(start)), nil
 }
 
 func sizeOfDockerContext(ctx context.Context, a *latestV2.Artifact, cfg docker.Config) (int64, error) {

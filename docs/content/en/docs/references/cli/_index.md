@@ -134,7 +134,7 @@ Options:
       --status-check=true: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --tail=false: Stream logs from deployed objects
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold apply [options]
@@ -218,7 +218,7 @@ Options:
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --toot=false: Emit a terminal beep after the deploy is complete
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold build [options]
@@ -430,7 +430,7 @@ Options:
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -570,7 +570,7 @@ Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': the directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
-  -i, --images=: A list of pre-built images to deploy
+  -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
       --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -592,7 +592,7 @@ Options:
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -690,7 +690,7 @@ Options:
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -920,6 +920,7 @@ Options:
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --hydration-dir='.kpt-pipeline': the directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
+  -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
@@ -931,7 +932,7 @@ Options:
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold render [options]
@@ -949,6 +950,7 @@ Env vars:
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
+* `SKAFFOLD_IMAGES` (same as `--images`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
 * `SKAFFOLD_MODULE` (same as `--module`)
@@ -1014,7 +1016,7 @@ Options:
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -1144,6 +1146,7 @@ Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+  -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -1152,7 +1155,7 @@ Options:
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --wait-for-connection=false: Blocks execution until the /v2/events gRPC/HTTP endpoint is hit
+      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold test [options]
@@ -1167,6 +1170,7 @@ Env vars:
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_IMAGES` (same as `--images`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)

@@ -24,8 +24,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -221,35 +221,35 @@ profiles:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configSet := parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-					Metadata:     v1.Metadata{Name: "cfg1"},
-					Dependencies: []v1.ConfigDependency{{Path: pathToCfg2}},
-					Pipeline:     v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{ProjectID: "project1"}}}},
-					Profiles: []v1.Profile{
-						{Name: "p1", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{ProjectID: "project1"}}}}},
-						{Name: "p2", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{Cluster: &v1.ClusterDetails{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
+					Metadata:     v2.Metadata{Name: "cfg1"},
+					Dependencies: []v2.ConfigDependency{{Path: pathToCfg2}},
+					Pipeline:     v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{GoogleCloudBuild: &v2.GoogleCloudBuild{ProjectID: "project1"}}}},
+					Profiles: []v2.Profile{
+						{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{GoogleCloudBuild: &v2.GoogleCloudBuild{ProjectID: "project1"}}}}},
+						{Name: "p2", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{Cluster: &v2.ClusterDetails{}}}}},
 					}}, SourceFile: pathToCfg1, IsRootConfig: true, SourceIndex: 0},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-					Metadata: v1.Metadata{Name: "cfg2"},
-					Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}},
-					Profiles: []v1.Profile{
-						{Name: "p1", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{ProjectID: "project1"}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
+					Metadata: v2.Metadata{Name: "cfg2"},
+					Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}},
+					Profiles: []v2.Profile{
+						{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{GoogleCloudBuild: &v2.GoogleCloudBuild{ProjectID: "project1"}}}}},
 					}}, SourceFile: pathToCfg2, SourceIndex: 0},
 			}
 			t.Override(&inspect.GetConfigSet, func(ctx context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
-				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg1") {
+				if len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, "cfg1") {
 					return configSet, nil
 				}
-				if util.StrSliceContains(opts.ConfigurationFilter, "cfg2") {
+				if stringslice.Contains(opts.ConfigurationFilter, "cfg2") {
 					return parser.SkaffoldConfigSet{configSet[0]}, nil
 				}
 				return nil, nil
 			})
 			t.Override(&inspect.ReadFileFunc, func(filename string) ([]byte, error) {
 				if filename == pathToCfg1 {
-					return yaml.MarshalWithSeparator([]*v1.SkaffoldConfig{configSet[0].SkaffoldConfig})
+					return yaml.MarshalWithSeparator([]*v2.SkaffoldConfig{configSet[0].SkaffoldConfig})
 				} else if filename == pathToCfg2 {
-					return yaml.MarshalWithSeparator([]*v1.SkaffoldConfig{configSet[1].SkaffoldConfig})
+					return yaml.MarshalWithSeparator([]*v2.SkaffoldConfig{configSet[1].SkaffoldConfig})
 				}
 				t.FailNow()
 				return nil, nil

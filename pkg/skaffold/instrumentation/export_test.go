@@ -501,6 +501,36 @@ func checkUser(t *testutil.T, user string, b []byte) {
 	}
 }
 
+func TestGetClusterType(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "is gke",
+			input:    "gke_test",
+			expected: "gke",
+		},
+		{
+			name:     "not gke",
+			input:    "minikube",
+			expected: "others",
+		},
+		{
+			name:     "azure",
+			input:    "azure_",
+			expected: "others",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, getClusterType(test.input))
+		})
+	}
+}
+
 // Derived from go.opentelemetry.io/otel/exporters/stdout/metric.go
 type line struct {
 	Name   string      `json:"Name"`

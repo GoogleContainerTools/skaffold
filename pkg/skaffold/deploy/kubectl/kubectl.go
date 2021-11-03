@@ -51,6 +51,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // Deployer deploys workflows using kubectl CLI.
@@ -301,7 +302,7 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	var filteredManifests []string
 	for _, f := range list {
 		if !kubernetes.HasKubernetesFileExtension(f) {
-			if !util.StrSliceContains(manifests, f) {
+			if !stringslice.Contains(manifests, f) {
 				olog.Entry(context.TODO()).Infof("refusing to deploy/delete non {json, yaml} file %s", f)
 				olog.Entry(context.TODO()).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue

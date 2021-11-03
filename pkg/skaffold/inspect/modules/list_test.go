@@ -27,8 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -43,20 +43,20 @@ func TestPrintModulesList(t *testing.T) {
 		{
 			description: "print modules",
 			configSet: parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg1", SourceIndex: 0, IsRootConfig: true},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}}, SourceFile: "path/to/cfg1", SourceIndex: 1, IsRootConfig: true},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}}, SourceFile: "path/to/cfg2", SourceIndex: 0, IsRemote: true},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg3", SourceIndex: 0},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: ""}}, SourceFile: "path/to/cfg1", SourceIndex: 0, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg1"}}, SourceFile: "path/to/cfg1", SourceIndex: 1, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg2"}}, SourceFile: "path/to/cfg2", SourceIndex: 0, IsRemote: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: ""}}, SourceFile: "path/to/cfg3", SourceIndex: 0},
 			},
 			expected: `{"modules":[{"name":"cfg1","path":"path/to/cfg1","isRoot":true},{"name":"cfg2","path":"path/to/cfg2","isRemote":true}]}` + "\n",
 		},
 		{
 			description: "print modules; include all",
 			configSet: parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg1", SourceIndex: 0, IsRootConfig: true},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}}, SourceFile: "path/to/cfg1", SourceIndex: 1, IsRootConfig: true},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}}, SourceFile: "path/to/cfg2", SourceIndex: 0, IsRemote: true},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg3", SourceIndex: 0},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: ""}}, SourceFile: "path/to/cfg1", SourceIndex: 0, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg1"}}, SourceFile: "path/to/cfg1", SourceIndex: 1, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: "cfg2"}}, SourceFile: "path/to/cfg2", SourceIndex: 0, IsRemote: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{Metadata: v2.Metadata{Name: ""}}, SourceFile: "path/to/cfg3", SourceIndex: 0},
 			},
 			includeAll: true,
 			expected: `{"modules":[` +
@@ -84,10 +84,10 @@ func TestPrintModulesList(t *testing.T) {
 					return test.configSet, test.err
 				}
 				var set parser.SkaffoldConfigSet
-				if util.StrSliceContains(opts.ConfigurationFilter, "cfg1") {
+				if stringslice.Contains(opts.ConfigurationFilter, "cfg1") {
 					set = append(set, test.configSet[0])
 				}
-				if util.StrSliceContains(opts.ConfigurationFilter, "cfg2") {
+				if stringslice.Contains(opts.ConfigurationFilter, "cfg2") {
 					set = append(set, test.configSet[1])
 				}
 				return set, test.err
