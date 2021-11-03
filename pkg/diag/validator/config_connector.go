@@ -19,16 +19,14 @@ package validator
 import (
 	"context"
 
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -42,9 +40,9 @@ type ConfigConnectorValidator struct {
 }
 
 // NewConfigConnectorValidator initializes a ConfigConnectorValidator
-func NewConfigConnectorValidator(k kubernetes.Interface, s *CustomResourceSelector) *ConfigConnectorValidator {
+func NewConfigConnectorValidator(k kubernetes.Interface, d dynamic.Interface, gvk schema.GroupVersionKind) *ConfigConnectorValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	return &ConfigConnectorValidator{client: k, recos: rs, resourceSelector: s}
+	return &ConfigConnectorValidator{client: k, recos: rs, resourceSelector: NewCustomResourceSelector(k, d, gvk)}
 }
 
 // Validate implements the Validate method for Validator interface
@@ -53,12 +51,9 @@ func (ccv *ConfigConnectorValidator) Validate(ctx context.Context, ns string, op
 	if err != nil {
 		return []Resource{}, err
 	}
-	eventsClient := ccv.client.CoreV1().Events(ns)
 	var rs []Resource
 	for _, r := range resources.Items {
 		status, ae := getResourceStatus(r)
-		// Log resource events as Info level messages
-		processResourceEvents(ctx, eventsClient, r)
 		// TODO: add recommendations from error codes
 		// TODO: add resource logs
 		rs = append(rs, NewResourceFromObject(&r, Status(status), ae, nil))
@@ -98,29 +93,4 @@ func getResourceStatus(res unstructured.Unstructured) (kstatus.Status, *proto.Ac
 		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: result.Message}
 	}
 	return result.Status, &ae
-}
-
-func processResourceEvents(ctx context.Context, e corev1.EventInterface, res unstructured.Unstructured) {
-	log.Entry(ctx).Debugf("Fetching events for config connector resource %q", res.GetName())
-	// Get pod events.
-	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(v1.SchemeGroupVersion, &res)
-	events, err := e.Search(scheme, &res)
-	if err != nil {
-		log.Entry(ctx).Debugf("Could not fetch events for resource %q: %v", res.GetName(), err)
-		return
-	}
-	// find the latest event.
-	var recentEvent *v1.Event
-	for _, e := range events.Items {
-		event := e.DeepCopy()
-		if recentEvent == nil || recentEvent.LastTimestamp.Before(&event.LastTimestamp) {
-			recentEvent = event
-		}
-	}
-	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
-		return
-	}
-
-	log.Entry(ctx).Infof("%s level event reported for resource %q. Reason: %s, message: %s", recentEvent.Type, res.GetName(), recentEvent.Reason, recentEvent.Message)
 }

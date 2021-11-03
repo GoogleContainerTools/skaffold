@@ -43,11 +43,11 @@ func NewCustomResourceSelector(client kubernetes.Interface, dynClient dynamic.In
 func (c *CustomResourceSelector) Select(ctx context.Context, namespace string, opts metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	_, r, err := util.GroupVersionResource(c.client.Discovery(), c.kind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query config connector resources: %w", err)
+		return nil, fmt.Errorf("listing resources of kind %v: %w", c.kind, err)
 	}
 	resList, err := c.dynClient.Resource(r).Namespace(namespace).List(ctx, opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query config connector resources: %w", err)
+		return nil, fmt.Errorf("listing resources of kind %v: %w", c.kind, err)
 	}
 	return resList, nil
 }

@@ -257,7 +257,7 @@ func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns stri
 
 func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
 	var result []*resource.Resource
-	uRes, err := m.FilterAsUnstructured(manifest.ConfigConnectorResourceSelector...)
+	uRes, err := m.SelectResources(manifest.ConfigConnectorResourceSelector...)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch config connector resources: %w", err)
 	}
@@ -268,7 +268,7 @@ func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.
 		}
 		pd := diag.New([]string{ns}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, validator.NewCustomResourceSelector(client, dynClient, r.GroupVersionKind()))})
+			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, dynClient, r.GroupVersionKind())})
 		result = append(result, resource.NewResource(resName, resource.ResourceTypes.ConfigConnector, ns, deadlineDuration).WithValidator(pd))
 	}
 

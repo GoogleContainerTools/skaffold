@@ -49,8 +49,8 @@ func (l *ManifestList) Filter(selectors []GroupKindSelector) (ManifestList, erro
 	return filtered, nil
 }
 
-// FilterAsUnstructured returns the resources defined in the manifest list that match the given `GroupKindSelector` items
-func (l *ManifestList) FilterAsUnstructured(selectors ...GroupKindSelector) ([]unstructured.Unstructured, error) {
+// SelectResources returns the resources defined in the manifest list that match the given `GroupKindSelector` items
+func (l *ManifestList) SelectResources(selectors ...GroupKindSelector) ([]unstructured.Unstructured, error) {
 	if l == nil {
 		return nil, nil
 	}
