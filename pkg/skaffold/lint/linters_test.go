@@ -31,7 +31,7 @@ var helloWorldTextFile = ConfigFile{
 	RelPath: "rel/path",
 }
 
-var k8sYamlFile = ConfigFile{
+var k8sManifestFile = ConfigFile{
 	Text: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -154,7 +154,7 @@ func TestYamlFieldLinter(t *testing.T) {
 	}{
 		{
 			description: "valid yaml field lint rule w/ match",
-			configFile:  k8sYamlFile,
+			configFile:  k8sManifestFile,
 			rules: &[]Rule{
 				{
 					RuleID:              DummyRuleIDForTesting,
@@ -187,7 +187,7 @@ func TestYamlFieldLinter(t *testing.T) {
 		},
 		{
 			description: "valid yaml field lint rule with no match",
-			configFile:  k8sYamlFile,
+			configFile:  k8sManifestFile,
 			rules: &[]Rule{
 				{
 					RuleID:              DummyRuleIDForTesting,
@@ -203,7 +203,7 @@ func TestYamlFieldLinter(t *testing.T) {
 		},
 		{
 			description: "valid yaml field lint rule match using InvertMatch",
-			configFile:  k8sYamlFile,
+			configFile:  k8sManifestFile,
 			rules: &[]Rule{
 				{
 					RuleID:              DummyRuleIDForTesting,
@@ -238,7 +238,7 @@ func TestYamlFieldLinter(t *testing.T) {
 		},
 		{
 			description: "yaml field linter w/ an different type lint rule",
-			configFile:  k8sYamlFile,
+			configFile:  k8sManifestFile,
 			rules: &[]Rule{
 				{
 					RuleID:   DummyRuleIDForTesting,
@@ -249,7 +249,7 @@ func TestYamlFieldLinter(t *testing.T) {
 		},
 		{
 			description: "yaml field command linter w/ an incorrect Filter type",
-			configFile:  k8sYamlFile,
+			configFile:  k8sManifestFile,
 			rules: &[]Rule{
 				{
 					RuleID:              DummyRuleIDForTesting,
