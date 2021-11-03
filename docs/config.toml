@@ -38,6 +38,9 @@ pygmentsStyle = "tango"
 # Enable Emojis
 enableEmoji = true
 
+# TODO(halvards) Stop ignoring ko.md when we are ready to release the ko builder
+ignoreFiles = ['ko.md']
+
 [markup.goldmark.renderer]
 unsafe= true
 
