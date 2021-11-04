@@ -67,10 +67,8 @@ require (
 	// github.com/moby/buildkit v0.7.1
 	github.com/moby/buildkit v0.8.0
 	github.com/nxadm/tail v1.4.8 // indirect
-	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20210730191737-8e42a01fb1b7
-	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/otiai10/copy v1.6.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
@@ -108,8 +106,9 @@ require (
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.21.3
 	k8s.io/kubectl v0.21.3
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
+	k8s.io/utils v0.0.0-20210517184530-5a248b5acedc
 	knative.dev/pkg v0.0.0-20201119170152-e5e30edc364a // indirect
+	sigs.k8s.io/cli-utils v0.22.0
 	sigs.k8s.io/kustomize/kyaml v0.10.17
 	sigs.k8s.io/yaml v1.2.0
 )

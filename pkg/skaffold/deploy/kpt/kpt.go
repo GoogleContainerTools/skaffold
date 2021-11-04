@@ -84,7 +84,7 @@ type Deployer struct {
 	logger        log.Logger
 	debugger      debug.Debugger
 	imageLoader   loader.ImageLoader
-	statusMonitor status.Monitor
+	statusMonitor kstatus.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
@@ -294,6 +294,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	k.TrackBuildArtifacts(builds)
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 	k.trackNamespaces(namespaces)
 	return nil
@@ -377,6 +378,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")

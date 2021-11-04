@@ -24,13 +24,13 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -98,7 +98,7 @@ func updateRuntimeObject(ctx context.Context, client dynamic.Interface, disco di
 	modifiedJSON, _ := json.Marshal(modifiedObj)
 	p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, modifiedObj)
 
-	namespaced, gvr, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
+	namespaced, gvr, err := util.GroupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
 	if err != nil {
 		return fmt.Errorf("getting group version resource from obj: %w", err)
 	}
@@ -144,25 +144,6 @@ func resolveNamespace(ns, kubeContext string) (string, error) {
 		return current.Namespace, nil
 	}
 	return "default", nil
-}
-
-func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (bool, schema.GroupVersionResource, error) {
-	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
-	if err != nil {
-		return false, schema.GroupVersionResource{}, fmt.Errorf("getting server resources for group version: %w", err)
-	}
-
-	for _, r := range resources.APIResources {
-		if r.Kind == gvk.Kind {
-			return r.Namespaced, schema.GroupVersionResource{
-				Group:    gvk.Group,
-				Version:  gvk.Version,
-				Resource: r.Name,
-			}, nil
-		}
-	}
-
-	return false, schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
 }
 
 func copyMap(dest, from map[string]string) {
