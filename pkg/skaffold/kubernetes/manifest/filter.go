@@ -23,8 +23,8 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-// Filter returns the manifest list filtered by the given selectors
-func (l *ManifestList) Filter(selectors []GroupKindSelector) (ManifestList, error) {
+// Filter returns the manifest list that match any of the given `GroupKindSelector` items
+func (l *ManifestList) Filter(selectors ...GroupKindSelector) (ManifestList, error) {
 	if l == nil {
 		return nil, nil
 	}
@@ -49,7 +49,7 @@ func (l *ManifestList) Filter(selectors []GroupKindSelector) (ManifestList, erro
 	return filtered, nil
 }
 
-// SelectResources returns the resources defined in the manifest list that match the given `GroupKindSelector` items
+// SelectResources returns the resources defined in the manifest list that match any of the given `GroupKindSelector` items
 func (l *ManifestList) SelectResources(selectors ...GroupKindSelector) ([]unstructured.Unstructured, error) {
 	if l == nil {
 		return nil, nil

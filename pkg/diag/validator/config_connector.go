@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -34,15 +33,12 @@ var _ Validator = (*ConfigConnectorValidator)(nil)
 
 // ConfigConnectorValidator implements the Validator interface for Config Connector resources
 type ConfigConnectorValidator struct {
-	client           kubernetes.Interface
 	resourceSelector *CustomResourceSelector
-	recos            []Recommender
 }
 
 // NewConfigConnectorValidator initializes a ConfigConnectorValidator
 func NewConfigConnectorValidator(k kubernetes.Interface, d dynamic.Interface, gvk schema.GroupVersionKind) *ConfigConnectorValidator {
-	rs := []Recommender{recommender.ContainerError{}}
-	return &ConfigConnectorValidator{client: k, recos: rs, resourceSelector: NewCustomResourceSelector(k, d, gvk)}
+	return &ConfigConnectorValidator{resourceSelector: NewCustomResourceSelector(k, d, gvk)}
 }
 
 // Validate implements the Validate method for Validator interface
