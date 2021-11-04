@@ -28,6 +28,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+// Most of the test cases set the artifact image name to a `ko://`-prefixed import path.
+// This speeds up the tests, as the code under test doesn't need to repeatedly determine the import path of this package.
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
 		description              string
@@ -37,6 +39,7 @@ func TestBuildOptions(t *testing.T) {
 		wantLabels               []string
 		wantPlatform             string
 		wantWorkingDirectory     string
+		wantImportPath           string
 	}{
 		{
 			description: "all zero value",
@@ -45,6 +48,7 @@ func TestBuildOptions(t *testing.T) {
 					KoArtifact: &latestV1.KoArtifact{},
 				},
 			},
+			wantImportPath: "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
 		},
 		{
 			description: "base image",
@@ -54,7 +58,9 @@ func TestBuildOptions(t *testing.T) {
 						BaseImage: "gcr.io/distroless/base:nonroot",
 					},
 				},
+				ImageName: "ko://example.com/foo",
 			},
+			wantImportPath: "example.com/foo",
 		},
 		{
 			description: "empty platforms",
@@ -64,7 +70,9 @@ func TestBuildOptions(t *testing.T) {
 						Platforms: []string{},
 					},
 				},
+				ImageName: "ko://example.com/foo",
 			},
+			wantImportPath: "example.com/foo",
 		},
 		{
 			description: "multiple platforms",
@@ -74,8 +82,10 @@ func TestBuildOptions(t *testing.T) {
 						Platforms: []string{"linux/amd64", "linux/arm64"},
 					},
 				},
+				ImageName: "ko://example.com/foo",
 			},
-			wantPlatform: "linux/amd64,linux/arm64",
+			wantPlatform:   "linux/amd64,linux/arm64",
+			wantImportPath: "example.com/foo",
 		},
 		{
 			description: "workspace",
@@ -83,9 +93,11 @@ func TestBuildOptions(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
+				ImageName: "ko://example.com/foo",
 				Workspace: "my-app-subdirectory",
 			},
 			wantWorkingDirectory: "my-app-subdirectory",
+			wantImportPath:       "example.com/foo",
 		},
 		{
 			description: "source dir",
@@ -95,8 +107,10 @@ func TestBuildOptions(t *testing.T) {
 						Dir: "my-go-mod-is-here",
 					},
 				},
+				ImageName: "ko://example.com/foo",
 			},
 			wantWorkingDirectory: "my-go-mod-is-here",
+			wantImportPath:       "example.com/foo",
 		},
 		{
 			description: "workspace and source dir",
@@ -106,9 +120,11 @@ func TestBuildOptions(t *testing.T) {
 						Dir: "my-go-mod-is-here",
 					},
 				},
+				ImageName: "ko://example.com/foo",
 				Workspace: "my-app-subdirectory",
 			},
 			wantWorkingDirectory: "my-app-subdirectory" + string(filepath.Separator) + "my-go-mod-is-here",
+			wantImportPath:       "example.com/foo",
 		},
 		{
 			description: "disable compiler optimizations for debug",
@@ -116,9 +132,11 @@ func TestBuildOptions(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
+				ImageName: "ko://example.com/foo",
 			},
 			runMode:                  config.RunModes.Debug,
 			wantDisableOptimizations: true,
+			wantImportPath:           "example.com/foo",
 		},
 		{
 			description: "labels",
@@ -131,13 +149,16 @@ func TestBuildOptions(t *testing.T) {
 						},
 					},
 				},
+				ImageName: "ko://example.com/foo",
 			},
-			wantLabels: []string{"foo=bar", "frob=baz"},
+			wantLabels:     []string{"foo=bar", "frob=baz"},
+			wantImportPath: "example.com/foo",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			bo := buildOptions(&test.artifact, test.runMode)
+			bo, err := buildOptions(&test.artifact, test.runMode)
+			t.CheckErrorAndFailNow(false, err)
 			t.CheckDeepEqual(test.artifact.KoArtifact.BaseImage, bo.BaseImage)
 			if bo.ConcurrentBuilds < 1 {
 				t.Errorf("ConcurrentBuilds must always be >= 1 for the ko builder")
@@ -149,6 +170,12 @@ func TestBuildOptions(t *testing.T) {
 			t.CheckDeepEqual(test.wantLabels, bo.Labels,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }),
 				cmpopts.EquateEmpty())
+			if len(bo.BuildConfigs) != 1 {
+				t.Fatalf("expected exactly one build config, got %d", len(bo.BuildConfigs))
+			}
+			for importpath := range bo.BuildConfigs {
+				t.CheckDeepEqual(test.wantImportPath, importpath)
+			}
 		})
 	}
 }

@@ -32,35 +32,42 @@ import (
 )
 
 func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact) (build.Interface, error) {
-	bo := buildOptions(a, b.runMode)
+	bo, err := buildOptions(a, b.runMode)
+	if err != nil {
+		return nil, fmt.Errorf("could not construct ko build options: %v", err)
+	}
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(a *latestV1.Artifact, runMode config.RunMode) *options.BuildOptions {
-	workingDirectory := filepath.Join(a.Workspace, a.KoArtifact.Dir)
+func buildOptions(a *latestV1.Artifact, runMode config.RunMode) (*options.BuildOptions, error) {
+	koImportpath, err := getImportPath(a)
+	if err != nil {
+		return nil, fmt.Errorf("could not determine import path: %v", err)
+	}
+	importpath := strings.TrimPrefix(koImportpath, build.StrictScheme)
 	return &options.BuildOptions{
 		BaseImage: a.KoArtifact.BaseImage,
 		BuildConfigs: map[string]build.Config{
-			a.Workspace: {
+			importpath: {
 				ID:      a.ImageName,
-				Dir:     workingDirectory,
+				Dir:     ".",
 				Env:     a.KoArtifact.Env,
 				Flags:   a.KoArtifact.Flags,
 				Ldflags: a.KoArtifact.Ldflags,
 				Main:    a.KoArtifact.Main,
 			},
 		},
-		ConcurrentBuilds:     1,
+		ConcurrentBuilds:     1, // we could plug in Skaffold's max builds here, but it'd be incorrect if users build more than one artifact
 		DisableOptimizations: runMode == config.RunModes.Debug,
 		Labels:               labels(a),
 		Platform:             strings.Join(a.KoArtifact.Platforms, ","),
 		UserAgent:            version.UserAgentWithClient(),
-		WorkingDirectory:     workingDirectory,
-	}
+		WorkingDirectory:     filepath.Join(a.Workspace, a.KoArtifact.Dir),
+	}, nil
 }
 
 func labels(a *latestV1.Artifact) []string {
-	labels := []string{}
+	var labels []string
 	for k, v := range a.KoArtifact.Labels {
 		labels = append(labels, fmt.Sprintf("%s=%s", k, v))
 	}
