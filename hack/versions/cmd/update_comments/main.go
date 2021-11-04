@@ -27,7 +27,7 @@ import (
 )
 
 func main() {
-	_, isReleased := hackschema.GetLatestVersion()
+	_, isReleased := hackschema.GetLatestV1Version()
 
 	updateVersionComment := func(path string, _ walk.Dirent) error {
 		released := !strings.Contains(path, "latest") || isReleased

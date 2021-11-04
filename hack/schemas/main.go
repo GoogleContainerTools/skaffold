@@ -94,18 +94,17 @@ type sameErr struct {
 	err  error
 }
 
-// TODO(yuwenma): Generate v2 schemas.
 func generateSchemas(root string, dryRun bool) (bool, error) {
 	var results [](chan sameErr)
-	for range schema.AllVersions {
+	for range schema.SchemaVersions {
 		results = append(results, make(chan sameErr, 1))
 	}
 
 	var wg sync.WaitGroup
-	for i, version := range schema.SchemaVersionsV1 {
+	for i, version := range schema.SchemaVersions {
 		wg.Add(1)
 		go func(i int, version schema.Version) {
-			same, err := generateV1Schema(root, dryRun, version)
+			same, err := generateSchema(root, dryRun, version)
 			results[i] <- sameErr{
 				same: same,
 				err:  err,
@@ -116,7 +115,7 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 	wg.Wait()
 
 	same := true
-	for i := range schema.SchemaVersionsV1 {
+	for i := range schema.SchemaVersions {
 		result := <-results[i]
 		if result.err != nil {
 			return false, result.err
@@ -128,13 +127,16 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 	return same, nil
 }
 
-func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, error) {
+func generateSchema(root string, dryRun bool, version schema.Version) (bool, error) {
 	apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
 
 	folder := apiVersion
 	strict := false
-	if version.APIVersion == schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-1].APIVersion {
+	if version.APIVersion == schema.LatestV1Version.APIVersion {
 		folder = "latest/v1"
+		strict = true
+	} else if version.APIVersion == schema.LatestV2Version.APIVersion {
+		folder = "latest/v2"
 		strict = true
 	}
 
@@ -207,13 +209,8 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 		typeName := tt.Name
 		setTypeOrRef(def, typeName)
 
-		switch typeName {
-		case "string":
-			// def.Default = "\"\""
-		case "bool":
+		if typeName == "bool" {
 			def.Default = "false"
-		case "int", "int64":
-			// def.Default = "0"
 		}
 
 	case *ast.StarExpr:

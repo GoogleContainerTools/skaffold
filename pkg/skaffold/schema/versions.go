@@ -91,17 +91,20 @@ import (
 )
 
 var (
-	AllVersions = append(SchemaVersionsV1, SchemaVersionsV2...)
-	V1Pattern   = regexp.MustCompile(`skaffold/v[12]((alpha|beta)\d+)?`)
-	V2Pattern   = regexp.MustCompile(`skaffold/v3((alpha|beta)\d+)?`)
+	V1Pattern = regexp.MustCompile(`skaffold/v[12]((alpha|beta)\d+)?`)
+	V2Pattern = regexp.MustCompile(`skaffold/v3((alpha|beta)\d+)?`)
 )
 
 type APIVersion struct {
 	Version string `yaml:"apiVersion"`
 }
 
-// SchemaVersionsV1 refers to all the supported API Schemas for skaffold v1 executables.e.g. skaffold 1.13. The API
-// schema versions are in the range of v1alpha*, v1beta*, v2alpha* and v2beta*.
+var (
+	LatestV1Version = Version{latestV1.Version, latestV1.NewSkaffoldConfig}
+	LatestV2Version = Version{latestV2.Version, latestV2.NewSkaffoldConfig}
+)
+
+// SchemaVersionsV1 refers to all the supported API Schemas for skaffold executables.
 var SchemaVersionsV1 = Versions{
 	{v1alpha1.Version, v1alpha1.NewSkaffoldConfig},
 	{v1alpha2.Version, v1alpha2.NewSkaffoldConfig},
@@ -155,15 +158,15 @@ var SchemaVersionsV1 = Versions{
 	{v2beta23.Version, v2beta23.NewSkaffoldConfig},
 	{v2beta24.Version, v2beta24.NewSkaffoldConfig},
 	{v2beta25.Version, v2beta25.NewSkaffoldConfig},
-	{latestV1.Version, latestV1.NewSkaffoldConfig},
+	LatestV1Version,
 }
 
-// SchemaVersionsV2 refers to all the supported API Schemas for skaffold v2 executables. The API schema versions are
-// in the range of v3alpha*.
 var SchemaVersionsV2 = Versions{
 	{v3alpha1.Version, v3alpha1.NewSkaffoldConfig},
-	{latestV2.Version, latestV2.NewSkaffoldConfig},
+	LatestV2Version,
 }
+
+var SchemaVersions = append(SchemaVersionsV1, SchemaVersionsV2...)
 
 type Version struct {
 	APIVersion string
@@ -245,7 +248,7 @@ func configFactoryFromAPIVersion(buf []byte) ([]func() util.VersionedConfig, err
 		if err != nil {
 			return nil, fmt.Errorf("parsing api version: %w", err)
 		}
-		factory, present := AllVersions.Find(v.Version)
+		factory, present := SchemaVersions.Find(v.Version)
 		if !present {
 			return nil, sErrors.ConfigUnknownAPIVersionErr(v.Version)
 		}
