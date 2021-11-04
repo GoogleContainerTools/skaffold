@@ -211,7 +211,18 @@ func TestKustomizeCleanup(t *testing.T) {
 		kustomize   latestV1.KustomizeDeploy
 		commands    util.Command
 		shouldErr   bool
+		dryRun      bool
 	}{
+		{
+			description: "cleanup dry-run",
+			kustomize: latestV1.KustomizeDeploy{
+				KustomizePaths: []string{tmpDir.Root()},
+			},
+			commands: testutil.
+				CmdRunOut("kustomize build "+tmpDir.Root(), kubectl.DeploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --dry-run --ignore-not-found=true --wait=false -f -"),
+			dryRun: true,
+		},
 		{
 			description: "cleanup success",
 			kustomize: latestV1.KustomizeDeploy{
@@ -262,7 +273,7 @@ func TestKustomizeCleanup(t *testing.T) {
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			err = k.Cleanup(context.Background(), ioutil.Discard)
+			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun)
 
 			t.CheckError(test.shouldErr, err)
 		})

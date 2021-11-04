@@ -345,7 +345,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "helm",
 	})
@@ -360,8 +360,14 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 		if err != nil {
 			return err
 		}
+		args := []string{}
+		if dryRun {
+			args = append(args, "get", "manifest")
+		} else {
+			args = append(args, "delete")
+		}
+		args = append(args, releaseName)
 
-		args := []string{"delete", releaseName}
 		if namespace != "" {
 			args = append(args, "--namespace", namespace)
 		}

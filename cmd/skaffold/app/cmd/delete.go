@@ -26,16 +26,24 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
+var (
+	dryRun bool
+)
+
 // NewCmdDelete describes the CLI command to delete deployed resources.
 func NewCmdDelete() *cobra.Command {
 	return NewCmd("delete").
 		WithDescription("Delete any resources deployed by Skaffold").
 		WithCommonFlags().
+		WithExample("Print the resources to be deleted", "delete --dry-run").
+		WithFlags([]*Flag{
+			{Value: &dryRun, Name: "dry-run", DefValue: false, Usage: "Don't delete resources, just print them.", IsEnum: true},
+		}).
 		NoArgs(doDelete)
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, out, func(r runner.Runner, _ []util.VersionedConfig) error {
-		return r.Cleanup(ctx, out)
+		return r.Cleanup(ctx, out, dryRun)
 	})
 }

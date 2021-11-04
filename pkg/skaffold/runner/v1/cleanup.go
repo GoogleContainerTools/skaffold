@@ -21,6 +21,6 @@ import (
 	"io"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer) error {
-	return r.deployer.Cleanup(ctx, out)
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+	return r.deployer.Cleanup(ctx, out, dryRun)
 }

@@ -72,7 +72,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 
 				if r.HasDeployed() {
 					cleanup = func() {
-						if err := r.Cleanup(context.Background(), out); err != nil {
+						if err := r.Cleanup(context.Background(), out, false); err != nil {
 							log.Entry(ctx).Warn("deployer cleanup:", err)
 						}
 					}

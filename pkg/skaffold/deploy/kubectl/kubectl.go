@@ -472,7 +472,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
@@ -480,7 +480,12 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-
+	if dryRun {
+		for _, manifest := range manifests {
+			output.White.Fprintf(out, "---\n%s", manifest)
+		}
+		return nil
+	}
 	// revert remote manifests
 	// TODO(dgageot): That seems super dangerous and I don't understand
 	// why we need to update resources just before we delete them.
