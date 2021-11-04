@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -249,6 +250,8 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	verifyDeployment(t, entries, client, dep)
 }
 
+*/
+
 func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
@@ -265,6 +268,8 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 	})
 	failNowIfError(t, err)
 }
+
+/*
 
 func TestDevPortForward(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
