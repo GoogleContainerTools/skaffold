@@ -167,6 +167,18 @@ Use the `ldflags` configuration field to provide linker flag arguments, e.g.:
       - -w
 ```
 
+`ko` supports templating of `flags` and `ldflags` using environment variables,
+e.g.:
+
+```yaml
+    ko:
+      ldflags:
+      - -X main.version={{.Env.VERSION}}
+```
+
+These templates are passed through to `ko` and are expanded using
+[`ko`'s template expansion implementation](https://github.com/google/ko/blob/v0.9.3/pkg/build/gobuild.go#L632-L660).
+
 ### Source file locations
 
 If your Go source files and `go.mod` are not in the `context` directory,
@@ -199,10 +211,10 @@ Useful tips for existing `ko` users:
 - Specify your destination image registry using Skaffold's
   [`default-repo` functionality]({{< relref "/docs/environment/image-registries" >}}).
   The ko builder does _not_ read the `KO_DOCKER_REPO` environment variable.
-    
-- The ko builder supports reading configuration from the `.ko.yaml` file.
-  If you already configure your `ko` builds using this file, you do not need
-  to repeat the configuration from this file in `skaffold.yaml`.
+
+- The ko builder supports reading base image configuration from the `.ko.yaml`
+  file. If you already configure your base images using this file, you do not
+  need to repeat this configuration in `skaffold.yaml`.
 
 - When you use the Skaffold ko builder, Skaffold takes care of replacing the
   image placeholder name in your Kubernetes manifest files using its
@@ -212,16 +224,16 @@ Useful tips for existing `ko` users:
   `ko://` prefix, followed by the Go import path to the main package.
   This means that Skaffold should work with existing Kubernetes manifest
   files that use this image name placeholder format.
-    
+
   If you previously rendered Kubernetes manifest using `ko`, e.g.:
 
   ```shell
   ko resolve --filename k8s/*.yaml > out.yaml
   ```
-    
+
   You can instead use Skaffold's
   [`render` subcommand]({{< relref "/docs/references/cli#skaffold-render" >}}):
-    
+
   ```shell
   skaffold render --digest-source local --offline=true --output out.yaml
   ```
