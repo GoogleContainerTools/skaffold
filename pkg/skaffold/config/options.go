@@ -37,6 +37,7 @@ type SkaffoldOptions struct {
 	Command           string
 	GlobalConfig      string
 	EventLogFile      string
+	LastLogFile       string
 	RenderOutput      string
 	User              string
 	CustomTag         string

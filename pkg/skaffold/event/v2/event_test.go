@@ -20,6 +20,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -28,6 +29,7 @@ import (
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/mitchellh/go-homedir"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -413,6 +415,80 @@ func TestSaveEventsToFile(t *testing.T) {
 	testutil.CheckDeepEqual(t, 2, len(logEntries))
 	testutil.CheckDeepEqual(t, 1, buildCompleteEvent)
 	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvent)
+}
+
+func TestSaveLastLog(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatalf("getting temp file: %v", err)
+	}
+	t.Cleanup(func() { os.Remove(f.Name()) })
+	if err := f.Close(); err != nil {
+		t.Fatalf("error closing tmp file: %v", err)
+	}
+
+	// add some events to the event log. Include irrelevant events to test that they are ignored
+	handler.eventLog = []*proto.Event{
+		{
+			EventType: &proto.Event_BuildSubtaskEvent{},
+		}, {
+			EventType: &proto.Event_SkaffoldLogEvent{
+				SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "Message 1\n"},
+			},
+		}, {
+			EventType: &proto.Event_DeploySubtaskEvent{},
+		}, {
+			EventType: &proto.Event_SkaffoldLogEvent{
+				SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "Message 2\n"},
+			},
+		}, {
+			EventType: &proto.Event_PortEvent{},
+		},
+	}
+
+	// save events to file
+	if err := SaveLastLog(f.Name()); err != nil {
+		t.Fatalf("error saving log to file: %v", err)
+	}
+
+	// ensure that the events in the file match the event log
+	b, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		t.Fatalf("reading tmp file: %v", err)
+	}
+
+	// make sure that the contents of the file match the expected result.
+	expectedText := `Message 1
+Message 2
+`
+	testutil.CheckDeepEqual(t, expectedText, string(b))
+}
+
+func TestLastLogFile(t *testing.T) {
+	homeDir, _ := homedir.Dir()
+	tests := []struct {
+		name     string
+		fp       string
+		expected string
+	}{
+		{
+			name:     "Empty string passed in",
+			fp:       "",
+			expected: filepath.Join(homeDir, ".skaffold", "last.log"),
+		},
+		{
+			name:     "Non-empty string passed in",
+			fp:       filepath.Join("/", "tmp"),
+			expected: "/tmp",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			actual, _ := lastLogFile(test.fp)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
 }
 
 type config struct {
