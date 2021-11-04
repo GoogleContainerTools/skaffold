@@ -42,7 +42,7 @@ func main() {
 	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-2].APIVersion, "skaffold/")
 	logrus.Infof("Previous Skaffold version: %s", prev)
 
-	current, latestIsReleased := hackschema.GetLatestVersion()
+	current, latestIsReleased := hackschema.GetLatestV1Version()
 
 	if !latestIsReleased {
 		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)

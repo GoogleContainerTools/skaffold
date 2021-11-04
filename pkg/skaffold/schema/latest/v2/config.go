@@ -517,11 +517,10 @@ type TestCase struct {
 
 // RenderConfig contains all the configuration needed by the render steps.
 type RenderConfig struct {
-
 	// Generate defines the dry manifests from a variety of sources.
 	Generate `yaml:",inline"`
 
-	// Transform defines a set of transformation operations to run in series
+	// Transform defines a set of transformation operations to run in series.
 	Transform *[]Transformer `yaml:"transform,omitempty"`
 
 	// Validate defines a set of validator operations to run in series.
@@ -533,17 +532,26 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	RawK8s    []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
+	// RawK8s is a list of raw manifests to be sent directly to the cluster.
+	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
+
+	// Kustomize is a list of resources to be templated using Kustomize.
 	Kustomize []string `yaml:"kustomize,omitempty" skaffold:"filepath"`
-	Helm      *Helm    `yaml:"helm,omitempty"`
-	Kpt       []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+
+	// Helm is a list of charts to be templated using `helm template`.
+	Helm *Helm `yaml:"helm,omitempty"`
+
+	// Kpt is a list of resources to be transformed using kpt.
+	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
 }
 
+// Helm defines deploy configuration for the legacy Helm deployer.
 type Helm struct {
 	// Flags are additional option flags that are passed on the command
 	// line to `helm`.
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 
+	// Releases is a list of helm releases.
 	Releases *[]HelmRelease `yaml:"releases,omitempty"`
 }
 
@@ -584,7 +592,7 @@ type KptV2Deploy struct {
 	// InventoryNamespace *alpha* sets the inventory namespace.
 	InventoryNamespace string `yaml:"namespace,omitempty"`
 
-	// Forces is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
+	// Force is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
 	Force bool `yaml:"false,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
@@ -648,14 +656,11 @@ type DockerDeploy struct {
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 // You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 type KubectlDeploy struct {
-	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
-	// Manifests lists the Kubernetes yaml or json manifests.
+	// Manifests lists the Kubernetes yaml or json manifests. If given, the v1 kubectl deployer will be triggered.
 	// Defaults to `["k8s/*.yaml"]`.
-
 	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
-	// This field is only used by v1 kubectl deployer.
-	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	// RemoteManifests lists Kubernetes manifests in remote clusters. This field is only used by v1 kubectl deployer.
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
 	// Flags are additional flags passed to `kubectl`.
@@ -1407,7 +1412,7 @@ type ContainerHook struct {
 // NamedContainerHook describes a lifecycle hook definition to execute on a named container.
 type NamedContainerHook struct {
 	// ContainerHook describes a lifecycle hook definition to execute on a container.
-	ContainerHook `yaml:",inline"`
+	ContainerHook `yaml:",inline" yamlTags:"skipTrim"`
 	// PodName is the name of the pod to execute the command in.
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.

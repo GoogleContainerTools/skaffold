@@ -32,17 +32,20 @@ type WaitForDeletions struct {
 
 // SkaffoldOptions are options that are set by command line arguments not included in the config file itself
 type SkaffoldOptions struct {
-	CacheFile         string
-	ConfigurationFile string
-	Command           string
-	CustomTag         string
-	DigestSource      string
-	EventLogFile      string
-	GlobalConfig      string
-	HydrationDir      string
-	KubeConfig        string
-	KubeContext       string
-	LastLogFile       string
+	CacheFile          string
+	ConfigurationFile  string
+	Command            string
+	CustomTag          string
+	DigestSource       string
+	EventLogFile       string
+	GlobalConfig       string
+	HydrationDir       string
+	InventoryNamespace string
+	InventoryID        string
+	InventoryName      string
+	KubeConfig         string
+	KubeContext        string
+	LastLogFile        string
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
