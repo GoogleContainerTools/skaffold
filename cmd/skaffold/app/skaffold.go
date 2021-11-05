@@ -18,6 +18,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,6 +26,7 @@ import (
 	shell "github.com/kballard/go-shellquote"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
@@ -45,6 +47,18 @@ func Run(out, stderr io.Writer) error {
 		log.Entry(ctx).Debugf("Retrieving command line from SKAFFOLD_CMDLINE: %q", parsed)
 		c.SetArgs(parsed)
 	}
-	err := c.ExecuteContext(ctx)
-	return extractInvalidUsageError(err)
+	c, err := c.ExecuteContextC(ctx)
+	if err != nil {
+		err = extractInvalidUsageError(err)
+		if errors.Is(err, context.Canceled) {
+			log.Entry(ctx).Debugln("ignore error since context is cancelled:", err)
+		} else if !cmd.ShouldSuppressErrorReporting(c) {
+			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
+			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
+			// before we print an error to get the right coloring.
+			errOut := output.SetupColors(context.Background(), stderr, output.DefaultColorCode, false)
+			output.Red.Fprintln(errOut, err)
+		}
+	}
+	return err
 }
