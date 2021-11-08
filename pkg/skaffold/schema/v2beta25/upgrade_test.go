@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package %PREV_VERSION%
+package v2beta25
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ import (
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/%PREV_VERSION%
+	yaml := `apiVersion: skaffold/v2beta25
 kind: Config
 build:
   artifacts:
@@ -50,8 +50,6 @@ build:
       builder: gcr.io/buildpacks/builder:v1
     sync:
       auto: true
-  - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
-    ko: {}
   googleCloudBuild:
     projectId: test-project
 test:
@@ -106,7 +104,7 @@ profiles:
         - k8s-*
       kustomize: {}
 `
-	expected := `apiVersion: skaffold/%NEXT_VERSION%
+	expected := `apiVersion: skaffold/v2beta26
 kind: Config
 build:
   artifacts:
@@ -131,8 +129,6 @@ build:
       builder: gcr.io/buildpacks/builder:v1
     sync:
       auto: true
-  - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
-    ko: {}
   googleCloudBuild:
     projectId: test-project
 test:
