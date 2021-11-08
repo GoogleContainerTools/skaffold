@@ -25,9 +25,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"sigs.k8s.io/kustomize/kyaml/yaml"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -154,6 +157,97 @@ func TestKptfileInitIfNot(t *testing.T) {
 	}
 }
 
+// TestInventoryFromMultiConfigs checks that when inventory is configured both in skaffold.yaml
+// and via flags skaffold.yaml config dominates the inventory value in Kptfile.
+func TestInventoryFromMultiConfigs(t *testing.T) {
+	tests := []struct {
+		description                string
+		fromSkaffoldYaml           latestV2.KptV2Deploy
+		fromFlags                  config.SkaffoldOptions
+		expectedInventoryID        string
+		expectedInventoryNamespace string
+		expectedInventoryName      string
+	}{
+		{
+			description: "Both configs are given. skaffoldYml wins",
+			fromSkaffoldYaml: latestV2.KptV2Deploy{
+				Dir:                ".",
+				InventoryNamespace: "test-ns-1",
+				InventoryID:        "aaaaaaaaaaaaaa",
+				Name:               "inventory-aaa",
+			},
+			fromFlags: config.SkaffoldOptions{
+				InventoryNamespace: "test-ns-2",
+				InventoryID:        "bbbbbbbbbbbb",
+				InventoryName:      "inventory-bbb",
+			},
+			expectedInventoryID:        "aaaaaaaaaaaaaa",
+			expectedInventoryNamespace: "test-ns-1",
+			expectedInventoryName:      "inventory-aaa",
+		},
+		{
+			description:      "Only Flags.",
+			fromSkaffoldYaml: latestV2.KptV2Deploy{Dir: "."},
+			fromFlags: config.SkaffoldOptions{
+				InventoryNamespace: "test-ns-2",
+				InventoryID:        "bbbbbbbbbbbb",
+				InventoryName:      "inventory-bbb",
+			},
+			expectedInventoryID:        "bbbbbbbbbbbb",
+			expectedInventoryNamespace: "test-ns-2",
+			expectedInventoryName:      "inventory-bbb",
+		},
+		{
+			description: "Only skaffoldYml.",
+			fromSkaffoldYaml: latestV2.KptV2Deploy{
+				Dir:                ".",
+				InventoryNamespace: "test-ns-1",
+				InventoryID:        "aaaaaaaaaaaaaa",
+				Name:               "inventory-aaa",
+			},
+			fromFlags:                  config.SkaffoldOptions{},
+			expectedInventoryID:        "aaaaaaaaaaaaaa",
+			expectedInventoryNamespace: "test-ns-1",
+			expectedInventoryName:      "inventory-aaa",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.
+				CmdRunOut("kpt fn source .", manifests).
+				AndRun("kpt live apply ."))
+			tmpDir := t.NewTempDir()
+			tmpDir.Write(kptfile.KptFileName, `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+inventory:
+  namespace:
+  inventoryID:
+  inventoryName:
+`)
+			tmpDir.Chdir()
+			k := NewDeployer(
+				&kptConfig{},
+				nil, deploy.NoopComponentProvider, &test.fromSkaffoldYaml,
+				test.fromFlags)
+			_, err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
+			t.CheckNoError(err)
+
+			// Check the actual inventory written in Kptfile.
+			file, err := os.Open(filepath.Join(tmpDir.Root(), kptfile.KptFileName))
+			t.CheckNoError(err)
+			defer file.Close()
+			kfConfig := &kptfile.KptFile{}
+			err = yaml.NewDecoder(file).Decode(&kfConfig)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedInventoryID, kfConfig.Inventory.InventoryID)
+			t.CheckDeepEqual(test.expectedInventoryName, kfConfig.Inventory.Name)
+			t.CheckDeepEqual(test.expectedInventoryNamespace, kfConfig.Inventory.Namespace)
+		})
+	}
+}
+
 func TestDeploy(t *testing.T) {
 	tests := []struct {
 		description string
@@ -180,7 +274,6 @@ func TestDeploy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			kptInitFunc = func(context.Context, io.Writer, *Deployer) error { return nil }
-
 			k := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt, config.SkaffoldOptions{})
 			ns, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckNoError(err)
@@ -197,6 +290,6 @@ type kptConfig struct {
 
 func (c *kptConfig) WorkingDir() string                                    { return c.workingDir }
 func (c *kptConfig) GetKubeContext() string                                { return "" }
-func (c *kptConfig) GetKubeNamespace() string                              { return "" }
+func (c *kptConfig) GetKubeNamespace() string                              { return defaultNs }
 func (c *kptConfig) GetKubeConfig() string                                 { return c.config }
 func (c *kptConfig) PortForwardResources() []*latestV2.PortForwardResource { return nil }
