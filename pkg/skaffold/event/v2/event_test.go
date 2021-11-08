@@ -221,7 +221,7 @@ func TestLastLogFile(t *testing.T) {
 		{
 			name:     "Non-empty string passed in",
 			fp:       filepath.Join("/", "tmp"),
-			expected: "/tmp",
+			expected: filepath.Join("/", "tmp"),
 		},
 	}
 
