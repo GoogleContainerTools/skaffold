@@ -262,7 +262,7 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 		case command.Env:
 			// one env command may define multiple variables
 			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
-				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, node.Next.Value))
+				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, unquote(node.Next.Value)))
 			}
 		}
 	}

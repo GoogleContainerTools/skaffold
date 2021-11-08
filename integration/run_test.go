@@ -41,8 +41,14 @@ var tests = []struct {
 	targetLog   string
 }{
 	{
-		description: "getting-started",
+		description: "copying directory",
 		dir:         "examples/getting-started",
+		pods:        []string{"getting-started"},
+		targetLog:   "Hello world!",
+	},
+	{
+		description: "getting-started",
+		dir:         "testdata/getting-started",
 		pods:        []string{"getting-started"},
 		targetLog:   "Hello world!",
 	},
