@@ -54,6 +54,10 @@ func doRun(ctx context.Context, out io.Writer) error {
 			}
 		}
 
+		if err := r.Render(ctx, out, bRes, true, ""); err != nil {
+			return fmt.Errorf("failed to render: %w", err)
+		}
+
 		err = r.DeployAndLog(ctx, out, bRes)
 		if err != nil {
 			return fmt.Errorf("failed to deploy: %w", err)

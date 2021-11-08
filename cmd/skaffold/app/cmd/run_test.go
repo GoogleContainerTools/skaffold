@@ -48,6 +48,7 @@ func TestNewCmdRun(t *testing.T) {
 type mockRunRunner struct {
 	runner.Runner
 	testRan            bool
+	renderRan          bool
 	deployRan          bool
 	artifactImageNames []string
 }
@@ -67,6 +68,11 @@ func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*lates
 
 func (r *mockRunRunner) Test(context.Context, io.Writer, []graph.Artifact) error {
 	r.testRan = true
+	return nil
+}
+
+func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+	r.renderRan = true
 	return nil
 }
 
@@ -114,6 +120,8 @@ func TestDoRun(t *testing.T) {
 			err := doRun(context.Background(), ioutil.Discard)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.skipTests, !mockRunner.testRan)
+			t.CheckTrue(mockRunner.renderRan)
+			t.CheckTrue(mockRunner.deployRan)
 			t.CheckDeepEqual([]string{"second-test", "test"}, mockRunner.artifactImageNames)
 		})
 	}
