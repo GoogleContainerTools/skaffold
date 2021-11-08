@@ -1,0 +1,22 @@
+apiVersion: skaffold/v2beta25
+kind: Config
+requires:
+  - path: ../app2
+build:
+  tagPolicy:
+    sha256: {}
+
+  artifacts:
+  - image: image1
+    custom:
+      buildCommand: ./build.sh
+      dependencies:
+        paths:
+        - "foo"
+    requires:
+    - image: image2
+
+deploy:
+  kubectl:
+    manifests:
+    - 'k8s.yaml'

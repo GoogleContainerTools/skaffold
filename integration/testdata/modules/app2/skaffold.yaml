@@ -1,0 +1,23 @@
+apiVersion: skaffold/v2beta25
+kind: Config
+requires:
+  - path: ../app3
+build:
+  tagPolicy:
+    sha256: {}
+
+  artifacts:
+  - image: image2
+    docker:
+      noCache: true
+      buildArgs:
+        SLEEP: "1"
+        FAIL: "0"
+    requires:
+    - image: image3
+      alias: IMAGE3
+
+deploy:
+  kubectl:
+    manifests:
+    - 'k8s.yaml'
