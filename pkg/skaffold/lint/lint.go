@@ -26,23 +26,33 @@ import (
 
 var realWorkDir = util.RealWorkDir
 
-func Lint(ctx context.Context, out io.Writer, opts Options, dockerCfg docker.Config) error {
-	skaffoldYamlRuleList, err := GetSkaffoldYamlsLintResults(ctx, opts)
-	if err != nil {
-		return err
-	}
-	dockerfileCommandRuleList, err := GetDockerfilesLintResults(ctx, opts, dockerCfg)
-	if err != nil {
-		return err
-	}
-	k8sManifestRuleList, err := GetK8sManifestsLintResults(ctx, opts)
-	if err != nil {
-		return err
-	}
+func GetAllLintResults(ctx context.Context, opts Options, dockerCfg docker.Config) ([]Result, error) {
 	results := []Result{}
-	results = append(results, *skaffoldYamlRuleList...)
-	results = append(results, *dockerfileCommandRuleList...)
-	results = append(results, *k8sManifestRuleList...)
+	skaffoldYamlResults, err := GetSkaffoldYamlsLintResults(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	results = append(results, *skaffoldYamlResults...)
+
+	dockerfileCommandResults, err := GetDockerfilesLintResults(ctx, opts, dockerCfg)
+	if err != nil {
+		return nil, err
+	}
+	results = append(results, *dockerfileCommandResults...)
+
+	k8sManifestResults, err := GetK8sManifestsLintResults(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	results = append(results, *k8sManifestResults...)
+	return results, nil
+}
+
+func Lint(ctx context.Context, out io.Writer, opts Options, dockerCfg docker.Config) error {
+	results, err := GetAllLintResults(ctx, opts, dockerCfg)
+	if err != nil {
+		return err
+	}
 	// output flattened list
 	if opts.OutFormat == JSONOutput {
 		// need to remove some fields that cannot be serialized in the Rules of the Results
