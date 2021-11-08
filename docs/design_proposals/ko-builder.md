@@ -321,7 +321,7 @@ Adding the ko builder requires making config changes to the Skaffold schema.
         // If main is a pattern with wildcards, such as `./...`,
         // the expansion must contain only one main package, otherwise ko fails.
         // Main is ignored if the `ImageName` starts with `ko://`.
-        // Example: `./cmd/foo` 
+        // Example: `./cmd/foo`
         Main string `yaml:"main,omitempty"`
 
         // Platforms is the list of platforms to build images for. Each platform
@@ -738,7 +738,7 @@ The following features will be released at each stage:
   [`all`](https://github.com/google/ko#multi-platform-images), which builds
   images for all platforms supported by the base image).
 - Image names following standard Skaffold naming, for existing Skaffold
-  users. 
+  users.
 - Support for `ko://`-prefixed image names, for existing ko users.
 
 **Beta**

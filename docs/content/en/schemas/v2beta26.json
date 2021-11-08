@@ -218,6 +218,57 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "ko": {
+              "$ref": "#/definitions/KoArtifact",
+              "description": "builds images using [ko](https://github.com/google/ko).",
+              "x-intellij-html-description": "builds images using <a href=\"https://github.com/google/ko\">ko</a>."
+            },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "requires",
+            "hooks",
+            "ko"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after each build of the target artifact."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
             "jib": {
               "$ref": "#/definitions/JibArtifact",
               "description": "builds images using the [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).",
@@ -2443,18 +2494,6 @@
     },
     "KoArtifact": {
       "properties": {
-        "args": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional build flags passed to the builder.",
-          "x-intellij-html-description": "additional build flags passed to the builder.",
-          "default": "[]",
-          "examples": [
-            "[\"-trimpath\", \"-v\"]"
-          ]
-        },
         "dependencies": {
           "$ref": "#/definitions/KoDependencies",
           "description": "file dependencies that Skaffold should watch for both rebuilding and file syncing for this artifact.",
@@ -2475,6 +2514,18 @@
           "default": "[]",
           "examples": [
             "[\"GOPRIVATE=source.developers.google.com\", \"GOCACHE=/workspace/.gocache\"]"
+          ]
+        },
+        "flags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional build flags passed to `go build`.",
+          "x-intellij-html-description": "additional build flags passed to <code>go build</code>.",
+          "default": "[]",
+          "examples": [
+            "[\"-trimpath\", \"-v\"]"
           ]
         },
         "fromImage": {
@@ -2526,7 +2577,7 @@
         "dependencies",
         "dir",
         "env",
-        "args",
+        "flags",
         "labels",
         "ldflags",
         "main",
@@ -2555,7 +2606,7 @@
           "type": "array",
           "description": "should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.",
           "x-intellij-html-description": "should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.",
-          "default": "[\".\"]"
+          "default": "[\"**/*.go\"]"
         }
       },
       "preferredOrder": [

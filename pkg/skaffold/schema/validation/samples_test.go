@@ -38,8 +38,7 @@ const (
 )
 
 var (
-	// TODO(halvards): Remove ko exmples from ignoredExamples once unmarshalling of ko config is enabled.
-	ignoredExamples = []string{"docker-deploy", "ko", "react-reload-docker"}
+	ignoredExamples = []string{"docker-deploy", "react-reload-docker"}
 	ignoredSamples  = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
 )
 
