@@ -43,7 +43,8 @@ func PrintBuildEnvsList(ctx context.Context, out io.Writer, opts inspect.Options
 		ConfigurationFilter: opts.Modules,
 	})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 
 	l := &buildEnvList{BuildEnvs: []buildEnvEntry{}}

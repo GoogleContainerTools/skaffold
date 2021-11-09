@@ -36,6 +36,7 @@ var inspectFlags = struct {
 
 func NewCmdInspect() *cobra.Command {
 	return NewCmd("inspect").
+		SuppressErrorReporting().
 		WithDescription("Helper commands for Cloud Code IDEs to interact with and modify skaffold configuration files.").
 		WithPersistentFlagAdder(cmdInspectFlags).
 		Hidden().

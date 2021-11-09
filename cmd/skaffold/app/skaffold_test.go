@@ -104,3 +104,32 @@ func TestMain_InvalidUsageExitCode(t *testing.T) {
 		t.CheckErrorAndExitCode(127, err)
 	})
 }
+
+func TestMain_SuppressedErrorReporing(t *testing.T) {
+	testutil.Run(t, "inspect should suppress error output", func(t *testutil.T) {
+		var (
+			output    bytes.Buffer
+			errOutput bytes.Buffer
+		)
+		// non-existent profile should report an error
+		t.Override(&os.Args, []string{"skaffold", "inspect", "build-env", "list", "--profile", "non-existent"})
+		err := Run(&output, &errOutput)
+		t.CheckError(true, err)
+		t.CheckContains(`{"errorCode":`, output.String())
+		t.CheckEmpty(errOutput.String())
+	})
+
+	testutil.Run(t, "diagnose should report error output", func(t *testutil.T) {
+		var (
+			output    bytes.Buffer
+			errOutput bytes.Buffer
+		)
+		// non-existent profile should report an error
+		t.Override(&os.Args, []string{"skaffold", "diagnose", "--yaml-only", "--profile", "non-existent"})
+		err := Run(&output, &errOutput)
+		t.CheckError(true, err)
+		t.CheckEmpty(output.String())
+		// checking quoted filename ensures there are no JSON errors too
+		t.CheckContains(`unable to find configuration file "skaffold.yaml"`, errOutput.String())
+	})
+}

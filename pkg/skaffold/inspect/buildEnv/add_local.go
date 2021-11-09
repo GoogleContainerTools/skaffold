@@ -30,7 +30,8 @@ func AddLocalBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) 
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.BoolPtr(false)})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 	if opts.Profile == "" {
 		// empty profile flag implies that the new build env needs to be added to the default pipeline.
@@ -38,7 +39,8 @@ func AddLocalBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) 
 		cfgs = cfgs.SelectRootConfigs()
 		for _, cfg := range cfgs {
 			if cfg.Build.LocalBuild != nil && (*cfg.Build.LocalBuild != latestV1.LocalBuild{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Local, cfg.SourceFile, ""))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Local, cfg.SourceFile, ""))
+				return err
 			}
 			cfg.Build.LocalBuild = constructLocalDefinition(cfg.Build.LocalBuild, opts.BuildEnvOptions)
 			cfg.Build.GoogleCloudBuild = nil
@@ -58,7 +60,8 @@ func AddLocalBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) 
 				cfg.Profiles = append(cfg.Profiles, latestV1.Profile{Name: opts.Profile})
 			}
 			if cfg.Profiles[index].Build.LocalBuild != nil && (*cfg.Profiles[index].Build.LocalBuild != latestV1.LocalBuild{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Local, cfg.SourceFile, opts.Profile))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Local, cfg.SourceFile, opts.Profile))
+				return err
 			}
 			cfg.Profiles[index].Build.LocalBuild = constructLocalDefinition(cfg.Profiles[index].Build.LocalBuild, opts.BuildEnvOptions)
 			cfg.Profiles[index].Build.GoogleCloudBuild = nil
