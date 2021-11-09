@@ -102,6 +102,8 @@ func getArtifacts(b latestV1.BuildConfig) []*proto.BuildMetadata_Artifact {
 		case a.KanikoArtifact != nil:
 			artifact.Type = proto.BuilderType_KANIKO
 			artifact.Dockerfile = a.KanikoArtifact.DockerfilePath
+		case a.KoArtifact != nil:
+			artifact.Type = proto.BuilderType_KO
 		default:
 			artifact.Type = proto.BuilderType_UNKNOWN_BUILDER_TYPE
 		}
