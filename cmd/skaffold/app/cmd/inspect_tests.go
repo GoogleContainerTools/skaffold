@@ -44,15 +44,17 @@ func cmdTestsList() *cobra.Command {
 
 func listTests(ctx context.Context, out io.Writer) error {
 	return tests.PrintTestsList(ctx, out, inspect.Options{
-		Filename:     inspectFlags.filename,
-		RepoCacheDir: inspectFlags.repoCacheDir,
-		OutFormat:    inspectFlags.outFormat,
-		Modules:      inspectFlags.modules,
-		TestsOptions: inspect.TestsOptions{TestsProfiles: inspectFlags.profiles},
+		Filename:          inspectFlags.filename,
+		RepoCacheDir:      inspectFlags.repoCacheDir,
+		OutFormat:         inspectFlags.outFormat,
+		Modules:           inspectFlags.modules,
+		Profiles:          inspectFlags.profiles,
+		PropagateProfiles: inspectFlags.propagateProfiles,
 	})
 }
 
 func cmdTestsListFlags(f *pflag.FlagSet) {
 	f.StringSliceVarP(&inspectFlags.profiles, "profile", "p", nil, `Profile names to activate`)
+	f.BoolVar(&inspectFlags.propagateProfiles, "propagate-profiles", true, `Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.`)
 	f.StringSliceVarP(&inspectFlags.modules, "module", "m", nil, "Names of modules to filter target action by.")
 }

@@ -22,16 +22,19 @@ import (
 )
 
 var inspectFlags = struct {
-	filename     string
-	outFormat    string
-	modules      []string
-	repoCacheDir string
-	buildEnv     string
-	profiles     []string
-	strict       bool
+	filename          string
+	outFormat         string
+	modules           []string
+	repoCacheDir      string
+	buildEnv          string
+	profiles          []string
+	profile           string
+	propagateProfiles bool
+	strict            bool
 }{
-	filename: "skaffold.yaml",
-	strict:   true,
+	filename:          "skaffold.yaml",
+	strict:            true,
+	propagateProfiles: true,
 }
 
 func NewCmdInspect() *cobra.Command {

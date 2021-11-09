@@ -40,6 +40,7 @@ func PrintBuildEnvsList(ctx context.Context, out io.Writer, opts inspect.Options
 		ConfigurationFile:   opts.Filename,
 		RepoCacheDir:        opts.RepoCacheDir,
 		Profiles:            opts.Profiles,
+		PropagateProfiles:   opts.PropagateProfiles,
 		ConfigurationFilter: opts.Modules,
 	})
 	if err != nil {
