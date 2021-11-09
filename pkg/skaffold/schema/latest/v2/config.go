@@ -62,6 +62,13 @@ type SkaffoldConfig struct {
 type Metadata struct {
 	// Name is an identifier for the project.
 	Name string `yaml:"name,omitempty"`
+
+	// Labels is a map of labels identifying the project.
+	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Annotations is a map of annotations providing additional
+	// metadata about the project.
+	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
 // Pipeline describes a Skaffold pipeline.
