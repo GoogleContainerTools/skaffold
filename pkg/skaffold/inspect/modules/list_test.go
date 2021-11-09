@@ -94,7 +94,7 @@ func TestPrintModulesList(t *testing.T) {
 			})
 			var buf bytes.Buffer
 			err := PrintModulesList(context.Background(), &buf, inspect.Options{OutFormat: "json", ModulesOptions: inspect.ModulesOptions{IncludeAll: test.includeAll}})
-			t.CheckNoError(err)
+			t.CheckError(test.err != nil, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}
