@@ -1,0 +1,6 @@
+apiVersion: skaffold/v2beta24
+kind: Config
+requires:
+  - path: app1
+  - path: app2
+  - path: app3
