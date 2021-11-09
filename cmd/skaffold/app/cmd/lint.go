@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/lint"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var outFormat string
@@ -35,15 +36,21 @@ func NewCmdLint() *cobra.Command {
 			{Value: &outFormat, Name: "format", DefValue: lint.PlainTextOutput,
 				Usage: "Output format. One of: plain-text(default) or json"}}).
 		Hidden().
-		NoArgs(lintCmd)
+		NoArgs(doLint)
 }
 
-func lintCmd(ctx context.Context, out io.Writer) error {
+func doLint(ctx context.Context, out io.Writer) error {
+	// createRunner initializes state for objects (Docker client, etc.) lint uses
+	_, _, runCtx, err := createRunner(ctx, out, opts)
+	log.Entry(ctx).Debugf("starting skaffold lint with runCtx: %v", runCtx)
+	if err != nil {
+		return err
+	}
 	return lint.Lint(ctx, out, lint.Options{
 		Filename:     opts.ConfigurationFile,
 		RepoCacheDir: opts.RepoCacheDir,
 		OutFormat:    outFormat,
 		Modules:      opts.ConfigurationFilter,
 		Profiles:     opts.Profiles,
-	})
+	}, runCtx)
 }

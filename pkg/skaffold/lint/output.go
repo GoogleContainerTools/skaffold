@@ -83,7 +83,7 @@ func generatePlainTextOutput(res *Result) (string, error) {
 	}
 	// TODO(aaron-prindle) - support different template for multiline matches -> (no ColPointerLine, show multi line match)
 	// if flagged text contains \n character, don't show colpointerline
-	tmpl, err := template.New("plainTextOutput").Parse("{{.RelFilePath}}:{{.LineNumber}}:{{.ColumnNumber}}: {{.RuleID}}: {{.Explanation}}: ({{.RuleType}})\n{{.FlaggedText}}\n{{.ColPointerLine}}")
+	tmpl, err := template.New("plainTextOutput").Parse("{{.RelFilePath}}:{{.LineNumber}}:{{.ColumnNumber}}: {{.RuleID}}: {{.RuleType}}: {{.Explanation}}\n{{.FlaggedText}}\n{{.ColPointerLine}}")
 	if err != nil {
 		return "", err
 	}

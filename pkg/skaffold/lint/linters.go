@@ -23,10 +23,56 @@ import (
 	"regexp"
 	"text/template"
 
+	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
+
+// for testing
+var readCopyCmdsFromDockerfile = docker.ReadCopyCmdsFromDockerfile
+
+type DockerfileCommandLinter struct{}
+
+func (*DockerfileCommandLinter) Lint(params InputParams, rules *[]Rule) (*[]Result, error) {
+	results := &[]Result{}
+	fromTos, err := readCopyCmdsFromDockerfile(context.TODO(), false, params.ConfigFile.AbsPath, params.WorkspacePath, map[string]*string{}, params.DockerConfig)
+	if err != nil {
+		return nil, err
+	}
+	for _, rule := range *rules {
+		if rule.RuleType != DockerfileCommandLintRule {
+			continue
+		}
+		var dockerCommandFilter DockerCommandFilter
+		switch v := rule.Filter.(type) {
+		case DockerCommandFilter:
+			dockerCommandFilter = v
+		default:
+			return nil, fmt.Errorf("unknown filter type found for DockerfileCommandLinter lint rule: %v", rule)
+		}
+		// NOTE: ADD and COPY are both treated the same from the linter perspective - eg: if you have linter look at COPY src/dest it will also check ADD src/dest
+		if dockerCommandFilter.DockerCommand != command.Copy && dockerCommandFilter.DockerCommand != command.Add {
+			log.Entry(context.TODO()).Errorf("unsupported docker command found for DockerfileCommandLinter: %v", dockerCommandFilter.DockerCommand)
+			return nil, fmt.Errorf("unsupported docker command found for DockerfileCommandLinter: %v", dockerCommandFilter.DockerCommand)
+		}
+		for _, fromTo := range fromTos {
+			r, err := regexp.Compile(dockerCommandFilter.DockerCopySourceRegExp)
+			if err != nil {
+				return nil, err
+			}
+			if !r.MatchString(fromTo.From) {
+				continue
+			}
+			log.Entry(context.TODO()).Infof("docker command 'copy' match found for source: %s\n", fromTo.From)
+			// TODO(aaron-prindle) modify so that there are input and output params s.t. it is more obvious what fields need to be updated
+			params.DockerCopyCommandInfo = fromTo
+			appendRuleIfLintConditionsPass(params, results, rule, fromTo.StartLine, 1)
+		}
+	}
+	return results, nil
+}
 
 type RegExpLinter struct{}
 
@@ -105,7 +151,12 @@ func (*YamlFieldLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, 
 }
 
 func appendRuleIfLintConditionsPass(lintInputs InputParams, results *[]Result, rule Rule, line, col int) {
-	allPassed := true
+	for _, f := range rule.LintConditions {
+		if !f(lintInputs) {
+			// lint condition failed, no rule is trigggered
+			return
+		}
+	}
 	explanation := rule.ExplanationTemplate
 	if rule.ExplanationPopulator != nil {
 		ei, err := rule.ExplanationPopulator(lintInputs)
@@ -128,23 +179,15 @@ func appendRuleIfLintConditionsPass(lintInputs InputParams, results *[]Result, r
 		explanation = b.String()
 	}
 
-	for _, f := range rule.LintConditions {
-		if !f(lintInputs) {
-			allPassed = false
-			break
-		}
+	mr := Result{
+		Rule:        &rule,
+		Explanation: explanation,
+		AbsFilePath: lintInputs.ConfigFile.AbsPath,
+		RelFilePath: lintInputs.ConfigFile.RelPath,
+		Line:        line,
+		Column:      col,
 	}
-	if allPassed {
-		mr := Result{
-			Rule:        &rule,
-			Explanation: explanation,
-			AbsFilePath: lintInputs.ConfigFile.AbsPath,
-			RelFilePath: lintInputs.ConfigFile.RelPath,
-			Line:        line,
-			Column:      col,
-		}
-		*results = append(*results, mr)
-	}
+	*results = append(*results, mr)
 }
 
 func convert1DFileIndexTo2D(input string, idx int) (int, int) {

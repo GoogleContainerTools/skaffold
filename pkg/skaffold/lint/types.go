@@ -22,6 +22,7 @@ import (
 	"go.lsp.dev/protocol"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 )
 
@@ -63,6 +64,12 @@ type Result struct {
 	Column      int
 }
 
+type DockerCommandFilter struct {
+	DockerCommand          string
+	DockerCopyDestRegExp   string
+	DockerCopySourceRegExp string
+}
+
 type YamlFieldFilter struct {
 	Filter      yaml.Filter
 	FieldOnly   string
@@ -80,10 +87,11 @@ type RuleType int
 const (
 	RegExpLintLintRule RuleType = iota
 	YamlFieldLintRule
+	DockerfileCommandLintRule
 )
 
 func (a RuleType) String() string {
-	return [...]string{"RegExpLintLintRule", "YamlFieldLintRule"}[a]
+	return [...]string{"RegExpLintLintRule", "YamlFieldLintRule", "DockerfileCommandLintRule"}[a]
 }
 
 type RuleID int
@@ -94,6 +102,9 @@ const (
 	SkaffoldYamlAPIVersionOutOfDate
 	SkaffoldYamlUseStaticPort
 	SkaffoldYamlSyncPython
+
+	DockerfileCopyOver1000Files
+	DockerfileCopyContainsGitDir
 )
 
 func (a RuleID) String() string {
@@ -101,9 +112,13 @@ func (a RuleID) String() string {
 }
 
 type InputParams struct {
-	ConfigFile         ConfigFile
-	DockerfileToDepMap map[string][]string
-	SkaffoldConfig     *parser.SkaffoldConfigEntry
+	ConfigFile               ConfigFile
+	DockerfileToDepMap       map[string][]string
+	DockerfileToFromToToDeps map[string]map[string][]string
+	SkaffoldConfig           *parser.SkaffoldConfigEntry
+	DockerCopyCommandInfo    docker.FromTo
+	WorkspacePath            string
+	DockerConfig             docker.Config
 }
 
 type Linter interface {
