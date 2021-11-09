@@ -38,9 +38,6 @@ pygmentsStyle = "tango"
 # Enable Emojis
 enableEmoji = true
 
-# TODO(halvards) Stop ignoring ko.md when we are ready to release the ko builder
-ignoreFiles = ['ko.md']
-
 [markup.goldmark.renderer]
 unsafe= true
 
@@ -85,7 +82,7 @@ weight = 1
 copyright = "Skaffold Authors"
 privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v2beta25"
+skaffold_version = "skaffold/v2beta26"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 # gcs_engine_id = "013756393218025596041:3nojel67sum"
