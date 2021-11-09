@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 
+	ggcrlogs "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -96,5 +97,19 @@ func SetupLogs(stdErr io.Writer, level string, timestamp bool, hook logrus.Hook)
 		FullTimestamp: timestamp,
 	})
 	logrus.AddHook(hook)
+	setupGGCRLogging(stdErr, lvl)
 	return nil
+}
+
+func setupGGCRLogging(stdErr io.Writer, lvl logrus.Level) {
+	if lvl >= logrus.ErrorLevel {
+		ggcrlogs.Warn.SetOutput(stdErr)
+	}
+	if lvl >= logrus.InfoLevel {
+		ggcrlogs.Progress.SetOutput(stdErr)
+	}
+	if lvl >= logrus.TraceLevel {
+		// ggcr Debug logging includes HTTP request and responses (with known sensitive header values redacted)
+		ggcrlogs.Debug.SetOutput(stdErr)
+	}
 }
