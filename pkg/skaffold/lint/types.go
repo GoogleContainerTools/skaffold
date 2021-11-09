@@ -105,6 +105,8 @@ const (
 
 	DockerfileCopyOver1000Files
 	DockerfileCopyContainsGitDir
+
+	K8sManifestManagedByLabelInUse
 )
 
 func (a RuleID) String() string {

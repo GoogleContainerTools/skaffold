@@ -35,9 +35,14 @@ func Lint(ctx context.Context, out io.Writer, opts Options, dockerCfg docker.Con
 	if err != nil {
 		return err
 	}
+	k8sManifestRuleList, err := GetK8sManifestsLintResults(ctx, opts)
+	if err != nil {
+		return err
+	}
 	results := []Result{}
 	results = append(results, *skaffoldYamlRuleList...)
 	results = append(results, *dockerfileCommandRuleList...)
+	results = append(results, *k8sManifestRuleList...)
 	// output flattened list
 	if opts.OutFormat == JSONOutput {
 		// need to remove some fields that cannot be serialized in the Rules of the Results
