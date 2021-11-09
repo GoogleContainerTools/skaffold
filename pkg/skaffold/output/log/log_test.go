@@ -18,12 +18,10 @@ package log
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	ggcrlogs "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/sirupsen/logrus"
-	logrustest "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -93,7 +91,7 @@ func TestKanikoLogLevel(t *testing.T) {
 	}
 }
 
-func TestSetupLogsEnablesGGCRLogging(t *testing.T) {
+func TestSetupGGCRLogging(t *testing.T) {
 	tests := []struct {
 		description           string
 		logLevel              logrus.Level
@@ -137,10 +135,19 @@ func TestSetupLogsEnablesGGCRLogging(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			SetupLogs(os.Stderr, test.logLevel.String(), true, &logrustest.Hook{})
+			setupGGCRLogging(logrus.New(), test.logLevel)
 			t.CheckDeepEqual(test.expectWarnEnabled, ggcrlogs.Enabled(ggcrlogs.Warn))
 			t.CheckDeepEqual(test.expectProgressEnabled, ggcrlogs.Enabled(ggcrlogs.Progress))
 			t.CheckDeepEqual(test.expectDebugEnabled, ggcrlogs.Enabled(ggcrlogs.Debug))
+			if test.expectWarnEnabled {
+				t.CheckDeepEqual(0, ggcrlogs.Warn.Flags())
+			}
+			if test.expectProgressEnabled {
+				t.CheckDeepEqual(0, ggcrlogs.Progress.Flags())
+			}
+			if test.expectDebugEnabled {
+				t.CheckDeepEqual(0, ggcrlogs.Debug.Flags())
+			}
 		})
 	}
 }
