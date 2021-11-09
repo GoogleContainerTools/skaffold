@@ -20,10 +20,14 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
+
+	"github.com/acarl005/stripansi"
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/mitchellh/go-homedir"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -311,4 +315,51 @@ func SaveEventsToFile(fp string) error {
 	}
 	handler.logLock.Unlock()
 	return nil
+}
+
+// SaveLastLog writes the output from the previous run to the specified filepath
+func SaveLastLog(fp string) error {
+	handler.logLock.Lock()
+	defer handler.logLock.Unlock()
+
+	// Create file to write logs to
+	fp, err := lastLogFile(fp)
+	if err != nil {
+		return fmt.Errorf("getting last log file %w", err)
+	}
+	f, err := os.OpenFile(fp, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("opening %s: %w", fp, err)
+	}
+	defer f.Close()
+
+	// Iterate over events, grabbing contents only from SkaffoldLogEvents
+	var contents bytes.Buffer
+	for _, ev := range handler.eventLog {
+		if sle := ev.GetSkaffoldLogEvent(); sle != nil {
+			// Strip ansi color sequences as this makes it easier to deal with when pasting into github issues
+			if _, err = contents.WriteString(stripansi.Strip(sle.Message)); err != nil {
+				return fmt.Errorf("writing string to temporary buffer: %w", err)
+			}
+		}
+	}
+
+	// Write contents of temporary buffer to file
+	if _, err = f.Write(contents.Bytes()); err != nil {
+		return fmt.Errorf("writing buffer contents to file: %w", err)
+	}
+	return nil
+}
+
+func lastLogFile(fp string) (string, error) {
+	if fp != "" {
+		return fp, nil
+	}
+
+	// last log location unspecified, use ~/.skaffold/last.log
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", fmt.Errorf("retrieving home directory: %w", err)
+	}
+	return filepath.Join(home, constants.DefaultSkaffoldDir, "last.log"), nil
 }
