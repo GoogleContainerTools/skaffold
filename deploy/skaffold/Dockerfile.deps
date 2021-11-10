@@ -115,7 +115,7 @@ RUN \
     sha256sum -c bazel.${ARCH}.sha256
 RUN chmod +x bazel
 
-FROM gcr.io/gcp-runtimes/ubuntu_18_0_4 as runtime_deps
+FROM gcr.io/gcp-runtimes/ubuntu_20_0_4 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
