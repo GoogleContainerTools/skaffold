@@ -19,6 +19,8 @@ enum BuilderType {
     KANIKO = 5;
     // Docker Builder
     DOCKER = 6;
+    // Ko Builder
+    KO = 7;
 }
 
 // Enum indicating build type i.e. local, cluster vs GCB
@@ -673,7 +675,7 @@ enum SuggestionCode {
     INSPECT_USE_ADD_BUILD_ENV = 801;
     // Check profile flag value
     INSPECT_CHECK_INPUT_PROFILE = 802;
-    
+
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
 
