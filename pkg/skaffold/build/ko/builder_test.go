@@ -28,8 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-// Most of the test cases set the artifact image name to a `ko://`-prefixed import path.
-// This speeds up the tests, as the code under test doesn't need to repeatedly determine the import path of this package.
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
 		description              string
@@ -48,7 +46,6 @@ func TestBuildOptions(t *testing.T) {
 					KoArtifact: &latestV1.KoArtifact{},
 				},
 			},
-			wantImportPath: "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
 		},
 		{
 			description: "base image",
@@ -60,7 +57,6 @@ func TestBuildOptions(t *testing.T) {
 				},
 				ImageName: "ko://example.com/foo",
 			},
-			wantImportPath: "example.com/foo",
 		},
 		{
 			description: "empty platforms",
@@ -72,7 +68,6 @@ func TestBuildOptions(t *testing.T) {
 				},
 				ImageName: "ko://example.com/foo",
 			},
-			wantImportPath: "example.com/foo",
 		},
 		{
 			description: "multiple platforms",
@@ -84,8 +79,7 @@ func TestBuildOptions(t *testing.T) {
 				},
 				ImageName: "ko://example.com/foo",
 			},
-			wantPlatform:   "linux/amd64,linux/arm64",
-			wantImportPath: "example.com/foo",
+			wantPlatform: "linux/amd64,linux/arm64",
 		},
 		{
 			description: "workspace",
@@ -97,7 +91,6 @@ func TestBuildOptions(t *testing.T) {
 				Workspace: "my-app-subdirectory",
 			},
 			wantWorkingDirectory: "my-app-subdirectory",
-			wantImportPath:       "example.com/foo",
 		},
 		{
 			description: "source dir",
@@ -136,7 +129,6 @@ func TestBuildOptions(t *testing.T) {
 			},
 			runMode:                  config.RunModes.Debug,
 			wantDisableOptimizations: true,
-			wantImportPath:           "example.com/foo",
 		},
 		{
 			description: "labels",
@@ -151,8 +143,7 @@ func TestBuildOptions(t *testing.T) {
 				},
 				ImageName: "ko://example.com/foo",
 			},
-			wantLabels:     []string{"foo=bar", "frob=baz"},
-			wantImportPath: "example.com/foo",
+			wantLabels: []string{"foo=bar", "frob=baz"},
 		},
 	}
 	for _, test := range tests {
@@ -170,7 +161,7 @@ func TestBuildOptions(t *testing.T) {
 			t.CheckDeepEqual(test.wantLabels, bo.Labels,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }),
 				cmpopts.EquateEmpty())
-			if len(bo.BuildConfigs) != 1 {
+			if test.wantImportPath != "" && len(bo.BuildConfigs) != 1 {
 				t.Fatalf("expected exactly one build config, got %d", len(bo.BuildConfigs))
 			}
 			for importpath := range bo.BuildConfigs {

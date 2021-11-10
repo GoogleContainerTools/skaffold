@@ -40,23 +40,13 @@ func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact) (build
 }
 
 func buildOptions(a *latestV1.Artifact, runMode config.RunMode) (*options.BuildOptions, error) {
-	koImportpath, err := getImportPath(a)
+	buildconfig, err := buildConfig(a)
 	if err != nil {
-		return nil, fmt.Errorf("could not determine import path: %v", err)
+		return nil, fmt.Errorf("could not create ko build config: %v", err)
 	}
-	importpath := strings.TrimPrefix(koImportpath, build.StrictScheme)
 	return &options.BuildOptions{
-		BaseImage: a.KoArtifact.BaseImage,
-		BuildConfigs: map[string]build.Config{
-			importpath: {
-				ID:      a.ImageName,
-				Dir:     ".",
-				Env:     a.KoArtifact.Env,
-				Flags:   a.KoArtifact.Flags,
-				Ldflags: a.KoArtifact.Ldflags,
-				Main:    a.KoArtifact.Main,
-			},
-		},
+		BaseImage:            a.KoArtifact.BaseImage,
+		BuildConfigs:         buildconfig,
 		ConcurrentBuilds:     1, // we could plug in Skaffold's max builds here, but it'd be incorrect if users build more than one artifact
 		DisableOptimizations: runMode == config.RunModes.Debug,
 		Labels:               labels(a),
@@ -64,6 +54,49 @@ func buildOptions(a *latestV1.Artifact, runMode config.RunMode) (*options.BuildO
 		UserAgent:            version.UserAgentWithClient(),
 		WorkingDirectory:     filepath.Join(a.Workspace, a.KoArtifact.Dir),
 	}, nil
+}
+
+// buildConfig creates the ko build config map based on the artifact config.
+// A map entry is only required if the artifact config specifies fields that need to be part of ko build configs.
+// If none of these are specified, we can provide an empty `BuildConfigs` map.
+// In this case, ko falls back to build configs provided in `.ko.yaml`, or to the default zero config.
+func buildConfig(a *latestV1.Artifact) (map[string]build.Config, error) {
+	buildconfigs := map[string]build.Config{}
+	if koArtifactSpecifiesBuildConfig(*a.KoArtifact) {
+		koImportpath, err := getImportPath(a)
+		if err != nil {
+			return nil, fmt.Errorf("could not determine import path of image %s: %v", a.ImageName, err)
+		}
+		importpath := strings.TrimPrefix(koImportpath, build.StrictScheme)
+		buildconfigs[importpath] = build.Config{
+			ID:      a.ImageName,
+			Dir:     ".",
+			Env:     a.KoArtifact.Env,
+			Flags:   a.KoArtifact.Flags,
+			Ldflags: a.KoArtifact.Ldflags,
+			Main:    a.KoArtifact.Main,
+		}
+	}
+	return buildconfigs, nil
+}
+
+func koArtifactSpecifiesBuildConfig(k latestV1.KoArtifact) bool {
+	if k.Dir != "" && k.Dir != "." {
+		return true
+	}
+	if k.Main != "" && k.Main != "." {
+		return true
+	}
+	if len(k.Env) != 0 {
+		return true
+	}
+	if len(k.Flags) != 0 {
+		return true
+	}
+	if len(k.Ldflags) != 0 {
+		return true
+	}
+	return false
 }
 
 func labels(a *latestV1.Artifact) []string {

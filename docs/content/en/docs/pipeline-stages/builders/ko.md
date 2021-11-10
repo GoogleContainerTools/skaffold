@@ -212,9 +212,18 @@ Useful tips for existing `ko` users:
   [`default-repo` functionality]({{< relref "/docs/environment/image-registries" >}}).
   The ko builder does _not_ read the `KO_DOCKER_REPO` environment variable.
 
-- The ko builder supports reading base image configuration from the `.ko.yaml`
-  file. If you already configure your base images using this file, you do not
-  need to repeat this configuration in `skaffold.yaml`.
+- The ko builder supports reading
+  [base image configuration](https://github.com/google/ko#overriding-base-images)
+  from the `.ko.yaml` file. If you already configure your base images using
+  this file, you do not need to specify the `fromImage` field for the
+  artifact in `skaffold.yaml`.
+
+- The ko builder supports reading
+  [build configs](https://github.com/google/ko#overriding-go-build-settings)
+  from the `.ko.yaml` file if `skaffold.yaml` does not specify any of the build
+  config fields (`dir`, `main`, `env`, `flags`, and `ldflags`). If you already
+  specify these fields in `.ko.yaml`, you do not need to repeat them in
+  `skaffold.yaml`.
 
 - When you use the Skaffold ko builder, Skaffold takes care of replacing the
   image placeholder name in your Kubernetes manifest files using its
