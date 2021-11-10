@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -79,22 +80,24 @@ func TestRenderApplyHelmDeployment(t *testing.T) {
 // Ensure that an intentionally broken deployment fails the status check in `skaffold apply`.
 func TestApplyStatusCheckFailure(t *testing.T) {
 	tests := []struct {
-		description  string
-		manifestFile string
+		description string
+		profile     string
 	}{
 		{
-			description:  "status check for deployment resources",
-			manifestFile: "deployment.yaml",
+			description: "status check for deployment resources",
+			profile:     "deployment",
 		},
 		{
-			description:  "status check for statefulset resources",
-			manifestFile: "statefulset.yaml",
+			description: "status check for statefulset resources",
+			profile:     "statefulset",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := skaffold.Apply(test.manifestFile).InDir("testdata/apply").Run(t.T)
-			skaffold.Delete()
+			MarkIntegrationTest(t.T, NeedsGcp)
+			ns, _ := SetupNamespace(t.T)
+			defer skaffold.Delete("-p", test.profile).InDir("testdata/apply").InNs(ns.Name).Run(t.T)
+			err := skaffold.Apply(fmt.Sprintf("%s.yaml", test.profile)).InDir("testdata/apply").InNs(ns.Name).Run(t.T)
 			t.CheckError(true, err)
 		})
 	}
