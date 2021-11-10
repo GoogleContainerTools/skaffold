@@ -178,6 +178,18 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			s.seenResources.Add(d)
 		}
 
+		newStatefulSets, err := getStatefulSets(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds))
+		if err != nil {
+			return proto.StatusCode_STATUSCHECK_STATEFULSET_FETCH_ERR, fmt.Errorf("could not fetch statefulsets: %w", err)
+		}
+		for _, d := range newStatefulSets {
+			if s.seenResources.Contains(d) {
+				continue
+			}
+			resources = append(resources, d)
+			s.seenResources.Add(d)
+		}
+
 		newStandalonePods, err := getStandalonePods(ctx, client, n, s.labeller, getDeadline((s.deadlineSeconds)))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_STANDALONE_PODS_FETCH_ERR, fmt.Errorf("could not fetch standalone pods: %w", err)
@@ -301,6 +313,29 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		}
 
 		resources[i] = resource.NewResource(d.Name, resource.ResourceTypes.Deployment, d.Namespace, deadline).WithValidator(pd)
+	}
+	return resources, nil
+}
+
+func getStatefulSets(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadline time.Duration) ([]*resource.Resource, error) {
+	sets, err := client.AppsV1().StatefulSets(ns).List(ctx, metav1.ListOptions{
+		LabelSelector: l.RunIDSelector(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch stateful sets: %w", err)
+	}
+
+	resources := make([]*resource.Resource, len(sets.Items))
+	for i, ss := range sets.Items {
+		pd := diag.New([]string{ss.Namespace}).
+			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, validator.NewStatefulSetPodsSelector(client, ss))})
+
+		for k, v := range ss.Spec.Template.Labels {
+			pd = pd.WithLabel(k, v)
+		}
+
+		resources[i] = resource.NewResource(ss.Name, resource.ResourceTypes.StatefulSet, ss.Namespace, deadline).WithValidator(pd)
 	}
 	return resources, nil
 }

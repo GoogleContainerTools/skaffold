@@ -78,9 +78,24 @@ func TestRenderApplyHelmDeployment(t *testing.T) {
 
 // Ensure that an intentionally broken deployment fails the status check in `skaffold apply`.
 func TestApplyStatusCheckFailure(t *testing.T) {
-	testutil.Run(t, "ApplyStatusCheckFailure", func(t *testutil.T) {
-		err := skaffold.Apply("deployment.yaml").InDir("testdata/apply").Run(t.T)
-
-		t.CheckError(true, err)
-	})
+	tests := []struct {
+		description  string
+		manifestFile string
+	}{
+		{
+			description:  "status check for deployment resources",
+			manifestFile: "deployment.yaml",
+		},
+		{
+			description:  "status check for statefulset resources",
+			manifestFile: "statefulset.yaml",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := skaffold.Apply(test.manifestFile).InDir("testdata/apply").Run(t.T)
+			skaffold.Delete()
+			t.CheckError(true, err)
+		})
+	}
 }
