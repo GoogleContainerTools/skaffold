@@ -94,6 +94,7 @@ func TestApplyStatusCheckFailure(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, NeedsGcp)
 			ns, _ := SetupNamespace(t.T)
 			defer skaffold.Delete("-p", test.profile).InDir("testdata/apply").InNs(ns.Name).Run(t.T)
 			err := skaffold.Apply(fmt.Sprintf("%s.yaml", test.profile)).InDir("testdata/apply").InNs(ns.Name).Run(t.T)
