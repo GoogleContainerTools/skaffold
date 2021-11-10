@@ -1301,6 +1301,9 @@ type DockerArtifact struct {
 	// These flags are only used during a build through the Docker CLI.
 	CliFlags []string `yaml:"cliFlags,omitempty"`
 
+	// PullParent is used to attempt pulling the parent image even if an older image exists locally.
+	PullParent bool `yaml:"pullParent,omitempty"`
+
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 
