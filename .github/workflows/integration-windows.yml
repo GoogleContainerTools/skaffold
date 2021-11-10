@@ -28,6 +28,6 @@ jobs:
         fetch-depth: 0
 
     # TODO(aaron-prindle) skip integration tests for doc only changes on Windows.  Figure out the proper syntax, etc.
-    - name: Run windows unit test
+    - name: Run windows unit tests and integration tests
       run: |
         go test -short -timeout 60s ./...
