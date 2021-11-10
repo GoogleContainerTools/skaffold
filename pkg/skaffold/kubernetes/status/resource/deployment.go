@@ -19,6 +19,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,20 +36,21 @@ import (
 )
 
 const (
-	deploymentRolloutSuccess  = "successfully rolled out"
-	statefulsetRolloutSuccess = "rolling update complete"
-	connectionErrMsg          = "Unable to connect to the server"
-	killedErrMsg              = "signal: killed"
-	defaultPodCheckDeadline   = 30 * time.Second
-	tabHeader                 = " -"
-	tab                       = "  "
-	maxLogLines               = 3
+	deploymentRolloutSuccess = "successfully rolled out"
+	connectionErrMsg         = "Unable to connect to the server"
+	killedErrMsg             = "signal: killed"
+	defaultPodCheckDeadline  = 30 * time.Second
+	tabHeader                = " -"
+	tab                      = "  "
+	maxLogLines              = 3
 )
 
 // Type represents a kubernetes resource type to health check.
 type Type string
 
 var (
+	statefulsetRolloutSuccess = regexp.MustCompile("(roll out|rolling update) complete")
+
 	msgKubectlKilled     = "kubectl rollout status command interrupted\n"
 	MsgKubectlConnection = "kubectl connection error\n"
 
@@ -62,10 +64,12 @@ var (
 	ResourceTypes = struct {
 		StandalonePods  Type
 		Deployment      Type
+		StatefulSet     Type
 		ConfigConnector Type
 	}{
 		StandalonePods:  "standalone-pods",
 		Deployment:      "deployment",
+		StatefulSet:     "statefulset",
 		ConfigConnector: "config-connector-resource",
 	}
 )
@@ -348,7 +352,7 @@ func parseKubectlRolloutError(details string, deadline time.Duration, err error)
 			Message: details,
 		}
 	// statefulset rollouts have success messages like `statefulset rolling update complete 2 pods at revision skaffold-foo`
-	case err == nil && strings.Contains(details, statefulsetRolloutSuccess):
+	case err == nil && statefulsetRolloutSuccess.MatchString(details):
 		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 			Message: details,
