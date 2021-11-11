@@ -191,6 +191,11 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	case k.skipRender:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
 		manifests, err = k.readManifests(childCtx, false)
+		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
+			return err
+		}
+		manifests, err = manifests.SetLabels(k.labeller.Labels())
 		endTrace()
 	default:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
