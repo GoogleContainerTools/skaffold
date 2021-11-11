@@ -1410,6 +1410,12 @@
           "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
           "default": "false"
         },
+        "pullParent": {
+          "type": "boolean",
+          "description": "used to attempt pulling the parent image even if an older image exists locally.",
+          "x-intellij-html-description": "used to attempt pulling the parent image even if an older image exists locally.",
+          "default": "false"
+        },
         "secrets": {
           "items": {
             "$ref": "#/definitions/DockerSecret"
@@ -1443,6 +1449,7 @@
         "addHost",
         "cacheFrom",
         "cliFlags",
+        "pullParent",
         "noCache",
         "squash",
         "secrets",
