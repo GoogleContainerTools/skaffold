@@ -85,7 +85,7 @@ is `linux/amd64`, but you can configure a list of platforms using the
       - linux/arm64
 ```
 
-You can also supply `[all]` as the value of `platforms`. `all` means that the
+You can also supply `["all"]` as the value of `platforms`. `all` means that the
 ko builder builds images for all platforms supported by the base image.
 
 ### Labels / annotations
@@ -346,8 +346,9 @@ build:
 [`skaffold debug`]({{< relref "/docs/references/cli#skaffold-debug" >}})
 can debug images built using `ko`.
 
-Images built using `ko` are identified as Go apps by the presence of the
-`KO_DATA_PATH` environment variable.
+Images built using `ko` are automatically identified as Go apps by the presence
+of the
+[`KO_DATA_PATH` environment variable](https://github.com/google/ko#static-assets).
 
 ### File sync
 
