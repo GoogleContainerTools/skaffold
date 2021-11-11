@@ -155,6 +155,7 @@ e.g.:
 ```yaml
     ko:
       flags:
+      - -mod=vendor
       - -v
 ```
 
@@ -225,27 +226,117 @@ Useful tips for existing `ko` users:
   specify these fields in `.ko.yaml`, you do not need to repeat them in
   `skaffold.yaml`.
 
-- When you use the Skaffold ko builder, Skaffold takes care of replacing the
-  image placeholder name in your Kubernetes manifest files using its
-  [render]({{< relref "/docs/pipeline-stages" >}}) functionality.
-
-- The ko builder supports image name placeholders that consist of the
-  `ko://` prefix, followed by the Go import path to the main package.
-  This means that Skaffold should work with existing Kubernetes manifest
-  files that use this image name placeholder format.
-
-  If you previously rendered Kubernetes manifest using `ko`, e.g.:
+- Future Skaffold releases will include support for generating `skaffold.yaml`
+  files by examining an existing code base. For now, you can generate a starter
+  `skaffold.yaml` file by searching your existing manifests for image
+  references starting with `ko://` by using this snippet:
 
   ```shell
-  ko resolve --filename k8s/*.yaml > out.yaml
+  cat << EOF > skaffold.yaml
+  apiVersion: skaffold/v2beta26
+  kind: Config
+  build:
+    artifacts:
+  EOF
+  grep -rho "ko://$(go list -m)[^\"]*" ./config/ | sort | uniq | xargs -Iimg echo -e "  - image: img\n    ko: {}" >> skaffold.yaml
+  cat << EOF >> skaffold.yaml
+    local:
+      concurrency: 0
+    tagPolicy:
+      sha256: {}
+  deploy:
+    kubectl:
+      manifests:
+      - ./config/**
+  EOF
   ```
 
-  You can instead use Skaffold's
-  [`render` subcommand]({{< relref "/docs/references/cli#skaffold-render" >}}):
+  Replace `./config/` with the path to your Kubernetes manifest files.
 
-  ```shell
-  skaffold render --digest-source local --offline=true --output out.yaml
-  ```
+### `ko` commands and workflows in Skaffold
+
+Here are some examples of Skaffold equivalents of `ko` commands and worflows.
+
+#### Using vendored dependencies
+
+If vendor your dependencies and your `go.mod` specifies a Go version < 1.14,
+you can pass `-mod=vendor` to `ko` using the `GOFLAGS` environment variable:
+
+```shell
+GOFLAGS="-mod=vendor" ko publish .
+```
+
+To achieve the same using Skaffold's ko builder, use the `flags` field in
+`skaffold.yaml`:
+
+```yaml
+    ko:
+      flags:
+      - -mod=vendor
+```
+
+```shell
+skaffold build
+```
+
+#### Rendering Kubernetes manifests
+
+When you use the Skaffold ko builder, Skaffold takes care of replacing the
+image placeholder name in your Kubernetes manifest files using its
+[render]({{< relref "/docs/pipeline-stages" >}}) functionality.
+
+The ko builder supports image name placeholders that consist of the `ko://`
+prefix, followed by the Go import path to the main package. This means that
+Skaffold works with existing Kubernetes manifest files that use this image name
+placeholder format. Note that Skaffold only replaces image references in fields
+that have the name `image`.
+
+If you previously built images and rendered Kubernetes manifests using `ko`,
+e.g.:
+
+```shell
+ko resolve --filename k8s/*.yaml > out.yaml
+```
+
+You can instead use Skaffold's
+[`render` subcommand]({{< relref "/docs/references/cli#skaffold-render" >}})
+with the `--digest-source local` flag to build and render manifests:
+
+```shell
+skaffold render --digest-source local --offline --output out.yaml
+```
+
+Or you can perform the action as two steps: first `build` the images, then
+`render` the manifests using the output file from the `build` step:
+
+```shell
+skaffold build --file-output artifacts.json --push
+skaffold render --build-artifacts artifacts.json --offline --output out.yaml
+```
+
+Specify the location of your Kubernetes manifests in `skaffold.yaml`:
+
+```yaml
+deploy:
+  kubectl:
+    manifests:
+    - k8s/*.yaml # this is the default
+```
+
+To build images in parallel, consider setting the `SKAFFOLD_BUILD_CONCURRENCY`
+environment variable value to `0`:
+
+```shell
+SKAFFOLD_BUILD_CONCURRENCY=0 skaffold render [...]
+```
+
+You can also set the concurrency value in your `skaffold.yaml`:
+
+```yaml
+build:
+  local:
+    concurrency: 0
+```
 
 ## Advanced usage
 
