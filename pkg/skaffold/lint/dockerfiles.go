@@ -28,7 +28,6 @@ import (
 )
 
 // for testing
-// var getDockerDependencies = docker.GetDependencies
 var getDockerDependenciesForEachFromTo = docker.GetDependenciesByDockerCopyFromTo
 var dockerfileRules = &dockerfileLintRules
 
@@ -128,7 +127,12 @@ func GetDockerfilesLintResults(ctx context.Context, opts Options, dockerCfg dock
 	for _, c := range cfgs {
 		for _, a := range c.Build.Artifacts {
 			if a.DockerArtifact != nil {
-				ws := filepath.Join(workdir, a.Workspace)
+				// TODO(aaron-prindle) HACK - multi-module configs use abs path for a.Workspace vs single module which has rel path
+				// see if there is a built-in/better way of handling this.  This is currently working for multi-module
+				ws := a.Workspace
+				if !filepath.IsAbs(ws) {
+					ws = filepath.Join(workdir, a.Workspace)
+				}
 				fp := filepath.Join(ws, a.DockerArtifact.DockerfilePath)
 				if _, ok := seen[fp]; ok {
 					continue
