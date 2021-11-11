@@ -307,6 +307,8 @@ enum StatusCode {
     STATUSCHECK_CONTAINER_WAITING_UNKNOWN = 503;
     // Container event reason unknown
     STATUSCHECK_UNKNOWN_EVENT = 509;
+    // Status Check internal error
+    STATUSCHECK_INTERNAL_ERROR = 514;
 
     // Deploy failed due to unknown reason
     DEPLOY_UNKNOWN = 504;

@@ -244,7 +244,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
 	cancel()
-	return getSkaffoldDeployStatus(c, resources)
+	return getSkaffoldDeployStatus(c, resources, ctx.Err())
 }
 
 func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
@@ -382,18 +382,25 @@ func pollResourceStatus(ctx context.Context, cfg kubectl.Config, r *resource.Res
 	}
 }
 
-func getSkaffoldDeployStatus(c *counter, rs []*resource.Resource) (proto.StatusCode, error) {
+func getSkaffoldDeployStatus(c *counter, rs []*resource.Resource, ctxErr error) (proto.StatusCode, error) {
 	if c.failed == 0 {
 		return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 	}
 	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
+	if ctxErr == context.DeadlineExceeded {
+		return proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, err
+	} else {
+		if ctxErr == context.Canceled {
+			return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
+		}
+	}
 	for _, r := range rs {
 		if r.StatusCode() != proto.StatusCode_STATUSCHECK_SUCCESS &&
 			r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 			return r.StatusCode(), err
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
+	return proto.StatusCode_STATUSCHECK_INTERNAL_ERROR, err
 }
 
 func getDeadline(d int) time.Duration {

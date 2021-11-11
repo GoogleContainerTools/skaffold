@@ -235,6 +235,7 @@ func TestGetDeployStatus(t *testing.T) {
 		description  string
 		counter      *counter
 		deployments  []*resource.Resource
+		ctxErr      error
 		expected     string
 		expectedCode proto.StatusCode
 		shouldErr    bool
@@ -311,12 +312,36 @@ func TestGetDeployStatus(t *testing.T) {
 			shouldErr:    true,
 			expectedCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
 		},
+		{
+			description: "deployments did not stabilize within deadline",
+			counter:     &counter{total: 3, failed: 2},
+			ctxErr: context.DeadlineExceeded,
+			expected:    "2/3 deployment(s) failed",
+			deployments: []*resource.Resource{
+				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
+					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
+			},
+			expectedCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
+			shouldErr:    true,
+		},
+		{
+			description: "user cancelled session",
+			counter:     &counter{total: 1, failed: 1},
+			ctxErr: context.Canceled,
+			expected:    "1/1 deployment(s) failed",
+			deployments: []*resource.Resource{
+				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
+					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_POD_INITIALIZING}),
+			},
+			expectedCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
+			shouldErr:    true,
+		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latestV1.Pipeline{{}})
-			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments)
+			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments, test.ctxErr)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				t.CheckErrorContains(test.expected, err)
