@@ -39,7 +39,8 @@ var K8sManifestLinters = []Linter{
 var k8sManifestLintRules = []Rule{
 	{
 		Filter: YamlFieldFilter{
-			Filter: yaml.Lookup("metadata", "labels", "app.kubernetes.io/managed-by"),
+			Filter:     yaml.Lookup("metadata", "labels"),
+			FieldMatch: "app.kubernetes.io/managed-by",
 		},
 		RuleID:   K8sManifestManagedByLabelInUse,
 		RuleType: YamlFieldLintRule,
