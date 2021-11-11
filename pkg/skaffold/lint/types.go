@@ -52,7 +52,6 @@ type Rule struct {
 
 type explanationInfo struct {
 	FieldMap map[string]interface{}
-	// FieldMap map[string]string
 }
 
 type Result struct {
@@ -72,7 +71,7 @@ type DockerCommandFilter struct {
 
 type YamlFieldFilter struct {
 	Filter      yaml.Filter
-	FieldOnly   string
+	FieldMatch  string
 	InvertMatch bool
 }
 

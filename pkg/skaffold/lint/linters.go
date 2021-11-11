@@ -135,9 +135,11 @@ func (*YamlFieldLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, 
 			appendRuleIfLintConditionsPass(lintInputs, results, rule, line, col)
 			continue
 		}
-		if yamlFilter.FieldOnly != "" {
-			fieldNode := obj.Field(yamlFilter.FieldOnly)
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, fieldNode.Key.YNode().Line, fieldNode.Key.YNode().Column)
+		if yamlFilter.FieldMatch != "" {
+			mapnode := node.Field(yamlFilter.FieldMatch)
+			if mapnode != nil {
+				appendRuleIfLintConditionsPass(lintInputs, results, rule, mapnode.Key.YNode().Line, mapnode.Key.YNode().Column)
+			}
 			continue
 		}
 		if node.YNode().Kind == yaml.ScalarNode {

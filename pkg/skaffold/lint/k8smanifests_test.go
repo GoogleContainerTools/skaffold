@@ -83,7 +83,7 @@ func TestGetK8sManifestsLintResults(t *testing.T) {
 					{
 						Rule:   ruleIDToK8sManifestRule[K8sManifestManagedByLabelInUse],
 						Line:   7,
-						Column: 35,
+						Column: 5,
 						Explanation: `Found usage of label 'app.kubernetes.io/managed-by'.  skaffold overwrites the 'app.kubernetes.io/managed-by' ` +
 							`field to 'app.kubernetes.io/managed-by: skaffold'. and as such is recommended to remove this label`,
 					},
