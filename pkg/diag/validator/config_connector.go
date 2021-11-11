@@ -69,16 +69,11 @@ func getResourceStatus(res unstructured.Unstructured) (kstatus.Status, *proto.Ac
 	case kstatus.CurrentStatus:
 		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
 	case kstatus.InProgressStatus:
-		if result.Message == "" {
-			ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS, Message: result.Message}
-		} else {
-			// TODO: config connector resource status doesn't distinguish between resource that is making progress towards reconciling from one that is doomed.
-			// This is tracked in b/187759279 internally. As such to avoid stalling the status check phase until timeout in case of a failed resource,
-			// we report an error if there's any message reported without the status being success. This can cause skaffold to fail even when resources
-			// are rightly in an InProgress state, say while adding new nodes.
-			ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, Message: result.Message}
-		}
-
+		// TODO: config connector resource status doesn't distinguish between resource that is making progress towards reconciling from one that is doomed.
+		// This is tracked in b/187759279 internally. As such to avoid stalling the status check phase until timeout in case of a failed resource,
+		// we report an error if there's any message reported without the status being success. This can cause skaffold to fail even when resources
+		// are rightly in an InProgress state, say while adding new nodes.
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS, Message: result.Message}
 	case kstatus.FailedStatus:
 		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, Message: result.Message}
 	case kstatus.TerminatingStatus:

@@ -56,23 +56,23 @@ func TestConfigConnectorValidator(t *testing.T) {
 			},
 		},
 		{
-			description: "resource failed",
+			description: "resource in progress with message",
 			status: map[string]interface{}{
 				"status":  "False",
 				"type":    "Ready",
-				"message": "error",
+				"message": "waiting on dependency",
 			},
 			expected: []Resource{
 				{
 					kind:   "bar",
 					name:   "foo1",
 					status: "InProgress",
-					ae:     &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, Message: "error"},
+					ae:     &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS, Message: "waiting on dependency"},
 				},
 			},
 		},
 		{
-			description: "resource in progress",
+			description: "resource in progress without message",
 			status: map[string]interface{}{
 				"status": "False",
 				"type":   "Ready",
