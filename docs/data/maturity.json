@@ -169,7 +169,7 @@
     "debug": "x",
     "area": "Deploy",
     "feature": "Docker Deployer",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Deploy applications to the local Docker daemon"
   },
   "deploy.status_check": {
