@@ -12,4 +12,5 @@ profiles:
   - name: configconnector
     deploy:
       kubectl:
+        statusCheckDeadlineSeconds: 10
         manifests: ["configconnector.yaml"]
