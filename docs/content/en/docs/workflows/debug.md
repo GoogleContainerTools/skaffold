@@ -106,6 +106,9 @@ Go-based applications are configured to run under [Delve](https://github.com/go-
 Go-based container images are recognized by:
 - the presence of one of the [standard Go runtime environment variables](https://godoc.org/runtime):
   `GODEBUG`, `GOGC`, `GOMAXPROCS`, or `GOTRACEBACK`, or
+- the presence of the
+  [`KO_DATA_PATH` environment variable](https://github.com/google/ko#static-assets)
+  in container images built by [`ko`]({{< relref "/docs/pipeline-stages/builders/ko" >}}), or
 - is launching using `dlv`.
 
 Virtually all container images will need to set one of the Go environment variables.
