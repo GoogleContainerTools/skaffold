@@ -158,14 +158,14 @@ build:
 			cfgFile := t.TempFile("config", []byte(test.inputYaml))
 
 			var b bytes.Buffer
-			err := fix(&b, cfgFile, test.targetVersion, false)
+			err := fix(&b, cfgFile, "", test.targetVersion)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String())
 		})
 	}
 }
 
-func TestFixOverwrite(t *testing.T) {
+func TestFixToFileOverwrite(t *testing.T) {
 	inputYaml := `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
@@ -203,7 +203,7 @@ deploy:
 		cfgFile := t.TempFile("config", []byte(inputYaml))
 
 		var b bytes.Buffer
-		err := fix(&b, cfgFile, latestV1.Version, true)
+		err := fix(&b, cfgFile, cfgFile, latestV1.Version)
 
 		output, _ := ioutil.ReadFile(cfgFile)
 

@@ -803,9 +803,16 @@ Examples:
   # Update "skaffold.yaml" in the current folder to version "skaffold/v1"
   skaffold fix --version skaffold/v1
 
+  # Update "skaffold.yaml" in the current folder in-place
+  skaffold fix --overwrite
+
+  # Update "skaffold.yaml" and write the output to a new file
+  skaffold fix --output skaffold.new.yaml
+
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
+  -o, --output='': File to write the changed config (instead of standard output)
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --sync-remote-cache='missing': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -822,6 +829,7 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)

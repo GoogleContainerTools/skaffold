@@ -17,17 +17,46 @@ limitations under the License.
 package integration
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestFix(t *testing.T) {
+func TestFixExclusiveOptions(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
+	out := skaffold.Fix().InDir("testdata/fix").RunOrFailOutput(t)
+	out, err := skaffold.Fix("--overwrite", "--output=ignored").WithConfig("-").InDir("testdata/fix").
+		WithStdin(out).RunWithCombinedOutput(t)
+	testutil.CheckError(t, true, err)
+	testutil.CheckContains(t, "cannot be used together", string(out))
+}
+
+func TestFixStdout(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 	ns, _ := SetupNamespace(t)
 
 	out := skaffold.Fix().InDir("testdata/fix").RunOrFailOutput(t)
-
 	skaffold.Run().WithConfig("-").InDir("testdata/fix").InNs(ns.Name).WithStdin(out).RunOrFail(t)
+}
+
+func TestFixOutputFile(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	out := skaffold.Fix("--output", filepath.Join("updated.yaml")).InDir("testdata/fix").RunOrFailOutput(t)
+	testutil.CheckContains(t, "written to updated.yaml", string(out))
+	defer os.Remove(filepath.Join("testdata", "fix", "updated.yaml"))
+
+	f, err := ioutil.ReadFile(filepath.Join("testdata", "fix", "updated.yaml"))
+	testutil.CheckError(t, false, err)
+
+	parsed := make(map[string]interface{})
+	err = yaml.UnmarshalStrict(f, parsed)
+	testutil.CheckError(t, false, err)
 }
