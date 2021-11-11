@@ -2520,7 +2520,7 @@
           "x-intellij-html-description": "environment variables, in the <code>key=value</code> form, passed to the build. These environment variables are only used at build time. They are <em>not</em> set in the resulting container image.",
           "default": "[]",
           "examples": [
-            "[\"GOPRIVATE=source.developers.google.com\", \"GOCACHE=/workspace/.gocache\"]"
+            "[\"GOPRIVATE=git.example.com\", \"GOCACHE=/workspace/.gocache\"]"
           ]
         },
         "flags": {
@@ -2549,7 +2549,7 @@
           "x-intellij-html-description": "key-value string pairs to add to the image config.",
           "default": "{}",
           "examples": [
-            "{\"org.opencontainers.image.source\":\"https://github.com/GoogleContainerTools/skaffold\"}"
+            "{\"foo\":\"bar\"}"
           ]
         },
         "ldflags": {
