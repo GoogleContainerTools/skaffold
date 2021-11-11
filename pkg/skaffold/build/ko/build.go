@@ -52,7 +52,13 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	if err != nil {
 		return "", fmt.Errorf("could not build and publish ko image %q: %w", a.ImageName, err)
 	}
-	fmt.Fprintln(out, imageRef.Name())
+
+	outputRef := ref
+	if strings.HasSuffix(ref, ":latest") {
+		// handle tagPolicy sha256
+		outputRef = imageRef.Name()
+	}
+	fmt.Fprintln(out, outputRef)
 
 	return b.getImageIdentifier(ctx, imageRef, ref)
 }

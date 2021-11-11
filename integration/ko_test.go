@@ -70,7 +70,8 @@ func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
 		Workspace: exampleAppDir,
 	}
 	imageName := fmt.Sprintf("%s/%s", registryAddr, "skaffold-ko")
-	digest, err := b.Build(context.Background(), &imageFullNameBuffer, artifact, imageName)
+	imageNameWithTag := fmt.Sprintf("%s:%s", imageName, "latest")
+	digest, err := b.Build(context.Background(), &imageFullNameBuffer, artifact, imageNameWithTag)
 	if err != nil {
 		t.Fatalf("b.Build(): %+v", err)
 	}
