@@ -66,6 +66,9 @@ func GetK8sManifestsLintResults(ctx context.Context, opts Options) (*[]Result, e
 	}
 
 	for _, c := range cfgs {
+		if c.Deploy.KubectlDeploy == nil {
+			continue
+		}
 		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
 			// NOTE: pattern is a pattern that can have wildcards, eg: leeroy-app/kubernetes/*
 			if util.IsURL(pattern) {

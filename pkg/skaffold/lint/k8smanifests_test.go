@@ -62,14 +62,15 @@ func TestGetK8sManifestsLintResults(t *testing.T) {
 		ruleIDToK8sManifestRule[k8sManifestLintRules[i].RuleID] = &k8sManifestLintRules[i]
 	}
 	tests := []struct {
+		shouldErr              bool
+		k8sManifestIsNil       bool
 		description            string
-		rules                  []RuleID
-		moduleAndSkaffoldYamls map[string]string
+		k8sManifestText        string
+		err                    error
 		profiles               []string
 		modules                []string
-		k8sManifestText        string
-		shouldErr              bool
-		err                    error
+		rules                  []RuleID
+		moduleAndSkaffoldYamls map[string]string
 		expected               map[string]*[]Result
 	}{
 		{
@@ -96,6 +97,12 @@ func TestGetK8sManifestsLintResults(t *testing.T) {
 			k8sManifestText:        invalidK8sManifest,
 			moduleAndSkaffoldYamls: map[string]string{"cfg0": testSkaffoldYaml},
 			shouldErr:              true,
+		},
+		{
+			rules:                  []RuleID{},
+			description:            "no k8sManifest file for skaffold.yaml",
+			k8sManifestIsNil:       true,
+			moduleAndSkaffoldYamls: map[string]string{"cfg0": testSkaffoldYaml},
 		},
 	}
 	for _, test := range tests {
@@ -124,11 +131,20 @@ func TestGetK8sManifestsLintResults(t *testing.T) {
 				if err != nil {
 					t.Fatalf("error creating deployment.yaml %s: %v", mp, err)
 				}
-				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-					Metadata: v1.Metadata{Name: module},
-					Pipeline: v1.Pipeline{Deploy: v1.DeployConfig{DeployType: v1.DeployType{KubectlDeploy: &v1.KubectlDeploy{Manifests: []string{mp}}}}},
-				},
-				})
+				if test.k8sManifestIsNil {
+					configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
+						Metadata: v1.Metadata{Name: module},
+						Pipeline: v1.Pipeline{},
+					},
+					})
+				} else {
+					configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
+						Metadata: v1.Metadata{Name: module},
+						Pipeline: v1.Pipeline{Deploy: v1.DeployConfig{DeployType: v1.DeployType{KubectlDeploy: &v1.KubectlDeploy{Manifests: []string{mp}}}}},
+					},
+					})
+				}
+
 				// test overwrites file paths for expected K8sManifestRules as they are made dynamically
 				results := test.expected[module]
 				if results == nil {
