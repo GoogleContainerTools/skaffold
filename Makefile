@@ -182,7 +182,6 @@ build_deps:
 		-t gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST) \
 		deploy/skaffold
 	docker push gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST)
-	@./hack/check-skaffold-builder.sh
 
 .PHONY: skaffold-builder
 skaffold-builder:

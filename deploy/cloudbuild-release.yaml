@@ -1,6 +1,19 @@
 # using default substitutions, provided by Google Cloud Build
 # see: https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values#using_default_substitutions
 steps:
+
+# Build and tag skaffold-deps image using docker with cache-from
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+    - 'build'
+    - '-t'
+    - 'gcr.io/$PROJECT_ID/build_deps:latest'
+    - '--cache-from'
+    - 'gcr.io/k8s-skaffold/build_deps:latest'
+    - '-f'
+    - 'deploy/skaffold/Dockerfile.deps'
+    - '.'
+
 # Grab secret credentials from gcp bucket
   - name: gcr.io/cloud-builders/gcloud
     entrypoint: 'bash'
@@ -38,4 +51,4 @@ images:
 options:
   machineType: 'N1_HIGHCPU_8'
 
-timeout: 1200s
+timeout: 1500s
