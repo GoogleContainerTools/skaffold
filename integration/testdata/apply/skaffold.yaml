@@ -9,3 +9,7 @@ profiles:
     deploy:
       kubectl:
         manifests: ["statefulset.yaml"]
+  - name: configconnector
+    deploy:
+      kubectl:
+        manifests: ["configconnector.yaml"]

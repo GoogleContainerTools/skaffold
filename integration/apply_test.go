@@ -91,6 +91,10 @@ func TestApplyStatusCheckFailure(t *testing.T) {
 			description: "status check for statefulset resources",
 			profile:     "statefulset",
 		},
+		{
+			description: "status check for config connector resources",
+			profile:     "configconnector",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
