@@ -374,8 +374,8 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 func TestStatusCode(t *testing.T) {
 	var tests = []struct {
 		description      string
-		status           proto.StatusCode
 		resourceStatuses []proto.StatusCode
+		status           proto.StatusCode
 		expected         proto.StatusCode
 	}{
 		{
