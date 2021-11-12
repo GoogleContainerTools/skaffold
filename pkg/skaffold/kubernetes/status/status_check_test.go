@@ -293,7 +293,7 @@ func TestGetDeployStatus(t *testing.T) {
 			description:  "user cancelled session",
 			counter:      &counter{total: 2, failed: 0, cancelled: 2},
 			sc:           proto.StatusCode_STATUSCHECK_USER_CANCELLED,
-			expected:     "status check cancelled",
+			expected:     "2/2 deployment(s) status check cancelled",
 			expectedCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 			shouldErr:    true,
 		},
@@ -515,18 +515,21 @@ func TestResourceMarkProcessed(t *testing.T) {
 		description string
 		c           *counter
 		sc          proto.StatusCode
+		ctxErr      error
 		expected    counter
+		expectedB   bool
 	}{
 		{
 			description: "when deployment failed, counter is updated",
 			c:           newCounter(10),
 			sc:          proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
 			expected:    counter{total: 10, failed: 1, pending: 9},
+			expectedB:   true,
 		},
 		{
 			description: "when deployment is cancelled, failed is not updated",
 			c:           newCounter(10),
-			sc:          proto.StatusCode_STATUSCHECK_USER_CANCELLED,
+			ctxErr:      context.Canceled,
 			expected:    counter{total: 10, failed: 0, pending: 9, cancelled: 1},
 		},
 		{
@@ -544,7 +547,10 @@ func TestResourceMarkProcessed(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, test.c.markProcessed(context.Background(), test.sc), cmp.AllowUnexported(counter{}))
+			ctx := testCtx{err: test.ctxErr, Context: context.Background()}
+			actual, actualB := test.c.markProcessed(ctx, test.sc)
+			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(counter{}))
+			t.CheckDeepEqual(test.expectedB, actualB, cmp.AllowUnexported(counter{}))
 		})
 	}
 }
@@ -635,3 +641,12 @@ type statusConfig struct {
 }
 
 func (c *statusConfig) GetKubeContext() string { return TestKubeContext }
+
+type testCtx struct {
+	err error
+	context.Context
+}
+
+func (t testCtx) Err() error {
+	return t.err
+}
