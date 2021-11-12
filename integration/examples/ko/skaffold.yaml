@@ -17,4 +17,6 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-ko
-    ko: {}
+    ko:
+      flags:
+      - -v
