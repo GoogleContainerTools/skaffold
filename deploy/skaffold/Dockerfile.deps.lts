@@ -54,15 +54,6 @@ COPY digests/kpt.${ARCH}.sha256 .
 RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
 RUN chmod +x kpt
 
-# Download container-structure-test (https://github.com/GoogleContainerTools/container-structure-test/releases/latest)
-FROM alpine:3.10 as download-container-structure-test
-ARG ARCH
-ENV CONTAINER_STRUCTURE_TEST_VERSION v1.10.0
-ENV CONTAINER_STRUCTURE_TEST_URL https://storage.googleapis.com/container-structure-test/${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-${ARCH}
-COPY digests/container-structure-test.${ARCH}.sha512 .
-RUN wget -O container-structure-test "${CONTAINER_STRUCTURE_TEST_URL}" && sha512sum -c container-structure-test.${ARCH}.sha512
-RUN chmod +x container-structure-test
-
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ARG ARCH
