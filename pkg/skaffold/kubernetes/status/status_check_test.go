@@ -301,7 +301,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, err := getSkaffoldDeployStatus(test.counter, test.sc)
+			actual, err := getSkaffoldDeployStatus(context.Background(), test.counter, test.sc)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedCode, actual)
 			if test.shouldErr {
@@ -527,7 +527,7 @@ func TestResourceMarkProcessed(t *testing.T) {
 			description: "when deployment is cancelled, failed is not updated",
 			c:           newCounter(10),
 			sc:          proto.StatusCode_STATUSCHECK_USER_CANCELLED,
-			expected:    counter{total: 10, failed: 0, pending: 9},
+			expected:    counter{total: 10, failed: 0, pending: 9, cancelled: 1},
 		},
 		{
 			description: "when deployment is successful, counter is updated",

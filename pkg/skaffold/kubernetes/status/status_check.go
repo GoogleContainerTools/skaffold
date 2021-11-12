@@ -246,7 +246,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
-	return getSkaffoldDeployStatus(c, exitStatusCode)
+	return getSkaffoldDeployStatus(ctx, c, exitStatusCode)
 }
 
 func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
@@ -384,9 +384,10 @@ func pollResourceStatus(ctx context.Context, cfg kubectl.Config, r *resource.Res
 	}
 }
 
-func getSkaffoldDeployStatus(c *counter, sc proto.StatusCode) (proto.StatusCode, error) {
+func getSkaffoldDeployStatus(ctx context.Context, c *counter, sc proto.StatusCode) (proto.StatusCode, error) {
 	// return overall code cancelled if status check for all resources was cancelled
 	if int(c.cancelled) == c.total && c.total > 0 {
+		log.Entry(ctx).Debug("setting skaffold deploy status to STATUSCHECK_USER_CANCELLED")
 		return proto.StatusCode_STATUSCHECK_USER_CANCELLED, fmt.Errorf("status check cancelled")
 	}
 	// return success if no failures find.
@@ -396,8 +397,10 @@ func getSkaffoldDeployStatus(c *counter, sc proto.StatusCode) (proto.StatusCode,
 	// construct an error message and return appropriate error code
 	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
 	if sc == proto.StatusCode_STATUSCHECK_SUCCESS || sc == 0 {
+		log.Entry(ctx).Debugf("found statuscode %s. setting skaffold deploy status to STATUSCHECK_INTERNAL_ERROR.", sc)
 		return proto.StatusCode_STATUSCHECK_INTERNAL_ERROR, err
 	}
+	log.Entry(ctx).Debugf("setting skaffold deploy status to %s.", sc)
 	return sc, err
 }
 
