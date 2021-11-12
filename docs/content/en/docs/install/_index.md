@@ -157,10 +157,12 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 ### Scoop
 
-Skaffold can be installed using the [Scoop package manager](https://scoop.sh/).
+Skaffold can be installed using the [Scoop package manager](https://scoop.sh/)
+from the [extras bucket](https://github.com/lukesampson/scoop-extras#readme).
 This package is not maintained by the Skaffold team.
 
 ```powershell
+scoop bucket add extras
 scoop install skaffold
 ```
 
