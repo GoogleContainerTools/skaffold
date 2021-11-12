@@ -373,14 +373,14 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 
 func TestStatusCode(t *testing.T) {
 	var tests = []struct {
-		description     string
-		status 					proto.StatusCode
-		resourceStatuses    []proto.StatusCode
-		expected        proto.StatusCode
+		description      string
+		status           proto.StatusCode
+		resourceStatuses []proto.StatusCode
+		expected         proto.StatusCode
 	}{
 		{
-			description:     "user cancelled status returns correctly",
-			status: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
+			description: "user cancelled status returns correctly",
+			status:      proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 			resourceStatuses: []proto.StatusCode{
 				proto.StatusCode_STATUSCHECK_UNHEALTHY,
 				proto.StatusCode_STATUSCHECK_SUCCESS,
@@ -388,8 +388,8 @@ func TestStatusCode(t *testing.T) {
 			expected: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 		},
 		{
-			description:     "successful returns correctly",
-			status: proto.StatusCode_STATUSCHECK_SUCCESS,
+			description: "successful returns correctly",
+			status:      proto.StatusCode_STATUSCHECK_SUCCESS,
 			resourceStatuses: []proto.StatusCode{
 				proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING,
 				proto.StatusCode_STATUSCHECK_SUCCESS,
@@ -397,8 +397,8 @@ func TestStatusCode(t *testing.T) {
 			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
 		},
 		{
-			description:     "other dep status returns the pod status",
-			status: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+			description: "other dep status returns the pod status",
+			status:      proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 			resourceStatuses: []proto.StatusCode{
 				proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING,
 				proto.StatusCode_STATUSCHECK_SUCCESS,
@@ -416,15 +416,15 @@ func TestStatusCode(t *testing.T) {
 			dep.resources = map[string]validator.Resource{}
 			for i, sc := range test.resourceStatuses {
 				dep.resources[fmt.Sprintf("foo-%d", i)] = validator.NewResource(
-						"test",
-						"pod",
-						"foo",
-						"Pending",
-						&proto.ActionableErr{
-							ErrCode: sc,
-							Message: "test status",
-						},
-						[]string{},
+					"test",
+					"pod",
+					"foo",
+					"Pending",
+					&proto.ActionableErr{
+						ErrCode: sc,
+						Message: "test status",
+					},
+					[]string{},
 				)
 			}
 			t.CheckDeepEqual(test.expected, dep.StatusCode())
