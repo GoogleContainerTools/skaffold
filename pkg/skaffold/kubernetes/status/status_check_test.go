@@ -230,7 +230,7 @@ func TestGetDeployments(t *testing.T) {
 	}
 }
 
-func TestExitErrorMessage(t *testing.T) {
+func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
 		description  string
 		counter      *counter
