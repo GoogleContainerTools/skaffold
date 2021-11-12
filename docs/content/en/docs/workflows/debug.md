@@ -28,7 +28,7 @@ Debugging is currently supported for five language runtimes.
   - Java and JVM languages (runtime ID: `jvm`) using JDWP
   - Python 3.5+ (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
   - .NET Core (runtime ID: `netcore`) using `vsdbg`
-  
+
 
 ## How It works
 
@@ -38,9 +38,9 @@ Enabling debugging has two phases:
    attempts to recognize the underlying language runtime.  Container images can be
    explicitly configured too.
 3. **Monitoring:** Skaffold watches the cluster to detect when debuggable containers
-   start execution. 
+   start execution.
 
-### Configuring container images for debugging 
+### Configuring container images for debugging
 
 `skaffold debug` examines the *built artifacts* to determine the underlying language runtime technology.
 Kubernetes manifests that reference these artifacts are transformed on-the-fly to enable the
@@ -73,7 +73,7 @@ an event that can be used by tools like IDEs to establish a debug session.
 
   - *Kubernetes Probes*:  `debug` changes the timeouts on HTTP-based
     [liveness, readiness, and startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
-    to 600 seconds (10 minutes) from the default of 1 second. 
+    to 600 seconds (10 minutes) from the default of 1 second.
     This change allows probes to be debugged, and avoids negative
     consequences from blocked probes when the app is already suspended
     during a debugging session.
@@ -95,35 +95,45 @@ an event that can be used by tools like IDEs to establish a debug session.
 
 This section describes how `debug` recognizes the language runtime used in a
 container image, and how the container image is configured for debugging.
- 
+
 Note that many debuggers may require additional information for the location of source files.
 We are looking for ways to identify this information and to pass it back if found.
 
 #### Go (runtime: `go`, protocols: `dlv`)
 
-Go-based applications are configured to run under [Delve](https://github.com/go-delve/delve) in its headless-server mode.
+Go-based applications are configured to run under
+[Delve](https://github.com/go-delve/delve) in its headless-server mode.
 
 Go-based container images are recognized by:
-- the presence of one of the [standard Go runtime environment variables](https://godoc.org/runtime):
+
+- the presence of one of the
+  [standard Go runtime environment variables](https://godoc.org/runtime):
   `GODEBUG`, `GOGC`, `GOMAXPROCS`, or `GOTRACEBACK`, or
 - the presence of the
   [`KO_DATA_PATH` environment variable](https://github.com/google/ko#static-assets)
-  in container images built by [`ko`]({{< relref "/docs/pipeline-stages/builders/ko" >}}), or
+  in container images built by
+  [`ko`]({{< relref "/docs/pipeline-stages/builders/ko" >}}), or
 - is launching using `dlv`.
 
-Virtually all container images will need to set one of the Go environment variables.
-`GOTRACEBACK=single` is the default setting for Go, and `GOTRACEBACK=all` is a 
-generally useful configuration.
+Unless you built your container image using `ko`, set one of the standard Go
+environment variables to allow Skaffold to detect your container as Go.
+`GOTRACEBACK=single` is the default setting for Go, so you can add this
+environment variable without changing behavior. Alternatively, `GOTRACEBACK=all`
+is a useful setting in many situtions.
 
 On recognizing a Go-based container image, `debug` rewrites the container image's
 entrypoint to invoke your application using `dlv`:
+
 ```
 dlv exec --headless --continue --accept-multiclient --listen=:56268 --api-version=2 <app> -- <args> ...
 ```
 
-Your application should be built with the `-gcflags='all=-N -l'` options to disable optimizations and inlining.
-Debugging can be confusing otherwise due to seemingly-random execution jumps from statement reordering and inlining.
-Skaffold configures Docker builds with a `SKAFFOLD_GO_GCFLAGS` build argument flag  with suitable values:
+Your application should be built with the `-gcflags='all=-N -l'` flag to
+disable optimizations and inlining. If you do not add this flag, debugging can
+becoming confusing due to seemingly-random execution jumps that happen due to
+statement reordering and inlining. Skaffold configures Docker builds with a
+`SKAFFOLD_GO_GCFLAGS` build argument that you should use in your `Dockerfile`:
+
 ```
 FROM golang
 ENV GOTRACEBACK=all
@@ -132,35 +142,78 @@ ARG SKAFFOLD_GO_GCFLAGS
 RUN go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /app .
 ```
 
-Note that the `golang:NN-alpine` container images do not include a C compiler which is required
-for `-gcflags='all=-N -l'`.
+Note that the Alpine Linux-based `golang` container images do not include a
+C compiler which is required to build with `-gcflags='all=-N -l'`.
 
-Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): the debug adapter
-may require configuring both the _local_ and _remote_ source path prefixes via the `cwd` and `remotePath` properties.
-The `cwd` property should point to the top-level container of your source files and should generally match
-the artifact's `context` directory in the `skaffold.yaml`.  The `remotePath` path property should be set to the
-remote source location _during compilation_.  For example, the `golang` images, which are
+The ko builder adds `-gcflags='all=-N -l'` automatically when you use
+`skaffold debug`.
+
+We recommend that you do _not_ add the `-trimpath` flag when debugging, as this
+flag removes information from the resulting binary that aids debugging.
+
+##### Skaffold debug using the VS Code Go extension
+
+If you use the debug functionality of the
+[VS Code Go extension](https://github.com/golang/vscode-go) to connect to
+`dlv`, you may need to configure _local_ and _remote_ source paths, via
+either the `cwd` and `remotePath` properties, or the `substitutePath` array
+property
+([reference](https://github.com/golang/vscode-go/blob/master/docs/debugging-legacy.md#launch-configurations)).
+
+The `cwd` or `from` properties should be the absolute path of the top-level
+directory of your source files and should generally match the artifact's
+`context` directory in `skaffold.yaml`. You can represent this using the
+`${workspaceFolder}` variable.
+
+The `remotePath` or `to` properties should be set to the absolute path of the
+source location _during compilation_. For example, the `golang` images, which
+are
 [often used in multi-stage builds](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/getting-started/Dockerfile),
-copy the source code to `/go`.  The following
-[remote launch configuration](https://github.com/Microsoft/vscode-go/wiki/Debugging-Go-code-using-VS-Code#remote-debugging)
+have a default working directory of `/go`. The following
+[configuration](https://github.com/golang/vscode-go/blob/master/docs/debugging-legacy.md#remote-debugging)
 works in this case:
+
 ```json
 {
-  "name": "Skaffold Debug",
-  "type": "go",
-  "request": "launch",
-  "mode": "remote",
-  "host": "localhost",
-  "port": 56268,
-  "cwd": "${workspaceFolder}",
-  "remotePath": "/go/"
+    "name": "Skaffold Debug",
+    "type": "go",
+    "request": "attach",
+    "mode": "remote",
+    "host": "localhost",
+    "port": 56268,
+    "cwd": "${workspaceFolder}",
+    "remotePath": "/go"
 }
 ```
+
+You can use the `substitutePath` property instead of `cwd` and `remotePath`:
+
+```json
+{
+    "name": "Skaffold Debug",
+    "type": "go",
+    "request": "attach",
+    "mode": "remote",
+    "host": "localhost",
+    "port": 56268,
+    "substitutePath": [
+        {
+            "from": "${workspaceFolder}",
+            "to": "/go",
+        },
+    ],
+}
+```
+
+If you use the `ko` local builder, the source path during compilation matches
+the source path in your IDE. In this case, the value for `remotePath` will
+match `cwd`. If the values of both `cwd` and `remotePath` are
+`${workspaceFolder}`, you can omit these properties.
 
 #### Java and Other JVM Languages (runtime: `jvm`, protocols: `jdwp`)
 
 Java/JVM applications are configured to expose the JDWP agent using the `JAVA_TOOL_OPTIONS`
-environment variable.  
+environment variable.
 Note that the use of `JAVA_TOOL_OPTIONS` causes extra debugging output from the JVM on launch.
 
 JVM application are recognized by:
@@ -184,7 +237,7 @@ NodeJS images are recognized by:
 On recognizing a NodeJS-based container image, `debug` rewrites the container image's
 entrypoint to invoke your application with `--inspect`:
 ```
-node --inspect=9229 <app.js> 
+node --inspect=9229 <app.js>
 ```
 
 {{< alert title="Note" >}}
@@ -196,14 +249,14 @@ and skips scripts located in <tt>node_modules</tt>.  For more details see the
 <a href="https://github.com/GoogleContainerTools/container-debug-support/pull/34">associated PR</a>.
 {{< /alert >}}
 
-Note that a debugging client must first obtain [the inspector UUID](https://github.com/nodejs/node/issues/9185#issuecomment-254872466).  
+Note that a debugging client must first obtain [the inspector UUID](https://github.com/nodejs/node/issues/9185#issuecomment-254872466).
 
 
 #### Python (runtime: `python`, protocols: `dap` or `pydevd`)
 
 Python applications are configured to use either  [`debugpy`](https://github.com/microsoft/debugpy/), or
 wrapper around [`pydevd`](https://github.com/fabioz/PyDev.Debugger).  `debugpy` uses the
-[_debug adapter protocol_ (DAP)](https://microsoft.github.io/debug-adapter-protocol/) which 
+[_debug adapter protocol_ (DAP)](https://microsoft.github.io/debug-adapter-protocol/) which
 is supported by Visual Studio Code, [Eclipse LSP4e](https://projects.eclipse.org/projects/technology.lsp4e),
 [and other editors and IDEs](https://microsoft.github.io/debug-adapter-protocol/implementors/tools/).
 
@@ -230,12 +283,12 @@ python -m pydevd --server --port 5678 <app.py>
 As many Python web frameworks use launcher scripts, like `gunicorn`, Skaffold now uses
 a debug launcher that examines the app command-line.
 {{< /alert >}}
-  
+
 
 #### .NET Core (runtime: `dotnet`, protocols: `vsdbg`)
 
 .NET Core applications are configured to be deployed along with `vsdbg`
-for VS Code. 
+for VS Code.
 
 
 .NET Core application are recognized by:
@@ -264,7 +317,7 @@ your base image.  (`//` comments must be stripped.)
     "name": "Skaffold Debug",
     "type": "coreclr",
     "request": "attach",
-    "processId" : 1, 
+    "processId" : 1,
     "justMyCode": true, // set to `true` in debug configuration and `false` in release configuration
     "pipeTransport": {
         "pipeProgram": "kubectl",
@@ -301,7 +354,7 @@ your base image.  (`//` comments must be stripped.)
 **Was Skaffold able to recognize the image?**
 `debug` emits a warning when it is unable to configure an image for debugging:
 ```
-WARN[0005] Image "image-name" not configured for debugging: unable to determine runtime for "image-name" 
+WARN[0005] Image "image-name" not configured for debugging: unable to determine runtime for "image-name"
 ```
 
 See the language runtime section details on how container images are recognized.
@@ -360,7 +413,7 @@ appropriate configuration parameters.
 
 Each transformed workload object carries a `debug.cloud.google.com/config` annotation with
 a JSON object describing the debug configurations for the pod's containers (linebreaks for readability):
-```  
+```
 	debug.cloud.google.com/config={
 		"<containerName>":{"runtime":"<runtimeId>",...},
 		"<containerName>":{"runtime":"<runtimeId>",...},
@@ -387,7 +440,7 @@ debug.cloud.google.com/config={
 ### API: Events
 
 Each debuggable container being started or stopped raises a _debug-container-event_ through
-Skaffold's event mechanism ([gRPC](../references/api/grpc/#debuggingcontainerevent), 
+Skaffold's event mechanism ([gRPC](../references/api/grpc/#debuggingcontainerevent),
 [REST](../references/api/swagger/#/SkaffoldService/Events)).
 
 <details>

@@ -327,7 +327,7 @@ To build images in parallel, consider setting the `SKAFFOLD_BUILD_CONCURRENCY`
 environment variable value to `0`:
 
 ```shell
-SKAFFOLD_BUILD_CONCURRENCY=0 skaffold render [...]
+SKAFFOLD_BUILD_CONCURRENCY=0 skaffold [...]
 ```
 
 You can also set the concurrency value in your `skaffold.yaml`:
@@ -349,6 +349,20 @@ can debug images built using `ko`.
 Images built using `ko` are automatically identified as Go apps by the presence
 of the
 [`KO_DATA_PATH` environment variable](https://github.com/google/ko#static-assets).
+
+Skaffold configures `ko` to build with compiler optimizations and inlining
+disabled (`-gcflags='all=-N -l'`) when you run `skaffold debug` or use
+Cloud Code to
+[debug a Kubernetes application](https://cloud.google.com/code/docs/vscode/debug).
+
+If you debug using VS Code and need to configure a "remote path" or "path on
+remote container", then this value should match your local path, typically
+`${workspaceFolder}`. The reason is that "remote path" in this case means the
+path to your Go source code where it was compiled. The `ko` builder currently
+only supports `local` builds, so the remote path will be same as the local path.
+
+To learn more about how Skaffold debugs Go applications, read the
+[Go section in the Debugging guide]({{< relref "/docs/workflows/debug#go-runtime-go-protocols-dlv" >}}).
 
 ### File sync
 
