@@ -230,109 +230,70 @@ func TestGetDeployments(t *testing.T) {
 	}
 }
 
-func TestGetDeployStatus(t *testing.T) {
+func TestExitErrorMessage(t *testing.T) {
 	tests := []struct {
 		description  string
 		counter      *counter
-		deployments  []*resource.Resource
-		ctxErr      error
+		sc           proto.StatusCode
 		expected     string
 		expectedCode proto.StatusCode
 		shouldErr    bool
 	}{
 		{
-			description: "one error",
-			counter:     &counter{total: 2, failed: 1},
-			deployments: []*resource.Resource{
-				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
-					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
-			},
+			description:  "one error",
+			counter:      &counter{total: 2, failed: 1},
 			expected:     "1/2 deployment(s) failed",
-			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+			sc:           proto.StatusCode_STATUSCHECK_POD_INITIALIZING,
+			expectedCode: proto.StatusCode_STATUSCHECK_POD_INITIALIZING,
 			shouldErr:    true,
 		},
 		{
-			description: "no error",
-			counter:     &counter{total: 2},
-			deployments: []*resource.Resource{
-				withStatus(
-					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
-					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
-				),
-				withStatus(
-					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1),
-					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
-				),
-			},
+			description:  "no error",
+			sc:           proto.StatusCode_STATUSCHECK_SUCCESS,
+			expectedCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+			counter:      &counter{total: 2},
 		},
 		{
-			description: "multiple errors",
-			counter:     &counter{total: 3, failed: 2},
-			expected:    "2/3 deployment(s) failed",
-			deployments: []*resource.Resource{
-				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
-					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
-			},
-			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+			description:  "multiple errors",
+			counter:      &counter{total: 3, failed: 2},
+			expected:     "2/3 deployment(s) failed",
+			sc:           proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED,
+			expectedCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED,
 			shouldErr:    true,
 		},
 		{
 			description: "0 deployments",
-			counter:     &counter{},
+			counter:     &counter{total: 0},
+			expectedCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 		},
 		{
-			description: "unable to retrieve pods for deployment",
-			counter:     &counter{total: 1, failed: 1},
-			deployments: []*resource.Resource{
-				withStatus(
-					resource.NewResource("deployment", resource.ResourceTypes.Deployment, "test", 1),
-					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
-				),
-			},
-			shouldErr:    true,
+			description:  "unable to retrieve pods for deployment",
+			counter:      &counter{total: 1, failed: 1},
+			sc:           proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
 			expectedCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
-		},
-		{
-			description: "one deployment failed and others cancelled and or succeeded",
-			counter:     &counter{total: 3, failed: 2},
-			deployments: []*resource.Resource{
-				withStatus(
-					resource.NewResource("deployment-cancelled", resource.ResourceTypes.Deployment, "test", 1),
-					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
-				),
-				withStatus(
-					resource.NewResource("deployment-success", resource.ResourceTypes.Deployment, "test", 1),
-					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
-				),
-				withStatus(
-					resource.NewResource("deployment", resource.ResourceTypes.Deployment, "test", 1),
-					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
-				),
-			},
-			shouldErr:    true,
-			expectedCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
-		},
-		{
-			description: "deployments did not stabilize within deadline",
-			counter:     &counter{total: 3, failed: 2},
-			ctxErr: context.DeadlineExceeded,
-			expected:    "2/3 deployment(s) failed",
-			deployments: []*resource.Resource{
-				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
-					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
-			},
-			expectedCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
 			shouldErr:    true,
 		},
 		{
-			description: "user cancelled session",
-			counter:     &counter{total: 1, failed: 1},
-			ctxErr: context.Canceled,
-			expected:    "1/1 deployment(s) failed",
-			deployments: []*resource.Resource{
-				resource.NewResource("foo", resource.ResourceTypes.Deployment, "test", time.Second).
-					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_POD_INITIALIZING}),
-			},
+			description:  "one deployment failed and others cancelled and or succeeded",
+			counter:      &counter{total: 3, failed: 2},
+			sc:           proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+			expected:     "2/3 deployment(s) failed",
+			shouldErr:    true,
+		},
+		{
+			description:  "deployments did not stabilize within deadline returns the pod error",
+			counter:      &counter{total: 1, failed: 1},
+			sc:           proto.StatusCode_STATUSCHECK_UNHEALTHY,
+			expected:     "1/1 deployment(s) failed",
+			expectedCode: proto.StatusCode_STATUSCHECK_UNHEALTHY,
+			shouldErr:    true,
+		},
+		{
+			description:  "user cancelled session",
+			counter:      &counter{total: 2, failed: 0, cancelled: 2},
+			sc:           proto.StatusCode_STATUSCHECK_USER_CANCELLED,
+			expected:     "status check cancelled",
 			expectedCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 			shouldErr:    true,
 		},
@@ -340,12 +301,11 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testEvent.InitializeState([]latestV1.Pipeline{{}})
-			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments, test.ctxErr)
+			actual, err := getSkaffoldDeployStatus(test.counter, test.sc)
 			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedCode, actual)
 			if test.shouldErr {
 				t.CheckErrorContains(test.expected, err)
-				t.CheckDeepEqual(test.expectedCode, errCode)
 			}
 		})
 	}
@@ -554,29 +514,37 @@ func TestResourceMarkProcessed(t *testing.T) {
 	tests := []struct {
 		description string
 		c           *counter
-		err         error
+		sc          proto.StatusCode
 		expected    counter
 	}{
 		{
 			description: "when deployment failed, counter is updated",
 			c:           newCounter(10),
-			err:         errors.New("some ae"),
+			sc:          proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
 			expected:    counter{total: 10, failed: 1, pending: 9},
+		},
+		{
+			description: "when deployment is cancelled, failed is not updated",
+			c:           newCounter(10),
+			sc:          proto.StatusCode_STATUSCHECK_USER_CANCELLED,
+			expected:    counter{total: 10, failed: 0, pending: 9},
 		},
 		{
 			description: "when deployment is successful, counter is updated",
 			c:           newCounter(10),
+			sc:          proto.StatusCode_STATUSCHECK_SUCCESS,
 			expected:    counter{total: 10, failed: 0, pending: 9},
 		},
 		{
 			description: "counter when 1 deployment is updated correctly",
 			c:           newCounter(1),
+			sc:          proto.StatusCode_STATUSCHECK_SUCCESS,
 			expected:    counter{total: 1, failed: 0, pending: 0},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, test.c.markProcessed(test.err), cmp.AllowUnexported(counter{}))
+			t.CheckDeepEqual(test.expected, test.c.markProcessed(context.Background(), test.sc), cmp.AllowUnexported(counter{}))
 		})
 	}
 }

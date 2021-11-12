@@ -67,9 +67,10 @@ const (
 )
 
 type counter struct {
-	total   int
-	pending int32
-	failed  int32
+	total     int
+	pending   int32
+	failed    int32
+	cancelled int32
 }
 
 type Config interface {
@@ -220,6 +221,8 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	// Set default status check exit code.
+	var exitStatusCode proto.StatusCode
 
 	for _, d := range resources {
 		wg.Add(1)
@@ -227,10 +230,11 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
 			pollResourceStatus(ctx, s.cfg, r)
-			rcCopy := c.markProcessed(r.Status().Error())
+			rcCopy := c.markProcessed(ctx, r.StatusCode())
 			s.printStatusCheckSummary(out, r, rcCopy)
-			// if one deployment fails, cancel status checks for all deployments.
-			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+			// if one resource fails, cancel status checks for all resources.
+			if resourceFailed(r.StatusCode()) {
+				exitStatusCode = r.StatusCode()
 				cancel()
 			}
 		}(d)
@@ -243,8 +247,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
-	cancel()
-	return getSkaffoldDeployStatus(c, resources, ctx.Err())
+	return getSkaffoldDeployStatus(c, exitStatusCode)
 }
 
 func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
@@ -382,25 +385,21 @@ func pollResourceStatus(ctx context.Context, cfg kubectl.Config, r *resource.Res
 	}
 }
 
-func getSkaffoldDeployStatus(c *counter, rs []*resource.Resource, ctxErr error) (proto.StatusCode, error) {
+func getSkaffoldDeployStatus(c *counter, sc proto.StatusCode) (proto.StatusCode, error) {
+	// return overall code cancelled if status check for all resources was cancelled
+	if int(c.cancelled) == c.total && c.total > 0 {
+		return proto.StatusCode_STATUSCHECK_USER_CANCELLED, fmt.Errorf("status check cancelled")
+	}
+	// return success if no failures find.
 	if c.failed == 0 {
 		return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 	}
+	// construct an error message and return appropriate error code
 	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
-	if ctxErr == context.DeadlineExceeded {
-		return proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, err
-	} else {
-		if ctxErr == context.Canceled {
-			return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
-		}
+	if sc == proto.StatusCode_STATUSCHECK_SUCCESS || sc == 0 {
+		return proto.StatusCode_STATUSCHECK_INTERNAL_ERROR, err
 	}
-	for _, r := range rs {
-		if r.StatusCode() != proto.StatusCode_STATUSCHECK_SUCCESS &&
-			r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
-			return r.StatusCode(), err
-		}
-	}
-	return proto.StatusCode_STATUSCHECK_INTERNAL_ERROR, err
+	return sc, err
 }
 
 func getDeadline(d int) time.Duration {
@@ -490,8 +489,12 @@ func newCounter(i int) *counter {
 	}
 }
 
-func (c *counter) markProcessed(err error) counter {
-	if err != nil && err != context.Canceled {
+func (c *counter) markProcessed(ctx context.Context, sc proto.StatusCode) counter {
+	if resourceCancelled(sc) {
+		log.Entry(ctx).Debug("marking resource status check cancelled", sc)
+		atomic.AddInt32(&c.cancelled, 1)
+	} else if resourceFailed(sc) {
+		log.Entry(ctx).Debugf("marking resource failed due to error code %s", sc)
 		atomic.AddInt32(&c.failed, 1)
 	}
 	atomic.AddInt32(&c.pending, -1)
@@ -500,10 +503,19 @@ func (c *counter) markProcessed(err error) counter {
 
 func (c *counter) copy() counter {
 	return counter{
-		total:   c.total,
-		pending: c.pending,
-		failed:  c.failed,
+		total:     c.total,
+		pending:   c.pending,
+		failed:    c.failed,
+		cancelled: c.cancelled,
 	}
+}
+
+func resourceFailed(sc proto.StatusCode) bool {
+	return sc != proto.StatusCode_STATUSCHECK_SUCCESS && sc != proto.StatusCode_STATUSCHECK_USER_CANCELLED
+}
+
+func resourceCancelled(sc proto.StatusCode) bool {
+	return sc == proto.StatusCode_STATUSCHECK_USER_CANCELLED
 }
 
 type NoopMonitor struct {
