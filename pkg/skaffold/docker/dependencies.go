@@ -264,9 +264,15 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 		absFrom := filepath.Join(workspace, dep)
 
 		keepFile := func(path string, info walk.Dirent) (bool, error) {
+			// This region was never reached
 			// Always keep root folders.
-			if info.IsDir() && path == absFrom {
-				return true, nil
+			// if info.IsDir() && path == absFrom {
+			// 	return false, nil
+			// }
+
+			// Ignore non empty dirs
+			if info.IsDir() && !util.IsEmptyDir(path) {
+				return false, nil
 			}
 
 			ignored, err := dockerIgnored(path, info)
@@ -277,7 +283,7 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 			return !ignored, nil
 		}
 
-		if err := walk.From(absFrom).Unsorted().When(keepFile).WhenIsFile().Do(func(path string, info walk.Dirent) error {
+		if err := walk.From(absFrom).Unsorted().When(keepFile).Do(func(path string, info walk.Dirent) error {
 			relPath, err := filepath.Rel(workspace, path)
 			if err != nil {
 				return err
@@ -289,6 +295,5 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 			return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 		}
 	}
-
 	return files, nil
 }

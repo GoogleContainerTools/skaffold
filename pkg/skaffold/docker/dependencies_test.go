@@ -30,6 +30,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const copyEmptydirectory = `
+FROM ubuntu:14.04
+COPY emptydir .
+`
+
 const copyServerGo = `
 FROM ubuntu:14.04
 COPY server.go .
@@ -284,6 +289,12 @@ func TestGetDependencies(t *testing.T) {
 		shouldErr bool
 	}{
 		{
+			description: "copy empty directory",
+			dockerfile:  copyEmptydirectory,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "emptydir"},
+		},
+		{
 			description: "buildkit dockerfile",
 			dockerfile:  buildKitDockerfile,
 			workspace:   "",
@@ -380,7 +391,7 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description: "dockerignore test",
 			dockerfile:  copyDirectory,
-			ignore:      "bar\ndocker/*",
+			ignore:      "emptydir\nbar\ndocker/*",
 			workspace:   ".",
 			expected:    []string{".dot", "Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 		},
@@ -402,40 +413,40 @@ func TestGetDependencies(t *testing.T) {
 			description: "ignore none",
 			dockerfile:  copyAll,
 			workspace:   ".",
-			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "emptydir", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "ignore dotfiles",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      ".*",
-			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "emptydir", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "ignore dotfiles (root syntax)",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      "/.*",
-			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "emptydir", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "dockerignore with context in parent directory",
 			dockerfile:  copyDirectory,
 			workspace:   "docker/..",
-			ignore:      "bar\ndocker\n*.go",
+			ignore:      "emptydir\nbar\ndocker\n*.go",
 			expected:    []string{".dot", "Dockerfile", "file", "test.conf"},
 		},
 		{
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
-			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "emptydir", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "onbuild with dockerignore",
 			dockerfile:  onbuild,
 			workspace:   ".",
-			ignore:      "bar\ndocker/*",
+			ignore:      "emptydir\nbar\ndocker/*",
 			expected:    []string{".dot", "Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
@@ -579,7 +590,7 @@ func TestGetDependencies(t *testing.T) {
 			description:    "find specific dockerignore",
 			dockerfile:     copyDirectory,
 			workspace:      ".",
-			ignore:         "bar\ndocker/*",
+			ignore:         "emptydir\nbar\ndocker/*",
 			ignoreFilename: "Dockerfile.dockerignore",
 			expected:       []string{".dot", "Dockerfile", "Dockerfile.dockerignore", "file", "server.go", "test.conf", "worker.go"},
 		},
@@ -605,6 +616,7 @@ func TestGetDependencies(t *testing.T) {
 
 			tmpDir := t.NewTempDir().
 				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
+			tmpDir.Mkdir("emptydir")
 			if test.dockerfile != "" {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
@@ -622,7 +634,6 @@ func TestGetDependencies(t *testing.T) {
 				mode: config.RunModes.Dev,
 			}
 			deps, err := GetDependencies(context.Background(), NewBuildConfig(workspace, "test", "Dockerfile", test.buildArgs), m)
-
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, deps)
 		})

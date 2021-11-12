@@ -449,3 +449,13 @@ func TestIsURL(t *testing.T) {
 func stringPointer(s string) *string {
 	return &s
 }
+
+func TestIsEmptyDir(t *testing.T) {
+	tmpDir := testutil.NewTempDir(t).Touch("file")
+	emptyTmpDir := testutil.NewTempDir(t)
+
+	testutil.CheckDeepEqual(t, true, IsEmptyDir(emptyTmpDir.Root()))
+	testutil.CheckDeepEqual(t, false, IsEmptyDir(tmpDir.Root()))
+	testutil.CheckDeepEqual(t, false, IsEmptyDir(filepath.Join(tmpDir.Root(), "file")))
+
+}
