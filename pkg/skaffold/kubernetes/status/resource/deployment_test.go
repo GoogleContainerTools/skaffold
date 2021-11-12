@@ -371,6 +371,67 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 	}
 }
 
+func TestStatusCode(t *testing.T) {
+	var tests = []struct {
+		description     string
+		status 					proto.StatusCode
+		resourceStatuses    []proto.StatusCode
+		expected        proto.StatusCode
+	}{
+		{
+			description:     "user cancelled status returns correctly",
+			status: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
+			resourceStatuses: []proto.StatusCode{
+				proto.StatusCode_STATUSCHECK_UNHEALTHY,
+				proto.StatusCode_STATUSCHECK_SUCCESS,
+			},
+			expected: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
+		},
+		{
+			description:     "successful returns correctly",
+			status: proto.StatusCode_STATUSCHECK_SUCCESS,
+			resourceStatuses: []proto.StatusCode{
+				proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING,
+				proto.StatusCode_STATUSCHECK_SUCCESS,
+			},
+			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
+		},
+		{
+			description:     "other dep status returns the pod status",
+			status: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+			resourceStatuses: []proto.StatusCode{
+				proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING,
+				proto.StatusCode_STATUSCHECK_SUCCESS,
+			},
+			expected: proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1)
+			dep.UpdateStatus(&proto.ActionableErr{
+				ErrCode: test.status,
+				Message: "test status code",
+			})
+			dep.resources = map[string]validator.Resource{}
+			for i, sc := range test.resourceStatuses {
+				dep.resources[fmt.Sprintf("foo-%d", i)] = validator.NewResource(
+						"test",
+						"pod",
+						"foo",
+						"Pending",
+						&proto.ActionableErr{
+							ErrCode: sc,
+							Message: "test status",
+						},
+						[]string{},
+				)
+			}
+			t.CheckDeepEqual(test.expected, dep.StatusCode())
+		})
+	}
+}
+
 type statusConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 }
