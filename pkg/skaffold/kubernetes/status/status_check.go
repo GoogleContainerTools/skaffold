@@ -221,7 +221,6 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	// Set default status check exit code.
 	var exitStatusCode proto.StatusCode
 
 	for _, d := range resources {

@@ -262,8 +262,8 @@ func TestExitErrorMessage(t *testing.T) {
 			shouldErr:    true,
 		},
 		{
-			description: "0 deployments",
-			counter:     &counter{total: 0},
+			description:  "0 deployments",
+			counter:      &counter{total: 0},
 			expectedCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 		},
 		{
