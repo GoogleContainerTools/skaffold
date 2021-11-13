@@ -514,9 +514,9 @@ func TestResourceMarkProcessed(t *testing.T) {
 	tests := []struct {
 		description string
 		c           *counter
-		sc          proto.StatusCode
-		ctxErr      error
 		expected    counter
+		ctxErr      error
+		sc          proto.StatusCode
 		expectedB   bool
 	}{
 		{
@@ -643,8 +643,8 @@ type statusConfig struct {
 func (c *statusConfig) GetKubeContext() string { return TestKubeContext }
 
 type testCtx struct {
-	err error
 	context.Context
+	err error
 }
 
 func (t testCtx) Err() error {
