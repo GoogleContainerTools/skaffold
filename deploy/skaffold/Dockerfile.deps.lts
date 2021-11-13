@@ -22,7 +22,7 @@ ARG ARCH
 ENV KUBECTL_VERSION v1.20.10
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
 # SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
-COPY digests/kubectl.${ARCH}.sha512 .
+COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
 RUN wget -O kubectl "${KUBECTL_URL}" && sha512sum -c kubectl.${ARCH}.sha512
 RUN chmod +x kubectl
 
@@ -32,7 +32,7 @@ ARG ARCH
 RUN echo arch=$ARCH
 ENV HELM_VERSION v3.7.1
 ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
-COPY digests/helm.${ARCH}.sha256 .
+COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
 RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
 RUN tar -xvf helm.tar.gz --strip-components 1
 
@@ -41,7 +41,7 @@ FROM alpine:3.10 as download-kustomize
 ARG ARCH
 ENV KUSTOMIZE_VERSION 4.4.0
 ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
-COPY digests/kustomize.${ARCH}.sha256 .
+COPY deploy/skaffold/digests/kustomize.${ARCH}.sha256 .
 RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}" && sha256sum -c kustomize.${ARCH}.sha256
 RUN tar -xvf kustomize.tar.gz
 
@@ -50,7 +50,7 @@ FROM alpine:3.10 as download-kpt
 ARG ARCH
 ENV KPT_VERSION 0.39.3
 ENV KPT_URL https://github.com/GoogleContainerTools/kpt/releases/download/v${KPT_VERSION}/kpt_linux_amd64
-COPY digests/kpt.${ARCH}.sha256 .
+COPY deploy/skaffold/digests/kpt.${ARCH}.sha256 .
 RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
 RUN chmod +x kpt
 
@@ -60,7 +60,7 @@ ARG ARCH
 ENV GCLOUD_VERSION 360.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
-COPY digests/gcloud.${ARCH}.sha256 .
+COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
 RUN \
     GCLOUDARCH=$(case "${ARCH}" in amd64) echo x86_64;; *) echo ${ARCH};; esac); \
     wget -O gcloud.tar.gz $(echo "${GCLOUD_URL}" | sed "s/GCLOUDARCH/${GCLOUDARCH}/g") && \
