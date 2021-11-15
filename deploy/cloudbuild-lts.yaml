@@ -32,7 +32,7 @@ steps:
   - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest-lts'
     args:
     - 'make'
-    - 'release-build-lts'
+    - 'release-lts-build'
     - 'RELEASE_BUCKET=$_RELEASE_BUCKET'
     - 'GCP_PROJECT=$PROJECT_ID'
 
