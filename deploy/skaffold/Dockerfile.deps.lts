@@ -79,7 +79,6 @@ COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
 COPY --from=download-kustomize kustomize /usr/local/bin/
 COPY --from=download-kpt kpt /usr/local/bin/
-COPY --from=download-container-structure-test container-structure-test /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
 
 # Finish installation of gcloud
