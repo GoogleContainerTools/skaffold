@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/moby/buildkit/frontend/dockerfile/command"
+	"go.lsp.dev/protocol"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -38,12 +39,13 @@ var DockerfileLinters = []Linter{
 
 var dockerfileLintRules = []Rule{
 	{
+		RuleID:   DockerfileCopyOver1000Files,
 		RuleType: DockerfileCommandLintRule,
+		Severity: protocol.DiagnosticSeverityWarning,
 		Filter: DockerCommandFilter{
 			DockerCommand:          command.Copy,
 			DockerCopySourceRegExp: `.*`,
 		},
-		RuleID: DockerfileCopyOver1000Files,
 		ExplanationTemplate: `Found docker 'COPY' command where the source directory "{{index .FieldMap "src"}}" has over 1000 files.  This has the potential to dramatically slow 'skaffold dev' down ` +
 			`as skaffold watches all sources files referenced in dockerfile COPY directives for changes. ` +
 			`If you notice skaffold rebuilding images unnecessarily when non-image-critical files are ` +
@@ -66,12 +68,13 @@ var dockerfileLintRules = []Rule{
 		}},
 	},
 	{
+		RuleID:   DockerfileCopyContainsGitDir,
 		RuleType: DockerfileCommandLintRule,
+		Severity: protocol.DiagnosticSeverityWarning,
 		Filter: DockerCommandFilter{
 			DockerCommand:          command.Copy,
 			DockerCopySourceRegExp: `.*`,
 		},
-		RuleID: DockerfileCopyContainsGitDir,
 		// TODO(aaron-prindle) suggest a full .dockerignore sample - .dockerignore:**/.git
 		ExplanationTemplate: `Found docker 'COPY' command where the source directory "{{index .FieldMap "src"}}" contains a '.git' directory at {{index .FieldMap "gitDirectoryAbsPath"}}.  This has the potential to dramatically slow 'skaffold dev' down ` +
 			`as skaffold will watch all of the files in the .git directory as skaffold watches all sources files referenced in dockerfile COPY directives for changes. ` +

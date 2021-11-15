@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"go.lsp.dev/protocol"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -38,12 +39,13 @@ var K8sManifestLinters = []Linter{
 
 var k8sManifestLintRules = []Rule{
 	{
+		RuleID:   K8sManifestManagedByLabelInUse,
+		RuleType: YamlFieldLintRule,
+		Severity: protocol.DiagnosticSeverityWarning,
 		Filter: YamlFieldFilter{
 			Filter:     yaml.Lookup("metadata", "labels"),
 			FieldMatch: "app.kubernetes.io/managed-by",
 		},
-		RuleID:   K8sManifestManagedByLabelInUse,
-		RuleType: YamlFieldLintRule,
 		ExplanationTemplate: "Found usage of label 'app.kubernetes.io/managed-by'.  skaffold overwrites the 'app.kubernetes.io/managed-by' field to 'app.kubernetes.io/managed-by: skaffold'. " +
 			"and as such is recommended to remove this label",
 	},
