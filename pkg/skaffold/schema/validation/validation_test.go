@@ -1182,9 +1182,16 @@ func TestValidateAcyclicDependencies(t *testing.T) {
 			}
 
 			setDependencies(artifacts, test.dependency)
-			errs := validateAcyclicDependencies(artifacts)
+			artToCfgMap := map[string]*parser.SkaffoldConfigEntry{}
+			for _, a := range artifacts {
+				artToCfgMap[a.ImageName] = &parser.SkaffoldConfigEntry{
+					SourceFile: "skaffold.yaml",
+				}
+			}
+			errs := validateAcyclicDependencies(artifacts, artToCfgMap)
 			expected := []error{
-				fmt.Errorf(`cycle detected in build dependencies involving "artifact1"`),
+				// fmt.Errorf(`cycle detected in build dependencies involving "artifact1"`),
+				fmt.Errorf(`cycle detected in build dependencies involving "artifact1" in file "skaffold.yaml" at line 0, col 0`),
 			}
 			if test.shouldErr {
 				t.CheckDeepEqual(expected, errs, cmp.Comparer(errorsComparer))
@@ -1215,6 +1222,7 @@ func setDependencies(a []*latestV1.Artifact, d map[int][]int) {
 func TestValidateUniqueDependencyAliases(t *testing.T) {
 	cfgs := parser.SkaffoldConfigSet{
 		&parser.SkaffoldConfigEntry{
+			SourceFile: "skaffold.yaml",
 			SkaffoldConfig: &latestV1.SkaffoldConfig{
 				Pipeline: latestV1.Pipeline{
 					Build: latestV1.BuildConfig{
@@ -1240,8 +1248,8 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 		},
 	}
 	expected := []error{
-		fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
-		fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1"`),
+		fmt.Errorf(`invalid build dependency for artifact "artifact1" in file "skaffold.yaml", line 0, column 0 : alias "alias2" repeated`),
+		fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1" in file skaffold.yaml, line 0, column 0`),
 	}
 	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
@@ -1250,6 +1258,7 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 func TestValidateValidDependencyAliases(t *testing.T) {
 	cfgs := parser.SkaffoldConfigSet{
 		&parser.SkaffoldConfigEntry{
+			SourceFile: "skaffold.yaml",
 			SkaffoldConfig: &latestV1.SkaffoldConfig{
 				Pipeline: latestV1.Pipeline{
 					Build: latestV1.BuildConfig{
@@ -1303,9 +1312,9 @@ func TestValidateValidDependencyAliases(t *testing.T) {
 			},
 		}}
 	expected := []error{
-		fmt.Errorf(`invalid build dependency for artifact "artifact2": alias "1_ARTIFACT" doesn't match required pattern %q`, dependencyAliasPattern),
-		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact!" doesn't match required pattern %q`, dependencyAliasPattern),
-		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact#1" doesn't match required pattern %q`, dependencyAliasPattern),
+		fmt.Errorf(`invalid build dependency for artifact "artifact2" in file "skaffold.yaml", line 0, column 0: alias "1_ARTIFACT" doesn't match required pattern %q`, dependencyAliasPattern),
+		fmt.Errorf(`invalid build dependency for artifact "artifact3" in file "skaffold.yaml", line 0, column 0: alias "artifact!" doesn't match required pattern %q`, dependencyAliasPattern),
+		fmt.Errorf(`invalid build dependency for artifact "artifact3" in file "skaffold.yaml", line 0, column 0: alias "artifact#1" doesn't match required pattern %q`, dependencyAliasPattern),
 	}
 	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))

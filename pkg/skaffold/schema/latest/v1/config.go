@@ -877,6 +877,12 @@ type Artifact struct {
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
 	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
+
+	// Line is the line number for the source skaffold.yaml file which has this artifact configuration info
+	Line int `yaml:"-"`
+
+	// Column is the column number for the source skaffold.yaml file for the artifact congfiguration info
+	Column int `yaml:"-"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -1666,4 +1672,26 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 		m["volumeMounts"] = vList
 	}
 	return m, err
+}
+
+func (t *Artifact) UnmarshalYAML(value *yaml.Node) error {
+	type ArtifactForUnmarshaling Artifact
+	arMap := make(map[string]interface{})
+	value.Decode(arMap)
+
+	// Remarshal the remaining values
+	remaining, err := yaml.Marshal(arMap)
+	if err != nil {
+		return err
+	}
+	// Unmarshal the remaining values
+	aux := (*ArtifactForUnmarshaling)(t)
+	err = yaml.Unmarshal(remaining, aux)
+	if err != nil {
+		return err
+	}
+	// Save the line number (the reason we are doing all of this!)
+	t.Line = value.Line + 1     // changing from 0 index line to file index line.  Easier for using w/ IDEs (or there is a bug somewhere as everything is one off....)
+	t.Column = value.Column + 1 // changing from 0 index line to file index line.  Easier for using w/ IDEs (or there is a bug somewhere as everything is one off....)
+	return nil
 }

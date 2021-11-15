@@ -127,30 +127,37 @@ func validateTaggingPolicy(bc latestV1.BuildConfig) (errs []error) {
 // without tags nor digests.
 func validateImageNames(configs parser.SkaffoldConfigSet) (errs []error) {
 	seen := make(map[string]string)
+	arMap := make(map[string]*latestV1.Artifact)
 	for _, c := range configs {
 		for _, a := range c.Build.Artifacts {
 			if prevSource, found := seen[a.ImageName]; found {
-				errs = append(errs, fmt.Errorf("duplicate image %q found in sources %s and %s: artifact image names must be unique across all configurations", a.ImageName, prevSource, c.SourceFile))
+				// TODO(aaron-prindle) make this emit two errors, one for each file when IDE usage is plumbed through
+				errs = append(errs, fmt.Errorf("duplicate image %q found in file %q, line %d, col %d and file %q, line %d, col %d: artifact image names must be unique across all configurations",
+					a.ImageName, c.SourceFile, a.Line, a.Column, prevSource, arMap[a.ImageName].Line, arMap[a.ImageName].Column))
 				continue
 			}
 
 			seen[a.ImageName] = c.SourceFile
+			arMap[a.ImageName] = a
 			parsed, err := docker.ParseReference(a.ImageName)
 			if err != nil {
-				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q: %w", a.ImageName, err))...)
+				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q in file %q, line %d, col %d: %w",
+					a.ImageName, c.SourceFile, a.Line, a.Column, err))...)
 				continue
 			}
 
 			if parsed.Tag != "" {
-				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q: no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))...)
+				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q in file %q, line %d, col %d: no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/",
+					a.ImageName, c.SourceFile, a.Line, a.Column))...)
 			}
 
 			if parsed.Digest != "" {
-				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q: no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))...)
+				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q in file %q, line %d, col %d: no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/",
+					a.ImageName, c.SourceFile, a.Line, a.Column))...)
 			}
 		}
 	}
-	return
+	return errs
 }
 
 func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (errs []error) {
@@ -158,21 +165,27 @@ func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (errs []erro
 	for _, c := range configs {
 		artifacts = append(artifacts, c.Build.Artifacts...)
 	}
-	errs = append(errs, validateUniqueDependencyAliases(artifacts)...)
-	errs = append(errs, validateAcyclicDependencies(artifacts)...)
-	errs = append(errs, validateValidDependencyAliases(artifacts)...)
+	artToCfgMap := map[string]*parser.SkaffoldConfigEntry{}
+	for _, c := range configs {
+		for _, a := range c.Build.Artifacts {
+			artToCfgMap[a.ImageName] = c
+		}
+	}
+	errs = append(errs, validateUniqueDependencyAliases(artifacts, artToCfgMap)...)
+	errs = append(errs, validateAcyclicDependencies(artifacts, artToCfgMap)...)
+	errs = append(errs, validateValidDependencyAliases(artifacts, artToCfgMap)...)
 	return
 }
 
 // validateAcyclicDependencies makes sure all artifact dependencies are found and don't have cyclic references
-func validateAcyclicDependencies(artifacts []*latestV1.Artifact) (errs []error) {
+func validateAcyclicDependencies(artifacts []*latestV1.Artifact, artToCfgMap map[string]*parser.SkaffoldConfigEntry) (errs []error) {
 	m := make(map[string]*latestV1.Artifact)
 	for _, artifact := range artifacts {
 		m[artifact.ImageName] = artifact
 	}
 	visited := make(map[string]bool)
 	for _, artifact := range artifacts {
-		if err := dfs(artifact, visited, make(map[string]bool), m); err != nil {
+		if err := dfs(artifact, visited, make(map[string]bool), m, artToCfgMap); err != nil {
 			errs = append(errs, err)
 			return
 		}
@@ -181,9 +194,9 @@ func validateAcyclicDependencies(artifacts []*latestV1.Artifact) (errs []error) 
 }
 
 // dfs runs a Depth First Search algorithm for cycle detection in a directed graph
-func dfs(artifact *latestV1.Artifact, visited, marked map[string]bool, artifacts map[string]*latestV1.Artifact) error {
+func dfs(artifact *latestV1.Artifact, visited, marked map[string]bool, artifacts map[string]*latestV1.Artifact, artToCfgMap map[string]*parser.SkaffoldConfigEntry) error {
 	if marked[artifact.ImageName] {
-		return fmt.Errorf("cycle detected in build dependencies involving %q", artifact.ImageName)
+		return fmt.Errorf("cycle detected in build dependencies involving %q in file %q at line %d, col %d", artifact.ImageName, artToCfgMap[artifact.ImageName].SourceFile, artifact.Line, artifact.Column)
 	}
 	marked[artifact.ImageName] = true
 	defer func() {
@@ -197,9 +210,10 @@ func dfs(artifact *latestV1.Artifact, visited, marked map[string]bool, artifacts
 	for _, dep := range artifact.Dependencies {
 		d, found := artifacts[dep.ImageName]
 		if !found {
-			return fmt.Errorf("unknown build dependency %q for artifact %q", dep.ImageName, artifact.ImageName)
+			return fmt.Errorf("unknown build dependency %q for artifact %q in file %s, line %d, column %d",
+				dep.ImageName, artifact.ImageName, artToCfgMap[artifact.ImageName].SourceFile, artifact.Line, artifact.Column)
 		}
-		if err := dfs(d, visited, marked, artifacts); err != nil {
+		if err := dfs(d, visited, marked, artifacts, artToCfgMap); err != nil {
 			return err
 		}
 	}
@@ -208,14 +222,15 @@ func dfs(artifact *latestV1.Artifact, visited, marked map[string]bool, artifacts
 
 // validateValidDependencyAliases makes sure that artifact dependency aliases are valid.
 // docker and custom builders require aliases match [a-zA-Z_][a-zA-Z0-9_]* pattern
-func validateValidDependencyAliases(artifacts []*latestV1.Artifact) (errs []error) {
+func validateValidDependencyAliases(artifacts []*latestV1.Artifact, artToCfgMap map[string]*parser.SkaffoldConfigEntry) (errs []error) {
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil && a.CustomArtifact == nil {
 			continue
 		}
 		for _, d := range a.Dependencies {
 			if !dependencyAliasPattern.MatchString(d.Alias) {
-				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: alias %q doesn't match required pattern %q", a.ImageName, d.Alias, dependencyAliasPattern.String()))
+				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q in file %q, line %d, column %d: alias %q doesn't match required pattern %q",
+					a.ImageName, artToCfgMap[a.ImageName].SourceFile, a.Line, a.Column, d.Alias, dependencyAliasPattern.String()))
 			}
 		}
 	}
@@ -223,7 +238,7 @@ func validateValidDependencyAliases(artifacts []*latestV1.Artifact) (errs []erro
 }
 
 // validateUniqueDependencyAliases makes sure that artifact dependency aliases are unique for each artifact
-func validateUniqueDependencyAliases(artifacts []*latestV1.Artifact) (errs []error) {
+func validateUniqueDependencyAliases(artifacts []*latestV1.Artifact, artToCfgMap map[string]*parser.SkaffoldConfigEntry) (errs []error) {
 	type State int
 	var (
 		unseen   State = 0
@@ -234,7 +249,8 @@ func validateUniqueDependencyAliases(artifacts []*latestV1.Artifact) (errs []err
 		aliasMap := make(map[string]State)
 		for _, d := range a.Dependencies {
 			if aliasMap[d.Alias] == seen {
-				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: alias %q repeated", a.ImageName, d.Alias))
+				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q in file %q, line %d, column %d : alias %q repeated",
+					a.ImageName, artToCfgMap[a.ImageName].SourceFile, a.Line, a.Column, d.Alias))
 				aliasMap[d.Alias] = recorded
 			} else if aliasMap[d.Alias] == unseen {
 				aliasMap[d.Alias] = seen
