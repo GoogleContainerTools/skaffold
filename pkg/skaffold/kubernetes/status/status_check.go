@@ -67,9 +67,10 @@ const (
 )
 
 type counter struct {
-	total   int
-	pending int32
-	failed  int32
+	total     int
+	pending   int32
+	failed    int32
+	cancelled int32
 }
 
 type Config interface {
@@ -220,17 +221,23 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	var exitStatusOnce sync.Once
+	var exitStatus proto.StatusCode
 
 	for _, d := range resources {
 		wg.Add(1)
 		go func(r *resource.Resource) {
 			defer wg.Done()
-			// keep updating the resource status until it fails/succeeds/times out
+			// keep updating the resource status until it fails/succeeds/times out/cancelled.
 			pollResourceStatus(ctx, s.cfg, r)
-			rcCopy := c.markProcessed(r.Status().Error())
+			rcCopy, failed := c.markProcessed(ctx, r.StatusCode())
 			s.printStatusCheckSummary(out, r, rcCopy)
-			// if one deployment fails, cancel status checks for all deployments.
-			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+			// if a resource fails, cancel status checks for all resources to fail fast
+			// and capture the first failed exit code.
+			if failed {
+				exitStatusOnce.Do(func() {
+					exitStatus = r.StatusCode()
+				})
 				cancel()
 			}
 		}(d)
@@ -243,8 +250,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
-	cancel()
-	return getSkaffoldDeployStatus(c, resources)
+	return getSkaffoldDeployStatus(ctx, c, exitStatus)
 }
 
 func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
@@ -382,18 +388,23 @@ func pollResourceStatus(ctx context.Context, cfg kubectl.Config, r *resource.Res
 	}
 }
 
-func getSkaffoldDeployStatus(c *counter, rs []*resource.Resource) (proto.StatusCode, error) {
+func getSkaffoldDeployStatus(ctx context.Context, c *counter, sc proto.StatusCode) (proto.StatusCode, error) {
+	if c.total == int(c.cancelled) && c.total > 0 {
+		err := fmt.Errorf("%d/%d deployment(s) status check cancelled", c.cancelled, c.total)
+		return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
+	}
+	// return success if no failures find.
 	if c.failed == 0 {
 		return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 	}
+	// construct an error message and return appropriate error code
 	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
-	for _, r := range rs {
-		if r.StatusCode() != proto.StatusCode_STATUSCHECK_SUCCESS &&
-			r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
-			return r.StatusCode(), err
-		}
+	if sc == proto.StatusCode_STATUSCHECK_SUCCESS || sc == 0 {
+		log.Entry(ctx).Debugf("found statuscode %s. setting skaffold deploy status to STATUSCHECK_INTERNAL_ERROR.", sc)
+		return proto.StatusCode_STATUSCHECK_INTERNAL_ERROR, err
 	}
-	return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
+	log.Entry(ctx).Debugf("setting skaffold deploy status to %s.", sc)
+	return sc, err
 }
 
 func getDeadline(d int) time.Duration {
@@ -483,19 +494,26 @@ func newCounter(i int) *counter {
 	}
 }
 
-func (c *counter) markProcessed(err error) counter {
-	if err != nil && err != context.Canceled {
-		atomic.AddInt32(&c.failed, 1)
-	}
+func (c *counter) markProcessed(ctx context.Context, sc proto.StatusCode) (counter, bool) {
 	atomic.AddInt32(&c.pending, -1)
-	return c.copy()
+	if ctx.Err() == context.Canceled {
+		log.Entry(ctx).Debug("marking resource status check cancelled", sc)
+		atomic.AddInt32(&c.cancelled, 1)
+		return c.copy(), false
+	} else if sc == proto.StatusCode_STATUSCHECK_SUCCESS {
+		return c.copy(), false
+	}
+	log.Entry(ctx).Debugf("marking resource failed due to error code %s", sc)
+	atomic.AddInt32(&c.failed, 1)
+	return c.copy(), true
 }
 
 func (c *counter) copy() counter {
 	return counter{
-		total:   c.total,
-		pending: c.pending,
-		failed:  c.failed,
+		total:     c.total,
+		pending:   c.pending,
+		failed:    c.failed,
+		cancelled: c.cancelled,
 	}
 }
 

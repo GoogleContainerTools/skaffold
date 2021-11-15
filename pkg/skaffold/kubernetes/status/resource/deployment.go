@@ -428,13 +428,15 @@ func (r *Resource) fetchPods(ctx context.Context) error {
 	return nil
 }
 
-// StatusCode() returns the rollout status code if the status check is cancelled
+// StatusCode returns the rollout status code if the status check is cancelled
 // or if no pod data exists for this rollout.
 // If pods are fetched, this function returns the error code a pod container encountered.
 func (r *Resource) StatusCode() proto.StatusCode {
-	// do not process pod status codes if another rollout failed
-	// or the user aborted the run.
-	if r.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+	// do not process pod status codes
+	// 1) the user aborted the run or
+	// 2) if another rollout failed which cancelled this deployment status check
+	// 3) the deployment is successful. In case of successful rollouts, the code doesn't fetch the updated pod statuses.
+	if r.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED || r.statusCode == proto.StatusCode_STATUSCHECK_SUCCESS {
 		return r.statusCode
 	}
 	for _, p := range r.resources {
