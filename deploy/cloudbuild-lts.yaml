@@ -8,7 +8,7 @@ steps:
     - '-t'
     - 'gcr.io/$PROJECT_ID/build_deps:latest-lts'
     - '--cache-from'
-    - 'gcr.io/k8s-skaffold/build_deps:latest-lts'
+    - 'gcr.io/$PROJECT_ID/build_deps:latest-lts'
     - '-f'
     - 'deploy/skaffold/Dockerfile.deps.lts'
     - '.'
@@ -23,13 +23,15 @@ steps:
     args:
     - 'build'
     - '-t'
-    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest-lts'
+    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
+    - '--cache-from'
+    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     - '-f'
-    - 'deploy/skaffold/Dockerfile.lts'
+    - 'deploy/skaffold/Dockerfile'
     - '.'
 
 # Do the go build & push the results to GCS
-  - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest-lts'
+  - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     args:
     - 'make'
     - 'release-lts-build'

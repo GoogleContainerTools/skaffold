@@ -23,14 +23,16 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
     - 'build'
+    - '--cache-from'
+    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     - '-t'
-    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest-lts'
+    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     - '-f'
-    - 'deploy/skaffold/Dockerfile.lts'
+    - 'deploy/skaffold/Dockerfile'
     - '.'
 
 # Do the go build & push the results to GCS
-  - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest-lts'
+  - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     args:
     - 'make'
     - 'release-lts'
