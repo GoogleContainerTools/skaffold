@@ -41,7 +41,7 @@ steps:
     - 'GCP_PROJECT=$PROJECT_ID'
 
 # Check that skaffold is in the image
-  - name: 'gcr.io/$PROJECT_ID/skaffold:latest-lts'
+  - name: 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME-lts'
     args:
     - 'skaffold'
     - 'version'
