@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"go.lsp.dev/protocol"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -59,6 +60,7 @@ var skaffoldYamlLintRules = []Rule{
 	{
 		RuleID:   SkaffoldYamlAPIVersionOutOfDate,
 		RuleType: YamlFieldLintRule,
+		Severity: protocol.DiagnosticSeverityWarning,
 		Filter: YamlFieldFilter{
 			Filter: yaml.FieldMatcher{Name: "apiVersion", StringRegexValue: fmt.Sprintf("[^%s]", version.Get().ConfigVersion)},
 		},
@@ -68,6 +70,7 @@ var skaffoldYamlLintRules = []Rule{
 	{
 		RuleID:   SkaffoldYamlUseStaticPort,
 		RuleType: YamlFieldLintRule,
+		Severity: protocol.DiagnosticSeverityWarning,
 		Filter: YamlFieldFilter{
 			Filter:      yaml.FieldMatcher{Name: "portForward"},
 			InvertMatch: true,
