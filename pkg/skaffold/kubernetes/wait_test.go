@@ -22,6 +22,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
@@ -49,6 +50,10 @@ func TestWaitForPodSucceeded(t *testing.T) {
 			timeout:     10 * time.Millisecond,
 			phases:      []v1.PodPhase{v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning},
 			shouldErr:   true,
+		}, {
+			description: "resilient to network issues",
+			timeout:     1 * time.Second,
+			phases:      []v1.PodPhase{v1.PodRunning, "", "", v1.PodSucceeded},
 		},
 	}
 
@@ -70,11 +75,18 @@ func TestWaitForPodSucceeded(t *testing.T) {
 				if fakeWatcher.IsStopped() {
 					break
 				}
-				fakeWatcher.Modify(&v1.Pod{
-					Status: v1.PodStatus{
-						Phase: phase,
-					},
-				})
+				switch phase {
+				case v1.PodPending, v1.PodRunning, v1.PodFailed, v1.PodSucceeded, v1.PodUnknown:
+					fakeWatcher.Modify(&v1.Pod{
+						Status: v1.PodStatus{
+							Phase: phase,
+						},
+					})
+				default:
+					fakeWatcher.Modify(&metav1.Status{
+						Status: "Failure",
+					})
+				}
 				time.Sleep(1 * time.Millisecond)
 			}
 			err := <-errChan
