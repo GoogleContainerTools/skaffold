@@ -57,7 +57,7 @@ RUN chmod +x kpt
 # Download kompose
 FROM alpine:3.10 as download-kompose
 ARG ARCH
-ENV KOMPOSE_VERSION v1.24.0
+ENV KOMPOSE_VERSION v1.26.0
 ENV KOMPOSE_URL https://github.com/kubernetes/kompose/releases/download/${KOMPOSE_VERSION}/kompose-linux-amd64
 COPY deploy/skaffold/digests/kompose.${ARCH}.sha256 .
 RUN wget -O kompose "${KOMPOSE_URL}" && sha256sum -c kompose.${ARCH}.sha256
