@@ -20,8 +20,8 @@ https://storage.googleapis.com/skaffold/releases/v1.35.0/skaffold-windows-amd64.
 Note: This release comes with a new config version, `v2beta26`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
 
 Highlights:
-* Skaffold's native support for `ko` builder for golang projects. Please try it out and let us [know](https://skaffold.dev/docs/pipeline-stages/builders/ko/)
-* Skaffold performs status-check for stateful sets [#6828](https://github.com/GoogleContainerTools/skaffold/pull/6828)
+* [alpha] Skaffold now natively supports  `ko` builder for golang projects. Please try it out and let us [know](https://skaffold.dev/docs/pipeline-stages/builders/ko/)
+* Skaffold now performs status-check for stateful sets [#6828](https://github.com/GoogleContainerTools/skaffold/pull/6828)
 
 New Features and Additions:
 * feat: add lts image, cloud build triggers [#6844](https://github.com/GoogleContainerTools/skaffold/pull/6844)
@@ -109,7 +109,6 @@ Huge thanks goes out to all of our contributors for this release:
 - Pablo Caderno
 - Rouan van der Ende
 - Tejal Desai
-- dependabot[bot]
 - jrcast
 
 # v1.34.0 Release - 10/26/2021
