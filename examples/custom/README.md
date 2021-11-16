@@ -1,5 +1,10 @@
 ### Example: use the custom builder with ko
 
+**Note:** Skaffold now includes a
+[`ko` builder](https://skaffold.dev/docs/pipeline-stages/builders/ko/).
+When you use the `ko` builder, you do not need to provide a custom build shell
+script or install the `ko` binary.
+
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/custom)
 
 This example shows how the custom builder can be used to
