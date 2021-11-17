@@ -3,8 +3,11 @@ title: "Quickstart"
 linkTitle: "Quickstart"
 weight: 20
 ---
+{{% tabs %}}
 
-Follow this tutorial to learn about Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
+{{% tab "STANDALONE" %}}
+
+Follow this tutorial if you're using the Skaffold [standalone binary]({{< relref "../install/#standalone-binary" >}}). It walks through running Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
 and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)! 
 
 This tutorial uses minikube as Skaffold knows to build the app using the Docker daemon hosted
@@ -25,17 +28,6 @@ In this quickstart, you will:
 * Use `skaffold run` to build and deploy your app once, similar to a CI/CD pipeline
 
 ## Set up
-
-{{< alert title="New!" >}}
-
-Skip this setup step by using Google Cloud Platform's [_Cloud Shell_](http://cloud.google.com/shell),
-which provides a [browser-based terminal/CLI and editor](https://cloud.google.com/shell#product-demo).
-Cloud Shell comes with Skaffold, Minikube, and Docker pre-installed, and is free
-(requires a [Google Account](https://accounts.google.com/SignUp)).
-
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_git_repo=https%3A%2F%2Fgithub.com%2FGoogleContainerTools%2Fskaffold&cloudshell_working_dir=examples%2Fgetting-started)
-
-{{< /alert >}}
 
 This tutorial requires Skaffold, Minikube, and Kubectl.
 
@@ -177,6 +169,39 @@ is completed, you should see the changes reflected in the output in the terminal
 
 If you prefer building and deploying once at a time, run `skaffold run`.
 Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
+
+{{% /tab %}}
+
+{{% tab "CLOUD CODE" %}}
+
+Follow these quickstart guides if you're using Skaffold with the [Cloud Code]({{< relref "../install/#managed-ide" >}}) IDE extensions:
+
+### [Cloud Code for VSCode](https://cloud.google.com/code/docs/vscode/quickstart-k8s)
+
+Create, locally develop, debug, and run a Kubernetes application with Cloud Code for VSCode.
+
+![vscode](/images/cloud-code-quick-deploy.gif)
+
+<br />
+
+### [Cloud Code for IntelliJ](https://cloud.google.com/code/docs/intellij/quickstart-k8s)
+
+Create, locally develop, debug, and run a Kubernetes application with Cloud Code for IntelliJ.
+
+![intellij](/images/intellij-quickstart-runthrough.gif)
+
+{{% /tab %}}
+{{% tab "CLOUD SHELL" %}}
+
+Skip any setup by using Google Cloud Platform's [_Cloud Shell_](http://cloud.google.com/shell),
+which provides a [browser-based terminal/CLI and editor](https://cloud.google.com/shell#product-demo).
+Cloud Shell comes with Skaffold, Minikube, and Docker pre-installed, and is free
+(requires a [Google Account](https://accounts.google.com/SignUp)).
+
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ide.cloud.google.com/?walkthrough_tutorial_url=https%3A%2F%2Fwalkthroughs.googleusercontent.com%2Fcontent%2Fgke_cloud_code_create_app%2Fgke_cloud_code_create_app.md)
+
+{{% /tab %}}
+{{% /tabs %}}
 
 ## What's next
 
