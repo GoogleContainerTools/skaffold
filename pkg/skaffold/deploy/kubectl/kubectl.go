@@ -180,8 +180,8 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// also, manually set the labels to ensure the runID is added
 	switch {
 	case len(k.hydratedManifests) > 0:
-		_, endTrace = instrumentation.StartTrace(ctx, "Deploy_createManifestList")
-		manifests, err = createManifestList(k.hydratedManifests)
+		_, endTrace = instrumentation.StartTrace(ctx, "Deploy_readHydratedManifests")
+		manifests, err = k.kubectl.ReadManifests(ctx, k.hydratedManifests)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return err
