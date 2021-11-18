@@ -14,3 +14,7 @@ profiles:
       kubectl:
         statusCheckDeadlineSeconds: 10
         manifests: ["configconnector.yaml"]
+  - name: pod
+    deploy:
+      kubectl:
+        manifests: ["pod.yaml"]
