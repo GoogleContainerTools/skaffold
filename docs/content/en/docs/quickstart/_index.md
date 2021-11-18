@@ -180,7 +180,7 @@ Follow these quickstart guides if you're using Skaffold with the [Cloud Code]({{
 
 Create, locally develop, debug, and run a Kubernetes application with Cloud Code for VSCode.
 
-![vscode](/images/cloud-code-quick-deploy.gif)
+<a href="https://cloud.google.com/code/docs/vscode/quickstart-k8s">![vscode](/images/cloud-code-quick-deploy.gif)</a>
 
 <br />
 
@@ -188,7 +188,7 @@ Create, locally develop, debug, and run a Kubernetes application with Cloud Code
 
 Create, locally develop, debug, and run a Kubernetes application with Cloud Code for IntelliJ.
 
-![intellij](/images/intellij-quickstart-runthrough.gif)
+<a href="https://cloud.google.com/code/docs/intellij/quickstart-k8s">![intellij](/images/intellij-quickstart-runthrough.gif)</a>
 
 {{% /tab %}}
 {{% tab "CLOUD SHELL" %}}
