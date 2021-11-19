@@ -45,19 +45,43 @@ The following options can optionally be configured:
 
 {{< schema root="LocalBuild" >}}
 
-**Faster builds**
+### Faster builds
+
+There are a few options for achieving faster local builds.
+
+#### Avoiding pushes
 
 When deploying to a [local cluster]({{<relref "/docs/environment/local-cluster" >}}), 
-Skaffold will default `push` to `false` to speed up builds.
+Skaffold defaults `push` to `false` to speed up builds.  The `push`
+setting can be set from the command-line with `--push`.
 
-Skaffold can build artifacts in parallel by setting `concurrency` to a value other than `1`, and `0` means there are no limits.
-For local builds, this is however disabled by default since local builds could have side effects that are
-not compatible with parallel builds. Feel free to increase the `concurrency` if you know that your builds
-can run in parallel.
+#### Parallel builds
 
-{{<alert title="Note">}}
+The `concurrency` controls the number of image builds that are run in parallel.
+Skaffold disables concurrency by default for local builds as several
+image builder types (`custom`, `jib`) may change files on disk and
+result in side-effects.
+`concurrency` can be set to `0` to enable full parallelism, though
+this may consume significant resources.
+The concurrency setting can be set from the command-line with the
+`--build-concurrency` flag.
+
 When artifacts are built in parallel, the build logs are still printed in sequence to make them easier to read.
-{{</alert>}}
+
+#### Build avoidance with `tryImportMissing`
+
+`tryImportMissing: true` causes Skaffold to avoid building an image when
+the tagged image already exists in the destination.  This setting can be
+useful for images that are expensive to build.
+
+`tryImportMissing` is disabled by default to avoid the risk from importing
+a _stale image_, where the imported image is different from the image
+that would have been built from the artifact source.
+`tryImportMissing` is best used with a
+[tagging policy]({{<relref "/docs/pipeline-stages/taggers" >}}) such as
+`imageDigest` or `gitCommit`'s `TreeSha` or `AbbrevTreeSha` variants,
+where the tag is computed using the artifact's contents.
+
 
 ## In Cluster Build
 
