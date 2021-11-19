@@ -107,6 +107,11 @@ func (m *YAMLInfos) LocateElement(obj interface{}, idx int) *Location {
 }
 
 // Locate gets the location for a skaffold schema struct pointer
+func (m *YAMLInfos) LocateField(obj interface{}, fieldName string) *Location {
+	return m.locate(obj, fieldName)
+}
+
+// Locate gets the location for a skaffold schema struct pointer
 func (m *YAMLInfos) LocateByPointer(ptr uintptr) *Location {
 	if m == nil {
 		log.Entry(context.TODO()).Infof("YamlInfos is nil, unable to complete call to LocateByPointer for pointer: %d", ptr)
@@ -137,11 +142,6 @@ func (m *YAMLInfos) LocateByPointer(ptr uintptr) *Location {
 		EndLine:     node.RNode.Document().Line + lines,
 		EndColumn:   cols,
 	}
-}
-
-// Locate gets the location for a skaffold schema struct pointer
-func (m *YAMLInfos) LocateField(obj interface{}, fieldName string) *Location {
-	return m.locate(obj, fieldName)
 }
 
 func (m *YAMLInfos) locate(obj interface{}, key string) *Location {
