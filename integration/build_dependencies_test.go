@@ -50,12 +50,12 @@ func TestBuildDependenciesOrder(t *testing.T) {
 		{
 			description: "invalid dependency",
 			args:        []string{"-p", "invalid-dependency"},
-			failure:     `invalid skaffold config: unknown build dependency "image5" for artifact "image1"`,
+			failure:     `unknown build dependency "image5" for artifact "image1"`,
 		},
 		{
 			description: "circular dependency",
 			args:        []string{"-p", "circular-dependency"},
-			failure:     `invalid skaffold config: cycle detected in build dependencies involving "image1"`,
+			failure:     `cycle detected in build dependencies involving "image1"`,
 		},
 		{
 			description: "build failure with concurrency=1",
