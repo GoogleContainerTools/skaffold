@@ -94,6 +94,13 @@ func GetConfigSet(ctx context.Context, opts config.SkaffoldOptions) (SkaffoldCon
 	if unmatched := unmatchedProfiles(r.appliedProfiles, opts.Profiles); len(unmatched) != 0 {
 		return nil, sErrors.ConfigProfilesNotMatchedErr(unmatched)
 	}
+	for _, c := range cfgs {
+		ynodes, err := Parse(c)
+		if err != nil {
+			return nil, err
+		}
+		c.YAMLNodes = ynodes
+	}
 	return cfgs, nil
 }
 
