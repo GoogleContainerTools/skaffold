@@ -16,7 +16,10 @@ limitations under the License.
 
 package parser
 
-import latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+)
 
 // SkaffoldConfigSet encapsulates a slice of skaffold configurations.
 type SkaffoldConfigSet []*SkaffoldConfigEntry
@@ -28,6 +31,7 @@ type SkaffoldConfigEntry struct {
 	SourceIndex  int
 	IsRootConfig bool
 	IsRemote     bool
+	YAMLInfos    *configlocations.YAMLInfos
 }
 
 // SelectRootConfigs filters SkaffoldConfigSet to only configs read from the root skaffold.yaml file
@@ -39,4 +43,15 @@ func (s SkaffoldConfigSet) SelectRootConfigs() SkaffoldConfigSet {
 		}
 	}
 	return filteredSet
+}
+
+// Locate gets the location for a skaffold schema struct pointer
+func (s SkaffoldConfigSet) Locate(obj interface{}) *configlocations.Location {
+	loc := configlocations.MissingLocation()
+	for _, c := range s {
+		if l := c.YAMLInfos.Locate(obj); l.StartLine != -1 {
+			loc = l
+		}
+	}
+	return loc
 }

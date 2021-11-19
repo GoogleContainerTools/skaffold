@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -91,7 +92,7 @@ func TestValidateSchema(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{SkaffoldConfig: test.cfg}},
+			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{SkaffoldConfig: test.cfg, YAMLInfos: configlocations.NewYAMLInfos()}},
 				Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
@@ -964,6 +965,7 @@ func TestValidateImageNames(t *testing.T) {
 			err := Process(
 				parser.SkaffoldConfigSet{
 					&parser.SkaffoldConfigEntry{
+						YAMLInfos: configlocations.NewYAMLInfos(),
 						SkaffoldConfig: &latestV1.SkaffoldConfig{
 							Pipeline: latestV1.Pipeline{
 								Build: latestV1.BuildConfig{
@@ -1496,7 +1498,7 @@ func TestValidateKubectlManifests(t *testing.T) {
 
 			set := parser.SkaffoldConfigSet{}
 			for _, c := range test.configs {
-				set = append(set, &parser.SkaffoldConfigEntry{SkaffoldConfig: c})
+				set = append(set, &parser.SkaffoldConfigEntry{SkaffoldConfig: c, YAMLInfos: configlocations.NewYAMLInfos()})
 			}
 			errs := validateKubectlManifests(set)
 			var err error
