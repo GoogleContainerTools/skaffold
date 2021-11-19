@@ -107,6 +107,9 @@ const (
 	DockerfileCopyContainsGitDir
 
 	K8sManifestManagedByLabelInUse
+
+	// TODO(aaron-prindle) see if it makes sense to add a rule type for each validation error possibility
+	ValidationError
 )
 
 func (a RuleID) String() string {

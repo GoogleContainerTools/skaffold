@@ -29,6 +29,8 @@ import (
 )
 
 var stdin []byte
+
+// Fs is the underlying filesystem to use for reading skaffold project files & configuration.  OS FS by default
 var Fs = afero.NewOsFs()
 
 // ReadConfiguration reads a `skaffold.yaml` configuration and

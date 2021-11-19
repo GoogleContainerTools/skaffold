@@ -35,6 +35,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -54,6 +55,11 @@ type Options struct {
 	CheckDeploySource bool
 }
 
+type ErrorWithLocation struct {
+	Error    error
+	Location *configlocations.Location
+}
+
 func GetValidationOpts(opts config.SkaffoldOptions) Options {
 	switch opts.Mode() {
 	case config.RunModes.Dev, config.RunModes.Deploy, config.RunModes.Run, config.RunModes.Debug, config.RunModes.Render:
@@ -63,22 +69,20 @@ func GetValidationOpts(opts config.SkaffoldOptions) Options {
 	}
 }
 
-// Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
-func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
+// ProcessForLSP checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
+func ProcessForLSP(configs parser.SkaffoldConfigSet, validateConfig Options) []ErrorWithLocation {
 	var errs = validateImageNames(configs)
 	for _, config := range configs {
-		var cfgErrs []error
-		cfgErrs = append(cfgErrs, visitStructs(config.SkaffoldConfig, validateYamltags)...)
-		cfgErrs = append(cfgErrs, validateDockerNetworkMode(config.Build.Artifacts)...)
-		cfgErrs = append(cfgErrs, validateCustomDependencies(config.Build.Artifacts)...)
-		cfgErrs = append(cfgErrs, validateSyncRules(config.Build.Artifacts)...)
-		cfgErrs = append(cfgErrs, validatePortForwardResources(config.PortForward)...)
-		cfgErrs = append(cfgErrs, validateJibPluginTypes(config.Build.Artifacts)...)
-		cfgErrs = append(cfgErrs, validateLogPrefix(config.Deploy.Logs)...)
-		cfgErrs = append(cfgErrs, validateArtifactTypes(config.Build)...)
-		cfgErrs = append(cfgErrs, validateTaggingPolicy(config.Build)...)
-		cfgErrs = append(cfgErrs, validateCustomTest(config.Test)...)
-		errs = append(errs, wrapWithContext(config, cfgErrs...)...)
+		errs = append(errs, visitStructs(config, config.SkaffoldConfig, validateYamltags)...)
+		errs = append(errs, validateDockerNetworkMode(config, config.Build.Artifacts)...)
+		errs = append(errs, validateCustomDependencies(config, config.Build.Artifacts)...)
+		errs = append(errs, validateSyncRules(config, config.Build.Artifacts)...)
+		errs = append(errs, validatePortForwardResources(config, config.PortForward)...)
+		errs = append(errs, validateJibPluginTypes(config, config.Build.Artifacts)...)
+		errs = append(errs, validateLogPrefix(config, config.Deploy.Logs)...)
+		errs = append(errs, validateArtifactTypes(config, config.Build)...)
+		errs = append(errs, validateTaggingPolicy(config, config.Build)...)
+		errs = append(errs, validateCustomTest(config, config.Test)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
 	if validateConfig.CheckDeploySource {
@@ -88,12 +92,23 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 	if len(errs) == 0 {
 		return nil
 	}
+	return errs
+}
 
+// Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
+func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
+	errs := ProcessForLSP(configs, validateConfig)
+	for _, config := range configs {
+		errs = append(errs, wrapWithContext(config, errs...)...)
+	}
 	var messages []string
 	for _, err := range errs {
-		messages = append(messages, err.Error())
+		messages = append(messages, err.Error.Error())
 	}
-	return fmt.Errorf(strings.Join(messages, " | "))
+	if len(messages) != 0 {
+		return fmt.Errorf(strings.Join(messages, "\n"))
+	}
+	return nil
 }
 
 // ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
@@ -109,15 +124,18 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 	for _, err := range errs {
 		messages = append(messages, err.Error())
 	}
-	return fmt.Errorf(strings.Join(messages, " | "))
+	return fmt.Errorf(strings.Join(messages, " \n "))
 }
 
 // validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
-func validateTaggingPolicy(bc latestV1.BuildConfig) (errs []error) {
+func validateTaggingPolicy(cfg *parser.SkaffoldConfigEntry, bc latestV1.BuildConfig) (cfgErrs []ErrorWithLocation) {
 	if bc.LocalBuild != nil {
 		// sha256 just uses `latest` tag, so tryImportMissing will virtually always succeed (#4889)
 		if bc.LocalBuild.TryImportMissing && bc.TagPolicy.ShaTagger != nil {
-			errs = append(errs, fmt.Errorf("tagging policy 'sha256' can not be used when 'tryImportMissing' is enabled"))
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    fmt.Errorf("tagging policy 'sha256' can not be used when 'tryImportMissing' is enabled"),
+				Location: cfg.YAMLInfos.Locate(cfg.Build.TagPolicy.ShaTagger),
+			})
 		}
 	}
 	return
@@ -125,68 +143,81 @@ func validateTaggingPolicy(bc latestV1.BuildConfig) (errs []error) {
 
 // validateImageNames makes sure the artifact image names are unique and valid base names,
 // without tags nor digests.
-func validateImageNames(configs parser.SkaffoldConfigSet) (errs []error) {
+func validateImageNames(configs parser.SkaffoldConfigSet) (errs []ErrorWithLocation) {
 	seen := make(map[string]string)
-	idxMap := make(map[string]int)
+	arMap := make(map[string]*latestV1.Artifact)
 
 	for _, c := range configs {
 		for i, a := range c.Build.Artifacts {
+			curLines := c.YAMLInfos.Locate(c.Build.Artifacts[i])
 			if prevSource, found := seen[a.ImageName]; found {
-				curLocation := c.YAMLInfos.LocateField(c.Build.Artifacts[i], "ImageName")
-				prevLocation := c.YAMLInfos.LocateField(c.Build.Artifacts[idxMap[c.Build.Artifacts[i].ImageName]], "ImageName")
-				errs = append(errs, fmt.Errorf("duplicate image %q found in file %q, line %d, col %d and file %q, line %d, col %d: artifact image names must be unique across all configurations",
-					a.ImageName,
-					c.SourceFile,
-					curLocation.StartLine,
-					curLocation.StartColumn,
-					prevSource,
-					prevLocation.StartLine,
-					prevLocation.StartColumn,
-				))
+				prevLines := c.YAMLInfos.Locate(arMap[c.Build.Artifacts[i].ImageName])
+				errs = append(errs, ErrorWithLocation{
+					Error: fmt.Errorf("duplicate image %q found in sources %s and %s: artifact image names must be unique across all configurations",
+						a.ImageName, prevSource, c.SourceFile),
+					Location: curLines,
+				})
+				errs = append(errs, ErrorWithLocation{
+					Error: fmt.Errorf("duplicate image %q found in sources %s and %s: artifact image names must be unique across all configurations",
+						a.ImageName, prevSource, c.SourceFile),
+					Location: prevLines,
+				})
 				continue
 			}
 
 			seen[a.ImageName] = c.SourceFile
-			idxMap[a.ImageName] = i
+			arMap[a.ImageName] = a
 			parsed, err := docker.ParseReference(a.ImageName)
 			if err != nil {
-				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q: %w", a.ImageName, err))...)
+				errs = append(errs, wrapWithContext(c, ErrorWithLocation{
+					Error:    fmt.Errorf("invalid image %q: %w", a.ImageName, err),
+					Location: curLines,
+				})...)
 				continue
 			}
 
 			if parsed.Tag != "" {
-				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q: no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))...)
+				errs = append(errs, wrapWithContext(c, ErrorWithLocation{
+					Error:    fmt.Errorf("invalid image %q: no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName),
+					Location: curLines,
+				})...)
 			}
 
 			if parsed.Digest != "" {
-				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q: no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))...)
+				errs = append(errs, wrapWithContext(c, ErrorWithLocation{
+					Error:    fmt.Errorf("invalid image %q: no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName),
+					Location: curLines,
+				})...)
 			}
 		}
 	}
 	return errs
 }
 
-func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (errs []error) {
+func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (cfgErrs []ErrorWithLocation) {
 	var artifacts []*latestV1.Artifact
 	for _, c := range configs {
 		artifacts = append(artifacts, c.Build.Artifacts...)
 	}
-	errs = append(errs, validateUniqueDependencyAliases(artifacts)...)
-	errs = append(errs, validateAcyclicDependencies(artifacts)...)
-	errs = append(errs, validateValidDependencyAliases(artifacts)...)
+	cfgErrs = append(cfgErrs, validateUniqueDependencyAliases(&configs, artifacts)...)
+	cfgErrs = append(cfgErrs, validateAcyclicDependencies(&configs, artifacts)...)
+	cfgErrs = append(cfgErrs, validateValidDependencyAliases(&configs, artifacts)...)
 	return
 }
 
 // validateAcyclicDependencies makes sure all artifact dependencies are found and don't have cyclic references
-func validateAcyclicDependencies(artifacts []*latestV1.Artifact) (errs []error) {
+func validateAcyclicDependencies(cfgs *parser.SkaffoldConfigSet, artifacts []*latestV1.Artifact) (cfgErrs []ErrorWithLocation) {
 	m := make(map[string]*latestV1.Artifact)
 	for _, artifact := range artifacts {
 		m[artifact.ImageName] = artifact
 	}
 	visited := make(map[string]bool)
-	for _, artifact := range artifacts {
+	for i, artifact := range artifacts {
 		if err := dfs(artifact, visited, make(map[string]bool), m); err != nil {
-			errs = append(errs, err)
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    err,
+				Location: cfgs.Locate(artifacts[i]),
+			})
 			return
 		}
 	}
@@ -221,14 +252,17 @@ func dfs(artifact *latestV1.Artifact, visited, marked map[string]bool, artifacts
 
 // validateValidDependencyAliases makes sure that artifact dependency aliases are valid.
 // docker and custom builders require aliases match [a-zA-Z_][a-zA-Z0-9_]* pattern
-func validateValidDependencyAliases(artifacts []*latestV1.Artifact) (errs []error) {
-	for _, a := range artifacts {
+func validateValidDependencyAliases(cfgs *parser.SkaffoldConfigSet, artifacts []*latestV1.Artifact) (cfgErrs []ErrorWithLocation) {
+	for i, a := range artifacts {
 		if a.DockerArtifact == nil && a.CustomArtifact == nil {
 			continue
 		}
-		for _, d := range a.Dependencies {
+		for j, d := range a.Dependencies {
 			if !dependencyAliasPattern.MatchString(d.Alias) {
-				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: alias %q doesn't match required pattern %q", a.ImageName, d.Alias, dependencyAliasPattern.String()))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("invalid build dependency for artifact %q: alias %q doesn't match required pattern %q", a.ImageName, d.Alias, dependencyAliasPattern.String()),
+					Location: cfgs.LocateField(artifacts[i].Dependencies[j], "Alias"),
+				})
 			}
 		}
 	}
@@ -236,18 +270,21 @@ func validateValidDependencyAliases(artifacts []*latestV1.Artifact) (errs []erro
 }
 
 // validateUniqueDependencyAliases makes sure that artifact dependency aliases are unique for each artifact
-func validateUniqueDependencyAliases(artifacts []*latestV1.Artifact) (errs []error) {
+func validateUniqueDependencyAliases(cfgs *parser.SkaffoldConfigSet, artifacts []*latestV1.Artifact) (cfgErrs []ErrorWithLocation) {
 	type State int
 	var (
 		unseen   State = 0
 		seen     State = 1
 		recorded State = 2
 	)
-	for _, a := range artifacts {
+	for i, a := range artifacts {
 		aliasMap := make(map[string]State)
-		for _, d := range a.Dependencies {
+		for j, d := range a.Dependencies {
 			if aliasMap[d.Alias] == seen {
-				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: alias %q repeated", a.ImageName, d.Alias))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("invalid build dependency for artifact %q: alias %q repeated", a.ImageName, d.Alias),
+					Location: cfgs.LocateField(artifacts[i].Dependencies[j], "Alias"),
+				})
 				aliasMap[d.Alias] = recorded
 			} else if aliasMap[d.Alias] == unseen {
 				aliasMap[d.Alias] = seen
@@ -324,8 +361,8 @@ func validateDockerContainerExpression(image string, id string) error {
 }
 
 // validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, `container:<name|id>`, or `host` if set.
-func validateDockerNetworkMode(artifacts []*latestV1.Artifact) (errs []error) {
-	for _, a := range artifacts {
+func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV1.Artifact) (cfgErrs []ErrorWithLocation) {
+	for i, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
 			continue
 		}
@@ -337,7 +374,11 @@ func validateDockerNetworkMode(artifacts []*latestV1.Artifact) (errs []error) {
 		if networkModeErr == nil {
 			continue
 		}
-		errs = append(errs, networkModeErr)
+		networkModeCfgErr := ErrorWithLocation{
+			Error:    networkModeErr,
+			Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i].DockerArtifact, "NetworkMode"),
+		}
+		cfgErrs = append(cfgErrs, networkModeCfgErr)
 	}
 	return
 }
@@ -414,29 +455,45 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 }
 
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
-func validateCustomDependencies(artifacts []*latestV1.Artifact) (errs []error) {
-	for _, a := range artifacts {
+func validateCustomDependencies(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV1.Artifact) (cfgErrs []ErrorWithLocation) {
+	for i, a := range artifacts {
 		if a.CustomArtifact == nil || a.CustomArtifact.Dependencies == nil || a.CustomArtifact.Dependencies.Ignore == nil {
 			continue
 		}
 
 		if a.CustomArtifact.Dependencies.Dockerfile != nil || a.CustomArtifact.Dependencies.Command != "" {
-			errs = append(errs, fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName))
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName),
+				Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i], "ImageName"),
+			})
 		}
 	}
 	return
 }
 
 // visitStructs recursively visits all fields in the config and collects errors found by the visitor
-func visitStructs(s interface{}, visitor func(interface{}) error) []error {
+func visitStructs(cfg *parser.SkaffoldConfigEntry, s interface{}, visitor func(interface{}) error) []ErrorWithLocation {
 	v := reflect.ValueOf(s)
 	t := reflect.TypeOf(s)
 
 	switch v.Kind() {
 	case reflect.Struct:
-		var errs []error
+		var cfgErrs []ErrorWithLocation
 		if err := visitor(v.Interface()); err != nil {
-			errs = append(errs, err)
+			var cfgErr ErrorWithLocation
+			if v.CanAddr() {
+				cfgErr = ErrorWithLocation{
+					Error:    err,
+					Location: cfg.YAMLInfos.Locate(v.Addr().Pointer()),
+				}
+			} else {
+				log.Entry(context.TODO()).Debugf("unexpected issue - unable to get pointer to struct in visitStruct")
+				cfgErr = ErrorWithLocation{
+					Error:    err,
+					Location: configlocations.MissingLocation(),
+				}
+			}
+			cfgErrs = append(cfgErrs, cfgErr)
 		}
 
 		// also check all fields of the current struct
@@ -444,29 +501,29 @@ func visitStructs(s interface{}, visitor func(interface{}) error) []error {
 			if !v.Field(i).CanInterface() {
 				continue
 			}
-			if fieldErrs := visitStructs(v.Field(i).Interface(), visitor); fieldErrs != nil {
-				errs = append(errs, fieldErrs...)
+			if fieldErrs := visitStructs(cfg, v.Field(i).Interface(), visitor); fieldErrs != nil {
+				cfgErrs = append(cfgErrs, fieldErrs...)
 			}
 		}
 
-		return errs
+		return cfgErrs
 
 	case reflect.Slice:
 		// for slices check each element
-		var errs []error
+		var cfgErrs []ErrorWithLocation
 		for i := 0; i < v.Len(); i++ {
-			if elemErrs := visitStructs(v.Index(i).Interface(), visitor); elemErrs != nil {
-				errs = append(errs, elemErrs...)
+			if elemErrs := visitStructs(cfg, v.Index(i).Interface(), visitor); elemErrs != nil {
+				cfgErrs = append(cfgErrs, elemErrs...)
 			}
 		}
-		return errs
+		return cfgErrs
 
 	case reflect.Ptr:
 		// for pointers check the referenced value
 		if v.IsNil() {
 			return nil
 		}
-		return visitStructs(v.Elem().Interface(), visitor)
+		return visitStructs(cfg, v.Elem().Interface(), visitor)
 
 	default:
 		// other values are fine
@@ -475,25 +532,28 @@ func visitStructs(s interface{}, visitor func(interface{}) error) []error {
 }
 
 // validateSyncRules checks that all manual sync rules have a valid strip prefix
-func validateSyncRules(artifacts []*latestV1.Artifact) []error {
-	var errs []error
-	for _, a := range artifacts {
+func validateSyncRules(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV1.Artifact) []ErrorWithLocation {
+	var cfgErrs []ErrorWithLocation
+	for i, a := range artifacts {
 		if a.Sync != nil {
 			for _, r := range a.Sync.Manual {
 				if !strings.HasPrefix(r.Src, r.Strip) {
 					err := fmt.Errorf("sync rule pattern '%s' does not have prefix '%s'", r.Src, r.Strip)
-					errs = append(errs, err)
+					cfgErrs = append(cfgErrs, ErrorWithLocation{
+						Error:    err,
+						Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i], "Sync"),
+					})
 				}
 			}
 		}
 	}
-	return errs
+	return cfgErrs
 }
 
 // validatePortForwardResources checks that all user defined port forward resources
 // have a valid resourceType
-func validatePortForwardResources(pfrs []*latestV1.PortForwardResource) []error {
-	var errs []error
+func validatePortForwardResources(cfg *parser.SkaffoldConfigEntry, pfrs []*latestV1.PortForwardResource) []ErrorWithLocation {
+	var errs []ErrorWithLocation
 	validResourceTypes := map[string]struct{}{
 		"container":             {},
 		"pod":                   {},
@@ -506,18 +566,21 @@ func validatePortForwardResources(pfrs []*latestV1.PortForwardResource) []error 
 		"cronjob":               {},
 		"job":                   {},
 	}
-	for _, pfr := range pfrs {
+	for i, pfr := range pfrs {
 		resourceType := strings.ToLower(string(pfr.Type))
 		if _, ok := validResourceTypes[resourceType]; !ok {
-			errs = append(errs, fmt.Errorf("%s is not a valid resource type for port forwarding", pfr.Type))
+			errs = append(errs, ErrorWithLocation{
+				Error:    fmt.Errorf("%s is not a valid resource type for port forwarding", pfr.Type),
+				Location: cfg.YAMLInfos.Locate(pfrs[i]),
+			})
 		}
 	}
 	return errs
 }
 
 // validateJibPluginTypes makes sure that jib type is one of `maven`, or `gradle` if set.
-func validateJibPluginTypes(artifacts []*latestV1.Artifact) (errs []error) {
-	for _, a := range artifacts {
+func validateJibPluginTypes(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV1.Artifact) (cfgErrs []ErrorWithLocation) {
+	for i, a := range artifacts {
 		if a.JibArtifact == nil || a.JibArtifact.Type == "" {
 			continue
 		}
@@ -525,43 +588,61 @@ func validateJibPluginTypes(artifacts []*latestV1.Artifact) (errs []error) {
 		if t == "maven" || t == "gradle" {
 			continue
 		}
-		errs = append(errs, fmt.Errorf("artifact %s has invalid Jib plugin type '%s'", a.ImageName, t))
+		cfgErrs = append(cfgErrs, ErrorWithLocation{
+			Error:    fmt.Errorf("artifact %s has invalid Jib plugin type '%s'", a.ImageName, t),
+			Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i].JibArtifact, "Type"),
+		})
 	}
 	return
 }
 
 // validateArtifactTypes checks that the artifact types are compatible with the specified builder.
-func validateArtifactTypes(bc latestV1.BuildConfig) (errs []error) {
+func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latestV1.BuildConfig) []ErrorWithLocation {
+	cfgErrs := []ErrorWithLocation{}
 	switch {
 	case bc.LocalBuild != nil:
-		for _, a := range bc.Artifacts {
+		for i, a := range bc.Artifacts {
 			if misc.ArtifactType(a) == misc.Kaniko {
-				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'local' builder:\n\n%s\n\nTo use the '%s' builder, add the 'cluster' stanza to the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("found a '%s' artifact, which is incompatible with the 'local' builder:\n\n%s\n\nTo use the '%s' builder, add the 'cluster' stanza to the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)),
+					Location: cfg.YAMLInfos.Locate(cfg.Build.Artifacts[i].ArtifactType),
+				})
 			}
 		}
 	case bc.GoogleCloudBuild != nil:
-		for _, a := range bc.Artifacts {
+		for i, a := range bc.Artifacts {
 			at := misc.ArtifactType(a)
 			if at != misc.Kaniko && at != misc.Docker && at != misc.Jib && at != misc.Buildpack {
-				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)),
+					Location: cfg.YAMLInfos.Locate(cfg.Build.Artifacts[i].ArtifactType),
+				})
 			}
 		}
 	case bc.Cluster != nil:
-		for _, a := range bc.Artifacts {
+		for i, a := range bc.Artifacts {
 			if misc.ArtifactType(a) != misc.Kaniko && misc.ArtifactType(a) != misc.Custom {
-				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'cluster' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'cluster' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("found a '%s' artifact, which is incompatible with the 'cluster' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'cluster' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)),
+					Location: cfg.YAMLInfos.Locate(cfg.Build.Artifacts[i].ArtifactType),
+				})
 			}
 		}
 	}
-	return
+	return cfgErrs
 }
 
 // validateLogPrefix checks that logs are configured with a valid prefix.
-func validateLogPrefix(lc latestV1.LogsConfig) []error {
+func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latestV1.LogsConfig) []ErrorWithLocation {
 	validPrefixes := []string{"", "auto", "container", "podAndContainer", "none"}
 
 	if !stringslice.Contains(validPrefixes, lc.Prefix) {
-		return []error{fmt.Errorf("invalid log prefix '%s'. Valid values are 'auto', 'container', 'podAndContainer' or 'none'", lc.Prefix)}
+		return []ErrorWithLocation{
+			{
+				Error:    fmt.Errorf("invalid log prefix '%s'. Valid values are 'auto', 'container', 'podAndContainer' or 'none'", lc.Prefix),
+				Location: cfg.YAMLInfos.Locate(&cfg.Deploy.Logs),
+			},
+		}
 	}
 
 	return nil
@@ -570,11 +651,14 @@ func validateLogPrefix(lc latestV1.LogsConfig) []error {
 // validateCustomTest
 // - makes sure that command is not empty
 // - makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
-func validateCustomTest(tcs []*latestV1.TestCase) (errs []error) {
-	for _, tc := range tcs {
-		for _, ct := range tc.CustomTests {
+func validateCustomTest(cfg *parser.SkaffoldConfigEntry, tcs []*latestV1.TestCase) (cfgErrs []ErrorWithLocation) {
+	for i, tc := range tcs {
+		for j, ct := range tc.CustomTests {
 			if ct.Command == "" {
-				errs = append(errs, fmt.Errorf("custom test command must not be empty;"))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("custom test command must not be empty;"),
+					Location: cfg.YAMLInfos.Locate(&cfg.Test[i].CustomTests[j]),
+				})
 				return
 			}
 
@@ -582,32 +666,46 @@ func validateCustomTest(tcs []*latestV1.TestCase) (errs []error) {
 				continue
 			}
 			if ct.Dependencies.Command != "" && ct.Dependencies.Paths != nil {
-				errs = append(errs, fmt.Errorf("dependencies can use either command or paths, but not both"))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("dependencies can use either command or paths, but not both"),
+					Location: cfg.YAMLInfos.Locate(&cfg.Test[i].CustomTests[j]),
+				})
 			}
 			if ct.Dependencies.Paths == nil && ct.Dependencies.Ignore != nil {
-				errs = append(errs, fmt.Errorf("customTest has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths"))
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("customTest has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths"),
+					Location: cfg.YAMLInfos.Locate(&cfg.Test[i].CustomTests[j]),
+				})
 			}
 		}
 	}
 	return
 }
 
-func wrapWithContext(config *parser.SkaffoldConfigEntry, errs ...error) []error {
-	var id string
+func wrapWithContext(config *parser.SkaffoldConfigEntry, errs ...ErrorWithLocation) []ErrorWithLocation {
+	module := ""
 	if config.Metadata.Name != "" {
-		id = fmt.Sprintf("in module %q", config.Metadata.Name)
-	} else {
-		id = fmt.Sprintf("in unnamed config at index %d", config.SourceIndex)
+		module = fmt.Sprintf(" in module %q", config.Metadata.Name)
 	}
+	// else {
+	// 	// TODO(aaron-prindle) what is config.SourceIndex? Seems it is 0 in my testing usually...
+	// 	id = fmt.Sprintf("in unnamed config at index %d", config.SourceIndex)
+	// }
+
 	for i := range errs {
-		errs[i] = errors.Wrapf(errs[i], "source: %s, %s", config.SourceFile, id)
+		if errs[i].Location == nil || errs[i].Location.StartLine == -1 {
+			errs[i].Error = errors.Wrapf(errs[i].Error, "source: %s,%s", config.SourceFile, module)
+			continue
+		}
+		errs[i].Error = errors.Wrapf(errs[i].Error, "source: %s,%s on line %d column %d",
+			config.SourceFile, module, errs[i].Location.StartLine, errs[i].Location.StartColumn)
 	}
 	return errs
 }
 
 // validateKubectlManifests
 // - validates that kubectl manifest files specified in the skaffold config exist
-func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
+func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWithLocation) {
 	for _, c := range configs {
 		if c.IsRemote {
 			continue
@@ -621,33 +719,40 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 		}
 
 		// validate that manifest files referenced in config exist
-		for i, pattern := range c.Deploy.KubectlDeploy.Manifests {
+		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
 			if util.IsURL(pattern) {
 				continue
 			}
 			// filepaths are all absolute from config parsing step via tags.MakeFilePathsAbsolute
 			expanded, err := filepath.Glob(pattern)
 			if err != nil {
-				errs = append(errs, err)
+				errs = append(errs, ErrorWithLocation{
+					Error: err,
+				})
 			}
-			invalidManifestLocation := c.YAMLInfos.LocateElement(&c.Deploy.KubectlDeploy.Manifests, i)
 			if len(expanded) == 0 {
-				msg := fmt.Sprintf("skaffold config file %q referenced manifest file %q in manifests list on line %d, column %d that could not be found", c.SourceFile,
-					pattern,
-					invalidManifestLocation.StartLine,
-					invalidManifestLocation.StartColumn,
-				)
-				errs = append(errs, sErrors.NewError(fmt.Errorf(msg),
-					&proto.ActionableErr{
-						Message: msg,
-						ErrCode: proto.StatusCode_CONFIG_MISSING_MANIFEST_FILE_ERR,
-						Suggestions: []*proto.Suggestion{
-							{
-								SuggestionCode: proto.SuggestionCode_CONFIG_FIX_MISSING_MANIFEST_FILE,
-								Action:         fmt.Sprintf("Verify that file %q referenced in config %q exists and the path and naming are correct", pattern, c.SourceFile),
+				// TODO(aaron-prindle) currently this references the whole manifest list and not the specific entry
+				// this is related to the fact that string pointers do not work with the current setup, need to get the closest struct
+				// TODO(aaron-prindle) parse the manifest node to extract exact correct line # for the value here (currently it is the parent obj)
+				msg := fmt.Sprintf("Manifest file %q referenced in skaffold config could not be found", pattern)
+				errMsg := wrapWithContext(c, ErrorWithLocation{
+					Error:    fmt.Errorf(msg),
+					Location: c.YAMLInfos.Locate(&c.Deploy.KubectlDeploy.Manifests),
+				})
+				errs = append(errs, ErrorWithLocation{
+					Error: sErrors.NewError(errMsg[0].Error,
+						&proto.ActionableErr{
+							Message: errMsg[0].Error.Error(),
+							ErrCode: proto.StatusCode_CONFIG_MISSING_MANIFEST_FILE_ERR,
+							Suggestions: []*proto.Suggestion{
+								{
+									SuggestionCode: proto.SuggestionCode_CONFIG_FIX_MISSING_MANIFEST_FILE,
+									Action:         fmt.Sprintf("Verify that file %q referenced in config %q exists and the path and naming are correct", pattern, c.SourceFile),
+								},
 							},
-						},
-					}))
+						}),
+					Location: errMsg[0].Location,
+				})
 			}
 		}
 	}
