@@ -114,6 +114,15 @@ func buildFlatMap(obj map[string]interface{}, result map[string]string, currK st
 			if err = buildFlatMap(v, result, currK); err != nil {
 				return
 			}
+		case []interface{}:
+			for idx, i := range v {
+				if m, ok := i.(map[string]interface{}); ok {
+					currIdx := fmt.Sprintf("%v[%d]", currK, idx)
+					if err = buildFlatMap(m, result, currIdx); err != nil {
+						return
+					}
+				}
+			}
 		case string:
 			result[currK] = v
 		default:
