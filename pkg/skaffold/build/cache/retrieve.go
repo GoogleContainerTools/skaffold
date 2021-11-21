@@ -60,9 +60,10 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var needToBuild []*latestV1.Artifact
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
+		tag := tags[artifact.ImageName]
 		eventV2.CacheCheckInProgress(artifact.ImageName)
 		out, ctx := output.WithEventContext(ctx, out, constants.Build, artifact.ImageName)
-		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
+		output.Default.Fprintf(out, " - %s: ", tag)
 
 		result := results[i]
 		switch result := result.(type) {
@@ -113,7 +114,6 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		c.cacheMutex.RLock()
 		entry := c.artifactCache[result.Hash()]
 		c.cacheMutex.RUnlock()
-		tag := tags[artifact.ImageName]
 
 		var uniqueTag string
 		isLocal, err := c.isLocalImage(artifact.ImageName)
