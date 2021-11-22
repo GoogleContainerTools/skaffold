@@ -6,7 +6,7 @@ featureId: debug
 aliases: [/docs/how-tos/debug]
 ---
 
-Skaffold lets you debug your application running on a local or remote Kubernetes cluster, almost exactly how you'd do it if the code were running locally on your machine. Skaffold does this by detecting the runtime of your project and transparently configuring the containers in pods for debugging against that framework.
+Skaffold lets you debug your application running on a local or remote Kubernetes cluster, almost exactly how you would do it if the code were running locally on your machine. Skaffold does this by detecting the runtime of your project and transparently configuring the containers in pods for debugging against that framework.
 
 Debugging is currently supported for five language runtimes.
 
