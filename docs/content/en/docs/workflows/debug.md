@@ -405,16 +405,46 @@ WARN[0005] Image "image-name" not configured for debugging: unable to determine 
 
 See the language runtime section details on how container images are recognized.
 
+### Why aren't my breakpoints being hit?
+
+**Breakpoints on startup path are not hit.**
+Skaffold configures the containers to run-on-start (sometimes called
+_continue_ mode), such that the containers do not wait for the
+debugger to connect.  The container will have likely finished its
+startup by the time the debugger is able to connect and configure
+the breakpoints, and so breakpoints in the normal startup path are
+unlikely to be hit.
+
+
+**File mapping misconfiguration between local and container filesystems.**
+IDE debugger integrations generally require configuring a _source map_
+to map local source files to their corresponding locations in the
+container for the remote language runtime debugging component. If
+this mapping is incorrect, then the remote language debugging
+component will not be able to locate the corresponding source file
+and will the breakpoint will not be installed.
+- Compiled languages like Go require that the container path correspond
+  to the *build-time* path, and not the deploy-time container path.
+  Many Go builds use the `golang` images for building, where the build
+  typically happens in `/go`.
+  This is less of a problem when using Go modules.
+- JVM languages do not require the mapping as the JVM uses class
+  names rather than file paths.
+
 ### Can images be debugged without the runtime support images?
 
 The special [runtime-support images](https://github.com/GoogleContainerTools/container-debug-support)
-are provided as a convenience for automatic configuration.  You can manually configure your images
-for debugging by:
+are provided as a convenience for automatic configuration.  You can
+manually configure your images for debugging by one of the following
+means:
 
-1. Configure your container image to install and invoke the appropriate debugger.
-2. Add a `debug.cloud.google.com/config` workload annotation on the
-   pod-spec to describe the debug configuration of each container image in the pod,
-   as described in [_Workload Annotations_](#workload-annotations).
+- `skaffold debug` usually recognizes already-configured container images
+  that use the appropriate debugger.  For example, you could use a
+  multi-stage Dockerfile with a `debug` stage that invokes the
+  application using the debugger.
+- Use a `debug.cloud.google.com/config` workload annotation on the
+  pod-spec to describe the debug configuration of each container
+  image in the pod, as described in [_Workload Annotations_](#workload-annotations).
 
 ## Limitations
 
