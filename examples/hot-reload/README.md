@@ -7,8 +7,11 @@ Application demonstrating the file synchronization mode with both NodeJS and Pyt
 #### Init
 
 ```bash
-skaffold dev
+skaffold dev [--default-repo docker.io/my-repo]
 ```
+
+You'll need to specify `--default-repo` to push to a repo you own.
+The default value for `--default-repo` is `docker.io/library/`.
 
 #### Workflow
 
