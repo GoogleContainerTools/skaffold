@@ -10,7 +10,7 @@ Application demonstrating the file synchronization mode with both NodeJS and Pyt
 skaffold dev [--default-repo docker.io/my-repo]
 ```
 
-You'll need to specify `--default-repo` to push to a repo you own.
+If you're not running against a local cluster like `minikube` or `kind`, then you'll need to specify the `--default-repo` flag to push to an image repository of your own.
 The default value for `--default-repo` is `docker.io/library/`.
 
 #### Workflow
