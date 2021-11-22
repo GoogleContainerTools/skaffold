@@ -328,7 +328,7 @@ local machine.
 One notable difference from `skaffold dev` is that `debug` disables image rebuilding and
 syncing as it leads to users accidentally terminating debugging sessions by saving file changes.
 These behaviours can be re-enabled with the `--auto-build`, `--auto-deploy`, and `--auto-sync`
-flags.
+flags, or triggering a [devloop iteration]({{< relref "/docs/design/api#control-api" >}}) using the Skaffold API.
 
 Enabling debugging has two phases:
 
