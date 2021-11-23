@@ -6,7 +6,7 @@ featureId: deploy.status_check
 aliases: [/docs/how-tos/healthchecks]
 ---
 
-This page describes how skaffold runs healthchecks for deployed resources - waits for them to stabilize, and reports errors on failure.
+This page describes how Skaffold runs healthchecks for deployed resources, waiting for them to stabilize, and reporting errors on failure.
 
 ### Overview
 
