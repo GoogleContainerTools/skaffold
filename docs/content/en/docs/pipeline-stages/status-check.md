@@ -1,32 +1,32 @@
 ---
-title: "Deploy Healthchecks"
-linkTitle: "Deploy Healthchecks"
+title: "Deploy Status Checking"
+linkTitle: "Deploy Status Checking"
 weight: 50
 featureId: deploy.status_check
-aliases: [/docs/how-tos/healthchecks]
+aliases: [/docs/how-tos/status-check]
 ---
 
-This page describes how Skaffold runs healthchecks for deployed resources, waiting for them to stabilize, and reporting errors on failure.
+This page describes how Skaffold's _deployment status checking_ waits for deployed resources to become ready, and reports errors if they fails to stabilize within a certain time period.
 
 ### Overview
 
 Commands that trigger a deployment, like `skaffold dev`, `skaffold deploy`, `skaffold run`, and `skaffold apply`, monitor select Kubernetes resources and wait for them to become ready.
 
 Skaffold monitors the status of the following resource types:
-* [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/)
-* [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) 
-* [`Stateful Sets`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) 
-* [`Google Cloud Config Connector resources`](https://cloud.google.com/config-connector/docs/overview)
+* [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/): check that the pod and its containers are in a `Ready` state.
+* [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/): check the output of `kubectl rollout status deployment` command 
+* [`Stateful Sets`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/): check the output of `kubectl rollout status statefulset` command  
+* [`Google Cloud Config Connector resources`](https://cloud.google.com/config-connector/docs/overview): check that the resource state has a `Ready` condition set to `True`.
 
 {{<alert title="Note">}}
-`healthcheck` is enabled by default; it can be disabled with the `--status-check=false`
+* `status-check` is enabled by default; it can be disabled with the `--status-check=false`
 flag, or by setting the `statusCheck` field of the deployment config stanza in
 the `skaffold.yaml` to false.
 
-If there are multiple skaffold `modules` active, then setting `statusCheck` field of the deployment config stanza will only disable healthcheck for that config. However using the `--status-check=false` flag will disable it for all modules.
-{{</alert>}}
+* If there are multiple skaffold `modules` active, then setting `statusCheck` field of the deployment config stanza will only disable status-check for that config. However using the `--status-check=false` flag will disable it for all modules.
 
-To determine if a `Deployment` or `StatefulSet` resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status. For standalone `Pods` it checks that the pod and its containers are in a `Ready` state.
+* Deployed resource logs are suppressed until status-check passes. If you need the detailed logs to diagnose a status failure then rerun with the `--status-check=false` flag.
+{{</alert>}}
 
 ```bash
 Waiting for deployments to stabilize
@@ -37,12 +37,12 @@ Waiting for deployments to stabilize
 Deployments stabilized in 2.168799605s
 ```
 
-### Configuring timeout for deploy `healthchecks`
+### Configuring timeout for `status-check`
 
 You can also configure the time for deployments to stabilize with the `statusCheckDeadlineSeconds` config field in the `skaffold.yaml`.
 
 For example, to configure deployments to stabilize within 5 minutes:
-{{% readfile file="samples/deployers/healthcheck.yaml" %}}
+{{% readfile file="samples/deployers/status-check.yaml" %}}
 
 With the `--status-check` flag, for each `Deployment` resource, `skaffold deploy` will wait for
 the time specified by [`progressDeadlineSeconds`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds)
@@ -101,8 +101,8 @@ Waiting for deployments to stabilize
 FATA[0006] 1/1 deployment(s) failed
 ```
 
-### Configuring `healthchecks` for multiple deployers or multiple modules
+### Configuring `status-check` for multiple deployers or multiple modules
 
-If you define multiple deployers, say `kubectl`, `helm`, and `kustomize`, all in the same skaffold config, or compose a multi-config project by importing other configs as dependencies, then the `healthcheck` can be run in one of two ways:
-- _Single status check after all deployers are run_. This is the default and it runs a single `healthcheck` at the end for resources deployed from all deployers across all skaffold configs.
-- _Per-deployer status check_. This can be enabled by using the `--iterative-status-check=true` flag. This will run a `healthcheck` iteratively after every individual deployer runs. This can be especially useful when there are startup dependencies between services, or you need to strictly enforce the time and order in which resources are deployed. 
+If you define multiple deployers, say `kubectl`, `helm`, and `kustomize`, all in the same skaffold config, or compose a multi-config project by importing other configs as dependencies, then the `status-check` can be run in one of two ways:
+- _Single status check after all deployers are run_. This is the default and it runs a single `status-check` at the end for resources deployed from all deployers across all skaffold configs.
+- _Per-deployer status check_. This can be enabled by using the `--iterative-status-check=true` flag. This will run a `status-check` iteratively after every individual deployer runs. This can be especially useful when there are startup dependencies between services, or you need to strictly enforce the time and order in which resources are deployed. 

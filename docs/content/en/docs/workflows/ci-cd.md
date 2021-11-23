@@ -18,7 +18,7 @@ We recommend `skaffold run` for the simplest Continuous Delivery setup, where it
 
 For more sophisticated Continuous Delivery pipelines, Skaffold offers building blocks:
 
-- [healthcheck]({{<relref "/docs/pipeline-stages/healthcheck">}}) - 
+- [status-check]({{<relref "/docs/pipeline-stages/status-check">}}) - 
 wait for `deployments` to stabilize and succeed only if all deployments are successful
 - [`skaffold build`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}}) - build, tag and push artifacts to a registry
 - [`skaffold deploy`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}})  - deploy built artifacts to a cluster
@@ -75,7 +75,7 @@ Skaffold allows separating the generation of fully-hydrated Kubernetes manifests
 `skaffold render` builds all application images from your artifacts, templates the newly-generated image tags into your Kubernetes manifests (based on your project's deployment configuration), and then prints out the final hydrated manifests to a file or your terminal.
 This allows you to capture the full, declarative state of your application in configuration, such that _applying_ the changes to your cluster can be done as a separate step.
 
-`skaffold apply` consumes one or more fully-hydrated Kubernetes manifests, and then sends the results directly to the Kubernetes control plane via `kubectl` to create resources on the target cluster. After creating the resources on your cluster, `skaffold apply` uses Skaffold's built-in health checking to monitor the created resources for readiness. See [resource health checks]({{<relref "/docs/pipeline-stages/healthcheck">}}) for more information on how Skaffold's resource health checking works.
+`skaffold apply` consumes one or more fully-hydrated Kubernetes manifests, and then sends the results directly to the Kubernetes control plane via `kubectl` to create resources on the target cluster. After creating the resources on your cluster, `skaffold apply` uses Skaffold's built-in health checking to monitor the created resources for readiness. See [resource health checks]({{<relref "/docs/pipeline-stages/status-check">}}) for more information on how Skaffold's resource health checking works.
 
 *Note: `skaffold apply` always uses `kubectl` to deploy resources to a target cluster, regardless of deployment configuration in the provided skaffold.yaml. Only a small subset of deploy configuration is honored when running `skaffold apply`:*
 * deploy.statusCheckDeadlineSeconds
