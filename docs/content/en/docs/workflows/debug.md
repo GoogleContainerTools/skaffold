@@ -407,6 +407,11 @@ See the language runtime section details on how container images are recognized.
 
 ### Why aren't my breakpoints being hit?
 
+**Missing required language extension.**
+Go, Python, and JavasCript debugging in IDEA Ultimate requires the
+corresponding language plugin to be installed. If it is not installed,
+the debugger will not attach and breakpoints will not be hit.
+
 **Breakpoints on startup path are not hit.**
 Skaffold configures the containers to run-on-start (sometimes called
 _continue_ mode), such that the containers do not wait for the
@@ -415,21 +420,25 @@ startup by the time the debugger is able to connect and configure
 the breakpoints, and so breakpoints in the normal startup path are
 unlikely to be hit.
 
-
 **File mapping misconfiguration between local and container filesystems.**
 IDE debugger integrations generally require configuring a _source map_
-to map local source files to their corresponding locations in the
+that maps local source files to their corresponding locations in the
 container for the remote language runtime debugging component. If
 this mapping is incorrect, then the remote language debugging
 component will not be able to locate the corresponding source file
 and will the breakpoint will not be installed.
-- Compiled languages like Go require that the container path correspond
-  to the *build-time* path, and not the deploy-time container path.
-  Many Go builds use the `golang` images for building, where the build
-  typically happens in `/go`.
-  This is less of a problem when using Go modules.
+
+- Some compiled languages embed full path names in binaries.  Some builds
+  use multi-stage dockerfiles to compile the binary using a build-time
+  image and then copy the binary into a smaller image intended for deployment.
+  In these cases, the source mapping must use the build-time paths.
+  For example, many Go builds use a `golang` image for building,
+  where the build typically happens in `/go`.
 - JVM languages do not require the mapping as the JVM uses class
   names rather than file paths.
+- Breakpoints for Go applications in JetBrains GoLand
+  and IDEA Ultimate requires building applications using Go Modules
+  and configuring the IDE settings to use Go Modules.
 
 ### Can images be debugged without the runtime support images?
 
