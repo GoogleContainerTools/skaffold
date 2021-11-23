@@ -10,7 +10,7 @@ This page describes how Skaffold runs healthchecks for deployed resources, waiti
 
 ### Overview
 
-Commands that trigger a deployment like `skaffold dev`, `skaffold deploy`, `skaffold run`, and `skaffold apply` perform a `healthcheck` for select Kubernetes resources and wait for them to be stable.
+Commands that trigger a deployment, like `skaffold dev`, `skaffold deploy`, `skaffold run`, and `skaffold apply`, monitor select Kubernetes resources and wait for them to become ready.
 
 Skaffold monitors the status of the following resource types:
 * [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/)
