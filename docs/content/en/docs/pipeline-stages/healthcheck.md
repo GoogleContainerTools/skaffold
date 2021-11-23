@@ -103,6 +103,6 @@ FATA[0006] 1/1 deployment(s) failed
 
 ### Configuring `healthchecks` for multiple deployers or multiple modules
 
-If you define multiple deployers, say `kubectl`, `helm` and `kustomize`, all in the same skaffold config, or compose a multi-config project by importing other configs as dependencies, then the `healthcheck` can be run in one of two ways:
+If you define multiple deployers, say `kubectl`, `helm`, and `kustomize`, all in the same skaffold config, or compose a multi-config project by importing other configs as dependencies, then the `healthcheck` can be run in one of two ways:
 - _Single status check after all deployers are run_. This is the default and it runs a single `healthcheck` at the end for resources deployed from all deployers across all skaffold configs.
 - _Per-deployer status check_. This can be enabled by using the `--iterative-status-check=true` flag. This will run a `healthcheck` iteratively after every individual deployer runs. This can be especially useful when there are startup dependencies between services, or you need to strictly enforce the time and order in which resources are deployed. 
