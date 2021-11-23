@@ -31,5 +31,6 @@ will not push artifacts to a remote repository.
 | [File Sync]({{< relref "/docs/pipeline-stages/filesync" >}}) |  sync changed files directly to containers |
 | [Log Tailing]({{< relref "/docs/pipeline-stages/log-tailing" >}}) |  tail logs from workloads |
 | [Port Forwarding]({{< relref "/docs/pipeline-stages/port-forwarding" >}}) | forward ports from services and arbitrary resources to localhost  |
+| [Deploy Healthchecks]({{< relref "/docs/pipeline-stages/healthcheck" >}}) | wait for deployed resources to stabilize  |
 | [Lifecycle Hooks]({{< relref "/docs/pipeline-stages/lifecycle-hooks" >}}) | run code triggered by different events during the skaffold process lifecycle  |
 | [Cleanup]({{< relref "/docs/pipeline-stages/cleanup" >}}) | cleanup manifests and images |

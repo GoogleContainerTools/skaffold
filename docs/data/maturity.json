@@ -180,7 +180,9 @@
     "area": "Deploy",
     "feature": "Status check",
     "maturity": "GA",
-    "description": "User can wait for deployments to stabilize"
+    "description": "User can wait for deployments to stabilize",
+    "url": "/docs/pipeline-stages/healthcheck/"
+
   },
   "dev": {
     "dev": "x",
