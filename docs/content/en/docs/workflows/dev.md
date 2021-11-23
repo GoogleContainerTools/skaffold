@@ -13,6 +13,10 @@ will rebuild your images (or sync files to your running containers), push any ne
 to leverage all of the features of Skaffold in a continuous way while iterating
 on your application.
 
+{{<alert title="💡 Tip">}}
+Running `skaffold dev` is equivalent to running the IDE command `Run on Kubernetes` if you're using Skaffold with the [Cloud Code IDE extensions]({{< relref "../install/#managed-ide" >}}). In addition to this guide you should also look at the corresponding guides for [VSCode](https://cloud.google.com/code/docs/vscode/running-an-application), [IntelliJ](https://cloud.google.com/code/docs/intellij/deploying-a-k8-app) and [Cloud Shell](https://ide.cloud.google.com/?walkthrough_tutorial_url=https%3A%2F%2Fwalkthroughs.googleusercontent.com%2Fcontent%2Fgke_cloud_code_create_app%2Fgke_cloud_code_create_app.md).
+{{</alert>}}
+
 ## Dev loop
 
 When `skaffold dev` is run, Skaffold will first do a full build, test and deploy of all artifacts specified in the `skaffold.yaml`, similar to `skaffold run`. Upon successful build, test and deploy, Skaffold will start watching all source file dependencies for all artifacts specified in the project. As changes are made to these source files, Skaffold will rebuild and retest the associated artifacts, and redeploy the new changes to your cluster.
