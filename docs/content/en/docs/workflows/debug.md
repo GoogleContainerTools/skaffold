@@ -408,7 +408,7 @@ See the language runtime section details on how container images are recognized.
 ### Why aren't my breakpoints being hit?
 
 **Missing required language extension.**
-Go, Python, and JavasCript debugging in IDEA Ultimate requires the
+Go, Python, and JavaScript debugging in IDEA Ultimate requires the
 corresponding language plugin to be installed. If it is not installed,
 the debugger will not attach and breakpoints will not be hit.
 
@@ -422,23 +422,20 @@ unlikely to be hit.
 
 **File mapping misconfiguration between local and container filesystems.**
 IDE debugger integrations generally require configuring a _source map_
-that maps local source files to their corresponding locations in the
-container for the remote language runtime debugging component. If
-this mapping is incorrect, then the remote language debugging
-component will not be able to locate the corresponding source file
-and will the breakpoint will not be installed.
+to map files in the container to their corresponding local files.
+If this mapping is incorrect, then the remote debugging runtime
+will not be able to find the source file for the breakpoint.
 
-- Some compiled languages embed full path names in binaries.  Some builds
-  use multi-stage dockerfiles to compile the binary using a build-time
-  image and then copy the binary into a smaller image intended for deployment.
-  In these cases, the source mapping must use the build-time paths.
-  For example, many Go builds use a `golang` image for building,
-  where the build typically happens in `/go`.
+- Some builds use multi-stage dockerfiles to compile the binary using
+  a build-time image and then copy the binary into a smaller image
+  intended for deployment.  In these cases, the source mapping must
+  use the build-time paths.  For example, many Go builds use a `golang`
+  image for building, where the source files are typically copied into `/go`.
+- JetBrains GoLand and IDEA Ultimate only support remote breakpoints
+  for Go applications built using Go Modules.  The IDE settings must
+  also be explicitly configured to use Go Modules.
 - JVM languages do not require the mapping as the JVM uses class
   names rather than file paths.
-- Breakpoints for Go applications in JetBrains GoLand
-  and IDEA Ultimate requires building applications using Go Modules
-  and configuring the IDE settings to use Go Modules.
 
 ### Can images be debugged without the runtime support images?
 
