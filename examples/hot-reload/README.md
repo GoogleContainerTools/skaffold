@@ -18,3 +18,16 @@ skaffold dev
 * Make some changes to `python/src/app.py`:
     * The file will be synchronized to the cluster
     * `flask` will restart the application
+
+#### Skip image build entirely
+
+If you have a pre-built image and want skaffold to skip building your image entirely
+and only sync code to the cluster, add the following to `skaffold.yaml`.
+
+```yaml
+build:
+  local:
+    tryImportMissing: true
+```
+
+Then add `--tag [image-tag]` to your `skaffold dev` command.
