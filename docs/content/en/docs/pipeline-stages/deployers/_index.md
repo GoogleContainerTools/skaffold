@@ -12,7 +12,7 @@ When Skaffold deploys your application to Kubernetes, it (usually) goes through 
 * the Skaffold deployer _renders_ the final Kubernetes manifests: Skaffold replaces untagged image names in the Kubernetes manifests with the final tagged image names.
 It also might go through the extra intermediate step of expanding templates (for helm) or calculating overlays (for kustomize).
 * the Skaffold deployer _deploys_ the final Kubernetes manifests to the cluster
-* the Skaffold deployer waits for the deployed resources to stabilize. See [healthchecks]({{< relref "/docs/workflows/ci-cd.md#waiting-for-skaffold-deployments-using-healthcheck" >}}).
+* the Skaffold deployer waits for the deployed resources to stabilize. See [status-check]({{< relref "/docs/pipeline-stages/status-check" >}}).
 
 ### Supported deployers
 
