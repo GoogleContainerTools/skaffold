@@ -256,28 +256,35 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 
 func TestDevPortForward(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	tests := []struct {
+		dir string
+	}{
+		{dir: "examples/microservices"},
+		{dir: "examples/multi-config-microservices"},
+	}
+	for _, test := range tests {
+		// Run skaffold build first to fail quickly on a build failure
+		skaffold.Build().InDir(test.dir).RunOrFail(t)
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
+		ns, _ := SetupNamespace(t)
 
-	ns, _ := SetupNamespace(t)
+		rpcAddr := randomPort()
+		skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
-	rpcAddr := randomPort()
-	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+		_, entries := apiEvents(t, rpcAddr)
 
-	_, entries := apiEvents(t, rpcAddr)
+		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
+		original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
+		failNowIfError(t, fErr)
+		defer func() {
+			if original != nil {
+				ioutil.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
+			}
+		}()
 
-	original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", "examples/microservices/leeroy-app/app.go")
-	failNowIfError(t, fErr)
-	defer func() {
-		if original != nil {
-			ioutil.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
-		}
-	}()
-
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
+		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
+	}
 }
 
 func TestDevPortForwardDefaultNamespace(t *testing.T) {
