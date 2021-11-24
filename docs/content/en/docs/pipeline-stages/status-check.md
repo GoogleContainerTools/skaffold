@@ -15,11 +15,10 @@ Commands that trigger a deployment, like `skaffold dev`, `skaffold deploy`, `ska
 Skaffold monitors the status of the following resource types:
 * [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/): check that the pod and its containers are in a `Ready` state.
 * [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/): check the output of `kubectl rollout status deployment` command 
-* [`Stateful Sets`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/): check the output of `kubectl rollout status statefulset` command  
-* [`Google Cloud Config Connector resources`](https://cloud.google.com/config-connector/docs/overview): check that the resource state has a `Ready` condition set to `True`.
+* [`Stateful Sets`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/): check the output of `kubectl rollout status statefulset` command
 
 {{<alert title="Note">}}
-* `status-check` is enabled by default; it can be disabled with the `--status-check=false`
+* Status checking is enabled by default; it can be disabled with the `--status-check=false`
 flag, or by setting the `statusCheck` field of the deployment config stanza in
 the `skaffold.yaml` to false.
 
