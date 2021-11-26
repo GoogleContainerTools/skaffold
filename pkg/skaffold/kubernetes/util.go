@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -54,7 +55,7 @@ func HasKubernetesFileExtension(n string) bool {
 
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
-	if !HasKubernetesFileExtension(file) {
+	if filepath.Base(file) == "skaffold.yaml.out" {
 		return false
 	}
 
