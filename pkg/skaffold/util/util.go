@@ -299,7 +299,6 @@ func IsEmptyDir(path string) bool {
 		return true
 	}
 	return false
-
 }
 
 // IsHiddenDir returns if a directory is hidden.

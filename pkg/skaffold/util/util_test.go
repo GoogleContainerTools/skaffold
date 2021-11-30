@@ -457,5 +457,4 @@ func TestIsEmptyDir(t *testing.T) {
 	testutil.CheckDeepEqual(t, true, IsEmptyDir(emptyTmpDir.Root()))
 	testutil.CheckDeepEqual(t, false, IsEmptyDir(tmpDir.Root()))
 	testutil.CheckDeepEqual(t, false, IsEmptyDir(filepath.Join(tmpDir.Root(), "file")))
-
 }

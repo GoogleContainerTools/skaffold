@@ -179,7 +179,6 @@ func TestRun(t *testing.T) {
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
 				}
-
 			}
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
