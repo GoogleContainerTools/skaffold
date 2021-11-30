@@ -172,8 +172,14 @@ func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
-
 			args := append(test.args, "--cache-artifacts=false")
+			if test.dir == "testdata/getting-started" {
+				err := os.Mkdir("testdir", 0755)
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
+
+			}
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
