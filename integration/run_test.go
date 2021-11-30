@@ -18,6 +18,7 @@ package integration
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -174,7 +175,7 @@ func TestRun(t *testing.T) {
 			ns, client := SetupNamespace(t)
 			args := append(test.args, "--cache-artifacts=false")
 			if test.dir == "testdata/getting-started" {
-				err := os.Mkdir("testdir", 0755)
+				err := os.Mkdir(filepath.Join(test.dir, "testdir"), 0755)
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
 				}
