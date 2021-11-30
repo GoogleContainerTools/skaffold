@@ -45,6 +45,14 @@ entrypoint to invoke your application using `dlv`:
 ```
 dlv exec --headless --continue --accept-multiclient --listen=:56268 --api-version=2 <app> -- <args> ...
 ```
+
+##### Skaffold debug using the JetBrains GoLand and IntelliJ Ultimate
+
+Debugging is only supported in JetBrains IDEs for Go applications built using Go Modules.
+The IDE settings must also be explicitly configured to use Go Modules.  Errors like
+`cannot find debugger path` indicate misconfiguration.
+
+
 ##### Skaffold debug using the VS Code Go extension
 
 If you use the debug functionality of the
