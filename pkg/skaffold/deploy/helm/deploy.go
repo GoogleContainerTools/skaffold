@@ -579,7 +579,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		return nil, userErr("get release", err)
 	}
 
-	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
+	artifacts := parseReleaseManifests(opts.namespace, bufio.NewReader(&b))
 	return artifacts, nil
 }
 
