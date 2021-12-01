@@ -24,6 +24,7 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/spf13/afero"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -34,7 +35,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var h Handler
@@ -51,14 +53,15 @@ type Handler struct {
 func NewHandler(conn jsonrpc2.Conn) *Handler {
 	return &Handler{
 		initialized:     false,
-		documentManager: NewDocumentManager(),
+		documentManager: NewDocumentManager(afero.NewMemMapFs()),
 		conn:            conn,
 	}
 }
 
-func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, createRunner func(ctx context.Context, out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error)) jsonrpc2.Handler {
+func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, createRunner func(ctx context.Context, out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []schemautil.VersionedConfig, *runcontext.RunContext, error)) jsonrpc2.Handler {
 	var runCtx *runcontext.RunContext
 	h = *NewHandler(conn)
+	util.Fs = afero.NewCacheOnReadFs(util.Fs, h.documentManager.memMapFs, 0)
 
 	return func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 		// Recover if a panic occurs in the handlers
@@ -86,6 +89,7 @@ func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, 
 			if err != nil {
 				return err
 			}
+
 			_, _, runCtx, err = createRunner(ctx, out, opts)
 			if err != nil {
 				return err
@@ -178,7 +182,6 @@ func (h *Handler) updateDocument(ctx context.Context, documentURI, content strin
 
 func lintFilesAndSendDiagnostics(ctx context.Context, runCtx docker.Config,
 	opts config.SkaffoldOptions, req jsonrpc2.Request) error {
-	// TODO(aaron-prindle) currently lint checks only filesystem, instead need to check VFS w/ documentManager info
 	results, err := lint.GetAllLintResults(ctx, lint.Options{
 		Filename:     opts.ConfigurationFile,
 		RepoCacheDir: opts.RepoCacheDir,

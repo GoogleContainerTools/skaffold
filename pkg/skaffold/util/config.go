@@ -21,11 +21,15 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+
+	"github.com/spf13/afero"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var stdin []byte
+var Fs = afero.NewOsFs()
 
 // ReadConfiguration reads a `skaffold.yaml` configuration and
 // returns its content.
@@ -45,14 +49,22 @@ func ReadConfiguration(filename string) ([]byte, error) {
 	case IsURL(filename):
 		return Download(filename)
 	default:
-		contents, err := ioutil.ReadFile(filename)
+		fp := filename
+		if !filepath.IsAbs(fp) {
+			dir, err := os.Getwd()
+			if err != nil {
+				return []byte{}, err
+			}
+			fp = filepath.Join(dir, fp)
+		}
+		contents, err := afero.ReadFile(Fs, fp)
 		if err != nil {
 			// If the config file is the default `skaffold.yaml`,
 			// then we also try to read `skaffold.yml`.
 			if filename == "skaffold.yaml" {
 				log.Entry(context.TODO()).Infof("Could not open skaffold.yaml: \"%s\"", err)
 				log.Entry(context.TODO()).Info("Trying to read from skaffold.yml instead")
-				contents, errIgnored := ioutil.ReadFile("skaffold.yml")
+				contents, errIgnored := afero.ReadFile(Fs, filepath.Join(filepath.Dir(fp), "skaffold.yml"))
 				if errIgnored != nil {
 					// Return original error because it's the one that matters
 					return nil, err
@@ -64,4 +76,15 @@ func ReadConfiguration(filename string) ([]byte, error) {
 
 		return contents, err
 	}
+}
+
+func ReadFile(filename string) ([]byte, error) {
+	if !filepath.IsAbs(filename) {
+		dir, err := os.Getwd()
+		if err != nil {
+			return []byte{}, err
+		}
+		filename = filepath.Join(dir, filename)
+	}
+	return afero.ReadFile(Fs, filename)
 }

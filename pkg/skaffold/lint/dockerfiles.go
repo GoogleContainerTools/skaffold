@@ -18,7 +18,6 @@ package lint
 
 import (
 	"context"
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/moby/buildkit/frontend/dockerfile/command"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // for testing
@@ -140,7 +140,7 @@ func GetDockerfilesLintResults(ctx context.Context, opts Options, dockerCfg dock
 					continue
 				}
 				seen[fp] = true
-				b, err := ioutil.ReadFile(fp)
+				b, err := util.ReadFile(fp)
 				if err != nil {
 					return nil, err
 				}
