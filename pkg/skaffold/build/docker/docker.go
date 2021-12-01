@@ -28,10 +28,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+	a = adjustCacheFrom(a, tag)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "docker",
 		"Context":     instrumentation.PII(a.Workspace),
@@ -131,4 +133,28 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 	}
 
 	return nil
+}
+
+// adjustCacheFrom returns an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
+func adjustCacheFrom(a *latestV1.Artifact, artifactTag string) *latestV1.Artifact {
+	if os.Getenv("SKAFFOLD_DISABLE_DOCKER_CACHE_ADJUSTMENT") != "" {
+		// allow this behaviour to be disabled
+		return a
+	}
+
+	if !stringslice.Contains(a.DockerArtifact.CacheFrom, a.ImageName) {
+		return a
+	}
+
+	cf := make([]string, 0, len(a.DockerArtifact.CacheFrom))
+	for _, image := range a.DockerArtifact.CacheFrom {
+		if image == a.ImageName {
+			cf = append(cf, artifactTag)
+		} else {
+			cf = append(cf, image)
+		}
+	}
+	copy := *a
+	copy.DockerArtifact.CacheFrom = cf
+	return &copy
 }
