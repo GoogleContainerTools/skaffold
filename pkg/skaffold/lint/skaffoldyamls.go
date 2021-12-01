@@ -45,7 +45,6 @@ var skaffoldYamlRules = &skaffoldYamlLintRules
 var getConfigSet = parser.GetConfigSet
 
 var SkaffoldYamlLinters = []Linter{
-	&RegExpLinter{},
 	&YamlFieldLinter{},
 }
 

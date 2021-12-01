@@ -74,36 +74,6 @@ func (*DockerfileCommandLinter) Lint(params InputParams, rules *[]Rule) (*[]Resu
 	return results, nil
 }
 
-type RegExpLinter struct{}
-
-func (*RegExpLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, error) {
-	results := &[]Result{}
-	for _, rule := range *rules {
-		if rule.RuleType != RegExpLintLintRule {
-			continue
-		}
-		var regexpFilter string
-		switch v := rule.Filter.(type) {
-		case string:
-			regexpFilter = v
-		default:
-			return nil, fmt.Errorf("unknown filter type found for RegExpLinter lint rule: %v", rule)
-		}
-		r, err := regexp.Compile(regexpFilter)
-		if err != nil {
-			return nil, err
-		}
-		matches := r.FindAllStringSubmatchIndex(lintInputs.ConfigFile.Text, -1)
-		for _, m := range matches {
-			log.Entry(context.TODO()).Infof("regexp match found for %s: %v\n", regexpFilter, m)
-			// TODO(aaron-prindle) support matches with more than 2 values for m?
-			line, col := convert1DFileIndexTo2D(lintInputs.ConfigFile.Text, m[0])
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, line, col)
-		}
-	}
-	return results, nil
-}
-
 type YamlFieldLinter struct{}
 
 func (*YamlFieldLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, error) {
@@ -190,19 +160,6 @@ func appendRuleIfLintConditionsPass(lintInputs InputParams, results *[]Result, r
 		Column:      col,
 	}
 	*results = append(*results, mr)
-}
-
-func convert1DFileIndexTo2D(input string, idx int) (int, int) {
-	line := 1
-	col := 0
-	for i := 0; i < idx; i++ {
-		col++
-		if input[i] == '\n' {
-			line++
-			col = 0
-		}
-	}
-	return line, col
 }
 
 func getLastLineAndColOfFile(input string) (int, int) {
