@@ -33,7 +33,6 @@ import (
 var k8sManifestRules = &k8sManifestLintRules
 
 var K8sManifestLinters = []Linter{
-	&RegExpLinter{},
 	&YamlFieldLinter{},
 }
 
