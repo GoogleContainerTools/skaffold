@@ -59,8 +59,10 @@ type Result struct {
 	AbsFilePath string
 	RelFilePath string
 	Explanation string
-	Line        int
-	Column      int
+	StartLine   int
+	EndLine     int
+	StartColumn int
+	EndColumn   int
 }
 
 type DockerCommandFilter struct {

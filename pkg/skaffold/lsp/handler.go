@@ -197,9 +197,9 @@ func lintFilesAndSendDiagnostics(ctx context.Context, runCtx docker.Config,
 	for _, result := range results {
 		diag := protocol.Diagnostic{
 			Range: protocol.Range{
-				Start: protocol.Position{Line: uint32(result.Line - 1), Character: uint32(result.Column - 1)},
+				Start: protocol.Position{Line: uint32(result.StartLine - 1), Character: uint32(result.StartColumn - 1)},
 				// TODO(aaron-prindle) should implement and pass end range from lint as well (currently a hack and just flags to end of line vs end of flagged text)
-				End: protocol.Position{Line: uint32(result.Line), Character: 0},
+				End: protocol.Position{Line: uint32(result.StartLine), Character: 0},
 			},
 			Severity: result.Rule.Severity,
 			Code:     result.Rule.RuleID,

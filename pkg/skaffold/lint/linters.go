@@ -68,7 +68,7 @@ func (*DockerfileCommandLinter) Lint(params InputParams, rules *[]Rule) (*[]Resu
 			log.Entry(context.TODO()).Infof("docker command 'copy' match found for source: %s\n", fromTo.From)
 			// TODO(aaron-prindle) modify so that there are input and output params s.t. it is more obvious what fields need to be updated
 			params.DockerCopyCommandInfo = fromTo
-			appendRuleIfConditionsAndExplanationPopulationsSucceed(params, results, rule, fromTo.StartLine, 1)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(params, results, rule, fromTo.StartLine, 1, fromTo.EndLine, 0)
 		}
 	}
 	return results, nil
@@ -104,27 +104,53 @@ func (*YamlFieldLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, 
 			// TODO(aaron-prindle) this type of message (last line of file) does not work well in an IDE via the LSP
 			// consider not using this and pinning to somewhere in the yaml or using some type of different messaging (window/showMessage, etc.)
 			line, col := getLastLineAndColOfFile(lintInputs.ConfigFile.Text)
-			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, line, col)
+			// TODO(aaron-prindle) verify this looks correct on an IDE
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, line, col, line+1, 0)
 			continue
 		}
 		if yamlFilter.FieldMatch != "" {
 			mapnode := node.Field(yamlFilter.FieldMatch)
 			if mapnode != nil {
-				appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, mapnode.Key.YNode().Line, mapnode.Key.YNode().Column)
+				ks, err := mapnode.Key.String()
+				if err != nil {
+					return nil, err
+				}
+				lineLen, endCol := getLinesAndColsOfString(ks)
+				appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, mapnode.Key.YNode().Line, mapnode.Key.YNode().Column,
+					mapnode.Key.YNode().Line+lineLen, endCol,
+				)
 			}
 			continue
 		}
 		if node.YNode().Kind == yaml.ScalarNode {
-			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, node.Document().Line, node.Document().Column)
+			ns, err := node.String()
+			if err != nil {
+				return nil, err
+			}
+			lineLen, endCol := getLinesAndColsOfString(ns)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, node.Document().Line, node.Document().Column,
+				node.Document().Line+lineLen, endCol,
+			)
 		}
 		for _, n := range node.Content() {
-			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, n.Line, n.Column)
+			ns, err := node.String()
+			if err != nil {
+				return nil, err
+			}
+			lineLen, endCol := getLinesAndColsOfString(ns)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, n.Line, n.Column,
+				n.Line+lineLen, endCol,
+			)
 		}
 	}
 	return results, nil
 }
 
-func appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs InputParams, results *[]Result, rule Rule, line, col int) {
+func appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs InputParams, results *[]Result, rule Rule, startline, startcol, endline, endcol int) {
+	if startline == endline {
+		endline++ // this is done to highlight entire line when used w/ an IDE
+	}
+
 	for _, f := range rule.LintConditions {
 		if !f(lintInputs) {
 			// lint condition failed, no rule is trigggered
@@ -158,8 +184,10 @@ func appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs InputPara
 		Explanation: explanation,
 		AbsFilePath: lintInputs.ConfigFile.AbsPath,
 		RelFilePath: lintInputs.ConfigFile.RelPath,
-		Line:        line,
-		Column:      col,
+		StartLine:   startline,
+		EndLine:     endline,
+		StartColumn: startcol,
+		EndColumn:   endcol,
 	}
 	*results = append(*results, mr)
 }
@@ -172,6 +200,19 @@ func getLastLineAndColOfFile(input string) (int, int) {
 		if input[i] == '\n' {
 			line++
 			col = 1
+		}
+	}
+	return line, col
+}
+
+func getLinesAndColsOfString(str string) (int, int) {
+	line := 0
+	col := 0
+	for i := range str {
+		col++
+		if str[i] == '\n' {
+			line++
+			col = 0
 		}
 	}
 	return line, col
