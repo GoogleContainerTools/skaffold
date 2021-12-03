@@ -41,6 +41,7 @@ func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description     string
 		localBuild      latestV1.LocalBuild
+		cliFlags        []string
 		cfg             mockConfig
 		extraEnv        []string
 		expectedEnv     []string
@@ -66,6 +67,13 @@ func TestDockerCLIBuild(t *testing.T) {
 			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			wantDockerCLI: true,
 			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
+		},
+		{
+			description:   "cliFlags",
+			cliFlags:      []string{"--platform", "linux/amd64"},
+			localBuild:    latestV1.LocalBuild{},
+			wantDockerCLI: true,
+			expectedEnv:   []string{"KEY=VALUE"},
 		},
 		{
 			description:   "buildkit and extra env",
@@ -143,10 +151,11 @@ func TestDockerCLIBuild(t *testing.T) {
 				t.Override(&util.DefaultExecCommand, mockCmd)
 			}
 			if test.wantDockerCLI {
-				mockCmd = testutil.CmdRunEnv(
-					"docker build . --file "+dockerfilePath+" -t tag",
-					test.expectedEnv,
-				)
+				cmdLine := "docker build . --file " + dockerfilePath + " -t tag"
+				if len(test.cliFlags) > 0 {
+					cmdLine += " " + strings.Join(test.cliFlags, " ")
+				}
+				mockCmd = testutil.CmdRunEnv(cmdLine, test.expectedEnv)
 				t.Override(&util.DefaultExecCommand, mockCmd)
 			}
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
@@ -158,6 +167,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
+						CliFlags:       test.cliFlags,
 					},
 				},
 			}
