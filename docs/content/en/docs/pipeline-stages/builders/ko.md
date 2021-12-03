@@ -213,6 +213,11 @@ Useful tips for existing `ko` users:
   [`default-repo` functionality]({{< relref "/docs/environment/image-registries" >}}).
   The ko builder does _not_ read the `KO_DOCKER_REPO` environment variable.
 
+- Image naming follows the
+  [Skaffold image naming strategy]({{< relref "/docs/environment/image-registries" >}}).
+  Skaffold removes the `ko://` prefix, if present, before determining the image
+  name.
+
 - The ko builder supports reading
   [base image configuration](https://github.com/google/ko#overriding-base-images)
   from the `.ko.yaml` file. If you already configure your base images using
@@ -242,8 +247,6 @@ Useful tips for existing `ko` users:
   cat << EOF >> skaffold.yaml
     local:
       concurrency: 0
-    tagPolicy:
-      sha256: {}
   deploy:
     kubectl:
       manifests:
@@ -279,6 +282,23 @@ To achieve the same using Skaffold's ko builder, use the `flags` field in
 skaffold build
 ```
 
+#### Capturing image name from `stdout`
+
+If you want Skaffold to print out the full image name and digest (and nothing
+else) to `stdout`, similar to what `ko build` does, use the
+[`--quiet` and `--output` flags]({{< relref "/docs/references/cli#skaffold-build" >}}).
+These flags enable you to capture the full image references in an environment
+variable or redirect to a file, e.g.:
+
+```shell
+skaffold build --quiet --output='{{range .Builds}}{{.Tag}}{{end}}' > out.txt
+```
+
+Note that Skaffold produces a JSON file with the image names if you run
+`skaffold build` with the `--file-output` flag. You can then use this flag as
+input to `skaffold render` to render Kubernetes manifests. For details on how
+to do this, see the next section.
+
 #### Rendering Kubernetes manifests
 
 When you use the Skaffold ko builder, Skaffold takes care of replacing the
@@ -311,7 +331,7 @@ Or you can perform the action as two steps: first `build` the images, then
 
 ```shell
 skaffold build --file-output artifacts.json --push
-skaffold render --build-artifacts artifacts.json --offline --output out.yaml
+skaffold render --build-artifacts artifacts.json --digest-source none --offline --output out.yaml
 ```
 
 Specify the location of your Kubernetes manifests in `skaffold.yaml`:

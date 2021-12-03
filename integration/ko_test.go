@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -25,10 +24,8 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/google/go-containerregistry/pkg/v1/random"
@@ -60,7 +57,6 @@ func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
 
 	// Build the artifact
 	b := ko.NewArtifactBuilder(nil, true, config.RunModes.Build, nil)
-	var imageFullNameBuffer bytes.Buffer
 	artifact := &latestV1.Artifact{
 		ArtifactType: latestV1.ArtifactType{
 			KoArtifact: &latestV1.KoArtifact{
@@ -70,15 +66,9 @@ func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
 		Workspace: exampleAppDir,
 	}
 	imageName := fmt.Sprintf("%s/%s", registryAddr, "skaffold-ko")
-	digest, err := b.Build(context.Background(), &imageFullNameBuffer, artifact, imageName)
+	_, err = b.Build(context.Background(), nil, artifact, imageName)
 	if err != nil {
 		t.Fatalf("b.Build(): %+v", err)
-	}
-
-	wantImageFullName := fmt.Sprintf("%s@%s", imageName, digest)
-	gotImageFullName := strings.TrimSuffix(imageFullNameBuffer.String(), "\n")
-	if diff := cmp.Diff(wantImageFullName, gotImageFullName); diff != "" {
-		t.Errorf("image name mismatch (-want +got):\n%s", diff)
 	}
 }
 
