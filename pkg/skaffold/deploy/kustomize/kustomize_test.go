@@ -215,7 +215,7 @@ func TestKustomizeCleanup(t *testing.T) {
 	}{
 		{
 			description: "cleanup dry-run",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latestV2.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.

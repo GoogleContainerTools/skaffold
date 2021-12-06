@@ -68,16 +68,16 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 	)
 	tests := []struct {
 		description            string
-		artifact               *latestV1.Artifact
+		artifact               *latestV2.Artifact
 		dockerConfig           docker.Config
 		dockerArtifactResolver docker.ArtifactResolver
 		expectedPaths          []string
 	}{
 		{
 			description: "ko default dependencies",
-			artifact: &latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{},
+			artifact: &latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{},
 				},
 				Workspace: tmpDir.Root(),
 			},

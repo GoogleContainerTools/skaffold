@@ -19,7 +19,7 @@ package util
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -27,14 +27,14 @@ import (
 func TestCollectHelmReleasesNamespaces(t *testing.T) {
 	tests := []struct {
 		description  string
-		helmReleases []latestV1.HelmRelease
+		helmReleases []latestV2.HelmRelease
 		env          []string
 		expected     []string
 		shouldErr    bool
 	}{
 		{
 			description: "namspaces are collected correctly",
-			helmReleases: []latestV1.HelmRelease{
+			helmReleases: []latestV2.HelmRelease{
 				{
 					Namespace: "foo",
 				},
@@ -49,7 +49,7 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 		},
 		{
 			description: "namespaces are collected correctly with env expansion",
-			helmReleases: []latestV1.HelmRelease{
+			helmReleases: []latestV2.HelmRelease{
 				{
 					Namespace: "{{.FOO}}",
 				},
@@ -65,7 +65,7 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 		},
 		{
 			description: "should error when template expansion fails",
-			helmReleases: []latestV1.HelmRelease{
+			helmReleases: []latestV2.HelmRelease{
 				{
 					Namespace: "{{.DOESNT_EXIST_AND_SHOULD_ERROR_AS_SUCH}}",
 				},
@@ -76,11 +76,11 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
-			ns, err := collectHelmReleasesNamespaces([]latestV1.Pipeline{
+			ns, err := collectHelmReleasesNamespaces([]latestV2.Pipeline{
 				{
-					Deploy: latestV1.DeployConfig{
-						DeployType: latestV1.DeployType{
-							HelmDeploy: &latestV1.HelmDeploy{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							HelmDeploy: &latestV2.HelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},

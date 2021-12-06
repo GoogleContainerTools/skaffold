@@ -266,7 +266,7 @@ func TestKubectlCleanup(t *testing.T) {
 	}{
 		{
 			description: "cleanup dry-run",
-			kubectl: latestV1.KubectlDeploy{
+			kubectl: latestV2.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.

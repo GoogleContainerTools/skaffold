@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v2
 
 import (
@@ -375,11 +376,16 @@ type KanikoCache struct {
 	// Repo is a remote repository to store cached layers. If none is specified, one will be
 	// inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).
 	Repo string `yaml:"repo,omitempty"`
+
 	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
 	// If set, must exist on each node and prepopulated with kaniko-warmer.
 	HostPath string `yaml:"hostPath,omitempty"`
+
 	// TTL Cache timeout in hours.
 	TTL string `yaml:"ttl,omitempty"`
+
+	// CacheCopyLayers enables caching of copy layers.
+	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -1224,6 +1230,9 @@ type DockerArtifact struct {
 	// CliFlags are any additional flags to pass to the local daemon during a build.
 	// These flags are only used during a build through the Docker CLI.
 	CliFlags []string `yaml:"cliFlags,omitempty"`
+
+	// PullParent is used to attempt pulling the parent image even if an older image exists locally.
+	PullParent bool `yaml:"pullParent,omitempty"`
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`

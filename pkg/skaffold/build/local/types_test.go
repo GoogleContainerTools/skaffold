@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -29,15 +29,15 @@ func TestNewPerArtifactBuilder(t *testing.T) {
 	tests := []struct {
 		description     string
 		builder         *Builder
-		artifact        *latestV1.Artifact
+		artifact        *latestV2.Artifact
 		expectedBuilder artifactBuilder
 	}{
 		{
 			description: "ko",
 			builder:     &Builder{},
-			artifact: &latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{},
+			artifact: &latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{},
 				},
 			},
 			expectedBuilder: &ko.Builder{},

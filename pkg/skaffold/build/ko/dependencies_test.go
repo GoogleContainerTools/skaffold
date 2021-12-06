@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -97,8 +97,8 @@ func TestGetDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latestV1.KoArtifact{
-				Dependencies: &latestV1.KoDependencies{
+			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latestV2.KoArtifact{
+				Dependencies: &latestV2.KoDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},

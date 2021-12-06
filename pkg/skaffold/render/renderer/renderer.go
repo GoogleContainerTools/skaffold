@@ -168,21 +168,6 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 	endTrace()
 
-	// Read the existing Kptfile content. Kptfile is guaranteed to be exist in prepareHydrationDir.
-	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
-		return sErrors.NewError(err,
-			&proto.ActionableErr{
-				Message: fmt.Sprintf("unable to parse Kptfile in %v", r.hydrationDir),
-				ErrCode: proto.StatusCode_RENDER_KPTFILE_INVALID_YAML_ERR,
-				Suggestions: []*proto.Suggestion{
-					{
-						SuggestionCode: proto.SuggestionCode_KPTFILE_CHECK_YAML,
-						Action: fmt.Sprintf("please check if the Kptfile is correct and " +
-							"the `apiVersion` is greater than `v1alpha2`"),
-					},
-				},
-			})
-	}
 	if kfConfig.Pipeline == nil {
 		kfConfig.Pipeline = &kptfile.Pipeline{}
 	}

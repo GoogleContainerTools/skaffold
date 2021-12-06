@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -132,15 +132,15 @@ func TestGetK8sManifestsLintResults(t *testing.T) {
 					t.Fatalf("error creating deployment.yaml %s: %v", mp, err)
 				}
 				if test.k8sManifestIsNil {
-					configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-						Metadata: v1.Metadata{Name: module},
-						Pipeline: v1.Pipeline{},
+					configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
+						Metadata: v2.Metadata{Name: module},
+						Pipeline: v2.Pipeline{},
 					},
 					})
 				} else {
-					configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-						Metadata: v1.Metadata{Name: module},
-						Pipeline: v1.Pipeline{Deploy: v1.DeployConfig{DeployType: v1.DeployType{KubectlDeploy: &v1.KubectlDeploy{Manifests: []string{mp}}}}},
+					configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
+						Metadata: v2.Metadata{Name: module},
+						Pipeline: v2.Pipeline{Deploy: v2.DeployConfig{DeployType: v2.DeployType{KubectlDeploy: &v2.KubectlDeploy{Manifests: []string{mp}}}}},
 					},
 					})
 				}

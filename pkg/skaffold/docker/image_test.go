@@ -340,7 +340,7 @@ func TestGetBuildArgs(t *testing.T) {
 		},
 		{
 			description: "pullParent",
-			artifact: &latestV1.DockerArtifact{
+			artifact: &latestV2.DockerArtifact{
 				PullParent: true,
 			},
 			want: []string{"--pull"},

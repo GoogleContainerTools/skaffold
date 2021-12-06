@@ -80,9 +80,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Cache Copy Layers",
-			artifact: &latestV1.KanikoArtifact{
+			artifact: &latestV2.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache:          &latestV1.KanikoCache{CacheCopyLayers: true},
+				Cache:          &latestV2.KanikoCache{CacheCopyLayers: true},
 			},
 			expectedArgs: []string{
 				kaniko.CacheFlag,

@@ -20,11 +20,11 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // GetDependencies returns a list of files to watch for changes to rebuild.
-func GetDependencies(_ context.Context, workspace string, a *latestV1.KoArtifact) ([]string, error) {
+func GetDependencies(_ context.Context, workspace string, a *latestV2.KoArtifact) ([]string, error) {
 	if a.Dependencies == nil || (a.Dependencies.Paths == nil && a.Dependencies.Ignore == nil) {
 		a.Dependencies = defaultKoDependencies()
 	}
@@ -32,8 +32,8 @@ func GetDependencies(_ context.Context, workspace string, a *latestV1.KoArtifact
 }
 
 // defaultKoDependencies behavior is to watch all Go files in the context directory and its subdirectories.
-func defaultKoDependencies() *latestV1.KoDependencies {
-	return &latestV1.KoDependencies{
+func defaultKoDependencies() *latestV2.KoDependencies {
+	return &latestV2.KoDependencies{
 		Paths:  []string{"**/*.go"},
 		Ignore: []string{},
 	}

@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -31,7 +31,7 @@ import (
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
 		description              string
-		artifact                 latestV1.Artifact
+		artifact                 latestV2.Artifact
 		runMode                  config.RunMode
 		wantDisableOptimizations bool
 		wantLabels               []string
@@ -41,17 +41,17 @@ func TestBuildOptions(t *testing.T) {
 	}{
 		{
 			description: "all zero value",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{},
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{},
 				},
 			},
 		},
 		{
 			description: "base image",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{
 						BaseImage: "gcr.io/distroless/base:nonroot",
 					},
 				},
@@ -60,9 +60,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "empty platforms",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{
 						Platforms: []string{},
 					},
 				},
@@ -71,9 +71,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "multiple platforms",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{
 						Platforms: []string{"linux/amd64", "linux/arm64"},
 					},
 				},
@@ -83,9 +83,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "workspace",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{},
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{},
 				},
 				ImageName: "ko://example.com/foo",
 				Workspace: "my-app-subdirectory",
@@ -94,9 +94,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "source dir",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{
 						Dir: "my-go-mod-is-here",
 					},
 				},
@@ -107,9 +107,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "workspace and source dir",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{
 						Dir: "my-go-mod-is-here",
 					},
 				},
@@ -121,9 +121,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "disable compiler optimizations for debug",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{},
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{},
 				},
 				ImageName: "ko://example.com/foo",
 			},
@@ -132,9 +132,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "labels",
-			artifact: latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					KoArtifact: &latestV1.KoArtifact{
+			artifact: latestV2.Artifact{
+				ArtifactType: latestV2.ArtifactType{
+					KoArtifact: &latestV2.KoArtifact{
 						Labels: map[string]string{
 							"foo":  "bar",
 							"frob": "baz",

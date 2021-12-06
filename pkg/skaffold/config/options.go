@@ -78,6 +78,7 @@ type SkaffoldOptions struct {
 	Trigger            string
 	KubeContext        string
 	KubeConfig         string
+	LastLogFile        string
 	DigestSource       string
 	Command            string
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):

@@ -353,7 +353,7 @@ func (k *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": deployerName,
 	})
@@ -361,7 +361,13 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	args := []string{"live", "destroy", k.applyDir}
+	var args []string
+	if dryRun {
+		args = append(args, "live", "status", k.applyDir)
+	} else {
+		args = append(args, "live", "destroy", k.applyDir)
+	}
+
 	args = append(args, k.Flags...)
 	cmd := exec.CommandContext(ctx, "kpt", args...)
 	cmd.Stdout = out

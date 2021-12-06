@@ -28,7 +28,7 @@ import (
 	"github.com/google/ko/pkg/publish"
 	"golang.org/x/tools/go/packages"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // Build an artifact using ko, and either push it to an image registry, or
@@ -36,7 +36,7 @@ import (
 // Build prints the image name to the out io.Writer and returns the image
 // identifier. The image identifier is the tag or digest for pushed images, or
 // the docker image ID for sideloaded images.
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, ref string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, ref string) (string, error) {
 	koBuilder, err := b.newKoBuilder(ctx, a)
 	if err != nil {
 		return "", fmt.Errorf("error creating ko builder: %w", err)
@@ -58,7 +58,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 }
 
 // buildAndPublish the image using the ko builder and publisher.
-func (b *Builder) buildAndPublish(ctx context.Context, a *latestV1.Artifact, koBuilder build.Interface, koPublisher publish.Interface) (name.Reference, error) {
+func (b *Builder) buildAndPublish(ctx context.Context, a *latestV2.Artifact, koBuilder build.Interface, koPublisher publish.Interface) (name.Reference, error) {
 	importpath, err := getImportPath(a)
 	if err != nil {
 		return nil, fmt.Errorf("could not determine Go import path for ko image %q: %w", a.ImageName, err)
@@ -85,7 +85,7 @@ func (b *Builder) buildAndPublish(ctx context.Context, a *latestV1.Artifact, koB
 //
 // If the image name does _not_ start with `ko://`, determine the Go import
 // path of the image workspace directory.
-func getImportPath(a *latestV1.Artifact) (string, error) {
+func getImportPath(a *latestV2.Artifact) (string, error) {
 	if strings.HasPrefix(a.ImageName, build.StrictScheme) {
 		return a.ImageName, nil
 	}

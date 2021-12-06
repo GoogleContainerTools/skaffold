@@ -35,7 +35,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
@@ -61,9 +61,9 @@ func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
 	// Build the artifact
 	b := ko.NewArtifactBuilder(nil, true, config.RunModes.Build, nil)
 	var imageFullNameBuffer bytes.Buffer
-	artifact := &latestV1.Artifact{
-		ArtifactType: latestV1.ArtifactType{
-			KoArtifact: &latestV1.KoArtifact{
+	artifact := &latestV2.Artifact{
+		ArtifactType: latestV2.ArtifactType{
+			KoArtifact: &latestV2.KoArtifact{
 				BaseImage: baseImage,
 			},
 		},
