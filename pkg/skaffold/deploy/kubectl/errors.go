@@ -37,7 +37,7 @@ func versionGetErr(err error) error {
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_INSTALL_KUBECTL,
-					Action:         fmt.Sprintf("Please install kubeclt via %s", installLink),
+					Action:         fmt.Sprintf("Please install kubectl via %s", installLink),
 				},
 			},
 		})
