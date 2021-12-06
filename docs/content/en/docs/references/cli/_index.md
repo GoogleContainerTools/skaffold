@@ -500,11 +500,16 @@ Delete any resources deployed by Skaffold
 ```
 
 
+Examples:
+  # Print the resources to be deleted
+  skaffold delete --dry-run
+
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
+      --dry-run=false: Don't delete resources, just print them.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -529,6 +534,7 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
+* `SKAFFOLD_DRY_RUN` (same as `--dry-run`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
@@ -813,10 +819,17 @@ Examples:
   # Update "skaffold.yaml" in the current folder to version "skaffold/v1"
   skaffold fix --version skaffold/v1
 
+  # Update "skaffold.yaml" in the current folder in-place
+  skaffold fix --overwrite
+
+  # Update "skaffold.yaml" and write the output to a new file
+  skaffold fix --output skaffold.new.yaml
+
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
+  -o, --output='': File to write the changed config (instead of standard output)
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --sync-remote-cache='missing': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -834,6 +847,7 @@ Env vars:
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)

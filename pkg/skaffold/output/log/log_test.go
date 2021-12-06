@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	ggcrlogs "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -87,5 +88,66 @@ func TestKanikoLogLevel(t *testing.T) {
 		kanikoLevel := KanikoLogLevel()
 
 		testutil.CheckDeepEqual(t, test.expected, kanikoLevel)
+	}
+}
+
+func TestSetupGGCRLogging(t *testing.T) {
+	tests := []struct {
+		description           string
+		logLevel              logrus.Level
+		expectWarnEnabled     bool
+		expectProgressEnabled bool
+		expectDebugEnabled    bool
+	}{
+		{
+			description: "fatal log level disables ggcr logging",
+			logLevel:    logrus.FatalLevel,
+		},
+		{
+			description:       "error log level enables ggcr warn logging",
+			logLevel:          logrus.ErrorLevel,
+			expectWarnEnabled: true,
+		},
+		{
+			description:       "warn log level enables ggcr warn logging",
+			logLevel:          logrus.WarnLevel,
+			expectWarnEnabled: true,
+		},
+		{
+			description:           "info log level enables ggcr warn and progress logging",
+			logLevel:              logrus.InfoLevel,
+			expectWarnEnabled:     true,
+			expectProgressEnabled: true,
+		},
+		{
+			description:           "debug log level enables ggcr warn and progress logging",
+			logLevel:              logrus.DebugLevel,
+			expectWarnEnabled:     true,
+			expectProgressEnabled: true,
+		},
+		{
+			description:           "trace log level enables ggcr warn and progress and debug logging",
+			logLevel:              logrus.TraceLevel,
+			expectWarnEnabled:     true,
+			expectProgressEnabled: true,
+			expectDebugEnabled:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			setupGGCRLogging(logrus.New(), test.logLevel)
+			t.CheckDeepEqual(test.expectWarnEnabled, ggcrlogs.Enabled(ggcrlogs.Warn))
+			t.CheckDeepEqual(test.expectProgressEnabled, ggcrlogs.Enabled(ggcrlogs.Progress))
+			t.CheckDeepEqual(test.expectDebugEnabled, ggcrlogs.Enabled(ggcrlogs.Debug))
+			if test.expectWarnEnabled {
+				t.CheckDeepEqual(0, ggcrlogs.Warn.Flags())
+			}
+			if test.expectProgressEnabled {
+				t.CheckDeepEqual(0, ggcrlogs.Progress.Flags())
+			}
+			if test.expectDebugEnabled {
+				t.CheckDeepEqual(0, ggcrlogs.Debug.Flags())
+			}
+		})
 	}
 }

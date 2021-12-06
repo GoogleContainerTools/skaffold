@@ -140,9 +140,9 @@ func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 func (t *TestBench) TestDependencies(context.Context, *latestV2.Artifact) ([]string, error) {
 	return nil, nil
 }
-func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
-func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
+func (t *TestBench) Dependencies() ([]string, error)                               { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error { return nil }
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error                { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)

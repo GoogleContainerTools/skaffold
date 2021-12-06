@@ -27,6 +27,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
@@ -40,9 +41,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -64,9 +67,10 @@ const (
 )
 
 type counter struct {
-	total   int
-	pending int32
-	failed  int32
+	total     int
+	pending   int32
+	failed    int32
+	cancelled int32
 }
 
 type Config interface {
@@ -78,7 +82,12 @@ type Config interface {
 }
 
 // Monitor runs status checks for selected resources
-type Monitor struct {
+type Monitor interface {
+	status.Monitor
+	RegisterDeployManifests(manifest.ManifestList)
+}
+
+type monitor struct {
 	cfg             Config
 	labeller        *label.DefaultLabeller
 	deadlineSeconds int
@@ -87,12 +96,13 @@ type Monitor struct {
 	singleRun       singleflight.Group
 	namespaces      *[]string
 	kubeContext     string
+	manifests       manifest.ManifestList
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on selected resource rollouts.
 // Currently implemented for deployments and statefulsets.
-func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) *Monitor {
-	return &Monitor{
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) Monitor {
+	return &monitor{
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,
 		labeller:        labeller,
@@ -101,19 +111,30 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		singleRun:       singleflight.Group{},
 		namespaces:      namespaces,
 		kubeContext:     cfg.GetKubeContext(),
+		manifests:       make(manifest.ManifestList, 0),
+	}
+}
+
+func (s *monitor) RegisterDeployManifests(manifests manifest.ManifestList) {
+	if len(s.manifests) == 0 {
+		s.manifests = manifests
+		return
+	}
+	for _, m := range manifests {
+		s.manifests.Append(m)
 	}
 }
 
 // Check runs the status checks on selected resource rollouts in current skaffold dev iteration.
 // Currently implemented for deployments.
-func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
+func (s *monitor) Check(ctx context.Context, out io.Writer) error {
 	_, err, _ := s.singleRun.Do(s.labeller.GetRunID(), func() (interface{}, error) {
 		return struct{}{}, s.check(ctx, out)
 	})
 	return err
 }
 
-func (s *Monitor) check(ctx context.Context, out io.Writer) error {
+func (s *monitor) check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
@@ -131,24 +152,38 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (s *Monitor) Reset() {
+func (s *monitor) Reset() {
 	s.seenResources.Reset()
 }
 
-func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
+func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
 	client, err := kubernetesclient.Client(s.kubeContext)
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
-
+	dynClient, err := kubernetesclient.DynamicClient(s.kubeContext)
+	if err != nil {
+		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
+	}
 	resources := make([]*resource.Resource, 0)
 	for _, n := range *s.namespaces {
-		newDeployments, err := getDeployments(ctx, client, n, s.labeller,
-			getDeadline(s.deadlineSeconds))
+		newDeployments, err := getDeployments(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
 		for _, d := range newDeployments {
+			if s.seenResources.Contains(d) {
+				continue
+			}
+			resources = append(resources, d)
+			s.seenResources.Add(d)
+		}
+
+		newStatefulSets, err := getStatefulSets(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds))
+		if err != nil {
+			return proto.StatusCode_STATUSCHECK_STATEFULSET_FETCH_ERR, fmt.Errorf("could not fetch statefulsets: %w", err)
+		}
+		for _, d := range newStatefulSets {
 			if s.seenResources.Contains(d) {
 				continue
 			}
@@ -167,6 +202,18 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			resources = append(resources, pods)
 			s.seenResources.Add(pods)
 		}
+
+		newConfigConnectorResources, err := getConfigConnectorResources(client, dynClient, s.manifests, n, s.labeller, getDeadline(s.deadlineSeconds))
+		if err != nil {
+			return proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR, fmt.Errorf("could not fetch config connector resources: %w", err)
+		}
+		for _, d := range newConfigConnectorResources {
+			if s.seenResources.Contains(d) {
+				continue
+			}
+			resources = append(resources, d)
+			s.seenResources.Add(d)
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -174,17 +221,23 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	var exitStatusOnce sync.Once
+	var exitStatus proto.StatusCode
 
 	for _, d := range resources {
 		wg.Add(1)
 		go func(r *resource.Resource) {
 			defer wg.Done()
-			// keep updating the resource status until it fails/succeeds/times out
+			// keep updating the resource status until it fails/succeeds/times out/cancelled.
 			pollResourceStatus(ctx, s.cfg, r)
-			rcCopy := c.markProcessed(r.Status().Error())
+			rcCopy, failed := c.markProcessed(ctx, r.StatusCode())
 			s.printStatusCheckSummary(out, r, rcCopy)
-			// if one deployment fails, cancel status checks for all deployments.
-			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+			// if a resource fails, cancel status checks for all resources to fail fast
+			// and capture the first failed exit code.
+			if failed {
+				exitStatusOnce.Do(func() {
+					exitStatus = r.StatusCode()
+				})
 				cancel()
 			}
 		}(d)
@@ -197,9 +250,9 @@ func (s *Monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
-	cancel()
-	return getSkaffoldDeployStatus(c, resources)
+	return getSkaffoldDeployStatus(ctx, c, exitStatus)
 }
+
 func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
 	var result []*resource.Resource
 	selector := validator.NewStandalonePodsSelector(client)
@@ -219,6 +272,27 @@ func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns stri
 
 	return result, nil
 }
+
+func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
+	var result []*resource.Resource
+	uRes, err := m.SelectResources(manifest.ConfigConnectorResourceSelector...)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch config connector resources: %w", err)
+	}
+	for _, r := range uRes {
+		resName := r.GroupVersionKind().String()
+		if r.GetName() != "" {
+			resName = fmt.Sprintf("%s, Name=%s", resName, r.GetName())
+		}
+		pd := diag.New([]string{ns}).
+			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
+			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, dynClient, r.GroupVersionKind())})
+		result = append(result, resource.NewResource(resName, resource.ResourceTypes.ConfigConnector, ns, deadlineDuration).WithValidator(pd))
+	}
+
+	return result, nil
+}
+
 func getDeployments(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: l.RunIDSelector(),
@@ -245,6 +319,29 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 		}
 
 		resources[i] = resource.NewResource(d.Name, resource.ResourceTypes.Deployment, d.Namespace, deadline).WithValidator(pd)
+	}
+	return resources, nil
+}
+
+func getStatefulSets(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadline time.Duration) ([]*resource.Resource, error) {
+	sets, err := client.AppsV1().StatefulSets(ns).List(ctx, metav1.ListOptions{
+		LabelSelector: l.RunIDSelector(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch stateful sets: %w", err)
+	}
+
+	resources := make([]*resource.Resource, len(sets.Items))
+	for i, ss := range sets.Items {
+		pd := diag.New([]string{ss.Namespace}).
+			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, validator.NewStatefulSetPodsSelector(client, ss))})
+
+		for k, v := range ss.Spec.Template.Labels {
+			pd = pd.WithLabel(k, v)
+		}
+
+		resources[i] = resource.NewResource(ss.Name, resource.ResourceTypes.StatefulSet, ss.Namespace, deadline).WithValidator(pd)
 	}
 	return resources, nil
 }
@@ -291,18 +388,23 @@ func pollResourceStatus(ctx context.Context, cfg kubectl.Config, r *resource.Res
 	}
 }
 
-func getSkaffoldDeployStatus(c *counter, rs []*resource.Resource) (proto.StatusCode, error) {
+func getSkaffoldDeployStatus(ctx context.Context, c *counter, sc proto.StatusCode) (proto.StatusCode, error) {
+	if c.total == int(c.cancelled) && c.total > 0 {
+		err := fmt.Errorf("%d/%d deployment(s) status check cancelled", c.cancelled, c.total)
+		return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
+	}
+	// return success if no failures find.
 	if c.failed == 0 {
 		return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 	}
+	// construct an error message and return appropriate error code
 	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
-	for _, r := range rs {
-		if r.StatusCode() != proto.StatusCode_STATUSCHECK_SUCCESS &&
-			r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
-			return r.StatusCode(), err
-		}
+	if sc == proto.StatusCode_STATUSCHECK_SUCCESS || sc == 0 {
+		log.Entry(ctx).Debugf("found statuscode %s. setting skaffold deploy status to STATUSCHECK_INTERNAL_ERROR.", sc)
+		return proto.StatusCode_STATUSCHECK_INTERNAL_ERROR, err
 	}
-	return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
+	log.Entry(ctx).Debugf("setting skaffold deploy status to %s.", sc)
+	return sc, err
 }
 
 func getDeadline(d int) time.Duration {
@@ -312,7 +414,7 @@ func getDeadline(d int) time.Duration {
 	return DefaultStatusCheckDeadline
 }
 
-func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Resource, c counter) {
+func (s *monitor) printStatusCheckSummary(out io.Writer, r *resource.Resource, c counter) {
 	ae := r.Status().ActionableError()
 	if r.StatusCode() == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 		// Don't print the status summary if the user ctrl-C or
@@ -339,7 +441,7 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, r *resource.Resource, c
 }
 
 // printResourceStatus prints resource statuses until all status check are completed or context is cancelled.
-func (s *Monitor) printResourceStatus(ctx context.Context, out io.Writer, resources []*resource.Resource) {
+func (s *monitor) printResourceStatus(ctx context.Context, out io.Writer, resources []*resource.Resource) {
 	ticker := time.NewTicker(reportStatusTime)
 	defer ticker.Stop()
 	for {
@@ -356,7 +458,7 @@ func (s *Monitor) printResourceStatus(ctx context.Context, out io.Writer, resour
 	}
 }
 
-func (s *Monitor) printStatus(resources []*resource.Resource, out io.Writer) bool {
+func (s *monitor) printStatus(resources []*resource.Resource, out io.Writer) bool {
 	allDone := true
 	for _, r := range resources {
 		if r.IsStatusCheckCompleteOrCancelled() {
@@ -392,18 +494,31 @@ func newCounter(i int) *counter {
 	}
 }
 
-func (c *counter) markProcessed(err error) counter {
-	if err != nil && err != context.Canceled {
-		atomic.AddInt32(&c.failed, 1)
-	}
+func (c *counter) markProcessed(ctx context.Context, sc proto.StatusCode) (counter, bool) {
 	atomic.AddInt32(&c.pending, -1)
-	return c.copy()
+	if ctx.Err() == context.Canceled {
+		log.Entry(ctx).Debug("marking resource status check cancelled", sc)
+		atomic.AddInt32(&c.cancelled, 1)
+		return c.copy(), false
+	} else if sc == proto.StatusCode_STATUSCHECK_SUCCESS {
+		return c.copy(), false
+	}
+	log.Entry(ctx).Debugf("marking resource failed due to error code %s", sc)
+	atomic.AddInt32(&c.failed, 1)
+	return c.copy(), true
 }
 
 func (c *counter) copy() counter {
 	return counter{
-		total:   c.total,
-		pending: c.pending,
-		failed:  c.failed,
+		total:     c.total,
+		pending:   c.pending,
+		failed:    c.failed,
+		cancelled: c.cancelled,
 	}
 }
+
+type NoopMonitor struct {
+	status.NoopMonitor
+}
+
+func (n *NoopMonitor) RegisterDeployManifests(manifest.ManifestList) {}

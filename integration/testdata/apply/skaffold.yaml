@@ -1,2 +1,16 @@
-apiVersion: skaffold/v2beta25
+apiVersion: skaffold/v2beta26
 kind: Config
+profiles:
+  - name: deployment
+    deploy:
+      kubectl:
+        manifests: ["deployment.yaml"]
+  - name: statefulset
+    deploy:
+      kubectl:
+        manifests: ["statefulset.yaml"]
+  - name: configconnector
+    deploy:
+      kubectl:
+        statusCheckDeadlineSeconds: 10
+        manifests: ["configconnector.yaml"]

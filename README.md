@@ -41,6 +41,14 @@ Or, check out our [Github Releases](https://github.com/GoogleContainerTools/skaf
 
 ### Check out our [examples page](./examples) for more complex workflows!
 
+## IDE integrations
+
+For a managed experience of Skaffold you can install the Google `Cloud Code` extensions:
+- for [Visual Studio Code](https://cloud.google.com/code/docs/vscode/quickstart-k8s#installing)
+- for [JetBrains IDEs](https://cloud.google.com/code/docs/intellij/quickstart-k8s#installing_the_plugin). 
+
+It can manage and keep Skaffold  up-to-date while providing a more guided startup experience, along with providing and managing other common dependencies, and works with any kubernetes cluster. 
+
 ## Contributing to Skaffold
 
 We welcome any contributions from the community with open arms - Skaffold wouldn't be where it is today without contributions from the community! Have a look at our [contribution guide](./CONTRIBUTING.md) for more information on how to get started on sending your first PR.

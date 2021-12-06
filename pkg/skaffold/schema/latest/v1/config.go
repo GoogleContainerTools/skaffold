@@ -26,7 +26,7 @@ import (
 )
 
 // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta25"
+const Version string = "skaffold/v2beta26"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -372,6 +372,8 @@ type KanikoCache struct {
 	HostPath string `yaml:"hostPath,omitempty"`
 	// TTL Cache timeout in hours.
 	TTL string `yaml:"ttl,omitempty"`
+	// CacheCopyLayers enables caching of copy layers.
+	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -983,9 +985,8 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// TODO(halvards)[09/29/2021]: Use `ko` as the yaml tag in place of `-` when we are ready to expose the ko builder in the docs.
 	// KoArtifact builds images using [ko](https://github.com/google/ko).
-	KoArtifact *KoArtifact `yaml:"-,omitempty" yamltags:"oneOf=artifact"`
+	KoArtifact *KoArtifact `yaml:"ko,omitempty" yamltags:"oneOf=artifact"`
 
 	// JibArtifact builds images using the
 	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
@@ -1300,6 +1301,9 @@ type DockerArtifact struct {
 	// These flags are only used during a build through the Docker CLI.
 	CliFlags []string `yaml:"cliFlags,omitempty"`
 
+	// PullParent is used to attempt pulling the parent image even if an older image exists locally.
+	PullParent bool `yaml:"pullParent,omitempty"`
+
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 
@@ -1354,15 +1358,15 @@ type KoArtifact struct {
 	// Env are environment variables, in the `key=value` form, passed to the build.
 	// These environment variables are only used at build time.
 	// They are _not_ set in the resulting container image.
-	// For example: `["GOPRIVATE=source.developers.google.com", "GOCACHE=/workspace/.gocache"]`.
+	// For example: `["GOPRIVATE=git.example.com", "GOCACHE=/workspace/.gocache"]`.
 	Env []string `yaml:"env,omitempty"`
 
-	// Flags are additional build flags passed to the builder.
+	// Flags are additional build flags passed to `go build`.
 	// For example: `["-trimpath", "-v"]`.
-	Flags []string `yaml:"args,omitempty"`
+	Flags []string `yaml:"flags,omitempty"`
 
 	// Labels are key-value string pairs to add to the image config.
-	// For example: `{"org.opencontainers.image.source":"https://github.com/GoogleContainerTools/skaffold"}`.
+	// For example: `{"foo":"bar"}`.
 	Labels map[string]string `yaml:"labels,omitempty"`
 
 	// Ldflags are linker flags passed to the builder.
@@ -1388,7 +1392,7 @@ type KoArtifact struct {
 // KoDependencies is used to specify dependencies for an artifact built by ko.
 type KoDependencies struct {
 	// Paths should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.
-	// Defaults to `["."]`.
+	// Defaults to `["**/*.go"]`.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
 	// Ignore specifies the paths that should be ignored by Skaffold's file watcher.

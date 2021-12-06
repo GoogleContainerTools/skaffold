@@ -97,7 +97,7 @@ func (m *mockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) erro
 	return nil
 }
 
-func (m *mockDeployer) Cleanup(context.Context, io.Writer) error {
+func (m *mockDeployer) Cleanup(context.Context, io.Writer, bool) error {
 	if m.err {
 		return errors.New("Unable to cleanup")
 	}
@@ -311,7 +311,7 @@ func TestTimingsCleanup(t *testing.T) {
 			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
 
 			var out bytes.Buffer
-			err := deployer.Cleanup(context.Background(), &out)
+			err := deployer.Cleanup(context.Background(), &out, false)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())

@@ -983,7 +983,6 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// TODO(halvards)[09/29/2021]: Use `ko` as the yaml tag in place of `-` when we are ready to expose the ko builder in the docs.
 	// KoArtifact builds images using [ko](https://github.com/google/ko).
 	KoArtifact *KoArtifact `yaml:"-,omitempty" yamltags:"oneOf=artifact"`
 

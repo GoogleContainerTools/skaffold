@@ -59,7 +59,7 @@ type plainTextOutput struct {
 
 func genColPointerLine(colIdx int) string {
 	s := ""
-	for i := 0; i < colIdx; i++ {
+	for i := 1; i < colIdx; i++ {
 		s += " "
 	}
 	s += "^"
@@ -76,14 +76,14 @@ func generatePlainTextOutput(res *Result) (string, error) {
 		LineNumber:     res.Line,
 		ColumnNumber:   res.Column,
 		RuleID:         res.Rule.RuleID.String(),
-		Explanation:    res.Rule.Explanation,
+		Explanation:    res.Explanation,
 		RuleType:       res.Rule.RuleType.String(),
 		FlaggedText:    strings.Split(string(text), "\n")[res.Line-1],
 		ColPointerLine: genColPointerLine(res.Column),
 	}
 	// TODO(aaron-prindle) - support different template for multiline matches -> (no ColPointerLine, show multi line match)
 	// if flagged text contains \n character, don't show colpointerline
-	tmpl, err := template.New("plainTextOutput").Parse("{{.RelFilePath}}:{{.LineNumber}}:{{.ColumnNumber}}: {{.RuleID}}: {{.Explanation}}: ({{.RuleType}})\n{{.FlaggedText}}\n{{.ColPointerLine}}")
+	tmpl, err := template.New("plainTextOutput").Parse("{{.RelFilePath}}:{{.LineNumber}}:{{.ColumnNumber}}: {{.RuleID}}: {{.RuleType}}: {{.Explanation}}\n{{.FlaggedText}}\n{{.ColPointerLine}}")
 	if err != nil {
 		return "", err
 	}

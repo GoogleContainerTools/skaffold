@@ -438,7 +438,7 @@ func TestKpt_Cleanup(t *testing.T) {
 				},
 			})
 
-			err := k.Cleanup(context.Background(), ioutil.Discard)
+			err := k.Cleanup(context.Background(), ioutil.Discard, false)
 
 			t.CheckError(test.shouldErr, err)
 		})

@@ -18,7 +18,7 @@ Multiple types of sync are supported by Skaffold:
 
  + `infer`: The destinations for each changed file is inferred from the builder.
    The docker and kaniko builders examine instructions in a Dockerfile.
-   This inference is also supported for custom artifacts that declare a dependency on a Dockerfile.
+   This inference is also supported for custom artifacts that **explicitly declare a dependency on a Dockerfile.**
 
 + `auto`: Skaffold automatically configures the sync.  This mode is only supported by Jib and Buildpacks artifacts.
    Auto sync mode is enabled by default for Buildpacks artifacts.

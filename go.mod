@@ -10,7 +10,7 @@ replace (
 	// Avoid indenting sequences.
 	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 
-	// TODO(halvards)[08/31/2021] Temporarily override version since ko is now on v0.22.2.
+	// TODO(halvards) Pin to match other k8s.io modules. Necessary since ko is now on v0.22.x.
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.3
 )
 
@@ -28,6 +28,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.2.15
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/ahmetalpbalkan/dlog v0.0.0-20170105205344-4fb5f8204f26 // indirect
 	github.com/ahmetb/dlog v0.0.0-20170105205344-4fb5f8204f26
 	github.com/aws/aws-sdk-go v1.36.30 // indirect
@@ -37,10 +38,9 @@ require (
 	github.com/buildpacks/lifecycle v0.10.2
 	github.com/buildpacks/pack v0.18.1
 	github.com/cenkalti/backoff/v4 v4.1.1
-	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/docker/cli v20.10.7+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
-	github.com/docker/docker v20.10.8+incompatible
+	github.com/docker/docker v20.10.10+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210216200643-d81088d9983e // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/ko v0.9.3
+	github.com/google/ko v0.9.4-0.20211102213605-98211906053b
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0
 	github.com/heroku/color v0.0.6
@@ -67,10 +67,8 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.8.0
 	github.com/nxadm/tail v1.4.8 // indirect
-	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20210730191737-8e42a01fb1b7
-	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/otiai10/copy v1.6.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
@@ -83,7 +81,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	github.com/xeipuuv/gojsonschema v1.2.0
-	go.lsp.dev/protocol v0.11.2 // indirect
+	go.lsp.dev/protocol v0.11.2
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/stdout v0.20.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
@@ -92,24 +90,24 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
 	golang.org/x/mod v0.4.2
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365
+	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/tools v0.1.7
 	google.golang.org/api v0.57.0
-	google.golang.org/genproto v0.0.0-20210921142501-181ce0d877f6
-	google.golang.org/grpc v1.40.0
+	google.golang.org/genproto v0.0.0-20211005153810-c76a74d43a8e
+	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.21.3
-	k8s.io/apimachinery v0.22.2
+	k8s.io/apimachinery v0.22.3
 	k8s.io/client-go v0.21.3
 	k8s.io/kubectl v0.21.3
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
+	k8s.io/utils v0.0.0-20210517184530-5a248b5acedc
 	knative.dev/pkg v0.0.0-20201119170152-e5e30edc364a // indirect
+	sigs.k8s.io/cli-utils v0.22.0
 	sigs.k8s.io/kustomize/kyaml v0.10.17
 	sigs.k8s.io/yaml v1.2.0
 )

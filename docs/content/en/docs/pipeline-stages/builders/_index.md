@@ -15,6 +15,7 @@ Skaffold supports different tools for building images:
 | **Jib Maven and Gradle** | [Yes]({{< relref "/docs/pipeline-stages/builders/jib#jib-maven-and-gradle-locally" >}}) | - | [Yes]({{< relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build" >}}) |
 | **Cloud Native Buildpacks** | [Yes]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) | - | [Yes]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) |
 | **Bazel** | [Yes]({{< relref "/docs/pipeline-stages/builders/bazel" >}}) | - | - |
+| **ko** | [Yes]({{< relref "/docs/pipeline-stages/builders/ko" >}}) | - | - |
 | **Custom Script** | [Yes]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-locally" >}}) | [Yes]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}) | - |
 
 **Configuration**

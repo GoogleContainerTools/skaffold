@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -50,8 +51,8 @@ func NewCmdFindConfigs() *cobra.Command {
 		NoArgs(doFindConfigs)
 }
 
-func doFindConfigs(_ context.Context, out io.Writer) error {
-	pathToVersion, err := findConfigs(directory)
+func doFindConfigs(ctx context.Context, out io.Writer) error {
+	pathToVersion, err := findConfigs(ctx, directory)
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func doFindConfigs(_ context.Context, out io.Writer) error {
 	}
 }
 
-func findConfigs(directory string) (map[string]string, error) {
+func findConfigs(ctx context.Context, directory string) (map[string]string, error) {
 	pathToVersion := make(map[string]string)
 
 	// Find files ending in ".yaml" and parseable to skaffold config in the specified root directory recursively.
@@ -88,7 +89,16 @@ func findConfigs(directory string) (map[string]string, error) {
 	}
 
 	err := walk.From(directory).When(isYaml).Do(func(path string, _ walk.Dirent) error {
-		if cfgs, err := schema.ParseConfig(path); err == nil && len(cfgs) > 0 {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		cfgs, err := schema.ParseConfig(path)
+		switch {
+		case err != nil:
+			log.Entry(ctx).Debugf("skipped %q: error: %v", path, err)
+		case len(cfgs) == 0:
+			log.Entry(ctx).Debugf("skipped %q: no configs found", path)
+		default:
 			// all configs defined in the same file should have the same version
 			pathToVersion[path] = cfgs[0].GetVersion()
 		}

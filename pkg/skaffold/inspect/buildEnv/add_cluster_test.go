@@ -85,7 +85,8 @@ profiles:
 		},
 		{
 			description:  "add to existing profile",
-			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p1"},
+			profile:      "p1",
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -144,7 +145,8 @@ profiles:
 		},
 		{
 			description:  "add to new profile",
-			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -213,7 +215,8 @@ profiles:
 		{
 			description:  "add to new profile in selected modules",
 			modules:      []string{"cfg1_1"},
-			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -274,7 +277,8 @@ profiles:
 		{
 			description:  "add to new profile in nested module",
 			modules:      []string{"cfg2"},
-			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{"",
 				`apiVersion: ""
 kind: ""
@@ -370,8 +374,8 @@ profiles:
 			})
 
 			var buf bytes.Buffer
-			err := AddClusterBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, BuildEnvOptions: test.buildEnvOpts})
-			t.CheckNoError(err)
+			err := AddClusterBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, Profile: test.profile, BuildEnvOptions: test.buildEnvOpts})
+			t.CheckError(test.err != nil, err)
 			if test.err == nil {
 				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)
 				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2)

@@ -29,7 +29,11 @@ import (
 )
 
 func (b *Builder) newKoPublisher(ref string) (publish.Interface, error) {
-	po, err := publishOptions(ref, b.pushImages, b.localDocker.RawClient(), b.insecureRegistries)
+	var dockerClient daemon.Client
+	if b.localDocker != nil {
+		dockerClient = b.localDocker.RawClient()
+	}
+	po, err := publishOptions(ref, b.pushImages, dockerClient, b.insecureRegistries)
 	if err != nil {
 		return nil, err
 	}

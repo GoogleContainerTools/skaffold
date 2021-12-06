@@ -47,10 +47,12 @@ func PrintTestsList(ctx context.Context, out io.Writer, opts inspect.Options) er
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
 		RepoCacheDir:        opts.RepoCacheDir,
-		Profiles:            opts.TestsProfiles,
+		Profiles:            opts.Profiles,
+		PropagateProfiles:   opts.PropagateProfiles,
 	})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 
 	// TODO(aaron-prindle) add a field 'testType' to both objects

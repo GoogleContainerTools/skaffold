@@ -42,6 +42,23 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+type FromTo struct {
+	// From is the relative path (wrt. the skaffold root directory) of the dependency on the host system.
+	From string
+	// To is the destination location in the container. Must use slashes as path separator.
+	To string
+	// ToIsDir indicates if the `to` path must be treated as directory
+	ToIsDir bool
+	// StartLine indicates the starting line in the dockerfile of the copy command
+	StartLine int
+	// EndLine indiciates the ending line in the dockerfile of the copy command
+	EndLine int
+}
+
+func (f *FromTo) String() string {
+	return fmt.Sprintf("From:%s, To:%s, ToIsDir:%t, StartLine: %d, EndLine: %d", f.From, f.To, f.ToIsDir, f.StartLine, f.EndLine)
+}
+
 type from struct {
 	image string
 	as    string
@@ -55,15 +72,10 @@ type copyCommand struct {
 	dest string
 	// destIsDir indicates if dest must be treated as directory.
 	destIsDir bool
-}
-
-type fromTo struct {
-	// from is the relative path (wrt. the skaffold root directory) of the dependency on the host system.
-	from string
-	// to is the destination location in the container. Must use slashes as path separator.
-	to string
-	// toIsDir indicates if the `to` path must be treated as directory
-	toIsDir bool
+	// startLine indicates the starting line in the dockerfile of the copy command
+	startLine int
+	// endLine indiciates the ending line in the dockerfile of the copy command
+	endLine int
 }
 
 var (
@@ -71,7 +83,9 @@ var (
 	RetrieveImage = retrieveImage
 )
 
-func readCopyCmdsFromDockerfile(ctx context.Context, onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
+// ReadCopyCmdsFromDockerfile parses a given dockerfile for COPY commands accounting for build args, env vars, globs, etc
+// and returns an array of FromTos specifying the files that will be copied 'from' local dirs 'to' container dirs in the COPY statements
+func ReadCopyCmdsFromDockerfile(ctx context.Context, onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]FromTo, error) {
 	r, err := ioutil.ReadFile(absDockerfilePath)
 	if err != nil {
 		return nil, err
@@ -103,6 +117,38 @@ func readCopyCmdsFromDockerfile(ctx context.Context, onlyLastImage bool, absDock
 	}
 
 	return expandSrcGlobPatterns(workspace, cpCmds)
+}
+
+func ExtractOnlyCopyCommands(absDockerfilePath string) ([]FromTo, error) {
+	r, err := ioutil.ReadFile(absDockerfilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := parser.Parse(bytes.NewReader(r))
+	if err != nil {
+		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
+	}
+
+	var copied []FromTo
+	workdir := "/"
+	envs := make([]string, 0)
+	for _, node := range res.AST.Children {
+		switch node.Value {
+		case command.Add, command.Copy:
+			cpCmd, err := readCopyCommand(node, envs, workdir)
+			if err != nil {
+				return nil, err
+			}
+
+			if cpCmd != nil && len(cpCmd.srcs) > 0 {
+				for _, src := range cpCmd.srcs {
+					copied = append(copied, FromTo{From: src, To: cpCmd.dest, ToIsDir: cpCmd.destIsDir, StartLine: cpCmd.startLine, EndLine: cpCmd.endLine})
+				}
+			}
+		}
+	}
+	return copied, nil
 }
 
 // filterUnusedBuildArgs removes entries from the build arguments map that are not found in the dockerfile
@@ -162,15 +208,15 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 	return nil
 }
 
-func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, error) {
-	var fts []fromTo
+func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, error) {
+	var fts []FromTo
 	for _, cpCmd := range cpCmds {
 		matchesOne := false
 
 		for _, p := range cpCmd.srcs {
 			path := filepath.Join(workspace, p)
 			if _, err := os.Stat(path); err == nil {
-				fts = append(fts, fromTo{from: filepath.Clean(p), to: cpCmd.dest, toIsDir: cpCmd.destIsDir})
+				fts = append(fts, FromTo{From: filepath.Clean(p), To: cpCmd.dest, ToIsDir: cpCmd.destIsDir, StartLine: cpCmd.startLine, EndLine: cpCmd.endLine})
 				matchesOne = true
 				continue
 			}
@@ -189,7 +235,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 					return nil, fmt.Errorf("getting relative path of %s", f)
 				}
 
-				fts = append(fts, fromTo{from: rel, to: cpCmd.dest, toIsDir: cpCmd.destIsDir})
+				fts = append(fts, FromTo{From: rel, To: cpCmd.dest, ToIsDir: cpCmd.destIsDir, StartLine: cpCmd.startLine, EndLine: cpCmd.endLine})
 			}
 			matchesOne = true
 		}
@@ -262,11 +308,10 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 		case command.Env:
 			// one env command may define multiple variables
 			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
-				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, node.Next.Value))
+				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, unquote(node.Next.Value)))
 			}
 		}
 	}
-
 	return copied, nil
 }
 
@@ -311,6 +356,8 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 		srcs:      srcs,
 		dest:      dest,
 		destIsDir: destIsDir,
+		startLine: value.StartLine,
+		endLine:   value.EndLine,
 	}, nil
 }
 

@@ -41,6 +41,16 @@
     "maturity": "beta",
     "description": "Define build artifact dependencies"
   },
+  "build.ko": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Build",
+    "feature": "ko builder",
+    "maturity": "alpha",
+    "description": "Build Go apps using ko"
+  },
   "build": {
     "dev": "x",
     "build": "x",
@@ -159,7 +169,7 @@
     "debug": "x",
     "area": "Deploy",
     "feature": "Docker Deployer",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Deploy applications to the local Docker daemon"
   },
   "deploy.status_check": {

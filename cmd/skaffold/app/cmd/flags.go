@@ -199,6 +199,15 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply"},
 	},
 	{
+		Name:          "last-log-file",
+		Usage:         "Save Skaffold output to the provided file after skaffold has finished executing, requires --rpc-port or --rpc-http-port (defaults to $HOME/.skaffold/repos)",
+		Hidden:        true,
+		Value:         &opts.LastLogFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply"},
+	},
+	{
 		Name:          "rpc-port",
 		Usage:         "tcp port to expose the Skaffold API over gRPC",
 		Value:         &opts.RPCPort,

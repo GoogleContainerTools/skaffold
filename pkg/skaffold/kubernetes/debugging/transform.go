@@ -69,6 +69,27 @@ func ApplyDebuggingTransforms(l manifest.ManifestList, builds []graph.Artifact, 
 	return applyDebuggingTransforms(l, retriever, registries.DebugHelpersRegistry)
 }
 
+func Describe(obj runtime.Object) (group, version, kind, description string) {
+	// get metadata/name; shamelessly stolen from from k8s.io/cli-runtime/pkg/printers/name.go
+	name := "<unknown>"
+	if acc, err := meta.Accessor(obj); err == nil {
+		if n := acc.GetName(); len(n) > 0 {
+			name = n
+		}
+	}
+
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	group = gvk.Group
+	version = gvk.Version
+	kind = gvk.Kind
+	if group == "" {
+		description = fmt.Sprintf("%s/%s", strings.ToLower(kind), name)
+	} else {
+		description = fmt.Sprintf("%s.%s/%s", strings.ToLower(kind), group, name)
+	}
+	return
+}
+
 func applyDebuggingTransforms(l manifest.ManifestList, retriever debug.ConfigurationRetriever, debugHelpersRegistry string) (manifest.ManifestList, error) {
 	var updated manifest.ManifestList
 	for _, manifest := range l {
@@ -88,27 +109,6 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever debug.Configura
 	}
 
 	return updated, nil
-}
-
-func describe(obj runtime.Object) (group, version, kind, description string) {
-	// get metadata/name; shamelessly stolen from from k8s.io/cli-runtime/pkg/printers/name.go
-	name := "<unknown>"
-	if acc, err := meta.Accessor(obj); err == nil {
-		if n := acc.GetName(); len(n) > 0 {
-			name = n
-		}
-	}
-
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	group = gvk.Group
-	version = gvk.Version
-	kind = gvk.Kind
-	if group == "" {
-		description = fmt.Sprintf("%s/%s", strings.ToLower(kind), name)
-	} else {
-		description = fmt.Sprintf("%s.%s/%s", strings.ToLower(kind), group, name)
-	}
-	return
 }
 
 // isPortAvailable returns true if none of the pod's containers specify the given port.
@@ -214,7 +214,7 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration debug.Conf
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 
 	default:
-		group, version, _, description := describe(obj)
+		group, version, _, description := Describe(obj)
 		if group == "apps" || group == "batch" {
 			if version != "v1" {
 				// treat deprecated objects as errors

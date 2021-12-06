@@ -365,7 +365,7 @@ func TestShouldTransformManifest(t *testing.T) {
 		{manifest: map[string]interface{}{"apiVersion": "foo.cnrm.cloud.google.com/v1", "kind": "Service"}, expected: true},
 		{manifest: map[string]interface{}{"apiVersion": "foo.bar.cnrm.cloud.google.com/v1", "kind": "Service"}, expected: true},
 		{manifest: map[string]interface{}{"apiVersion": "foo/v1", "kind": "Blah"}, expected: false},
-		{manifest: map[string]interface{}{"apiVersion": "foo.bar.cnrm.cloud.google.com/v1", "kind": "Other"}, expected: false},
+		{manifest: map[string]interface{}{"apiVersion": "foo.bar.cnrm.cloud.google.com/v1", "kind": "Other"}, expected: true},
 	}
 	for _, test := range tests {
 		testutil.Run(t, fmt.Sprintf("%v", test.manifest), func(t *testutil.T) {

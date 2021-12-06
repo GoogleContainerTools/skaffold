@@ -64,3 +64,9 @@ type ErrSyncMapNotSupported struct{}
 func (ErrSyncMapNotSupported) Error() string {
 	return "SyncMap is not supported by this builder"
 }
+
+type ErrCustomBuildNoDockerfile struct{}
+
+func (ErrCustomBuildNoDockerfile) Error() string {
+	return "inferred sync with custom build requires explicitly declared Dockerfile dependency"
+}

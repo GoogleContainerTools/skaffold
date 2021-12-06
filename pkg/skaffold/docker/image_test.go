@@ -139,6 +139,7 @@ func TestBuild(t *testing.T) {
 				Target:      "target",
 				NetworkMode: "None",
 				NoCache:     true,
+				PullParent:  true,
 			},
 			mode: config.RunModes.Dev,
 			expected: types.ImageBuildOptions{
@@ -154,6 +155,7 @@ func TestBuild(t *testing.T) {
 				Target:      "target",
 				NetworkMode: "none",
 				NoCache:     true,
+				PullParent:  true,
 			},
 		},
 		{
@@ -337,6 +339,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--no-cache"},
 		},
 		{
+			description: "pullParent",
+			artifact: &latestV1.DockerArtifact{
+				PullParent: true,
+			},
+			want: []string{"--pull"},
+		},
+		{
 			description: "squash",
 			artifact: &latestV2.DockerArtifact{
 				Squash: true,
@@ -397,8 +406,9 @@ func TestGetBuildArgs(t *testing.T) {
 				Target:      "stage1",
 				NetworkMode: "None",
 				CliFlags:    []string{"--foo", "--bar"},
+				PullParent:  true,
 			},
-			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--foo", "--bar", "--target", "stage1", "--network", "none"},
+			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--foo", "--bar", "--target", "stage1", "--network", "none", "--pull"},
 		},
 	}
 	for _, test := range tests {

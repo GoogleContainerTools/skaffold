@@ -75,7 +75,10 @@ func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
 			return false, nil
 		}
-		pod := event.Object.(*v1.Pod)
+		pod, isPod := event.Object.(*v1.Pod)
+		if !isPod {
+			return false, nil
+		}
 		if pod.Name != podName {
 			return false, nil
 		}

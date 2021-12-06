@@ -28,9 +28,13 @@ wait for `deployments` to stabilize and succeed only if all deployments are succ
 ## Waiting for Skaffold deployments
 {{< maturity "deploy.status_check" >}}
 
-`skaffold deploy` optionally performs a `healthcheck` for resources of kind [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) and waits for them to be stable.
+`skaffold deploy` and `skaffold apply` optionally perform a `healthcheck` for select Kubernetes resources and waits for them to be stable.
 This feature can be very useful in Continuous Delivery pipelines to ensure that the deployed resources are
 healthy before proceeding with the next steps in the pipeline.
+
+Skaffold supports the following resource types for monitoring status after creation in the cluster:
+* [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/)
+* [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) 
 
 {{<alert title="Note">}}
 `healthcheck` is enabled by default; it can be disabled with the `--status-check=false`

@@ -23,13 +23,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"sigs.k8s.io/kustomize/kyaml/yaml"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -37,88 +34,151 @@ var testSkaffoldYaml = `apiVersion: skaffold/v2beta21
 kind: Config
 build:
   artifacts:
-    - image: test-app
+    - image: leeroy-app
+      context: leeroy-app
+      requires:
+        - image: base
+          alias: BASE
+deploy:
+  kubectl:
+    manifests:
+      - leeroy-app/kubernetes/*
+`
+
+var testManifest = `apiVersion: v1
+kind: Service
+metadata:
+  name: leeroy-app
+  labels:
+    app: leeroy-app
+spec:
+  clusterIP: None
+  ports:
+    - port: 50051
+      name: leeroy-app
+  selector:
+    app: leeroy-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leeroy-app
+  labels:
+    app: leeroy-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leeroy-app
+  template:
+    metadata:
+      labels:
+        app: leeroy-app
+    spec:
+      containers:
+      - name: leeroy-app
+        image: leeroy-app
+        ports:
+        - containerPort: 50051
+          name: http
 `
 
 var invalidSkaffoldYaml = `invalid{\{\Yaml}`
 
 func TestGetSkaffoldYamlsLintResults(t *testing.T) {
+	ruleIDToskaffoldYamlRule := map[RuleID]*Rule{}
+	for i := range skaffoldYamlLintRules {
+		ruleIDToskaffoldYamlRule[skaffoldYamlLintRules[i].RuleID] = &skaffoldYamlLintRules[i]
+	}
 	tests := []struct {
 		description            string
+		rules                  []RuleID
 		moduleAndSkaffoldYamls map[string]string
 		profiles               []string
-		module                 []string
+		modules                []string
 		shouldErr              bool
 		err                    error
 		expected               map[string]*[]Result
 	}{
 		{
-			description:            "get all skaffold yaml lint rules for 2 skaffold yaml files",
+			description:            "apply 1 skaffold lint rule for 2 skaffold yaml files",
+			rules:                  []RuleID{SkaffoldYamlAPIVersionOutOfDate},
 			moduleAndSkaffoldYamls: map[string]string{"cfg0": testSkaffoldYaml, "cfg1": testSkaffoldYaml},
 			expected: map[string]*[]Result{
 				"cfg0": {
 					{
-						Rule: &Rule{
-							Filter: YamlFieldFilter{
-								Filter: yaml.FieldMatcher{Name: "apiVersion", StringRegexValue: fmt.Sprintf("[^%s]", version.Get().ConfigVersion)},
-							},
-							RuleID:   SkaffoldYamlAPIVersionOutOfDate,
-							RuleType: YamlFieldLintRule,
-							Explanation: fmt.Sprintf("Found 'apiVersion' field with value that is not the latest skaffold apiVersion. Modify the apiVersion to the latest version: `apiVersion: %s` "+
-								"or run the 'skaffold fix' command to have skaffold upgrade this for you.", version.Get().ConfigVersion),
-						},
-						Line:   1,
-						Column: 12,
+						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate],
+						Line:        1,
+						Column:      13,
+						Explanation: ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate].ExplanationTemplate,
 					},
 				},
 				"cfg1": {
 					{
-						Rule: &Rule{
-							Filter: YamlFieldFilter{
-								Filter: yaml.FieldMatcher{Name: "apiVersion", StringRegexValue: fmt.Sprintf("[^%s]", version.Get().ConfigVersion)},
-							},
-							RuleID:   SkaffoldYamlAPIVersionOutOfDate,
-							RuleType: YamlFieldLintRule,
-							Explanation: fmt.Sprintf("Found 'apiVersion' field with value that is not the latest skaffold apiVersion. Modify the apiVersion to the latest version: `apiVersion: %s` "+
-								"or run the 'skaffold fix' command to have skaffold upgrade this for you.", version.Get().ConfigVersion),
-						},
-						Line:   1,
-						Column: 12,
+						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate],
+						Line:        1,
+						Column:      13,
+						Explanation: ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate].ExplanationTemplate,
 					},
 				},
 			},
 		},
 		{
 			description:            "get all skaffold yaml lint rules for one module",
+			rules:                  []RuleID{SkaffoldYamlAPIVersionOutOfDate},
 			moduleAndSkaffoldYamls: map[string]string{"cfg0": testSkaffoldYaml, "cfg1": testSkaffoldYaml},
-			module:                 []string{"cfg0"},
+			modules:                []string{"cfg0"},
 			expected: map[string]*[]Result{
 				"cfg0": {
 					{
-						Rule: &Rule{
-							Filter: YamlFieldFilter{
-								Filter: yaml.FieldMatcher{Name: "apiVersion", StringRegexValue: fmt.Sprintf("[^%s]", version.Get().ConfigVersion)},
-							},
-							RuleID:   SkaffoldYamlAPIVersionOutOfDate,
-							RuleType: YamlFieldLintRule,
-							Explanation: fmt.Sprintf("Found 'apiVersion' field with value that is not the latest skaffold apiVersion. Modify the apiVersion to the latest version: `apiVersion: %s` "+
-								"or run the 'skaffold fix' command to have skaffold upgrade this for you.", version.Get().ConfigVersion),
-						},
-						Line:   1,
-						Column: 12,
+						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate],
+						Line:        1,
+						Column:      13,
+						Explanation: ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate].ExplanationTemplate,
 					},
 				},
 			},
 		},
 		{
+			description:            "verify SkaffoldYamlUseStaticPort rule works as intended",
+			rules:                  []RuleID{SkaffoldYamlUseStaticPort},
+			moduleAndSkaffoldYamls: map[string]string{"cfg0": testSkaffoldYaml},
+			modules:                []string{"cfg0"},
+			expected: map[string]*[]Result{
+				"cfg0": {
+					{
+						Rule:   ruleIDToskaffoldYamlRule[SkaffoldYamlUseStaticPort],
+						Line:   14,
+						Column: 1,
+						Explanation: "It is a skaffold best practice to specify a static port (vs skaffold dynamically choosing one) for port forwarding " +
+							"container based resources skaffold deploys.  This is helpful because with this the local ports are predictable across dev sessions which " +
+							" makes testing/debugging easier. It is recommended to add the following stanza at the end of your skaffold.yaml for each shown deployed resource:\n" +
+							`portForward:
+- resourceType: deployment
+  resourceName: leeroy-app
+  port: 50051
+  localPort: 32581`,
+					},
+				},
+			},
+		},
+		{
+			rules:                  []RuleID{SkaffoldYamlAPIVersionOutOfDate},
 			description:            "invalid skaffold yaml file",
 			moduleAndSkaffoldYamls: map[string]string{"cfg0": invalidSkaffoldYaml},
 			shouldErr:              true,
 		},
 	}
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			testRules := []Rule{}
+			for _, ruleID := range test.rules {
+				testRules = append(testRules, *(ruleIDToskaffoldYamlRule[ruleID]))
+			}
+			t.Override(skaffoldYamlRules, testRules)
+			t.Override(&realWorkDir, func() (string, error) {
+				return "", nil
+			})
 			tmpdir := t.TempDir()
 			configSet := parser.SkaffoldConfigSet{}
 			// iteration done to enforce result order
@@ -130,8 +190,16 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				if err != nil {
 					t.Fatalf("error creating skaffold.yaml file with name %s: %v", fp, err)
 				}
+				mp := filepath.Join(tmpdir, fmt.Sprintf("%s.yaml", "deployment"))
+				err = ioutil.WriteFile(mp, []byte(testManifest), 0644)
+				if err != nil {
+					t.Fatalf("error creating deployment.yaml file with name %s: %v", fp, err)
+				}
 				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
 					Metadata: v2.Metadata{Name: module},
+					Pipeline: v2.Pipeline{Deploy: v2.DeployConfig{DeployType: v2.DeployType{KubectlDeploy: &v2.KubectlDeploy{Manifests: []string{
+						mp,
+					}}}}},
 				},
 					SourceFile: fp,
 				})
@@ -145,9 +213,6 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 					(*results)[i].RelFilePath = configSet[len(configSet)-1].SourceFile
 				}
 			}
-			t.Override(&realWorkDir, func() (string, error) {
-				return "", nil
-			})
 			t.Override(&getConfigSet, func(_ context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
 				var set parser.SkaffoldConfigSet
@@ -168,15 +233,24 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				return set, test.err
 			})
 			results, err := GetSkaffoldYamlsLintResults(context.Background(), Options{
-				OutFormat: "json", Modules: test.module, Profiles: test.profiles})
+				OutFormat: "json", Modules: test.modules, Profiles: test.profiles})
 			t.CheckError(test.shouldErr, err)
-			expectedResults := &[]Result{}
-
-			// this is done to enforce result order
-			for i := 0; i < len(test.expected); i++ {
-				*expectedResults = append(*expectedResults, *test.expected[fmt.Sprintf("cfg%d", i)]...)
-			}
 			if !test.shouldErr {
+				expectedResults := &[]Result{}
+				// this is done to enforce result order
+				for i := 0; i < len(test.expected); i++ {
+					*expectedResults = append(*expectedResults, *test.expected[fmt.Sprintf("cfg%d", i)]...)
+					(*expectedResults)[0].Rule.ExplanationPopulator = nil
+					(*expectedResults)[0].Rule.LintConditions = nil
+				}
+				if results == nil {
+					t.CheckDeepEqual(expectedResults, results)
+					return
+				}
+				for i := 0; i < len(*results); i++ {
+					(*results)[i].Rule.ExplanationPopulator = nil
+					(*results)[i].Rule.LintConditions = nil
+				}
 				t.CheckDeepEqual(expectedResults, results)
 			}
 		})

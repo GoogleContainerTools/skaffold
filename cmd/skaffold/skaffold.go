@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -47,17 +46,9 @@ func main() {
 		}
 	}
 	var code int
-	if err := app.Run(os.Stdout, os.Stderr); err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Entry(context.TODO()).Debugln("ignore error since context is cancelled:", err)
-		} else {
-			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
-			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
-			// before we print an error to get the right coloring.
-			errOut := output.SetupColors(context.Background(), os.Stderr, output.DefaultColorCode, false)
-			output.Red.Fprintln(errOut, err)
-			code = app.ExitCode(err)
-		}
+	if err := app.Run(os.Stdout, os.Stderr); err != nil && !errors.Is(err, context.Canceled) {
+		// ignore cancelled errors
+		code = app.ExitCode(err)
 	}
 	instrumentation.ShutdownAndFlush(context.Background(), code)
 	os.Exit(code)

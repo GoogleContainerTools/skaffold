@@ -83,6 +83,8 @@ func getBuilders(b latestV2.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
 			updateOrAddKey(m, proto.BuilderType_JIB)
 		case a.KanikoArtifact != nil:
 			updateOrAddKey(m, proto.BuilderType_KANIKO)
+		case a.KoArtifact != nil:
+			updateOrAddKey(m, proto.BuilderType_KO)
 		default:
 			updateOrAddKey(m, proto.BuilderType_UNKNOWN_BUILDER_TYPE)
 		}

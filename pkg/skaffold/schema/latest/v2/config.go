@@ -61,6 +61,13 @@ type SkaffoldConfig struct {
 type Metadata struct {
 	// Name is an identifier for the project.
 	Name string `yaml:"name,omitempty"`
+
+	// Labels is a map of labels identifying the project.
+	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Annotations is a map of annotations providing additional
+	// metadata about the project.
+	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
 // Pipeline describes a Skaffold pipeline.
@@ -902,9 +909,8 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// TODO(halvards)[09/29/2021]: Use `ko` as the yaml tag in place of `-` when we are ready to expose the ko builder in the docs.
 	// KoArtifact builds images using [ko](https://github.com/google/ko).
-	KoArtifact *KoArtifact `yaml:"-,omitempty" yamltags:"oneOf=artifact"`
+	KoArtifact *KoArtifact `yaml:"ko,omitempty" yamltags:"oneOf=artifact"`
 
 	// JibArtifact builds images using the
 	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
@@ -1277,9 +1283,9 @@ type KoArtifact struct {
 	// For example: `["GOPRIVATE=source.developers.google.com", "GOCACHE=/workspace/.gocache"]`.
 	Env []string `yaml:"env,omitempty"`
 
-	// Flags are additional build flags passed to the builder.
+	// Flags are additional build flags passed to `go build`.
 	// For example: `["-trimpath", "-v"]`.
-	Flags []string `yaml:"args,omitempty"`
+	Flags []string `yaml:"flags,omitempty"`
 
 	// Labels are key-value string pairs to add to the image config.
 	// For example: `{"org.opencontainers.image.source":"https://github.com/GoogleContainerTools/skaffold"}`.
@@ -1308,7 +1314,7 @@ type KoArtifact struct {
 // KoDependencies is used to specify dependencies for an artifact built by ko.
 type KoDependencies struct {
 	// Paths should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.
-	// Defaults to `["."]`.
+	// Defaults to `["**/*.go"]`.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
 	// Ignore specifies the paths that should be ignored by Skaffold's file watcher.

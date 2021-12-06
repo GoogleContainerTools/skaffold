@@ -129,7 +129,7 @@ func TestPrintProfilesList(t *testing.T) {
 			})
 			var buf bytes.Buffer
 			err := PrintProfilesList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, ProfilesOptions: inspect.ProfilesOptions{BuildEnv: test.buildEnv}})
-			t.CheckNoError(err)
+			t.CheckError(test.err != nil, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}

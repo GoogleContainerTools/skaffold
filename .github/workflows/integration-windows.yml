@@ -5,6 +5,10 @@ on: [push, pull_request]
 
 permissions: read-all
 
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: true
+
 jobs:
 
   build:
@@ -24,6 +28,6 @@ jobs:
         fetch-depth: 0
 
     # TODO(aaron-prindle) skip integration tests for doc only changes on Windows.  Figure out the proper syntax, etc.
-    - name: Run windows unit test
+    - name: Run skaffold unit tests on windows
       run: |
-        go test -short -timeout 60s ./...
+        go test -short -timeout 60s  ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...

@@ -76,3 +76,18 @@ func getLastReleasedConfigVersion() string {
 	logrus.Fatalf("can't determine latest released config version, failed to download %s: %s", lastTag, err)
 	return ""
 }
+
+// IsReleased takes a filepath to a skaffold config in pkg/skaffold/schema and returns true if it's released and false if otherwise.
+func IsReleased(filepath string) (bool, error) {
+	b, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return false, err
+	}
+
+	s := string(b)
+	if strings.Contains(s, releasedComment) {
+		return true, nil
+	}
+
+	return false, nil
+}

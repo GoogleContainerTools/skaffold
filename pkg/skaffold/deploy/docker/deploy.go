@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -285,13 +286,19 @@ func (d *Deployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+	if dryRun {
+		for _, container := range d.tracker.DeployedContainers() {
+			output.Yellow.Fprintln(out, container.ID)
+		}
+		return nil
+	}
 	for _, container := range d.tracker.DeployedContainers() {
 		if err := d.client.Delete(ctx, out, container.ID); err != nil {
 			// TODO(nkubala): replace with actionable error
 			return errors.Wrap(err, "cleaning up deployed container")
 		}
-		d.portManager.relinquishPorts(container.Name)
+		d.portManager.relinquishPorts(container.ID)
 	}
 
 	for _, m := range d.debugger.SupportMounts() {

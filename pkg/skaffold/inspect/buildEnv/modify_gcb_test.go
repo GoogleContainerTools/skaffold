@@ -69,7 +69,8 @@ profiles:
 		{
 			description:  "modify profile pipeline; strict true",
 			strict:       true,
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project2", Profile: "p1"},
+			profile:      "p1",
+			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project2"},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -105,13 +106,15 @@ profiles:
 		{
 			description:  "add to non-existing profile; strict true",
 			strict:       true,
-			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2, Profile: "p3"},
+			profile:      "p3",
+			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2},
 			errCode:      proto.StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR,
 		},
 		{
 			description:  "add to profile with wrong build env type; strict true",
 			strict:       true,
-			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2},
 			errCode:      proto.StatusCode_INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR,
 		},
 		{
@@ -142,7 +145,8 @@ profiles:
 		{
 			description:  "modify profile pipeline; strict false",
 			strict:       false,
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project2", Profile: "p1"},
+			profile:      "p1",
+			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project2"},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -178,13 +182,15 @@ profiles:
 		{
 			description:  "add to non-existing profile; strict false",
 			strict:       false,
-			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2, Profile: "p3"},
+			profile:      "p3",
+			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2},
 			errCode:      proto.StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR,
 		},
 		{
 			description:  "add to profile with wrong build env type; strict false",
 			strict:       false,
-			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -268,7 +274,7 @@ profiles:
 			})
 
 			var buf bytes.Buffer
-			err := ModifyGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, BuildEnvOptions: test.buildEnvOpts, Strict: test.strict})
+			err := ModifyGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, Profile: test.profile, BuildEnvOptions: test.buildEnvOpts, Strict: test.strict})
 			t.CheckNoError(err)
 			if test.errCode == proto.StatusCode_OK {
 				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)

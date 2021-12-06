@@ -21,6 +21,8 @@ const (
 	BuildArgsFlag = "--build-arg"
 	// CacheFlag additional flag
 	CacheFlag = "--cache"
+	// CacheCopyLayersFlag additional flag
+	CacheCopyLayersFlag = "--cache-copy-layers"
 	// CacheDirFlag additional flag
 	CacheDirFlag = "--cache-dir"
 	// CacheRepoFlag additional flag

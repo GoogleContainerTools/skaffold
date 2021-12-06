@@ -1113,7 +1113,17 @@ func TestHelmCleanup(t *testing.T) {
 		namespace        string
 		builds           []graph.Artifact
 		expectedWarnings []string
+		dryRun           bool
 	}{
+		{
+			description: "helm3 cleanup dry-run",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get manifest skaffold-helm --kubeconfig kubeconfig"),
+			helm:   testDeployConfig,
+			builds: testBuilds,
+			dryRun: true,
+		},
 		{
 			description: "helm3 cleanup success",
 			commands: testutil.
@@ -1169,7 +1179,7 @@ func TestHelmCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.helm)
 			t.RequireNoError(err)
 
-			deployer.Cleanup(context.Background(), ioutil.Discard)
+			deployer.Cleanup(context.Background(), ioutil.Discard, test.dryRun)
 
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

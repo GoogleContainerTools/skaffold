@@ -41,6 +41,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -111,7 +112,7 @@ type Deployer struct {
 	logger        log.Logger
 	imageLoader   loader.ImageLoader
 	debugger      debug.Debugger
-	statusMonitor status.Monitor
+	statusMonitor kstatus.Monitor
 	syncer        sync.Syncer
 	hookRunner    hooks.Runner
 
@@ -296,6 +297,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	k.TrackBuildArtifacts(builds)
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 
 	k.trackNamespaces(namespaces)
@@ -342,7 +344,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kustomize",
 	})
@@ -350,7 +352,12 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-
+	if dryRun {
+		for _, manifest := range manifests {
+			output.White.Fprintf(out, "---\n%s", manifest)
+		}
+		return nil
+	}
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return err
 	}
@@ -382,6 +389,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	k.statusMonitor.RegisterDeployManifests(manifests)
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
 	defer endTrace()

@@ -19,6 +19,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,20 +36,21 @@ import (
 )
 
 const (
-	deploymentRolloutSuccess  = "successfully rolled out"
-	statefulsetRolloutSuccess = "rolling update complete"
-	connectionErrMsg          = "Unable to connect to the server"
-	killedErrMsg              = "signal: killed"
-	defaultPodCheckDeadline   = 30 * time.Second
-	tabHeader                 = " -"
-	tab                       = "  "
-	maxLogLines               = 3
+	deploymentRolloutSuccess = "successfully rolled out"
+	connectionErrMsg         = "Unable to connect to the server"
+	killedErrMsg             = "signal: killed"
+	defaultPodCheckDeadline  = 30 * time.Second
+	tabHeader                = " -"
+	tab                      = "  "
+	maxLogLines              = 3
 )
 
 // Type represents a kubernetes resource type to health check.
 type Type string
 
 var (
+	statefulsetRolloutSuccess = regexp.MustCompile("(roll out|rolling update) complete")
+
 	msgKubectlKilled     = "kubectl rollout status command interrupted\n"
 	MsgKubectlConnection = "kubectl connection error\n"
 
@@ -60,11 +62,15 @@ var (
 	}
 
 	ResourceTypes = struct {
-		StandalonePods Type
-		Deployment     Type
+		StandalonePods  Type
+		Deployment      Type
+		StatefulSet     Type
+		ConfigConnector Type
 	}{
-		StandalonePods: "standalone pods",
-		Deployment:     "deployment",
+		StandalonePods:  "standalone-pods",
+		Deployment:      "deployment",
+		StatefulSet:     "statefulset",
+		ConfigConnector: "config-connector-resource",
 	}
 )
 
@@ -86,15 +92,15 @@ func (r Group) Reset() {
 }
 
 type Resource struct {
-	name         string
-	namespace    string
-	rType        Type
-	status       Status
-	statusCode   proto.StatusCode
-	done         bool
-	deadline     time.Duration
-	pods         map[string]validator.Resource
-	podValidator diag.Diagnose
+	name             string
+	namespace        string
+	rType            Type
+	status           Status
+	statusCode       proto.StatusCode
+	done             bool
+	deadline         time.Duration
+	resources        map[string]validator.Resource
+	resoureValidator diag.Diagnose
 }
 
 func (r *Resource) ID() string {
@@ -121,27 +127,27 @@ func (r *Resource) UpdateStatus(ae *proto.ActionableErr) {
 
 func NewResource(name string, rType Type, ns string, deadline time.Duration) *Resource {
 	return &Resource{
-		name:         name,
-		namespace:    ns,
-		rType:        rType,
-		status:       newStatus(&proto.ActionableErr{}),
-		deadline:     deadline,
-		podValidator: diag.New(nil),
+		name:             name,
+		namespace:        ns,
+		rType:            rType,
+		status:           newStatus(&proto.ActionableErr{}),
+		deadline:         deadline,
+		resoureValidator: diag.New(nil),
 	}
 }
 
 func (r *Resource) WithValidator(pd diag.Diagnose) *Resource {
-	r.podValidator = pd
+	r.resoureValidator = pd
 	return r
 }
 
 func (r *Resource) checkStandalonePodsStatus(ctx context.Context, cfg kubectl.Config) *proto.ActionableErr {
-	if len(r.pods) == 0 {
+	if len(r.resources) == 0 {
 		return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING}
 	}
 	kubeCtl := kubectl.NewCLI(cfg, "")
 	var pendingPods []string
-	for _, pod := range r.pods {
+	for _, pod := range r.resources {
 		switch pod.Status() {
 		case "Failed":
 			return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: fmt.Sprintf("pod %s failed", pod.Name())}
@@ -166,6 +172,34 @@ func (r *Resource) checkStandalonePodsStatus(ctx context.Context, cfg kubectl.Co
 	return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
 }
 
+func (r *Resource) checkConfigConnectorStatus() *proto.ActionableErr {
+	if len(r.resources) == 0 {
+		return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS}
+	}
+	var pendingResources []string
+	for _, resource := range r.resources {
+		ae := resource.ActionableError()
+		if ae == nil {
+			continue
+		}
+		switch ae.ErrCode {
+		case proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_TERMINATING:
+			return ae
+		case proto.StatusCode_STATUSCHECK_SUCCESS:
+			continue
+		default:
+			pendingResources = append(pendingResources, resource.Name())
+		}
+	}
+	if len(pendingResources) > 0 {
+		return &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS,
+			Message: fmt.Sprintf("config connector resources not ready: %v", pendingResources),
+		}
+	}
+	return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
+}
+
 func (r *Resource) checkRolloutStatus(ctx context.Context, cfg kubectl.Config) *proto.ActionableErr {
 	kubeCtl := kubectl.NewCLI(cfg, "")
 
@@ -183,6 +217,8 @@ func (r *Resource) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 	switch r.rType {
 	case ResourceTypes.StandalonePods:
 		ae = r.checkStandalonePodsStatus(ctx, cfg)
+	case ResourceTypes.ConfigConnector:
+		ae = r.checkConfigConnectorStatus()
 	default:
 		ae = r.checkRolloutStatus(ctx, cfg)
 	}
@@ -193,7 +229,7 @@ func (r *Resource) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 	// all pod are marked as success in V2
 	// See https://github.com/GoogleCloudPlatform/cloud-code-vscode-internal/issues/5277
 	if ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS {
-		for _, pod := range r.pods {
+		for _, pod := range r.resources {
 			eventV2.ResourceStatusCheckEventCompletedMessage(
 				pod.String(),
 				fmt.Sprintf("%s %s: running.\n", tabHeader, pod.String()),
@@ -233,7 +269,7 @@ func (r *Resource) IsStatusCheckCompleteOrCancelled() bool {
 }
 
 func (r *Resource) StatusMessage() string {
-	for _, p := range r.pods {
+	for _, p := range r.resources {
 		if s := p.ActionableError(); s.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 			return fmt.Sprintf("%s\n", s.Message)
 		}
@@ -263,7 +299,7 @@ func (r *Resource) ReportSinceLastUpdated(isMuted bool) string {
 	// 1. No pods have been scheduled for the rollout
 	// 2. All containers are in running phase with no errors.
 	// In such case, avoid printing any status update for the rollout.
-	for _, p := range r.pods {
+	for _, p := range r.resources {
 		if s := p.ActionableError().Message; s != "" {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, s))
 			// if logs are muted, write container logs to file and last 3 lines to
@@ -316,7 +352,7 @@ func parseKubectlRolloutError(details string, deadline time.Duration, err error)
 			Message: details,
 		}
 	// statefulset rollouts have success messages like `statefulset rolling update complete 2 pods at revision skaffold-foo`
-	case err == nil && strings.Contains(details, statefulsetRolloutSuccess):
+	case err == nil && statefulsetRolloutSuccess.MatchString(details):
 		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 			Message: details,
@@ -347,13 +383,14 @@ func parseKubectlRolloutError(details string, deadline time.Duration, err error)
 func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
 	return statusCode != proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR &&
 		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING &&
-		statusCode != proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING
+		statusCode != proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING &&
+		statusCode != proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS
 }
 
 // HasEncounteredUnrecoverableError goes through all pod statuses and return true
 // if any cannot be recovered
 func (r *Resource) HasEncounteredUnrecoverableError() bool {
-	for _, p := range r.pods {
+	for _, p := range r.resources {
 		if _, ok := nonRetryContainerErrors[p.ActionableError().ErrCode]; ok {
 			return true
 		}
@@ -364,15 +401,15 @@ func (r *Resource) HasEncounteredUnrecoverableError() bool {
 func (r *Resource) fetchPods(ctx context.Context) error {
 	timeoutContext, cancel := context.WithTimeout(ctx, defaultPodCheckDeadline)
 	defer cancel()
-	pods, err := r.podValidator.Run(timeoutContext)
+	pods, err := r.resoureValidator.Run(timeoutContext)
 	if err != nil {
 		return err
 	}
 
-	newPods := map[string]validator.Resource{}
+	newResources := map[string]validator.Resource{}
 	r.status.changed = false
 	for _, p := range pods {
-		originalPod, found := r.pods[p.String()]
+		originalPod, found := r.resources[p.String()]
 		if !found || originalPod.StatusUpdated(p) {
 			r.status.changed = true
 			prefix := fmt.Sprintf("%s %s:", tabHeader, p.String())
@@ -385,22 +422,24 @@ func (r *Resource) fetchPods(ctx context.Context) error {
 					sErrors.V2fromV1(p.ActionableError()))
 			}
 		}
-		newPods[p.String()] = p
+		newResources[p.String()] = p
 	}
-	r.pods = newPods
+	r.resources = newResources
 	return nil
 }
 
-// StatusCode() returns the rollout status code if the status check is cancelled
+// StatusCode returns the rollout status code if the status check is cancelled
 // or if no pod data exists for this rollout.
 // If pods are fetched, this function returns the error code a pod container encountered.
 func (r *Resource) StatusCode() proto.StatusCode {
-	// do not process pod status codes if another rollout failed
-	// or the user aborted the run.
-	if r.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+	// do not process pod status codes
+	// 1) the user aborted the run or
+	// 2) if another rollout failed which cancelled this deployment status check
+	// 3) the deployment is successful. In case of successful rollouts, the code doesn't fetch the updated pod statuses.
+	if r.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED || r.statusCode == proto.StatusCode_STATUSCHECK_SUCCESS {
 		return r.statusCode
 	}
-	for _, p := range r.pods {
+	for _, p := range r.resources {
 		if s := p.ActionableError().ErrCode; s != proto.StatusCode_STATUSCHECK_SUCCESS {
 			return s
 		}
@@ -409,10 +448,10 @@ func (r *Resource) StatusCode() proto.StatusCode {
 }
 
 func (r *Resource) WithPodStatuses(scs []proto.StatusCode) *Resource {
-	r.pods = map[string]validator.Resource{}
+	r.resources = map[string]validator.Resource{}
 	for i, s := range scs {
 		name := fmt.Sprintf("%s-%d", r.name, i)
-		r.pods[name] = validator.NewResource("test", "pod", "foo", validator.Status("failed"),
+		r.resources[name] = validator.NewResource("test", "pod", "foo", validator.Status("failed"),
 			&proto.ActionableErr{Message: "pod failed", ErrCode: s}, nil)
 	}
 	return r

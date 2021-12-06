@@ -37,7 +37,8 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 		SkipConfigDefaults:  true,
 		MakePathsAbsolute:   util.BoolPtr(false)})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 	if opts.Profile == "" {
 		// empty profile flag implies that the new build env needs to be added to the default pipeline.
@@ -45,7 +46,8 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 		cfgs = cfgs.SelectRootConfigs()
 		for _, cfg := range cfgs {
 			if cfg.Build.GoogleCloudBuild != nil && (*cfg.Build.GoogleCloudBuild != latestV2.GoogleCloudBuild{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, ""))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, ""))
+				return err
 			}
 			cfg.Build.GoogleCloudBuild = constructGcbDefinition(cfg.Build.GoogleCloudBuild, opts.BuildEnvOptions)
 			cfg.Build.LocalBuild = nil
@@ -65,7 +67,8 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 				cfg.Profiles = append(cfg.Profiles, latestV2.Profile{Name: opts.Profile})
 			}
 			if cfg.Profiles[index].Build.GoogleCloudBuild != nil && (*cfg.Profiles[index].Build.GoogleCloudBuild != latestV2.GoogleCloudBuild{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, opts.Profile))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, opts.Profile))
+				return err
 			}
 			cfg.Profiles[index].Build.GoogleCloudBuild = constructGcbDefinition(cfg.Profiles[index].Build.GoogleCloudBuild, opts.BuildEnvOptions)
 			cfg.Profiles[index].Build.LocalBuild = nil

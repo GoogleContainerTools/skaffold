@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const suppressErrorReporting = "suppress-error-reporting"
+
 // Builder is used to build cobra commands.
 type Builder interface {
 	WithArgs(cobra.PositionalArgs, func(context.Context, io.Writer, []string) error) *cobra.Command
@@ -41,6 +43,7 @@ type Builder interface {
 	WithCommands(cmds ...*cobra.Command) *cobra.Command
 	WithPersistentFlagAdder(adder func(*pflag.FlagSet)) Builder
 	WithPostRunHook(hook func(error) error) Builder
+	SuppressErrorReporting() Builder
 }
 
 type builder struct {
@@ -154,6 +157,24 @@ func (b *builder) WithCommands(cmds ...*cobra.Command) *cobra.Command {
 		b.cmd.AddCommand(c)
 	}
 	return &b.cmd
+}
+
+func (b *builder) SuppressErrorReporting() Builder {
+	if b.cmd.Annotations == nil {
+		b.cmd.Annotations = make(map[string]string)
+	}
+	b.cmd.Annotations[suppressErrorReporting] = "true"
+	return b
+}
+
+func ShouldSuppressErrorReporting(c *cobra.Command) bool {
+	for c != nil {
+		if _, found := c.Annotations[suppressErrorReporting]; found {
+			return true
+		}
+		c = c.Parent()
+	}
+	return false
 }
 
 func applyPostRunHooks(cmd *cobra.Command, postRunHooks []func(error) error) {

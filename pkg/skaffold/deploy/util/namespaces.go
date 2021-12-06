@@ -22,6 +22,7 @@ import (
 
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // GetAllPodNamespaces lists the namespaces that should be watched.
@@ -49,7 +50,11 @@ func GetAllPodNamespaces(configNamespace string, pipelines []latestV2.Pipeline) 
 	}
 
 	// Set additional namespaces each helm release referenced
-	for _, namespace := range collectHelmReleasesNamespaces(pipelines) {
+	helmReleasesNamespaces, err := collectHelmReleasesNamespaces(pipelines)
+	if err != nil {
+		return nil, fmt.Errorf("collecting helm releases namespaces: %w", err)
+	}
+	for _, namespace := range helmReleasesNamespaces {
 		nsMap[namespace] = true
 	}
 
@@ -63,16 +68,20 @@ func GetAllPodNamespaces(configNamespace string, pipelines []latestV2.Pipeline) 
 	return namespaces, nil
 }
 
-func collectHelmReleasesNamespaces(pipelines []latestV2.Pipeline) []string {
+func collectHelmReleasesNamespaces(pipelines []latestV2.Pipeline) ([]string, error) {
 	var namespaces []string
 	for _, cfg := range pipelines {
 		if cfg.Deploy.HelmDeploy != nil {
 			for _, release := range cfg.Deploy.HelmDeploy.Releases {
 				if release.Namespace != "" {
-					namespaces = append(namespaces, release.Namespace)
+					templatedNamespace, err := util.ExpandEnvTemplateOrFail(release.Namespace, nil)
+					if err != nil {
+						return []string{}, fmt.Errorf("cannot parse the release namespace template: %w", err)
+					}
+					namespaces = append(namespaces, templatedNamespace)
 				}
 			}
 		}
 	}
-	return namespaces
+	return namespaces, nil
 }

@@ -65,6 +65,7 @@ func TestBuild(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					KoArtifact: &latestV1.KoArtifact{},
 				},
+				ImageName: importPath,
 			}
 			var outBuffer bytes.Buffer
 			gotImageIdentifier, err := b.Build(context.Background(), &outBuffer, artifact, test.expectedRef)
@@ -146,13 +147,8 @@ func Test_getImportPath(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			b := NewArtifactBuilder(nil, false, config.RunModes.Build, nil)
-			koBuilder, err := b.newKoBuilder(context.Background(), test.artifact)
+			gotImportPath, err := getImportPath(test.artifact)
 			t.CheckNoError(err)
-
-			gotImportPath, err := getImportPath(test.artifact, koBuilder)
-			t.CheckNoError(err)
-
 			t.CheckDeepEqual(test.expectedImportPath, gotImportPath)
 		})
 	}

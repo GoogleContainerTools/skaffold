@@ -1,0 +1,18 @@
+apiVersion: skaffold/v2beta25
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+
+  artifacts:
+  - image: image3
+    docker:
+      noCache: true
+      buildArgs:
+        SLEEP: "2"
+        FAIL: "0"
+
+deploy:
+  kubectl:
+    manifests:
+    - 'k8s.yaml'

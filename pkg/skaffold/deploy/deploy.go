@@ -40,7 +40,7 @@ type Deployer interface {
 	Dependencies() ([]string, error)
 
 	// Cleanup deletes what was deployed by calling Deploy.
-	Cleanup(context.Context, io.Writer) error
+	Cleanup(context.Context, io.Writer, bool) error
 
 	// Render generates the Kubernetes manifests replacing the build results and
 	// writes them to the given file path

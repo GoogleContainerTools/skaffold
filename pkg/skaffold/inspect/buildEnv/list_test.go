@@ -120,8 +120,8 @@ func TestPrintBuildEnvsList(t *testing.T) {
 				return set, test.err
 			})
 			var buf bytes.Buffer
-			err := PrintBuildEnvsList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, BuildEnvOptions: inspect.BuildEnvOptions{Profiles: test.profiles}})
-			t.CheckNoError(err)
+			err := PrintBuildEnvsList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, Profiles: test.profiles})
+			t.CheckError(test.err != nil, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}

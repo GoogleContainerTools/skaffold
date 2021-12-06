@@ -817,6 +817,7 @@ Enum indicating builders used
 | CUSTOM | 4 | Custom Builder |
 | KANIKO | 5 | Kaniko Builder |
 | DOCKER | 6 | Docker Builder |
+| KO | 7 | Ko Builder |
 
 
 
@@ -967,12 +968,19 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR | 411 | Kubectl client fetch err |
 | STATUSCHECK_DEPLOYMENT_FETCH_ERR | 412 |  |
 | STATUSCHECK_STANDALONE_PODS_FETCH_ERR | 413 |  |
+| STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR | 414 |  |
+| STATUSCHECK_STATEFULSET_FETCH_ERR | 415 |  |
 | STATUSCHECK_POD_INITIALIZING | 451 | Pod Initializing |
+| STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS | 452 | The actual state of the resource has not yet reached the desired state |
+| STATUSCHECK_CONFIG_CONNECTOR_FAILED | 453 | The process of reconciling the actual state with the desired state has encountered an error |
+| STATUSCHECK_CONFIG_CONNECTOR_TERMINATING | 454 | The resource is in the process of being deleted |
+| STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND | 455 | The resource does not exist |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
 | STATUSCHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
 | STATUSCHECK_UNKNOWN_EVENT | 509 | Container event reason unknown |
+| STATUSCHECK_INTERNAL_ERROR | 514 | Status Check internal error |
 | DEPLOY_UNKNOWN | 504 | Deploy failed due to unknown reason |
 | SYNC_UNKNOWN | 505 | SYNC failed due to known reason |
 | BUILD_UNKNOWN | 506 | Build failed due to unknown reason |

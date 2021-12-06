@@ -18,7 +18,10 @@ package graph
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -54,4 +57,42 @@ func TestSourceDependenciesCache(t *testing.T) {
 			t.CheckDeepEqual(v, 1)
 		}
 	})
+}
+
+func TestSourceDependenciesForArtifact(t *testing.T) {
+	tmpDir := testutil.NewTempDir(t).Touch(
+		"foo.java",
+		"bar.go",
+		"dir1/baz.java",
+		"dir2/frob.go",
+	)
+	tests := []struct {
+		description            string
+		artifact               *latestV1.Artifact
+		dockerConfig           docker.Config
+		dockerArtifactResolver docker.ArtifactResolver
+		expectedPaths          []string
+	}{
+		{
+			description: "ko default dependencies",
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					KoArtifact: &latestV1.KoArtifact{},
+				},
+				Workspace: tmpDir.Root(),
+			},
+			expectedPaths: []string{
+				filepath.Join(tmpDir.Root(), "dir2/frob.go"),
+				filepath.Join(tmpDir.Root(), "bar.go"),
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, test.dockerArtifactResolver)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedPaths, paths,
+				cmpopts.SortSlices(func(x, y string) bool { return x < y }))
+		})
+	}
 }

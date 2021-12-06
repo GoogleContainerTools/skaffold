@@ -342,6 +342,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		NetworkMode: strings.ToLower(a.NetworkMode),
 		ExtraHosts:  a.AddHost,
 		NoCache:     a.NoCache,
+		PullParent:  a.PullParent,
 	})
 	if err != nil {
 		return "", fmt.Errorf("docker build: %w", err)
@@ -635,6 +636,10 @@ func ToCLIBuildArgs(a *latestV2.DockerArtifact, evaluatedArgs map[string]*string
 
 	if a.Squash {
 		args = append(args, "--squash")
+	}
+
+	if a.PullParent {
+		args = append(args, "--pull")
 	}
 
 	for _, secret := range a.Secrets {

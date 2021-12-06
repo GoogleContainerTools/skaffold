@@ -109,8 +109,8 @@ func TestPrintTestsList(t *testing.T) {
 			})
 			var buf bytes.Buffer
 			err := PrintTestsList(context.Background(), &buf, inspect.Options{
-				OutFormat: "json", Modules: test.module, TestsOptions: inspect.TestsOptions{TestsProfiles: test.profiles}})
-			t.CheckNoError(err)
+				OutFormat: "json", Modules: test.module, Profiles: test.profiles})
+			t.CheckError(test.err != nil, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}

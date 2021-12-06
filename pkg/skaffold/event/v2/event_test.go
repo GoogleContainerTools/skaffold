@@ -20,6 +20,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -27,10 +28,8 @@ import (
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"google.golang.org/protobuf/testing/protocmp"
+	"github.com/mitchellh/go-homedir"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -76,19 +75,6 @@ func TestGetLogEvents(t *testing.T) {
 	}
 }
 
-func TestGetState(t *testing.T) {
-	ev := newHandler()
-	ev.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
-
-	ev.stateLock.Lock()
-	ev.state.BuildState.Artifacts["img"] = Complete
-	ev.stateLock.Unlock()
-
-	state := ev.getState()
-
-	testutil.CheckDeepEqual(t, Complete, state.BuildState.Artifacts["img"])
-}
-
 func wait(t *testing.T, condition func() bool) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -106,248 +92,6 @@ func wait(t *testing.T, condition func() bool) {
 		case <-timeout.C:
 			t.Fatal("Timed out waiting")
 		}
-	}
-}
-
-func TestResetStateOnBuild(t *testing.T) {
-	defer func() { handler = newHandler() }()
-	handler = newHandler()
-	handler.state = &proto.State{
-		BuildState: &proto.BuildState{
-			Artifacts: map[string]string{
-				"image1": Complete,
-			},
-		},
-		RenderState: &proto.RenderState{Status: Complete},
-		DeployState: &proto.DeployState{Status: Complete},
-		ForwardedPorts: map[int32]*proto.PortForwardEvent{
-			2001: {
-				LocalPort:  2000,
-				PodName:    "test/pod",
-				TargetPort: &targetPort,
-			},
-		},
-		StatusCheckState: &proto.StatusCheckState{Status: Complete},
-		FileSyncState:    &proto.FileSyncState{Status: Succeeded},
-	}
-
-	ResetStateOnBuild()
-	expected := &proto.State{
-		BuildState: &proto.BuildState{
-			Artifacts: map[string]string{
-				"image1": NotStarted,
-			},
-		},
-		TestState:        &proto.TestState{Status: NotStarted},
-		RenderState:      &proto.RenderState{Status: NotStarted},
-		DeployState:      &proto.DeployState{Status: NotStarted},
-		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
-		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
-	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
-}
-
-func TestResetStateOnDeploy(t *testing.T) {
-	defer func() { handler = newHandler() }()
-	handler = newHandler()
-	handler.state = &proto.State{
-		BuildState: &proto.BuildState{
-			Artifacts: map[string]string{
-				"image1": Complete,
-			},
-		},
-		DeployState: &proto.DeployState{Status: Complete},
-		ForwardedPorts: map[int32]*proto.PortForwardEvent{
-			2001: {
-				LocalPort:  2000,
-				PodName:    "test/pod",
-				TargetPort: &targetPort,
-			},
-		},
-		StatusCheckState: &proto.StatusCheckState{Status: Complete},
-	}
-	ResetStateOnDeploy()
-	expected := &proto.State{
-		BuildState: &proto.BuildState{
-			Artifacts: map[string]string{
-				"image1": Complete,
-			},
-		},
-		DeployState: &proto.DeployState{Status: NotStarted},
-		StatusCheckState: &proto.StatusCheckState{Status: NotStarted,
-			Resources: map[string]string{},
-		},
-	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
-}
-
-func TestEmptyStateCheckState(t *testing.T) {
-	actual := emptyStatusCheckState()
-	expected := &proto.StatusCheckState{Status: NotStarted,
-		Resources: map[string]string{},
-	}
-	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty(), protocmp.Transform())
-}
-
-func TestUpdateStateAutoTriggers(t *testing.T) {
-	defer func() { handler = newHandler() }()
-	handler = newHandler()
-	handler.state = &proto.State{
-		BuildState: &proto.BuildState{
-			Artifacts: map[string]string{
-				"image1": Complete,
-			},
-			AutoTrigger: false,
-		},
-		DeployState: &proto.DeployState{Status: Complete, AutoTrigger: false},
-		ForwardedPorts: map[int32]*proto.PortForwardEvent{
-			2001: {
-				LocalPort:  2000,
-				PodName:    "test/pod",
-				TargetPort: &targetPort,
-			},
-		},
-		StatusCheckState: &proto.StatusCheckState{Status: Complete},
-		FileSyncState: &proto.FileSyncState{
-			Status:      "Complete",
-			AutoTrigger: false,
-		},
-	}
-	UpdateStateAutoBuildTrigger(true)
-	UpdateStateAutoDeployTrigger(true)
-	UpdateStateAutoSyncTrigger(true)
-
-	expected := &proto.State{
-		BuildState: &proto.BuildState{
-			Artifacts: map[string]string{
-				"image1": Complete,
-			},
-			AutoTrigger: true,
-		},
-		DeployState: &proto.DeployState{Status: Complete, AutoTrigger: true},
-		ForwardedPorts: map[int32]*proto.PortForwardEvent{
-			2001: {
-				LocalPort:  2000,
-				PodName:    "test/pod",
-				TargetPort: &targetPort,
-			},
-		},
-		StatusCheckState: &proto.StatusCheckState{Status: Complete},
-		FileSyncState: &proto.FileSyncState{
-			Status:      "Complete",
-			AutoTrigger: true,
-		},
-	}
-	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
-}
-
-func TestTaskFailed(t *testing.T) {
-	tcs := []struct {
-		description string
-		state       *proto.State
-		phase       constants.Phase
-		waitFn      func() bool
-	}{
-		{
-			description: "build failed",
-			phase:       constants.Build,
-			waitFn: func() bool {
-				handler.logLock.Lock()
-				logEntry := handler.eventLog[len(handler.eventLog)-1]
-				handler.logLock.Unlock()
-				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "Build-0"
-			},
-		},
-		{
-			description: "deploy failed",
-			phase:       constants.Deploy,
-			waitFn: func() bool {
-				handler.logLock.Lock()
-				logEntry := handler.eventLog[len(handler.eventLog)-1]
-				handler.logLock.Unlock()
-				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "Deploy-0"
-			},
-		},
-		{
-			description: "status check failed",
-			phase:       constants.StatusCheck,
-			waitFn: func() bool {
-				handler.logLock.Lock()
-				logEntry := handler.eventLog[len(handler.eventLog)-1]
-				handler.logLock.Unlock()
-				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "StatusCheck-0"
-			},
-		},
-	}
-	for _, tc := range tcs {
-		t.Run(tc.description, func(t *testing.T) {
-			TaskFailed(tc.phase, errors.New("random error"))
-			wait(t, tc.waitFn)
-		})
-	}
-}
-
-func TestAutoTriggerDiff(t *testing.T) {
-	tests := []struct {
-		description  string
-		phase        constants.Phase
-		handlerState *proto.State
-		val          bool
-		expected     bool
-	}{
-		{
-			description: "build needs update",
-			phase:       constants.Build,
-			val:         true,
-			handlerState: &proto.State{
-				BuildState: &proto.BuildState{
-					AutoTrigger: false,
-				},
-			},
-			expected: true,
-		},
-		{
-			description: "deploy doesn't need update",
-			phase:       constants.Deploy,
-			val:         true,
-			handlerState: &proto.State{
-				BuildState: &proto.BuildState{
-					AutoTrigger: false,
-				},
-				DeployState: &proto.DeployState{
-					AutoTrigger: true,
-				},
-			},
-			expected: false,
-		},
-		{
-			description: "sync needs update",
-			phase:       constants.Sync,
-			val:         false,
-			handlerState: &proto.State{
-				FileSyncState: &proto.FileSyncState{
-					AutoTrigger: true,
-				},
-			},
-			expected: true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			// Setup handler state
-			handler.setState(test.handlerState)
-
-			got, err := AutoTriggerDiff(test.phase, test.val)
-			if err != nil {
-				t.Fail()
-			}
-
-			t.CheckDeepEqual(test.expected, got)
-		})
 	}
 }
 
@@ -413,6 +157,80 @@ func TestSaveEventsToFile(t *testing.T) {
 	testutil.CheckDeepEqual(t, 2, len(logEntries))
 	testutil.CheckDeepEqual(t, 1, buildCompleteEvent)
 	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvent)
+}
+
+func TestSaveLastLog(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatalf("getting temp file: %v", err)
+	}
+	t.Cleanup(func() { os.Remove(f.Name()) })
+	if err := f.Close(); err != nil {
+		t.Fatalf("error closing tmp file: %v", err)
+	}
+
+	// add some events to the event log. Include irrelevant events to test that they are ignored
+	handler.eventLog = []*proto.Event{
+		{
+			EventType: &proto.Event_BuildSubtaskEvent{},
+		}, {
+			EventType: &proto.Event_SkaffoldLogEvent{
+				SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "Message 1\n"},
+			},
+		}, {
+			EventType: &proto.Event_DeploySubtaskEvent{},
+		}, {
+			EventType: &proto.Event_SkaffoldLogEvent{
+				SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "Message 2\n"},
+			},
+		}, {
+			EventType: &proto.Event_PortEvent{},
+		},
+	}
+
+	// save events to file
+	if err := SaveLastLog(f.Name()); err != nil {
+		t.Fatalf("error saving log to file: %v", err)
+	}
+
+	// ensure that the events in the file match the event log
+	b, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		t.Fatalf("reading tmp file: %v", err)
+	}
+
+	// make sure that the contents of the file match the expected result.
+	expectedText := `Message 1
+Message 2
+`
+	testutil.CheckDeepEqual(t, expectedText, string(b))
+}
+
+func TestLastLogFile(t *testing.T) {
+	homeDir, _ := homedir.Dir()
+	tests := []struct {
+		name     string
+		fp       string
+		expected string
+	}{
+		{
+			name:     "Empty string passed in",
+			fp:       "",
+			expected: filepath.Join(homeDir, ".skaffold", "last.log"),
+		},
+		{
+			name:     "Non-empty string passed in",
+			fp:       filepath.Join("/", "tmp"),
+			expected: filepath.Join("/", "tmp"),
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			actual, _ := lastLogFile(test.fp)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
 }
 
 type config struct {
