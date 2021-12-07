@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
@@ -44,12 +45,16 @@ func buildOptions(a *latestV1.Artifact, runMode config.RunMode) (*options.BuildO
 	if err != nil {
 		return nil, fmt.Errorf("could not create ko build config: %v", err)
 	}
+	imageLabels, err := labels(a)
+	if err != nil {
+		return nil, fmt.Errorf("could not expand image labels: %v", err)
+	}
 	return &options.BuildOptions{
 		BaseImage:            a.KoArtifact.BaseImage,
 		BuildConfigs:         buildconfig,
 		ConcurrentBuilds:     1, // we could plug in Skaffold's max builds here, but it'd be incorrect if users build more than one artifact
 		DisableOptimizations: runMode == config.RunModes.Debug,
-		Labels:               labels(a),
+		Labels:               imageLabels,
 		Platform:             strings.Join(a.KoArtifact.Platforms, ","),
 		Trimpath:             runMode != config.RunModes.Debug,
 		UserAgent:            version.UserAgentWithClient(),
@@ -63,20 +68,33 @@ func buildOptions(a *latestV1.Artifact, runMode config.RunMode) (*options.BuildO
 // In this case, ko falls back to build configs provided in `.ko.yaml`, or to the default zero config.
 func buildConfig(a *latestV1.Artifact) (map[string]build.Config, error) {
 	buildconfigs := map[string]build.Config{}
-	if koArtifactSpecifiesBuildConfig(*a.KoArtifact) {
-		koImportpath, err := getImportPath(a)
-		if err != nil {
-			return nil, fmt.Errorf("could not determine import path of image %s: %v", a.ImageName, err)
-		}
-		importpath := strings.TrimPrefix(koImportpath, build.StrictScheme)
-		buildconfigs[importpath] = build.Config{
-			ID:      a.ImageName,
-			Dir:     ".",
-			Env:     a.KoArtifact.Env,
-			Flags:   a.KoArtifact.Flags,
-			Ldflags: a.KoArtifact.Ldflags,
-			Main:    a.KoArtifact.Main,
-		}
+	if !koArtifactSpecifiesBuildConfig(*a.KoArtifact) {
+		return buildconfigs, nil
+	}
+	koImportpath, err := getImportPath(a)
+	if err != nil {
+		return nil, fmt.Errorf("could not determine import path of image %s: %v", a.ImageName, err)
+	}
+	env, err := expand(a.KoArtifact.Env)
+	if err != nil {
+		return nil, fmt.Errorf("could not expand env: %v", err)
+	}
+	flags, err := expand(a.KoArtifact.Flags)
+	if err != nil {
+		return nil, fmt.Errorf("could not expand build flags: %v", err)
+	}
+	ldflags, err := expand(a.KoArtifact.Ldflags)
+	if err != nil {
+		return nil, fmt.Errorf("could not expand linker flags: %v", err)
+	}
+	importpath := strings.TrimPrefix(koImportpath, build.StrictScheme)
+	buildconfigs[importpath] = build.Config{
+		ID:      a.ImageName,
+		Dir:     ".",
+		Env:     env,
+		Flags:   flags,
+		Ldflags: ldflags,
+		Main:    a.KoArtifact.Main,
 	}
 	return buildconfigs, nil
 }
@@ -100,10 +118,32 @@ func koArtifactSpecifiesBuildConfig(k latestV1.KoArtifact) bool {
 	return false
 }
 
-func labels(a *latestV1.Artifact) []string {
-	var labels []string
+func labels(a *latestV1.Artifact) ([]string, error) {
+	rawLabels := map[string]*string{}
 	for k, v := range a.KoArtifact.Labels {
-		labels = append(labels, fmt.Sprintf("%s=%s", k, v))
+		rawLabels[k] = util.StringPtr(v)
 	}
-	return labels
+	expandedLabels, err := util.EvaluateEnvTemplateMapWithEnv(rawLabels, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to expand image labels: %w", err)
+	}
+	var labels []string
+	for k, v := range expandedLabels {
+		labels = append(labels, fmt.Sprintf("%s=%s", k, *v))
+	}
+	return labels, nil
+}
+
+func expand(dryValues []string) ([]string, error) {
+	var expandedValues []string
+	for _, rawValue := range dryValues {
+		// support ko-style envvar templating syntax, see https://github.com/GoogleContainerTools/skaffold/issues/6916
+		rawValue = strings.ReplaceAll(rawValue, "{{.Env.", "{{.")
+		expandedValue, err := util.ExpandEnvTemplate(rawValue, nil)
+		if err != nil {
+			return nil, fmt.Errorf("could not expand %s", rawValue)
+		}
+		expandedValues = append(expandedValues, expandedValue)
+	}
+	return expandedValues, nil
 }

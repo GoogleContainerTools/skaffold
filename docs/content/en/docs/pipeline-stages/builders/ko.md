@@ -88,18 +88,31 @@ is `linux/amd64`, but you can configure a list of platforms using the
 You can also supply `["all"]` as the value of `platforms`. `all` means that the
 ko builder builds images for all platforms supported by the base image.
 
-### Labels / annotations
+### Image labels
 
 Use the `labels` configuration field to add
-[annotations](https://github.com/opencontainers/image-spec/blob/main/annotations.md)
+[image labels](https://github.com/opencontainers/image-spec/blob/main/config.md#properties)
 (a.k.a. [`Dockerfile` `LABEL`s](https://docs.docker.com/engine/reference/builder/#label)),
-e.g.:
+
+For example, you can add labels based on the
+[pre-defined annotations keys](https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys)
+from the Open Container Initiative (OCI) Image Format Specification:
 
 ```yaml
     ko:
       labels:
         org.opencontainers.image.licenses: Apache-2.0
         org.opencontainers.image.source: https://github.com/GoogleContainerTools/skaffold
+```
+
+The `labels` section supports templating of values based on environment
+variables, e.g.:
+
+```yaml
+    ko:
+      labels:
+        org.opencontainers.image.revision: "{{.GITHUB_SHA}}"
+        org.opencontainers.image.source: "{{.GITHUB_SERVER_URL}}/{{.GITHUB_REPOSITORY}}"
 ```
 
 ### Build time environment variables
@@ -113,6 +126,15 @@ Example:
       env:
       - GOCACHE=/workspace/.gocache
       - GOPRIVATE=git.internal.example.com,source.developers.google.com
+```
+
+The `env` field supports templating of values using environment variables, for
+example:
+
+```yaml
+    ko:
+      env:
+      - GOPROXY={{.GOPROXY}}
 ```
 
 ### Dependencies
@@ -168,17 +190,20 @@ Use the `ldflags` configuration field to provide linker flag arguments, e.g.:
       - -w
 ```
 
-`ko` supports templating of `flags` and `ldflags` using environment variables,
+The `flags` and `ldflags` fields support templating using environment
+variables,
 e.g.:
 
 ```yaml
     ko:
       ldflags:
-      - -X main.version={{.Env.VERSION}}
+      - -X main.version={{.VERSION}}
 ```
 
-These templates are passed through to `ko` and are expanded using
-[`ko`'s template expansion implementation](https://github.com/google/ko/blob/v0.9.3/pkg/build/gobuild.go#L632-L660).
+These templates are evaluated by Skaffold. Note that the syntax is slightly
+different to
+[`ko`'s template expansion](https://github.com/google/ko/blob/v0.9.3/pkg/build/gobuild.go#L632-L660),
+specifically, there's no `.Env` prefix.
 
 ### Source file locations
 
