@@ -68,7 +68,7 @@ func (*DockerfileCommandLinter) Lint(params InputParams, rules *[]Rule) (*[]Resu
 			log.Entry(context.TODO()).Infof("docker command 'copy' match found for source: %s\n", fromTo.From)
 			// TODO(aaron-prindle) modify so that there are input and output params s.t. it is more obvious what fields need to be updated
 			params.DockerCopyCommandInfo = fromTo
-			appendRuleIfLintConditionsPass(params, results, rule, fromTo.StartLine, 1)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(params, results, rule, fromTo.StartLine, 1)
 		}
 	}
 	return results, nil
@@ -101,28 +101,30 @@ func (*YamlFieldLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, 
 		if (node == nil && !yamlFilter.InvertMatch) || node != nil && yamlFilter.InvertMatch {
 			continue
 		} else if node == nil && yamlFilter.InvertMatch {
+			// TODO(aaron-prindle) this type of message (last line of file) does not work well in an IDE via the LSP
+			// consider not using this and pinning to somewhere in the yaml or using some type of different messaging (window/showMessage, etc.)
 			line, col := getLastLineAndColOfFile(lintInputs.ConfigFile.Text)
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, line, col)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, line, col)
 			continue
 		}
 		if yamlFilter.FieldMatch != "" {
 			mapnode := node.Field(yamlFilter.FieldMatch)
 			if mapnode != nil {
-				appendRuleIfLintConditionsPass(lintInputs, results, rule, mapnode.Key.YNode().Line, mapnode.Key.YNode().Column)
+				appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, mapnode.Key.YNode().Line, mapnode.Key.YNode().Column)
 			}
 			continue
 		}
 		if node.YNode().Kind == yaml.ScalarNode {
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, node.Document().Line, node.Document().Column)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, node.Document().Line, node.Document().Column)
 		}
 		for _, n := range node.Content() {
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, n.Line, n.Column)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, n.Line, n.Column)
 		}
 	}
 	return results, nil
 }
 
-func appendRuleIfLintConditionsPass(lintInputs InputParams, results *[]Result, rule Rule, line, col int) {
+func appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs InputParams, results *[]Result, rule Rule, line, col int) {
 	for _, f := range rule.LintConditions {
 		if !f(lintInputs) {
 			// lint condition failed, no rule is trigggered
