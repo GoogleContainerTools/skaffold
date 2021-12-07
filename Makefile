@@ -52,11 +52,6 @@ LDFLAGS_linux = -static
 
 GO_BUILD_TAGS_windows = release
 
-# darwin/arm64 requires Go 1.16beta1 or later; dockercore/golang-cross
-# doesn't have a recent macOS toolchain so disable CGO and use
-# github.com/rjeczalik/notify's kqueue support. 
-GO_VERSION_darwin_arm64 = 1.16beta1
-CGO_ENABLED_darwin_arm64 = 0
 GO_BUILD_TAGS_darwin = release
 
 ifneq "$(strip $(LOCAL))" "true"
@@ -80,27 +75,13 @@ install: $(BUILD_DIR)/$(PROJECT)
 .PHONY: cross
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
-$(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
+$(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 	$(eval os = $(firstword $(subst -, ,$*)))
 	$(eval arch = $(lastword $(subst -, ,$(subst .exe,,$*))))
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(os))))
 	$(eval tags = $(GO_BUILD_TAGS_$(os)) $(GO_BUILD_TAGS_$(os)_$(arch)))
-	$(eval cgoenabled = $(CGO_ENABLED_$(os)_$(arch)))
-	$(eval goversion = $(GO_VERSION_$(os)_$(arch)))
-
-	docker build \
-		--build-arg GOOS="$(os)" \
-		--build-arg GOARCH="$(arch)" \
-		--build-arg TAGS="$(tags)" \
-		--build-arg LDFLAGS="$(ldflags)" \
-		$(patsubst %,--build-arg CGO_ENABLED="%",$(cgoenabled)) \
-		$(patsubst %,--build-arg GO_VERSION="%",$(goversion)) \
-		-f deploy/cross/Dockerfile \
-		-t skaffold/cross \
-		.
-
-	docker run --rm skaffold/cross cat /build/skaffold > $@
-	shasum -a 256 $@ | tee $@.sha256
+	GOOS=$(os) GOARCH=$(arch) CGO_ENABLED=1 go build -tags "$(tags)" -ldflags "$(ldflags)" -o $@ ./cmd/skaffold
+	(cd `dirname $@`; shasum -a 256 `basename $@`) | tee $@.sha256
 	file $@ || true
 
 .PHONY: $(BUILD_DIR)/VERSION
