@@ -43,7 +43,7 @@ func TestLintOutput(t *testing.T) {
 				{
 					Rule: &Rule{
 						RuleID:              DummyRuleIDForTesting,
-						RuleType:            RegExpLintLintRule,
+						RuleType:            DockerfileCommandLintRule,
 						ExplanationTemplate: "",
 					},
 					Explanation: "test explanation",
@@ -54,7 +54,7 @@ func TestLintOutput(t *testing.T) {
 				},
 			},
 			text:     "first column of this line should be flagged in the result [1,1]",
-			expected: "rel/path:1:1: ID000000: RegExpLintLintRule: test explanation\nfirst column of this line should be flagged in the result [1,1]\n^\n",
+			expected: "rel/path:1:1: ID000000: DockerfileCommandLintRule: test explanation\nfirst column of this line should be flagged in the result [1,1]\n^\n",
 		},
 		{
 			description: "verify json lint output is as expected",
@@ -63,7 +63,7 @@ func TestLintOutput(t *testing.T) {
 				{
 					Rule: &Rule{
 						RuleID:              DummyRuleIDForTesting,
-						RuleType:            RegExpLintLintRule,
+						RuleType:            DockerfileCommandLintRule,
 						ExplanationTemplate: "",
 						Severity:            protocol.DiagnosticSeverityError,
 					},
@@ -75,7 +75,7 @@ func TestLintOutput(t *testing.T) {
 				},
 			},
 			text:     "first column of this line should be flagged in the result [1,1]",
-			expected: `[{"Rule":{"RuleID":0,"RuleType":0,"ExplanationTemplate":"","Severity":1,"Filter":null},"AbsFilePath":%#v,"RelFilePath":"rel/path","Explanation":"test explanation","Line":1,"Column":1}]` + "\n",
+			expected: `[{"Rule":{"RuleID":0,"RuleType":1,"ExplanationTemplate":"","Severity":1,"Filter":null},"AbsFilePath":%#v,"RelFilePath":"rel/path","Explanation":"test explanation","Line":1,"Column":1}]` + "\n",
 		},
 	}
 	for _, test := range tests {

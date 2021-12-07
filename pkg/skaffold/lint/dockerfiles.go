@@ -33,7 +33,6 @@ var getDockerDependenciesForEachFromTo = docker.GetDependenciesByDockerCopyFromT
 var dockerfileRules = &dockerfileLintRules
 
 var DockerfileLinters = []Linter{
-	&RegExpLinter{},
 	&DockerfileCommandLinter{},
 }
 
