@@ -143,7 +143,7 @@ endif
 integration: install integration-tests
 
 .PHONY: release
-release: cross $(BUILD_DIR)/VERSION
+release: $(BUILD_DIR)/VERSION
 	docker build \
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile \
@@ -151,9 +151,6 @@ release: cross $(BUILD_DIR)/VERSION
 		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
 		.
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
-	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
-	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
 
 .PHONY: release-build
 release-build: cross
