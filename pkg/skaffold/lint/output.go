@@ -73,13 +73,13 @@ func generatePlainTextOutput(res *Result) (string, error) {
 	}
 	out := plainTextOutput{
 		RelFilePath:    res.RelFilePath,
-		LineNumber:     res.Line,
-		ColumnNumber:   res.Column,
+		LineNumber:     res.StartLine,
+		ColumnNumber:   res.StartColumn,
 		RuleID:         res.Rule.RuleID.String(),
 		Explanation:    res.Explanation,
 		RuleType:       res.Rule.RuleType.String(),
-		FlaggedText:    strings.Split(string(text), "\n")[res.Line-1],
-		ColPointerLine: genColPointerLine(res.Column),
+		FlaggedText:    strings.Split(string(text), "\n")[res.StartLine-1],
+		ColPointerLine: genColPointerLine(res.StartColumn),
 	}
 	// TODO(aaron-prindle) - support different template for multiline matches -> (no ColPointerLine, show multi line match)
 	// if flagged text contains \n character, don't show colpointerline
