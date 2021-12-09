@@ -401,7 +401,7 @@ enum StatusCode {
     DEPLOY_HELM_APPLY_LABELS = 1004;
     // Deploy error due to user deploy config for helm deployer
     DEPLOY_HELM_USER_ERR = 1005;
-    // Helm error when no build result is found of value  specified in helm `artifactOverrides`
+    // An image was referenced with no matching build result
     DEPLOY_NO_MATCHING_BUILD = 1006;
     // Unable to get helm client version
     DEPLOY_HELM_VERSION_ERR = 1007;
@@ -585,7 +585,7 @@ enum SuggestionCode {
     INSTALL_HELM = 203;
     // Upgrade helm tool
     UPGRADE_HELM = 204;
-    // Fix helm `releases.artifactOverrides` config to match with `build.artiofacts`
+    // Fix helm `releases.artifactOverrides` config to match with `build.artifacts` (no longer used in Skaffold v2)
     FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES = 205;
     // Upgrade helm version to v3.2.0 and higher.
     UPGRADE_HELM32 = 206;

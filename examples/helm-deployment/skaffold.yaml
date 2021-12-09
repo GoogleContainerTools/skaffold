@@ -8,5 +8,3 @@ deploy:
     releases:
     - name: skaffold-helm
       chartPath: charts
-      artifactOverrides:
-        image: skaffold-helm

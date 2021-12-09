@@ -89,10 +89,6 @@ profiles:
               - ./deployment/dev/values.yaml
               - ./deployment/dev/secrets.yaml
             skipBuildDependencies: true
-            artifactOverrides:
-              image: asia.gcr.io/my-project/my-image
-            imageStrategy:
-              helm: {}
         flags:
           upgrade:
             - --install

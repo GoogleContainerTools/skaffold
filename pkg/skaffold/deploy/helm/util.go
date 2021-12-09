@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	shell "github.com/kballard/go-shellquote"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -119,29 +120,35 @@ func imageSetFromConfig(cfg *latestV2.HelmConventionConfig, valueName string, ta
 	return fmt.Sprintf("%[1]s.repository=%[2]s,%[1]s.tag=%[3]s", valueName, ref.BaseName, imageTag), nil
 }
 
-// pairParamsToArtifacts associates parameters to the build artifact it creates
-func pairParamsToArtifacts(builds []graph.Artifact, params map[string]string) (map[string]graph.Artifact, error) {
-	imageToBuildResult := map[string]graph.Artifact{}
-	for _, b := range builds {
-		imageToBuildResult[b.ImageName] = b
+func (h *Deployer) prepareSkaffoldFilter(builds []graph.Artifact) (skaffoldBinary string, env []string, cleanup func(), err error) {
+	skaffoldBinary, err = osExecutable()
+	if err != nil {
+		return "", nil, nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
 	}
 
-	paramToBuildResult := map[string]graph.Artifact{}
-
-	for param, imageName := range params {
-		b, ok := imageToBuildResult[imageName]
-		if !ok {
-			return nil, noMatchingBuild(imageName)
+	var buildsFile string
+	if len(builds) > 0 {
+		buildsFile, cleanup, err = writeBuildArtifactsFunc(builds)
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("could not write build-artifacts: %w", err)
 		}
-
-		paramToBuildResult[param] = b
 	}
-
-	return paramToBuildResult, nil
+	cmdLine := h.generateSkaffoldFilter(buildsFile)
+	env = append(env, fmt.Sprintf("SKAFFOLD_CMDLINE=%s", shell.Join(cmdLine...)))
+	env = append(env, fmt.Sprintf("SKAFFOLD_FILENAME=%s", h.configFile))
+	return
 }
 
-func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
-	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
+// generateSkaffoldFilter creates a `skaffold filter`` command-line for applying the various
+// Skaffold manifest filters, such a debugging, image replacement, and applying labels.
+func (h *Deployer) generateSkaffoldFilter(buildsFile string) []string {
+	args := []string{"filter", "--kube-context", h.kubeContext}
+	if h.enableDebug {
+		args = append(args, "--debugging")
+	}
+	for k, v := range h.labels {
+		args = append(args, fmt.Sprintf("--label=%s=%s", k, v))
+	}
 	if len(buildsFile) > 0 {
 		args = append(args, "--build-artifacts", buildsFile)
 	}

@@ -7,10 +7,11 @@
 package enums
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -707,7 +708,7 @@ const (
 	StatusCode_DEPLOY_HELM_APPLY_LABELS StatusCode = 1004
 	// Deploy error due to user deploy config for helm deployer
 	StatusCode_DEPLOY_HELM_USER_ERR StatusCode = 1005
-	// Helm error when no build result is found of value  specified in helm `artifactOverrides`
+	// An image was referenced with no matching build result
 	StatusCode_DEPLOY_NO_MATCHING_BUILD StatusCode = 1006
 	// Unable to get helm client version
 	StatusCode_DEPLOY_HELM_VERSION_ERR StatusCode = 1007
@@ -1276,7 +1277,7 @@ const (
 	SuggestionCode_INSTALL_HELM SuggestionCode = 203
 	// Upgrade helm tool
 	SuggestionCode_UPGRADE_HELM SuggestionCode = 204
-	// Fix helm `releases.artifactOverrides` config to match with `build.artiofacts`
+	// Fix helm `releases.artifactOverrides` config to match with `build.artifacts` (no longer used in Skaffold v2)
 	SuggestionCode_FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES SuggestionCode = 205
 	// Upgrade helm version to v3.2.0 and higher.
 	SuggestionCode_UPGRADE_HELM32 SuggestionCode = 206

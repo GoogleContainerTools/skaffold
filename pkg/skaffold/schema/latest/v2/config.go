@@ -1661,12 +1661,6 @@ type HelmRelease struct {
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
 
-	// ArtifactOverrides are key value pairs where the
-	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
-	// image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
-	// The resulting command-line is controlled by `ImageStrategy`.
-	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty"`
-
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
 
@@ -1724,10 +1718,6 @@ type HelmRelease struct {
 
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
-
-	// ImageStrategy controls how an `ArtifactOverrides` entry is
-	// turned into `--set-string` Helm CLI flag or flags.
-	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).
@@ -1737,11 +1727,6 @@ type HelmPackaged struct {
 
 	// AppVersion sets the `appVersion` on the chart to this version.
 	AppVersion string `yaml:"appVersion,omitempty"`
-}
-
-// HelmImageStrategy adds image configurations to the Helm `values` file.
-type HelmImageStrategy struct {
-	HelmImageConfig `yaml:",inline"`
 }
 
 // HelmImageConfig describes an image configuration.

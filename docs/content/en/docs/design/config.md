@@ -63,8 +63,6 @@ deploy:
       chartPath: helm/project
       valuesFiles:
       - "helm/project/dev-values.yaml"
-      artifactOverrides:
-        image: app
 ```
 
 In this example, the `Dockerfile` for building `app`

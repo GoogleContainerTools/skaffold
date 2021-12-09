@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // for tests
@@ -64,6 +65,16 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 		if err != nil {
 			return fmt.Errorf("loading manifests: %w", err)
 		}
+
+		manifestList, err = manifestList.SetLabels(pkgutil.EnvSliceToMap(opts.CustomLabels, "="))
+		if err != nil {
+			return err
+		}
+		manifestList, err = manifestList.ReplaceImages(ctx, buildArtifacts)
+		if err != nil {
+			return err
+		}
+
 		if debuggingFilters {
 			// TODO(bdealwis): refactor this code
 			debugHelpersRegistry, err := config.GetDebugHelpersRegistry(opts.GlobalConfig)

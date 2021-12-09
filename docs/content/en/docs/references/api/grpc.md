@@ -1018,7 +1018,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_CLEANUP_ERR | 1003 | Deploy clean up error |
 | DEPLOY_HELM_APPLY_LABELS | 1004 | Unable to apply helm labels. |
 | DEPLOY_HELM_USER_ERR | 1005 | Deploy error due to user deploy config for helm deployer |
-| DEPLOY_NO_MATCHING_BUILD | 1006 | Helm error when no build result is found of value specified in helm `artifactOverrides` |
+| DEPLOY_NO_MATCHING_BUILD | 1006 | An image was referenced with no matching build result |
 | DEPLOY_HELM_VERSION_ERR | 1007 | Unable to get helm client version |
 | DEPLOY_HELM_MIN_VERSION_ERR | 1008 | Helm version not supported. |
 | DEPLOY_KUBECTL_VERSION_ERR | 1109 | Unable to retrieve kubectl version |
@@ -1109,7 +1109,7 @@ Enum for Suggestion codes
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
 | UPGRADE_HELM | 204 | Upgrade helm tool |
-| FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES | 205 | Fix helm `releases.artifactOverrides` config to match with `build.artiofacts` |
+| FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES | 205 | Fix helm `releases.artifactOverrides` config to match with `build.artifacts` (no longer used in Skaffold v2) |
 | UPGRADE_HELM32 | 206 | Upgrade helm version to v3.2.0 and higher. |
 | FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE | 207 | Set `releases.createNamespace` to false. |
 | INVALID_KPT_MANIFESTS | 208 | check the Kptfile validation. |

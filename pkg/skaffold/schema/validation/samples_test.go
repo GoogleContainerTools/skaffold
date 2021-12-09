@@ -76,6 +76,7 @@ func TestParseSamples(t *testing.T) {
 		}
 
 		testutil.Run(t, name, func(t *testutil.T) {
+			t.Logf("Checking %s...", path)
 			buf, err := ioutil.ReadFile(path)
 			t.CheckNoError(err)
 

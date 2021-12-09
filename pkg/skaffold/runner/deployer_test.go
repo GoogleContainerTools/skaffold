@@ -59,7 +59,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected:    deploy.DeployerMux{},
 			},
 			{
-				description: "helm deployer with 3.0.0 version",
+				description: "helm deployer with 3.1.0 version",
 				cfg: latestV2.Pipeline{
 					Render: latestV2.RenderConfig{
 						Generate: latestV2.Generate{
@@ -67,7 +67,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						},
 					},
 				},
-				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
+				helmVersion: `version.BuildInfo{Version:"v3.1.0"}`,
 				expected:    deploy.NewDeployerMux([]deploy.Deployer{&helm.Deployer{}}, false),
 			},
 			{
@@ -151,7 +151,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
 					},
 				},
-				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
+				helmVersion: `version.BuildInfo{Version:"v3.7.0"}`,
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&helm.Deployer{},
 					&kptV2.Deployer{},

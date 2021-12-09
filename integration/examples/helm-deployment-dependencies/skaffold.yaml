@@ -14,10 +14,6 @@ deploy:
       #valuesFiles:
       #- helm-skaffold-values.yaml
       skipBuildDependencies: true # Skip helm dep build
-      artifactOverrides:
-        image: skaffold-helm
-        skaffold-helm-subchart:
-          image: skaffold-helm
       #recreatePods will pass --recreate-pods to helm upgrade
       #recreatePods: true
       #overrides builds an override values.yaml file to run with the helm deploy

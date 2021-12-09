@@ -230,7 +230,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomLabels,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "filter"},
 	},
 	{
 		Name:          "toot",

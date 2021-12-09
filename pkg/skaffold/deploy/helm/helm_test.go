@@ -51,18 +51,10 @@ var testBuilds = []graph.Artifact{{
 	Tag:       "docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 }}
 
-var testBuildsFoo = []graph.Artifact{{
-	ImageName: "foo",
-	Tag:       "foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
-}}
-
 var testDeployConfig = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -74,9 +66,6 @@ var testDeployNamespacedConfig = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -89,9 +78,6 @@ var testDeployEnvTemplateNamespacedConfig = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -104,9 +90,6 @@ var testDeployConfigRemoteRepo = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -119,9 +102,6 @@ var testDeployConfigTemplated = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValueTemplates: map[string]string{
 			"some.key":    "somevalue",
@@ -138,9 +118,6 @@ var testDeployConfigValuesFilesTemplated = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		ValuesFiles: []string{
 			"/some/file-{{.FOO}}.yaml",
@@ -152,10 +129,7 @@ var testDeployConfigVersionTemplated = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
-		Version: "{{.VERSION}}",
+		Version:   "{{.VERSION}}",
 	}},
 }
 
@@ -163,9 +137,6 @@ var testDeployConfigSetFiles = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetFiles: map[string]string{
 			"expanded": "~/file.yaml",
@@ -178,9 +149,6 @@ var testDeployRecreatePodsConfig = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -193,9 +161,6 @@ var testDeploySkipBuildDependenciesConfig = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -204,63 +169,10 @@ var testDeploySkipBuildDependenciesConfig = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployHelmStyleConfig = latestV2.HelmDeploy{
+var testDeployWithPackaged = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
-		},
-		ImageStrategy: latestV2.HelmImageStrategy{
-			HelmImageConfig: latestV2.HelmImageConfig{
-				HelmConventionConfig: &latestV2.HelmConventionConfig{},
-			},
-		},
-	}},
-}
-
-var testDeployHelmExplicitRegistryStyleConfig = latestV2.HelmDeploy{
-	Releases: []latestV2.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
-		},
-		ImageStrategy: latestV2.HelmImageStrategy{
-			HelmImageConfig: latestV2.HelmImageConfig{
-				HelmConventionConfig: &latestV2.HelmConventionConfig{
-					ExplicitRegistry: true,
-				},
-			},
-		},
-	}},
-}
-
-var testDeployConfigParameterUnmatched = latestV2.HelmDeploy{
-	Releases: []latestV2.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm-unmatched",
-		}},
-	},
-}
-
-var testDeployFooWithPackaged = latestV2.HelmDeploy{
-	Releases: []latestV2.HelmRelease{{
-		Name:      "foo",
-		ChartPath: "testdata/foo",
-		ArtifactOverrides: map[string]string{
-			"image": "foo",
-		},
+		ChartPath: "testdata/skaffold-helm",
 		Packaged: &latestV2.HelmPackaged{
 			Version:    "0.1.2",
 			AppVersion: "1.2.3",
@@ -272,9 +184,6 @@ var testDeployWithTemplatedName = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "{{.USER}}-skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image.tag": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -284,11 +193,8 @@ var testDeployWithTemplatedName = latestV2.HelmDeploy{
 
 var testDeploySkipBuildDependencies = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "stable/chartmuseum",
-		ArtifactOverrides: map[string]string{
-			"image.tag": "skaffold-helm",
-		},
+		Name:                  "skaffold-helm",
+		ChartPath:             "stable/chartmuseum",
 		SkipBuildDependencies: true,
 	}},
 }
@@ -333,9 +239,6 @@ var testTwoReleases = latestV2.HelmDeploy{
 	}, {
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image.tag": "skaffold-helm",
-		},
 	}},
 }
 
@@ -344,9 +247,6 @@ var testDeployCreateNamespaceConfig = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		ArtifactOverrides: map[string]string{
-			"image": "skaffold-helm",
-		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetValues: map[string]string{
 			"some.key": "somevalue",
@@ -381,7 +281,7 @@ spec:
     spec:
       containers:
         - name: skaffold-helm
-          image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
+          image: docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184
           imagePullPolicy:
           command: ["/bin/bash", "-c", "--" ]
           args: ["while true; do sleep 30; done;"]
@@ -483,9 +383,9 @@ func TestNewDeployer(t *testing.T) {
 	}{
 		{"Helm 2.0RC1", version20rc, true},
 		{"Helm 2.15.1", version21, true},
-		{"Helm 3.0.0-beta.0", version30b, false},
-		{"Helm 3.0", version30, false},
-		{"Helm 3.1.1", version31, false},
+		{"Helm 3.0.0-beta.0", version30b, true},
+		{"Helm 3.0", version30, true},
+		{"Helm 3.1.0", version31, false},
 		{"helm3 unparseable version", "gobbledygook", true},
 	}
 
@@ -523,99 +423,40 @@ func TestHelmDeploy(t *testing.T) {
 		expectedNamespaces []string
 	}{
 		{
-			description: "helm3.0beta deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30b).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployConfig,
-			builds:             testBuilds,
-			expectedNamespaces: []string{""},
-		},
-		{
-			description: "helm3.0beta namespaced context deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30b).
-				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployConfig,
-			namespace:          kubectl.TestNamespace,
-			builds:             testBuilds,
-			expectedNamespaces: []string{"testNamespace"},
-		},
-		{
-			description: "helm3.0 deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployConfig,
-			builds:             testBuilds,
-			expectedNamespaces: []string{""},
-		},
-		{
-			description: "helm3.0 namespaced deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30).
-				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployNamespacedConfig,
-			builds:             testBuilds,
-			expectedNamespaces: []string{"testReleaseNamespace"},
-		},
-		{
-			description: "helm3.0 namespaced (with env template) deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30).
-				AndRun("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseFOOBARNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployEnvTemplateNamespacedConfig,
-			builds:             testBuilds,
-			expectedNamespaces: []string{"testReleaseFOOBARNamespace"},
-		},
-		{
-			description: "helm3.0 namespaced context deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30).
-				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployConfig,
-			namespace:          kubectl.TestNamespace,
-			builds:             testBuilds,
-			expectedNamespaces: []string{"testNamespace"},
-		},
-		{
-			description: "helm3.0 namespaced context deploy success overrides release namespaces",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30).
-				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployNamespacedConfig,
-			namespace:          kubectl.TestNamespace,
-			builds:             testBuilds,
-			expectedNamespaces: []string{"testNamespace"},
-		},
-		{
 			description: "helm3.1 deploy success",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployConfig,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "helm3.1 namespaced context deploy success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployConfig,
+			namespace:          kubectl.TestNamespace,
+			builds:             testBuilds,
+			expectedNamespaces: []string{"testNamespace"},
+		},
+		{
+			description: "helm3.5 deploy success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version35).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
@@ -627,35 +468,25 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testReleaseNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployNamespacedConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseNamespace"},
 		},
 		{
-			description: "helm3.1 namespaced deploy (with env template) success",
+			description: "helm3.1 namespaced (with env template) deploy success",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseFOOBARNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testReleaseFOOBARNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployEnvTemplateNamespacedConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseFOOBARNamespace"},
-		},
-		{
-			description: "helm3.1 deploy with repo success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --repo https://charts.helm.sh/stable --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployConfigRemoteRepo,
-			builds:             testBuilds,
-			expectedNamespaces: []string{""},
 		},
 		{
 			description: "helm3.1 namespaced context deploy success",
@@ -663,7 +494,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
 			namespace:          kubectl.TestNamespace,
@@ -676,7 +508,88 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployNamespacedConfig,
+			namespace:          kubectl.TestNamespace,
+			builds:             testBuilds,
+			expectedNamespaces: []string{"testNamespace"},
+		},
+		{
+			description: "helm3.1 deploy success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployConfig,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "helm3.1 namespaced deploy success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testReleaseNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployNamespacedConfig,
+			builds:             testBuilds,
+			expectedNamespaces: []string{"testReleaseNamespace"},
+		},
+		{
+			description: "helm3.1 namespaced deploy (with env template) success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testReleaseFOOBARNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployEnvTemplateNamespacedConfig,
+			builds:             testBuilds,
+			expectedNamespaces: []string{"testReleaseFOOBARNamespace"},
+		},
+		{
+			description: "helm3.1 deploy with repo success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --repo https://charts.helm.sh/stable --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployConfigRemoteRepo,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "helm3.1 namespaced context deploy success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployConfig,
+			namespace:          kubectl.TestNamespace,
+			builds:             testBuilds,
+			expectedNamespaces: []string{"testNamespace"},
+		},
+		{
+			description: "helm3.1 namespaced context deploy success overrides release namespaces",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployNamespacedConfig,
 			namespace:          kubectl.TestNamespace,
@@ -689,7 +602,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --recreate-pods examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm --recreate-pods examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployRecreatePodsConfig,
 			builds:             testBuilds,
@@ -700,23 +614,11 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeploySkipBuildDependenciesConfig,
 			builds:             testBuilds,
-			expectedNamespaces: []string{""},
-		},
-		{
-			description: "deploy should error for unmatched parameter",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployConfigParameterUnmatched,
-			builds:             testBuilds,
-			shouldErr:          true,
 			expectedNamespaces: []string{""},
 		},
 		{
@@ -724,7 +626,8 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm stable/chartmuseum --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm stable/chartmuseum --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeploySkipBuildDependencies,
 			builds:             testBuilds,
@@ -743,7 +646,8 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
-				AndRun("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME", "SKAFFOLD_CMDLINE"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployRemoteChart,
 			expectedNamespaces: []string{""},
@@ -753,7 +657,8 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
-				AndRun("helm --kube-context kubecontext install skaffold-helm-remote --version 1.0.0 stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote --version 1.0.0 stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME", "SKAFFOLD_CMDLINE"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployRemoteChartVersion,
 			expectedNamespaces: []string{""},
@@ -774,7 +679,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext install skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
@@ -786,33 +692,10 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext install skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
-			builds:             testBuilds,
-			expectedNamespaces: []string{""},
-		},
-		{
-			description: "get failure should install not upgrade with helm image strategy",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRunErr("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext install skaffold-helm examples/test --set-string image.repository=docker.io:5000/skaffold-helm,image.tag=3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployHelmStyleConfig,
-			builds:             testBuilds,
-			expectedNamespaces: []string{""},
-		},
-		{
-			description: "helm image strategy with explicit registry should set the Helm registry value",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRunErr("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext install skaffold-helm examples/test --set-string image.registry=docker.io:5000,image.repository=skaffold-helm,image.tag=3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:               testDeployHelmExplicitRegistryStyleConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{""},
 		},
@@ -822,7 +705,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --force examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm --force examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
 			force:              true,
@@ -835,7 +719,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
@@ -847,7 +732,7 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRunErr("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig", fmt.Errorf("unexpected error")).
+				AndRunErr("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig", fmt.Errorf("unexpected error")).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			shouldErr:          true,
 			helm:               testDeployConfig,
@@ -860,7 +745,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRunErr("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig", fmt.Errorf("unexpected error")).
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			shouldErr:          true,
 			helm:               testDeployConfig,
@@ -868,43 +754,30 @@ func TestHelmDeploy(t *testing.T) {
 			expectedNamespaces: []string{""},
 		},
 		{
-			description: "helm 3.0 beta should package chart and deploy",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version30b).
-				AndRun("helm --kube-context kubecontext get all foo --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build testdata/foo --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Sprintf("Packaged to %s", filepath.Join(tmpDir, "foo-0.1.2.tgz"))).
-				AndRun("helm --kube-context kubecontext upgrade foo "+filepath.Join(tmpDir, "foo-0.1.2.tgz")+" --set-string image=foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all foo --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			shouldErr:          false,
-			helm:               testDeployFooWithPackaged,
-			builds:             testBuildsFoo,
-			expectedNamespaces: []string{""},
-		},
-		{
 			description: "helm 3.1 should package chart and deploy",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all foo --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build testdata/foo --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Sprintf("Packaged to %s", filepath.Join(tmpDir, "foo-0.1.2.tgz"))).
-				AndRun("helm --kube-context kubecontext upgrade foo "+filepath.Join(tmpDir, "foo-0.1.2.tgz")+" --set-string image=foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all foo --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build testdata/skaffold-helm --kubeconfig kubeconfig").
+				AndRunWithOutput("helm --kube-context kubecontext package testdata/skaffold-helm --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Sprintf("Packaged to %s", filepath.Join(tmpDir, "skaffold-helm-0.1.2.tgz"))).
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm "+filepath.Join(tmpDir, "skaffold-helm-0.1.2.tgz")+" --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			shouldErr:          false,
-			helm:               testDeployFooWithPackaged,
-			builds:             testBuildsFoo,
+			helm:               testDeployWithPackaged,
+			builds:             testBuilds,
 			expectedNamespaces: []string{""},
 		},
 		{
 			description: "should fail to deploy when packaging fails",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all foo --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build testdata/foo --kubeconfig kubeconfig").
-				AndRunErr("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Errorf("packaging failed")),
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build testdata/skaffold-helm --kubeconfig kubeconfig").
+				AndRunErr("helm --kube-context kubecontext package testdata/skaffold-helm --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Errorf("packaging failed")),
 			shouldErr:          true,
-			helm:               testDeployFooWithPackaged,
-			builds:             testBuildsFoo,
+			helm:               testDeployWithPackaged,
+			builds:             testBuilds,
 			expectedNamespaces: []string{""},
 		},
 		{
@@ -922,7 +795,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all user-skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade user-skaffold-helm examples/test --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all user-skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployWithTemplatedName,
 			builds:             testBuilds,
@@ -934,7 +808,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set image.name=skaffold-helm --set image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfigTemplated,
 			builds:             testBuilds,
@@ -946,7 +821,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 -f /some/file-FOOBAR.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfigValuesFilesTemplated,
 			builds:             testBuilds,
@@ -958,7 +834,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --version 1.0 examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm --version 1.0 examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			env:                []string{"VERSION=1.0"},
 			helm:               testDeployConfigVersionTemplated,
@@ -971,26 +848,11 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun(fmt.Sprintf("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set-file expanded=%s --set-file value=/some/file.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig", strings.ReplaceAll(filepath.Join(home, "file.yaml"), "\\", "\\\\"))).
+				AndRunEnv(fmt.Sprintf("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set-file expanded=%s --set-file value=/some/file.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig", strings.ReplaceAll(filepath.Join(home, "file.yaml"), "\\", "\\\\")),
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfigSetFiles,
 			builds:             testBuilds,
-			expectedNamespaces: []string{""},
-		},
-		{
-			description: "deploy without actual tags",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
-			helm:   testDeployWithoutTags,
-			builds: testBuilds,
-			expectedWarnings: []string{
-				"See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration",
-				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
-			},
 			expectedNamespaces: []string{""},
 		},
 		{
@@ -999,23 +861,16 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all other --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade other examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade other examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRun("helm --kube-context kubecontext get all other --template {{.Release.Manifest}} --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testTwoReleases,
 			builds:             testBuilds,
-			expectedNamespaces: []string{""},
-		},
-		{
-			description:        "debug for helm3.0 failure",
-			commands:           testutil.CmdRunWithOutput("helm version --client", version30),
-			shouldErr:          true,
-			helm:               testDeployConfig,
-			builds:             testBuilds,
-			configure:          func(deployer *Deployer) { deployer.enableDebug = true },
 			expectedNamespaces: []string{""},
 		},
 		{
@@ -1024,8 +879,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm --post-renderer SKAFFOLD-BINARY examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
-					[]string{"SKAFFOLD_FILENAME=test.yaml"}).
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --debugging --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
@@ -1049,7 +904,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version32).
 				AndRunErr("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext install skaffold-helm examples/test --namespace testReleaseNamespace --create-namespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testReleaseNamespace --create-namespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployCreateNamespaceConfig,
 			builds:             testBuilds,
@@ -1061,7 +917,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version32).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseNamespace --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --namespace testReleaseNamespace --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployCreateNamespaceConfig,
 			builds:             testBuilds,
@@ -1071,6 +928,7 @@ func TestHelmDeploy(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&writeBuildArtifactsFunc, func([]graph.Artifact) (string, func(), error) { return "TMPFILE", func() {}, nil })
 			t.Override(&client.Client, deployutil.MockK8sClient)
 			fakeWarner := &warnings.Collect{}
 			env := test.env
@@ -1270,7 +1128,7 @@ func TestHelmDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version30))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
 			tmpDir := t.NewTempDir().Touch(test.files...)
 			var local, remote string
 			if test.remote {
@@ -1285,7 +1143,6 @@ func TestHelmDependencies(t *testing.T) {
 					ChartPath:             local,
 					RemoteChart:           remote,
 					ValuesFiles:           test.valuesFiles,
-					ArtifactOverrides:     map[string]string{"image": "skaffold-helm"},
 					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
@@ -1388,7 +1245,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
 			builds: []graph.Artifact{
 				{
@@ -1401,7 +1258,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRunWithOutput("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --kubeconfig kubeconfig",
+				AndRunWithOutput("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig",
 					"Dummy Output"),
 			helm:       testDeployConfig,
 			outputFile: "dummy.yaml",
@@ -1417,7 +1274,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfigTemplated,
 			builds: []graph.Artifact{
 				{
@@ -1430,7 +1287,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfigValuesFilesTemplated,
 			builds: []graph.Artifact{
 				{
@@ -1450,7 +1307,7 @@ func TestHelmRender(t *testing.T) {
 			env:         []string{"USER=user"},
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedName,
 			builds: testBuilds,
 		},
@@ -1458,7 +1315,7 @@ func TestHelmRender(t *testing.T) {
 			description: "render with namespace",
 			shouldErr:   false,
 			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
 			helm: testDeployNamespacedConfig,
 			builds: []graph.Artifact{
 				{
@@ -1470,7 +1327,7 @@ func TestHelmRender(t *testing.T) {
 			description: "render with namespace",
 			shouldErr:   false,
 			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
 			helm: testDeployEnvTemplateNamespacedConfig,
 			builds: []graph.Artifact{
 				{
@@ -1482,7 +1339,7 @@ func TestHelmRender(t *testing.T) {
 			description: "render with remote repo",
 			shouldErr:   false,
 			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
 			helm: testDeployConfigRemoteRepo,
 			builds: []graph.Artifact{
 				{
@@ -1510,7 +1367,7 @@ func TestHelmRender(t *testing.T) {
 			namespace:   "clinamespace",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
 			builds: []graph.Artifact{
 				{
@@ -1524,7 +1381,7 @@ func TestHelmRender(t *testing.T) {
 			namespace:   "clinamespace",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
 			helm: testDeployNamespacedConfig,
 			builds: []graph.Artifact{
 				{
@@ -1541,6 +1398,7 @@ func TestHelmRender(t *testing.T) {
 			}
 
 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
+			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&util.DefaultExecCommand, test.commands)
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
@@ -1593,29 +1451,36 @@ func TestWriteBuildArtifacts(t *testing.T) {
 	}
 }
 
-func TestGenerateSkaffoldDebugFilter(t *testing.T) {
+func TestGenerateSkaffoldFilter(t *testing.T) {
 	tests := []struct {
 		description string
+		enableDebug bool
 		buildFile   string
 		result      []string
 	}{
 		{
 			description: "empty buildfile is skipped",
 			buildFile:   "",
-			result:      []string{"filter", "--debugging", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
+			result:      []string{"filter", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
 		},
 		{
 			description: "buildfile is added",
 			buildFile:   "buildfile",
-			result:      []string{"filter", "--debugging", "--kube-context", "kubecontext", "--build-artifacts", "buildfile", "--kubeconfig", "kubeconfig"},
+			result:      []string{"filter", "--kube-context", "kubecontext", "--build-artifacts", "buildfile", "--kubeconfig", "kubeconfig"},
+		},
+		{
+			description: "debugging brings --debugging",
+			enableDebug: true,
+			result:      []string{"filter", "--kube-context", "kubecontext", "--debugging", "--kubeconfig", "kubeconfig"},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
 			h, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			h.enableDebug = test.enableDebug
 			t.RequireNoError(err)
-			result := h.generateSkaffoldDebugFilter(test.buildFile)
+			result := h.generateSkaffoldFilter(test.buildFile)
 			t.CheckDeepEqual(test.result, result)
 		})
 	}
