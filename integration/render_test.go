@@ -274,9 +274,6 @@ func TestHelmRender(t *testing.T) {
 			helmReleases: []latestV2.HelmRelease{{
 				Name:      "gke_loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
-				ArtifactOverrides: map[string]string{
-					"image": "gke-loadbalancer",
-				},
 			}},
 			expectedOut: `---
 # Source: loadbalancer-helm/templates/k8s.yaml
@@ -332,9 +329,6 @@ spec:
 			helmReleases: []latestV2.HelmRelease{{
 				Name:      "skaffold-helm",
 				ChartPath: "testdata/helm/skaffold-helm",
-				ArtifactOverrides: map[string]string{
-					"image": "gcr.io/k8s-skaffold/skaffold-helm",
-				},
 				SetValues: map[string]string{
 					"pullPolicy": "Always",
 				},
