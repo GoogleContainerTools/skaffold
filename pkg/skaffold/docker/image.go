@@ -367,7 +367,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if err := streamDockerMessages(out, resp.Body, auxCallback); err != nil {
 		var jm *jsonmessage.JSONError
 		if errors.As(err, &jm) {
-			return "", err
+			return "", fmt.Errorf("docker build failure: %w", err)
 		}
 		return "", fmt.Errorf("unable to stream build output: %w", err)
 	}
