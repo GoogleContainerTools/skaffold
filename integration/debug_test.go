@@ -69,6 +69,12 @@ func TestDebug(t *testing.T) {
 			deployments:   []string{"skaffold-helm"},
 			ignoreWorkdir: true, // dockerfile doesn't have a workdir
 		},
+		{
+			description:   "modules",
+			dir:           "examples/multi-config-microservices",
+			deployments:   []string{"leeroy-web", "leeroy-app"},
+			ignoreWorkdir: true, // dockerfile doesn't have a workdir
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
