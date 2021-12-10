@@ -420,7 +420,7 @@ Go, Python, and JavaScript debugging in IDEA Ultimate requires the
 corresponding language plugin to be installed. If it is not installed,
 the debugger will not attach and breakpoints will not be hit.
 
-**Breakpoints on startup path are not hit.**
+**Breakpoints are not hit during program startup.**
 Skaffold configures the containers to run-on-start (sometimes called
 _continue_ mode), such that the containers do not wait for the
 debugger to connect.  The container will have likely finished its
@@ -429,10 +429,10 @@ the breakpoints, and so breakpoints in the normal startup path are
 unlikely to be hit.
 
 **File mapping misconfiguration between local and container filesystems.**
-IDE debugger integrations generally require configuring a _source map_
+Some language runtimes require configuring the IDE with a _source map_
 to map files in the container to their corresponding local files.
 If this mapping is incorrect, then the remote debugging runtime
-will not be able to find the source file for the breakpoint.
+will not be able to find the source file for the breakpoint. The Cloud Code plugins generally prompt the user when required.
 
 - Some builds use multi-stage dockerfiles to compile the binary using
   a build-time image and then copy the binary into a smaller image
