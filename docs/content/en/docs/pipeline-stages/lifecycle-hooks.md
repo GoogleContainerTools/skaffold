@@ -105,6 +105,7 @@ $SKAFFOLD_DEFAULT_REPO | The resolved default repository | All
 $SKAFFOLD_RPC_PORT | TCP port to expose event API | All
 $SKAFFOLD_HTTP_PORT | TCP port to expose event REST API over HTTP | All
 $SKAFFOLD_KUBE_CONTEXT | The resolved Kubernetes context | Sync, Deploy
+$SKAFFOLD_MULTI_LEVEL_REPO | The multi-level support of the repository | All
 $SKAFFOLD_NAMESPACES | Comma separated list of Kubernetes namespaces | Sync, Deploy
 $SKAFFOLD_WORK_DIR | The workspace root directory | All
 Local environment variables | The current state of the local environment (e.g. $HOST, $PATH). Determined by the golang os.Environ function. | All

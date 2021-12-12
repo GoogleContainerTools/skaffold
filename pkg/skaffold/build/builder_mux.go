@@ -41,6 +41,7 @@ type BuilderMux struct {
 type Config interface {
 	GetPipelines() []latestV1.Pipeline
 	DefaultRepo() *string
+	MultiLevelRepo() *bool
 	GlobalConfig() string
 	BuildConcurrency() int
 }

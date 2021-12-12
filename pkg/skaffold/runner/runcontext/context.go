@@ -189,6 +189,7 @@ func (rc *RunContext) ConfigurationFile() string                     { return rc
 func (rc *RunContext) CustomLabels() []string                        { return rc.Opts.CustomLabels }
 func (rc *RunContext) CustomTag() string                             { return rc.Opts.CustomTag }
 func (rc *RunContext) DefaultRepo() *string                          { return rc.Opts.DefaultRepo.Value() }
+func (rc *RunContext) MultiLevelRepo() *bool                         { return rc.Opts.MultiLevelRepo }
 func (rc *RunContext) Mode() config.RunMode                          { return rc.Opts.Mode() }
 func (rc *RunContext) DigestSource() string                          { return rc.Opts.DigestSource }
 func (rc *RunContext) DryRun() bool                                  { return rc.Opts.DryRun }

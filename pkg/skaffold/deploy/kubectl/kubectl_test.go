@@ -691,8 +691,9 @@ spec:
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
 				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
 			deployer, err := NewDeployer(&kubectlConfig{
-				workingDir:  ".",
-				defaultRepo: "gcr.io/project",
+				workingDir:     ".",
+				defaultRepo:    "gcr.io/project",
+				multiLevelRepo: util.BoolPtr(true),
 			}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{
 				Manifests: []string{tmpDir.Path("deployment.yaml")},
 			})
@@ -788,6 +789,7 @@ type kubectlConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	workingDir            string
 	defaultRepo           string
+	multiLevelRepo        *bool
 	skipRender            bool
 	force                 bool
 	waitForDeletions      config.WaitForDeletions
@@ -799,5 +801,6 @@ func (c *kubectlConfig) WorkingDir() string                                    {
 func (c *kubectlConfig) SkipRender() bool                                      { return c.skipRender }
 func (c *kubectlConfig) ForceDeploy() bool                                     { return c.force }
 func (c *kubectlConfig) DefaultRepo() *string                                  { return &c.defaultRepo }
+func (c *kubectlConfig) MultiLevelRepo() *bool                                 { return c.multiLevelRepo }
 func (c *kubectlConfig) WaitForDeletions() config.WaitForDeletions             { return c.waitForDeletions }
 func (c *kubectlConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }

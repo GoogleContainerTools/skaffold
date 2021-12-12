@@ -33,7 +33,7 @@ var (
 	prefixRegex = regexp.MustCompile(`^` + reference.DomainRegexp.String() + `/` + gcpProjectIDRegex + `/?`)
 )
 
-func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
+func SubstituteDefaultRepoIntoImage(defaultRepo string, multiLevelRepo *bool, image string) (string, error) {
 	if defaultRepo == "" {
 		return image, nil
 	}
@@ -43,7 +43,7 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 		return "", err
 	}
 
-	replaced := replace(defaultRepo, parsed.BaseName)
+	replaced := replace(defaultRepo, multiLevelRepo, parsed.BaseName)
 	if parsed.Tag != "" {
 		replaced = replaced + ":" + parsed.Tag
 	}
@@ -54,13 +54,13 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 	return replaced, nil
 }
 
-func replace(defaultRepo string, baseImage string) string {
+func replace(defaultRepo string, multiLevelRepo *bool, baseImage string) string {
 	if strings.HasPrefix(baseImage, defaultRepo) {
 		return baseImage
 	}
 	originalPrefix := prefixRegex.FindString(baseImage)
 	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
-	if registrySupportsMultiLevelRepos(defaultRepoPrefix) {
+	if registrySupportsMultiLevelRepos(defaultRepoPrefix, multiLevelRepo) {
 		// prefixes match
 		if originalPrefix == defaultRepoPrefix {
 			return defaultRepo + "/" + baseImage[len(originalPrefix):]
@@ -72,8 +72,14 @@ func replace(defaultRepo string, baseImage string) string {
 	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(baseImage, "_"))
 }
 
-func registrySupportsMultiLevelRepos(repo string) bool {
-	return strings.Contains(repo, "gcr.io") || strings.Contains(repo, "-docker.pkg.dev")
+func registrySupportsMultiLevelRepos(repo string, multiLevelRepo *bool) bool {
+	if strings.Contains(repo, "gcr.io") || strings.Contains(repo, "-docker.pkg.dev") {
+		return true
+	}
+	if multiLevelRepo != nil {
+		return *multiLevelRepo
+	}
+	return false
 }
 
 func truncate(image string) string {

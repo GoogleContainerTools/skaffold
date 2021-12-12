@@ -104,6 +104,7 @@ func (m *mockConfig) DefaultRepo() *string {
 	}
 	return nil
 }
+func (m *mockConfig) MultiLevelRepo() *bool { return nil }
 func (m *mockConfig) BuildConcurrency() int { return -1 }
 
 type mockPipelineBuilder struct {

@@ -47,12 +47,14 @@ func TestList(t *testing.T) {
 					{
 						Kubecontext:        "another_context",
 						DefaultRepo:        "other-value",
+						MultiLevelRepo:     util.BoolPtr(false),
 						LocalCluster:       util.BoolPtr(false),
 						InsecureRegistries: []string{"good.io", "better.io"},
 					},
 					{
 						Kubecontext:        "this_is_a_context",
 						DefaultRepo:        "value",
+						MultiLevelRepo:     util.BoolPtr(true),
 						LocalCluster:       util.BoolPtr(true),
 						InsecureRegistries: []string{"bad.io", "worse.io"},
 					},
@@ -60,6 +62,7 @@ func TestList(t *testing.T) {
 			},
 			expectedOutput: `kube-context: this_is_a_context
 default-repo: value
+multi-level-repo: true
 local-cluster: true
 insecure-registries:
 - bad.io
@@ -72,6 +75,7 @@ insecure-registries:
 			cfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo:        "default-repo-value",
+					MultiLevelRepo:     util.BoolPtr(true),
 					LocalCluster:       util.BoolPtr(true),
 					InsecureRegistries: []string{"mediocre.io"},
 				},
@@ -83,6 +87,7 @@ insecure-registries:
 				},
 			},
 			expectedOutput: `default-repo: default-repo-value
+multi-level-repo: true
 local-cluster: true
 insecure-registries:
 - mediocre.io
@@ -94,6 +99,7 @@ insecure-registries:
 			cfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo:        "default-repo-value",
+					MultiLevelRepo:     util.BoolPtr(true),
 					LocalCluster:       util.BoolPtr(true),
 					InsecureRegistries: []string{"mediocre.io"},
 				},
@@ -107,6 +113,7 @@ insecure-registries:
 			expectedOutput: `
 global:
   default-repo: default-repo-value
+  multi-level-repo: true
   local-cluster: true
   insecure-registries:
   - mediocre.io
@@ -121,6 +128,7 @@ kubeContexts:
 			cfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo:        "default-repo-value",
+					MultiLevelRepo:     util.BoolPtr(true),
 					LocalCluster:       util.BoolPtr(true),
 					InsecureRegistries: []string{"mediocre.io"},
 				},
