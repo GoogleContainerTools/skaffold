@@ -45,6 +45,14 @@ entrypoint to invoke your application using `dlv`:
 ```
 dlv exec --headless --continue --accept-multiclient --listen=:56268 --api-version=2 <app> -- <args> ...
 ```
+
+##### Skaffold debug using the JetBrains GoLand and IntelliJ Ultimate
+
+Debugging is only supported in JetBrains IDEs for Go applications built using Go Modules.
+The IDE settings must also be explicitly configured to use Go Modules.  Errors like
+`cannot find debugger path` indicate misconfiguration.
+
+
 ##### Skaffold debug using the VS Code Go extension
 
 If you use the debug functionality of the
@@ -405,16 +413,52 @@ WARN[0005] Image "image-name" not configured for debugging: unable to determine 
 
 See the language runtime section details on how container images are recognized.
 
+### Why aren't my breakpoints being hit?
+
+**Missing required language extension.**
+Go, Python, and JavaScript debugging in IDEA Ultimate requires the
+corresponding language plugin to be installed. If it is not installed,
+the debugger will not attach and breakpoints will not be hit.
+
+**Breakpoints are not hit during program startup.**
+Skaffold configures the containers to run-on-start (sometimes called
+_continue_ mode), such that the containers do not wait for the
+debugger to connect.  The container will have likely finished its
+startup by the time the debugger is able to connect and configure
+the breakpoints, and so breakpoints in the normal startup path are
+unlikely to be hit.
+
+**File mapping misconfiguration between local and container filesystems.**
+Some language runtimes require configuring the IDE with a _source map_
+to map files in the container to their corresponding local files.
+If this mapping is incorrect, then the remote debugging runtime
+will not be able to find the source file for the breakpoint. The Cloud Code plugins generally prompt the user when required.
+
+- Some builds use multi-stage dockerfiles to compile the binary using
+  a build-time image and then copy the binary into a smaller image
+  intended for deployment.  In these cases, the source mapping must
+  use the build-time paths.  For example, many Go builds use a `golang`
+  image for building, where the source files are typically copied into `/go`.
+- JetBrains GoLand and IDEA Ultimate only support remote breakpoints
+  for Go applications built using Go Modules.  The IDE settings must
+  also be explicitly configured to use Go Modules.
+- JVM languages do not require the mapping as the JVM uses class
+  names rather than file paths.
+
 ### Can images be debugged without the runtime support images?
 
 The special [runtime-support images](https://github.com/GoogleContainerTools/container-debug-support)
-are provided as a convenience for automatic configuration.  You can manually configure your images
-for debugging by:
+are provided as a convenience for automatic configuration.  You can
+manually configure your images for debugging by one of the following
+means:
 
-1. Configure your container image to install and invoke the appropriate debugger.
-2. Add a `debug.cloud.google.com/config` workload annotation on the
-   pod-spec to describe the debug configuration of each container image in the pod,
-   as described in [_Workload Annotations_](#workload-annotations).
+- `skaffold debug` usually recognizes already-configured container images
+  that use the appropriate debugger.  For example, you could use a
+  multi-stage Dockerfile with a `debug` stage that invokes the
+  application using the debugger.
+- Use a `debug.cloud.google.com/config` workload annotation on the
+  pod-spec to describe the debug configuration of each container
+  image in the pod, as described in [_Workload Annotations_](#workload-annotations).
 
 ## Limitations
 
