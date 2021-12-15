@@ -32,8 +32,12 @@ OS_VULN_FILE=/workspace/os_vuln.txt
 check_existing_issue() {
   label=$1
   # Returns the open issues. There should be only one issue opened at a time.
-  if [ $(gh issue list --label="$label" --repo="$_REPO" | wc -c) -ne 0 ]; then
-    echo "There is already an issue opened for the vulnerabilities that are found in the LTS images." && exit 0
+  issue_num=$(gh issue list --label="$label" --repo="$_REPO" --json number | grep -oP 'number":\s*\K\d+' | head -n 1)
+
+  if [ "$issue_num" ]; then
+    echo >&2 "There is already an issue opened for the detected vulnerabilities in the LTS images." && echo "$issue_num"
+  else
+    echo "-1"
   fi
 }
 
@@ -44,7 +48,18 @@ create_issue() {
   gh issue create --title="${title}" --label="${label}" --body-file="$body_file" --repo="$_REPO"
 }
 
+update_issue() {
+  num="$1"
+  body_file="$2"
+  gh issue edit "$num" --body-file="$body_file" --repo="$_REPO"
+}
+
 gh auth login --with-token <token.txt
-check_existing_issue "$_OS_VULN_LABEL"
-echo "Creating the issue..."
-create_issue "$TITLE_OS" "$OS_VULN_FILE" "$_OS_VULN_LABEL"
+issue_num=$(check_existing_issue "$_OS_VULN_LABEL")
+if [ "$issue_num" -eq "-1" ]; then
+  echo "Creating an issue..."
+  create_issue "$TITLE_OS" "$OS_VULN_FILE" "$_OS_VULN_LABEL"
+else
+  echo "Updating issue: #""$issue_num"
+  update_issue "$issue_num" "$OS_VULN_FILE"
+fi
