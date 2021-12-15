@@ -1,0 +1,18 @@
+steps:
+- id: Get github token.
+  name: gcr.io/cloud-builders/gcloud
+  entrypoint: 'bash'
+  args: [ '-c', "gcloud secrets versions access latest --secret=lts-image-github-token --format='get(payload.data)' | tr '_-' '/+' | base64 -d > token.txt" ]
+- id: Check vulnerability report.
+  name: gcr.io/cloud-builders/gcloud
+  entrypoint: /bin/bash
+  args:
+  - ./deploy/lts-vuln-monitor/scan.sh
+- id: Report vulnerability.
+  name: 'gcr.io/$PROJECT_ID/github'
+  entrypoint: /bin/bash
+  args:
+  - -c
+  - |
+    if test -f /workspace/os_vuln.txt; \
+    then ./deploy/lts-vuln-monitor/report.sh; fi
