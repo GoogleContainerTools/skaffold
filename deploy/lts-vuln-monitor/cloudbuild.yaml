@@ -1,18 +1,32 @@
 steps:
 - id: Get github token.
   name: gcr.io/cloud-builders/gcloud
-  entrypoint: 'bash'
-  args: [ '-c', "gcloud secrets versions access latest --secret=lts-image-github-token --format='get(payload.data)' | tr '_-' '/+' | base64 -d > token.txt" ]
+  entrypoint: /bin/bash
+  args: [ '-c', "gcloud secrets versions access latest --secret=$_GITHUB_TOKEN --format='get(payload.data)' | tr '_-' '/+' | base64 -d > token.txt" ]
 - id: Check vulnerability report.
   name: gcr.io/cloud-builders/gcloud
   entrypoint: /bin/bash
   args:
   - ./deploy/lts-vuln-monitor/scan.sh
+  env:
+  - 'PROJECT_ID=$PROJECT_ID'
+  - '_IMAGE=$_IMAGE'
+  - '_TAG_FILTER=$_TAG_FILTER'
+  - '_SEVERITIES=$_SEVERITIES'
 - id: Report vulnerability.
   name: 'gcr.io/$PROJECT_ID/github'
   entrypoint: /bin/bash
   args:
   - -c
   - |
-    if test -f /workspace/os_vuln.txt; \
-    then ./deploy/lts-vuln-monitor/report.sh; fi
+    if test -f /workspace/os_vuln.txt; then ./deploy/lts-vuln-monitor/report.sh; fi
+  env:
+  - '_OS_VULN_LABEL=$_OS_VULN_LABEL'
+  - '_REPO=$_REPO'
+substitutions:
+  _IMAGE: skaffold
+  _TAG_FILTER: v*lts
+  _SEVERITIES: HIGH CRITICAL
+  _OS_VULN_LABEL: lts os vuln
+  _REPO: GoogleContainerTools/skaffold
+  _GITHUB_TOKEN: LTS_IMAGE_GITHUB_TOKEN

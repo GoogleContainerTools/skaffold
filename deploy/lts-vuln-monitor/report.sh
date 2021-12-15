@@ -16,7 +16,7 @@
 # This script creates a github issue if it hasn't been created when there
 # are vulnerabilities found in the LTS image.
 
-set -x
+set -xeo pipefail
 
 # Variables that will be substituted in cloudbuild.yaml.
 if [ -z "$_OS_VULN_LABEL" ]; then
@@ -31,6 +31,7 @@ OS_VULN_FILE=/workspace/os_vuln.txt
 
 check_existing_issue() {
   label=$1
+  # Returns the open issues. There should be only one issue opened at a time.
   if [ $(gh issue list --label="$label" --repo="$_REPO" | wc -c) -ne 0 ]; then
     echo "There is already an issue opened for the vulnerabilities that are found in the LTS images." && exit 0
   fi
