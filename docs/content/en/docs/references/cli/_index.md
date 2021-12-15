@@ -328,6 +328,9 @@ Examples:
   # Globally set the default image repository
   skaffold config set default-repo <myrepo>
 
+  # Globally set multi-level repo support
+  skaffold config set multi-level-repo true
+
   # Disable pushing images for a given Kubernetes context
   skaffold config set --kube-context <mycluster> local-cluster true
 

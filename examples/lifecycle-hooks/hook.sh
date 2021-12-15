@@ -3,6 +3,7 @@
 cat << EOF
 Build specification:
     DefaultRepo:    $SKAFFOLD_DEFAULT_REPO
+    MultiLevelRepo: $SKAFFOLD_MULTI_LEVEL_REPO
     RPCPort:        $SKAFFOLD_RPC_PORT
     HTTPPort:       $SKAFFOLD_HTTP_PORT
     WorkDir:        $SKAFFOLD_WORK_DIR

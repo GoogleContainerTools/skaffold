@@ -34,7 +34,8 @@ import (
 func TestReadConfig(t *testing.T) {
 	baseConfig := &GlobalConfig{
 		Global: &ContextConfig{
-			DefaultRepo: "test-repository",
+			DefaultRepo:    "test-repository",
+			MultiLevelRepo: util.BoolPtr(false),
 		},
 		ContextConfigs: []*ContextConfig{
 			{
@@ -42,6 +43,7 @@ func TestReadConfig(t *testing.T) {
 				InsecureRegistries: []string{"bad.io", "worse.io"},
 				LocalCluster:       util.BoolPtr(true),
 				DefaultRepo:        "context-local-repository",
+				MultiLevelRepo:     util.BoolPtr(true),
 			},
 		},
 	}
@@ -106,11 +108,13 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 		InsecureRegistries: []string{"bad.io", "worse.io"},
 		LocalCluster:       util.BoolPtr(true),
 		DefaultRepo:        "my-private-registry",
+		MultiLevelRepo:     util.BoolPtr(true),
 	}
 	sampleConfig2 := &ContextConfig{
-		Kubecontext:  "another_context",
-		LocalCluster: util.BoolPtr(false),
-		DefaultRepo:  "my-public-registry",
+		Kubecontext:    "another_context",
+		LocalCluster:   util.BoolPtr(false),
+		DefaultRepo:    "my-public-registry",
+		MultiLevelRepo: util.BoolPtr(false),
 	}
 
 	tests := []struct {
@@ -126,6 +130,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 					InsecureRegistries: []string{"mediocre.io"},
 					LocalCluster:       util.BoolPtr(true),
 					DefaultRepo:        "my-private-registry",
+					MultiLevelRepo:     util.BoolPtr(true),
 				},
 				ContextConfigs: []*ContextConfig{
 					{
@@ -138,6 +143,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 				InsecureRegistries: []string{"mediocre.io"},
 				LocalCluster:       util.BoolPtr(true),
 				DefaultRepo:        "my-private-registry",
+				MultiLevelRepo:     util.BoolPtr(true),
 			},
 		},
 		{
@@ -182,9 +188,10 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 				},
 			},
 			expectedConfig: &ContextConfig{
-				Kubecontext:  someKubeContext,
-				LocalCluster: util.BoolPtr(false),
-				DefaultRepo:  "my-public-registry",
+				Kubecontext:    someKubeContext,
+				LocalCluster:   util.BoolPtr(false),
+				DefaultRepo:    "my-public-registry",
+				MultiLevelRepo: util.BoolPtr(false),
 			},
 		},
 		{
@@ -192,9 +199,10 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			kubecontext: someKubeContext,
 			cfg:         &GlobalConfig{Global: sampleConfig2},
 			expectedConfig: &ContextConfig{
-				Kubecontext:  someKubeContext,
-				LocalCluster: util.BoolPtr(false),
-				DefaultRepo:  "my-public-registry",
+				Kubecontext:    someKubeContext,
+				LocalCluster:   util.BoolPtr(false),
+				DefaultRepo:    "my-public-registry",
+				MultiLevelRepo: util.BoolPtr(false),
 			},
 		},
 		{
@@ -495,6 +503,36 @@ func TestGetDefaultRepo(t *testing.T) {
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
+		})
+	}
+}
+
+func TestGetMultiLevelRepo(t *testing.T) {
+	tests := []struct {
+		description   string
+		cfg           *ContextConfig
+		expectedValue *bool
+		shouldErr     bool
+	}{
+		{
+			description:   "empty",
+			cfg:           &ContextConfig{},
+			expectedValue: (*bool)(nil),
+		},
+		{
+			description:   "from global config",
+			cfg:           &ContextConfig{MultiLevelRepo: util.BoolPtr(true)},
+			expectedValue: util.BoolPtr(true),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+
+			multiLevelRepo, err := GetMultiLevelRepo("config")
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedValue, multiLevelRepo)
 		})
 	}
 }
