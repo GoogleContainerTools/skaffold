@@ -107,7 +107,7 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 		return nil, sErrors.ConfigParsingError(err)
 	}
 
-	if !util.IsURL(cfgOpts.file) && !filepath.IsAbs(cfgOpts.file) {
+	if !util.IsURL(cfgOpts.file) && !filepath.IsAbs(cfgOpts.file) && cfgOpts.file != "-" {
 		cwd, _ := util.RealWorkDir()
 		// convert `file` path to absolute value as it's used as a map key in several places.
 		cfgOpts.file = filepath.Join(cwd, cfgOpts.file)

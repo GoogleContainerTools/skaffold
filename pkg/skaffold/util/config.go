@@ -25,6 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
+var stdin []byte
+
 // ReadConfiguration reads a `skaffold.yaml` configuration and
 // returns its content.
 func ReadConfiguration(filename string) ([]byte, error) {
@@ -32,7 +34,14 @@ func ReadConfiguration(filename string) ([]byte, error) {
 	case filename == "":
 		return nil, errors.New("filename not specified")
 	case filename == "-":
-		return ioutil.ReadAll(os.Stdin)
+		if len(stdin) == 0 {
+			var err error
+			stdin, err = ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				return []byte{}, err
+			}
+		}
+		return stdin, nil
 	case IsURL(filename):
 		return Download(filename)
 	default:
