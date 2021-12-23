@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	cnb "github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/launch"
+	cnb "github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"

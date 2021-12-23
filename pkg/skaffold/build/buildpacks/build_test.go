@@ -22,9 +22,10 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/buildpacks/pack"
-	packcfg "github.com/buildpacks/pack/config"
+	pack "github.com/buildpacks/pack/pkg/client"
+	packcfg "github.com/buildpacks/pack/pkg/image"
 	"github.com/docker/docker/api/types"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -95,13 +96,12 @@ func TestBuild(t *testing.T) {
 			resolver:    mockArtifactResolver{},
 			mode:        config.RunModes.Debug,
 			expectedOptions: &pack.BuildOptions{
-				AppPath:      ".",
-				Builder:      "my/otherBuilder",
-				RunImage:     "my/otherRun",
-				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
-				TrustBuilder: true,
-				Env:          debugModeArgs,
-				Image:        "img:latest",
+				AppPath:    ".",
+				Builder:    "my/otherBuilder",
+				RunImage:   "my/otherRun",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Env:        debugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -112,14 +112,13 @@ func TestBuild(t *testing.T) {
 			resolver:    mockArtifactResolver{},
 			mode:        config.RunModes.Build,
 			expectedOptions: &pack.BuildOptions{
-				AppPath:      ".",
-				Builder:      "my/otherBuilder",
-				RunImage:     "my/otherRun",
-				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
-				TrustBuilder: true,
-				PullPolicy:   packcfg.PullNever,
-				Env:          nonDebugModeArgs,
-				Image:        "img:latest",
+				AppPath:    ".",
+				Builder:    "my/otherBuilder",
+				RunImage:   "my/otherRun",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -283,7 +282,7 @@ value = "VALUE2"
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {
-				t.CheckDeepEqual(*test.expectedOptions, pack.Opts)
+				t.CheckDeepEqual(*test.expectedOptions, pack.Opts, ignoreField("ProjectDescriptor.SchemaVersion"), ignoreField("TrustBuilder"))
 			}
 		})
 	}
@@ -424,7 +423,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {
-				t.CheckDeepEqual(*test.expectedOptions, pack.Opts)
+				t.CheckDeepEqual(*test.expectedOptions, pack.Opts, ignoreField("ProjectDescriptor.SchemaVersion"), ignoreField("TrustBuilder"))
 			}
 		})
 	}
@@ -489,4 +488,10 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 }
 func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
 	return nil, nil
+}
+
+func ignoreField(path string) cmp.Option {
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		return p.String() == path
+	}, cmp.Ignore())
 }
