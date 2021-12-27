@@ -7,8 +7,10 @@ build:
       before:
         - command: ["sh", "-c", "./hook.sh"]
           os: [darwin, linux]
+          dir: .
         - command: ["cmd.exe", "/C", "hook.bat"]
           os: [windows]
+          dir: .
       after:
         - command: ["sh", "-c", "docker images $SKAFFOLD_IMAGE --digests"]
           os: [darwin, linux]

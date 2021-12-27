@@ -1465,6 +1465,9 @@ type HostHook struct {
 	Command []string `yaml:"command" yamltags:"required"`
 	// OS is an optional slice of operating system names. If the host machine OS is different, then it skips execution.
 	OS []string `yaml:"os,omitempty"`
+	// Dir specifies the working directory of the command.
+	// If empty, the command runs in the calling process's current directory.
+	Dir string `yaml:"dir,omitempty" skaffold:"filepath"`
 }
 
 // ContainerHook describes a lifecycle hook definition to execute on a container. The container name is inferred from the scope in which this hook is defined.
