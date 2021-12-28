@@ -159,7 +159,11 @@ func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 }
 
 func (rc *RunContext) SkipTests() bool {
-	return rc.Opts.SkipTests || len(rc.TestCases()) == 0
+	return rc.Opts.SkipTests
+}
+
+func (rc *RunContext) IsTestPhaseActive() bool {
+	return !rc.SkipTests() && len(rc.TestCases()) != 0
 }
 
 func (rc *RunContext) TransformableAllowList() []latestV1.ResourceFilter {
