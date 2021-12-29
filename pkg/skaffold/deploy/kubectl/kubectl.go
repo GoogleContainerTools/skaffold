@@ -40,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	k8slogger "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
@@ -170,6 +171,17 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
+	kubeConfigNew, err := kubectx.CurrentConfig()
+
+	if err != nil {
+		return fmt.Errorf("getting current cluster context: %w", err)
+	}
+	kubeContextNew := kubeConfigNew.CurrentContext
+	clusterName, exists := kubeConfigNew.Contexts[kubeContextNew]
+	if !exists {
+		return fmt.Errorf("error finding context: %w", err)
+	}
+	output.Default.Fprintf(out, "Using kubectl context: %s\nUsing cluster: %s\n", kubeContextNew, clusterName.Cluster)
 
 	// Check that the cluster is reachable.
 	// This gives a better error message when the cluster can't

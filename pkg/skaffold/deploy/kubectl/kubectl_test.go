@@ -32,6 +32,7 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -487,7 +488,15 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		})
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
+
+		kubeConfigNew, err := kubectx.CurrentConfig()
+		t.CheckNoError(err)
+		kubeContextNew := kubeConfigNew.CurrentContext
+		clusterName, exists := kubeConfigNew.Contexts[kubeContextNew]
+		t.CheckTrue(exists)
+		t.CheckDeepEqual(`Using kubectl context: `+kubeContextNew+`
+Using cluster: `+clusterName.Cluster+`
+ - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
  - "leeroy-web" is marked for deletion, waiting for completion
 `, out.String())
 	})
