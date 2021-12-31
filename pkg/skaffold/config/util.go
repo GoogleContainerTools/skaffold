@@ -254,7 +254,7 @@ func GetCluster(ctx context.Context, configFile string, defaultRepo StringOrUnde
 		registry, err := DiscoverLocalRegistry(ctx, kubeContext)
 		switch {
 		case err != nil:
-			log.Entry(context.TODO()).Infof("failed to discover registry %v", err)
+			log.Entry(context.TODO()).Infof("failed to discover local registry %v", err)
 		case registry != nil:
 			log.Entry(context.TODO()).Infof("using default-repo=%s from cluster configmap", *registry)
 			return Cluster{
@@ -350,7 +350,6 @@ func DiscoverLocalRegistry(ctx context.Context, kubeContext string) (*string, er
 	statusErr := &api_errors.StatusError{}
 	switch {
 	case errors.As(err, &statusErr) && statusErr.Status().Code == http.StatusNotFound:
-		log.Entry(context.TODO()).Infof("kube-public/local-registry-hosting configmap not found")
 		return nil, nil
 	case err != nil:
 		return nil, err
@@ -358,7 +357,7 @@ func DiscoverLocalRegistry(ctx context.Context, kubeContext string) (*string, er
 
 	data, ok := configMap.Data["localRegistryHosting.v1"]
 	if !ok {
-		return nil, errors.New("local-registry hosting ConfigMap has invalid structure")
+		return nil, errors.New("invalid local-registry-hosting ConfigMap")
 	}
 
 	dst := struct {
@@ -366,7 +365,7 @@ func DiscoverLocalRegistry(ctx context.Context, kubeContext string) (*string, er
 	}{}
 
 	if err := yaml.Unmarshal([]byte(data), &dst); err != nil {
-		return nil, err
+		return nil, errors.New("invalid local-registry-hosting ConfigMap")
 	}
 
 	return &dst.Host, nil
