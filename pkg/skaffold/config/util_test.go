@@ -290,6 +290,7 @@ func (fakeClient) MinikubeExec(context.Context, ...string) (*exec.Cmd, error) { 
 func TestGetCluster(t *testing.T) {
 	var registry = "localhost:5000"
 	var registryConfig = `host: "localhost:5000"`
+	var defaultRepo = "localhost:4000"
 
 	tests := []struct {
 		description    string
@@ -309,6 +310,12 @@ func TestGetCluster(t *testing.T) {
 			cfg:            &ContextConfig{Kubecontext: "kind-other"},
 			registryConfig: registryConfig,
 			expected:       Cluster{Local: true, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&registry)},
+		},
+		{
+			description: "kind with default-repo=localhost:4000",
+			cfg:         &ContextConfig{Kubecontext: "kind-other"},
+			defaultRepo: NewStringOrUndefined(&defaultRepo),
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false, DefaultRepo: NewStringOrUndefined(&defaultRepo)},
 		},
 		{
 			description: "kind with local-cluster=false",

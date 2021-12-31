@@ -246,8 +246,8 @@ func GetCluster(ctx context.Context, configFile string, defaultRepo StringOrUnde
 		local = false
 	}
 
-	if defaultRepo.Value() != nil && config.DefaultRepo != "" {
-		defaultRepo = NewStringOrUndefined(&config.DefaultRepo)
+	if defaultRepo.Value() != nil && cfg.DefaultRepo != "" {
+		defaultRepo = NewStringOrUndefined(&cfg.DefaultRepo)
 	}
 
 	if local && defaultRepo.Value() == nil {
