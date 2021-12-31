@@ -18,8 +18,10 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -27,9 +29,12 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
+	api_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubeclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -210,7 +215,7 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-func GetCluster(ctx context.Context, configFile string, minikubeProfile string, detectMinikube bool) (Cluster, error) {
+func GetCluster(ctx context.Context, configFile string, defaultRepo StringOrUndefined, minikubeProfile string, detectMinikube bool) (Cluster, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
 		return Cluster{}, err
@@ -241,6 +246,26 @@ func GetCluster(ctx context.Context, configFile string, minikubeProfile string, 
 		local = false
 	}
 
+	if defaultRepo.Value() != nil && config.DefaultRepo != "" {
+		defaultRepo = NewStringOrUndefined(&config.DefaultRepo)
+	}
+
+	if local && defaultRepo.Value() == nil {
+		registry, err := DiscoverLocalRegistry(ctx, kubeContext)
+		switch {
+		case err != nil:
+			log.Entry(context.TODO()).Infof("failed to discover registry %v", err)
+		case registry != nil:
+			log.Entry(context.TODO()).Infof("using default-repo=%s from cluster configmap", *registry)
+			return Cluster{
+				Local:       local,
+				LoadImages:  false,
+				PushImages:  true,
+				DefaultRepo: NewStringOrUndefined(registry),
+			}, nil
+		}
+	}
+
 	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
 	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
 
@@ -251,9 +276,10 @@ func GetCluster(ctx context.Context, configFile string, minikubeProfile string, 
 	pushImages := !local || (isKindCluster && kindDisableLoad) || (isK3dCluster && k3dDisableLoad)
 
 	return Cluster{
-		Local:      local,
-		LoadImages: loadImages,
-		PushImages: pushImages,
+		Local:       local,
+		LoadImages:  loadImages,
+		PushImages:  pushImages,
+		DefaultRepo: defaultRepo,
 	}, nil
 }
 
@@ -311,6 +337,39 @@ func K3dClusterName(clusterName string) string {
 		return strings.TrimPrefix(clusterName, "k3d-")
 	}
 	return clusterName
+}
+
+func DiscoverLocalRegistry(ctx context.Context, kubeContext string) (*string, error) {
+	clientset, err := kubeclient.Client(kubeContext)
+	if err != nil {
+		return nil, err
+	}
+
+	configMap, err := clientset.CoreV1().ConfigMaps("kube-public").Get(ctx, "local-registry-hosting", api_v1.GetOptions{})
+
+	statusErr := &api_errors.StatusError{}
+	switch {
+	case errors.As(err, &statusErr) && statusErr.Status().Code == http.StatusNotFound:
+		log.Entry(context.TODO()).Infof("kube-public/local-registry-hosting configmap not found")
+		return nil, nil
+	case err != nil:
+		return nil, err
+	}
+
+	data, ok := configMap.Data["localRegistryHosting.v1"]
+	if !ok {
+		return nil, errors.New("local-registry hosting ConfigMap has invalid structure")
+	}
+
+	dst := struct {
+		Host string `yaml:"host"`
+	}{}
+
+	if err := yaml.Unmarshal([]byte(data), &dst); err != nil {
+		return nil, err
+	}
+
+	return &dst.Host, nil
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {

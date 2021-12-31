@@ -26,9 +26,14 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
+	kubeclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestReadConfig(t *testing.T) {
@@ -282,16 +287,27 @@ func (fakeClient) IsMinikube(ctx context.Context, kubeContext string) bool {
 func (fakeClient) MinikubeExec(context.Context, ...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestGetCluster(t *testing.T) {
+	var registry = "localhost:5000"
+	var registryConfig = `host: "localhost:5000"`
+
 	tests := []struct {
-		description string
-		cfg         *ContextConfig
-		profile     string
-		expected    Cluster
+		description    string
+		cfg            *ContextConfig
+		defaultRepo    StringOrUndefined
+		profile        string
+		registryConfig string
+		expected       Cluster
 	}{
 		{
 			description: "kind",
 			cfg:         &ContextConfig{Kubecontext: "kind-other"},
 			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			description:    "kind with registry config",
+			cfg:            &ContextConfig{Kubecontext: "kind-other"},
+			registryConfig: registryConfig,
+			expected:       Cluster{Local: true, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&registry)},
 		},
 		{
 			description: "kind with local-cluster=false",
@@ -372,13 +388,31 @@ func TestGetCluster(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			ctx := context.Background()
+			fakeKubeClient := fake.NewSimpleClientset()
+
+			if test.registryConfig != "" {
+				configMap := &v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "local-registry-hosting",
+					},
+					Data: map[string]string{
+						"localRegistryHosting.v1": test.registryConfig,
+					},
+				}
+
+				_, err := fakeKubeClient.CoreV1().ConfigMaps("kube-public").Create(ctx, configMap, metav1.CreateOptions{})
+				t.CheckError(false, err)
+			}
+
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
+			t.Override(&kubeclient.Client, func(kubeContext string) (kubernetes.Interface, error) { return fakeKubeClient, nil })
 
-			cluster, _ := GetCluster(context.Background(), "dummyname", test.profile, true)
+			cluster, _ := GetCluster(ctx, "dummyname", test.defaultRepo, test.profile, true)
 			t.CheckDeepEqual(test.expected, cluster)
 
-			cluster, _ = GetCluster(context.Background(), "dummyname", test.profile, false)
+			cluster, _ = GetCluster(ctx, "dummyname", test.defaultRepo, test.profile, false)
 			t.CheckDeepEqual(test.expected, cluster)
 		})
 	}
