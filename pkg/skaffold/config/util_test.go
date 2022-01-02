@@ -288,17 +288,15 @@ func (fakeClient) IsMinikube(ctx context.Context, kubeContext string) bool {
 func (fakeClient) MinikubeExec(context.Context, ...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestGetCluster(t *testing.T) {
-	var registry = "localhost:5000"
-	var registryConfig = `host: "localhost:5000"`
 	var defaultRepo = "localhost:4000"
 
 	tests := []struct {
-		description    string
-		cfg            *ContextConfig
-		defaultRepo    StringOrUndefined
-		profile        string
-		registryConfig string
-		expected       Cluster
+		description string
+		cfg         *ContextConfig
+		defaultRepo StringOrUndefined
+		registry    *string
+		profile     string
+		expected    Cluster
 	}{
 		{
 			description: "kind",
@@ -306,10 +304,10 @@ func TestGetCluster(t *testing.T) {
 			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
 		},
 		{
-			description:    "kind with registry config",
-			cfg:            &ContextConfig{Kubecontext: "kind-other"},
-			registryConfig: registryConfig,
-			expected:       Cluster{Local: true, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&registry)},
+			description: "kind with registry config",
+			cfg:         &ContextConfig{Kubecontext: "kind-other"},
+			registry:    &defaultRepo,
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&defaultRepo)},
 		},
 		{
 			description: "kind with default-repo=localhost:4000",
@@ -397,25 +395,10 @@ func TestGetCluster(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			ctx := context.Background()
-			fakeKubeClient := fake.NewSimpleClientset()
-
-			if test.registryConfig != "" {
-				configMap := &v1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "local-registry-hosting",
-					},
-					Data: map[string]string{
-						"localRegistryHosting.v1": test.registryConfig,
-					},
-				}
-
-				_, err := fakeKubeClient.CoreV1().ConfigMaps("kube-public").Create(ctx, configMap, metav1.CreateOptions{})
-				t.CheckError(false, err)
-			}
 
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+			t.Override(&DiscoverLocalRegistry, func(context.Context, string) (*string, error) { return test.registry, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
-			t.Override(&kubeclient.Client, func(kubeContext string) (kubernetes.Interface, error) { return fakeKubeClient, nil })
 
 			cluster, _ := GetCluster(ctx, "dummyname", test.defaultRepo, test.profile, true)
 			t.CheckDeepEqual(test.expected, cluster)
@@ -542,7 +525,6 @@ func TestGetDefaultRepo(t *testing.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 
 			defaultRepo, err := GetDefaultRepo("config", test.cliValue)
-
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
 		})
@@ -575,6 +557,76 @@ func TestGetMultiLevelRepo(t *testing.T) {
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedValue, multiLevelRepo)
+		})
+	}
+}
+
+func TestDiscoverLocalRegistry(t *testing.T) {
+	var defaultRepo = "localhost:4000"
+
+	tests := []struct {
+		description        string
+		registryConfigData map[string]string
+		expectedRegistry   *string
+		expectedErr        string
+	}{
+		{
+			description: "no config map",
+		},
+		{
+			description:        "missing data",
+			registryConfigData: make(map[string]string),
+			expectedErr:        "invalid local-registry-hosting ConfigMap",
+		},
+		{
+			description: "invalid data",
+			registryConfigData: map[string]string{
+				"localRegistryHosting.v1": `invalid`,
+			},
+			expectedErr: "invalid local-registry-hosting ConfigMap",
+		},
+		{
+			description: "empty data",
+			registryConfigData: map[string]string{
+				"localRegistryHosting.v1": `{}`,
+			},
+		},
+		{
+			description: "valid data",
+			registryConfigData: map[string]string{
+				"localRegistryHosting.v1": `{host: "localhost:4000"}`,
+			},
+			expectedRegistry: &defaultRepo,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			ctx := context.Background()
+			fakeKubeClient := fake.NewSimpleClientset()
+
+			if test.registryConfigData != nil {
+				configMap := &v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "local-registry-hosting",
+					},
+					Data: test.registryConfigData,
+				}
+
+				_, err := fakeKubeClient.CoreV1().ConfigMaps("kube-public").Create(ctx, configMap, metav1.CreateOptions{})
+				t.CheckError(false, err)
+			}
+
+			t.Override(&kubeclient.Client, func(kubeContext string) (kubernetes.Interface, error) { return fakeKubeClient, nil })
+
+			registry, err := DiscoverLocalRegistry(ctx, "dummyname")
+			t.CheckDeepEqual(test.expectedRegistry, registry)
+
+			if test.expectedErr != "" {
+				t.CheckErrorContains(test.expectedErr, err)
+			} else {
+				t.CheckError(false, err)
+			}
 		})
 	}
 }

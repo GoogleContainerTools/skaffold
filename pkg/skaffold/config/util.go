@@ -60,7 +60,9 @@ var (
 
 	ReadConfigFile             = readConfigFileCached
 	GetConfigForCurrentKubectx = getConfigForCurrentKubectx
-	current                    = time.Now
+	DiscoverLocalRegistry      = discoverLocalRegistry
+
+	current = time.Now
 
 	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
@@ -339,7 +341,7 @@ func K3dClusterName(clusterName string) string {
 	return clusterName
 }
 
-func DiscoverLocalRegistry(ctx context.Context, kubeContext string) (*string, error) {
+func discoverLocalRegistry(ctx context.Context, kubeContext string) (*string, error) {
 	clientset, err := kubeclient.Client(kubeContext)
 	if err != nil {
 		return nil, err
@@ -361,14 +363,14 @@ func DiscoverLocalRegistry(ctx context.Context, kubeContext string) (*string, er
 	}
 
 	dst := struct {
-		Host string `yaml:"host"`
+		Host *string `yaml:"host"`
 	}{}
 
 	if err := yaml.Unmarshal([]byte(data), &dst); err != nil {
 		return nil, errors.New("invalid local-registry-hosting ConfigMap")
 	}
 
-	return &dst.Host, nil
+	return dst.Host, nil
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {
