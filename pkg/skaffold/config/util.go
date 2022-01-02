@@ -217,8 +217,15 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-func GetCluster(ctx context.Context, configFile string, defaultRepo StringOrUndefined, minikubeProfile string, detectMinikube bool) (Cluster, error) {
-	cfg, err := GetConfigForCurrentKubectx(configFile)
+type GetClusterOpts struct {
+	ConfigFile      string
+	DefaultRepo     StringOrUndefined
+	MinikubeProfile string
+	DetectMinikube  bool
+}
+
+func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
+	cfg, err := GetConfigForCurrentKubectx(opts.ConfigFile)
 	if err != nil {
 		return Cluster{}, err
 	}
@@ -228,7 +235,7 @@ func GetCluster(ctx context.Context, configFile string, defaultRepo StringOrUnde
 
 	var local bool
 	switch {
-	case minikubeProfile != "":
+	case opts.MinikubeProfile != "":
 		local = true
 
 	case cfg.LocalCluster != nil:
@@ -241,12 +248,14 @@ func GetCluster(ctx context.Context, configFile string, defaultRepo StringOrUnde
 		isKindCluster || isK3dCluster:
 		local = true
 
-	case detectMinikube:
+	case opts.DetectMinikube:
 		local = cluster.GetClient().IsMinikube(ctx, kubeContext)
 
 	default:
 		local = false
 	}
+
+	var defaultRepo = opts.DefaultRepo
 
 	if defaultRepo.Value() != nil && cfg.DefaultRepo != "" {
 		defaultRepo = NewStringOrUndefined(&cfg.DefaultRepo)
@@ -256,7 +265,7 @@ func GetCluster(ctx context.Context, configFile string, defaultRepo StringOrUnde
 		registry, err := DiscoverLocalRegistry(ctx, kubeContext)
 		switch {
 		case err != nil:
-			log.Entry(context.TODO()).Infof("failed to discover local registry %v", err)
+			log.Entry(context.TODO()).Tracef("failed to discover local registry %v", err)
 		case registry != nil:
 			log.Entry(context.TODO()).Infof("using default-repo=%s from cluster configmap", *registry)
 			return Cluster{

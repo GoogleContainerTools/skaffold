@@ -400,10 +400,20 @@ func TestGetCluster(t *testing.T) {
 			t.Override(&DiscoverLocalRegistry, func(context.Context, string) (*string, error) { return test.registry, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
-			cluster, _ := GetCluster(ctx, "dummyname", test.defaultRepo, test.profile, true)
+			cluster, _ := GetCluster(ctx, GetClusterOpts{
+				ConfigFile:      "dummyname",
+				DefaultRepo:     test.defaultRepo,
+				MinikubeProfile: test.profile,
+				DetectMinikube:  true,
+			})
 			t.CheckDeepEqual(test.expected, cluster)
 
-			cluster, _ = GetCluster(ctx, "dummyname", test.defaultRepo, test.profile, false)
+			cluster, _ = GetCluster(ctx, GetClusterOpts{
+				ConfigFile:      "dummyname",
+				DefaultRepo:     test.defaultRepo,
+				MinikubeProfile: test.profile,
+				DetectMinikube:  false,
+			})
 			t.CheckDeepEqual(test.expected, cluster)
 		})
 	}

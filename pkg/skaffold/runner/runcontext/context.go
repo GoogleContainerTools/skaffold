@@ -264,7 +264,12 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	cluster, err := config.GetCluster(ctx, opts.GlobalConfig, opts.DefaultRepo, opts.MinikubeProfile, opts.DetectMinikube)
+	cluster, err := config.GetCluster(ctx, config.GetClusterOpts{
+		ConfigFile:      opts.GlobalConfig,
+		DefaultRepo:     opts.DefaultRepo,
+		MinikubeProfile: opts.MinikubeProfile,
+		DetectMinikube:  opts.DetectMinikube,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("getting cluster: %w", err)
 	}
