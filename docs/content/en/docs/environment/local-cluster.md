@@ -11,6 +11,8 @@ with [`minikube`] or [`Docker Desktop`].
 The advantage of this setup is that no images need to be pushed, since the local cluster
 uses images straight from your local docker daemon. It leads to much faster development cycles.
 
+Keep in mind that when using Minikube, by default, Skaffold will use Minikube's internal docker daemon to build images. To manage the images use the Minikube CLI eg: `minikube image ls`.
+
 ### Auto detection
 
 Skaffold's heuristic to detect local clusters is based on the Kubernetes context name
