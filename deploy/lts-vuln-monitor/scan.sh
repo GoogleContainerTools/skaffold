@@ -47,7 +47,7 @@ check_vulnerability(){
 
   if [ -z "$tags" ]; then
     # Gets the last 5 images if _TAGS is not set.
-    tags=$(gcloud container images list-tags "$base_image" --filter="tags:$tags_filter" --limit=5 --format='value(tags)')
+    tags=$(gcloud container images list-tags "$base_image" --filter="tags~$tags_filter" --limit=5 --format='value(tags)')
   fi
   grep_args=""
   for s in $severities; do
