@@ -58,6 +58,7 @@ func (h hostHook) retrieveCmd(ctx context.Context, out io.Writer) *exec.Cmd {
 	cmd.Stderr = out
 	cmd.Env = append(cmd.Env, h.env...)
 	cmd.Env = append(cmd.Env, util.OSEnviron()...)
+	cmd.Dir = h.cfg.Dir
 
 	return cmd
 }

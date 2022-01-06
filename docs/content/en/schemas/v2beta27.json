@@ -2091,6 +2091,11 @@
           "x-intellij-html-description": "command to execute.",
           "default": "[]"
         },
+        "dir": {
+          "type": "string",
+          "description": "specifies the working directory of the command. If empty, the command runs in the calling process's current directory.",
+          "x-intellij-html-description": "specifies the working directory of the command. If empty, the command runs in the calling process's current directory."
+        },
         "os": {
           "items": {
             "type": "string"
@@ -2103,7 +2108,8 @@
       },
       "preferredOrder": [
         "command",
-        "os"
+        "os",
+        "dir"
       ],
       "additionalProperties": false,
       "type": "object",
