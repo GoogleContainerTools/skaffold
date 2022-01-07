@@ -34,11 +34,13 @@ func GetAllLintResults(ctx context.Context, opts Options, dockerCfg docker.Confi
 	}
 	results = append(results, *skaffoldYamlResults...)
 
-	dockerfileCommandResults, err := GetDockerfilesLintResults(ctx, opts, dockerCfg)
-	if err != nil {
-		return nil, err
+	if dockerCfg != nil {
+		dockerfileCommandResults, err := GetDockerfilesLintResults(ctx, opts, dockerCfg)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, *dockerfileCommandResults...)
 	}
-	results = append(results, *dockerfileCommandResults...)
 
 	k8sManifestResults, err := GetK8sManifestsLintResults(ctx, opts)
 	if err != nil {

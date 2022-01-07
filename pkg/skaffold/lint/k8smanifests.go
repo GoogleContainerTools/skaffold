@@ -18,7 +18,6 @@ package lint
 
 import (
 	"context"
-	"io/ioutil"
 	"path/filepath"
 
 	"go.lsp.dev/protocol"
@@ -84,7 +83,7 @@ func GetK8sManifestsLintResults(ctx context.Context, opts Options) (*[]Result, e
 			}
 
 			for _, relPath := range expanded {
-				b, err := ioutil.ReadFile(relPath)
+				b, err := util.ReadFile(relPath)
 				if err != nil {
 					return nil, err
 				}
