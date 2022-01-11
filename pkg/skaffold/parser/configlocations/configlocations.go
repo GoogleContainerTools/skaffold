@@ -44,10 +44,23 @@ type Location struct {
 }
 
 type YAMLInfos struct {
-	// TODO(aaron-prindle)make private again once Parse is setup properly
-	YamlInfos map[uintptr]map[string]YAMLInfo
-	// rename FieldsOverrodeByProfile -> SchemaPathsOverrodeByProfile
-	FieldsOverrodeByProfile map[string]YAMLOverrideInfo // map of schema path -> profile name
+	yamlInfos               map[uintptr]map[string]YAMLInfo
+	FieldsOverrodeByProfile map[string]YAMLOverrideInfo // map of schema path -> profile name -- ex: /artifacts/0/image -> "overwrite-artifacte-image-profile"
+}
+
+func (m *YAMLInfos) GetYamlInfosCopy() map[uintptr]map[string]YAMLInfo {
+	yamlInfos := map[uintptr]map[string]YAMLInfo{}
+	for ptr, mp := range m.yamlInfos {
+		tmpmp := map[string]YAMLInfo{}
+		for k, v := range mp {
+			tmpmp[k] = YAMLInfo{
+				RNode:      v.RNode.Copy(),
+				SourceFile: v.SourceFile,
+			}
+		}
+		yamlInfos[ptr] = tmpmp
+	}
+	return yamlInfos
 }
 
 func MissingLocation() *Location {
@@ -62,7 +75,7 @@ func MissingLocation() *Location {
 
 func NewYAMLInfos() *YAMLInfos {
 	return &YAMLInfos{
-		YamlInfos: map[uintptr]map[string]YAMLInfo{},
+		yamlInfos: map[uintptr]map[string]YAMLInfo{},
 	}
 }
 
@@ -77,7 +90,7 @@ type YAMLOverrideInfo struct {
 func Parse(sourceFile string, config *latestV1.SkaffoldConfig, fieldsOverrodeByProfile map[string]YAMLOverrideInfo) (*YAMLInfos, error) {
 	yamlInfos, err := buildMapOfSchemaObjPointerToYAMLInfos(sourceFile, config, map[uintptr]map[string]YAMLInfo{}, fieldsOverrodeByProfile)
 	return &YAMLInfos{
-			YamlInfos:               yamlInfos,
+			yamlInfos:               yamlInfos,
 			FieldsOverrodeByProfile: fieldsOverrodeByProfile,
 		},
 		err
@@ -104,11 +117,11 @@ func (m *YAMLInfos) locate(obj interface{}, key string) *Location {
 		log.Entry(context.TODO()).Infof("non pointer object passed to Locate: %v of type %T", obj, obj)
 		return MissingLocation()
 	}
-	if _, ok := m.YamlInfos[reflect.ValueOf(obj).Pointer()]; !ok {
+	if _, ok := m.yamlInfos[reflect.ValueOf(obj).Pointer()]; !ok {
 		log.Entry(context.TODO()).Infof("no map entry found when attempting Locate for %v of type %T and pointer: %d", obj, obj, reflect.ValueOf(obj).Pointer())
 		return MissingLocation()
 	}
-	node, ok := m.YamlInfos[reflect.ValueOf(obj).Pointer()][key]
+	node, ok := m.yamlInfos[reflect.ValueOf(obj).Pointer()][key]
 	if !ok {
 		log.Entry(context.TODO()).Infof("no map entry found when attempting Locate for %v of type %T and pointer: %d", obj, obj, reflect.ValueOf(obj).Pointer())
 		return MissingLocation()

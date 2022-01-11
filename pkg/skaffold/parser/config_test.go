@@ -1480,7 +1480,7 @@ func TestConfigLocationsParse(t *testing.T) {
 				if expectedNode == nil {
 					t.Errorf("test query led to nil node, should not be the case for kyaml filters: %v", filters)
 				}
-				for _, yamlInfos := range cfgs[0].YAMLInfos.YamlInfos {
+				for _, yamlInfos := range cfgs[0].YAMLInfos.GetYamlInfosCopy() {
 					for _, v := range yamlInfos {
 						if reflect.DeepEqual(expectedNode, v.RNode) {
 							seen = true
@@ -1489,7 +1489,7 @@ func TestConfigLocationsParse(t *testing.T) {
 				}
 				if seen != true && test.missingNodeCount == 0 {
 					str, _ := expectedNode.String()
-					t.Errorf("unable to find expected yaml node text: %q in the generated yaml node map: %v", str, cfgs[0].YAMLInfos.YamlInfos)
+					t.Errorf("unable to find expected yaml node text: %q in the generated yaml node map: %v", str, cfgs[0].YAMLInfos.GetYamlInfosCopy())
 				}
 				if seen != true && test.missingNodeCount > 0 {
 					missingNodeCount++
