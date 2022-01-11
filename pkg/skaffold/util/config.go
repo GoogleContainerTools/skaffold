@@ -28,8 +28,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
-var stdin []byte
+// Fs is the underlying filesystem to use for reading skaffold project files & configuration.  OS FS by default
 var Fs = afero.NewOsFs()
+
+var stdin []byte
 
 // ReadConfiguration reads a `skaffold.yaml` configuration and
 // returns its content.
