@@ -164,7 +164,7 @@ release-build: cross
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
 .PHONY: release-lts
-release-lts: cross $(BUILD_DIR)/VERSION
+release-lts: $(BUILD_DIR)/VERSION
 	docker build \
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile.lts \
@@ -172,9 +172,6 @@ release-lts: cross $(BUILD_DIR)/VERSION
 		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
 		.
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_LTS_RELEASE_PATH)/
-	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_LTS_RELEASE_PATH)/VERSION
-	gsutil -m cp -r $(GSC_LTS_RELEASE_PATH)/* $(GSC_LTS_RELEASE_LATEST)
 
 .PHONY: release-lts-build
 release-lts-build: cross
