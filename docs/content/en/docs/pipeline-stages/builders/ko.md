@@ -243,6 +243,10 @@ Useful tips for existing `ko` users:
   Skaffold removes the `ko://` prefix, if present, before determining the image
   name.
 
+- If your image references use the `ko://` prefix _and_ you are pushing the
+  images to a registry, you must set the
+  [default repo]({{< relref "/docs/environment/image-registries" >}}).
+
 - The ko builder supports reading
   [base image configuration](https://github.com/google/ko#overriding-base-images)
   from the `.ko.yaml` file. If you already configure your base images using
