@@ -37,6 +37,9 @@ import (
 // identifier. The image identifier is the tag or digest for pushed images, or
 // the docker image ID for sideloaded images.
 func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, ref string) (string, error) {
+	if b.pushImages && strings.HasPrefix(ref, build.StrictScheme) {
+		return "", fmt.Errorf("default repo must be set when using the 'ko://' prefix and pushing to a registry: %s, see https://skaffold.dev/docs/environment/image-registries/", a.ImageName)
+	}
 	koBuilder, err := b.newKoBuilder(ctx, a)
 	if err != nil {
 		return "", fmt.Errorf("error creating ko builder: %w", err)
