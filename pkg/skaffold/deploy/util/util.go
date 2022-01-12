@@ -58,7 +58,8 @@ func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.
 		m[a.ImageName] = true
 	}
 	for _, artifact := range artifacts {
-		if _, ok := m[artifact.ImageName]; ok {
+		imageName := docker.SanitizeImageName(artifact.ImageName)
+		if _, ok := m[imageName]; ok {
 			podSelector.Add(artifact.Tag)
 		}
 	}
