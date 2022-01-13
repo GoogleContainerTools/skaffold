@@ -41,7 +41,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	return sErr
 }
 
-func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, localImages []graph.Artifact) error {
+func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, _ []graph.Artifact) error {
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err

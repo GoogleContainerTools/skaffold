@@ -225,13 +225,6 @@ var testDeployUpgradeOnChange = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployWithoutTags = latestV2.HelmDeploy{
-	Releases: []latestV2.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-	}},
-}
-
 var testTwoReleases = latestV2.HelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "other",

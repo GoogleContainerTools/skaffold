@@ -69,8 +69,7 @@ var (
 	// versionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
 	versionRegex = regexp.MustCompile(`v?(\d[\w.\-]+)`)
 
-	// helm3Version represents the version cut-off for helm3 behavior
-	helm3Version  = semver.MustParse("3.0.0-beta.0")
+	// helm32Version represents the version cut-off for helm3 behavior
 	helm32Version = semver.MustParse("3.2.0")
 
 	// helm31Version represents the version cut-off for helm3.1 post-renderer behavior
@@ -99,7 +98,7 @@ type Deployer struct {
 	hookRunner    hooks.Runner
 
 	podSelector *kubernetes.ImageList
-	//originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
+	// originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
 	localImages []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubeContext string
@@ -225,7 +224,6 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.bV)
 
-	var dRes []types.Artifact
 	nsMap := map[string]struct{}{}
 	manifests := manifest.ManifestList{}
 
@@ -252,7 +250,6 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 				nsMap[trimmed] = struct{}{}
 			}
 		}
-		dRes = append(dRes, results...)
 	}
 
 	// Let's make sure that every image tag is set with `--set`.
