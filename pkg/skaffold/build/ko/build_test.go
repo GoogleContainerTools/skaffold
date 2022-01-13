@@ -17,9 +17,7 @@ limitations under the License.
 package ko
 
 import (
-	"bytes"
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/docker/docker/client"
@@ -34,32 +32,32 @@ import (
 )
 
 // TestBuild doesn't actually build (or publish) any container images, because
-// it's a unit test. Instead, it only verifies that the Build() function prints
-// the image name to the out io.Writer and returns the image identifier.
+// it's a unit test. Instead, it only verifies that the Build() returns the
+// image identifier.
 func TestBuild(t *testing.T) {
 	tests := []struct {
 		description             string
 		pushImages              bool
-		expectedRef             string
+		imageRef                string
 		expectedImageIdentifier string
 	}{
 		{
 			description:             "pushed image with tag",
 			pushImages:              true,
-			expectedRef:             "registry.example.com/repo/image1:tag1",
+			imageRef:                "registry.example.com/repo/image1:tag1",
 			expectedImageIdentifier: "tag1",
 		},
 		{
 			description:             "sideloaded image",
 			pushImages:              false,
-			expectedRef:             "registry.example.com/repo/image2:any",
+			imageRef:                "registry.example.com/repo/image2:any",
 			expectedImageIdentifier: "ab737430e80b",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			importPath := "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko" // this package
-			b := stubKoArtifactBuilder(test.expectedRef, test.expectedImageIdentifier, test.pushImages, importPath)
+			b := stubKoArtifactBuilder(test.imageRef, test.expectedImageIdentifier, test.pushImages, importPath)
 
 			artifact := &latestV1.Artifact{
 				ArtifactType: latestV1.ArtifactType{
@@ -67,12 +65,8 @@ func TestBuild(t *testing.T) {
 				},
 				ImageName: importPath,
 			}
-			var outBuffer bytes.Buffer
-			gotImageIdentifier, err := b.Build(context.Background(), &outBuffer, artifact, test.expectedRef)
+			gotImageIdentifier, err := b.Build(context.Background(), nil, artifact, test.imageRef)
 			t.CheckNoError(err)
-
-			imageNameOut := strings.TrimSuffix(outBuffer.String(), "\n")
-			t.CheckDeepEqual(test.expectedRef, imageNameOut)
 			t.CheckDeepEqual(test.expectedImageIdentifier, gotImageIdentifier)
 		})
 	}

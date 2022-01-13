@@ -175,6 +175,17 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	return cfg.DefaultRepo, nil
 }
 
+func GetMultiLevelRepo(configFile string) (*bool, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.MultiLevelRepo != nil {
+		log.Entry(context.TODO()).Infof("Using multi-level-repo=%t from config", *cfg.MultiLevelRepo)
+	}
+	return cfg.MultiLevelRepo, nil
+}
+
 func GetInsecureRegistries(configFile string) ([]string, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {

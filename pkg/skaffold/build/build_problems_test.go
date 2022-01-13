@@ -60,13 +60,13 @@ func TestBuildProblems(t *testing.T) {
 		{
 			description: "Push access denied when neither default repo or global config is defined",
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
-			expected:    "Build Failed. No push access to specified image repository. Trying running with `--default-repo` flag.",
+			expected:    "Build Failed. No push access to specified image repository. Try running with `--default-repo` flag.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 				Message: "skaffold build failed: could not push image: denied: push access to resource",
 				Suggestions: []*proto.Suggestion{{
 					SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
-					Action:         "Trying running with `--default-repo` flag",
+					Action:         "Try running with `--default-repo` flag",
 				},
 				}},
 		},

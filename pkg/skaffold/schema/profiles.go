@@ -20,14 +20,17 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"reflect"
 	"strings"
+	"unicode"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -38,21 +41,21 @@ import (
 
 // ApplyProfiles modifies the input skaffold configuration by the application
 // of a list of profiles, and returns the list of applied profiles.
-func ApplyProfiles(c *latestV1.SkaffoldConfig, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, error) {
+func ApplyProfiles(c *latestV1.SkaffoldConfig, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, map[string]configlocations.YAMLOverrideInfo, error) {
 	byName := profilesByName(c.Profiles)
 
 	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts, namedProfiles)
 	if err != nil {
-		return nil, fmt.Errorf("finding auto-activated profiles: %w", err)
+		return nil, nil, fmt.Errorf("finding auto-activated profiles: %w", err)
 	}
 	for _, name := range profiles {
 		profile, present := byName[name]
 		if !present {
-			return nil, fmt.Errorf("couldn't find profile %s", name)
+			return nil, nil, fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		if err := applyProfile(c, profile); err != nil {
-			return nil, fmt.Errorf("applying profile %q: %w", name, err)
+		if err := applyProfile(c, fieldsOverrodeByProfile, profile); err != nil {
+			return nil, nil, fmt.Errorf("applying profile %q: %w", name, err)
 		}
 	}
 
@@ -61,8 +64,7 @@ func ApplyProfiles(c *latestV1.SkaffoldConfig, opts cfg.SkaffoldOptions, namedPr
 	case cfg.RunModes.Build, cfg.RunModes.Dev, cfg.RunModes.Deploy, cfg.RunModes.Debug, cfg.RunModes.Render, cfg.RunModes.Run, cfg.RunModes.Diagnose, cfg.RunModes.Delete:
 		c.Profiles = nil
 	}
-
-	return profiles, checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
+	return profiles, fieldsOverrodeByProfile, checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
 }
 
 func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, effectiveContext string) error {
@@ -196,7 +198,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 	return skutil.RegexEqual(kubeContext, currentKubeConfig.CurrentContext), nil
 }
 
-func applyProfile(config *latestV1.SkaffoldConfig, profile latestV1.Profile) error {
+func applyProfile(config *latestV1.SkaffoldConfig, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, profile latestV1.Profile) error {
 	log.Entry(context.TODO()).Infof("applying profile: %s", profile.Name)
 
 	// Apply profile, field by field
@@ -205,9 +207,10 @@ func applyProfile(config *latestV1.SkaffoldConfig, profile latestV1.Profile) err
 	profileV := reflect.ValueOf(profile.Pipeline)
 
 	profileT := profileV.Type()
+
 	for i := 0; i < profileT.NumField(); i++ {
 		name := profileT.Field(i).Name
-		merged := overlayProfileField(name, configV.FieldByName(name).Interface(), profileV.FieldByName(name).Interface())
+		merged := overlayProfileField(profile.Name, name, yamltags.YamlName(profileT.Field(i)), []string{}, fieldsOverrodeByProfile, configV.FieldByName(name).Interface(), profileV.FieldByName(name).Interface())
 		mergedV.FieldByName(name).Set(reflect.ValueOf(merged))
 	}
 
@@ -222,7 +225,7 @@ func applyProfile(config *latestV1.SkaffoldConfig, profile latestV1.Profile) err
 	}
 
 	var patches []yamlpatch.Operation
-	for _, patch := range profile.Patches {
+	for i, patch := range profile.Patches {
 		// Default patch operation to `replace`
 		op := patch.Op
 		if op == "" {
@@ -246,6 +249,18 @@ func applyProfile(config *latestV1.SkaffoldConfig, profile latestV1.Profile) err
 		}
 
 		patches = append(patches, patch)
+		// TODO(aaron-prindle) we can ignore - op:'remove' - patch profiles as there is no corresponding schema object for them (it is removed already)
+		yamlOverrideInfo := configlocations.YAMLOverrideInfo{
+			ProfileName:    profile.Name,
+			PatchOperation: string(patch.Op),
+			PatchIndex:     i,
+		}
+		if patch.Op == "copy" {
+			yamlOverrideInfo.PatchCopyFrom = patch.From.String()
+		}
+		if patch.Op != "remove" { // TODO(aaron-prindle) yamlpatch lib doesn't export op types, should copy paste the types elsewhere and refer to that here
+			fieldsOverrodeByProfile[string(patch.Path)] = yamlOverrideInfo
+		}
 	}
 
 	buf, err = yamlpatch.Patch(patches).Apply(buf)
@@ -281,7 +296,7 @@ func profilesByName(profiles []latestV1.Profile) map[string]latestV1.Profile {
 
 // if we find a oneOf tag, the fields in this struct are themselves pointers to structs,
 // but should be treated as values. the first non-nil one we find is what we should use.
-func overlayOneOfField(config interface{}, profile interface{}) interface{} {
+func overlayOneOfField(profileName string, fieldPath []string, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
 	for i := 0; i < v.NumField(); i++ {
@@ -289,9 +304,15 @@ func overlayOneOfField(config interface{}, profile interface{}) interface{} {
 		fieldValue := v.Field(i).Interface() // the value of the field itself
 
 		if fieldValue != nil && !reflect.ValueOf(fieldValue).IsNil() {
+			yamltags.YamlName(fieldType)
+			fieldPath = append(fieldPath, yamltags.YamlName(fieldType))
 			ret := reflect.New(t)                                                   // New(t) returns a Value representing pointer to new zero value for type t
 			ret.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(fieldValue)) // set the value
-			return reflect.Indirect(ret).Interface()                                // since ret is a pointer, dereference it
+			fieldsOverrodeByProfile["/"+path.Join(fieldPath...)] = configlocations.YAMLOverrideInfo{
+				ProfileName: profileName,
+				PatchIndex:  -1,
+			}
+			return reflect.Indirect(ret).Interface() // since ret is a pointer, dereference it
 		}
 	}
 	// if we're here, we didn't find any values set in the profile config. just return the original.
@@ -299,7 +320,7 @@ func overlayOneOfField(config interface{}, profile interface{}) interface{} {
 	return config
 }
 
-func overlayStructField(config interface{}, profile interface{}) interface{} {
+func overlayStructField(profileName string, fieldPath []string, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, config interface{}, profile interface{}) interface{} {
 	// we already know the top level fields for whatever struct we have are themselves structs
 	// (and not one-of values), so we need to recursively overlay them
 	configValue := reflect.ValueOf(config)
@@ -309,27 +330,47 @@ func overlayStructField(config interface{}, profile interface{}) interface{} {
 
 	for i := 0; i < profileValue.NumField(); i++ {
 		fieldType := t.Field(i)
-		overlay := overlayProfileField(yamltags.YamlName(fieldType), configValue.Field(i).Interface(), profileValue.Field(i).Interface())
+		yamlFieldName := yamltags.YamlName(fieldType)
+		var first rune
+		for _, c := range yamlFieldName {
+			first = c
+			break
+		}
+		if !unicode.IsLower(first) {
+			yamlFieldName = "-"
+		}
+		overlay := overlayProfileField(profileName, yamltags.YamlName(fieldType), yamlFieldName, fieldPath, fieldsOverrodeByProfile, configValue.Field(i).Interface(), profileValue.Field(i).Interface())
 		finalConfig.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(overlay))
 	}
 	return reflect.Indirect(finalConfig).Interface() // since finalConfig is a pointer, dereference it
 }
 
-func overlayProfileField(fieldName string, config interface{}, profile interface{}) interface{} {
+// I could either get struct names in a flat manner and just not care about name collisions for now
+// OR I could make a tree of fieldNames and then check the tree when doing the profile yaml node stuff
+func overlayProfileField(profileName, fieldName string, yamlFieldName string, fieldPath []string, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
 	log.Entry(context.TODO()).Debugf("overlaying profile on config for field %s", fieldName)
+
+	if yamlFieldName != "-" {
+		fieldPath = append(fieldPath, yamlFieldName)
+	}
+
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
 		if util.IsOneOfField(t.Field(0)) {
-			return overlayOneOfField(config, profile)
+			return overlayOneOfField(profileName, fieldPath, fieldsOverrodeByProfile, config, profile)
 		}
-		return overlayStructField(config, profile)
+		return overlayStructField(profileName, fieldPath, fieldsOverrodeByProfile, config, profile)
 	case reflect.Slice:
 		// either return the values provided in the profile, or the original values if none were provided.
 		if v.Len() == 0 {
 			return config
+		}
+		fieldsOverrodeByProfile["/"+path.Join(fieldPath...)] = configlocations.YAMLOverrideInfo{
+			ProfileName: profileName,
+			PatchIndex:  -1,
 		}
 		return v.Interface()
 	case reflect.Ptr:
@@ -337,15 +378,27 @@ func overlayProfileField(fieldName string, config interface{}, profile interface
 		if v.IsNil() {
 			return config
 		}
+		fieldsOverrodeByProfile["/"+path.Join(fieldPath...)] = configlocations.YAMLOverrideInfo{
+			ProfileName: profileName,
+			PatchIndex:  -1,
+		}
 		return v.Interface()
 	case reflect.Int:
 		if v.Interface() == reflect.Zero(v.Type()).Interface() {
 			return config
 		}
+		fieldsOverrodeByProfile["/"+path.Join(fieldPath...)] = configlocations.YAMLOverrideInfo{
+			ProfileName: profileName,
+			PatchIndex:  -1,
+		}
 		return v.Interface()
 	case reflect.String:
 		if reflect.DeepEqual("", v.Interface()) {
 			return config
+		}
+		fieldsOverrodeByProfile["/"+path.Join(fieldPath...)] = configlocations.YAMLOverrideInfo{
+			ProfileName: profileName,
+			PatchIndex:  -1,
 		}
 		return v.Interface()
 	default:

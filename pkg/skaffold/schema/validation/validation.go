@@ -127,14 +127,27 @@ func validateTaggingPolicy(bc latestV1.BuildConfig) (errs []error) {
 // without tags nor digests.
 func validateImageNames(configs parser.SkaffoldConfigSet) (errs []error) {
 	seen := make(map[string]string)
+	idxMap := make(map[string]int)
+
 	for _, c := range configs {
-		for _, a := range c.Build.Artifacts {
+		for i, a := range c.Build.Artifacts {
 			if prevSource, found := seen[a.ImageName]; found {
-				errs = append(errs, fmt.Errorf("duplicate image %q found in sources %s and %s: artifact image names must be unique across all configurations", a.ImageName, prevSource, c.SourceFile))
+				curLocation := c.YAMLInfos.LocateField(c.Build.Artifacts[i], "ImageName")
+				prevLocation := c.YAMLInfos.LocateField(c.Build.Artifacts[idxMap[c.Build.Artifacts[i].ImageName]], "ImageName")
+				errs = append(errs, fmt.Errorf("duplicate image %q found in file %q, line %d, col %d and file %q, line %d, col %d: artifact image names must be unique across all configurations",
+					a.ImageName,
+					c.SourceFile,
+					curLocation.StartLine,
+					curLocation.StartColumn,
+					prevSource,
+					prevLocation.StartLine,
+					prevLocation.StartColumn,
+				))
 				continue
 			}
 
 			seen[a.ImageName] = c.SourceFile
+			idxMap[a.ImageName] = i
 			parsed, err := docker.ParseReference(a.ImageName)
 			if err != nil {
 				errs = append(errs, wrapWithContext(c, fmt.Errorf("invalid image %q: %w", a.ImageName, err))...)
@@ -150,7 +163,7 @@ func validateImageNames(configs parser.SkaffoldConfigSet) (errs []error) {
 			}
 		}
 	}
-	return
+	return errs
 }
 
 func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (errs []error) {
@@ -608,7 +621,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 		}
 
 		// validate that manifest files referenced in config exist
-		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
+		for i, pattern := range c.Deploy.KubectlDeploy.Manifests {
 			if util.IsURL(pattern) {
 				continue
 			}
@@ -617,8 +630,13 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []error) {
 			if err != nil {
 				errs = append(errs, err)
 			}
+			invalidManifestLocation := c.YAMLInfos.LocateElement(&c.Deploy.KubectlDeploy.Manifests, i)
 			if len(expanded) == 0 {
-				msg := fmt.Sprintf("skaffold config file %q referenced file %q that could not be found", c.SourceFile, pattern)
+				msg := fmt.Sprintf("skaffold config file %q referenced manifest file %q in manifests list on line %d, column %d that could not be found", c.SourceFile,
+					pattern,
+					invalidManifestLocation.StartLine,
+					invalidManifestLocation.StartColumn,
+				)
 				errs = append(errs, sErrors.NewError(fmt.Errorf(msg),
 					&proto.ActionableErr{
 						Message: msg,

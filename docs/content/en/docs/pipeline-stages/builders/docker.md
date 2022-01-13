@@ -33,6 +33,10 @@ of `skaffold.yaml`. The following options can optionally be configured:
 
 {{< schema root="LocalBuild" >}}
 
+The `docker` builder replaces cache references to the
+artifact image with the tagged image to allow caching from the
+previously built image.
+
 **Example**
 
 The following `build` section instructs Skaffold to build a

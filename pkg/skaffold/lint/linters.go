@@ -68,37 +68,7 @@ func (*DockerfileCommandLinter) Lint(params InputParams, rules *[]Rule) (*[]Resu
 			log.Entry(context.TODO()).Infof("docker command 'copy' match found for source: %s\n", fromTo.From)
 			// TODO(aaron-prindle) modify so that there are input and output params s.t. it is more obvious what fields need to be updated
 			params.DockerCopyCommandInfo = fromTo
-			appendRuleIfLintConditionsPass(params, results, rule, fromTo.StartLine, 1)
-		}
-	}
-	return results, nil
-}
-
-type RegExpLinter struct{}
-
-func (*RegExpLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, error) {
-	results := &[]Result{}
-	for _, rule := range *rules {
-		if rule.RuleType != RegExpLintLintRule {
-			continue
-		}
-		var regexpFilter string
-		switch v := rule.Filter.(type) {
-		case string:
-			regexpFilter = v
-		default:
-			return nil, fmt.Errorf("unknown filter type found for RegExpLinter lint rule: %v", rule)
-		}
-		r, err := regexp.Compile(regexpFilter)
-		if err != nil {
-			return nil, err
-		}
-		matches := r.FindAllStringSubmatchIndex(lintInputs.ConfigFile.Text, -1)
-		for _, m := range matches {
-			log.Entry(context.TODO()).Infof("regexp match found for %s: %v\n", regexpFilter, m)
-			// TODO(aaron-prindle) support matches with more than 2 values for m?
-			line, col := convert1DFileIndexTo2D(lintInputs.ConfigFile.Text, m[0])
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, line, col)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(params, results, rule, fromTo.StartLine, 1, fromTo.EndLine, 0)
 		}
 	}
 	return results, nil
@@ -131,28 +101,56 @@ func (*YamlFieldLinter) Lint(lintInputs InputParams, rules *[]Rule) (*[]Result, 
 		if (node == nil && !yamlFilter.InvertMatch) || node != nil && yamlFilter.InvertMatch {
 			continue
 		} else if node == nil && yamlFilter.InvertMatch {
+			// TODO(aaron-prindle) this type of message (last line of file) does not work well in an IDE via the LSP
+			// consider not using this and pinning to somewhere in the yaml or using some type of different messaging (window/showMessage, etc.)
 			line, col := getLastLineAndColOfFile(lintInputs.ConfigFile.Text)
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, line, col)
+			// TODO(aaron-prindle) verify this looks correct on an IDE
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, line, col, line+1, 0)
 			continue
 		}
 		if yamlFilter.FieldMatch != "" {
 			mapnode := node.Field(yamlFilter.FieldMatch)
 			if mapnode != nil {
-				appendRuleIfLintConditionsPass(lintInputs, results, rule, mapnode.Key.YNode().Line, mapnode.Key.YNode().Column)
+				ks, err := mapnode.Key.String()
+				if err != nil {
+					return nil, err
+				}
+				lineLen, endCol := getLinesAndColsOfString(ks)
+				appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, mapnode.Key.YNode().Line, mapnode.Key.YNode().Column,
+					mapnode.Key.YNode().Line+lineLen, endCol,
+				)
 			}
 			continue
 		}
 		if node.YNode().Kind == yaml.ScalarNode {
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, node.Document().Line, node.Document().Column)
+			ns, err := node.String()
+			if err != nil {
+				return nil, err
+			}
+			lineLen, endCol := getLinesAndColsOfString(ns)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, node.Document().Line, node.Document().Column,
+				node.Document().Line+lineLen, endCol,
+			)
 		}
 		for _, n := range node.Content() {
-			appendRuleIfLintConditionsPass(lintInputs, results, rule, n.Line, n.Column)
+			ns, err := node.String()
+			if err != nil {
+				return nil, err
+			}
+			lineLen, endCol := getLinesAndColsOfString(ns)
+			appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs, results, rule, n.Line, n.Column,
+				n.Line+lineLen, endCol,
+			)
 		}
 	}
 	return results, nil
 }
 
-func appendRuleIfLintConditionsPass(lintInputs InputParams, results *[]Result, rule Rule, line, col int) {
+func appendRuleIfConditionsAndExplanationPopulationsSucceed(lintInputs InputParams, results *[]Result, rule Rule, startline, startcol, endline, endcol int) {
+	if startline == endline {
+		endline++ // this is done to highlight entire line when used w/ an IDE
+	}
+
 	for _, f := range rule.LintConditions {
 		if !f(lintInputs) {
 			// lint condition failed, no rule is trigggered
@@ -186,23 +184,12 @@ func appendRuleIfLintConditionsPass(lintInputs InputParams, results *[]Result, r
 		Explanation: explanation,
 		AbsFilePath: lintInputs.ConfigFile.AbsPath,
 		RelFilePath: lintInputs.ConfigFile.RelPath,
-		Line:        line,
-		Column:      col,
+		StartLine:   startline,
+		EndLine:     endline,
+		StartColumn: startcol,
+		EndColumn:   endcol,
 	}
 	*results = append(*results, mr)
-}
-
-func convert1DFileIndexTo2D(input string, idx int) (int, int) {
-	line := 1
-	col := 0
-	for i := 0; i < idx; i++ {
-		col++
-		if input[i] == '\n' {
-			line++
-			col = 0
-		}
-	}
-	return line, col
 }
 
 func getLastLineAndColOfFile(input string) (int, int) {
@@ -213,6 +200,19 @@ func getLastLineAndColOfFile(input string) (int, int) {
 		if input[i] == '\n' {
 			line++
 			col = 1
+		}
+	}
+	return line, col
+}
+
+func getLinesAndColsOfString(str string) (int, int) {
+	line := 0
+	col := 0
+	for i := range str {
+		col++
+		if str[i] == '\n' {
+			line++
+			col = 0
 		}
 	}
 	return line, col

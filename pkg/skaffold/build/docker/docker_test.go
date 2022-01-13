@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -40,6 +41,7 @@ func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description     string
 		localBuild      latestV1.LocalBuild
+		cliFlags        []string
 		cfg             mockConfig
 		extraEnv        []string
 		expectedEnv     []string
@@ -65,6 +67,13 @@ func TestDockerCLIBuild(t *testing.T) {
 			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			wantDockerCLI: true,
 			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
+		},
+		{
+			description:   "cliFlags",
+			cliFlags:      []string{"--platform", "linux/amd64"},
+			localBuild:    latestV1.LocalBuild{},
+			wantDockerCLI: true,
+			expectedEnv:   []string{"KEY=VALUE"},
 		},
 		{
 			description:   "buildkit and extra env",
@@ -142,10 +151,11 @@ func TestDockerCLIBuild(t *testing.T) {
 				t.Override(&util.DefaultExecCommand, mockCmd)
 			}
 			if test.wantDockerCLI {
-				mockCmd = testutil.CmdRunEnv(
-					"docker build . --file "+dockerfilePath+" -t tag",
-					test.expectedEnv,
-				)
+				cmdLine := "docker build . --file " + dockerfilePath + " -t tag"
+				if len(test.cliFlags) > 0 {
+					cmdLine += " " + strings.Join(test.cliFlags, " ")
+				}
+				mockCmd = testutil.CmdRunEnv(cmdLine, test.expectedEnv)
 				t.Override(&util.DefaultExecCommand, mockCmd)
 			}
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
@@ -157,6 +167,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
+						CliFlags:       test.cliFlags,
 					},
 				},
 			}
@@ -174,6 +185,64 @@ func TestDockerCLIBuild(t *testing.T) {
 					t.Fatalf("expected to find an actionable error. not found")
 				}
 			}
+		})
+	}
+}
+
+func TestDockerCLICheckCacheFromArgs(t *testing.T) {
+	tests := []struct {
+		description       string
+		artifact          *latestV1.Artifact
+		tag               string
+		expectedCacheFrom []string
+	}{
+		{
+			description: "multiple cache-from images",
+			artifact: &latestV1.Artifact{
+				ImageName: "gcr.io/k8s-skaffold/test",
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
+						CacheFrom: []string{"from/image1", "from/image2"},
+					},
+				},
+			},
+			tag:               "tag",
+			expectedCacheFrom: []string{"from/image1", "from/image2"},
+		},
+		{
+			description: "cache-from self uses tagged image",
+			artifact: &latestV1.Artifact{
+				ImageName: "gcr.io/k8s-skaffold/test",
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
+						CacheFrom: []string{"gcr.io/k8s-skaffold/test"},
+					},
+				},
+			},
+			tag:               "gcr.io/k8s-skaffold/test:tagged",
+			expectedCacheFrom: []string{"gcr.io/k8s-skaffold/test:tagged"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("Dockerfile").Chdir()
+			dockerfilePath, _ := filepath.Abs("Dockerfile")
+			a := *test.artifact
+			a.Workspace = "."
+			a.DockerArtifact.DockerfilePath = dockerfilePath
+			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+				return args, nil
+			})
+
+			mockCmd := testutil.CmdRun(
+				"docker build . --file " + dockerfilePath + " -t " + test.tag + " --cache-from " + strings.Join(test.expectedCacheFrom, " --cache-from "),
+			)
+			t.Override(&util.DefaultExecCommand, mockCmd)
+
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.BoolPtr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
+			_, err := builder.Build(context.Background(), ioutil.Discard, &a, test.tag)
+			t.CheckNoError(err)
 		})
 	}
 }

@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
@@ -152,15 +155,23 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 // imageTags generates tags for a list of artifacts
 func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
+	maxWorkers := runtime.GOMAXPROCS(0)
 	output.Default.Fprintln(out, "Generating tags...")
 
 	tagErrs := make([]chan tagErr, len(artifacts))
 
+	// Use a weighted semaphore as a counting semaphore to limit the number of simultaneous taggers.
+	sem := semaphore.NewWeighted(int64(maxWorkers))
 	for i := range artifacts {
 		tagErrs[i] = make(chan tagErr, 1)
 
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+
 		i := i
 		go func() {
+			defer sem.Release(1)
 			_tag, err := tag.GenerateFullyQualifiedImageName(ctx, r.tagger, *artifacts[i])
 			tagErrs[i] <- tagErr{tag: _tag, err: err}
 		}()

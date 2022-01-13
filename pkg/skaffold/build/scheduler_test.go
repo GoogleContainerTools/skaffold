@@ -56,7 +56,7 @@ func TestGetBuild(t *testing.T) {
 				"skaffold/image2": "skaffold/image2:v0.0.2",
 			},
 			expectedTag: "skaffold/image1:v0.0.1@sha256:abac",
-			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
+			expectedOut: "build succeeds",
 		},
 		{
 			description: "tag with ko scheme prefix and Go import path with uppercase characters is sanitized",
@@ -68,7 +68,7 @@ func TestGetBuild(t *testing.T) {
 				"skaffold/image1": "ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold:v0.0.1",
 			},
 			expectedTag: "github.com/googlecontainertools/skaffold/cmd/skaffold:v0.0.1@sha256:abac",
-			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
+			expectedOut: "build succeeds",
 		},
 		{
 			description: "build fails",
@@ -78,13 +78,13 @@ func TestGetBuild(t *testing.T) {
 			tags: tag.ImageTags{
 				"skaffold/image1": "",
 			},
-			expectedOut: "Building [skaffold/image1]...\n",
+			expectedOut: "",
 			shouldErr:   true,
 		},
 		{
 			description: "tag not found",
 			tags:        tag.ImageTags{},
-			expectedOut: "Building [skaffold/image1]...\n",
+			expectedOut: "",
 			shouldErr:   true,
 		},
 	}
@@ -159,9 +159,9 @@ func TestInOrder(t *testing.T) {
 	}{
 		{
 			description: "short and nice build log",
-			expected:    "Building 2 artifacts in parallel\nBuilding [skaffold/image1]...\nshort\nBuilding [skaffold/image2]...\nshort\n",
+			expected:    "Building 2 artifacts in parallel\nBuilding [skaffold/image1]...\nshort\nBuild [skaffold/image1] succeeded\nBuilding [skaffold/image2]...\nshort\nBuild [skaffold/image2] succeeded\n",
 			buildFunc: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
-				out.Write([]byte("short"))
+				out.Write([]byte("short\n"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
 		},
@@ -171,12 +171,14 @@ func TestInOrder(t *testing.T) {
 Building [skaffold/image1]...
 This is a long string more than 10 bytes.
 And new lines
+Build [skaffold/image1] succeeded
 Building [skaffold/image2]...
 This is a long string more than 10 bytes.
 And new lines
+Build [skaffold/image2] succeeded
 `,
 			buildFunc: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
-				out.Write([]byte("This is a long string more than 10 bytes.\nAnd new lines"))
+				out.Write([]byte("This is a long string more than 10 bytes.\nAnd new lines\n"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
 		},
@@ -339,7 +341,7 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			expected:    nil,
-			err:         fmt.Errorf(`some error occurred while building "artifact2"`),
+			err:         fmt.Errorf(`build [artifact2] failed: %w`, fmt.Errorf(`some error occurred while building "artifact2"`)),
 		},
 		{
 			description: "build fails for artifacts with dependencies",
@@ -357,7 +359,7 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			expected:    nil,
-			err:         fmt.Errorf(`some error occurred while building "artifact2"`),
+			err:         fmt.Errorf(`build [artifact2] failed: %w`, fmt.Errorf(`some error occurred while building "artifact2"`)),
 		},
 	}
 	for _, test := range tests {

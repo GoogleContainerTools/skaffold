@@ -136,7 +136,7 @@ func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
 
 	return []*proto.Suggestion{{
 		SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
-		Action:         "Trying running with `--default-repo` flag",
+		Action:         "Try running with `--default-repo` flag",
 	}}
 }
 

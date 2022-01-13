@@ -89,6 +89,7 @@ type SkaffoldOptions struct {
 
 	BuildConcurrency  int
 	DefaultRepo       StringOrUndefined
+	MultiLevelRepo    *bool
 	MakePathsAbsolute *bool
 	Muted             Muted
 	PortForward       PortForwardOptions

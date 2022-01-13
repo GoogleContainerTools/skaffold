@@ -45,6 +45,7 @@ type scheduler struct {
 	logger          logAggregator
 	results         ArtifactStore
 	concurrencySem  countingSemaphore
+	reportFailure   bool
 }
 
 func newScheduler(artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilder, concurrency int, out io.Writer, store ArtifactStore) *scheduler {
@@ -55,6 +56,9 @@ func newScheduler(artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilde
 		logger:          newLogAggregator(out, len(artifacts), concurrency),
 		results:         store,
 		concurrencySem:  newCountingSemaphore(concurrency),
+
+		// avoid visual stutters from reporting failures inline and Skaffold's final command output
+		reportFailure: concurrency != 1 && len(artifacts) > 1,
 	}
 	return &s
 }
@@ -112,19 +116,24 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	defer closeFn()
 
 	w, ctx = output.WithEventContext(ctx, w, constants.Build, a.ImageName)
+	output.Default.Fprintf(w, "Building [%s]...\n", a.ImageName)
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
-		if errors.Is(ctx.Err(), context.Canceled) {
-			output.Yellow.Fprintf(w, "Canceled build for %s\n", a.ImageName)
-			eventV2.BuildCanceled(a.ImageName, err)
-		} else {
-			eventV2.BuildFailed(a.ImageName, err)
-		}
 		endTrace(instrumentation.TraceEndError(err))
-		return err
+		if errors.Is(ctx.Err(), context.Canceled) {
+			output.Yellow.Fprintf(w, "Build [%s] was canceled\n", a.ImageName)
+			eventV2.BuildCanceled(a.ImageName, err)
+			return err
+		}
+		if s.reportFailure {
+			output.Red.Fprintf(w, "Build [%s] failed: %v\n", a.ImageName, err)
+		}
+		eventV2.BuildFailed(a.ImageName, err)
+		return fmt.Errorf("build [%s] failed: %w", a.ImageName, err)
 	}
 
+	output.Default.Fprintf(w, "Build [%s] succeeded\n", a.ImageName)
 	s.results.Record(a, finalTag)
 	n.markComplete()
 	event.BuildComplete(a.ImageName)
@@ -148,7 +157,6 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 }
 
 func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latestV1.Artifact, build ArtifactBuilder) (string, error) {
-	output.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
 	tag, present := tags[artifact.ImageName]
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)

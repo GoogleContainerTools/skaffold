@@ -29,6 +29,7 @@ func TestConfigListForContext(t *testing.T) {
 	out := skaffold.Config("list", "-c", "testdata/config/config.yaml", "-k", "test-context").RunOrFailOutput(t)
 
 	testutil.CheckContains(t, "default-repo: context-local-repository", string(out))
+	testutil.CheckContains(t, "multi-level-repo: true", string(out))
 }
 
 func TestConfigListForAll(t *testing.T) {
@@ -39,8 +40,10 @@ func TestConfigListForAll(t *testing.T) {
 	for _, output := range []string{
 		"global:",
 		"default-repo: global-repository",
+		"multi-level-repo: false",
 		"kube-context: test-context",
 		"default-repo: context-local-repository",
+		"multi-level-repo: true",
 	} {
 		testutil.CheckContains(t, output, string(out))
 	}
@@ -65,6 +68,17 @@ func TestSetDefaultRepoForContext(t *testing.T) {
 	testutil.CheckContains(t, "default-repo: REPO1", string(out))
 }
 
+func TestSetMultiLevelRepoForContext(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	file := testutil.TempFile(t, "config", nil)
+
+	skaffold.Config("set", "multi-level-repo", "false", "-c", file, "-k", "test-context").RunOrFail(t)
+	out := skaffold.Config("list", "-c", file, "-k", "test-context").RunOrFailOutput(t)
+
+	testutil.CheckContains(t, "multi-level-repo: false", string(out))
+}
+
 func TestSetGlobalDefaultRepo(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -74,4 +88,15 @@ func TestSetGlobalDefaultRepo(t *testing.T) {
 	out := skaffold.Config("list", "-c", file, "--all").RunOrFailOutput(t)
 
 	testutil.CheckContains(t, "default-repo: REPO2", string(out))
+}
+
+func TestSetGlobalMultiLevelRepo(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	file := testutil.TempFile(t, "config", nil)
+
+	skaffold.Config("set", "multi-level-repo", "true", "-c", file, "--global").RunOrFail(t)
+	out := skaffold.Config("list", "-c", file, "--all").RunOrFailOutput(t)
+
+	testutil.CheckContains(t, "multi-level-repo: true", string(out))
 }

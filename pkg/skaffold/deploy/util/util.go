@@ -38,7 +38,12 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 		return "", fmt.Errorf("getting default repo: %w", err)
 	}
 
-	newTag, err := docker.SubstituteDefaultRepoIntoImage(repo, tag)
+	multiLevel, err := config.GetMultiLevelRepo(globalConfig)
+	if err != nil {
+		return "", fmt.Errorf("getting multi-level repo support: %w", err)
+	}
+
+	newTag, err := docker.SubstituteDefaultRepoIntoImage(repo, multiLevel, tag)
 	if err != nil {
 		return "", fmt.Errorf("applying default repo to %q: %w", tag, err)
 	}

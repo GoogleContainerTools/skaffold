@@ -210,6 +210,10 @@ func SendErrorMessageOnce(task constants.Phase, subtaskID string, err error) {
 }
 
 func (ev *eventHandler) sendErrorMessage(task constants.Phase, subtask string, err error) {
+	if err == nil {
+		return
+	}
+
 	ev.errorOnce.Do(func() {
 		ev.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
 			TaskId:    fmt.Sprintf("%s-%d", task, handler.iteration),
