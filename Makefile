@@ -138,15 +138,32 @@ release: $(BUILD_DIR)/VERSION
 		.
 
 .PHONY: release-build
-release-build: cross
+release-build:
 	docker build \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
 		.
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
-	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
+
+.PHONY: release-lts
+release-lts: $(BUILD_DIR)/VERSION
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		-f deploy/skaffold/Dockerfile.lts \
+		--target release \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
+		.
+
+.PHONY: release-lts-build
+release-lts-build:
+	docker build \
+		-f deploy/skaffold/Dockerfile.lts \
+		--target release \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:edge-lts \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT)-lts \
+		.
 
 .PHONY: clean
 clean:
