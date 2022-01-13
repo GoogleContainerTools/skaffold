@@ -49,7 +49,7 @@ func newLabelsSetter(labels map[string]string) *labelsSetter {
 	}
 }
 
-func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) bool {
+func (r *labelsSetter) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
 	if k != "metadata" {
 		return true
 	}
