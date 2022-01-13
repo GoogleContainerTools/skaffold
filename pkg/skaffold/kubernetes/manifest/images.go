@@ -37,7 +37,7 @@ type imageSaver struct {
 	Images []graph.Artifact
 }
 
-func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) bool {
+func (is *imageSaver) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
 	if k != "image" {
 		return true
 	}
@@ -112,7 +112,7 @@ func newImageReplacer(builds []graph.Artifact, selector imageSelector) *imageRep
 	}
 }
 
-func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{}) bool {
+func (r *imageReplacer) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
 	if k != "image" {
 		return true
 	}
