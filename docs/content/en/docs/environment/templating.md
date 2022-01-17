@@ -24,6 +24,7 @@ List of fields that support templating:
 * `deploy.helm.releases.version` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
 * `deploy.kubectl.defaultNamespace`
 * `deploy.kustomize.defaultNamespace`
+* `deploy.kustomize.paths.[]`
 * `portForward.namespace`
 * `portForward.resourceName`
 
