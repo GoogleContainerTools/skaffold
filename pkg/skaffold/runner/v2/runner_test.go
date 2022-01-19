@@ -531,8 +531,7 @@ func TestNewForConfig(t *testing.T) {
 				return "", semver.Version{}, errors.New("not found")
 			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
-				"helm version --client", `version.BuildInfo{Version:"v3.7.0"}`).
-				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
+				"kubectl version --client -ojson", "v1.5.6"))
 			tmpDir := t.NewTempDir()
 			tmpDir.Chdir()
 			runCtx := &v2.RunContext{
