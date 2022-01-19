@@ -17,35 +17,31 @@ limitations under the License.
 package lsp
 
 import (
-	"sync"
+	"github.com/spf13/afero"
 )
 
-// DocumentManager manages syncing documents for the LSP server
+// DocumentManager manages syncing memMapFs for the LSP server
 type DocumentManager struct {
-	documents map[string]string
-	mtx       sync.RWMutex
+	memMapFs afero.Fs
 }
 
 // NewDocumentManager creates a new DocumentManager object
-func NewDocumentManager() *DocumentManager {
+func NewDocumentManager(fs afero.Fs) *DocumentManager {
 	return &DocumentManager{
-		documents: make(map[string]string),
+		memMapFs: fs,
 	}
 }
 
-// UpdateDocument updates the string value for a document
+// UpdateDocument updates the string value for a memMapFs
 func (m *DocumentManager) UpdateDocument(documentURI string, doc string) {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-	m.documents[documentURI] = doc
+	afero.WriteFile(m.memMapFs, documentURI, []byte(doc), 0644)
 }
 
-// GetDocument gets the string value for a document
+// GetDocument gets the string value for a memMapFs
 func (m *DocumentManager) GetDocument(documentURI string) string {
-	m.mtx.RLock()
-	defer m.mtx.RUnlock()
-	if doc, ok := m.documents[documentURI]; ok {
-		return doc
+	b, err := afero.ReadFile(m.memMapFs, documentURI)
+	if err != nil {
+		return ""
 	}
-	return ""
+	return string(b)
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -68,7 +69,7 @@ profiles:
 		t.CheckTrue(len(parsed) > 0)
 
 		skaffoldConfig := parsed[0].(*latestV1.SkaffoldConfig)
-		activated, err := ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"patches"})
+		activated, _, err := ApplyProfiles(skaffoldConfig, map[string]configlocations.YAMLOverrideInfo{}, cfg.SkaffoldOptions{}, []string{"patches"})
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]string{"patches"}, activated)
 		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
@@ -98,7 +99,7 @@ profiles:
 		t.CheckTrue(len(parsed) > 0)
 
 		skaffoldConfig := parsed[0].(*latestV1.SkaffoldConfig)
-		_, err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"patches"})
+		_, _, err = ApplyProfiles(skaffoldConfig, map[string]configlocations.YAMLOverrideInfo{}, cfg.SkaffoldOptions{}, []string{"patches"})
 		t.CheckErrorAndDeepEqual(true, err, `applying profile "patches": invalid path: /build/artifacts/0/image/`, err.Error())
 	})
 }
@@ -479,7 +480,7 @@ func TestApplyProfiles(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
-			_, err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
+			_, _, err := ApplyProfiles(test.config, map[string]configlocations.YAMLOverrideInfo{}, cfg.SkaffoldOptions{
 				Command:               "dev",
 				KubeContext:           test.kubeContextCli,
 				ProfileAutoActivation: test.profileAutoActivationCli,
@@ -805,7 +806,7 @@ profiles:
 		t.CheckDeepEqual("simple2", skaffoldConfig.Profiles[1].Name)
 		t.CheckDeepEqual([]latestV1.Activation{{Env: "ABC=common"}, {Env: "ABC=2"}}, skaffoldConfig.Profiles[1].Activation)
 
-		applied, err := ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"simple1"})
+		applied, _, err := ApplyProfiles(skaffoldConfig, map[string]configlocations.YAMLOverrideInfo{}, cfg.SkaffoldOptions{}, []string{"simple1"})
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]string{"simple1"}, applied)
 		t.CheckDeepEqual(1, len(skaffoldConfig.Build.Artifacts))
