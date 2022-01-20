@@ -39,7 +39,7 @@ const (
 
 var (
 	//nolint:golint,unused
-	ignoredSamples  = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
+	ignoredSamples = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
 	//nolint:golint,unused
 	ignoredExamples = []string{"docker-deploy", "react-reload-docker"}
 )

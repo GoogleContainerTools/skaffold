@@ -26,7 +26,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -45,6 +44,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -269,11 +269,11 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		}
 	} else {
 		if k.InventoryID != "" && k.InventoryID != kfConfig.Inventory.InventoryID {
-			logrus.Warnf("Updating Kptfile inventory from %v to %v", kfConfig.Inventory.InventoryID, k.InventoryID)
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile inventory from %v to %v", kfConfig.Inventory.InventoryID, k.InventoryID)
 			kfConfig.Inventory.InventoryID = k.InventoryID
 		}
 		if k.Name != "" && k.Name != kfConfig.Inventory.Name {
-			logrus.Warnf("Updating Kptfile name from %v to %v", kfConfig.Inventory.Name, k.Name)
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile name from %v to %v", kfConfig.Inventory.Name, k.Name)
 			kfConfig.Inventory.Name = k.Name
 		}
 		// Set the namespace to be a valid kubernetes namespace value. If not specified, the value shall be "default".
@@ -284,10 +284,10 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 			k.InventoryNamespace = defaultNs
 		}
 		if k.namespace != kfConfig.Inventory.Namespace {
-			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.namespace)
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.namespace)
 			kfConfig.Inventory.Namespace = k.namespace
 		} else if k.InventoryNamespace != kfConfig.Inventory.Namespace {
-			logrus.Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.InventoryNamespace)
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.InventoryNamespace)
 			kfConfig.Inventory.Namespace = k.InventoryNamespace
 		}
 		configByte, err := yaml.Marshal(kfConfig)
