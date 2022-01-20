@@ -440,13 +440,14 @@ func fromInstruction(node *parser.Node) from {
 // unquote remove single quote/double quote pairs around a string value.
 // It looks like FROM "scratch" and FROM 'scratch' and FROM """scratch"""...
 // are valid forms of FROM scratch.
+// Quotes are also accepted on tags, e.g. golang:"1.15".
 func unquote(v string) string {
-	unquoted := strings.TrimFunc(v, func(r rune) bool { return r == '"' })
+	unquoted := strings.ReplaceAll(v, "\"", "")
 	if unquoted != v {
 		return unquoted
 	}
 
-	unquoted = strings.TrimFunc(v, func(r rune) bool { return r == '\'' })
+	unquoted = strings.ReplaceAll(v, "'", "")
 	return unquoted
 }
 

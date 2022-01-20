@@ -192,7 +192,7 @@ func (rc *RunContext) CacheFile() string                             { return rc
 func (rc *RunContext) ConfigurationFile() string                     { return rc.Opts.ConfigurationFile }
 func (rc *RunContext) CustomLabels() []string                        { return rc.Opts.CustomLabels }
 func (rc *RunContext) CustomTag() string                             { return rc.Opts.CustomTag }
-func (rc *RunContext) DefaultRepo() *string                          { return rc.Opts.DefaultRepo.Value() }
+func (rc *RunContext) DefaultRepo() *string                          { return rc.Cluster.DefaultRepo.Value() }
 func (rc *RunContext) MultiLevelRepo() *bool                         { return rc.Opts.MultiLevelRepo }
 func (rc *RunContext) Mode() config.RunMode                          { return rc.Opts.Mode() }
 func (rc *RunContext) DigestSource() string                          { return rc.Opts.DigestSource }
@@ -268,7 +268,12 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	cluster, err := config.GetCluster(ctx, opts.GlobalConfig, opts.MinikubeProfile, opts.DetectMinikube)
+	cluster, err := config.GetCluster(ctx, config.GetClusterOpts{
+		ConfigFile:      opts.GlobalConfig,
+		DefaultRepo:     opts.DefaultRepo,
+		MinikubeProfile: opts.MinikubeProfile,
+		DetectMinikube:  opts.DetectMinikube,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("getting cluster: %w", err)
 	}

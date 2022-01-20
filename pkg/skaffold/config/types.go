@@ -31,6 +31,14 @@ type StringOrUndefined struct {
 	value *string
 }
 
+func (s StringOrUndefined) Equal(o StringOrUndefined) bool {
+	if s.value == nil || o.value == nil {
+		return s.value == o.value
+	}
+
+	return *s.value == *o.value
+}
+
 func (s *StringOrUndefined) Type() string {
 	return "string"
 }
@@ -54,6 +62,10 @@ func (s *StringOrUndefined) String() string {
 		return ""
 	}
 	return *s.value
+}
+
+func NewStringOrUndefined(v *string) StringOrUndefined {
+	return StringOrUndefined{value: v}
 }
 
 // BoolOrUndefined holds the value of a flag of type `bool`,
@@ -159,7 +171,8 @@ func (m Muted) mute(phase string) bool {
 }
 
 type Cluster struct {
-	Local      bool
-	PushImages bool
-	LoadImages bool
+	Local       bool
+	PushImages  bool
+	LoadImages  bool
+	DefaultRepo StringOrUndefined
 }

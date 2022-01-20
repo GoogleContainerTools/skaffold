@@ -48,7 +48,7 @@ func newNamespaceCollector() *namespaceCollector {
 	}
 }
 
-func (r *namespaceCollector) Visit(o map[string]interface{}, k string, v interface{}) bool {
+func (r *namespaceCollector) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
 	if k != "metadata" {
 		return true
 	}
