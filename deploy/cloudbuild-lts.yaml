@@ -45,6 +45,7 @@ steps:
     - 'version'
 
 images:
+- 'gcr.io/$PROJECT_ID/build_deps:latest-lts'
 - 'gcr.io/$PROJECT_ID/skaffold:edge-lts'
 - 'gcr.io/$PROJECT_ID/skaffold:$COMMIT_SHA-lts'
 
