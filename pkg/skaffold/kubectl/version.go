@@ -106,7 +106,7 @@ func (c *CLI) Version(ctx context.Context) ClientVersion {
 		if err != nil {
 			warnings.Printf("unable to get kubectl client version: %v", err)
 		} else if err := json.Unmarshal(buf, &version); err != nil {
-			warnings.Printf("unable to parse client version: %v", err)
+			warnings.Printf("unable to parse client version %s: %v", string(buf), err)
 		}
 
 		c.version = version.Client
