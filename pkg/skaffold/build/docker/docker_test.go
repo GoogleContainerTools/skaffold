@@ -192,7 +192,7 @@ func TestDockerCLIBuild(t *testing.T) {
 
 func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 	defer func(l logrus.Level) { logrus.SetLevel(l) }(logrus.GetLevel())
-	logrus.SetLevel(test.logrusLevel)
+	logrus.SetLevel(logrus.TraceLevel)
 
 	tests := []struct {
 		description       string
