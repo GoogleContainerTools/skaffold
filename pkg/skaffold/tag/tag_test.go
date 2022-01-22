@@ -98,6 +98,18 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			tagger:      customTemplateExample,
 			expected:    "test:" + dateTimeExpected + "_latest",
 		},
+		{
+			description: "error on invalid image tag",
+			imageName:   "test",
+			tagger:      &CustomTag{Tag: "bar:bar"},
+			shouldErr:   true,
+		},
+		{
+			description: "error on invalid image tag inside imageName",
+			imageName:   "test:bar:bar",
+			tagger:      &ChecksumTagger{},
+			shouldErr:   true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
