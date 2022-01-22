@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/errdefs"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -190,6 +191,9 @@ func TestDockerCLIBuild(t *testing.T) {
 }
 
 func TestDockerCLICheckCacheFromArgs(t *testing.T) {
+	defer func(l logrus.Level) { logrus.SetLevel(l) }(logrus.GetLevel())
+	logrus.SetLevel(test.logrusLevel)
+
 	tests := []struct {
 		description       string
 		artifact          *latestV1.Artifact
