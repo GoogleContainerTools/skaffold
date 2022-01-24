@@ -3301,6 +3301,11 @@
           "description": "describes user defined resources to port-forward.",
           "x-intellij-html-description": "describes user defined resources to port-forward."
         },
+        "resourceSelector": {
+          "$ref": "#/definitions/ResourceSelectorConfig",
+          "description": "describes user defined filters describing how skaffold should treat objects/fields during rendering.",
+          "x-intellij-html-description": "describes user defined filters describing how skaffold should treat objects/fields during rendering."
+        },
         "test": {
           "items": {
             "$ref": "#/definitions/TestCase"
@@ -3317,7 +3322,8 @@
         "build",
         "test",
         "deploy",
-        "portForward"
+        "portForward",
+        "resourceSelector"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -3355,9 +3361,14 @@
     },
     "ResourceFilter": {
       "required": [
-        "type"
+        "groupKind"
       ],
       "properties": {
+        "groupKind": {
+          "type": "string",
+          "description": "compact format of a resource type.",
+          "x-intellij-html-description": "compact format of a resource type."
+        },
         "image": {
           "items": {
             "type": "string"
@@ -3375,15 +3386,10 @@
           "description": "an optional slide of JSON-path-like paths of where to add a labels block if missing.",
           "x-intellij-html-description": "an optional slide of JSON-path-like paths of where to add a labels block if missing.",
           "default": "[]"
-        },
-        "type": {
-          "type": "string",
-          "description": "compact format of a resource type.",
-          "x-intellij-html-description": "compact format of a resource type."
         }
       },
       "preferredOrder": [
-        "type",
+        "groupKind",
         "image",
         "labels"
       ],
@@ -3460,6 +3466,34 @@
       "description": "describes the resource requirements for the kaniko pod.",
       "x-intellij-html-description": "describes the resource requirements for the kaniko pod."
     },
+    "ResourceSelectorConfig": {
+      "properties": {
+        "allow": {
+          "items": {
+            "$ref": "#/definitions/ResourceFilter"
+          },
+          "type": "array",
+          "description": "configures an allowlist for transforming manifests.",
+          "x-intellij-html-description": "configures an allowlist for transforming manifests."
+        },
+        "deny": {
+          "items": {
+            "$ref": "#/definitions/ResourceFilter"
+          },
+          "type": "array",
+          "description": "configures an allowlist for transforming manifests.",
+          "x-intellij-html-description": "configures an allowlist for transforming manifests."
+        }
+      },
+      "preferredOrder": [
+        "allow",
+        "deny"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "contains all the configuration needed by the deploy steps.",
+      "x-intellij-html-description": "contains all the configuration needed by the deploy steps."
+    },
     "ResourceType": {
       "type": "string",
       "description": "describes the Kubernetes resource types used for port forwarding.",
@@ -3526,6 +3560,11 @@
           "description": "describes a list of other required configs for the current config.",
           "x-intellij-html-description": "describes a list of other required configs for the current config."
         },
+        "resourceSelector": {
+          "$ref": "#/definitions/ResourceSelectorConfig",
+          "description": "describes user defined filters describing how skaffold should treat objects/fields during rendering.",
+          "x-intellij-html-description": "describes user defined filters describing how skaffold should treat objects/fields during rendering."
+        },
         "test": {
           "items": {
             "$ref": "#/definitions/TestCase"
@@ -3544,6 +3583,7 @@
         "test",
         "deploy",
         "portForward",
+        "resourceSelector",
         "profiles"
       ],
       "additionalProperties": false,

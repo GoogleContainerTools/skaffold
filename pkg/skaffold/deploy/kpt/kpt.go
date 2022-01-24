@@ -30,6 +30,7 @@ import (
 
 	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -100,6 +101,9 @@ type Deployer struct {
 	namespace          string
 
 	namespaces *[]string
+
+	transformableAllowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
+	transformableDenylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
 }
 
 type Config interface {
@@ -110,7 +114,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDeploy) *Deployer {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDeploy) (*Deployer, error) {
 	podSelector := kubernetes.NewImageList()
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
@@ -118,24 +122,30 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDep
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
-	return &Deployer{
-		KptDeploy:          d,
-		podSelector:        podSelector,
-		namespaces:         &namespaces,
-		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
-		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:        component.NewImageLoader(cfg, kubectl),
-		logger:             logger,
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:             component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		labels:             labeller.Labels(),
-		globalConfig:       cfg.GlobalConfig(),
-		hasKustomization:   hasKustomization,
-		kubeContext:        cfg.GetKubeContext(),
-		kubeConfig:         cfg.GetKubeConfig(),
-		namespace:          cfg.GetKubeNamespace(),
+	transformableAllowlist, transformableDenylist, err := deployutil.ConsolidateTransformConfiguration(cfg)
+	if err != nil {
+		return nil, err
 	}
+	return &Deployer{
+		KptDeploy:              d,
+		podSelector:            podSelector,
+		namespaces:             &namespaces,
+		accessor:               component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:            component.NewImageLoader(cfg, kubectl),
+		logger:                 logger,
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
+		insecureRegistries:     cfg.GetInsecureRegistries(),
+		labels:                 labeller.Labels(),
+		globalConfig:           cfg.GlobalConfig(),
+		hasKustomization:       hasKustomization,
+		kubeContext:            cfg.GetKubeContext(),
+		kubeConfig:             cfg.GetKubeConfig(),
+		namespace:              cfg.GetKubeNamespace(),
+		transformableAllowlist: transformableAllowlist,
+		transformableDenylist:  transformableDenylist,
+	}, nil
 }
 
 func (k *Deployer) trackNamespaces(namespaces []string) {
@@ -475,12 +485,12 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 		return nil, fmt.Errorf("excluding kpt functions from manifests: %w", err)
 	}
 	if k.originalImages == nil {
-		k.originalImages, err = manifests.GetImages()
+		k.originalImages, err = manifests.GetImages(manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 		if err != nil {
 			return nil, err
 		}
 	}
-	manifests, err = manifests.ReplaceImages(ctx, builds)
+	manifests, err = manifests.ReplaceImages(ctx, builds, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 	if err != nil {
 		return nil, fmt.Errorf("replacing images in manifests: %w", err)
 	}
@@ -489,7 +499,7 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 		return nil, err
 	}
 
-	return manifests.SetLabels(k.labels)
+	return manifests.SetLabels(k.labels, manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 }
 
 func sink(ctx context.Context, buf []byte, sinkDir string) error {

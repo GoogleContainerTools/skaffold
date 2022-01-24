@@ -20,9 +20,14 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -180,3 +185,128 @@ func TestAddTagsToPodSelector(t *testing.T) {
 		})
 	}
 }
+
+func TestConsolidateTransformConfiguration(t *testing.T) {
+	tests := []struct {
+		description           string
+		shouldErr             bool
+		allowSchemaTransforms []latestV1.ResourceFilter
+		denySchemaTransforms  []latestV1.ResourceFilter
+		flagTransforms        latestV1.ResourceSelectorConfig
+		expected              func(map[schema.GroupKind]latestV1.ResourceFilter, map[schema.GroupKind]latestV1.ResourceFilter) (map[schema.GroupKind]latestV1.ResourceFilter, map[schema.GroupKind]latestV1.ResourceFilter)
+	}{
+		{
+			description: "verify schema transform configuration outprioritizes default hardcoded transform configuration",
+			denySchemaTransforms: []latestV1.ResourceFilter{
+				{
+					GroupKind: "Deployment.apps",
+				},
+			},
+			expected: func(allow map[schema.GroupKind]latestV1.ResourceFilter, deny map[schema.GroupKind]latestV1.ResourceFilter) (map[schema.GroupKind]latestV1.ResourceFilter, map[schema.GroupKind]latestV1.ResourceFilter) {
+				// Deployment.apps removed from hardcoded allowlist
+				delete(allow, schema.GroupKind{Group: "apps", Kind: "Deployment"})
+				// Deployment.apps added to denylist
+				deny[schema.GroupKind{Group: "apps", Kind: "Deployment"}] = latestV1.ResourceFilter{GroupKind: "Deployment.apps"}
+				return allow, deny
+			},
+		},
+		{
+			description: "verify flag transform configuration outprioritizes schema transform configuration",
+			flagTransforms: latestV1.ResourceSelectorConfig{
+				Allow: []latestV1.ResourceFilter{
+					{
+						GroupKind: "Test.skaffold.dev",
+					},
+				},
+			},
+			denySchemaTransforms: []latestV1.ResourceFilter{
+				{
+					GroupKind: "Test.skaffold.dev",
+				},
+			},
+			expected: func(allow map[schema.GroupKind]latestV1.ResourceFilter, deny map[schema.GroupKind]latestV1.ResourceFilter) (map[schema.GroupKind]latestV1.ResourceFilter, map[schema.GroupKind]latestV1.ResourceFilter) {
+				// Test.skaffold.dev added to allowlist as flag config outprioritizes schema config
+				allow[schema.GroupKind{Group: "skaffold.dev", Kind: "Test"}] = latestV1.ResourceFilter{GroupKind: "Test.skaffold.dev"}
+				return allow, deny
+			},
+		},
+		{
+			description: "verify denylist outprioritizes allowlist transform configuration (for same config input source)",
+			flagTransforms: latestV1.ResourceSelectorConfig{
+				Allow: []latestV1.ResourceFilter{
+					{
+						GroupKind: "Test.skaffold.dev",
+					},
+				},
+				Deny: []latestV1.ResourceFilter{
+					{
+						GroupKind: "Test.skaffold.dev",
+					},
+				},
+			},
+			expected: func(allow map[schema.GroupKind]latestV1.ResourceFilter, deny map[schema.GroupKind]latestV1.ResourceFilter) (map[schema.GroupKind]latestV1.ResourceFilter, map[schema.GroupKind]latestV1.ResourceFilter) {
+				// Test.skaffold.dev added to denylist as deny config outprioritizes allow config for same priority config source (both flag config)
+				deny[schema.GroupKind{Group: "skaffold.dev", Kind: "Test"}] = latestV1.ResourceFilter{GroupKind: "Test.skaffold.dev"}
+				return allow, deny
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// convert flagTransform struct to yaml
+			buf, err := yaml.Marshal(test.flagTransforms)
+			if err != nil {
+				t.Fatalf("error marshalling flagTransforms test inputs: %v", err)
+			}
+
+			// denybuf, err := yaml.Marshal(test.denyFlagTransforms)
+			// if err != nil {
+			// t.Fatalf("error marshalling denyFlagTransforms test inputs: %v", err)
+			// }
+
+			flagTransformYAMLFile := t.TempFile("TestConsolidateTransformConfiguration", buf)
+
+			cfg := &mockDeployConfig{
+				transformAllowList: test.allowSchemaTransforms,
+				transformDenyList:  test.denySchemaTransforms,
+				transformRulesFile: flagTransformYAMLFile,
+			}
+			allowlist, denylist, err := ConsolidateTransformConfiguration(cfg)
+			t.CheckError(test.shouldErr, err)
+
+			copyAllow := map[schema.GroupKind]latestV1.ResourceFilter{}
+			for k, v := range manifest.TransformAllowlist {
+				copyAllow[k] = v
+			}
+
+			copyDeny := map[schema.GroupKind]latestV1.ResourceFilter{}
+			for k, v := range manifest.TransformDenylist {
+				copyDeny[k] = v
+			}
+			expectedAllowlist, expectedDenyList := test.expected(copyAllow, copyDeny)
+			t.CheckDeepEqual(expectedAllowlist, allowlist)
+			t.CheckDeepEqual(expectedDenyList, denylist)
+		})
+	}
+}
+
+type mockDeployConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	transformAllowList    []latestV1.ResourceFilter
+	transformDenyList     []latestV1.ResourceFilter
+	transformRulesFile    string
+}
+
+func (c *mockDeployConfig) ForceDeploy() bool                                     { return false }
+func (c *mockDeployConfig) GetKubeConfig() string                                 { return "" }
+func (c *mockDeployConfig) GetKubeContext() string                                { return "" }
+func (c *mockDeployConfig) GetKubeNamespace() string                              { return "" }
+func (c *mockDeployConfig) ConfigurationFile() string                             { return "" }
+func (c *mockDeployConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }
+func (c *mockDeployConfig) TransformAllowList() []latestV1.ResourceFilter {
+	return c.transformAllowList
+}
+func (c *mockDeployConfig) TransformDenyList() []latestV1.ResourceFilter {
+	return c.transformDenyList
+}
+func (c *mockDeployConfig) TransformRulesFile() string { return c.transformRulesFile }

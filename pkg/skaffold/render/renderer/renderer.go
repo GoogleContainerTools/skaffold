@@ -139,11 +139,13 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	if err != nil {
 		return err
 	}
-	manifests, err = manifests.ReplaceImages(ctx, builds)
+	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
+	manifests, err = manifests.ReplaceImages(ctx, builds, manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
 	if err != nil {
 		return err
 	}
-	manifests.SetLabels(r.labels)
+	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
+	manifests.SetLabels(r.labels, manifest.NewResourceSelectorLabels(manifest.TransformAllowlist, manifest.TransformDenylist))
 
 	// cache the dry manifests to the temp directory. manifests.yaml will be truncated if already exists.
 	dryConfigPath := filepath.Join(r.hydrationDir, dryFileName)
