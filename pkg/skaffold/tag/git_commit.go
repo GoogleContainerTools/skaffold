@@ -44,6 +44,7 @@ var variants = map[string]func(context.Context, string) (string, error){
 	"abbrevcommitsha": gitAbbrevcommitsha,
 	"treesha":         gitTreesha,
 	"abbrevtreesha":   gitAbbrevtreesha,
+	"branches":        gitBranches,
 }
 
 // NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
@@ -133,6 +134,15 @@ func gitAbbrevtreesha(ctx context.Context, workingDir string) (string, error) {
 	}
 
 	return runGit(ctx, workingDir, "rev-parse", "--short", "HEAD:"+gitPath+"/")
+}
+
+func gitBranches(ctx context.Context, workingDir string) (string, error) {
+	gitBranch, err := runGit(ctx, workingDir, "branch", "--show-current")
+	if err != nil {
+		return gitAbbrevcommitsha(ctx, workingDir)
+	}
+
+	return gitBranch, nil
 }
 
 func getGitPathToWorkdir(ctx context.Context, workingDir string) (string, error) {

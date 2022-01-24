@@ -107,23 +107,18 @@ func (m *YAMLInfos) LocateElement(obj interface{}, idx int) *Location {
 }
 
 // Locate gets the location for a skaffold schema struct pointer
-func (m *YAMLInfos) LocateField(obj interface{}, fieldName string) *Location {
-	return m.locate(obj, fieldName)
-}
-
-func (m *YAMLInfos) locate(obj interface{}, key string) *Location {
-	kind := reflect.ValueOf(obj).Kind()
-	if kind != reflect.Ptr {
-		log.Entry(context.TODO()).Infof("non pointer object passed to Locate: %v of type %T", obj, obj)
+func (m *YAMLInfos) LocateByPointer(ptr uintptr) *Location {
+	if m == nil {
+		log.Entry(context.TODO()).Infof("YamlInfos is nil, unable to complete call to LocateByPointer for pointer: %d", ptr)
 		return MissingLocation()
 	}
-	if _, ok := m.yamlInfos[reflect.ValueOf(obj).Pointer()]; !ok {
-		log.Entry(context.TODO()).Infof("no map entry found when attempting Locate for %v of type %T and pointer: %d", obj, obj, reflect.ValueOf(obj).Pointer())
+	if _, ok := m.yamlInfos[ptr]; !ok {
+		log.Entry(context.TODO()).Infof("no map entry found when attempting LocateByPointer for pointer: %d", ptr)
 		return MissingLocation()
 	}
-	node, ok := m.yamlInfos[reflect.ValueOf(obj).Pointer()][key]
+	node, ok := m.yamlInfos[ptr][""]
 	if !ok {
-		log.Entry(context.TODO()).Infof("no map entry found when attempting Locate for %v of type %T and pointer: %d", obj, obj, reflect.ValueOf(obj).Pointer())
+		log.Entry(context.TODO()).Infof("no map entry found when attempting LocateByPointer for pointer: %d", ptr)
 		return MissingLocation()
 	}
 	// iterate over kyaml.RNode text to get endline and endcolumn information
@@ -131,7 +126,49 @@ func (m *YAMLInfos) locate(obj interface{}, key string) *Location {
 	if err != nil {
 		return MissingLocation()
 	}
-	log.Entry(context.TODO()).Infof("map entry found when executing Locate for %v of type %T and pointer: %d", obj, obj, reflect.ValueOf(obj).Pointer())
+	log.Entry(context.TODO()).Infof("map entry found when executing LocateByPointer for pointer: %d", ptr)
+	lines, cols := getLinesAndColsOfString(nodeText)
+
+	// TODO(aaron-prindle) all line & col values seem 1 greater than expected in actual use, will need to check to see how it works with IDE
+	return &Location{
+		SourceFile:  node.SourceFile,
+		StartLine:   node.RNode.Document().Line,
+		StartColumn: node.RNode.Document().Column,
+		EndLine:     node.RNode.Document().Line + lines,
+		EndColumn:   cols,
+	}
+}
+
+// Locate gets the location for a skaffold schema struct pointer
+func (m *YAMLInfos) LocateField(obj interface{}, fieldName string) *Location {
+	return m.locate(obj, fieldName)
+}
+
+func (m *YAMLInfos) locate(obj interface{}, key string) *Location {
+	if m == nil {
+		log.Entry(context.TODO()).Infof("YamlInfos is nil, unable to complete call to locate with params: %v of type %T", obj, obj)
+		return MissingLocation()
+	}
+	v := reflect.ValueOf(obj)
+	if v.Kind() != reflect.Ptr {
+		log.Entry(context.TODO()).Infof("non pointer object passed to locate: %v of type %T", obj, obj)
+		return MissingLocation()
+	}
+	if _, ok := m.yamlInfos[v.Pointer()]; !ok {
+		log.Entry(context.TODO()).Infof("no map entry found when attempting locate for %v of type %T and pointer: %d", obj, obj, v.Pointer())
+		return MissingLocation()
+	}
+	node, ok := m.yamlInfos[v.Pointer()][key]
+	if !ok {
+		log.Entry(context.TODO()).Infof("no map entry found when attempting locate for %v of type %T and pointer: %d", obj, obj, v.Pointer())
+		return MissingLocation()
+	}
+	// iterate over kyaml.RNode text to get endline and endcolumn information
+	nodeText, err := node.RNode.String()
+	if err != nil {
+		return MissingLocation()
+	}
+	log.Entry(context.TODO()).Infof("map entry found when executing locate for %v of type %T and pointer: %d", obj, obj, v.Pointer())
 	lines, cols := getLinesAndColsOfString(nodeText)
 
 	// TODO(aaron-prindle) all line & col values seem 1 greater than expected in actual use, will need to check to see how it works with IDE
@@ -168,7 +205,8 @@ func buildMapOfSchemaObjPointerToYAMLInfos(sourceFile string, config *latestV1.S
 		return nil, err
 	}
 	// TODO(aaron-prindle) perhaps add some defensive logic to recover from panic when using reflection and instead return error?
-	return generateObjPointerToYAMLNodeMap(sourceFile, reflect.ValueOf(config), reflect.ValueOf(nil), "", "", []string{}, root, root, -1, fieldsOverrodeByProfile, map[interface{}]bool{}, yamlInfos, false)
+	return generateObjPointerToYAMLNodeMap(sourceFile, reflect.ValueOf(config), reflect.ValueOf(nil), "", "", []string{},
+		root, root, -1, fieldsOverrodeByProfile, map[interface{}]bool{}, yamlInfos, false)
 }
 
 // generateObjPointerToYAMLNodeMap recursively walks through a structs fields (taking into account profile and patch profile overrides)
@@ -250,7 +288,7 @@ func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV
 		v = v.Elem()
 	}
 
-	if yamlTag != "" { // this check is done to not emit entries for structs that are `yaml:",inline"`
+	if yamlTag != "" { // check that struct is not `yaml:",inline"`
 		// traverse kyaml node tree to current obj/field location
 		var kf kyaml.Filter
 		switch {
@@ -263,43 +301,48 @@ func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV
 		if err != nil {
 			return nil, err
 		}
+		if rNode == nil {
+			return yamlInfos, nil
+		}
 
-		if rNode != nil {
-			if v.CanAddr() {
-				if _, ok := yamlInfos[v.Addr().Pointer()]; !ok {
-					yamlInfos[v.Addr().Pointer()] = map[string]YAMLInfo{}
+		// this case is so that the line #'s of primitive values can be "located" as they are not addressable but we can
+		// map the parent address and put the child field in second map
+		if parentV.CanAddr() {
+			if _, ok := yamlInfos[parentV.Addr().Pointer()]; !ok {
+				yamlInfos[parentV.Addr().Pointer()] = map[string]YAMLInfo{}
+			}
+			// add parent relationship entry to yaml info map
+			if containerIdx >= 0 {
+				yamlInfos[parentV.Addr().Pointer()][strconv.Itoa(containerIdx)] = YAMLInfo{
+					RNode:      rNode,
+					SourceFile: sourceFile,
 				}
-				// add current node entry to yaml info map
-				yamlInfos[v.Addr().Pointer()][""] = YAMLInfo{
+			} else {
+				yamlInfos[parentV.Addr().Pointer()][fieldName] = YAMLInfo{
 					RNode:      rNode,
 					SourceFile: sourceFile,
 				}
 			}
-
-			if parentV.CanAddr() {
-				if _, ok := yamlInfos[parentV.Addr().Pointer()]; !ok {
-					yamlInfos[parentV.Addr().Pointer()] = map[string]YAMLInfo{}
-				}
-				// add parent relationship entry to yaml info map
-				if containerIdx >= 0 {
-					yamlInfos[parentV.Addr().Pointer()][strconv.Itoa(containerIdx)] = YAMLInfo{
-						RNode:      rNode,
-						SourceFile: sourceFile,
-					}
-				} else {
-					yamlInfos[parentV.Addr().Pointer()][fieldName] = YAMLInfo{
-						RNode:      rNode,
-						SourceFile: sourceFile,
-					}
-				}
-			}
 		}
 	}
+
+	if v.CanAddr() {
+		if _, ok := yamlInfos[v.Addr().Pointer()]; !ok {
+			yamlInfos[v.Addr().Pointer()] = map[string]YAMLInfo{}
+		}
+		// add current node entry to yaml info map
+		yamlInfos[v.Addr().Pointer()][""] = YAMLInfo{
+			RNode:      rNode,
+			SourceFile: sourceFile,
+		}
+	}
+
 	switch v.Kind() {
 	// TODO(aaron-prindle) add reflect.Map support here as well, currently no struct fields have nested struct in map field so ok for now
 	case reflect.Slice, reflect.Array:
 		for i := 0; i < v.Len(); i++ {
-			generateObjPointerToYAMLNodeMap(sourceFile, v.Index(i), v, fieldName+"["+strconv.Itoa(i)+"]", yamlTag+"["+strconv.Itoa(i)+"]", schemaPath, rootRNode, rNode, i, fieldPathsOverrodeByProfiles, visited, yamlInfos, isPatchProfileElemOverride)
+			generateObjPointerToYAMLNodeMap(sourceFile, v.Index(i), v, fieldName+"["+strconv.Itoa(i)+"]", yamlTag+"["+strconv.Itoa(i)+"]", schemaPath,
+				rootRNode, rNode, i, fieldPathsOverrodeByProfiles, visited, yamlInfos, isPatchProfileElemOverride)
 		}
 	case reflect.Struct:
 		t := v.Type() // use type to get number and names of fields
@@ -315,7 +358,8 @@ func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV
 				}
 				newYamlTag = yamlTagToken[:commaIdx]
 			}
-			generateObjPointerToYAMLNodeMap(sourceFile, v.Field(i), v, field.Name, newYamlTag, schemaPath, rootRNode, rNode, -1, fieldPathsOverrodeByProfiles, visited, yamlInfos, isPatchProfileElemOverride)
+			generateObjPointerToYAMLNodeMap(sourceFile, v.Field(i), v, field.Name, newYamlTag, schemaPath, rootRNode, rNode, -1,
+				fieldPathsOverrodeByProfiles, visited, yamlInfos, isPatchProfileElemOverride)
 		}
 	}
 	return yamlInfos, nil

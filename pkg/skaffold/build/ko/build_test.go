@@ -37,21 +37,28 @@ import (
 func TestBuild(t *testing.T) {
 	tests := []struct {
 		description             string
-		pushImages              bool
 		imageRef                string
 		expectedImageIdentifier string
+		pushImages              bool
+		shouldErr               bool
 	}{
 		{
 			description:             "pushed image with tag",
-			pushImages:              true,
 			imageRef:                "registry.example.com/repo/image1:tag1",
 			expectedImageIdentifier: "tag1",
+			pushImages:              true,
 		},
 		{
 			description:             "sideloaded image",
-			pushImages:              false,
 			imageRef:                "registry.example.com/repo/image2:any",
 			expectedImageIdentifier: "ab737430e80b",
+			pushImages:              false,
+		},
+		{
+			description: "error for missing default repo when using ko:// prefix combined with pushing image to a registry",
+			imageRef:    "ko://github.com/google/ko",
+			pushImages:  true,
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -66,7 +73,7 @@ func TestBuild(t *testing.T) {
 				ImageName: importPath,
 			}
 			gotImageIdentifier, err := b.Build(context.Background(), nil, artifact, test.imageRef)
-			t.CheckNoError(err)
+			t.CheckErrorAndFailNow(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedImageIdentifier, gotImageIdentifier)
 		})
 	}

@@ -55,3 +55,25 @@ func (s SkaffoldConfigSet) Locate(obj interface{}) *configlocations.Location {
 	}
 	return loc
 }
+
+// LocateField gets the location for a skaffold field from a skaffold schema struct pointer and a field name
+func (s SkaffoldConfigSet) LocateField(obj interface{}, fieldName string) *configlocations.Location {
+	loc := configlocations.MissingLocation()
+	for _, c := range s {
+		if l := c.YAMLInfos.LocateField(obj, fieldName); l.StartLine != -1 {
+			loc = l
+		}
+	}
+	return loc
+}
+
+// LocateElement gets the location for a skaffold element from a skaffold schema struct pointer and a slice/array index(int)
+func (s SkaffoldConfigSet) LocateElement(obj interface{}, idx int) *configlocations.Location {
+	loc := configlocations.MissingLocation()
+	for _, c := range s {
+		if l := c.YAMLInfos.LocateElement(obj, idx); l.StartLine != -1 {
+			loc = l
+		}
+	}
+	return loc
+}
