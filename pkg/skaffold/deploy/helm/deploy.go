@@ -350,6 +350,7 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 		"DeployerType": "helm",
 	})
 
+	var errMsgs []string
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
@@ -372,8 +373,12 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 			args = append(args, "--namespace", namespace)
 		}
 		if err := h.exec(ctx, out, false, nil, args...); err != nil {
-			return deployerr.CleanupErr(err)
+			errMsgs = append(errMsgs, err.Error())
 		}
+	}
+
+	if len(errMsgs) != 0 {
+		return deployerr.CleanupErr(fmt.Errorf(strings.Join(errMsgs, "\n")))
 	}
 	return nil
 }
