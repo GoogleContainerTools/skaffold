@@ -26,6 +26,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -34,6 +35,8 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+
+	"github.com/containers/common/libimage"
 )
 
 // ImageDetails holds the Digest and ID of an image
@@ -52,6 +55,7 @@ type cache struct {
 	artifactStore      build.ArtifactStore
 	cacheMutex         sync.RWMutex
 	client             docker.LocalDaemon
+	libimageRuntime    *libimage.Runtime
 	cfg                Config
 	cacheFile          string
 	isLocalImage       func(imageName string) (bool, error)
@@ -93,13 +97,38 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 
 	client, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
-		// error only if any pipeline is local.
+		// error only if any pipeline is local and not buildah artifact.
 		for _, p := range cfg.GetPipelines() {
 			for _, a := range p.Build.Artifacts {
-				if local, _ := isLocalImage(a.ImageName); local {
+				if local, _ := isLocalImage(a.ImageName); local && a.BuildahArtifact == nil {
 					return nil, fmt.Errorf("getting local Docker client: %w", err)
 				}
 			}
+		}
+	}
+
+	checkIfBuildahArtifact := func(err error, errMessage string) error {
+		// error only if any pipeline is buildah artifact.
+		for _, p := range cfg.GetPipelines() {
+			for _, a := range p.Build.Artifacts {
+				if a.BuildahArtifact != nil {
+					return fmt.Errorf("%v: %w", errMessage, err)
+				}
+			}
+		}
+		return nil
+	}
+
+	buildahStore, err := buildah.GetBuildStore()
+	if err != nil {
+		if err := checkIfBuildahArtifact(err, "getting buildah store"); err != nil {
+			return nil, err
+		}
+	}
+	libimageRuntime, err := libimage.RuntimeFromStore(buildahStore, &libimage.RuntimeOptions{})
+	if err != nil {
+		if err := checkIfBuildahArtifact(err, "getting libimage runtime"); err != nil {
+			return nil, err
 		}
 	}
 
@@ -120,6 +149,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		artifactGraph:      graph,
 		artifactStore:      store,
 		client:             client,
+		libimageRuntime:    libimageRuntime,
 		cfg:                cfg,
 		cacheFile:          cacheFile,
 		isLocalImage:       isLocalImage,

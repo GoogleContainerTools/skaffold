@@ -44,8 +44,8 @@ require (
 	github.com/buildpacks/pack v0.18.1
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/containers/buildah v1.23.1
+	github.com/containers/common v0.47.0
 	github.com/containers/image/v5 v5.18.0
-	github.com/containers/podman/v4 v4.0.0-rc2
 	github.com/containers/storage v1.38.0
 	github.com/docker/cli v20.10.10+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
@@ -77,6 +77,8 @@ require (
 	github.com/moby/buildkit v0.8.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198
+	github.com/opencontainers/runtime-spec v1.0.3-0.20211214071223-8958f93039ab // indirect
+	github.com/opencontainers/runtime-tools v0.9.1-0.20220110225228-7e2d60f1e41f // indirect
 	github.com/otiai10/copy v1.6.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
@@ -89,6 +91,7 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
+	github.com/vishvananda/netlink v1.1.1-0.20220115184804-dd687eb2f2d4 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.lsp.dev/jsonrpc2 v0.9.0
 	go.lsp.dev/protocol v0.11.2
@@ -100,6 +103,7 @@ require (
 	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
+	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce // indirect
 	golang.org/x/mod v0.5.0
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c

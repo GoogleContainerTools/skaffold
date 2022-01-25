@@ -9,7 +9,9 @@ build:
     buildah:
       containerfile: Dockerfile
       compression: "gzip"
-      
+  local:
+    push: false
+   
 deploy:
   kubectl:
     manifests:

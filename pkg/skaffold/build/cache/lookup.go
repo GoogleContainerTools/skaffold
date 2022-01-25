@@ -18,6 +18,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"sync"
@@ -27,6 +28,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	"github.com/containers/common/libimage"
+	"github.com/containers/common/pkg/config"
+	"github.com/containers/storage"
 )
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latestV1.Artifact) []cacheDetails {
@@ -76,16 +80,26 @@ func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, h 
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
 		return failed{err}
 	} else if isLocal {
-		return c.lookupLocal(ctx, hash, tag, entry)
+		log.Entry(ctx).Debugf("using local lookup for %v", a.ImageName)
+		return c.lookupLocal(ctx, hash, tag, entry, a)
 	}
-	return c.lookupRemote(ctx, hash, tag, entry)
+
+	log.Entry(ctx).Debugf("using remote lookup for %v", a.ImageName)
+	return c.lookupRemote(ctx, hash, tag, entry, a)
 }
 
-func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
+func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails, a *latestV1.Artifact) cacheDetails {
 	if entry.ID == "" {
 		return needsBuilding{hash: hash}
 	}
+	if a.BuildahArtifact != nil {
+		log.Entry(ctx).Debugf("using libimage cache localLookup for %v", a.ImageName)
+		return c.lookupLocalLibImage(ctx, hash, tag, a.ImageName, entry)
+	}
+	return c.lookupLocalDocker(ctx, hash, tag, entry)
+}
 
+func (c *cache) lookupLocalDocker(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
 	// Check the imageID for the tag
 	idForTag, err := c.client.ImageID(ctx, tag)
 	if err != nil {
@@ -106,7 +120,23 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	return needsBuilding{hash: hash}
 }
 
-func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
+func (c *cache) lookupLocalLibImage(ctx context.Context, hash, tag, imageName string, entry ImageDetails) cacheDetails {
+	image, _, err := c.libimageRuntime.LookupImage(fmt.Sprintf("%v:%v", imageName, tag), &libimage.LookupImageOptions{})
+	if err == storage.ErrImageUnknown {
+		// image was not found in local storage
+		return needsBuilding{hash: hash}
+	} else if err != nil {
+		return failed{err: err}
+	}
+
+	// Image exists locally with the same tag
+	if image.ID() == entry.ID {
+		return found{hash: hash}
+	}
+	return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
+}
+
+func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageDetails, a *latestV1.Artifact) cacheDetails {
 	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
 		// Image exists remotely with the same tag and digest
 		if remoteDigest == entry.Digest {
@@ -123,7 +153,17 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	}
 
 	// Image exists locally
-	if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
+	var exists bool
+	if a.BuildahArtifact != nil {
+		_, _, err := c.libimageRuntime.LookupImage(a.ImageName, &libimage.LookupImageOptions{})
+		if err != storage.ErrImageUnknown {
+			exists = true
+		}
+	} else {
+		exists = c.client.ImageExists(ctx, entry.ID)
+	}
+
+	if entry.ID != "" && c.client != nil && exists {
 		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
@@ -131,31 +171,25 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 }
 
 func (c *cache) tryImport(ctx context.Context, a *latestV1.Artifact, tag string, hash string) (ImageDetails, error) {
-	entry := ImageDetails{}
-
 	if importMissing, err := c.importMissingImage(a.ImageName); err != nil {
-		return entry, err
+		return ImageDetails{}, err
 	} else if !importMissing {
 		return ImageDetails{}, fmt.Errorf("import of missing images disabled")
 	}
 
-	if !c.client.ImageExists(ctx, tag) {
-		log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
-		err := c.client.Pull(ctx, ioutil.Discard, tag)
+	var err error
+	var entry ImageDetails
+
+	if a.BuildahArtifact == nil {
+		entry, err = c.tryImportDocker(ctx, tag)
 		if err != nil {
-			return entry, err
+			return ImageDetails{}, err
 		}
 	} else {
-		log.Entry(ctx).Debugf("Importing artifact %s from local docker", tag)
-	}
-
-	imageID, err := c.client.ImageID(ctx, tag)
-	if err != nil {
-		return entry, err
-	}
-
-	if imageID != "" {
-		entry.ID = imageID
+		entry, err = c.tryImportLibImage(ctx, a.ImageName, tag)
+		if err != nil {
+			return ImageDetails{}, err
+		}
 	}
 
 	if digest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
@@ -167,4 +201,43 @@ func (c *cache) tryImport(ctx context.Context, a *latestV1.Artifact, tag string,
 	c.artifactCache[hash] = entry
 	c.cacheMutex.Unlock()
 	return entry, nil
+}
+
+func (c *cache) tryImportDocker(ctx context.Context, tag string) (ImageDetails, error) {
+	if !c.client.ImageExists(ctx, tag) {
+		log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
+		err := c.client.Pull(ctx, ioutil.Discard, tag)
+		if err != nil {
+			return ImageDetails{}, err
+		}
+	} else {
+		log.Entry(ctx).Debugf("Importing artifact %s from local docker", tag)
+	}
+
+	imageID, err := c.client.ImageID(ctx, tag)
+	if err != nil {
+		return ImageDetails{}, err
+	}
+
+	entry := ImageDetails{}
+	if imageID != "" {
+		entry.ID = imageID
+	}
+	return entry, nil
+}
+
+func (c *cache) tryImportLibImage(ctx context.Context, imageName, tag string) (ImageDetails, error) {
+	images, err := c.libimageRuntime.Pull(ctx, fmt.Sprintf("%v:%v", imageName, tag), config.PullPolicyMissing, &libimage.PullOptions{})
+	if err != nil {
+		return ImageDetails{}, fmt.Errorf("pulling image: %w", err)
+	}
+	if len(images) > 1 {
+		return ImageDetails{}, errors.New("pulled multiple images")
+	}
+	var details ImageDetails
+	for _, image := range images {
+		details.Digest = image.StorageImage().Digest.String()
+		details.ID = image.StorageImage().ID
+	}
+	return details, nil
 }

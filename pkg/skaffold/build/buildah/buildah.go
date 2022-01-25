@@ -32,7 +32,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 		return "", containerfileNotFound(fmt.Errorf("normalizing containerfile path: %w", err), a.ImageName)
 	}
 
-	buildStore, err := newBuildStore()
+	buildStore, err := GetBuildStore()
 	if err != nil {
 		return "", fmt.Errorf("buildah store: %w", err)
 	}
@@ -82,12 +82,14 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	log.Entry(ctx).Trace(fmt.Sprintf("built image %v with id %v", a.ImageName, id))
 
 	if b.pushImages {
-		dest, err := alltransports.ParseImageName(a.ImageName)
+		dest, err := alltransports.ParseImageName("docker://" + a.ImageName)
 		if err != nil {
 			return "", fmt.Errorf("parsing image name: %w", err)
 		}
 		pushOpts := buildah.PushOptions{
 			ReportWriter: out,
+			Compression:  compression,
+			Store:        buildStore,
 		}
 		ref, _, err = buildah.Push(ctx, id, dest, pushOpts)
 		if err != nil {
@@ -97,9 +99,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 
 	log.Entry(ctx).Debug(fmt.Sprintf("id for image %v: %v", a.ImageName, id))
 	return ref.Name(), nil
+
 }
 
-func newBuildStore() (storage.Store, error) {
+func GetBuildStore() (storage.Store, error) {
 	buildStoreOptions, err := storage.DefaultStoreOptions(unshare.IsRootless(), unshare.GetRootlessUID())
 	if err != nil {
 		return nil, fmt.Errorf("buildah store options: %w", err)

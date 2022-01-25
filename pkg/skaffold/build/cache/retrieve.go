@@ -121,13 +121,15 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
-		if isLocal {
+		if isLocal && artifact.BuildahArtifact == nil {
 			var err error
 			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.client)
 			if err != nil {
 				endTrace(instrumentation.TraceEndError(err))
 				return nil, err
 			}
+		} else if isLocal && artifact.BuildahArtifact != nil {
+
 		} else {
 			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
