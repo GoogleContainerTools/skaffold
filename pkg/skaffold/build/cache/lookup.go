@@ -114,7 +114,7 @@ func (c *cache) lookupLocalDocker(ctx context.Context, hash, tag string, entry I
 
 	// Image exists locally with a different tag
 	if c.client.ImageExists(ctx, entry.ID) {
-		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
+		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID, docker: true}
 	}
 
 	return needsBuilding{hash: hash}
@@ -133,7 +133,7 @@ func (c *cache) lookupLocalLibImage(ctx context.Context, hash, tag, imageName st
 	if image.ID() == entry.ID {
 		return found{hash: hash}
 	}
-	return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
+	return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID, docker: false}
 }
 
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageDetails, a *latestV1.Artifact) cacheDetails {
@@ -153,18 +153,19 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	}
 
 	// Image exists locally
-	var exists bool
+	var exists, checkWithDocker bool
 	if a.BuildahArtifact != nil {
 		_, _, err := c.libimageRuntime.LookupImage(a.ImageName, &libimage.LookupImageOptions{})
 		if err != storage.ErrImageUnknown {
 			exists = true
 		}
 	} else {
+		checkWithDocker = true
 		exists = c.client.ImageExists(ctx, entry.ID)
 	}
 
 	if entry.ID != "" && c.client != nil && exists {
-		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
+		return needsPushing{hash: hash, tag: tag, imageID: entry.ID, docker: checkWithDocker}
 	}
 
 	return needsBuilding{hash: hash}
