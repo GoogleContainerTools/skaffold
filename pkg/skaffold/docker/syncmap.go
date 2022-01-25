@@ -41,7 +41,7 @@ func SyncMap(ctx context.Context, workspace string, dockerfilePath string, build
 		return nil, err
 	}
 
-	excludes, err := readDockerignore(workspace, absDockerfilePath)
+	excludes, err := ReadDockerignore(workspace, absDockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading .dockerignore: %w", err)
 	}

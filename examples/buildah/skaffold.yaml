@@ -1,0 +1,16 @@
+apiVersion: skaffold/v2beta27
+kind: Config
+metadata:
+  name: skaffold-test
+build:
+  artifacts:
+  - image: quay.io/hown3d/skaffold-test
+    context: ./examples/buildah
+    buildah:
+      containerfile: Dockerfile
+      compression: "gzip"
+      
+deploy:
+  kubectl:
+    manifests:
+    - examples/buildah/pod.yaml

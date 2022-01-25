@@ -1000,6 +1000,9 @@ type ArtifactType struct {
 
 	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
+
+	// CustomArtifact *beta* builds images using a custom build script written by the user.
+	BuildahArtifact *BuildahArtifact `yaml:"buildah,omitempty" yamltags:"oneOf=artifact"`
 }
 
 // ArtifactDependency describes a specific build dependency for an artifact.
@@ -1010,6 +1013,39 @@ type ArtifactDependency struct {
 	// For example, the `docker` builder will use the alias as a build-arg key.
 	// Defaults to the value of `image`.
 	Alias string `yaml:"alias,omitempty"`
+}
+
+// BuildahArtifact *alpha* describes an artifact built using buildah
+type BuildahArtifact struct {
+	// NoCache used to prevent buildah from caching
+	NoCache bool `yaml:"noCache,omitempty"`
+
+	// locates the Containerfile relative to workspace.
+	ContainerFilePath string `yaml:"containerfile,omitempty"`
+
+	// BuildArgs are key/value pairs used to resolve values of `ARG` instructions in a Containerfile.
+	// Values can be constants or environment variables via the go template syntax.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
+	BuildArgs map[string]string `yaml:"buildArgs,omitempty"`
+
+	// Target is the Containerfile target name to build.
+	Target string `yaml:"target,omitempty"`
+
+	// Squash is used to squash container image layers into single layer.
+	Squash bool `yaml:"squash,omitempty"`
+
+	// Compression to use when building the container image
+	// Valid Compression Algorithms are: gzip, bzip2, xz and zstd
+	// Defaults to uncompressed
+	Compression string `yaml:"compression,omitempty"`
+
+	// Format to use when building the container image
+	// Valid Formats are: oci and docker
+	// Defaults to oci
+	Format string `yaml:"format,omitempty"`
+
+	// Secrets defines secret files to expose to the build
+	Secrets []string `yaml:"secrets,omitempty"`
 }
 
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).

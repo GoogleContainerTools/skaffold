@@ -65,3 +65,21 @@ func TagWithDigest(tag, digest string) string {
 func TagWithImageID(ctx context.Context, tag string, imageID string, localDocker docker.LocalDaemon) (string, error) {
 	return localDocker.TagWithImageID(ctx, tag, imageID)
 }
+
+// // TagWithImageIDBuildah uses rootless buildah image store instead of docker daemon to get the image name
+// func TagWithImageIDBuildah(ctx context.Context, tag, imageID string) (string, error) {
+// 	inspect, err := images.GetImage(ctx, imageID, &images.GetOptions{})
+// 	if err != nil {
+// 		return "", fmt.Errorf("getting image: %w", err)
+// 	}
+// 	for _, tag := range inspect.RepoTags {
+// 		ref, err := docker.ParseReference(tag)
+// 		if err != nil {
+// 			return "", fmt.Errorf("parsing image: %w", err)
+// 		}
+// 		if ref.Tag == tag {
+// 			return fmt.Sprintf("%v:%v", ref.Name, tag), nil
+// 		}
+// 	}
+// 	return "", fmt.Errorf("No image matched id %v", imageID)
+// }

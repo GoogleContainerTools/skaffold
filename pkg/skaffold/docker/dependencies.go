@@ -140,7 +140,7 @@ func getDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return err
 	}
 
-	excludes, err := readDockerignore(workspace, absDockerfilePath)
+	excludes, err := ReadDockerignore(workspace, absDockerfilePath)
 	if err != nil {
 		return fmt.Errorf("reading .dockerignore: %w", err)
 	}
@@ -188,7 +188,7 @@ func getDependenciesByDockerCopyFromTo(ctx context.Context, workspace string, do
 		return err
 	}
 
-	excludes, err := readDockerignore(workspace, absDockerfilePath)
+	excludes, err := ReadDockerignore(workspace, absDockerfilePath)
 	if err != nil {
 		return fmt.Errorf("reading .dockerignore: %w", err)
 	}
@@ -220,8 +220,8 @@ func getDependenciesByDockerCopyFromTo(ctx context.Context, workspace string, do
 	return ftToDependencies
 }
 
-// readDockerignore reads patterns to ignore
-func readDockerignore(workspace string, absDockerfilePath string) ([]string, error) {
+// ReadDockerignore reads patterns to ignore
+func ReadDockerignore(workspace string, absDockerfilePath string) ([]string, error) {
 	var excludes []string
 	dockerignorePaths := []string{
 		absDockerfilePath + ".dockerignore",

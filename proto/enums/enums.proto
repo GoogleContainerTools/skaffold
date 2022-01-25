@@ -21,6 +21,8 @@ enum BuilderType {
     DOCKER = 6;
     // Ko Builder
     KO = 7;
+    // Buildah Builder
+    BUILDAH = 8;
 }
 
 // Enum indicating build type i.e. local, cluster vs GCB

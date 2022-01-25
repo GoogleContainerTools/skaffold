@@ -92,12 +92,17 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
+
+	// buildah returns the image name directly, so we don't have to mess with libpod/http api
+	if a.BuildahArtifact != nil {
+		return digestOrImageID, nil
+	}
 	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
-	if !b.pushImages {
-		// All of the builders will rely on a local Docker:
+	if !b.pushImages && a.BuildahArtifact != nil {
+		// All of the builders (expect Buildah) will rely on a local Docker:
 		// + Either to build the image,
 		// + Or to docker load it.
 		// Let's fail fast if Docker is not available

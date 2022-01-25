@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
@@ -146,6 +147,9 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latestV1.Artifact, cf
 
 	case a.KoArtifact != nil:
 		paths, err = ko.GetDependencies(ctx, a.Workspace, a.KoArtifact)
+
+	case a.BuildahArtifact != nil:
+		paths, err = buildah.GetDependencies(ctx, a.Workspace, a.BuildahArtifact, cfg)
 
 	default:
 		return nil, fmt.Errorf("unexpected artifact type %q:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

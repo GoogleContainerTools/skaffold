@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "skaffold-test"
+  namespace: default
+spec:
+  containers:
+  - name: skaffold-test
+    image: "quay.io/hown3d/skaffold-test"
+  restartPolicy: Always
