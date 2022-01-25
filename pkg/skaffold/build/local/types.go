@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
@@ -36,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/containers/common/libimage"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -44,6 +46,7 @@ type Builder struct {
 
 	cfg                docker.Config
 	localDocker        docker.LocalDaemon
+	libImageRuntime    *libimage.Runtime
 	localCluster       bool
 	pushImages         bool
 	tryImportMissing   bool
@@ -81,9 +84,16 @@ type BuilderContext interface {
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(ctx, bCtx)
-	if err != nil {
-		return nil, fmt.Errorf("getting docker client: %w", err)
+	var localDocker docker.LocalDaemon
+	var err error
+	var libimageRuntime *libimage.Runtime
+	if buildCfg.UseBuildah {
+		libimageRuntime, err = buildah.NewLibImageRuntime()
+	} else {
+		localDocker, err = docker.NewAPIClient(ctx, bCtx)
+		if err != nil {
+			return nil, fmt.Errorf("getting docker client: %w", err)
+		}
 	}
 
 	cluster := bCtx.GetCluster()
@@ -108,6 +118,7 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 		cfg:                bCtx,
 		kubeContext:        bCtx.GetKubeContext(),
 		localDocker:        localDocker,
+		libImageRuntime:    libimageRuntime,
 		localCluster:       cluster.Local,
 		pushImages:         pushImages,
 		tryImportMissing:   tryImportMissing,
@@ -115,7 +126,7 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 		mode:               bCtx.Mode(),
 		prune:              bCtx.Prune(),
 		pruneChildren:      !bCtx.NoPruneChildren(),
-		localPruner:        newPruner(localDocker, !bCtx.NoPruneChildren()),
+		localPruner:        newPruner(buildCfg.UseBuildah, libimageRuntime, localDocker, !bCtx.NoPruneChildren()),
 		insecureRegistries: bCtx.GetInsecureRegistries(),
 		muted:              bCtx.Muted(),
 		artifactStore:      bCtx.ArtifactStore(),
@@ -133,6 +144,17 @@ func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 			toPrune = append(toPrune, img)
 			seen[img] = true
 		}
+	}
+	if b.local.UseBuildah {
+		_, buildErrs := b.libImageRuntime.RemoveImages(ctx, toPrune, &libimage.RemoveImagesOptions{})
+		if len(buildErrs) > 0 {
+			var errors []string
+			for _, buildErr := range buildErrs {
+				errors = append(errors, buildErr.Error())
+			}
+			return fmt.Errorf("buildah pruning images: %v", strings.Join(errors, ";"))
+		}
+		return nil
 	}
 	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
 	return err

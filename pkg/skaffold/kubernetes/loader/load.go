@@ -20,19 +20,24 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/containers/common/libimage"
 	"github.com/docker/distribution/reference"
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
@@ -49,6 +54,8 @@ type Config interface {
 	GetKubeContext() string
 	LoadImages() bool
 }
+
+var imageArchivePath = os.TempDir()
 
 func NewImageLoader(kubeContext string, cli *kubectl.CLI) *ImageLoader {
 	return &ImageLoader{
@@ -97,8 +104,12 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 		kindCluster := config.KindClusterName(currentContext.Cluster)
 
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
-		if err := i.loadImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
-			return fmt.Errorf("loading images into kind nodes: %w", err)
+		if err := i.loadDockerImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
+			log.Entry(ctx).Infof("docker image load failed, trying to load from podman/buildah...")
+			buildahErr := i.loadBuildahImagesInKindNodes(ctx, out, kindCluster, artifacts)
+			if buildahErr != nil {
+				return fmt.Errorf("docker and buildah load failed: %w, %w", err, buildahErr)
+			}
 		}
 	}
 
@@ -114,11 +125,37 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 	return nil
 }
 
-// loadImagesInKindNodes loads artifact images into every node of a kind cluster.
-func (i *ImageLoader) loadImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
-	output.Default.Fprintln(out, "Loading images into kind cluster nodes...")
+// loadDockerImagesInKindNodes loads artifact images into every node of a kind cluster.
+func (i *ImageLoader) loadDockerImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
+	output.Default.Fprintln(out, "Loading images from docker into kind cluster nodes...")
 	return i.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
 		return exec.CommandContext(ctx, "kind", "load", "docker-image", "--name", kindCluster, tag)
+	})
+}
+
+// loadBuildahImagesInKindNodes saves buildah images as archive to file and kind loads them from the filesystem
+// workaround, since there's currently no native buildah load in kind
+func (i *ImageLoader) loadBuildahImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
+	output.Default.Fprintln(out, "Loading images from buildah into kind cluster nodes...")
+	runtime, err := buildah.NewLibImageRuntime()
+	if err != nil {
+		return fmt.Errorf("getting libimage runtime: %w", err)
+	}
+	var names []string
+	for _, artifact := range artifacts {
+		names = append(names, artifact.ImageName)
+	}
+
+	// save images to load them with kind load image-archive
+	path := filepath.Join(imageArchivePath, "skaffold-images.tar")
+
+	err = runtime.Save(ctx, names, "docker-archive", path, &libimage.SaveOptions{})
+	if err != nil {
+		return fmt.Errorf("saving images: %w", err)
+	}
+	defer os.Remove(path)
+	return i.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
+		return exec.CommandContext(ctx, "kind", "load", "image-archive", "--name", kindCluster, path)
 	})
 }
 

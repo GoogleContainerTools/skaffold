@@ -119,13 +119,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		return nil
 	}
 
-	buildahStore, err := buildah.GetBuildStore()
-	if err != nil {
-		if err := checkIfBuildahArtifact(err, "getting buildah store"); err != nil {
-			return nil, err
-		}
-	}
-	libimageRuntime, err := libimage.RuntimeFromStore(buildahStore, &libimage.RuntimeOptions{})
+	libimageRuntime, err := buildah.NewLibImageRuntime()
 	if err != nil {
 		if err := checkIfBuildahArtifact(err, "getting libimage runtime"); err != nil {
 			return nil, err

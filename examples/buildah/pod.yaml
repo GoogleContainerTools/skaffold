@@ -6,5 +6,6 @@ metadata:
 spec:
   containers:
   - name: skaffold-test
-    image: "quay.io/hown3d/skaffold-test"
+    image: quay.io/hown3d/skaffold-test:latest
+    imagePullPolicy: IfNotPresent
   restartPolicy: Always

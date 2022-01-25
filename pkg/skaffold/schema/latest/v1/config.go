@@ -253,7 +253,7 @@ type TaggerComponent struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	// LocalBuild *beta* describes how to do a build on the local docker daemon
+	// LocalBuild *beta* describes how to do a build on the local docker daemon or with buildah
 	// and optionally push to a repository.
 	LocalBuild *LocalBuild `yaml:"local,omitempty" yamltags:"oneOf=build"`
 
@@ -282,6 +282,9 @@ type LocalBuild struct {
 
 	// UseBuildkit use BuildKit to build Docker images. If unspecified, uses the Docker default.
 	UseBuildkit *bool `yaml:"useBuildkit,omitempty"`
+
+	// UseBuildah use Buildah to build Container images.
+	UseBuildah bool `yaml:"useBuildah,omitempty"`
 
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `1`.

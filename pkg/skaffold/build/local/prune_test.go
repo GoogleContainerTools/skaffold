@@ -65,7 +65,7 @@ func TestDiskUsage(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+			pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
 				DUFails: test.fails,
 			}), true)
 
@@ -84,7 +84,7 @@ func TestDiskUsage(t *testing.T) {
 }
 
 func TestRunPruneOk(t *testing.T) {
-	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
+	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
 	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
@@ -92,7 +92,7 @@ func TestRunPruneOk(t *testing.T) {
 }
 
 func TestRunPruneDuFailed(t *testing.T) {
-	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
 		DUFails: -1,
 	}), true)
 	err := pruner.runPrune(context.Background(), []string{"test"})
@@ -102,7 +102,7 @@ func TestRunPruneDuFailed(t *testing.T) {
 }
 
 func TestRunPruneDuFailed2(t *testing.T) {
-	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
 		DUFails: 2,
 	}), true)
 	err := pruner.runPrune(context.Background(), []string{"test"})
@@ -112,7 +112,7 @@ func TestRunPruneDuFailed2(t *testing.T) {
 }
 
 func TestRunPruneImageRemoveFailed(t *testing.T) {
-	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
 		ErrImageRemove: true,
 	}), true)
 	err := pruner.runPrune(context.Background(), []string{"test"})
@@ -122,7 +122,7 @@ func TestRunPruneImageRemoveFailed(t *testing.T) {
 }
 
 func TestIsPruned(t *testing.T) {
-	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
+	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
 	err := pruner.runPrune(context.Background(),
 		[]string{"test1", "test2", "test1"})
 	if err != nil {
@@ -137,7 +137,7 @@ func TestIsPruned(t *testing.T) {
 }
 
 func TestIsPrunedFail(t *testing.T) {
-	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
 		ErrImageRemove: true,
 	}), true)
 
@@ -177,7 +177,7 @@ func TestCollectPruneImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+			pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
 				LocalImages: test.localImages,
 			}), true)
 

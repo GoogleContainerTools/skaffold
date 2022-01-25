@@ -18,10 +18,12 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/containers/common/libimage"
 )
 
 // MergeWithPreviousBuilds merges previous or prebuilt build artifacts with
@@ -66,20 +68,20 @@ func TagWithImageID(ctx context.Context, tag string, imageID string, localDocker
 	return localDocker.TagWithImageID(ctx, tag, imageID)
 }
 
-// // TagWithImageIDBuildah uses rootless buildah image store instead of docker daemon to get the image name
-// func TagWithImageIDBuildah(ctx context.Context, tag, imageID string) (string, error) {
-// 	inspect, err := images.GetImage(ctx, imageID, &images.GetOptions{})
-// 	if err != nil {
-// 		return "", fmt.Errorf("getting image: %w", err)
-// 	}
-// 	for _, tag := range inspect.RepoTags {
-// 		ref, err := docker.ParseReference(tag)
-// 		if err != nil {
-// 			return "", fmt.Errorf("parsing image: %w", err)
-// 		}
-// 		if ref.Tag == tag {
-// 			return fmt.Sprintf("%v:%v", ref.Name, tag), nil
-// 		}
-// 	}
-// 	return "", fmt.Errorf("No image matched id %v", imageID)
-// }
+// TagWithImageIDBuildah uses rootless buildah image store instead of docker daemon to get the image name
+func TagWithImageIDBuildah(ctx context.Context, tag, imageID string, runtime *libimage.Runtime) (string, error) {
+	parsed, err := docker.ParseReference(tag)
+	if err != nil {
+		return "", err
+	}
+
+	image, _, err := runtime.LookupImage(imageID, &libimage.LookupImageOptions{})
+	if err != nil {
+		return "", fmt.Errorf("get buildah image: %w", err)
+	}
+	uniqueTag := parsed.BaseName + ":" + strings.TrimPrefix(imageID, "sha256:")
+	if err := image.Tag(uniqueTag); err != nil {
+		return "", fmt.Errorf("tagging image: %w", err)
+	}
+	return uniqueTag, nil
+}

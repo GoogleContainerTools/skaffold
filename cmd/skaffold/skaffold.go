@@ -34,6 +34,8 @@ import (
 func main() {
 
 	// TODO: reexec only when detecting buildah
+	// Debugging is kinda hard
+	// have to use `buildah unshare` before launching
 	if buildah.InitReexec() {
 		return
 	}

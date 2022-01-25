@@ -129,10 +129,16 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 				return nil, err
 			}
 		} else if isLocal && artifact.BuildahArtifact != nil {
-
+			log.Entry(ctx).Debugf("tagging image with buildah")
+			uniqueTag, err = build.TagWithImageIDBuildah(ctx, tag, entry.ID, c.libimageRuntime)
+			if err != nil {
+				endTrace(instrumentation.TraceEndError(err))
+				return nil, err
+			}
 		} else {
 			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
+		log.Entry(ctx).Debugf("caching artifact with tag: %v", uniqueTag)
 		c.artifactStore.Record(artifact, uniqueTag)
 		alreadyBuilt = append(alreadyBuilt, graph.Artifact{
 			ImageName: artifact.ImageName,

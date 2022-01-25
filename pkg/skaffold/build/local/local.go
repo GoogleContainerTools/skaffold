@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/containers/common/libimage"
 )
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -45,7 +46,9 @@ func (b *Builder) PreBuild(_ context.Context, out io.Writer) error {
 }
 
 func (b *Builder) PostBuild(ctx context.Context, _ io.Writer) error {
-	defer b.localDocker.Close()
+	if !b.local.UseBuildah {
+		defer b.localDocker.Close()
+	}
 	if b.prune {
 		if b.mode == config.RunModes.Build {
 			b.localPruner.synchronousCleanupOldImages(ctx, b.builtImages)
@@ -74,16 +77,22 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.
 	}
 
 	if b.pushImages {
-		// only track images for pruning when building with docker
+		var imageID string
+		var err error
+		// only track images for pruning when building with docker or buildah
 		// if we're pushing a bazel image, it was built directly to the registry
 		if a.DockerArtifact != nil {
-			imageID, err := b.getImageIDForTag(ctx, tag)
-			if err != nil {
-				log.Entry(ctx).Warn("unable to inspect image: built images may not be cleaned up correctly by skaffold")
-			}
-			if imageID != "" {
-				b.builtImages = append(b.builtImages, imageID)
-			}
+			imageID, err = b.getImageIDForTagDocker(ctx, tag)
+		}
+		if a.BuildahArtifact != nil {
+			imageID, err = b.getImageIDForTagBuildah(ctx, tag)
+		}
+
+		if err != nil {
+			log.Entry(ctx).Warn("unable to inspect image: built images may not be cleaned up correctly by skaffold")
+		}
+		if imageID != "" {
+			b.builtImages = append(b.builtImages, imageID)
 		}
 
 		digest := digestOrImageID
@@ -101,7 +110,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
-	if !b.pushImages && a.BuildahArtifact != nil {
+	if !b.pushImages && a.BuildahArtifact == nil {
 		// All of the builders (expect Buildah) will rely on a local Docker:
 		// + Either to build the image,
 		// + Or to docker load it.
@@ -118,7 +127,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 	return builder.Build(ctx, out, a, tag)
 }
 
-func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
+func (b *Builder) getImageIDForTagDocker(ctx context.Context, tag string) (string, error) {
 	insp, _, err := b.localDocker.ImageInspectWithRaw(ctx, tag)
 	if err != nil {
 		return "", err
@@ -126,6 +135,13 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 	return insp.ID, nil
 }
 
+func (b *Builder) getImageIDForTagBuildah(_ context.Context, tag string) (string, error) {
+	image, _, err := b.libImageRuntime.LookupImage(tag, &libimage.LookupImageOptions{})
+	if err != nil {
+		return "", err
+	}
+	return image.ID(), nil
+}
 func (b *Builder) retrieveExtraEnv() []string {
 	return b.localDocker.ExtraEnv()
 }

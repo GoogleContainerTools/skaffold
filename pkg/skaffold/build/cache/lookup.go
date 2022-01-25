@@ -90,6 +90,7 @@ func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, h 
 
 func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails, a *latestV1.Artifact) cacheDetails {
 	if entry.ID == "" {
+		log.Entry(ctx).Debugf("entry ID for %v is empty", a.ImageName)
 		return needsBuilding{hash: hash}
 	}
 	if a.BuildahArtifact != nil {

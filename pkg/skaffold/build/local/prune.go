@@ -18,11 +18,12 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/containers/common/libimage"
 	"github.com/dustin/go-humanize"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -35,24 +36,40 @@ const (
 )
 
 type pruner struct {
-	localDocker   docker.LocalDaemon
-	pruneChildren bool
-	pruneMutex    sync.Mutex
-	prunedImgIDs  map[string]struct{}
+	localDocker     docker.LocalDaemon
+	libimageRuntime *libimage.Runtime
+	useLibImage     bool
+	pruneChildren   bool
+	pruneMutex      sync.Mutex
+	prunedImgIDs    map[string]struct{}
 }
 
-func newPruner(dockerAPI docker.LocalDaemon, pruneChildren bool) *pruner {
+func newPruner(useLibimage bool, libimageRuntime *libimage.Runtime, dockerAPI docker.LocalDaemon, pruneChildren bool) *pruner {
 	return &pruner{
-		localDocker:   dockerAPI,
-		pruneChildren: pruneChildren,
-		prunedImgIDs:  make(map[string]struct{}),
+		useLibImage:     useLibimage,
+		libimageRuntime: libimageRuntime,
+		localDocker:     dockerAPI,
+		pruneChildren:   pruneChildren,
+		prunedImgIDs:    make(map[string]struct{}),
 	}
 }
 
-func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSummary, error) {
-	imgs, err := p.localDocker.ImageList(ctx, name)
-	if err != nil {
-		return nil, err
+type imageSummary struct {
+	id      string
+	created int64
+}
+
+func (p *pruner) listImages(ctx context.Context, name string) (imgs []imageSummary, err error) {
+	if p.useLibImage {
+		imgs, err = p.listImagesLibImage(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		imgs, err = p.listImagesDocker(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if len(imgs) < 2 {
 		// no need to sort
@@ -61,12 +78,39 @@ func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSumm
 
 	sort.Slice(imgs, func(i, j int) bool {
 		// reverse sort
-		return imgs[i].Created > imgs[j].Created
+		return imgs[i].created > imgs[j].created
 	})
 
 	return imgs, nil
 }
 
+func (p *pruner) listImagesDocker(ctx context.Context, name string) (sums []imageSummary, err error) {
+	imgs, err := p.localDocker.ImageList(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("docker listing images: %w", err)
+	}
+	for _, img := range imgs {
+		sums = append(sums, imageSummary{
+			id:      img.ID,
+			created: img.Created,
+		})
+	}
+	return sums, nil
+}
+
+func (p *pruner) listImagesLibImage(ctx context.Context, name string) (sums []imageSummary, err error) {
+	imgs, err := p.libimageRuntime.ListImages(ctx, []string{name}, &libimage.ListImagesOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("libimage listing images: %w", err)
+	}
+	for _, img := range imgs {
+		sums = append(sums, imageSummary{
+			id:      img.ID(),
+			created: img.Created().Unix(),
+		})
+	}
+	return sums, nil
+}
 func (p *pruner) cleanup(ctx context.Context, sync bool, artifacts []string) {
 	toPrune := p.collectImagesToPrune(ctx, artifacts)
 	if len(toPrune) == 0 {
@@ -171,7 +215,7 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []string) [
 			continue
 		}
 		for i := imgNameCount[a]; i < len(imgs); i++ {
-			rt = append(rt, imgs[i].ID)
+			rt = append(rt, imgs[i].id)
 		}
 	}
 	return rt

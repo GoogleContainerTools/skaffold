@@ -13,6 +13,7 @@ import (
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
 	"github.com/containers/buildah/imagebuildah"
+	"github.com/containers/common/libimage"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/storage"
 	"github.com/containers/storage/pkg/archive"
@@ -32,7 +33,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 		return "", containerfileNotFound(fmt.Errorf("normalizing containerfile path: %w", err), a.ImageName)
 	}
 
-	buildStore, err := GetBuildStore()
+	buildStore, err := getBuildStore()
 	if err != nil {
 		return "", fmt.Errorf("buildah store: %w", err)
 	}
@@ -102,12 +103,21 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 
 }
 
-func GetBuildStore() (storage.Store, error) {
+func getBuildStore() (storage.Store, error) {
 	buildStoreOptions, err := storage.DefaultStoreOptions(unshare.IsRootless(), unshare.GetRootlessUID())
 	if err != nil {
 		return nil, fmt.Errorf("buildah store options: %w", err)
 	}
 	return storage.GetStore(buildStoreOptions)
+}
+
+// NewLibImageRuntime returns a new libimage runtime with the default store
+func NewLibImageRuntime() (*libimage.Runtime, error) {
+	store, err := getBuildStore()
+	if err != nil {
+		return nil, fmt.Errorf("getting build store: %w", err)
+	}
+	return libimage.RuntimeFromStore(store, &libimage.RuntimeOptions{})
 }
 
 func getCompression(compression string) (archive.Compression, error) {

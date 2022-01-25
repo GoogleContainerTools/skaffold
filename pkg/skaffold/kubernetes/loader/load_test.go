@@ -89,7 +89,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 	}
 
 	runImageLoadingTests(t, tests, func(i *ImageLoader, test ImageLoadingTest) error {
-		return i.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+		return i.loadDockerImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
 	})
 }
 
