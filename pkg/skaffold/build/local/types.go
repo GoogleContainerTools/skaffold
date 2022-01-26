@@ -20,24 +20,23 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildah"
+	buildahbuilder "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	dockerbuilder "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/containers/common/libimage"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -46,7 +45,7 @@ type Builder struct {
 
 	cfg                docker.Config
 	localDocker        docker.LocalDaemon
-	libImageRuntime    *libimage.Runtime
+	buildahClient      *buildah.Buildah
 	localCluster       bool
 	pushImages         bool
 	tryImportMissing   bool
@@ -59,6 +58,7 @@ type Builder struct {
 	insecureRegistries map[string]bool
 	muted              build.Muted
 	localPruner        *pruner
+	checker            ImageTaggerChecker
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
 }
@@ -82,18 +82,49 @@ type BuilderContext interface {
 	SourceDependenciesResolver() graph.SourceDependenciesCache
 }
 
+// ImageTaggerChecker handles everything related to tagging and checking images
+type ImageTaggerChecker interface {
+	GetImageID(ctx context.Context, tag string) (string, error)
+	TagImageWithImageID(ctx context.Context, tag string, imageID string) (string, error)
+}
+
+// ImagePruner handles the real deletions of the image
+// currently implemented with docker and buildah
+type ImagePruner interface {
+	ListImages(ctx context.Context, name string) ([]imageSummary, error)
+	// prune removes images from the handler by their ids and returns all pruned images
+	Prune(ctx context.Context, ids []string, pruneChildren bool) ([]string, error)
+
+	DiskUsage(ctx context.Context) (uint64, error)
+}
+
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
+	var imagePruner ImagePruner
+	var checker ImageTaggerChecker
 	var localDocker docker.LocalDaemon
+	var buildahClient *buildah.Buildah
 	var err error
-	var libimageRuntime *libimage.Runtime
+
 	if buildCfg.UseBuildah {
-		libimageRuntime, err = buildah.NewLibImageRuntime()
+		buildahClient, err = buildah.New()
+		if err != nil {
+			return nil, err
+		}
+		b := NewLocalBuildah(buildahClient)
+		// set buildah to needed interfaces
+		imagePruner = b
+		checker = b
 	} else {
 		localDocker, err = docker.NewAPIClient(ctx, bCtx)
 		if err != nil {
 			return nil, fmt.Errorf("getting docker client: %w", err)
 		}
+		d := NewLocalDocker(localDocker)
+
+		// set buildah to needed interfaces
+		imagePruner = d
+		checker = d
 	}
 
 	cluster := bCtx.GetCluster()
@@ -115,10 +146,10 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 
 	return &Builder{
 		local:              *buildCfg,
+		localDocker:        localDocker,
+		buildahClient:      buildahClient,
 		cfg:                bCtx,
 		kubeContext:        bCtx.GetKubeContext(),
-		localDocker:        localDocker,
-		libImageRuntime:    libimageRuntime,
 		localCluster:       cluster.Local,
 		pushImages:         pushImages,
 		tryImportMissing:   tryImportMissing,
@@ -126,7 +157,8 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 		mode:               bCtx.Mode(),
 		prune:              bCtx.Prune(),
 		pruneChildren:      !bCtx.NoPruneChildren(),
-		localPruner:        newPruner(buildCfg.UseBuildah, libimageRuntime, localDocker, !bCtx.NoPruneChildren()),
+		localPruner:        newPruner(imagePruner, !bCtx.NoPruneChildren()),
+		checker:            checker,
 		insecureRegistries: bCtx.GetInsecureRegistries(),
 		muted:              bCtx.Muted(),
 		artifactStore:      bCtx.ArtifactStore(),
@@ -134,7 +166,7 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 	}, nil
 }
 
-// Prune uses the docker API client to remove all images built with Skaffold
+// Prune removes all images built with Skaffold
 func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 	var toPrune []string
 	seen := make(map[string]bool)
@@ -145,19 +177,9 @@ func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 			seen[img] = true
 		}
 	}
-	if b.local.UseBuildah {
-		_, buildErrs := b.libImageRuntime.RemoveImages(ctx, toPrune, &libimage.RemoveImagesOptions{})
-		if len(buildErrs) > 0 {
-			var errors []string
-			for _, buildErr := range buildErrs {
-				errors = append(errors, buildErr.Error())
-			}
-			return fmt.Errorf("buildah pruning images: %v", strings.Join(errors, ";"))
-		}
-		return nil
-	}
-	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
-	return err
+
+	b.localPruner.cleanup(ctx, true /*sync*/, toPrune)
+	return nil
 }
 
 // artifactBuilder represents a per artifact builder interface
@@ -189,7 +211,7 @@ func newPerArtifactBuilder(b *Builder, a *latestV1.Artifact) (artifactBuilder, e
 		return ko.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.insecureRegistries), nil
 
 	case a.BuildahArtifact != nil:
-		return buildah.NewBuilder(b.pushImages), nil
+		return buildahbuilder.NewBuilder(b.buildahClient, b.pushImages), nil
 	default:
 		return nil, fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}

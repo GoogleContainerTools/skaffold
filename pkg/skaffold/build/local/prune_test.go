@@ -65,9 +65,9 @@ func TestDiskUsage(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
+			pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{
 				DUFails: test.fails,
-			}), true)
+			})))
 
 			ctx := context.Background()
 			if test.ctxFunc != nil {
@@ -84,7 +84,7 @@ func TestDiskUsage(t *testing.T) {
 }
 
 func TestRunPruneOk(t *testing.T) {
-	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
+	pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{})))
 	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
@@ -92,9 +92,9 @@ func TestRunPruneOk(t *testing.T) {
 }
 
 func TestRunPruneDuFailed(t *testing.T) {
-	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
+	pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{
 		DUFails: -1,
-	}), true)
+	})))
 	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
@@ -102,9 +102,10 @@ func TestRunPruneDuFailed(t *testing.T) {
 }
 
 func TestRunPruneDuFailed2(t *testing.T) {
-	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
+
+	pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{
 		DUFails: 2,
-	}), true)
+	})))
 	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
@@ -112,9 +113,9 @@ func TestRunPruneDuFailed2(t *testing.T) {
 }
 
 func TestRunPruneImageRemoveFailed(t *testing.T) {
-	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
+	pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{
 		ErrImageRemove: true,
-	}), true)
+	})))
 	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err == nil {
 		t.Fatal("An error expected here")
@@ -122,7 +123,7 @@ func TestRunPruneImageRemoveFailed(t *testing.T) {
 }
 
 func TestIsPruned(t *testing.T) {
-	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
+	pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{})))
 	err := pruner.runPrune(context.Background(),
 		[]string{"test1", "test2", "test1"})
 	if err != nil {
@@ -137,9 +138,9 @@ func TestIsPruned(t *testing.T) {
 }
 
 func TestIsPrunedFail(t *testing.T) {
-	pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
+	pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{
 		ErrImageRemove: true,
-	}), true)
+	})))
 
 	err := pruner.runPrune(context.Background(), []string{"test1"})
 	if err == nil {
@@ -177,9 +178,9 @@ func TestCollectPruneImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pruner := newPruner(false, nil, fakeLocalDaemon(&testutil.FakeAPIClient{
+			pruner := fakePruner(NewLocalDocker(fakeLocalDaemon(&testutil.FakeAPIClient{
 				LocalImages: test.localImages,
-			}), true)
+			})))
 
 			res := pruner.collectImagesToPrune(
 				context.Background(), test.imagesToBuild)
@@ -188,4 +189,8 @@ func TestCollectPruneImages(t *testing.T) {
 			t.CheckDeepEqual(res, test.expectedToPrune)
 		})
 	}
+}
+
+func fakePruner(imagePruner ImagePruner) *pruner {
+	return newPruner(imagePruner, true)
 }

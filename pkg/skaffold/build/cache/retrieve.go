@@ -121,16 +121,9 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
-		if isLocal && artifact.BuildahArtifact == nil {
+		if isLocal {
 			var err error
-			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.client)
-			if err != nil {
-				endTrace(instrumentation.TraceEndError(err))
-				return nil, err
-			}
-		} else if isLocal && artifact.BuildahArtifact != nil {
-			log.Entry(ctx).Debugf("tagging image with buildah")
-			uniqueTag, err = build.TagWithImageIDBuildah(ctx, tag, entry.ID, c.libimageRuntime)
+			uniqueTag, err = c.runtime.TagImageWithImageID(ctx, tag, entry.ID)
 			if err != nil {
 				endTrace(instrumentation.TraceEndError(err))
 				return nil, err
@@ -190,7 +183,7 @@ func (c *cache) addArtifacts(ctx context.Context, bRes []graph.Artifact, hashByN
 			return err
 		}
 		if isLocal {
-			imageID, err := c.client.ImageID(ctx, a.Tag)
+			imageID, err := c.runtime.GetImageID(ctx, a.Tag)
 			if err != nil {
 				return err
 			}

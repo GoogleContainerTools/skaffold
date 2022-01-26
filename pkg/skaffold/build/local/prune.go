@@ -18,15 +18,12 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
 
-	"github.com/containers/common/libimage"
 	"github.com/dustin/go-humanize"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
@@ -36,21 +33,17 @@ const (
 )
 
 type pruner struct {
-	localDocker     docker.LocalDaemon
-	libimageRuntime *libimage.Runtime
-	useLibImage     bool
-	pruneChildren   bool
-	pruneMutex      sync.Mutex
-	prunedImgIDs    map[string]struct{}
+	imagePruner   ImagePruner
+	pruneChildren bool
+	pruneMutex    sync.Mutex
+	prunedImgIDs  map[string]struct{}
 }
 
-func newPruner(useLibimage bool, libimageRuntime *libimage.Runtime, dockerAPI docker.LocalDaemon, pruneChildren bool) *pruner {
+func newPruner(imagePruner ImagePruner, pruneChildren bool) *pruner {
 	return &pruner{
-		useLibImage:     useLibimage,
-		libimageRuntime: libimageRuntime,
-		localDocker:     dockerAPI,
-		pruneChildren:   pruneChildren,
-		prunedImgIDs:    make(map[string]struct{}),
+		imagePruner:   imagePruner,
+		pruneChildren: pruneChildren,
+		prunedImgIDs:  make(map[string]struct{}),
 	}
 }
 
@@ -60,16 +53,9 @@ type imageSummary struct {
 }
 
 func (p *pruner) listImages(ctx context.Context, name string) (imgs []imageSummary, err error) {
-	if p.useLibImage {
-		imgs, err = p.listImagesLibImage(ctx, name)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		imgs, err = p.listImagesDocker(ctx, name)
-		if err != nil {
-			return nil, err
-		}
+	imgs, err = p.imagePruner.ListImages(ctx, name)
+	if err != nil {
+		return nil, err
 	}
 	if len(imgs) < 2 {
 		// no need to sort
@@ -84,33 +70,6 @@ func (p *pruner) listImages(ctx context.Context, name string) (imgs []imageSumma
 	return imgs, nil
 }
 
-func (p *pruner) listImagesDocker(ctx context.Context, name string) (sums []imageSummary, err error) {
-	imgs, err := p.localDocker.ImageList(ctx, name)
-	if err != nil {
-		return nil, fmt.Errorf("docker listing images: %w", err)
-	}
-	for _, img := range imgs {
-		sums = append(sums, imageSummary{
-			id:      img.ID,
-			created: img.Created,
-		})
-	}
-	return sums, nil
-}
-
-func (p *pruner) listImagesLibImage(ctx context.Context, name string) (sums []imageSummary, err error) {
-	imgs, err := p.libimageRuntime.ListImages(ctx, []string{name}, &libimage.ListImagesOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("libimage listing images: %w", err)
-	}
-	for _, img := range imgs {
-		sums = append(sums, imageSummary{
-			id:      img.ID(),
-			created: img.Created().Unix(),
-		})
-	}
-	return sums, nil
-}
 func (p *pruner) cleanup(ctx context.Context, sync bool, artifacts []string) {
 	toPrune := p.collectImagesToPrune(ctx, artifacts)
 	if len(toPrune) == 0 {
@@ -161,10 +120,10 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		log.Entry(ctx).Debugf("Failed to get docker usage info: %v", err)
+		log.Entry(ctx).Debugf("Failed to get disk usage info: %v", err)
 	}
 
-	pruned, err := p.localDocker.Prune(ctx, ids, p.pruneChildren)
+	pruned, err := p.imagePruner.Prune(ctx, ids, p.pruneChildren)
 	for _, pi := range pruned {
 		p.prunedImgIDs[pi] = struct{}{}
 	}
@@ -178,7 +137,7 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			log.Entry(ctx).Debugf("Failed to get docker usage info: %v", err)
+			log.Entry(ctx).Debugf("Failed to get disk usage info: %v", err)
 			return nil
 		}
 		if beforeDu >= afterDu {
@@ -223,7 +182,7 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []string) [
 
 func (p *pruner) diskUsage(ctx context.Context) (uint64, error) {
 	for retry := 0; retry < usageRetries-1; retry++ {
-		usage, err := p.localDocker.DiskUsage(ctx)
+		usage, err := p.imagePruner.DiskUsage(ctx)
 		if err == nil {
 			return usage, nil
 		}
@@ -236,7 +195,7 @@ func (p *pruner) diskUsage(ctx context.Context) (uint64, error) {
 		time.Sleep(usageRetryInterval)
 	}
 
-	usage, err := p.localDocker.DiskUsage(ctx)
+	usage, err := p.imagePruner.DiskUsage(ctx)
 	if err == nil {
 		return usage, nil
 	}

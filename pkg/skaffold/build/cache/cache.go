@@ -19,6 +19,7 @@ package cache
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
@@ -26,7 +27,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildah"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -35,8 +37,6 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-
-	"github.com/containers/common/libimage"
 )
 
 // ImageDetails holds the Digest and ID of an image
@@ -50,12 +50,14 @@ type ArtifactCache map[string]ImageDetails
 
 // cache holds any data necessary for accessing the cache
 type cache struct {
-	artifactCache      ArtifactCache
-	artifactGraph      graph.ArtifactGraph
-	artifactStore      build.ArtifactStore
-	cacheMutex         sync.RWMutex
-	client             docker.LocalDaemon
-	libimageRuntime    *libimage.Runtime
+	artifactCache ArtifactCache
+	artifactGraph graph.ArtifactGraph
+	artifactStore build.ArtifactStore
+	cacheMutex    sync.RWMutex
+
+	runtime RuntimeCache
+	//client             docker.LocalDaemon
+	//libimageRuntime    *libimage.Runtime
 	cfg                Config
 	cacheFile          string
 	isLocalImage       func(imageName string) (bool, error)
@@ -77,6 +79,16 @@ type Config interface {
 	Mode() config.RunMode
 }
 
+type RuntimeCache interface {
+	TagImageWithImageID(ctx context.Context, tag, imageID string) (string, error)
+	TagImage(ctx context.Context, tag, imageID string) error
+	// push returns the digest of the pushed image
+	Push(ctx context.Context, w io.Writer, ref string) (string, error)
+	Pull(ctx context.Context, ref string) error
+	ImageExists(ctx context.Context, ref string) bool
+	GetImageID(ctx context.Context, ref string) (string, error)
+}
+
 // NewCache returns the current state of the cache
 func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
@@ -95,34 +107,28 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		return &noCache{}, nil
 	}
 
-	client, err := docker.NewAPIClient(ctx, cfg)
-	if err != nil {
-		// error only if any pipeline is local and not buildah artifact.
-		for _, p := range cfg.GetPipelines() {
-			for _, a := range p.Build.Artifacts {
-				if local, _ := isLocalImage(a.ImageName); local && a.BuildahArtifact == nil {
-					return nil, fmt.Errorf("getting local Docker client: %w", err)
-				}
-			}
+	var runtime RuntimeCache
+	// check in the default pipeline for useBuildah key
+	localBuildCfg := cfg.DefaultPipeline().Build.LocalBuild
+	if localBuildCfg != nil {
+		if localBuildCfg.UseBuildah {
+			client, clientErr := buildah.New()
+			runtime = local.NewLocalBuildah(client)
+			err = clientErr
+		} else {
+			client, clientErr := docker.NewAPIClient(ctx, cfg)
+			runtime = local.NewLocalDocker(client)
+			err = clientErr
 		}
 	}
-
-	checkIfBuildahArtifact := func(err error, errMessage string) error {
-		// error only if any pipeline is buildah artifact.
+	if err != nil {
+		// error only if any pipeline is local.
 		for _, p := range cfg.GetPipelines() {
 			for _, a := range p.Build.Artifacts {
-				if a.BuildahArtifact != nil {
-					return fmt.Errorf("%v: %w", errMessage, err)
+				if local, _ := isLocalImage(a.ImageName); local {
+					return nil, fmt.Errorf("getting local runtime: %w", err)
 				}
 			}
-		}
-		return nil
-	}
-
-	libimageRuntime, err := buildah.NewLibImageRuntime()
-	if err != nil {
-		if err := checkIfBuildahArtifact(err, "getting libimage runtime"); err != nil {
-			return nil, err
 		}
 	}
 
@@ -142,8 +148,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		artifactCache:      artifactCache,
 		artifactGraph:      graph,
 		artifactStore:      store,
-		client:             client,
-		libimageRuntime:    libimageRuntime,
+		runtime:            runtime,
 		cfg:                cfg,
 		cacheFile:          cacheFile,
 		isLocalImage:       isLocalImage,

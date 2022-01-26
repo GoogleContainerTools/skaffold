@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/containers/common/libimage"
 )
 
 type cacheDetails interface {
@@ -72,11 +71,10 @@ func (d needsLocalTagging) Hash() string {
 }
 
 func (d needsLocalTagging) Tag(ctx context.Context, c *cache) error {
-	if d.docker {
-		return c.client.Tag(ctx, d.imageID, d.tag)
-	}
-	_, err := c.libimageRuntime.Push(ctx, d.imageID, d.tag, &libimage.PushOptions{})
-	return err
+	return c.runtime.TagImage(ctx, d.imageID, d.tag)
+	// }
+	// _, err := c.libimageRuntime.Push(ctx, d.imageID, d.tag, &libimage.PushOptions{})
+	// return err
 }
 
 // Found remotely with wrong tag. Needs retagging
@@ -100,7 +98,6 @@ type needsPushing struct {
 	hash    string
 	tag     string
 	imageID string
-	docker  bool
 }
 
 func (d needsPushing) Hash() string {
@@ -108,24 +105,9 @@ func (d needsPushing) Hash() string {
 }
 
 func (d needsPushing) Push(ctx context.Context, out io.Writer, c *cache) error {
-	var digest string
-	var err error
-
-	if d.docker {
-		if err = c.client.Tag(ctx, d.imageID, d.tag); err != nil {
-			return err
-		}
-
-		digest, err = c.client.Push(ctx, out, d.tag)
-		if err != nil {
-			return err
-		}
-	} else {
-		digestBytes, err := c.libimageRuntime.Push(ctx, d.imageID, d.tag, &libimage.PushOptions{})
-		if err != nil {
-			return err
-		}
-		digest = string(digestBytes)
+	digest, err := c.runtime.Push(ctx, out, d.tag)
+	if err != nil {
+		return err
 	}
 
 	// Update cache

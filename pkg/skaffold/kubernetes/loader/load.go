@@ -22,15 +22,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/containers/common/libimage"
 	"github.com/docker/distribution/reference"
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildah"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -106,7 +104,11 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
 		if err := i.loadDockerImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
 			log.Entry(ctx).Infof("docker image load failed, trying to load from podman/buildah...")
-			buildahErr := i.loadBuildahImagesInKindNodes(ctx, out, kindCluster, artifacts)
+			runtime, runtimeErr := buildah.New()
+			if runtimeErr != nil {
+				return fmt.Errorf("docker and buildah load failed: %w, %w", err, runtimeErr)
+			}
+			buildahErr := i.loadBuildahImagesInKindNodes(ctx, out, kindCluster, artifacts, runtime)
 			if buildahErr != nil {
 				return fmt.Errorf("docker and buildah load failed: %w, %w", err, buildahErr)
 			}
@@ -135,21 +137,16 @@ func (i *ImageLoader) loadDockerImagesInKindNodes(ctx context.Context, out io.Wr
 
 // loadBuildahImagesInKindNodes saves buildah images as archive to file and kind loads them from the filesystem
 // workaround, since there's currently no native buildah load in kind
-func (i *ImageLoader) loadBuildahImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
+func (i *ImageLoader) loadBuildahImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact, runtime *buildah.Buildah) error {
 	output.Default.Fprintln(out, "Loading images from buildah into kind cluster nodes...")
-	runtime, err := buildah.NewLibImageRuntime()
-	if err != nil {
-		return fmt.Errorf("getting libimage runtime: %w", err)
-	}
 	var names []string
 	for _, artifact := range artifacts {
-		names = append(names, artifact.ImageName)
+		// create image-archive with tags,
+		// if tag isn't specifed, buildah will only save the latest tag
+		names = append(names, fmt.Sprintf("%v:%v", artifact.ImageName, artifact.Tag))
 	}
 
-	// save images to load them with kind load image-archive
-	path := filepath.Join(imageArchivePath, "skaffold-images.tar")
-
-	err = runtime.Save(ctx, names, "docker-archive", path, &libimage.SaveOptions{})
+	path, err := runtime.Save(ctx, names)
 	if err != nil {
 		return fmt.Errorf("saving images: %w", err)
 	}

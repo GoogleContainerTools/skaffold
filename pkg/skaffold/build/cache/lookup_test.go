@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/docker/client"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -121,7 +122,7 @@ func TestLookupLocal(t *testing.T) {
 				isLocalImage:       func(string) (bool, error) { return true, nil },
 				importMissingImage: func(imageName string) (bool, error) { return false, nil },
 				artifactCache:      test.cache,
-				client:             fakeLocalDaemon(test.api),
+				runtime:            local.NewLocalDocker(fakeLocalDaemon(test.api)),
 				cfg:                &mockConfig{mode: config.RunModes.Build},
 			}
 
@@ -210,7 +211,7 @@ func TestLookupRemote(t *testing.T) {
 				isLocalImage:       func(string) (bool, error) { return false, nil },
 				importMissingImage: func(imageName string) (bool, error) { return false, nil },
 				artifactCache:      test.cache,
-				client:             fakeLocalDaemon(test.api),
+				runtime:            local.NewLocalDocker(fakeLocalDaemon(test.api)),
 				cfg:                &mockConfig{mode: config.RunModes.Build},
 			}
 			t.Override(&newArtifactHasherFunc, func(_ graph.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })

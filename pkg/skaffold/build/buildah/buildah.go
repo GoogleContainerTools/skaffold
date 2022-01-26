@@ -8,16 +8,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
-	"github.com/containers/buildah/imagebuildah"
-	"github.com/containers/common/libimage"
-	"github.com/containers/image/v5/transports/alltransports"
-	"github.com/containers/storage"
 	"github.com/containers/storage/pkg/archive"
-	"github.com/containers/storage/pkg/unshare"
 )
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
@@ -31,11 +25,6 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	containerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.BuildahArtifact.ContainerFilePath)
 	if err != nil {
 		return "", containerfileNotFound(fmt.Errorf("normalizing containerfile path: %w", err), a.ImageName)
-	}
-
-	buildStore, err := getBuildStore()
-	if err != nil {
-		return "", fmt.Errorf("buildah store: %w", err)
 	}
 
 	format, err := getFormat(a.BuildahArtifact.Format)
@@ -75,49 +64,18 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 		},
 	}
 
-	id, ref, err := imagebuildah.BuildDockerfiles(ctx, buildStore, buildOptions, containerfile)
+	id, err := b.runtime.Build(ctx, containerfile, buildOptions)
 	if err != nil {
 		return "", fmt.Errorf("building image %v: %w", a.ImageName, err)
 	}
-
-	log.Entry(ctx).Trace(fmt.Sprintf("built image %v with id %v", a.ImageName, id))
-
 	if b.pushImages {
-		dest, err := alltransports.ParseImageName("docker://" + a.ImageName)
+		digest, err := b.runtime.Push(ctx, out, id)
 		if err != nil {
-			return "", fmt.Errorf("parsing image name: %w", err)
+			return "", fmt.Errorf("pushing image %v: %w", a.ImageName, err)
 		}
-		pushOpts := buildah.PushOptions{
-			ReportWriter: out,
-			Compression:  compression,
-			Store:        buildStore,
-		}
-		ref, _, err = buildah.Push(ctx, id, dest, pushOpts)
-		if err != nil {
-			return "", fmt.Errorf("buildah push: %w", err)
-		}
+		return digest, nil
 	}
-
-	log.Entry(ctx).Debug(fmt.Sprintf("id for image %v: %v", a.ImageName, id))
-	return ref.Name(), nil
-
-}
-
-func getBuildStore() (storage.Store, error) {
-	buildStoreOptions, err := storage.DefaultStoreOptions(unshare.IsRootless(), unshare.GetRootlessUID())
-	if err != nil {
-		return nil, fmt.Errorf("buildah store options: %w", err)
-	}
-	return storage.GetStore(buildStoreOptions)
-}
-
-// NewLibImageRuntime returns a new libimage runtime with the default store
-func NewLibImageRuntime() (*libimage.Runtime, error) {
-	store, err := getBuildStore()
-	if err != nil {
-		return nil, fmt.Errorf("getting build store: %w", err)
-	}
-	return libimage.RuntimeFromStore(store, &libimage.RuntimeOptions{})
+	return id, nil
 }
 
 func getCompression(compression string) (archive.Compression, error) {

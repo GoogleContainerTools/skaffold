@@ -17,13 +17,9 @@ limitations under the License.
 package build
 
 import (
-	"context"
-	"fmt"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/containers/common/libimage"
 )
 
 // MergeWithPreviousBuilds merges previous or prebuilt build artifacts with
@@ -62,26 +58,4 @@ func TagWithDigest(tag, digest string) string {
 		return tag
 	}
 	return tag + digestSuffix
-}
-
-func TagWithImageID(ctx context.Context, tag string, imageID string, localDocker docker.LocalDaemon) (string, error) {
-	return localDocker.TagWithImageID(ctx, tag, imageID)
-}
-
-// TagWithImageIDBuildah uses rootless buildah image store instead of docker daemon to get the image name
-func TagWithImageIDBuildah(ctx context.Context, tag, imageID string, runtime *libimage.Runtime) (string, error) {
-	parsed, err := docker.ParseReference(tag)
-	if err != nil {
-		return "", err
-	}
-
-	image, _, err := runtime.LookupImage(imageID, &libimage.LookupImageOptions{})
-	if err != nil {
-		return "", fmt.Errorf("get buildah image: %w", err)
-	}
-	uniqueTag := parsed.BaseName + ":" + strings.TrimPrefix(imageID, "sha256:")
-	if err := image.Tag(uniqueTag); err != nil {
-		return "", fmt.Errorf("tagging image: %w", err)
-	}
-	return uniqueTag, nil
 }
