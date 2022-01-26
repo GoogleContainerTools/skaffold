@@ -18,29 +18,34 @@ package buildpacks
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/buildpacks/pack/project"
+	"github.com/buildpacks/pack/pkg/project"
+	"github.com/buildpacks/pack/pkg/project/types"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func GetEnv(a *latestV1.Artifact, mode config.RunMode) (map[string]string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
+	var projectDescriptor types.Descriptor
 	path := filepath.Join(workspace, artifact.ProjectDescriptor)
-	projectDescriptor, err := project.ReadProjectDescriptor(path)
-	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to read project descriptor %q: %w", path, err)
+	if util.IsFile(path) {
+		var err error
+		projectDescriptor, err = project.ReadProjectDescriptor(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read project descriptor %q: %w", path, err)
+		}
 	}
 	return env(a, mode, projectDescriptor)
 }
 
-func env(a *latestV1.Artifact, mode config.RunMode, projectDescriptor project.Descriptor) (map[string]string, error) {
+func env(a *latestV1.Artifact, mode config.RunMode, projectDescriptor types.Descriptor) (map[string]string, error) {
 	envVars, err := misc.EvaluateEnv(a.BuildpackArtifact.Env)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate env variables: %w", err)
