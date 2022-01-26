@@ -154,6 +154,12 @@ func (t *T) CheckElementsMatch(expected, actual interface{}) {
 	CheckElementsMatch(t.T, expected, actual)
 }
 
+// CheckMapsMatch validates that two given maps contain the same key value pairs.
+func (t *T) CheckMapsMatch(expected, actual interface{}) {
+	t.Helper()
+	CheckMapsMatch(t.T, expected, actual)
+}
+
 // CheckErrorAndFailNow checks that the provided error complies with whether or not we expect an error
 // and fails the test execution immediately if it does not.
 // Useful for testing functions which return (obj interface{}, e error) and subsequent checks operate on `obj`
@@ -270,6 +276,34 @@ func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Opti
 	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
+	}
+}
+
+// CheckMapsMatch validates that two given maps contain the same key-value pairs
+func CheckMapsMatch(t *testing.T, expected, actual interface{}) {
+	t.Helper()
+	s1 := reflect.ValueOf(expected)
+	if s1.Kind() != reflect.Map {
+		t.Fatalf("`expected` is not a map")
+	}
+	s2 := reflect.ValueOf(actual)
+	if s2.Kind() != reflect.Map {
+		t.Fatalf("`actual` is not a map")
+	}
+	if s1.Len() != s2.Len() {
+		t.Fatalf("length of the maps differ: Expected %d, but was %d", s1.Len(), s2.Len())
+	}
+
+	var err string
+	for _, key := range s1.MapKeys() {
+		val1 := s1.MapIndex(key)
+		val2 := s2.MapIndex(key)
+		if diff := cmp.Diff(val2.Interface(), val1.Interface()); diff != "" {
+			err += fmt.Sprintf("%T differ for key %q (-got, +want): %s\n", val1.Interface(), key, diff)
+		}
+	}
+	if err != "" {
+		t.Error(err)
 	}
 }
 

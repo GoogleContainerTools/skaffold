@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -40,7 +41,7 @@ type mockBuilder struct {
 	err bool
 }
 
-func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, []*latestV1.Artifact) ([]graph.Artifact, error) {
+func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, platform.Resolver, []*latestV1.Artifact) ([]graph.Artifact, error) {
 	if m.err {
 		return nil, errors.New("Unable to build")
 	}
@@ -112,7 +113,7 @@ func TestTimingsBuild(t *testing.T) {
 			builder, _, _ := WithTimings(b, nil, nil, false)
 
 			var out bytes.Buffer
-			_, err := builder.Build(context.Background(), &out, nil, nil)
+			_, err := builder.Build(context.Background(), &out, nil, platform.Resolver{}, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
