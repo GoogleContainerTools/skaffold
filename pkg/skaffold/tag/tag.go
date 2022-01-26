@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -41,10 +42,19 @@ func GenerateFullyQualifiedImageName(ctx context.Context, t Tagger, image latest
 		return "", fmt.Errorf("generating tag: %w", err)
 	}
 
-	// Do not append :tag to imageName if tag is empty.
+	// Tag is already set in imageName
 	if tag == "" {
+		_, err := docker.ParseReference(image.ImageName)
+		if err != nil {
+			return "", fmt.Errorf("parsing image name: %w", err)
+		}
 		return image.ImageName, nil
 	}
 
-	return fmt.Sprintf("%s:%s", image.ImageName, tag), nil
+	fullImageName := fmt.Sprintf("%v:%v", image.ImageName, tag)
+	_, err = docker.ParseReference(fullImageName)
+	if err != nil {
+		return "", fmt.Errorf("parsing image name: %w", err)
+	}
+	return fullImageName, nil
 }
