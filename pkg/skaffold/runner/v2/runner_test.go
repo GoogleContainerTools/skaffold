@@ -530,9 +530,10 @@ func TestNewForConfig(t *testing.T) {
 			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
 				return "", semver.Version{}, errors.New("not found")
 			})
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
-				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
-				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
+			// t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
+			// 	"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
+			// 	AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
 			tmpDir := t.NewTempDir()
 			tmpDir.Chdir()
 			runCtx := &v2.RunContext{
