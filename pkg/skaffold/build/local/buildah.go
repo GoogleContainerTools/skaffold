@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/podman"
 )
 
 // TODO: this isn't a nice workaround for creating small interfaces for abstracting docker.LocalDaemon.
@@ -14,10 +14,10 @@ import (
 // so every runtime can implement it
 
 type localBuildah struct {
-	*buildah.Buildah
+	*podman.Buildah
 }
 
-func NewLocalBuildah(client *buildah.Buildah) *localBuildah {
+func NewLocalBuildah(client *podman.Buildah) *localBuildah {
 	return &localBuildah{Buildah: client}
 }
 

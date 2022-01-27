@@ -30,11 +30,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/podman"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -45,7 +45,7 @@ type Builder struct {
 
 	cfg                docker.Config
 	localDocker        docker.LocalDaemon
-	buildahClient      *buildah.Buildah
+	buildahClient      *podman.Buildah
 	localCluster       bool
 	pushImages         bool
 	tryImportMissing   bool
@@ -109,8 +109,18 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 		sourceDependencies: bCtx.SourceDependenciesResolver(),
 	}
 
-	if buildCfg.UseBuildah {
-		buildahClient, err := buildah.New()
+	// TODO: check OS. If we are running on linux, dont use remote connection
+	if buildCfg.Podman != nil {
+		conn, err := podman.GetConnection(buildCfg.Podman.Connection)
+		if err != nil {
+			return nil, err
+		}
+		err = podman.OverrideDockerHost(conn)
+		if err != nil {
+			return nil, err
+		}
+
+		buildahClient, err := podman.NewBuildah()
 		if err != nil {
 			return nil, err
 		}

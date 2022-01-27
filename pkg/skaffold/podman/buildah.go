@@ -1,4 +1,4 @@
-package buildah
+package podman
 
 import (
 	"context"
@@ -22,7 +22,7 @@ type Buildah struct {
 	store   storage.Store
 }
 
-func New() (*Buildah, error) {
+func NewBuildah() (*Buildah, error) {
 	store, err := getBuildStore()
 	if err != nil {
 		return nil, fmt.Errorf("getting build store: %w", err)

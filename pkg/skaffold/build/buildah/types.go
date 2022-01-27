@@ -1,11 +1,11 @@
 package buildah
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/podman"
 
 // Builder is an artifact builder that uses buildah
 type Builder struct {
 	pushImages bool
-	runtime    *buildah.Buildah
+	runtime    *podman.Buildah
 }
 
 const (
@@ -16,7 +16,7 @@ const (
 	uncompressed     = "uncompressed"
 )
 
-func NewBuilder(runtime *buildah.Buildah, pushImages bool) *Builder {
+func NewBuilder(runtime *podman.Buildah, pushImages bool) *Builder {
 	return &Builder{
 		runtime:    runtime,
 		pushImages: pushImages,

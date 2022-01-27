@@ -283,12 +283,16 @@ type LocalBuild struct {
 	// UseBuildkit use BuildKit to build Docker images. If unspecified, uses the Docker default.
 	UseBuildkit *bool `yaml:"useBuildkit,omitempty"`
 
-	// UseBuildah use Buildah to build Container images.
-	UseBuildah bool `yaml:"useBuildah,omitempty"`
+	// Podman use Buildah to build Container images.
+	Podman *PodmanConfig `yaml:"podman,omitempty"`
 
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `1`.
 	Concurrency *int `yaml:"concurrency,omitempty"`
+}
+
+type PodmanConfig struct {
+	Connection string `yaml:"connection,omitempty"`
 }
 
 // GoogleCloudBuild *beta* describes how to do a remote build on

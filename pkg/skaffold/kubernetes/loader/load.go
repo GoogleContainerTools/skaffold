@@ -28,7 +28,6 @@ import (
 	"github.com/docker/distribution/reference"
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -36,6 +35,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/podman"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
@@ -104,7 +104,7 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
 		if err := i.loadDockerImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
 			log.Entry(ctx).Infof("docker image load failed, trying to load from podman/buildah...")
-			runtime, runtimeErr := buildah.New()
+			runtime, runtimeErr := podman.NewBuildah()
 			if runtimeErr != nil {
 				return fmt.Errorf("docker and buildah load failed: %w, %w", err, runtimeErr)
 			}
@@ -137,7 +137,7 @@ func (i *ImageLoader) loadDockerImagesInKindNodes(ctx context.Context, out io.Wr
 
 // loadBuildahImagesInKindNodes saves buildah images as archive to file and kind loads them from the filesystem
 // workaround, since there's currently no native buildah load in kind
-func (i *ImageLoader) loadBuildahImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact, runtime *buildah.Buildah) error {
+func (i *ImageLoader) loadBuildahImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact, runtime *podman.Buildah) error {
 	output.Default.Fprintln(out, "Loading images from buildah into kind cluster nodes...")
 	var names []string
 	for _, artifact := range artifacts {

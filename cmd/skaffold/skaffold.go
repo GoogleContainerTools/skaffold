@@ -27,8 +27,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/containers/buildah"
-	"github.com/containers/storage/pkg/unshare"
 )
 
 func main() {
@@ -36,10 +34,10 @@ func main() {
 	// TODO: reexec only when detecting buildah
 	// Debugging is kinda hard
 	// have to use `buildah unshare` before launching
-	if buildah.InitReexec() {
-		return
-	}
-	unshare.MaybeReexecUsingUserNamespace(false)
+	// if buildah.InitReexec() {
+	// 	return
+	// }
+	// unshare.MaybeReexecUsingUserNamespace(false)
 
 	if _, ok := os.LookupEnv("SKAFFOLD_PROFILER"); ok {
 		err := profiler.Start(profiler.Config{

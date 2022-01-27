@@ -28,12 +28,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/buildah"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/podman"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -111,8 +111,8 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 	// check in the default pipeline for useBuildah key
 	localBuildCfg := cfg.DefaultPipeline().Build.LocalBuild
 	if localBuildCfg != nil {
-		if localBuildCfg.UseBuildah {
-			client, clientErr := buildah.New()
+		if localBuildCfg.Podman {
+			client, clientErr := podman.NewBuildah()
 			runtime = local.NewLocalBuildah(client)
 			err = clientErr
 		} else {

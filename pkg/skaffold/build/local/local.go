@@ -45,7 +45,7 @@ func (b *Builder) PreBuild(_ context.Context, out io.Writer) error {
 }
 
 func (b *Builder) PostBuild(ctx context.Context, _ io.Writer) error {
-	if !b.local.UseBuildah {
+	if b.local.Podman == nil {
 		defer b.localDocker.Close()
 	}
 	if b.prune {
