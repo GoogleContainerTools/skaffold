@@ -58,7 +58,7 @@ type Builder struct {
 	insecureRegistries map[string]bool
 	muted              build.Muted
 	localPruner        *pruner
-	checker            ImageTaggerChecker
+	imageHandler       ImageHandler
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
 }
@@ -82,49 +82,51 @@ type BuilderContext interface {
 	SourceDependenciesResolver() graph.SourceDependenciesCache
 }
 
-// ImageTaggerChecker handles everything related to tagging and checking images
-type ImageTaggerChecker interface {
-	GetImageID(ctx context.Context, tag string) (string, error)
-	TagImageWithImageID(ctx context.Context, tag string, imageID string) (string, error)
-}
-
-// ImagePruner handles the real deletions of the image
+// ImageHandler handles the real operations for the image
 // currently implemented with docker and buildah
-type ImagePruner interface {
+type ImageHandler interface {
 	ListImages(ctx context.Context, name string) ([]imageSummary, error)
 	// prune removes images from the handler by their ids and returns all pruned images
 	Prune(ctx context.Context, ids []string, pruneChildren bool) ([]string, error)
-
 	DiskUsage(ctx context.Context) (uint64, error)
+	GetImageID(ctx context.Context, tag string) (string, error)
+	TagWithImageID(ctx context.Context, tag string, imageID string) (string, error)
 }
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
-	var imagePruner ImagePruner
-	var checker ImageTaggerChecker
-	var localDocker docker.LocalDaemon
-	var buildahClient *buildah.Buildah
-	var err error
+	builder := &Builder{
+		local:              *buildCfg,
+		cfg:                bCtx,
+		kubeContext:        bCtx.GetKubeContext(),
+		skipTests:          bCtx.SkipTests(),
+		mode:               bCtx.Mode(),
+		prune:              bCtx.Prune(),
+		pruneChildren:      !bCtx.NoPruneChildren(),
+		insecureRegistries: bCtx.GetInsecureRegistries(),
+		muted:              bCtx.Muted(),
+		artifactStore:      bCtx.ArtifactStore(),
+		sourceDependencies: bCtx.SourceDependenciesResolver(),
+	}
 
 	if buildCfg.UseBuildah {
-		buildahClient, err = buildah.New()
+		buildahClient, err := buildah.New()
 		if err != nil {
 			return nil, err
 		}
-		b := NewLocalBuildah(buildahClient)
-		// set buildah to needed interfaces
-		imagePruner = b
-		checker = b
+		localBuildah := NewLocalBuildah(buildahClient)
+		builder.localPruner = newPruner(localBuildah, !bCtx.NoPruneChildren())
+		builder.buildahClient = buildahClient
+		builder.imageHandler = localBuildah
 	} else {
-		localDocker, err = docker.NewAPIClient(ctx, bCtx)
+		localDocker, err := docker.NewAPIClient(ctx, bCtx)
 		if err != nil {
 			return nil, fmt.Errorf("getting docker client: %w", err)
 		}
 		d := NewLocalDocker(localDocker)
-
-		// set buildah to needed interfaces
-		imagePruner = d
-		checker = d
+		builder.localPruner = newPruner(d, !bCtx.NoPruneChildren())
+		builder.localDocker = localDocker
+		builder.imageHandler = d
 	}
 
 	cluster := bCtx.GetCluster()
@@ -142,28 +144,10 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 		pushImages = *buildCfg.Push
 	}
 
-	tryImportMissing := buildCfg.TryImportMissing
-
-	return &Builder{
-		local:              *buildCfg,
-		localDocker:        localDocker,
-		buildahClient:      buildahClient,
-		cfg:                bCtx,
-		kubeContext:        bCtx.GetKubeContext(),
-		localCluster:       cluster.Local,
-		pushImages:         pushImages,
-		tryImportMissing:   tryImportMissing,
-		skipTests:          bCtx.SkipTests(),
-		mode:               bCtx.Mode(),
-		prune:              bCtx.Prune(),
-		pruneChildren:      !bCtx.NoPruneChildren(),
-		localPruner:        newPruner(imagePruner, !bCtx.NoPruneChildren()),
-		checker:            checker,
-		insecureRegistries: bCtx.GetInsecureRegistries(),
-		muted:              bCtx.Muted(),
-		artifactStore:      bCtx.ArtifactStore(),
-		sourceDependencies: bCtx.SourceDependenciesResolver(),
-	}, nil
+	builder.tryImportMissing = buildCfg.TryImportMissing
+	builder.localCluster = cluster.Local
+	builder.pushImages = pushImages
+	return builder, nil
 }
 
 // Prune removes all images built with Skaffold

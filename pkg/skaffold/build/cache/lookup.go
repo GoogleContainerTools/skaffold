@@ -19,6 +19,7 @@ package cache
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -144,7 +145,7 @@ func (c *cache) tryImport(ctx context.Context, a *latestV1.Artifact, tag string,
 
 	if !c.runtime.ImageExists(ctx, tag) {
 		log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
-		err := c.runtime.Pull(ctx, tag)
+		err := c.runtime.Pull(ctx, io.Discard, tag)
 		if err != nil {
 			return ImageDetails{}, err
 		}

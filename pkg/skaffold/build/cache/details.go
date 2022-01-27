@@ -71,10 +71,7 @@ func (d needsLocalTagging) Hash() string {
 }
 
 func (d needsLocalTagging) Tag(ctx context.Context, c *cache) error {
-	return c.runtime.TagImage(ctx, d.imageID, d.tag)
-	// }
-	// _, err := c.libimageRuntime.Push(ctx, d.imageID, d.tag, &libimage.PushOptions{})
-	// return err
+	return c.runtime.Tag(ctx, d.imageID, d.tag)
 }
 
 // Found remotely with wrong tag. Needs retagging

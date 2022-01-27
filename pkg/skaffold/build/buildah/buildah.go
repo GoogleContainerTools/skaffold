@@ -69,7 +69,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 		return "", fmt.Errorf("building image %v: %w", a.ImageName, err)
 	}
 	if b.pushImages {
-		digest, err := b.runtime.Push(ctx, out, id)
+		digest, err := b.runtime.Push(ctx, id)
 		if err != nil {
 			return "", fmt.Errorf("pushing image %v: %w", a.ImageName, err)
 		}

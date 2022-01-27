@@ -123,7 +123,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		}
 		if isLocal {
 			var err error
-			uniqueTag, err = c.runtime.TagImageWithImageID(ctx, tag, entry.ID)
+			uniqueTag, err = c.runtime.TagWithImageID(ctx, tag, entry.ID)
 			if err != nil {
 				endTrace(instrumentation.TraceEndError(err))
 				return nil, err

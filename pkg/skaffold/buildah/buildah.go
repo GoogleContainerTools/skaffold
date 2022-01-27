@@ -3,7 +3,6 @@ package buildah
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,7 +96,7 @@ func (b *Buildah) GetImageID(ctx context.Context, tag string) (string, error) {
 	return image.ID(), nil
 }
 
-func (b *Buildah) TagImage(ctx context.Context, tag string, imageID string) error {
+func (b *Buildah) Tag(ctx context.Context, tag string, imageID string) error {
 	image, err := b.findImage(imageID)
 	if err != nil {
 		return err
@@ -105,7 +104,7 @@ func (b *Buildah) TagImage(ctx context.Context, tag string, imageID string) erro
 	return image.Tag(tag)
 }
 
-func (b *Buildah) TagImageWithImageID(ctx context.Context, tag string, imageID string) (string, error) {
+func (b *Buildah) TagWithImageID(ctx context.Context, tag string, imageID string) (string, error) {
 	parsed, err := docker.ParseReference(tag)
 	if err != nil {
 		return "", err
@@ -122,7 +121,7 @@ func (b *Buildah) TagImageWithImageID(ctx context.Context, tag string, imageID s
 	return uniqueTag, nil
 }
 
-func (b *Buildah) Push(ctx context.Context, w io.Writer, ref string) (string, error) {
+func (b *Buildah) Push(ctx context.Context, ref string) (string, error) {
 	digest, err := b.runtime.Push(ctx, ref, ref, &libimage.PushOptions{})
 	if err != nil {
 		return "", err

@@ -191,6 +191,6 @@ func TestCollectPruneImages(t *testing.T) {
 	}
 }
 
-func fakePruner(imagePruner ImagePruner) *pruner {
+func fakePruner(imagePruner ImageHandler) *pruner {
 	return newPruner(imagePruner, true)
 }

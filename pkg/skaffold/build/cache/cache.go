@@ -80,11 +80,11 @@ type Config interface {
 }
 
 type RuntimeCache interface {
-	TagImageWithImageID(ctx context.Context, tag, imageID string) (string, error)
-	TagImage(ctx context.Context, tag, imageID string) error
+	TagWithImageID(ctx context.Context, tag, imageID string) (string, error)
+	Tag(ctx context.Context, tag, imageID string) error
 	// push returns the digest of the pushed image
 	Push(ctx context.Context, w io.Writer, ref string) (string, error)
-	Pull(ctx context.Context, ref string) error
+	Pull(ctx context.Context, w io.Writer, ref string) error
 	ImageExists(ctx context.Context, ref string) bool
 	GetImageID(ctx context.Context, ref string) (string, error)
 }

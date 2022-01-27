@@ -33,13 +33,13 @@ const (
 )
 
 type pruner struct {
-	imagePruner   ImagePruner
+	imagePruner   ImageHandler
 	pruneChildren bool
 	pruneMutex    sync.Mutex
 	prunedImgIDs  map[string]struct{}
 }
 
-func newPruner(imagePruner ImagePruner, pruneChildren bool) *pruner {
+func newPruner(imagePruner ImageHandler, pruneChildren bool) *pruner {
 	return &pruner{
 		imagePruner:   imagePruner,
 		pruneChildren: pruneChildren,

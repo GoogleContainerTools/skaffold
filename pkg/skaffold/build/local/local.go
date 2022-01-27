@@ -81,7 +81,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.
 		// only track images for pruning when building with docker or buildah
 		// if we're pushing a bazel image, it was built directly to the registry
 		if a.DockerArtifact != nil || a.BuildahArtifact != nil {
-			imageID, err = b.checker.GetImageID(ctx, tag)
+			imageID, err = b.imageHandler.GetImageID(ctx, tag)
 			if err != nil {
 				log.Entry(ctx).Warn("unable to inspect image: built images may not be cleaned up correctly by skaffold")
 			}
@@ -97,7 +97,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
 
-	return b.checker.TagImageWithImageID(ctx, tag, imageID)
+	return b.imageHandler.TagWithImageID(ctx, tag, imageID)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
