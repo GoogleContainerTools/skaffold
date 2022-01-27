@@ -143,7 +143,8 @@ RUN /google-cloud-sdk/install.sh \
     --bash-completion=false \
     --disable-installation-options
 ENV PATH=$PATH:/google-cloud-sdk/bin
-RUN gcloud auth configure-docker
+RUN gcloud auth configure-docker && \
+    gcloud components install gke-gcloud-auth-plugin
 
 FROM runtime_deps
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
