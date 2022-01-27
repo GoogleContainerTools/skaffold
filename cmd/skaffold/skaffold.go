@@ -31,14 +31,6 @@ import (
 
 func main() {
 
-	// TODO: reexec only when detecting buildah
-	// Debugging is kinda hard
-	// have to use `buildah unshare` before launching
-	// if buildah.InitReexec() {
-	// 	return
-	// }
-	// unshare.MaybeReexecUsingUserNamespace(false)
-
 	if _, ok := os.LookupEnv("SKAFFOLD_PROFILER"); ok {
 		err := profiler.Start(profiler.Config{
 			Service:              os.Getenv("SKAFFOLD_PROFILER_SERVICE"),

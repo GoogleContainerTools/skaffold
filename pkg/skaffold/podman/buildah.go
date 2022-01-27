@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
 	"github.com/containers/buildah/imagebuildah"
 	"github.com/containers/common/libimage"
@@ -179,4 +180,14 @@ func getBuildStore() (storage.Store, error) {
 		return nil, fmt.Errorf("buildah store options: %w", err)
 	}
 	return storage.GetStore(buildStoreOptions)
+}
+
+// TODO: reexec only when detecting buildah and running natively on linux
+// Debugging is kinda hard
+// have to use `buildah unshare` before launching
+func reexec() {
+	if buildah.InitReexec() {
+		return
+	}
+	unshare.MaybeReexecUsingUserNamespace(false)
 }
