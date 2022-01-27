@@ -104,7 +104,7 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 
 	// Image exists locally with a different tag
 	if c.runtime.ImageExists(ctx, entry.ID) {
-		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID, docker: true}
+		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
 	return needsBuilding{hash: hash}

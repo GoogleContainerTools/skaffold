@@ -63,7 +63,6 @@ type needsLocalTagging struct {
 	hash    string
 	tag     string
 	imageID string
-	docker  bool
 }
 
 func (d needsLocalTagging) Hash() string {
@@ -71,7 +70,7 @@ func (d needsLocalTagging) Hash() string {
 }
 
 func (d needsLocalTagging) Tag(ctx context.Context, c *cache) error {
-	return c.runtime.Tag(ctx, d.imageID, d.tag)
+	return c.runtime.Tag(ctx, d.tag, d.imageID)
 }
 
 // Found remotely with wrong tag. Needs retagging

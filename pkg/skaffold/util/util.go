@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -313,4 +314,8 @@ func IsSubPath(basepath string, targetpath string) bool {
 
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
+}
+
+func Runtime() string {
+	return runtime.GOOS
 }

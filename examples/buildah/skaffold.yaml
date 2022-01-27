@@ -11,7 +11,7 @@ build:
       compression: "gzip"
   local:
     push: false
-    useBuildah: true
+    podman: {}
    
 deploy:
   kubectl:

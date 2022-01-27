@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	goRuntime "runtime"
 	"sync"
 
 	"github.com/mitchellh/go-homedir"
@@ -108,10 +109,10 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 	}
 
 	var runtime RuntimeCache
-	// check in the default pipeline for useBuildah key
+	// check in the default pipeline for podman
 	localBuildCfg := cfg.DefaultPipeline().Build.LocalBuild
 	if localBuildCfg != nil {
-		if localBuildCfg.Podman {
+		if localBuildCfg.Podman != nil && goRuntime.GOOS == "linux" {
 			client, clientErr := podman.NewBuildah()
 			runtime = local.NewLocalBuildah(client)
 			err = clientErr

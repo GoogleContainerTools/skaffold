@@ -109,17 +109,7 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.Loc
 		sourceDependencies: bCtx.SourceDependenciesResolver(),
 	}
 
-	// TODO: check OS. If we are running on linux, dont use remote connection
 	if buildCfg.Podman != nil {
-		conn, err := podman.GetConnection(buildCfg.Podman.Connection)
-		if err != nil {
-			return nil, err
-		}
-		err = podman.OverrideDockerHost(conn)
-		if err != nil {
-			return nil, err
-		}
-
 		buildahClient, err := podman.NewBuildah()
 		if err != nil {
 			return nil, err

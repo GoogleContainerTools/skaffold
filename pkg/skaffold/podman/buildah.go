@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
 	"github.com/containers/buildah/imagebuildah"
 	"github.com/containers/common/libimage"
@@ -42,16 +41,6 @@ var imageArchivePath = os.TempDir()
 
 func (b *Buildah) ListImages(ctx context.Context, name string) (sums []*libimage.Image, err error) {
 	return b.runtime.ListImages(ctx, []string{name}, &libimage.ListImagesOptions{})
-	// if err != nil {
-	// 	return nil, fmt.Errorf("libimage listing images: %w", err)
-	// }
-	// for _, img := range imgs {
-	// 	sums = append(sums, imageSummary{
-	// 		id:      img.ID(),
-	// 		created: img.Created().Unix(),
-	// 	})
-	// }
-	// return sums, nil
 }
 
 func (b *Buildah) Prune(ctx context.Context, ids []string, pruneChildren bool) ([]string, error) {
@@ -180,14 +169,4 @@ func getBuildStore() (storage.Store, error) {
 		return nil, fmt.Errorf("buildah store options: %w", err)
 	}
 	return storage.GetStore(buildStoreOptions)
-}
-
-// TODO: reexec only when detecting buildah and running natively on linux
-// Debugging is kinda hard
-// have to use `buildah unshare` before launching
-func reexec() {
-	if buildah.InitReexec() {
-		return
-	}
-	unshare.MaybeReexecUsingUserNamespace(false)
 }

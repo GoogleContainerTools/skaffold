@@ -107,6 +107,15 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 	return tests
 }
 
+// BuildConfigs gets all BuildConfigs from the pipelines
+func (ps Pipelines) BuildConfigs() []latestV1.BuildConfig {
+	var buildConfigs []latestV1.BuildConfig
+	for _, p := range ps.pipelines {
+		buildConfigs = append(buildConfigs, p.Build)
+	}
+	return buildConfigs
+}
+
 // TransformableAllowList returns combined allowlist from pipelines
 func (ps Pipelines) TransformableAllowList() []latestV1.ResourceFilter {
 	var allowList []latestV1.ResourceFilter
@@ -151,6 +160,8 @@ func (rc *RunContext) Artifacts() []*latestV1.Artifact { return rc.Pipelines.Art
 func (rc *RunContext) DeployConfigs() []latestV1.DeployConfig { return rc.Pipelines.DeployConfigs() }
 
 func (rc *RunContext) Deployers() []latestV1.DeployConfig { return rc.Pipelines.Deployers() }
+
+func (rc *RunContext) BuildConfigs() []latestV1.BuildConfig { return rc.Pipelines.BuildConfigs() }
 
 func (rc *RunContext) TestCases() []*latestV1.TestCase { return rc.Pipelines.TestCases() }
 
