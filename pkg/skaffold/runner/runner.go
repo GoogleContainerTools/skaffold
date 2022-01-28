@@ -48,4 +48,6 @@ type Runner interface {
 	// "output" arg is only used in Render v1.
 	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, output string) (manifest.ManifestList, error)
 	Test(context.Context, io.Writer, []graph.Artifact) error
+	Verify(context.Context, io.Writer, []graph.Artifact) error
+	VerifyAndLog(context.Context, io.Writer, []graph.Artifact) error
 }

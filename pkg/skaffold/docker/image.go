@@ -71,6 +71,7 @@ type ContainerCreateOpts struct {
 	Bindings        nat.PortMap
 	Mounts          []mount.Mount
 	ContainerConfig *container.Config
+	VerifyTestName  string
 }
 
 // LocalDaemon talks to a local Docker API.
@@ -87,7 +88,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error)
+	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -213,9 +214,9 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns then container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (string, error) {
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error) {
 	if opts.ContainerConfig == nil {
-		return "", fmt.Errorf("cannot call Run with empty container config")
+		return nil, nil, "", fmt.Errorf("cannot call Run with empty container config")
 	}
 	hCfg := &container.HostConfig{
 		NetworkMode:  container.NetworkMode(opts.Network),
@@ -223,17 +224,19 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCrea
 		PortBindings: opts.Bindings,
 		Mounts:       opts.Mounts,
 	}
+
 	c, err := l.apiClient.ContainerCreate(ctx, opts.ContainerConfig, hCfg, nil, nil, opts.Name)
 	if err != nil {
-		return "", err
+		return nil, nil, "", err
 	}
 	if err := l.apiClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
-		return "", err
+		return nil, nil, "", err
 	}
 	if opts.Wait {
-		l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+		statusCh, errCh := l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+		return statusCh, errCh, c.ID, nil
 	}
-	return c.ID, nil
+	return nil, nil, c.ID, nil
 }
 
 func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {

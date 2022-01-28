@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	dockerport "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker/port"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	dockerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -55,7 +56,7 @@ type Deployer struct {
 
 	cfg                *latest.DockerDeploy
 	tracker            *tracker.ContainerTracker
-	portManager        *PortManager // functions as Accessor
+	portManager        *dockerport.PortManager // functions as Accessor
 	client             dockerutil.LocalDaemon
 	network            string
 	globalConfig       string
@@ -93,7 +94,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		globalConfig:       cfg.GlobalConfig(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		tracker:            tracker,
-		portManager:        NewPortManager(), // fulfills Accessor interface
+		portManager:        dockerport.NewPortManager(), // fulfills Accessor interface
 		debugger:           dbg,
 		logger:             l,
 		monitor:            &status.NoopMonitor{},
@@ -145,7 +146,7 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		if err := d.client.Delete(ctx, out, container.ID); err != nil {
 			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, artifact.ImageName, err)
 		}
-		d.portManager.relinquishPorts(container.Name)
+		d.portManager.RelinquishPorts(container.Name)
 	}
 	if d.cfg.UseCompose {
 		// TODO(nkubala): implement
@@ -179,13 +180,13 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		opts.Mounts = mounts
 	}
 
-	bindings, err := d.portManager.allocatePorts(artifact.ImageName, d.resources, containerCfg, debugBindings)
+	bindings, err := d.portManager.AllocatePorts(artifact.ImageName, d.resources, containerCfg, debugBindings)
 	if err != nil {
 		return err
 	}
 	opts.Bindings = bindings
 
-	id, err := d.client.Run(ctx, out, opts)
+	_, _, id, err := d.client.Run(ctx, out, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating container in local docker")
 	}
@@ -225,7 +226,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 			return nil, errors.Wrap(err, "pulling init container image")
 		}
 		// create the init container
-		id, err := d.client.Run(ctx, out, dockerutil.ContainerCreateOpts{
+		_, _, id, err := d.client.Run(ctx, out, dockerutil.ContainerCreateOpts{
 			ContainerConfig: c,
 		})
 		if err != nil {
@@ -299,7 +300,7 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list
 			// TODO(nkubala): replace with actionable error
 			return errors.Wrap(err, "cleaning up deployed container")
 		}
-		d.portManager.relinquishPorts(container.ID)
+		d.portManager.RelinquishPorts(container.ID)
 	}
 
 	for _, m := range d.debugger.SupportMounts() {

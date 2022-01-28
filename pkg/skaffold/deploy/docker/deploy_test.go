@@ -146,7 +146,7 @@ func TestDebugBindings(t *testing.T) {
 				}
 				testutil.CheckErrorAndFailNow(t, false, err)
 
-				bindings, err := d.portManager.allocatePorts(a.image, d.resources, &config, debugBindings)
+				bindings, err := d.portManager.AllocatePorts(a.image, d.resources, &config, debugBindings)
 				testutil.CheckErrorAndFailNow(t, false, err)
 
 				// CheckDeepEqual unfortunately doesn't work when the map elements are slices
