@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/ahmetb/dlog"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
@@ -81,8 +82,13 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
 	tr, tw := io.Pipe()
 	go func() {
-		err := l.client.ContainerLogs(ctx, tw, id)
-		if err != nil {
+		var err error
+		if waitErr := wait.Poll(time.Second, 10*time.Minute, func() (bool, error) {
+			if err = l.client.ContainerLogs(ctx, tw, id); err != nil {
+				return false, nil
+			}
+			return true, nil
+		}); waitErr != nil {
 			// Don't print errors if the user interrupted the logs
 			// or if the logs were interrupted because of a configuration change
 			// TODO(nkubala)[07/23/21]: if container is lost, emit API event and attempt to reattach

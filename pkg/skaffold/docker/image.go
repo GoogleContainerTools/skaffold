@@ -71,6 +71,7 @@ type ContainerCreateOpts struct {
 	Bindings        nat.PortMap
 	Mounts          []mount.Mount
 	ContainerConfig *container.Config
+	VerifyTestName  string
 }
 
 // LocalDaemon talks to a local Docker API.
@@ -223,15 +224,36 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCrea
 		PortBindings: opts.Bindings,
 		Mounts:       opts.Mounts,
 	}
+
+	// TODO(aaron-prindle) wire up the environ better, make sure to allow it to be customizable & add any helpful skaffold special env vars
+	opts.ContainerConfig.Env = os.Environ()
+
 	c, err := l.apiClient.ContainerCreate(ctx, opts.ContainerConfig, hCfg, nil, nil, opts.Name)
 	if err != nil {
 		return "", err
 	}
+
 	if err := l.apiClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return "", err
 	}
 	if opts.Wait {
-		l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+		var containerErr error
+		statusCh, errCh := l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+		select {
+		case err := <-errCh:
+			if err != nil {
+				containerErr = err
+			}
+		case status := <-statusCh:
+			if status.StatusCode != 0 {
+				errMsg := fmt.Sprintf("%q, running container image %q errored during run with status code: %d", opts.VerifyTestName, opts.ContainerConfig.Image, status.StatusCode)
+				containerErr = errors.New(errMsg)
+			}
+		}
+
+		if containerErr != nil {
+			return "", containerErr
+		}
 	}
 	return c.ID, nil
 }

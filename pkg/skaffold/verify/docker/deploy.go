@@ -20,15 +20,20 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	"github.com/fatih/semgroup"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	dockerport "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker/port"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
@@ -37,14 +42,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/debugger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	pkgsync "github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 type Deployer struct {
@@ -53,18 +58,18 @@ type Deployer struct {
 	monitor  status.Monitor
 	syncer   pkgsync.Syncer
 
-	cfg                *v1.DockerDeploy
+	cfg                []*latestV1.VerifyTestCase
 	tracker            *tracker.ContainerTracker
 	portManager        *dockerport.PortManager // functions as Accessor
 	client             dockerutil.LocalDaemon
 	network            string
 	globalConfig       string
 	insecureRegistries map[string]bool
-	resources          []*v1.PortForwardResource
+	resources          []*latestV1.PortForwardResource
 	once               sync.Once
 }
 
-func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
+func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, testCases []*latestV1.VerifyTestCase, resources []*latestV1.PortForwardResource, network string) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -84,11 +89,15 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		}
 		dbg = debugger.NewDebugManager(cfg.GetInsecureRegistries(), debugHelpersRegistry)
 	}
+	ntwrk := fmt.Sprintf("skaffold-network-%s", labeller.GetRunID())
+	if network != "" {
+		ntwrk = network
+	}
 
 	return &Deployer{
-		cfg:                d,
+		cfg:                testCases,
 		client:             client,
-		network:            fmt.Sprintf("skaffold-network-%s", labeller.GetRunID()),
+		network:            ntwrk,
 		resources:          resources,
 		globalConfig:       cfg.GlobalConfig(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
@@ -113,7 +122,7 @@ func (d *Deployer) TrackContainerFromBuild(artifact graph.Artifact, container tr
 
 // Deploy deploys built artifacts by creating containers in the local docker daemon
 // from each artifact's image.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network)
@@ -122,24 +131,44 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return fmt.Errorf("creating skaffold network %s: %w", d.network, err)
 	}
 
-	// TODO(nkubala)[07/20/21]: parallelize with sync.Errgroup
-	for _, b := range builds {
-		if err := d.deploy(ctx, out, b); err != nil {
-			return err
+	builds := []graph.Artifact{}
+	const maxWorkers = math.MaxInt64
+	s := semgroup.NewGroup(context.Background(), maxWorkers)
+
+	for _, tc := range d.cfg {
+		var nb graph.Artifact
+		foundArtifact := false
+		testCase := tc
+		for _, b := range allbuilds {
+			if tc.Container.Image == b.ImageName {
+				foundArtifact = true
+				nb = graph.Artifact{
+					ImageName: tc.Container.Image,
+					Tag:       b.Tag,
+				}
+				builds = append(builds, nb)
+				break
+			}
 		}
+		if !foundArtifact {
+			nb = graph.Artifact{
+				ImageName: tc.Container.Image,
+				Tag:       tc.Container.Image,
+			}
+		}
+		s.Go(func() error {
+			return d.deploy(ctx, out, nb, *testCase)
+		})
 	}
 	d.TrackBuildArtifacts(builds)
-
-	return nil
+	return s.Wait()
 }
 
 // deploy creates a container in the local docker daemon from a build artifact's image.
-func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Artifact) error {
-	if !stringslice.Contains(d.cfg.Images, artifact.ImageName) {
-		// TODO(nkubala)[07/20/21]: should we error out in this case?
-		olog.Entry(ctx).Warnf("skipping deploy for image %s since it was not built by Skaffold", artifact.ImageName)
-		return nil
-	}
+func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Artifact, tc latestV1.VerifyTestCase) error {
+	out, ctx = output.WithEventContext(ctx, out, constants.Verify, tc.Name)
+
+	// TODO(aaron-prindle) need to fix things so that image comes from "verify" stanza, NOT like how deploy config does it
 	if container, found := d.tracker.ContainerForImage(artifact.ImageName); found {
 		olog.Entry(ctx).Debugf("removing old container %s for image %s", container.ID, artifact.ImageName)
 		if err := d.client.Delete(ctx, out, container.ID); err != nil {
@@ -147,21 +176,24 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		}
 		d.portManager.RelinquishPorts(container.Name)
 	}
-	if d.cfg.UseCompose {
-		// TODO(nkubala): implement
-		return fmt.Errorf("docker compose not yet supported by skaffold")
-	}
-
 	containerCfg, err := d.containerConfigFromImage(ctx, artifact.Tag)
 	if err != nil {
 		return err
 	}
-
+	// TODO(aaron-prindle) use util.ExpandEnvTemplate to expand any env vars in the commands here
+	// additionally might make sense to do some docker env var pass through (not sure if added already, need to check)
+	if len(tc.Container.Command) != 0 {
+		containerCfg.Entrypoint = tc.Container.Command
+	}
+	if len(tc.Container.Args) != 0 {
+		containerCfg.Cmd = tc.Container.Args
+	}
 	containerName := d.getContainerName(ctx, artifact.ImageName)
 	opts := dockerutil.ContainerCreateOpts{
 		Name:            containerName,
 		Network:         d.network,
 		ContainerConfig: containerCfg,
+		VerifyTestName:  tc.Name,
 	}
 
 	var debugBindings nat.PortMap
@@ -184,12 +216,19 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		return err
 	}
 	opts.Bindings = bindings
+	// verify waits for run to complete
+	opts.Wait = true
 
-	id, err := d.client.Run(ctx, out, opts)
+	d.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: tc.Name})
+
+	eventV2.VerifyInProgress(opts.VerifyTestName)
+	_, err = d.client.Run(ctx, out, opts)
 	if err != nil {
+		eventV2.VerifyFailed(tc.Name, err)
 		return errors.Wrap(err, "creating container in local docker")
 	}
-	d.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: id})
+
+	eventV2.VerifySucceeded(opts.VerifyTestName)
 	return nil
 }
 
@@ -259,14 +298,29 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 func (d *Deployer) containerConfigFromImage(ctx context.Context, taggedImage string) (*container.Config, error) {
 	config, _, err := d.client.ImageInspectWithRaw(ctx, taggedImage)
 	if err != nil {
-		return nil, err
+		// TODO(aaron-prindle) hack: attempt to pull down the image here
+		err = d.client.Pull(ctx, os.Stdout, taggedImage)
+		if err != nil {
+			return nil, err
+		}
+		taggedImage, err = d.client.ImageID(ctx, taggedImage)
+		if err != nil {
+			return nil, err
+		}
+		config, _, err = d.client.ImageInspectWithRaw(ctx, taggedImage)
+		if err != nil {
+			return nil, err
+		}
 	}
 	config.Config.Image = taggedImage // the client replaces this with an image ID. put back the originally provided tagged image
 	return config.Config, err
 }
 
 func (d *Deployer) getContainerName(ctx context.Context, name string) string {
+	// TODO(aaron-prindle) semi-hack to fix this for naming convention of non-skaffold built images
+	name = strings.Split(name, ":")[0]
 	currentName := name
+
 	counter := 1
 	for {
 		if !d.client.ContainerExists(ctx, currentName) {

@@ -50,4 +50,6 @@ type Runner interface {
 	Prune(context.Context, io.Writer) error
 	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
 	Test(context.Context, io.Writer, []graph.Artifact) error
+	Verify(context.Context, io.Writer, []graph.Artifact) error
+	VerifyAndLog(context.Context, io.Writer, []graph.Artifact) error
 }

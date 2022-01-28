@@ -32,6 +32,7 @@ message State {
     Metadata metadata = 7;
     TestState testState = 8;
     RenderState renderState = 9;
+    VerifyState verifyState = 10;
 }
 
 message Metadata {
@@ -115,6 +116,14 @@ message RenderState {
     enums.StatusCode statusCode = 2;
 }
 
+// `VerifyState` describes the current state of the render
+message VerifyState {
+    // Status of the current render
+    string status = 1;
+    // Verifystate status code
+    enums.StatusCode statusCode = 2;
+}
+
 // `DeployState` describes the status of the current deploy
 message DeployState {
     string status = 1;
@@ -161,6 +170,7 @@ message Event {
         TerminationEvent terminationEvent = 12; // describes a skaffold termination event
         TestSubtaskEvent testEvent = 13; // describes if the test has started, is in progress or is complete.
         RenderSubtaskEvent renderEvent = 14; // describes if the render has started, is in progress or is complete.
+        VerifySubtaskEvent verifyEvent = 15; // describes if the render has started, is in progress or is complete.
     }
 }
 
@@ -236,6 +246,15 @@ message TestSubtaskEvent {
 // `RenderSubtaskEvent` represents the status of a render, and is emitted by Skaffold
 // anytime a render starts or completes, successfully or not.
 message RenderSubtaskEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // render status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `VerifyEvent` represents the status of a render, and is emitted by Skaffold
+// anytime a render starts or completes, successfully or not.
+message VerifySubtaskEvent {
     string id = 1; // id of the subtask which will be used in SkaffoldLog
     string task_id = 2; // id of the task of skaffold that this event came from
     string status = 3; // render status oneof: InProgress, Completed, Failed

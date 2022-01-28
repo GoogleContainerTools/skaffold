@@ -28,6 +28,7 @@ const (
 	Test        = Phase("Test")
 	Render      = Phase("Render")
 	Deploy      = Phase("Deploy")
+	Verify      = Phase("Verify")
 	StatusCheck = Phase("StatusCheck")
 	PortForward = Phase("PortForward")
 	Sync        = Phase("Sync")

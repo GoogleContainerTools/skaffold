@@ -76,6 +76,9 @@ type Pipeline struct {
 
 	// ResourceSelector describes user defined filters describing how skaffold should treat objects/fields during rendering.
 	ResourceSelector ResourceSelectorConfig `yaml:"resourceSelector,omitempty"`
+
+	// Verify describes how images are verified (via verification tests).
+	Verify []*VerifyTestCase `yaml:"verify,omitempty"`
 }
 
 // GitInfo contains information on the origin of skaffold configurations cloned from a git repository.
@@ -496,6 +499,14 @@ type ResourceRequirement struct {
 	// ResourceStorage the amount of resource storage to allocate to the pod.
 	// For example: `1Gi` or `1000Mi`.
 	ResourceStorage string `yaml:"resourceStorage,omitempty"`
+}
+
+// VerifyTestCase is a list of tests to run on images that Skaffold builds.
+type VerifyTestCase struct {
+	// Name is the name descriptor for the verify test.
+	Name string `yaml:"name" yamltags:"required"`
+	// Container is the container information for the verify test.
+	Container v1.Container `yaml:"container,omitempty" yamltags:"oneOf=verifyType"`
 }
 
 // TestCase is a list of tests to run on images that Skaffold builds.

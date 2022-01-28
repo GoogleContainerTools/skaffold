@@ -169,6 +169,8 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				NewCmdDelete(),
 				NewCmdRender(),
 				NewCmdApply(),
+				// TODO(aaron-prindle) while this likely makes sense, perhaps rollout of feature should be standalone command and then later a phase
+				// NewCmdVerify(),
 			},
 		},
 		{

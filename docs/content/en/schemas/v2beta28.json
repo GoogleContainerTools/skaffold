@@ -3313,6 +3313,14 @@
           "type": "array",
           "description": "describes how images are tested.",
           "x-intellij-html-description": "describes how images are tested."
+        },
+        "verify": {
+          "items": {
+            "$ref": "#/definitions/VerifyTestCase"
+          },
+          "type": "array",
+          "description": "describes how images are verified (via verification tests).",
+          "x-intellij-html-description": "describes how images are verified (via verification tests)."
         }
       },
       "preferredOrder": [
@@ -3323,7 +3331,8 @@
         "test",
         "deploy",
         "portForward",
-        "resourceSelector"
+        "resourceSelector",
+        "verify"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -3572,6 +3581,14 @@
           "type": "array",
           "description": "describes how images are tested.",
           "x-intellij-html-description": "describes how images are tested."
+        },
+        "verify": {
+          "items": {
+            "$ref": "#/definitions/VerifyTestCase"
+          },
+          "type": "array",
+          "description": "describes how images are verified (via verification tests).",
+          "x-intellij-html-description": "describes how images are verified (via verification tests)."
         }
       },
       "preferredOrder": [
@@ -3584,6 +3601,7 @@
         "deploy",
         "portForward",
         "resourceSelector",
+        "verify",
         "profiles"
       ],
       "additionalProperties": false,
@@ -3962,6 +3980,30 @@
         "custom",
         "structureTests",
         "structureTestsArgs"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "a list of tests to run on images that Skaffold builds.",
+      "x-intellij-html-description": "a list of tests to run on images that Skaffold builds."
+    },
+    "VerifyTestCase": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "container": {
+          "description": "container information for the verify test.",
+          "x-intellij-html-description": "container information for the verify test."
+        },
+        "name": {
+          "type": "string",
+          "description": "name descriptor for the verify test.",
+          "x-intellij-html-description": "name descriptor for the verify test."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "container"
       ],
       "additionalProperties": false,
       "type": "object",

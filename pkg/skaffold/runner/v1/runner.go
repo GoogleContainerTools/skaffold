@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/verify"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
@@ -35,6 +36,7 @@ type SkaffoldRunner struct {
 	tester test.Tester
 
 	deployer deploy.Deployer
+	verifier verify.Deployer
 	monitor  filemon.Monitor
 	listener runner.Listener
 

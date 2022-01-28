@@ -46,13 +46,14 @@ type SkaffoldOptions struct {
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	MinikubeProfile    string
-	Namespace          string
-	RenderOutput       string
-	RepoCacheDir       string
-	Trigger            string
-	User               string
-	TransformRulesFile string
+	MinikubeProfile     string
+	Namespace           string
+	RenderOutput        string
+	RepoCacheDir        string
+	Trigger             string
+	User                string
+	TransformRulesFile  string
+	VerifyDockerNetwork string
 
 	ConfigurationFilter []string
 	CustomLabels        []string
