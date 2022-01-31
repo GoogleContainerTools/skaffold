@@ -866,7 +866,6 @@ func TestShouldDisplayUpdateMsg(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
-			// HERE
 			t.CheckDeepEqual(test.expected, ShouldDisplayUpdateMsg("dummyconfig"))
 		})
 	}
