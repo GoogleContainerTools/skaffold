@@ -25,11 +25,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latestV1.Artifact) []cacheDetails {
+func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV1.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
 	// Create a new `artifactHasher` on every new dev loop.
 	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
@@ -43,7 +44,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], h)
+			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], platforms, h)
 			wg.Done()
 		}()
 	}
@@ -52,13 +53,13 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, h artifactHasher) cacheDetails {
+func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, platforms platform.Resolver, h artifactHasher) cacheDetails {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "lookup_CacheLookupOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
-	hash, err := h.hash(ctx, a)
+	hash, err := h.hash(ctx, a, platforms)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}

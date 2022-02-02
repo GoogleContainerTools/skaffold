@@ -159,6 +159,13 @@ type BuildConfig struct {
 	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
+	// Platforms is the list of platforms to build all artifact images for.
+	// It can be overridden by the individual artifact's `platforms` property.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
+
 	BuildType `yaml:",inline"`
 }
 
@@ -851,13 +858,13 @@ type LogsConfig struct {
 	// Defaults to `auto`.
 	Prefix string `yaml:"prefix,omitempty"`
 
-	// JSONParse defines the rules for parsing/outputting json logs
+	// JSONParse defines the rules for parsing/outputting json logs.
 	JSONParse JSONParseConfig `yaml:"jsonParse,omitempty"`
 }
 
-// JSONParseConfig defines the rules for parsing/outputting json logs
+// JSONParseConfig defines the rules for parsing/outputting json logs.
 type JSONParseConfig struct {
-	// Fields specifies which top level fields should be printed
+	// Fields specifies which top level fields should be printed.
 	Fields []string `yaml:"fields,omitempty"`
 }
 
@@ -886,6 +893,13 @@ type Artifact struct {
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
 	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
+
+	// Platforms is the list of platforms to build this artifact image for.
+	// It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.

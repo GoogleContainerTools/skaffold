@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -80,3 +81,7 @@ func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 }
 
 func (b *Builder) PushImages() bool { return true }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher {
+	return platform.All
+}

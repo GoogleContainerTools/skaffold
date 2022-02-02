@@ -145,7 +145,7 @@ def get_regexs():
     # Search for "YEAR" which exists in the boilerplate, but shouldn't in the real thing
     regexs["year"] = re.compile( 'YEAR' )
     # dates can be 2018, company holder names can be anything
-    regexs["date"] = re.compile( '(2019|2020|2021)' )
+    regexs["date"] = re.compile( '(2019|2020|2021|2022)' )
     # strip // +build \n\n build constraints
     regexs["go_build_constraints"] = re.compile(r"^(// \+build.*\n)+\n", re.MULTILINE)
     # strip //go:build \n build constraints (for go1.17 and higher)

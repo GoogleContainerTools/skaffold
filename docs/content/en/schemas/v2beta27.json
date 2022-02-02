@@ -71,6 +71,15 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -91,7 +100,8 @@
             "context",
             "sync",
             "requires",
-            "hooks"
+            "hooks",
+            "platforms"
           ],
           "additionalProperties": false
         },
@@ -121,6 +131,15 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -142,6 +161,7 @@
             "sync",
             "requires",
             "hooks",
+            "platforms",
             "docker"
           ],
           "additionalProperties": false
@@ -172,6 +192,15 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -193,6 +222,7 @@
             "sync",
             "requires",
             "hooks",
+            "platforms",
             "bazel"
           ],
           "additionalProperties": false
@@ -223,6 +253,15 @@
               "description": "builds images using [ko](https://github.com/google/ko).",
               "x-intellij-html-description": "builds images using <a href=\"https://github.com/google/ko\">ko</a>."
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -244,6 +283,7 @@
             "sync",
             "requires",
             "hooks",
+            "platforms",
             "ko"
           ],
           "additionalProperties": false
@@ -274,6 +314,15 @@
               "description": "builds images using the [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).",
               "x-intellij-html-description": "builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/\">Jib plugins for Maven or Gradle</a>."
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -295,6 +344,7 @@
             "sync",
             "requires",
             "hooks",
+            "platforms",
             "jib"
           ],
           "additionalProperties": false
@@ -325,6 +375,15 @@
               "description": "builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).",
               "x-intellij-html-description": "builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -346,6 +405,7 @@
             "sync",
             "requires",
             "hooks",
+            "platforms",
             "kaniko"
           ],
           "additionalProperties": false
@@ -376,6 +436,15 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -397,6 +466,7 @@
             "sync",
             "requires",
             "hooks",
+            "platforms",
             "buildpacks"
           ],
           "additionalProperties": false
@@ -427,6 +497,15 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build this artifact image for. It overrides the values inferred through heuristics or provided in the top level <code>platforms</code> property or in the global config. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "requires": {
               "items": {
                 "$ref": "#/definitions/ArtifactDependency"
@@ -448,6 +527,7 @@
             "sync",
             "requires",
             "hooks",
+            "platforms",
             "custom"
           ],
           "additionalProperties": false
@@ -538,6 +618,15 @@
               "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
               "default": "[]"
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's `platforms` property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's <code>platforms</code> property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
@@ -547,7 +636,8 @@
           "preferredOrder": [
             "artifacts",
             "insecureRegistries",
-            "tagPolicy"
+            "tagPolicy",
+            "platforms"
           ],
           "additionalProperties": false
         },
@@ -575,6 +665,15 @@
               "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
               "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's `platforms` property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's <code>platforms</code> property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
@@ -585,6 +684,7 @@
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
+            "platforms",
             "local"
           ],
           "additionalProperties": false
@@ -613,6 +713,15 @@
               "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
               "default": "[]"
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's `platforms` property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's <code>platforms</code> property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
@@ -623,6 +732,7 @@
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
+            "platforms",
             "googleCloudBuild"
           ],
           "additionalProperties": false
@@ -651,6 +761,15 @@
               "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
               "default": "[]"
             },
+            "platforms": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's `platforms` property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
+              "x-intellij-html-description": "list of platforms to build all artifact images for. It can be overridden by the individual artifact's <code>platforms</code> property. If the target builder cannot build for atleast one of the specified platforms, then the build fails. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
+              "default": "[]"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
@@ -661,6 +780,7 @@
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
+            "platforms",
             "cluster"
           ],
           "additionalProperties": false
@@ -2121,6 +2241,26 @@
       "description": "*beta* tags hashes the image content.",
       "x-intellij-html-description": "<em>beta</em> tags hashes the image content."
     },
+    "JSONParseConfig": {
+      "properties": {
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies which top level fields should be printed.",
+          "x-intellij-html-description": "specifies which top level fields should be printed.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "fields"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "defines the rules for parsing/outputting json logs.",
+      "x-intellij-html-description": "defines the rules for parsing/outputting json logs."
+    },
     "JSONPatch": {
       "required": [
         "path"
@@ -2992,6 +3132,11 @@
     },
     "LogsConfig": {
       "properties": {
+        "jsonParse": {
+          "$ref": "#/definitions/JSONParseConfig",
+          "description": "defines the rules for parsing/outputting json logs.",
+          "x-intellij-html-description": "defines the rules for parsing/outputting json logs."
+        },
         "prefix": {
           "type": "string",
           "description": "defines the prefix shown on each log line. Valid values are `container`: prefix logs lines with the name of the container. `podAndContainer`: prefix logs lines with the names of the pod and of the container. `auto`: same as `podAndContainer` except that the pod name is skipped if it's the same as the container name. `none`: don't add a prefix.",
@@ -3006,7 +3151,8 @@
         }
       },
       "preferredOrder": [
-        "prefix"
+        "prefix",
+        "jsonParse"
       ],
       "additionalProperties": false,
       "type": "object",
