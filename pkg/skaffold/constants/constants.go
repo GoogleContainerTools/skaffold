@@ -96,6 +96,9 @@ var (
 	// SkipTest is Whether to skip the tests after building passing into a custom build script
 	SkipTest = "SKIP_TEST"
 
+	// Platforms is the set of platforms to build the image for.
+	Platforms = "PLATFORMS"
+
 	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
 	KubeContext = "KUBE_CONTEXT"
 

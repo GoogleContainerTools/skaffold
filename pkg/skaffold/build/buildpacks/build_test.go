@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -278,7 +279,7 @@ value = "VALUE2"
 			localDocker := fakeLocalDaemon(test.api)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode, test.resolver)
-			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
+			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {
@@ -419,7 +420,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			localDocker := fakeLocalDaemon(test.api)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode, test.resolver)
-			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
+			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {

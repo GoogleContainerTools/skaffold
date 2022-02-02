@@ -32,6 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -66,7 +67,7 @@ func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
 		Workspace: exampleAppDir,
 	}
 	imageName := fmt.Sprintf("%s/%s", registryAddr, "skaffold-ko")
-	_, err = b.Build(context.Background(), nil, artifact, imageName)
+	_, err = b.Build(context.Background(), nil, artifact, imageName, platform.Matcher{})
 	if err != nil {
 		t.Fatalf("b.Build(): %+v", err)
 	}

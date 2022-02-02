@@ -21,11 +21,12 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Build builds an artifact with Jib.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "jib",
 		"Context":     instrumentation.PII(artifact.Workspace),
@@ -54,3 +55,5 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.A
 		return "", unknownPluginType(artifact.Workspace)
 	}
 }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }

@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -87,7 +88,7 @@ func TestWithLogFile(t *testing.T) {
 			var out bytes.Buffer
 
 			builder := WithLogFile(test.builder, test.muted)
-			digest, err := builder(context.Background(), &out, &latestV1.Artifact{ImageName: "img"}, "img:123")
+			digest, err := builder(context.Background(), &out, &latestV1.Artifact{ImageName: "img"}, "img:123", platform.All)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 			for _, found := range test.logsFound {
@@ -100,12 +101,12 @@ func TestWithLogFile(t *testing.T) {
 	}
 }
 
-func fakeBuilder(_ context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+func fakeBuilder(_ context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	fmt.Fprintln(out, "building", a.ImageName, "with tag", tag)
 	return "digest", nil
 }
 
-func fakeFailingBuilder(_ context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+func fakeFailingBuilder(_ context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	fmt.Fprintln(out, "failed to build", a.ImageName, "with tag", tag)
 	return "", errors.New("bug")
 }
