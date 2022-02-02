@@ -227,6 +227,9 @@ func (rc *RunContext) GetRunID() string                              { return rc
 func (rc *RunContext) RPCPort() *int                                 { return rc.Opts.RPCPort.Value() }
 func (rc *RunContext) RPCHTTPPort() *int                             { return rc.Opts.RPCHTTPPort.Value() }
 func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
+func (rc *RunContext) JSONParseConfig() latestV1.JSONParseConfig {
+	return rc.DefaultPipeline().Deploy.Logs.JSONParse
+}
 
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline

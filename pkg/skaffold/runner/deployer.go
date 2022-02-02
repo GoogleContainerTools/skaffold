@@ -59,6 +59,11 @@ func (d *deployerCtx) StatusCheck() *bool {
 	return d.deploy.StatusCheck
 }
 
+// JsonParseType returns the JsonParseType field from the underlying deployConfig struct
+func (d *deployerCtx) JSONParseConfig() v1.JSONParseConfig {
+	return d.deploy.Logs.JSONParse
+}
+
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
 func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
