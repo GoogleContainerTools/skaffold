@@ -180,23 +180,8 @@ skaffold init \
 ```
 
 will produce an `skaffold.yaml` config like this
-```yaml
-apiVersion: skaffold/v1
-kind: Config
-metadata:
-  name: microservices
-build:
-  artifacts:
-  - image: gcr.io/k8s-skaffold/leeroy-app
-    context: leeroy-app
-  - image: gcr.io/k8s-skaffold/leeroy-web
-    context: path/to/context
-deploy:
-  kubectl:
-    manifests:
-    - leeroy-app/kubernetes/deployment.yaml
-    - leeroy-web/kubernetes/deployment.yaml
-```
+
+{{% readfile file="samples/pipeline-stages/init-example.yaml" %}}
 
 ### Exit Codes
 
