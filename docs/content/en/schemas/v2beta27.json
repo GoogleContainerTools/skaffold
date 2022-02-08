@@ -2241,6 +2241,26 @@
       "description": "*beta* tags hashes the image content.",
       "x-intellij-html-description": "<em>beta</em> tags hashes the image content."
     },
+    "JSONParseConfig": {
+      "properties": {
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies which top level fields should be printed.",
+          "x-intellij-html-description": "specifies which top level fields should be printed.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "fields"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "defines the rules for parsing/outputting json logs.",
+      "x-intellij-html-description": "defines the rules for parsing/outputting json logs."
+    },
     "JSONPatch": {
       "required": [
         "path"
@@ -3112,6 +3132,11 @@
     },
     "LogsConfig": {
       "properties": {
+        "jsonParse": {
+          "$ref": "#/definitions/JSONParseConfig",
+          "description": "defines the rules for parsing/outputting json logs.",
+          "x-intellij-html-description": "defines the rules for parsing/outputting json logs."
+        },
         "prefix": {
           "type": "string",
           "description": "defines the prefix shown on each log line. Valid values are `container`: prefix logs lines with the name of the container. `podAndContainer`: prefix logs lines with the names of the pod and of the container. `auto`: same as `podAndContainer` except that the pod name is skipped if it's the same as the container name. `none`: don't add a prefix.",
@@ -3126,7 +3151,8 @@
         }
       },
       "preferredOrder": [
-        "prefix"
+        "prefix",
+        "jsonParse"
       ],
       "additionalProperties": false,
       "type": "object",

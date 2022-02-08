@@ -857,6 +857,15 @@ type LogsConfig struct {
 	// `none`: don't add a prefix.
 	// Defaults to `auto`.
 	Prefix string `yaml:"prefix,omitempty"`
+
+	// JSONParse defines the rules for parsing/outputting json logs.
+	JSONParse JSONParseConfig `yaml:"jsonParse,omitempty"`
+}
+
+// JSONParseConfig defines the rules for parsing/outputting json logs.
+type JSONParseConfig struct {
+	// Fields specifies which top level fields should be printed.
+	Fields []string `yaml:"fields,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which
