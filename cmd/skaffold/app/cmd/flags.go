@@ -316,11 +316,10 @@ var flagRegistry = []Flag{
 		Name:          "status-check",
 		Usage:         "Wait for deployed resources to stabilize",
 		Value:         &opts.StatusCheck,
-		DefValue:      true,
+		DefValue:      nil,
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
-		NoOptDefVal:   "true",
 	},
 	{
 		Name:          "iterative-status-check",
