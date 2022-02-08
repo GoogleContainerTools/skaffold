@@ -277,7 +277,7 @@ func TestHelmRender(t *testing.T) {
 				},
 			},
 			helmReleases: []latestV1.HelmRelease{{
-				Name:      "gke_loadbalancer",
+				Name:      "gke-loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
 				ArtifactOverrides: map[string]string{
 					"image": "gke-loadbalancer",
