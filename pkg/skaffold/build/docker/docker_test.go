@@ -232,6 +232,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			a := *test.artifact
 			a.Workspace = "."
 			a.DockerArtifact.DockerfilePath = dockerfilePath
+			t.Override(&docker.DefaultAuthHelper, stubAuth{})
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 				return args, nil
 			})
