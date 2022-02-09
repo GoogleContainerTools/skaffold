@@ -30,14 +30,14 @@ import (
 
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
-		description              string
-		artifact                 latestV2.Artifact
-		runMode                  config.RunMode
-		wantDisableOptimizations bool
-		wantLabels               []string
-		wantPlatform             string
-		wantWorkingDirectory     string
-		wantImportPath           string
+		description          string
+		artifact             latestV2.Artifact
+		runMode              config.RunMode
+		wantDebugOptions     bool
+		wantLabels           []string
+		wantPlatform         string
+		wantWorkingDirectory string
+		wantImportPath       string
 	}{
 		{
 			description: "all zero value",
@@ -120,15 +120,15 @@ func TestBuildOptions(t *testing.T) {
 			wantImportPath:       "example.com/foo",
 		},
 		{
-			description: "disable compiler optimizations for debug",
+			description: "remove trimpath flag and add flags that disable compiler optimizations for debug",
 			artifact: latestV2.Artifact{
 				ArtifactType: latestV2.ArtifactType{
 					KoArtifact: &latestV2.KoArtifact{},
 				},
 				ImageName: "ko://example.com/foo",
 			},
-			runMode:                  config.RunModes.Debug,
-			wantDisableOptimizations: true,
+			runMode:          config.RunModes.Debug,
+			wantDebugOptions: true,
 		},
 		{
 			description: "labels",
@@ -157,7 +157,8 @@ func TestBuildOptions(t *testing.T) {
 			t.CheckDeepEqual(test.wantPlatform, bo.Platform)
 			t.CheckDeepEqual(version.UserAgentWithClient(), bo.UserAgent)
 			t.CheckDeepEqual(test.wantWorkingDirectory, bo.WorkingDirectory)
-			t.CheckDeepEqual(test.wantDisableOptimizations, bo.DisableOptimizations)
+			t.CheckDeepEqual(test.wantDebugOptions, bo.DisableOptimizations)
+			t.CheckDeepEqual(test.wantDebugOptions, !bo.Trimpath)
 			t.CheckDeepEqual(test.wantLabels, bo.Labels,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }),
 				cmpopts.EquateEmpty())

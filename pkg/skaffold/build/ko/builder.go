@@ -51,6 +51,7 @@ func buildOptions(a *latestV2.Artifact, runMode config.RunMode) (*options.BuildO
 		DisableOptimizations: runMode == config.RunModes.Debug,
 		Labels:               labels(a),
 		Platform:             strings.Join(a.KoArtifact.Platforms, ","),
+		Trimpath:             runMode != config.RunModes.Debug,
 		UserAgent:            version.UserAgentWithClient(),
 		WorkingDirectory:     filepath.Join(a.Workspace, a.KoArtifact.Dir),
 	}, nil

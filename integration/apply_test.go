@@ -101,6 +101,10 @@ func TestApplyStatusCheckFailure(t *testing.T) {
 			description: "status check for config connector resources",
 			profile:     "configconnector",
 		},
+		{
+			description: "status check for standalone pods",
+			profile:     "pod",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
