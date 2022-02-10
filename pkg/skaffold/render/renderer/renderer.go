@@ -24,8 +24,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
-
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -37,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -121,17 +120,14 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 	endTrace()
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_readKptfile")
-	file, err := os.Open(kptfilePath)
+	kptfileBytes, err := ioutil.ReadFile(kptfilePath)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(fmt.Errorf("read Kptfile from %v: %w",
 			filepath.Dir(kptfilePath), err)))
 		return err
 	}
-	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
+	if err := yaml.UnmarshalStrict(kptfileBytes, &kfConfig); err != nil {
 		return errors.ParseKptfileError(err, r.hydrationDir)
-	}
-	if err = file.Close(); err != nil {
-		return fmt.Errorf("close file %v: %w", kptfilePath, err)
 	}
 	if err := os.RemoveAll(r.hydrationDir); err != nil {
 		return errors.DeleteKptfileError(err, r.hydrationDir)
