@@ -92,10 +92,6 @@ func GetConfigSet(ctx context.Context, opts config.SkaffoldOptions) (SkaffoldCon
 		return nil, sErrors.ZeroConfigsParsedErr(opts.ConfigurationFile)
 	}
 
-	if unmatched := unmatchedProfiles(r.appliedProfiles, opts.Profiles); len(unmatched) != 0 {
-		return nil, sErrors.ConfigProfilesNotMatchedErr(unmatched)
-	}
-
 	for _, c := range cfgs {
 		yinfos, err := configlocations.Parse(c.SourceFile, c.SkaffoldConfig, fieldsOverrodeByProfile)
 		if err != nil {
@@ -175,6 +171,10 @@ func processEachConfig(ctx context.Context, config *latestV1.SkaffoldConfig, cfg
 	// if config names are explicitly specified via the configuration flag, we need to include the dependency tree of configs starting at that named config.
 	// `requiredConfigs` specifies if we are already in the dependency-tree of a required config, so all selected configs are required even if they are not explicitly named via the configuration flag.
 	required := cfgOpts.isRequired || len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, config.Metadata.Name)
+
+	if unmatched := unmatchedProfiles(config.Profiles, opts.Profiles); len(unmatched) != 0 {
+		return nil, sErrors.ConfigProfilesNotMatchedErr(unmatched)
+	}
 
 	profiles, _, err := schema.ApplyProfiles(config, fieldsOverrodeByProfile, opts, cfgOpts.profiles)
 	if err != nil {
@@ -342,14 +342,14 @@ func checkRevisit(config *latestV1.SkaffoldConfig, profiles []string, appliedPro
 	return false, nil
 }
 
-func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string) []string {
-	var allActivated []string
-	for _, profiles := range activatedProfiles {
-		allActivated = append(allActivated, strings.Split(profiles, ",")...)
+func unmatchedProfiles(configProfiles []latestV1.Profile, optsProfiles []string) []string {
+	var allProfiles []string
+	for _, profile := range configProfiles {
+		allProfiles = append(allProfiles, profile.Name)
 	}
 	var unmatched []string
-	for _, p := range allProfiles {
-		if !stringslice.Contains(allActivated, p) {
+	for _, p := range optsProfiles {
+		if !stringslice.Contains(allProfiles, strings.TrimPrefix(p, "-")) {
 			unmatched = append(unmatched, p)
 		}
 	}
