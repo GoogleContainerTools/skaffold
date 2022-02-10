@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"cloud.google.com/go/profiler"
@@ -46,6 +47,7 @@ func main() {
 		}
 	}
 	var code int
+	fmt.Println("aprindle - hello, don't merge")
 	if err := app.Run(os.Stdout, os.Stderr); err != nil && !errors.Is(err, context.Canceled) {
 		// ignore cancelled errors
 		code = app.ExitCode(err)
