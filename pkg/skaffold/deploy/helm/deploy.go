@@ -125,6 +125,7 @@ type Config interface {
 	kloader.Config
 	portforward.Config
 	IsMultiConfig() bool
+	JSONParseConfig() latestV1.JSONParseConfig
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.

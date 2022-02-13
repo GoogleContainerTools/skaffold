@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -87,7 +88,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag")
+			}, "img:tag", platform.All)
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -158,7 +159,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag")
+			}, "img:tag", platform.All)
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {

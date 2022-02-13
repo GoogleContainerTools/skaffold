@@ -22,6 +22,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -125,6 +126,8 @@ func (m *mockPipelineBuilder) Concurrency() int { return m.concurrency }
 func (m *mockPipelineBuilder) Prune(context.Context, io.Writer) error { return nil }
 
 func (m *mockPipelineBuilder) PushImages() bool { return false }
+
+func (m *mockPipelineBuilder) SupportedPlatforms() platform.Matcher { return platform.All }
 
 func newMockPipelineBuilder(p latestV1.Pipeline) (PipelineBuilder, error) {
 	switch {

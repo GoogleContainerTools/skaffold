@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -30,7 +31,7 @@ import (
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV1.Artifact) ([]graph.Artifact, error)
 
 	// Prune removes images built with Skaffold
 	Prune(context.Context, io.Writer) error
@@ -57,6 +58,9 @@ type PipelineBuilder interface {
 
 	// PushImages specifies if the built image needs to be explicitly pushed to an image registry.
 	PushImages() bool
+
+	// SupportedPlatforms returns the platforms supported for building the image by this build pipeline type.
+	SupportedPlatforms() platform.Matcher
 }
 
 type ErrSyncMapNotSupported struct{}

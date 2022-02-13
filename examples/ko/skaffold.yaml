@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: skaffold/v2beta26
+apiVersion: skaffold/v2beta27
 kind: Config
 build:
   artifacts:
   - image: skaffold-ko
-    ko:
-      flags:
-      - -v
+    ko: {}

@@ -387,6 +387,10 @@ func IsUpdateCheckEnabled(configfile string) bool {
 	if err != nil {
 		return true
 	}
+	return IsUpdateCheckEnabledForContext(cfg)
+}
+
+func IsUpdateCheckEnabledForContext(cfg *ContextConfig) bool {
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }
 
@@ -414,6 +418,9 @@ func UpdateMsgDisplayed(configFile string) error {
 	fullConfig, err := ReadConfigFile(configFile)
 	if err != nil {
 		return err
+	}
+	if !IsUpdateCheckEnabledForContext(fullConfig.Global) {
+		return nil
 	}
 	if fullConfig.Global == nil {
 		fullConfig.Global = &ContextConfig{}

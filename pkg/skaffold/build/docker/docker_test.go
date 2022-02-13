@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -172,7 +173,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag")
+			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag", platform.Matcher{})
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
@@ -231,6 +232,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			a := *test.artifact
 			a.Workspace = "."
 			a.DockerArtifact.DockerfilePath = dockerfilePath
+			t.Override(&docker.DefaultAuthHelper, stubAuth{})
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 				return args, nil
 			})
@@ -241,7 +243,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, mockCmd)
 
 			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.BoolPtr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
-			_, err := builder.Build(context.Background(), ioutil.Discard, &a, test.tag)
+			_, err := builder.Build(context.Background(), ioutil.Discard, &a, test.tag, platform.Matcher{})
 			t.CheckNoError(err)
 		})
 	}

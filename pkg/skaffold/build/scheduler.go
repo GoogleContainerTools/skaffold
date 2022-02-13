@@ -32,11 +32,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error)
+type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error)
 
 type scheduler struct {
 	artifacts       []*latestV1.Artifact
@@ -63,7 +64,7 @@ func newScheduler(artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilde
 	return &s
 }
 
-func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]graph.Artifact, error) {
+func (s *scheduler) run(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver) ([]graph.Artifact, error) {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	for i := range s.artifacts {
@@ -73,7 +74,7 @@ func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]graph.Artifa
 		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
 		// Wrap in an error group so that all other builds are cancelled as soon as any one fails.
 		g.Go(func() error {
-			return s.build(gCtx, tags, i)
+			return s.build(gCtx, tags, platforms, i)
 		})
 	}
 	// print output for all artifact builds in order
@@ -85,7 +86,7 @@ func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]graph.Artifa
 	return s.results.GetArtifacts(s.artifacts)
 }
 
-func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error {
+func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver, i int) error {
 	n := s.nodes[i]
 	a := s.artifacts[i]
 	err := n.waitForDependencies(ctx)
@@ -117,7 +118,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 
 	w, ctx = output.WithEventContext(ctx, w, constants.Build, a.ImageName)
 	output.Default.Fprintf(w, "Building [%s]...\n", a.ImageName)
-	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
+	finalTag, err := performBuild(ctx, w, tags, platforms, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		endTrace(instrumentation.TraceEndError(err))
@@ -142,7 +143,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 }
 
 // InOrder builds a list of artifacts in dependency order.
-func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]graph.Artifact, error) {
+func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]graph.Artifact, error) {
 	// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then all builds can run in parallel.
 	if concurrency == 0 {
 		concurrency = len(artifacts)
@@ -153,14 +154,18 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	s := newScheduler(artifacts, artifactBuilder, concurrency, out, store)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	return s.run(ctx, tags)
+	return s.run(ctx, tags, platforms)
 }
 
-func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latestV1.Artifact, build ArtifactBuilder) (string, error) {
+func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifact *latestV1.Artifact, build ArtifactBuilder) (string, error) {
 	tag, present := tags[artifact.ImageName]
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
 	}
+	pl := platforms.GetPlatforms(artifact.ImageName)
+	if pl.IsNotEmpty() {
+		output.Default.Fprintf(cw, "Target platforms: [%s]\n", pl)
+	}
 	tag = docker.SanitizeImageName(tag)
-	return build(ctx, cw, artifact, tag)
+	return build(ctx, cw, artifact, tag, pl)
 }

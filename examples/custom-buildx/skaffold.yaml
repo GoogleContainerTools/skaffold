@@ -1,6 +1,7 @@
-apiVersion: skaffold/v2beta26
+apiVersion: skaffold/v2beta27
 kind: Config
 build:
+  platforms: ["linux/amd64", "linux/arm64"]
   artifacts:
   - image: skaffold-examples-buildx
     custom:
