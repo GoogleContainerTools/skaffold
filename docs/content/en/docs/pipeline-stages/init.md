@@ -16,8 +16,8 @@ and [deploy](#deploy-config-initialization) config.
 `skaffold init` currently supports build detection for those builders:
 
 1. [Docker]({{<relref "/docs/pipeline-stages/builders/docker">}})
-2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}}) (with `--XXenableJibInit` flag)
-2. [Buildpacks]({{<relref "/docs/pipeline-stages/builders/buildpacks">}}) (with `--XXenableBuildpacksInit` flag)
+2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}})
+2. [Buildpacks]({{<relref "/docs/pipeline-stages/builders/buildpacks">}})
 
 `skaffold init` walks your project directory and looks for any build configuration files such as `Dockerfile`,
 `build.gradle/pom.xml`, `package.json`, `requirements.txt` or `go.mod`. `init` skips files that are larger
@@ -41,12 +41,12 @@ If this image is one you want Skaffold to build, you'll need to manually set up 
 {{</alert>}}
 
 `skaffold` init also recognizes Maven and Gradle projects, and will auto-suggest the [`jib`]({{<relref "/docs/pipeline-stages/builders#/local#jib-maven-and-gradle">}}) builder.
-Currently `jib` artifact detection is disabled by default, but can be enabled using the flag `--XXenableJibInit`.
+As of v1.27.0, `jib` artifact detection is enabled by default.
 
 You can try this out on our example [jib project](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/jib-multimodule)
 
 ```bash
-skaffold init --XXenableJibInit
+skaffold init
 ```
 
 ![jib-multimodule](/images/jib-multimodule-init-flow.png)
