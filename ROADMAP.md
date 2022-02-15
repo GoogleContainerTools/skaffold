@@ -15,7 +15,7 @@ Feedback! We want to hear from each and every one of you: what are you personall
 
 # Product Excellence
 ### Improve Developer Experience for Helm Users
-### Imrpove Skaffold Onboarding docs
+### Improve Skaffold Onboarding docs
 ### Revamp skaffold configuration to dissociate configuration from phase they are used and improve configuration reusability across modules.
 
 # CI/CD
