@@ -16,7 +16,7 @@ Feedback! We want to hear from each and every one of you: what are you personall
 # Product Excellence
 ### Improve Developer Experience for Helm Users
 ### Imrpove Skaffold Onboarding docs
-### Improve skaffold configuration to dissociate configuration from phase they are used and improve configuration reusability across modules.
+### Revamp skaffold configuration to dissociate configuration from phase they are used and improve configuration reusability across modules.
 
 # CI/CD
 ### Create a Clearer Separation of Manifest Management (`render`) and Deployment (`deploy`) Phases
@@ -24,7 +24,7 @@ Feedback! We want to hear from each and every one of you: what are you personall
 
 # User Experience and Extensibility
 ### Enable users to perform Cross Platform and Multi-Architecture Container Builds
-### Polish, skaffold Deployer platform extensibility.
+### Polish Skaffold's Deployer platform extensibility.
 
 
 # OSS Health and Community Engagement
