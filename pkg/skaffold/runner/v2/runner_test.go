@@ -23,6 +23,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/blang/semver"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -39,7 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
+	kRenderer "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
@@ -367,7 +368,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -386,7 +387,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -405,7 +406,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -430,7 +431,7 @@ func TestNewForConfig(t *testing.T) {
 			pipeline:         latestV2.Pipeline{},
 			shouldErr:        true,
 			expectedTester:   &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -449,7 +450,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
@@ -472,7 +473,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester: &test.FullTester{},
-			expectedRenderer: &renderer.SkaffoldRenderer{
+			expectedRenderer: &kRenderer.Kubectl{
 				Generator: generate.Generator{},
 			},
 			expectedDeployer: &kubectl.Deployer{},

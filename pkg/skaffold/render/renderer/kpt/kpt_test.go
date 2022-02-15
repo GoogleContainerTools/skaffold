@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -233,7 +232,7 @@ inventory:
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Chdir()
-			r, err := renderer.New(&latestV2.RenderConfig{
+			r, err := New(&latestV2.RenderConfig{
 				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, tmpDirObj.Root(),
 				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
