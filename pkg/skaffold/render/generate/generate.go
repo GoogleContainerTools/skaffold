@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package generate
 
 import (
@@ -39,8 +40,8 @@ import (
 )
 
 // NewGenerator instantiates a Generator object.
-func NewGenerator(workingDir string, config latestV2.Generate, hydrationDir string) *Generator {
-	return &Generator{
+func NewGenerator(workingDir string, config latestV2.Generate, hydrationDir string) Generator {
+	return Generator{
 		workingDir:   workingDir,
 		hydrationDir: hydrationDir,
 		config:       config,
@@ -72,7 +73,7 @@ func excludeRemote(paths []string) []string {
 
 // Generate parses the config resources from the paths in .Generate.Manifests. This path can be the path to raw manifest,
 // kustomize manifests, helm charts or kpt function configs. All should be file-watched.
-func (g *Generator) Generate(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
+func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
 	var manifests manifest.ManifestList
 
 	// Generate kustomize Manifests
@@ -210,7 +211,7 @@ func isKptDir(path string) (string, bool) {
 // walkManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
 // Note: the logic about manifest dependencies shall separate from the "Generate" function, which requires "context" and
 // only be called when a renderig action is needed (normally happens after the file watcher registration).
-func (g *Generator) walkManifests() ([]string, error) {
+func (g Generator) walkManifests() ([]string, error) {
 	var dependencyPaths []string
 	// Generate kustomize Manifests
 	kustomizePaths := excludeRemote(g.config.Kustomize)
@@ -241,7 +242,7 @@ func (g *Generator) walkManifests() ([]string, error) {
 	return dependencyPaths, nil
 }
 
-func (g *Generator) ManifestDeps() ([]string, error) {
+func (g Generator) ManifestDeps() ([]string, error) {
 	deps := stringset.New()
 
 	dependencyPaths, err := g.walkManifests()

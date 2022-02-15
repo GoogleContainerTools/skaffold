@@ -54,7 +54,7 @@ type Renderer interface {
 func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir, hydrationDir string,
 	labels map[string]string) (Renderer, error) {
 	generator := generate.NewGenerator(workingDir, config.Generate, hydrationDir)
-	var validator *validate.Validator
+	var validator validate.Validator
 	if config.Validate != nil {
 		var err error
 		validator, err = validate.NewValidator(*config.Validate)
@@ -65,7 +65,7 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir, hydrationDir
 		validator, _ = validate.NewValidator([]latestV2.Validator{})
 	}
 
-	var transformer *transform.Transformer
+	var transformer transform.Transformer
 	if config.Transform != nil {
 		var err error
 		transformer, err = transform.NewTransformer(*config.Transform)
@@ -75,7 +75,7 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir, hydrationDir
 	} else {
 		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
 	}
-	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, Transformer: *transformer,
+	return &SkaffoldRenderer{Generator: generator, Validator: validator, Transformer: transformer,
 		hydrationDir: hydrationDir, labels: labels}, nil
 }
 
