@@ -60,12 +60,12 @@ var (
 )
 
 // NewTransformer instantiates a Transformer object.
-func NewTransformer(config []latestV2.Transformer) (*Transformer, error) {
+func NewTransformer(config []latestV2.Transformer) (Transformer, error) {
 	newFuncs, err := validateTransformers(config)
 	if err != nil {
-		return nil, err
+		return Transformer{}, err
 	}
-	return &Transformer{kptFn: newFuncs, needRefresh: true, config: config}, nil
+	return Transformer{kptFn: newFuncs, needRefresh: true, config: config}, nil
 }
 
 type Transformer struct {
@@ -75,7 +75,7 @@ type Transformer struct {
 }
 
 // GetDeclarativeValidators transforms and returns the skaffold validators defined in skaffold.yaml
-func (v *Transformer) GetDeclarativeTransformers() ([]kptfile.Function, error) {
+func (v Transformer) GetDeclarativeTransformers() ([]kptfile.Function, error) {
 	// TODO: guarantee the v.kptFn is updated once users changed skaffold.yaml file.
 	if v.needRefresh {
 		newFuncs, err := validateTransformers(v.config)

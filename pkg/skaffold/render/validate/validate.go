@@ -33,13 +33,13 @@ var (
 )
 
 // NewValidator instantiates a Validator object.
-func NewValidator(config []latestV2.Validator) (*Validator, error) {
+func NewValidator(config []latestV2.Validator) (Validator, error) {
 	var fns []kptfile.Function
 	for _, c := range config {
 		fn, ok := validatorAllowlist[c.Name]
 		if !ok {
 			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
-			return nil, sErrors.NewErrorWithStatusCode(
+			return Validator{}, sErrors.NewErrorWithStatusCode(
 				&proto.ActionableErr{
 					Message: fmt.Sprintf("unsupported validator %q", c.Name),
 					ErrCode: proto.StatusCode_CONFIG_UNKNOWN_VALIDATOR,
@@ -55,7 +55,7 @@ func NewValidator(config []latestV2.Validator) (*Validator, error) {
 		}
 		fns = append(fns, fn)
 	}
-	return &Validator{kptFn: fns}, nil
+	return Validator{kptFn: fns}, nil
 }
 
 type Validator struct {
@@ -63,7 +63,7 @@ type Validator struct {
 }
 
 // GetDeclarativeValidators transforms and returns the skaffold validators defined in skaffold.yaml
-func (v *Validator) GetDeclarativeValidators() []kptfile.Function {
+func (v Validator) GetDeclarativeValidators() []kptfile.Function {
 	// TODO: guarantee the v.kptFn is updated once users changed skaffold.yaml file.
 	return v.kptFn
 }
