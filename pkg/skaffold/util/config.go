@@ -35,11 +35,11 @@ var stdin []byte
 
 // ReadConfiguration reads a `skaffold.yaml` configuration and
 // returns its content.
-func ReadConfiguration(filename string) ([]byte, error) {
+func ReadConfiguration(filePath string) ([]byte, error) {
 	switch {
-	case filename == "":
+	case filePath == "":
 		return nil, errors.New("filename not specified")
-	case filename == "-":
+	case filePath == "-":
 		if len(stdin) == 0 {
 			var err error
 			stdin, err = ioutil.ReadAll(os.Stdin)
@@ -48,25 +48,24 @@ func ReadConfiguration(filename string) ([]byte, error) {
 			}
 		}
 		return stdin, nil
-	case IsURL(filename):
-		return Download(filename)
+	case IsURL(filePath):
+		return Download(filePath)
 	default:
-		fp := filename
-		if !filepath.IsAbs(fp) {
+		if !filepath.IsAbs(filePath) {
 			dir, err := os.Getwd()
 			if err != nil {
 				return []byte{}, err
 			}
-			fp = filepath.Join(dir, fp)
+			filePath = filepath.Join(dir, filePath)
 		}
-		contents, err := afero.ReadFile(Fs, fp)
+		contents, err := afero.ReadFile(Fs, filePath)
 		if err != nil {
 			// If the config file is the default `skaffold.yaml`,
 			// then we also try to read `skaffold.yml`.
-			if filename == "skaffold.yaml" {
+			if filepath.Base(filePath) == "skaffold.yaml" {
 				log.Entry(context.TODO()).Infof("Could not open skaffold.yaml: \"%s\"", err)
 				log.Entry(context.TODO()).Info("Trying to read from skaffold.yml instead")
-				contents, errIgnored := afero.ReadFile(Fs, filepath.Join(filepath.Dir(fp), "skaffold.yml"))
+				contents, errIgnored := afero.ReadFile(Fs, filepath.Join(filepath.Dir(filePath), "skaffold.yml"))
 				if errIgnored != nil {
 					// Return original error because it's the one that matters
 					return nil, err
