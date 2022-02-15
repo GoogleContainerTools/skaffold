@@ -1,5 +1,5 @@
-# 2021 Roadmap
-Last updated: 03/09/2021
+# 2022 Roadmap
+Last updated: 02/15/2022
 
 **What this roadmap is**
 
@@ -15,21 +15,17 @@ Feedback! We want to hear from each and every one of you: what are you personall
 
 # Product Excellence
 ### Improve Developer Experience for Helm Users
-### Identify and Address Performance Bottlenecks
+### Imrpove Skaffold Onboarding docs
+### Improve skaffold configuration to dissociate configuration from phase they are used and improve configuration reusability across modules.
 
 # CI/CD
 ### Create a Clearer Separation of Manifest Management (`render`) and Deployment (`deploy`) Phases
 
-# User Experience and Extensibility
-### Pre- and Post- Phase Hooks
-### Deploy Directly to Docker
-### Multi-Architecture Container Builds
-### Terminal UX Improvements
-### Extensible Skaffold API
 
-# Diagnostics and Debugging
-### Improve Python Debug Support
-### Improve Developer Assistance For Failures to Run/Debug Apps
+# User Experience and Extensibility
+### Enable users to perform Cross Platform and Multi-Architecture Container Builds
+### Polish, skaffold Deployer platform extensibility.
+
 
 # OSS Health and Community Engagement
 ### Reduce PR Review Latency
