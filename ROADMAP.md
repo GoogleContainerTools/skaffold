@@ -20,6 +20,7 @@ Feedback! We want to hear from each and every one of you: what are you personall
 
 # CI/CD
 ### Create a Clearer Separation of Manifest Management (`render`) and Deployment (`deploy`) Phases
+### Post deployments tests
 
 
 # User Experience and Extensibility
