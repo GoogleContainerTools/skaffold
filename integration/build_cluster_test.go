@@ -34,6 +34,7 @@ import (
 
 // run on GCP as this test requires a load balancer
 func TestBuildKanikoInsecureRegistry(t *testing.T) {
+	t.Skipf("Skipped due to https://github.com/GoogleContainerTools/skaffold/issues/7121")
 	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
