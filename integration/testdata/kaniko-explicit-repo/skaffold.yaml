@@ -3,6 +3,7 @@ kind: Config
 build:
   artifacts:
     - image: gcr.io/k8s-skaffold/skaffold-explicit-repo
-      kaniko: {}
+      kaniko:
+        image: gcr.io/kaniko-project/executor:v1.6.0
   cluster:
     pullSecretName: e2esecret

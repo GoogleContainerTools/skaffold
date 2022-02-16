@@ -4,6 +4,7 @@ build:
   artifacts:
     - image: skaffold-example-sub
       context: sub
-      kaniko: {}
+      kaniko:
+        image: gcr.io/kaniko-project/executor:v1.6.0
   cluster:
     pullSecretName: e2esecret

@@ -7,6 +7,7 @@ profiles:
         - image: kaniko-insecure
           context: app
           kaniko:
+            image: gcr.io/kaniko-project/executor:v1.6.0
             cache: {}
       cluster:
         pullSecretName: e2esecret

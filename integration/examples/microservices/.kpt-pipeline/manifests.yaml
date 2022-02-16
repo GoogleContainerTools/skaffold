@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: leeroy-web
+    skaffold.dev/run-id: c6868102-77f9-429a-b350-f6b4cb445202
+  name: leeroy-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leeroy-web
+  template:
+    metadata:
+      labels:
+        app: leeroy-web
+        skaffold.dev/run-id: c6868102-77f9-429a-b350-f6b4cb445202
+    spec:
+      containers:
+      - image: gcr.io/tejal-gke1/leeroy-web:v1.35.0-68-g8a19742ca@sha256:8cd734c97eb84394eaf777a9f297e9e6a0f3f90b563d6819743849e2456c5c02
+        name: leeroy-web
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: leeroy-app
+    skaffold.dev/run-id: c6868102-77f9-429a-b350-f6b4cb445202
+  name: leeroy-app
+spec:
+  clusterIP: None
+  ports:
+  - name: leeroy-app
+    port: 50051
+  selector:
+    app: leeroy-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: leeroy-app
+    skaffold.dev/run-id: c6868102-77f9-429a-b350-f6b4cb445202
+  name: leeroy-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leeroy-app
+  template:
+    metadata:
+      labels:
+        app: leeroy-app
+        skaffold.dev/run-id: c6868102-77f9-429a-b350-f6b4cb445202
+    spec:
+      containers:
+      - image: gcr.io/tejal-gke1/leeroy-app:v1.35.0-68-g8a19742ca@sha256:d3fbf53de026f0019b3e3fb9ddd171cbc176fe97b4aaddd394d3133bd70f15bb
+        name: leeroy-app
+        ports:
+        - containerPort: 50051
+          name: http
