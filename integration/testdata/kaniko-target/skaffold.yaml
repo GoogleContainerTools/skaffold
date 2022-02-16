@@ -4,7 +4,6 @@ build:
   artifacts:
     - image: skaffold-example
       kaniko:
-        image: gcr.io/kaniko-project/executor:v1.6.0
         target: runner
         cache: {}
   cluster:

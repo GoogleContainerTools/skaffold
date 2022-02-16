@@ -5,7 +5,6 @@ build:
     - image: skaffold-example
       kaniko:
         cache: {}
-        image: gcr.io/kaniko-project/executor:v1.6.0
   cluster:
     pullSecretName: e2esecret-with-path
     pullSecretPath:     kaniko-secret.json

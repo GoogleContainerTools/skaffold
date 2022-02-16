@@ -6,7 +6,6 @@ build:
       context: ./leeroy-web/
       kaniko:
         cache: {}
-        image: gcr.io/kaniko-project/executor:v1.6.0
       requires:
       - image: base
         alias: BASE
@@ -14,7 +13,6 @@ build:
       context: ./leeroy-app/
       kaniko:
         cache: {}
-        image: gcr.io/kaniko-project/executor:v1.6.0
         target: target_stage
       requires:
       - image: base
@@ -23,7 +21,6 @@ build:
       context: ./base/
       kaniko:
         cache: {}
-        image: gcr.io/kaniko-project/executor:v1.6.0
   cluster:
     pullSecretName: e2esecret
 deploy:
