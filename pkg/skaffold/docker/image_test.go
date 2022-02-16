@@ -537,6 +537,10 @@ func TestTagWithImageID(t *testing.T) {
 			imageName:   "!!invalid!!",
 			shouldErr:   true,
 		},
+		{
+			description: "empty image id",
+			imageName:   "ref",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
