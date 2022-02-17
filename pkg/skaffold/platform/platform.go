@@ -49,6 +49,10 @@ func (m Matcher) IsMultiPlatform() bool {
 	return m.All || len(m.Platforms) > 1
 }
 
+func (m Matcher) IsCrossPlatform() bool {
+	return m.IsMultiPlatform() || (len(m.Platforms) == 1 && !platforms.Only(m.Platforms[0]).Match(platforms.DefaultSpec()))
+}
+
 func (m Matcher) String() string {
 	if m.All {
 		return "all"

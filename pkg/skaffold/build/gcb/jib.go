@@ -23,14 +23,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latestV1.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
 	t, err := jib.DeterminePluginType(ctx, artifact.Workspace, artifact.JibArtifact)
 	if err != nil {
 		return cloudbuild.Build{}, err
@@ -42,7 +43,7 @@ func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latestV1.Artifact,
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.MavenImage,
 				Entrypoint: "sh",
-				Args:       fixHome("mvn", jib.GenerateMavenBuildArgs("build", tag, artifact.JibArtifact, b.skipTests, true, artifact.Dependencies, b.artifactStore, b.cfg.GetInsecureRegistries(), false)),
+				Args:       fixHome("mvn", jib.GenerateMavenBuildArgs("build", tag, artifact.JibArtifact, platforms, b.skipTests, true, artifact.Dependencies, b.artifactStore, b.cfg.GetInsecureRegistries(), false)),
 			}},
 		}, nil
 	case jib.JibGradle:
@@ -50,7 +51,7 @@ func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latestV1.Artifact,
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.GradleImage,
 				Entrypoint: "sh",
-				Args:       fixHome("gradle", jib.GenerateGradleBuildArgs("jib", tag, artifact.JibArtifact, b.skipTests, true, artifact.Dependencies, b.artifactStore, b.cfg.GetInsecureRegistries(), false)),
+				Args:       fixHome("gradle", jib.GenerateGradleBuildArgs("jib", tag, artifact.JibArtifact, platforms, b.skipTests, true, artifact.Dependencies, b.artifactStore, b.cfg.GetInsecureRegistries(), false)),
 			}},
 		}, nil
 	default:
