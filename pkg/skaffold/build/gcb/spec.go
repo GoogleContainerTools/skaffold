@@ -20,9 +20,10 @@ import (
 	"context"
 	"fmt"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -65,7 +66,7 @@ func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latestV1.Artifact
 		return b.dockerBuildSpec(a, tag)
 
 	case a.JibArtifact != nil:
-		return b.jibBuildSpec(ctx, a, tag)
+		return b.jibBuildSpec(ctx, a, tag, platform.Matcher{}) // TODO: pass correct platform matcher for GCB builds
 
 	case a.BuildpackArtifact != nil:
 		return b.buildpackBuildSpec(a.BuildpackArtifact, tag, a.Dependencies)
