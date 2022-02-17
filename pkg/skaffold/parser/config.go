@@ -57,6 +57,7 @@ type record struct {
 	appliedProfiles  map[string]string      // config -> list of applied profiles
 	configNameToFile map[string]string      // configName -> file path
 	cachedRepos      map[string]interface{} // git repo -> cache path or error
+	allProfiles      []string               // list of all profiles, from all configuration files
 }
 
 func newRecord() *record {
@@ -92,7 +93,7 @@ func GetConfigSet(ctx context.Context, opts config.SkaffoldOptions) (SkaffoldCon
 		return nil, sErrors.ZeroConfigsParsedErr(opts.ConfigurationFile)
 	}
 
-	if unmatched := unmatchedProfiles(r.appliedProfiles, opts.Profiles); len(unmatched) != 0 {
+	if unmatched := unmatchedProfiles(r.allProfiles, opts.Profiles); len(unmatched) != 0 {
 		return nil, sErrors.ConfigProfilesNotMatchedErr(unmatched)
 	}
 
@@ -130,10 +131,17 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 	}
 	log.Entry(context.TODO()).Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
-	// validate that config names are unique if specified
+	// add profiles to record and validate that config names are unique if specified
 	seen := make(map[string]bool)
 	for _, cfg := range parsed {
-		cfgName := cfg.(*latestV1.SkaffoldConfig).Metadata.Name
+		config := cfg.(*latestV1.SkaffoldConfig)
+		for _, profile := range config.Profiles {
+			if !stringslice.Contains(r.allProfiles, profile.Name) {
+				r.allProfiles = append(r.allProfiles, profile.Name)
+			}
+		}
+
+		cfgName := config.Metadata.Name
 		if cfgName == "" {
 			continue
 		}
@@ -342,14 +350,10 @@ func checkRevisit(config *latestV1.SkaffoldConfig, profiles []string, appliedPro
 	return false, nil
 }
 
-func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string) []string {
-	var allActivated []string
-	for _, profiles := range activatedProfiles {
-		allActivated = append(allActivated, strings.Split(profiles, ",")...)
-	}
+func unmatchedProfiles(configProfiles []string, optsProfiles []string) []string {
 	var unmatched []string
-	for _, p := range allProfiles {
-		if !stringslice.Contains(allActivated, p) {
+	for _, p := range optsProfiles {
+		if !stringslice.Contains(configProfiles, strings.TrimPrefix(p, "-")) {
 			unmatched = append(unmatched, p)
 		}
 	}
