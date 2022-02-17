@@ -63,6 +63,7 @@ type Config interface {
 	Tail() bool
 	PipelineForImage(imageName string) (latestV2.Pipeline, bool)
 	DefaultPipeline() latestV2.Pipeline
+	JSONParseConfig() latestV2.JSONParseConfig
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.

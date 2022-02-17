@@ -57,6 +57,10 @@ func (c *mockConfig) DefaultPipeline() latestV2.Pipeline {
 	return pipeline
 }
 
+func (c *mockConfig) JSONParseConfig() latestV2.JSONParseConfig {
+	return c.log.JSONParse
+}
+
 func TestPrintLogLine(t *testing.T) {
 	testutil.Run(t, "verify lines are not intermixed", func(t *testutil.T) {
 		var (
@@ -67,7 +71,7 @@ func TestPrintLogLine(t *testing.T) {
 			groups        = 5
 		)
 
-		f := NewKubernetesLogFormatter(&mockConfig{log: latestV2.LogsConfig{Prefix: "none"}}, &mockColorPicker{}, func() bool { return false }, &v1.Pod{}, v1.ContainerStatus{})
+		f := newKubernetesLogFormatter(&mockConfig{log: latestV2.LogsConfig{Prefix: "none"}}, &mockColorPicker{}, func() bool { return false }, &v1.Pod{}, v1.ContainerStatus{})
 
 		for i := 0; i < groups; i++ {
 			wg.Add(1)

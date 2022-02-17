@@ -143,7 +143,8 @@ RUN /google-cloud-sdk/install.sh \
     --bash-completion=false \
     --disable-installation-options
 ENV PATH=$PATH:/google-cloud-sdk/bin
-RUN gcloud auth configure-docker
+RUN gcloud auth configure-docker && \
+    gcloud components install gke-gcloud-auth-plugin
 
 FROM runtime_deps
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
@@ -155,5 +156,5 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.15 /usr/local/go /usr/local/go
+COPY --from=golang:1.17.3 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH

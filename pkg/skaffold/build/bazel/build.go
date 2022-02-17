@@ -28,12 +28,19 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds an artifact with Bazel.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string, matcher platform.Matcher) (string, error) {
+	// TODO: Implement building multi-platform images
+	if matcher.IsMultiPlatform() {
+		log.Entry(ctx).Println("skaffold doesn't yet support multi platform builds for the bazel builder")
+	}
+
 	a := artifact.ArtifactType.BazelArtifact
 
 	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a)
@@ -46,6 +53,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.A
 	}
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
 func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latestV2.BazelArtifact) (string, error) {
 	if !strings.HasSuffix(a.BuildTarget, ".tar") {

@@ -32,6 +32,7 @@ type Config interface {
 	GlobalConfig() string
 	ConfigurationFile() string
 	DefaultRepo() *string
+	MultiLevelRepo() *bool
 	SkipRender() bool
 	TransformableAllowList() []latestV2.ResourceFilter
 }

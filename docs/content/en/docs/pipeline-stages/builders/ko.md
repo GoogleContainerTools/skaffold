@@ -88,18 +88,31 @@ is `linux/amd64`, but you can configure a list of platforms using the
 You can also supply `["all"]` as the value of `platforms`. `all` means that the
 ko builder builds images for all platforms supported by the base image.
 
-### Labels / annotations
+### Image labels
 
 Use the `labels` configuration field to add
-[annotations](https://github.com/opencontainers/image-spec/blob/main/annotations.md)
+[image labels](https://github.com/opencontainers/image-spec/blob/main/config.md#properties)
 (a.k.a. [`Dockerfile` `LABEL`s](https://docs.docker.com/engine/reference/builder/#label)),
-e.g.:
+
+For example, you can add labels based on the
+[pre-defined annotations keys](https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys)
+from the Open Container Initiative (OCI) Image Format Specification:
 
 ```yaml
     ko:
       labels:
         org.opencontainers.image.licenses: Apache-2.0
         org.opencontainers.image.source: https://github.com/GoogleContainerTools/skaffold
+```
+
+The `labels` section supports templating of values based on environment
+variables, e.g.:
+
+```yaml
+    ko:
+      labels:
+        org.opencontainers.image.revision: "{{.GITHUB_SHA}}"
+        org.opencontainers.image.source: "{{.GITHUB_SERVER_URL}}/{{.GITHUB_REPOSITORY}}"
 ```
 
 ### Build time environment variables
@@ -113,6 +126,15 @@ Example:
       env:
       - GOCACHE=/workspace/.gocache
       - GOPRIVATE=git.internal.example.com,source.developers.google.com
+```
+
+The `env` field supports templating of values using environment variables, for
+example:
+
+```yaml
+    ko:
+      env:
+      - GOPROXY={{.GOPROXY}}
 ```
 
 ### Dependencies
@@ -168,17 +190,20 @@ Use the `ldflags` configuration field to provide linker flag arguments, e.g.:
       - -w
 ```
 
-`ko` supports templating of `flags` and `ldflags` using environment variables,
+The `flags` and `ldflags` fields support templating using environment
+variables,
 e.g.:
 
 ```yaml
     ko:
       ldflags:
-      - -X main.version={{.Env.VERSION}}
+      - -X main.version={{.VERSION}}
 ```
 
-These templates are passed through to `ko` and are expanded using
-[`ko`'s template expansion implementation](https://github.com/google/ko/blob/v0.9.3/pkg/build/gobuild.go#L632-L660).
+These templates are evaluated by Skaffold. Note that the syntax is slightly
+different to
+[`ko`'s template expansion](https://github.com/google/ko/blob/v0.9.3/pkg/build/gobuild.go#L632-L660),
+specifically, there's no `.Env` prefix.
 
 ### Source file locations
 
@@ -213,6 +238,15 @@ Useful tips for existing `ko` users:
   [`default-repo` functionality]({{< relref "/docs/environment/image-registries" >}}).
   The ko builder does _not_ read the `KO_DOCKER_REPO` environment variable.
 
+- Image naming follows the
+  [Skaffold image naming strategy]({{< relref "/docs/environment/image-registries" >}}).
+  Skaffold removes the `ko://` prefix, if present, before determining the image
+  name.
+
+- If your image references use the `ko://` prefix _and_ you are pushing the
+  images to a registry, you must set the
+  [default repo]({{< relref "/docs/environment/image-registries" >}}).
+
 - The ko builder supports reading
   [base image configuration](https://github.com/google/ko#overriding-base-images)
   from the `.ko.yaml` file. If you already configure your base images using
@@ -242,8 +276,6 @@ Useful tips for existing `ko` users:
   cat << EOF >> skaffold.yaml
     local:
       concurrency: 0
-    tagPolicy:
-      sha256: {}
   deploy:
     kubectl:
       manifests:
@@ -279,6 +311,23 @@ To achieve the same using Skaffold's ko builder, use the `flags` field in
 skaffold build
 ```
 
+#### Capturing image name from `stdout`
+
+If you want Skaffold to print out the full image name and digest (and nothing
+else) to `stdout`, similar to what `ko build` does, use the
+[`--quiet` and `--output` flags]({{< relref "/docs/references/cli#skaffold-build" >}}).
+These flags enable you to capture the full image references in an environment
+variable or redirect to a file, e.g.:
+
+```shell
+skaffold build --quiet --output='{{range .Builds}}{{.Tag}}{{end}}' > out.txt
+```
+
+Note that Skaffold produces a JSON file with the image names if you run
+`skaffold build` with the `--file-output` flag. You can then use this flag as
+input to `skaffold render` to render Kubernetes manifests. For details on how
+to do this, see the next section.
+
 #### Rendering Kubernetes manifests
 
 When you use the Skaffold ko builder, Skaffold takes care of replacing the
@@ -311,7 +360,7 @@ Or you can perform the action as two steps: first `build` the images, then
 
 ```shell
 skaffold build --file-output artifacts.json --push
-skaffold render --build-artifacts artifacts.json --offline --output out.yaml
+skaffold render --build-artifacts artifacts.json --digest-source none --offline --output out.yaml
 ```
 
 Specify the location of your Kubernetes manifests in `skaffold.yaml`:

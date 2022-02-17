@@ -272,7 +272,7 @@ func TestHelmRender(t *testing.T) {
 				},
 			},
 			helmReleases: []latestV2.HelmRelease{{
-				Name:      "gke_loadbalancer",
+				Name:      "gke-loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
 			}},
 			expectedOut: `---

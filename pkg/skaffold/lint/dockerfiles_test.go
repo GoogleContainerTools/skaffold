@@ -85,9 +85,11 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 			expected: map[string]*[]Result{
 				"cfg0": {
 					{
-						Rule:   ruleIDToDockerfileRule[DockerfileCopyOver1000Files],
-						Line:   3,
-						Column: 1,
+						Rule:        ruleIDToDockerfileRule[DockerfileCopyOver1000Files],
+						StartLine:   3,
+						EndLine:     4,
+						StartColumn: 1,
+						EndColumn:   0,
 						Explanation: `Found docker 'COPY' command where the source directory "." has over 1000 files.  This has the potential ` +
 							`to dramatically slow 'skaffold dev' down as skaffold watches all sources files referenced in dockerfile COPY directives ` +
 							`for changes. If you notice skaffold rebuilding images unnecessarily when non-image-critical files are modified, consider ` +
@@ -122,9 +124,11 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 			expected: map[string]*[]Result{
 				"cfg0": {
 					{
-						Rule:   ruleIDToDockerfileRule[DockerfileCopyContainsGitDir],
-						Line:   3,
-						Column: 1,
+						Rule:        ruleIDToDockerfileRule[DockerfileCopyContainsGitDir],
+						StartLine:   3,
+						EndLine:     4,
+						StartColumn: 1,
+						EndColumn:   0,
 						Explanation: `Found docker 'COPY' command where the source directory "." contains a '.git' directory at .git.  This has the potential ` +
 							`to dramatically slow 'skaffold dev' down as skaffold will watch all of the files in the .git directory as skaffold watches all sources ` +
 							`files referenced in dockerfile COPY directives for changes. skaffold will likely rebuild images unnecessarily when non-image-critical ` +

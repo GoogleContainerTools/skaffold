@@ -23,17 +23,18 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // Build builds an artifact using a custom script
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "custom",
 		"Context":     instrumentation.PII(artifact.Workspace),
 		"Destination": instrumentation.PII(tag),
 	})
-	if err := b.runBuildScript(ctx, out, artifact, tag); err != nil {
+	if err := b.runBuildScript(ctx, out, artifact, tag, platforms); err != nil {
 		return "", fmt.Errorf("building custom artifact: %w", err)
 	}
 
@@ -51,3 +52,5 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.A
 
 	return imageID, nil
 }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }

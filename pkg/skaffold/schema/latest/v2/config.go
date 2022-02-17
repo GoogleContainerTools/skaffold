@@ -168,6 +168,13 @@ type BuildConfig struct {
 	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
+	// Platforms is the list of platforms to build all artifact images for.
+	// It can be overridden by the individual artifact's `platforms` property.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
+
 	BuildType `yaml:",inline"`
 }
 
@@ -665,7 +672,7 @@ type KubectlDeploy struct {
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -780,6 +787,15 @@ type LogsConfig struct {
 	// `none`: don't add a prefix.
 	// Defaults to `auto`.
 	Prefix string `yaml:"prefix,omitempty"`
+
+	// JSONParse defines the rules for parsing/outputting json logs.
+	JSONParse JSONParseConfig `yaml:"jsonParse,omitempty"`
+}
+
+// JSONParseConfig defines the rules for parsing/outputting json logs.
+type JSONParseConfig struct {
+	// Fields specifies which top level fields should be printed.
+	Fields []string `yaml:"fields,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which
@@ -806,7 +822,14 @@ type Artifact struct {
 	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
-	LifecycleHooks BuildHooks `yaml:"-"`
+	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
+
+	// Platforms is the list of platforms to build this artifact image for.
+	// It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -829,7 +852,7 @@ type Sync struct {
 	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers.
-	LifecycleHooks SyncHooks `yaml:"-"`
+	LifecycleHooks SyncHooks `yaml:"hooks,omitempty"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -1254,7 +1277,7 @@ type DockerSecret struct {
 	ID string `yaml:"id,omitempty" yamltags:"required"`
 
 	// Source is the path to the secret on the host machine.
-	Source string `yaml:"src,omitempty"`
+	Source string `yaml:"src,omitempty" yamltags:"oneOf=secretSource"`
 
 	// Env is the environment variable name containing the secret value.
 	Env string `yaml:"env,omitempty" yamltags:"oneOf=secretSource"`
@@ -1396,6 +1419,9 @@ type HostHook struct {
 	Command []string `yaml:"command" yamltags:"required"`
 	// OS is an optional slice of operating system names. If the host machine OS is different, then it skips execution.
 	OS []string `yaml:"os,omitempty"`
+	// Dir specifies the working directory of the command.
+	// If empty, the command runs in the calling process's current directory.
+	Dir string `yaml:"dir,omitempty" skaffold:"filepath"`
 }
 
 // ContainerHook describes a lifecycle hook definition to execute on a container. The container name is inferred from the scope in which this hook is defined.
@@ -1407,7 +1433,7 @@ type ContainerHook struct {
 // NamedContainerHook describes a lifecycle hook definition to execute on a named container.
 type NamedContainerHook struct {
 	// ContainerHook describes a lifecycle hook definition to execute on a container.
-	ContainerHook `yaml:",inline"`
+	ContainerHook `yaml:",inline" yamlTags:"skipTrim"`
 	// PodName is the name of the pod to execute the command in.
 	PodName string `yaml:"podName" yamltags:"required"`
 	// ContainerName is the name of the container to execute the command in.

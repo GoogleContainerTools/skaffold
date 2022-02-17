@@ -29,13 +29,15 @@ func TestSetupStaticEnvOptions(t *testing.T) {
 	}()
 
 	cfg := mockCfg{
-		defaultRepo: util.StringPtr("gcr.io/foo"),
-		workDir:     ".",
-		rpcPort:     util.IntPtr(8080),
-		httpPort:    util.IntPtr(8081),
+		defaultRepo:    util.StringPtr("gcr.io/foo"),
+		multiLevelRepo: util.BoolPtr(true),
+		workDir:        ".",
+		rpcPort:        util.IntPtr(8080),
+		httpPort:       util.IntPtr(8081),
 	}
 	SetupStaticEnvOptions(cfg)
 	testutil.CheckDeepEqual(t, cfg.defaultRepo, staticEnvOpts.DefaultRepo)
+	testutil.CheckDeepEqual(t, cfg.multiLevelRepo, staticEnvOpts.MultiLevelRepo)
 	testutil.CheckDeepEqual(t, cfg.workDir, staticEnvOpts.WorkDir)
 	testutil.CheckDeepEqual(t, cfg.rpcPort, staticEnvOpts.RPCPort)
 	testutil.CheckDeepEqual(t, cfg.httpPort, staticEnvOpts.HTTPPort)
@@ -50,13 +52,15 @@ func TestGetEnv(t *testing.T) {
 		{
 			description: "static env opts, all defined",
 			input: StaticEnvOpts{
-				DefaultRepo: util.StringPtr("gcr.io/foo"),
-				RPCPort:     util.IntPtr(8080),
-				HTTPPort:    util.IntPtr(8081),
-				WorkDir:     "./foo",
+				DefaultRepo:    util.StringPtr("gcr.io/foo"),
+				MultiLevelRepo: util.BoolPtr(true),
+				RPCPort:        util.IntPtr(8080),
+				HTTPPort:       util.IntPtr(8081),
+				WorkDir:        "./foo",
 			},
 			expected: []string{
 				"SKAFFOLD_DEFAULT_REPO=gcr.io/foo",
+				"SKAFFOLD_MULTI_LEVEL_REPO=true",
 				"SKAFFOLD_RPC_PORT=8080",
 				"SKAFFOLD_HTTP_PORT=8081",
 				"SKAFFOLD_WORK_DIR=./foo",
@@ -150,13 +154,15 @@ func TestGetEnv(t *testing.T) {
 }
 
 type mockCfg struct {
-	defaultRepo *string
-	workDir     string
-	rpcPort     *int
-	httpPort    *int
+	defaultRepo    *string
+	multiLevelRepo *bool
+	workDir        string
+	rpcPort        *int
+	httpPort       *int
 }
 
 func (m mockCfg) DefaultRepo() *string  { return m.defaultRepo }
+func (m mockCfg) MultiLevelRepo() *bool { return m.multiLevelRepo }
 func (m mockCfg) GetWorkingDir() string { return m.workDir }
 func (m mockCfg) RPCPort() *int         { return m.rpcPort }
 func (m mockCfg) RPCHTTPPort() *int     { return m.httpPort }

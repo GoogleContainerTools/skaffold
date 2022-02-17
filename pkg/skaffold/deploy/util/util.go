@@ -50,7 +50,12 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 		return "", fmt.Errorf("getting default repo: %w", err)
 	}
 
-	newTag, err := docker.SubstituteDefaultRepoIntoImage(repo, tag)
+	multiLevel, err := config.GetMultiLevelRepo(globalConfig)
+	if err != nil {
+		return "", fmt.Errorf("getting multi-level repo support: %w", err)
+	}
+
+	newTag, err := docker.SubstituteDefaultRepoIntoImage(repo, multiLevel, tag)
 	if err != nil {
 		return "", fmt.Errorf("applying default repo to %q: %w", tag, err)
 	}
@@ -65,7 +70,8 @@ func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.
 		m[a.ImageName] = true
 	}
 	for _, artifact := range artifacts {
-		if _, ok := m[artifact.ImageName]; ok {
+		imageName := docker.SanitizeImageName(artifact.ImageName)
+		if _, ok := m[imageName]; ok {
 			podSelector.Add(artifact.Tag)
 		}
 	}

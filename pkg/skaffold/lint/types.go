@@ -59,8 +59,10 @@ type Result struct {
 	AbsFilePath string
 	RelFilePath string
 	Explanation string
-	Line        int
-	Column      int
+	StartLine   int
+	EndLine     int
+	StartColumn int
+	EndColumn   int
 }
 
 type DockerCommandFilter struct {
@@ -84,13 +86,12 @@ type ConfigFile struct {
 type RuleType int
 
 const (
-	RegExpLintLintRule RuleType = iota
-	YamlFieldLintRule
+	YamlFieldLintRule RuleType = iota
 	DockerfileCommandLintRule
 )
 
 func (a RuleType) String() string {
-	return [...]string{"RegExpLintLintRule", "YamlFieldLintRule", "DockerfileCommandLintRule"}[a]
+	return [...]string{"YamlFieldLintRule", "DockerfileCommandLintRule"}[a]
 }
 
 type RuleID int

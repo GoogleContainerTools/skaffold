@@ -224,6 +224,10 @@ enum StatusCode {
     // GCB error to get cloud build client to perform GCB operations.
     BUILD_GET_CLOUD_BUILD_CLIENT_ERR = 145;
 
+    // Build platform errors
+
+    // Value provided to --platform flag cannot be parsed
+    BUILD_UNKNOWN_PLATFORM_FLAG = 150;
 
     // Container errors
 
@@ -574,6 +578,9 @@ enum SuggestionCode {
     RUN_DOCKER_PRUNE = 115;
     // Set Cleanup flag for skaffold command.
     SET_CLEANUP_FLAG = 116;
+
+    // Build platform error suggestion codes
+    BUILD_FIX_UNKNOWN_PLATFORM_FLAG = 117;
 
     // Deploy error suggestion codes
 

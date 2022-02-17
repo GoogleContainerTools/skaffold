@@ -31,12 +31,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
-func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV2.Artifact, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
+func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV2.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -47,7 +48,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	defer endTrace()
 
 	lookup := make(chan []cacheDetails)
-	go func() { lookup <- c.lookupArtifacts(ctx, tags, artifacts) }()
+	go func() { lookup <- c.lookupArtifacts(ctx, tags, platforms, artifacts) }()
 
 	var results []cacheDetails
 	select {
@@ -140,7 +141,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	log.Entry(ctx).Infoln("Cache check completed in", timeutil.Humanize(time.Since(start)))
 
-	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
+	bRes, err := buildAndTest(ctx, out, tags, needToBuild, platforms)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err

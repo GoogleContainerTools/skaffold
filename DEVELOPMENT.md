@@ -65,7 +65,7 @@ Some changes to the skaffold code require a change to the skaffold config. These
   // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
   ```
   
-  * Run `./hack/new_version.sh` to create a new version.
+  * Run `./hack/new-version.sh` to create a new version.
 
   * Run `make test` to verify changes.
   

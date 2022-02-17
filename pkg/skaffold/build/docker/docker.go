@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,12 +27,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error) {
+func (b *Builder) SupportedPlatforms() platform.Matcher {
+	return platform.All
+}
+
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string, matcher platform.Matcher) (string, error) {
+	a = adjustCacheFrom(a, tag)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "docker",
 		"Context":     instrumentation.PII(a.Workspace),
@@ -56,8 +64,9 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact
 
 	// ignore useCLI boolean if buildkit is enabled since buildkit is only implemented for docker CLI at the moment in skaffold.
 	// we might consider a different approach in the future.
-	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) {
-		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts)
+	// use CLI for cross-platform builds
+	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 || matcher.IsNotEmpty() {
+		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, matcher)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
 	}
@@ -75,7 +84,12 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latestV2.DockerArtifact, opts docker.BuildOptions) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latestV2.DockerArtifact, opts docker.BuildOptions, matcher platform.Matcher) (string, error) {
+	if matcher.IsMultiPlatform() {
+		// TODO: implement multi platform build
+		return "", errors.New("skaffold doesn't yet support multi platform builds for the docker builder")
+	}
+
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
 	ba, err := docker.EvalBuildArgs(b.cfg.Mode(), workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
@@ -91,6 +105,10 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 		args = append(args, "--force-rm")
 	}
 
+	if matcher.IsNotEmpty() {
+		args = append(args, "--platform", platform.Format(matcher.Platforms[0]))
+	}
+
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
 	if b.useBuildKit != nil {
@@ -99,6 +117,8 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 		} else {
 			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=0")
 		}
+	} else if matcher.IsNotEmpty() { // cross-platform builds require buildkit
+		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
 	cmd.Stderr = out
@@ -131,4 +151,28 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 	}
 
 	return nil
+}
+
+// adjustCacheFrom returns an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
+func adjustCacheFrom(a *latestV2.Artifact, artifactTag string) *latestV2.Artifact {
+	if os.Getenv("SKAFFOLD_DISABLE_DOCKER_CACHE_ADJUSTMENT") != "" {
+		// allow this behaviour to be disabled
+		return a
+	}
+
+	if !stringslice.Contains(a.DockerArtifact.CacheFrom, a.ImageName) {
+		return a
+	}
+
+	cf := make([]string, 0, len(a.DockerArtifact.CacheFrom))
+	for _, image := range a.DockerArtifact.CacheFrom {
+		if image == a.ImageName {
+			cf = append(cf, artifactTag)
+		} else {
+			cf = append(cf, image)
+		}
+	}
+	copy := *a
+	copy.DockerArtifact.CacheFrom = cf
+	return &copy
 }

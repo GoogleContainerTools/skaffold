@@ -18,8 +18,10 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -27,9 +29,12 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
+	api_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubeclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -55,7 +60,9 @@ var (
 
 	ReadConfigFile             = readConfigFileCached
 	GetConfigForCurrentKubectx = getConfigForCurrentKubectx
-	current                    = time.Now
+	DiscoverLocalRegistry      = discoverLocalRegistry
+
+	current = time.Now
 
 	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
@@ -175,6 +182,17 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	return cfg.DefaultRepo, nil
 }
 
+func GetMultiLevelRepo(configFile string) (*bool, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.MultiLevelRepo != nil {
+		log.Entry(context.TODO()).Infof("Using multi-level-repo=%t from config", *cfg.MultiLevelRepo)
+	}
+	return cfg.MultiLevelRepo, nil
+}
+
 func GetInsecureRegistries(configFile string) ([]string, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
@@ -199,8 +217,15 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-func GetCluster(ctx context.Context, configFile string, minikubeProfile string, detectMinikube bool) (Cluster, error) {
-	cfg, err := GetConfigForCurrentKubectx(configFile)
+type GetClusterOpts struct {
+	ConfigFile      string
+	DefaultRepo     StringOrUndefined
+	MinikubeProfile string
+	DetectMinikube  bool
+}
+
+func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
+	cfg, err := GetConfigForCurrentKubectx(opts.ConfigFile)
 	if err != nil {
 		return Cluster{}, err
 	}
@@ -210,7 +235,7 @@ func GetCluster(ctx context.Context, configFile string, minikubeProfile string, 
 
 	var local bool
 	switch {
-	case minikubeProfile != "":
+	case opts.MinikubeProfile != "":
 		local = true
 
 	case cfg.LocalCluster != nil:
@@ -223,11 +248,33 @@ func GetCluster(ctx context.Context, configFile string, minikubeProfile string, 
 		isKindCluster || isK3dCluster:
 		local = true
 
-	case detectMinikube:
+	case opts.DetectMinikube:
 		local = cluster.GetClient().IsMinikube(ctx, kubeContext)
 
 	default:
 		local = false
+	}
+
+	var defaultRepo = opts.DefaultRepo
+
+	if defaultRepo.Value() != nil && cfg.DefaultRepo != "" {
+		defaultRepo = NewStringOrUndefined(&cfg.DefaultRepo)
+	}
+
+	if local && defaultRepo.Value() == nil {
+		registry, err := DiscoverLocalRegistry(ctx, kubeContext)
+		switch {
+		case err != nil:
+			log.Entry(context.TODO()).Tracef("failed to discover local registry %v", err)
+		case registry != nil:
+			log.Entry(context.TODO()).Infof("using default-repo=%s from cluster configmap", *registry)
+			return Cluster{
+				Local:       local,
+				LoadImages:  false,
+				PushImages:  true,
+				DefaultRepo: NewStringOrUndefined(registry),
+			}, nil
+		}
 	}
 
 	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
@@ -240,9 +287,10 @@ func GetCluster(ctx context.Context, configFile string, minikubeProfile string, 
 	pushImages := !local || (isKindCluster && kindDisableLoad) || (isK3dCluster && k3dDisableLoad)
 
 	return Cluster{
-		Local:      local,
-		LoadImages: loadImages,
-		PushImages: pushImages,
+		Local:       local,
+		LoadImages:  loadImages,
+		PushImages:  pushImages,
+		DefaultRepo: defaultRepo,
 	}, nil
 }
 
@@ -302,11 +350,47 @@ func K3dClusterName(clusterName string) string {
 	return clusterName
 }
 
+func discoverLocalRegistry(ctx context.Context, kubeContext string) (*string, error) {
+	clientset, err := kubeclient.Client(kubeContext)
+	if err != nil {
+		return nil, err
+	}
+
+	configMap, err := clientset.CoreV1().ConfigMaps("kube-public").Get(ctx, "local-registry-hosting", api_v1.GetOptions{})
+
+	statusErr := &api_errors.StatusError{}
+	switch {
+	case errors.As(err, &statusErr) && statusErr.Status().Code == http.StatusNotFound:
+		return nil, nil
+	case err != nil:
+		return nil, err
+	}
+
+	data, ok := configMap.Data["localRegistryHosting.v1"]
+	if !ok {
+		return nil, errors.New("invalid local-registry-hosting ConfigMap")
+	}
+
+	dst := struct {
+		Host *string `yaml:"host"`
+	}{}
+
+	if err := yaml.Unmarshal([]byte(data), &dst); err != nil {
+		return nil, errors.New("invalid local-registry-hosting ConfigMap")
+	}
+
+	return dst.Host, nil
+}
+
 func IsUpdateCheckEnabled(configfile string) bool {
 	cfg, err := GetConfigForCurrentKubectx(configfile)
 	if err != nil {
 		return true
 	}
+	return IsUpdateCheckEnabledForContext(cfg)
+}
+
+func IsUpdateCheckEnabledForContext(cfg *ContextConfig) bool {
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }
 
@@ -334,6 +418,9 @@ func UpdateMsgDisplayed(configFile string) error {
 	fullConfig, err := ReadConfigFile(configFile)
 	if err != nil {
 		return err
+	}
+	if !IsUpdateCheckEnabledForContext(fullConfig.Global) {
+		return nil
 	}
 	if fullConfig.Global == nil {
 		fullConfig.Global = &ContextConfig{}

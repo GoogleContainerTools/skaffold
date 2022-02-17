@@ -21,12 +21,21 @@ import (
 	"fmt"
 	"io"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 // Build builds an artifact with Cloud Native Buildpacks:
 // https://buildpacks.io/
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string, matcher platform.Matcher) (string, error) {
+	if matcher.IsMultiPlatform() {
+		// TODO: Implement building multiplatform images
+		log.Entry(ctx).Println("skaffold doesn't yet support multi platform builds for the buildpacks builder")
+	}
+
 	built, err := b.build(ctx, out, artifact, tag)
 	if err != nil {
 		return "", err
@@ -40,4 +49,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.A
 		return b.localDocker.Push(ctx, out, tag)
 	}
 	return b.localDocker.ImageID(ctx, tag)
+}
+
+func (b *Builder) SupportedPlatforms() platform.Matcher {
+	return platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}}
 }

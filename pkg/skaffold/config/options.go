@@ -97,14 +97,16 @@ type SkaffoldOptions struct {
 
 	DefaultRepo       StringOrUndefined
 	MakePathsAbsolute *bool
-	Muted             Muted
+	StatusCheck       BoolOrUndefined
 	PortForward       PortForwardOptions
 	PushImages        BoolOrUndefined
+	Platforms         []string
+	Muted             Muted
 	RPCPort           IntOrUndefined
 	RPCHTTPPort       IntOrUndefined
-	StatusCheck       BoolOrUndefined
 	SyncRemoteCache   SyncRemoteCacheOption
 	WaitForDeletions  WaitForDeletions
+	MultiLevelRepo    *bool
 }
 
 type RunMode string

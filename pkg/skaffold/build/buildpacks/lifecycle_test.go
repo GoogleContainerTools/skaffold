@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
-	"github.com/buildpacks/pack"
+	pack "github.com/buildpacks/pack/pkg/client"
 
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -37,19 +37,8 @@ func TestLifecycleStatusCode(t *testing.T) {
 		{lifecycle.CodeInvalidArgs, "lifecycle reported invalid arguments"},
 		{lifecycle.CodeIncompatiblePlatformAPI, "incompatible version of Platform API"},
 		{lifecycle.CodeIncompatibleBuildpackAPI, "incompatible version of Buildpacks API"},
-		{lifecycle.CodeFailedDetect, "buildpacks could not determine application type"},
-		{lifecycle.CodeFailedDetectWithErrors, "buildpacks could not determine application type"},
-		{lifecycle.CodeAnalyzeError, "buildpacks failed analyzing metadata from previous builds"},
-		{lifecycle.CodeRestoreError, "buildpacks failed to restoring cached layers"},
-		{lifecycle.CodeFailedBuildWithErrors, "buildpacks failed to build image"},
-		{lifecycle.CodeBuildError, "buildpacks failed to build image"},
-		{lifecycle.CodeExportError, "buildpacks failed to save image and cache layers"},
 
 		{0, "lifecycle failed with status code 0"},
-		// we do not handle CodeRebaseError
-		{lifecycle.CodeRebaseError, "lifecycle failed with status code 602"},
-		// we do not handle CodeLaunchError
-		{lifecycle.CodeLaunchError, "lifecycle failed with status code 702"},
 	}
 	for _, test := range tests {
 		result := mapLifecycleStatusCode(test.code)

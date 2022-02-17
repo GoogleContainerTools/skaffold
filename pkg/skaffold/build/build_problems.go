@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -136,19 +137,32 @@ func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
 
 	return []*proto.Suggestion{{
 		SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
-		Action:         "Trying running with `--default-repo` flag",
+		Action:         "Try running with `--default-repo` flag",
 	}}
 }
 
 func makeAuthSuggestionsForRepo(repo string) *proto.Suggestion {
-	if re(`(.+\.)?gcr\.io.*`).MatchString(repo) || re(`.+-docker\.pkg\.dev.*`).MatchString(repo) {
+	// parse off the registry component; should have already been validated so unlikely to fail
+	if ref, _ := docker.ParseReference(repo); ref != nil {
+		repo = ref.Domain
+	}
+
+	if re(`(.+\.)?gcr\.io`).MatchString(repo) || re(`.+-docker\.pkg\.dev`).MatchString(repo) {
 		return &proto.Suggestion{
 			SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
-			Action:         "try `gcloud auth configure-docker`",
+			Action:         fmt.Sprintf("try `gcloud auth configure-docker%s`", withSpace(repo)),
 		}
 	}
 	return &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
-		Action:         "try `docker login`",
+		Action:         fmt.Sprintf("try `docker login%s`", withSpace(repo)),
 	}
+}
+
+// withSpace returns the given value with a space prepended when not empty.
+func withSpace(value string) string {
+	if len(value) > 0 {
+		return " " + value
+	}
+	return value
 }

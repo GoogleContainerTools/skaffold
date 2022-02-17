@@ -108,16 +108,20 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				"cfg0": {
 					{
 						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate],
-						Line:        1,
-						Column:      13,
+						StartLine:   1,
+						EndLine:     2,
+						StartColumn: 13,
+						EndColumn:   0,
 						Explanation: ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate].ExplanationTemplate,
 					},
 				},
 				"cfg1": {
 					{
 						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate],
-						Line:        1,
-						Column:      13,
+						StartLine:   1,
+						EndLine:     2,
+						StartColumn: 13,
+						EndColumn:   0,
 						Explanation: ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate].ExplanationTemplate,
 					},
 				},
@@ -132,8 +136,10 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				"cfg0": {
 					{
 						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate],
-						Line:        1,
-						Column:      13,
+						StartLine:   1,
+						EndLine:     2,
+						StartColumn: 13,
+						EndColumn:   0,
 						Explanation: ruleIDToskaffoldYamlRule[SkaffoldYamlAPIVersionOutOfDate].ExplanationTemplate,
 					},
 				},
@@ -147,9 +153,11 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 			expected: map[string]*[]Result{
 				"cfg0": {
 					{
-						Rule:   ruleIDToskaffoldYamlRule[SkaffoldYamlUseStaticPort],
-						Line:   14,
-						Column: 1,
+						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlUseStaticPort],
+						StartLine:   14,
+						EndLine:     15,
+						StartColumn: 1,
+						EndColumn:   0,
 						Explanation: "It is a skaffold best practice to specify a static port (vs skaffold dynamically choosing one) for port forwarding " +
 							"container based resources skaffold deploys.  This is helpful because with this the local ports are predictable across dev sessions which " +
 							" makes testing/debugging easier. It is recommended to add the following stanza at the end of your skaffold.yaml for each shown deployed resource:\n" +

@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -45,7 +46,7 @@ var (
 )
 
 type artifactHasher interface {
-	hash(ctx context.Context, a *latestV2.Artifact) (string, error)
+	hash(context.Context, *latestV2.Artifact, platform.Resolver) (string, error)
 }
 
 type artifactHasherImpl struct {
@@ -65,20 +66,20 @@ func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, m
 	}
 }
 
-func (h *artifactHasherImpl) hash(ctx context.Context, a *latestV2.Artifact) (string, error) {
+func (h *artifactHasherImpl) hash(ctx context.Context, a *latestV2.Artifact, platforms platform.Resolver) (string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "hash_GenerateHashOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
-	hash, err := h.safeHash(ctx, a)
+	hash, err := h.safeHash(ctx, a, platforms.GetPlatforms(a.ImageName))
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return "", err
 	}
 	hashes := []string{hash}
 	for _, dep := range sortedDependencies(a, h.artifacts) {
-		depHash, err := h.hash(ctx, dep)
+		depHash, err := h.hash(ctx, dep, platforms)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return "", err
@@ -92,10 +93,10 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latestV2.Artifact) (st
 	return encode(hashes)
 }
 
-func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latestV2.Artifact) (string, error) {
+func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latestV2.Artifact, platforms platform.Matcher) (string, error) {
 	val := h.syncStore.Exec(a.ImageName,
 		func() interface{} {
-			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
+			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode, platforms)
 			if err != nil {
 				return err
 			}
@@ -112,7 +113,7 @@ func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latestV2.Artifact)
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
-func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latestV2.Artifact, mode config.RunMode) (string, error) {
+func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latestV2.Artifact, mode config.RunMode, m platform.Matcher) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
@@ -150,6 +151,15 @@ func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *late
 	if args != nil {
 		inputs = append(inputs, args...)
 	}
+
+	// add build platforms
+	var ps []string
+	for _, p := range m.Platforms {
+		ps = append(ps, platform.Format(p))
+	}
+	sort.Strings(ps)
+	inputs = append(inputs, ps...)
+
 	return encode(inputs)
 }
 

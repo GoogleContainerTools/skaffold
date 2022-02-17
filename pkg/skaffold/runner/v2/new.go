@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -92,7 +93,11 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
-
+	platforms, err := platform.NewResolver(ctx, runCtx.Pipelines.All(), runCtx.Opts.Platforms, runCtx.Mode(), runCtx.KubeContext)
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, fmt.Errorf("getting target platforms: %w", err)
+	}
 	// The Builder must be instantiated AFTER the Deployer, because the Deploy target influences
 	// the Cluster object on the RunContext, which in turn influences whether or not we will push images.
 	var builder build.Builder
@@ -141,14 +146,14 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	rbuilder := runner.NewBuilder(builder, tagger, artifactCache, runCtx)
-
+	rbuilder := runner.NewBuilder(builder, tagger, platforms, artifactCache, runCtx)
 	return &SkaffoldRunner{
 		Builder:            *rbuilder,
 		Pruner:             runner.Pruner{Builder: builder},
 		renderer:           renderer,
 		tester:             tester,
 		deployer:           deployer,
+		platforms:          platforms,
 		monitor:            monitor,
 		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
 		artifactStore:      store,

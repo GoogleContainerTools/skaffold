@@ -33,8 +33,9 @@ import (
 type Formatter func(pod v1.Pod, containerStatus v1.ContainerStatus, isMuted func() bool) log.Formatter
 
 type kubernetesLogFormatter struct {
-	colorPicker output.ColorPicker
-	prefix      string
+	colorPicker     output.ColorPicker
+	prefix          string
+	JSONParseConfig latestV2.JSONParseConfig
 
 	pod       *v1.Pod
 	container v1.ContainerStatus
@@ -43,17 +44,14 @@ type kubernetesLogFormatter struct {
 	isMuted func() bool
 }
 
-func NewKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, isMuted func() bool, pod *v1.Pod, container v1.ContainerStatus) log.Formatter {
-	return newKubernetesLogFormatter(config, colorPicker, isMuted, pod, container)
-}
-
 func newKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, isMuted func() bool, pod *v1.Pod, container v1.ContainerStatus) *kubernetesLogFormatter {
 	return &kubernetesLogFormatter{
-		colorPicker: colorPicker,
-		pod:         pod,
-		container:   container,
-		prefix:      prefix(config, pod, container),
-		isMuted:     isMuted,
+		colorPicker:     colorPicker,
+		prefix:          prefix(config, pod, container),
+		JSONParseConfig: config.JSONParseConfig(),
+		pod:             pod,
+		container:       container,
+		isMuted:         isMuted,
 	}
 }
 
@@ -72,6 +70,8 @@ func (k *kubernetesLogFormatter) PrintLine(out io.Writer, line string) {
 			formattedPrefix = fmt.Sprintf("%s ", formattedPrefix)
 		}
 	}
+
+	line = log.ParseJSON(k.JSONParseConfig, line)
 	formattedLine := fmt.Sprintf("%s%s", formattedPrefix, line)
 	eventV2.ApplicationLog(k.pod.Name, k.container.Name, formattedPrefix, line, formattedLine)
 

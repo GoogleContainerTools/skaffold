@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v2
 
 import (
@@ -134,7 +135,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	}
 
 	// Trigger retest when there are newly rebuilt artifacts or untested previous artifacts; and it's not explicitly skipped
-	if (len(bRes) > 0 || needsTest) && !r.runCtx.SkipTests() {
+	if (len(bRes) > 0 || needsTest) && r.runCtx.IsTestPhaseActive() {
 		childCtx, endTrace := instrumentation.StartTrace(ctx, "doDev_needsTest")
 		event.ResetStateOnTest()
 		defer func() {
@@ -329,7 +330,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
 	// First test
-	if !r.runCtx.SkipTests() {
+	if r.runCtx.IsTestPhaseActive() {
 		if err = r.Test(ctx, out, bRes); err != nil {
 			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
 			eventV2.TaskFailed(constants.DevLoop, err)

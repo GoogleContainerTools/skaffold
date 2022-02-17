@@ -19,6 +19,7 @@ options:
   env:
   - 'KUBECONFIG=/workspace/.kubeconfig'
   - 'SKAFFOLD_DEFAULT_REPO=$_IMAGE_REPO'
+  - 'SKAFFOLD_MULTI_LEVEL_REPO=true'
   - 'SKAFFOLD_DETECT_MINIKUBE=false'
   - 'SKAFFOLD_INTERACTIVE=false'
   - 'SKAFFOLD_TIMESTAMPS=true'

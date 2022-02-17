@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -91,7 +93,7 @@ func TestValidateSchema(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{SkaffoldConfig: test.cfg}},
+			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{SkaffoldConfig: test.cfg, YAMLInfos: configlocations.NewYAMLInfos()}},
 				Options{CheckDeploySource: false})
 
 			t.CheckError(test.shouldErr, err)
@@ -256,8 +258,7 @@ func TestVisitStructs(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := visitStructs(test.input, alwaysErr)
-
+			actual := visitStructs(&parser.SkaffoldConfigEntry{YAMLInfos: configlocations.NewYAMLInfos()}, reflect.ValueOf(test.input), alwaysErr)
 			t.CheckDeepEqual(test.expectedErrs, len(actual))
 		})
 	}
@@ -507,6 +508,7 @@ func TestValidateNetworkMode(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
 			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{
+				YAMLInfos: configlocations.NewYAMLInfos(),
 				SkaffoldConfig: &latestV2.SkaffoldConfig{
 					Pipeline: latestV2.Pipeline{
 						Build: latestV2.BuildConfig{
@@ -808,6 +810,7 @@ func TestValidateSyncRules(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{
+				YAMLInfos: configlocations.NewYAMLInfos(),
 				SkaffoldConfig: &latestV2.SkaffoldConfig{
 					Pipeline: latestV2.Pipeline{
 						Build: latestV2.BuildConfig{
@@ -864,7 +867,18 @@ func TestValidateCustomDependencies(t *testing.T) {
 				},
 			}
 
-			errs := validateCustomDependencies([]*latestV2.Artifact{artifact})
+			errs := validateCustomDependencies(&parser.SkaffoldConfigEntry{
+				YAMLInfos: configlocations.NewYAMLInfos(),
+				SkaffoldConfig: &latestV2.SkaffoldConfig{
+					Pipeline: latestV2.Pipeline{
+						Build: latestV2.BuildConfig{
+							Artifacts: []*latestV2.Artifact{
+								artifact,
+							},
+						},
+					},
+				},
+			}, []*latestV2.Artifact{artifact})
 
 			t.CheckDeepEqual(test.expectedErrors, len(errs))
 		})
@@ -894,10 +908,10 @@ func TestValidatePortForwardResources(t *testing.T) {
 					Type: latestV2.ResourceType(test.resourceType),
 				},
 			}
-			errs := validatePortForwardResources(pfrs)
+			errs := validatePortForwardResources(&parser.SkaffoldConfigEntry{YAMLInfos: configlocations.NewYAMLInfos()}, pfrs)
 			var err error
 			if len(errs) > 0 {
-				err = errs[0]
+				err = errs[0].Error
 			}
 
 			t.CheckError(test.shouldErr, err)
@@ -964,6 +978,7 @@ func TestValidateImageNames(t *testing.T) {
 			err := Process(
 				parser.SkaffoldConfigSet{
 					&parser.SkaffoldConfigEntry{
+						YAMLInfos: configlocations.NewYAMLInfos(),
 						SkaffoldConfig: &latestV2.SkaffoldConfig{
 							Pipeline: latestV2.Pipeline{
 								Build: latestV2.BuildConfig{
@@ -1069,6 +1084,7 @@ func TestValidateJibPluginType(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{
+				YAMLInfos: configlocations.NewYAMLInfos(),
 				SkaffoldConfig: &latestV2.SkaffoldConfig{
 					Pipeline: latestV2.Pipeline{
 						Build: latestV2.BuildConfig{
@@ -1102,6 +1118,7 @@ func TestValidateLogsConfig(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(parser.SkaffoldConfigSet{&parser.SkaffoldConfigEntry{
+				YAMLInfos: configlocations.NewYAMLInfos(),
 				SkaffoldConfig: &latestV2.SkaffoldConfig{
 					Pipeline: latestV2.Pipeline{
 						Deploy: latestV2.DeployConfig{
@@ -1182,9 +1199,16 @@ func TestValidateAcyclicDependencies(t *testing.T) {
 			}
 
 			setDependencies(artifacts, test.dependency)
-			errs := validateAcyclicDependencies(artifacts)
-			expected := []error{
-				fmt.Errorf(`cycle detected in build dependencies involving "artifact1"`),
+			errs := validateAcyclicDependencies(&parser.SkaffoldConfigSet{
+				&parser.SkaffoldConfigEntry{
+					YAMLInfos: configlocations.NewYAMLInfos(),
+				},
+			}, artifacts)
+			expected := []ErrorWithLocation{
+				{
+					Error:    fmt.Errorf(`cycle detected in build dependencies involving "artifact1"`),
+					Location: configlocations.MissingLocation(),
+				},
 			}
 			if test.shouldErr {
 				t.CheckDeepEqual(expected, errs, cmp.Comparer(errorsComparer))
@@ -1239,9 +1263,18 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 			},
 		},
 	}
-	expected := []error{
-		fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
-		fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1"`),
+	expected := []ErrorWithLocation{
+		{
+			Error:    fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
+			Location: configlocations.MissingLocation(),
+		},
+		{
+			Error:    fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1"`),
+			Location: configlocations.MissingLocation(),
+		},
+	}
+	for i := range cfgs {
+		cfgs[i].YAMLInfos = configlocations.NewYAMLInfos()
 	}
 	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
@@ -1302,11 +1335,25 @@ func TestValidateValidDependencyAliases(t *testing.T) {
 				},
 			},
 		}}
-	expected := []error{
-		fmt.Errorf(`invalid build dependency for artifact "artifact2": alias "1_ARTIFACT" doesn't match required pattern %q`, dependencyAliasPattern),
-		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact!" doesn't match required pattern %q`, dependencyAliasPattern),
-		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact#1" doesn't match required pattern %q`, dependencyAliasPattern),
+	expected := []ErrorWithLocation{
+		{
+			Error:    fmt.Errorf(`invalid build dependency for artifact "artifact2": alias "1_ARTIFACT" doesn't match required pattern %q`, dependencyAliasPattern),
+			Location: configlocations.MissingLocation(),
+		},
+		{
+			Error:    fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact!" doesn't match required pattern %q`, dependencyAliasPattern),
+			Location: configlocations.MissingLocation(),
+		},
+		{
+			Error:    fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact#1" doesn't match required pattern %q`, dependencyAliasPattern),
+			Location: configlocations.MissingLocation(),
+		},
 	}
+
+	for i := range cfgs {
+		cfgs[i].YAMLInfos = configlocations.NewYAMLInfos()
+	}
+
 	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
 }
@@ -1363,6 +1410,7 @@ func TestValidateTaggingPolicy(t *testing.T) {
 
 			err := Process(parser.SkaffoldConfigSet{
 				&parser.SkaffoldConfigEntry{
+					YAMLInfos: configlocations.NewYAMLInfos(),
 					SkaffoldConfig: &latestV2.SkaffoldConfig{
 						Pipeline: latestV2.Pipeline{
 							Build: test.cfg,
@@ -1430,7 +1478,16 @@ func TestValidateCustomTest(t *testing.T) {
 				}},
 			}
 
-			errs := validateCustomTest([]*latestV2.TestCase{testCase})
+			errs := validateCustomTest(&parser.SkaffoldConfigEntry{
+				YAMLInfos: configlocations.NewYAMLInfos(),
+				SkaffoldConfig: &latestV2.SkaffoldConfig{
+					Pipeline: latestV2.Pipeline{
+						Test: []*latestV2.TestCase{
+							testCase,
+						},
+					},
+				},
+			}, []*latestV2.TestCase{testCase})
 			t.CheckDeepEqual(test.expectedErrors, len(errs))
 		})
 	}
@@ -1496,12 +1553,12 @@ func TestValidateKubectlManifests(t *testing.T) {
 
 			set := parser.SkaffoldConfigSet{}
 			for _, c := range test.configs {
-				set = append(set, &parser.SkaffoldConfigEntry{SkaffoldConfig: c})
+				set = append(set, &parser.SkaffoldConfigEntry{SkaffoldConfig: c, YAMLInfos: configlocations.NewYAMLInfos()})
 			}
 			errs := validateKubectlManifests(set)
 			var err error
 			if len(errs) > 0 {
-				err = errs[0]
+				err = errs[0].Error
 			}
 			t.CheckError(test.shouldErr, err)
 		})

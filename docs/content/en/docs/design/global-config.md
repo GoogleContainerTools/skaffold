@@ -2,7 +2,7 @@
 title: "Global Configuration"
 linkTitle: "Global Configuration"
 weight: 50
-featureId: global_config
+featureId: global\_config
 
 ---
 
@@ -13,6 +13,7 @@ The options are:
 | Option | Type | Description |
 | ------ | ---- | ----------- |
 | `default-repo` | string | The image registry where built artifact images are published (see [image name rewriting]({{< relref "/docs/environment/image-registries.md" >}})). |
+| `multi-level-repo` | boolean | If true, do not replace '.' and '/' with '\_' in image name. |
 | `debug-helpers-registry` | string | The image registry where debug support images are retrieved (see [debugging]({{< relref "/docs/workflows/debug.md" >}})). |
 | `insecure-registries` | list of strings | A list of image registries that may be accessed without TLS. |
 | `k3d-disable-load` | boolean | If true, do not use `k3d import image` to load images locally. |

@@ -21,8 +21,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -114,4 +118,95 @@ func TestGetHydrationDir_CustomHydrationDir(t *testing.T) {
 		_, err = os.Stat(actual)
 		t.CheckFalse(os.IsNotExist(err))
 	})
+}
+
+func TestAddTagsToPodSelector(t *testing.T) {
+	tests := []struct {
+		description       string
+		artifacts         []graph.Artifact
+		deployerArtifacts []graph.Artifact
+		expectedImages    []string
+	}{
+		{
+			description: "empty image list",
+		},
+		{
+			description: "non-matching image results in empty list",
+			artifacts: []graph.Artifact{
+				{
+					ImageName: "my-image",
+					Tag:       "my-image-tag",
+				},
+			},
+			deployerArtifacts: []graph.Artifact{
+				{
+					ImageName: "not-my-image",
+				},
+			},
+		},
+		{
+			description: "matching images appear in list",
+			artifacts: []graph.Artifact{
+				{
+					ImageName: "my-image1",
+					Tag:       "registry.example.com/repo/my-image1:tag1",
+				},
+				{
+					ImageName: "my-image2",
+					Tag:       "registry.example.com/repo/my-image2:tag2",
+				},
+				{
+					ImageName: "image-not-in-deployer",
+					Tag:       "registry.example.com/repo/my-image3:tag3",
+				},
+			},
+			deployerArtifacts: []graph.Artifact{
+				{
+					ImageName: "my-image1",
+				},
+				{
+					ImageName: "my-image2",
+				},
+			},
+			expectedImages: []string{
+				"registry.example.com/repo/my-image1:tag1",
+				"registry.example.com/repo/my-image2:tag2",
+			},
+		},
+		{
+			description: "images from manifest files with ko:// scheme prefix are sanitized before matching",
+			artifacts: []graph.Artifact{
+				{
+					ImageName: "ko://git.example.com/Foo/bar",
+					Tag:       "registry.example.com/repo/git.example.com/foo/bar:tag",
+				},
+			},
+			deployerArtifacts: []graph.Artifact{
+				{
+					ImageName: "git.example.com/foo/bar",
+					Tag:       "ko://git.example.com/Foo/bar",
+				},
+			},
+			expectedImages: []string{
+				"registry.example.com/repo/git.example.com/foo/bar:tag",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			podSelector := kubernetes.NewImageList()
+			AddTagsToPodSelector(test.artifacts, test.deployerArtifacts, podSelector)
+			for _, expectedImage := range test.expectedImages {
+				if exists := podSelector.Select(&v1.Pod{
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{Image: expectedImage},
+						},
+					},
+				}); !exists {
+					t.Errorf("expected image list to contain %s", expectedImage)
+				}
+			}
+		})
+	}
 }

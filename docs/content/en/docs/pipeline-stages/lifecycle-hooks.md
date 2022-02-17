@@ -105,6 +105,7 @@ $SKAFFOLD_DEFAULT_REPO | The resolved default repository | All
 $SKAFFOLD_RPC_PORT | TCP port to expose event API | All
 $SKAFFOLD_HTTP_PORT | TCP port to expose event REST API over HTTP | All
 $SKAFFOLD_KUBE_CONTEXT | The resolved Kubernetes context | Sync, Deploy
+$SKAFFOLD_MULTI_LEVEL_REPO | The multi-level support of the repository | All
 $SKAFFOLD_NAMESPACES | Comma separated list of Kubernetes namespaces | Sync, Deploy
 $SKAFFOLD_WORK_DIR | The workspace root directory | All
 Local environment variables | The current state of the local environment (e.g. $HOST, $PATH). Determined by the golang os.Environ function. | All
@@ -152,4 +153,4 @@ deploy:
             containerName: hooks-example* # use a glob pattern to prefix-match the container name and pod name for deployments, stateful-sets, etc.
             podName: hooks-example-deployment*
 ```
-This config snippet defines a simple `echo` command to run inside the containers that match `podName` and `containerName`, before and after each `kubectl` deploy. The `after` container commands are only run post [healthchecks]({{< relref "/docs/workflows/ci-cd.md#waiting-for-skaffold-deployments-using-healthcheck" >}}) on the deployment are complete. Also, unlike the `sync` container hooks, skaffold cannot determine the target container from just the config definition, and needs the `podName` and `containerName`.
+This config snippet defines a simple `echo` command to run inside the containers that match `podName` and `containerName`, before and after each `kubectl` deploy. The `after` container commands are only run after the [deployment status checks]({{< relref "/docs/pipeline-stages/status-check" >}}) on the deployment are complete. Also, unlike the `sync` container hooks, skaffold cannot determine the target container from just the config definition, and needs the `podName` and `containerName`.

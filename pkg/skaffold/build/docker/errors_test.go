@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -71,7 +72,7 @@ Refer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for deta
 				},
 			}
 
-			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag")
+			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag", platform.Matcher{})
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				t.CheckErrorContains("", err)

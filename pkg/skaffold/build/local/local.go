@@ -18,12 +18,14 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
@@ -67,8 +69,10 @@ func (b *Builder) PushImages() bool {
 	return b.pushImages
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error) {
-	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag)
+func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
+
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string, platforms platform.Matcher) (string, error) {
+	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag, platforms)
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +99,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV2.
 	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	if !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,
@@ -110,7 +114,15 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 	if err != nil {
 		return "", err
 	}
-	return builder.Build(ctx, out, a, tag)
+	if platforms.IsNotEmpty() {
+		supported := builder.SupportedPlatforms()
+		if p := platforms.Intersect(supported); p.IsNotEmpty() {
+			platforms = p
+		} else {
+			return "", fmt.Errorf("builder for artifact %q doesn't support building for target platforms: %q. Supported platforms are %q", a.ImageName, platforms, supported)
+		}
+	}
+	return builder.Build(ctx, out, a, tag, platforms)
 }
 
 func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {

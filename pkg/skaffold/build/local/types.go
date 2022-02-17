@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -139,7 +140,8 @@ func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 
 // artifactBuilder represents a per artifact builder interface
 type artifactBuilder interface {
-	Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error)
+	Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string, platforms platform.Matcher) (string, error)
+	SupportedPlatforms() platform.Matcher
 }
 
 // newPerArtifactBuilder returns an instance of `artifactBuilder`

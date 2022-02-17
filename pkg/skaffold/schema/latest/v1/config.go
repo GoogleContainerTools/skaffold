@@ -26,7 +26,7 @@ import (
 )
 
 // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta26"
+const Version string = "skaffold/v2beta27"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -158,6 +158,13 @@ type BuildConfig struct {
 	// A few strategies are provided here, although you most likely won't need to care!
 	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
+
+	// Platforms is the list of platforms to build all artifact images for.
+	// It can be overridden by the individual artifact's `platforms` property.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
 
 	BuildType `yaml:",inline"`
 }
@@ -850,6 +857,15 @@ type LogsConfig struct {
 	// `none`: don't add a prefix.
 	// Defaults to `auto`.
 	Prefix string `yaml:"prefix,omitempty"`
+
+	// JSONParse defines the rules for parsing/outputting json logs.
+	JSONParse JSONParseConfig `yaml:"jsonParse,omitempty"`
+}
+
+// JSONParseConfig defines the rules for parsing/outputting json logs.
+type JSONParseConfig struct {
+	// Fields specifies which top level fields should be printed.
+	Fields []string `yaml:"fields,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which
@@ -877,6 +893,13 @@ type Artifact struct {
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
 	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
+
+	// Platforms is the list of platforms to build this artifact image for.
+	// It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -1465,6 +1488,9 @@ type HostHook struct {
 	Command []string `yaml:"command" yamltags:"required"`
 	// OS is an optional slice of operating system names. If the host machine OS is different, then it skips execution.
 	OS []string `yaml:"os,omitempty"`
+	// Dir specifies the working directory of the command.
+	// If empty, the command runs in the calling process's current directory.
+	Dir string `yaml:"dir,omitempty" skaffold:"filepath"`
 }
 
 // ContainerHook describes a lifecycle hook definition to execute on a container. The container name is inferred from the scope in which this hook is defined.

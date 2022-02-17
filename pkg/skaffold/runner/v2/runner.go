@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -45,6 +46,7 @@ type SkaffoldRunner struct {
 	labeller           *label.DefaultLabeller
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
+	platforms          platform.Resolver
 
 	devIteration int
 	isLocalImage func(imageName string) (bool, error)

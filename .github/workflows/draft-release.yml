@@ -1,4 +1,4 @@
-name: create draft release
+name: Create Draft Release
 
 on:
   push:

@@ -23,6 +23,9 @@ import (
 	"runtime"
 	"testing"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -36,6 +39,7 @@ func TestRetrieveEnv(t *testing.T) {
 		buildContext  string
 		additionalEnv []string
 		environ       []string
+		platforms     platform.Matcher
 		expected      []string
 	}{
 
@@ -44,24 +48,31 @@ func TestRetrieveEnv(t *testing.T) {
 			tag:          "gcr.io/image/tag:mytag",
 			environ:      nil,
 			buildContext: "/some/path",
-			expected:     []string{"IMAGE=gcr.io/image/tag:mytag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/tag", "IMAGE_TAG=mytag"},
+			platforms:    platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "arm64"}}},
+			expected:     []string{"IMAGE=gcr.io/image/tag:mytag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path", "PLATFORMS=linux/amd64,linux/arm64", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/tag", "IMAGE_TAG=mytag"},
 		}, {
 			description:  "make sure environ is correctly applied",
 			tag:          "gcr.io/image/tag:anothertag",
 			environ:      []string{"PATH=/path", "HOME=/root"},
 			buildContext: "/some/path",
-			expected:     []string{"IMAGE=gcr.io/image/tag:anothertag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/tag", "IMAGE_TAG=anothertag", "PATH=/path", "HOME=/root"},
+			expected:     []string{"IMAGE=gcr.io/image/tag:anothertag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path", "PLATFORMS=", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/tag", "IMAGE_TAG=anothertag", "PATH=/path", "HOME=/root"},
+		}, {
+			description: "all platforms",
+			tag:         "gcr.io/image/push:tag",
+			pushImages:  true,
+			platforms:   platform.All,
+			expected:    []string{"IMAGE=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT=", "PLATFORMS=all", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/push", "IMAGE_TAG=tag"},
 		}, {
 			description: "push image is true",
 			tag:         "gcr.io/image/push:tag",
 			pushImages:  true,
-			expected:    []string{"IMAGE=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT=", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/push", "IMAGE_TAG=tag"},
+			expected:    []string{"IMAGE=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT=", "PLATFORMS=", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/push", "IMAGE_TAG=tag"},
 		}, {
 			description:   "add additional env",
 			tag:           "gcr.io/image/push:tag",
 			pushImages:    true,
 			additionalEnv: []string{"KUBECONTEXT=mycluster"},
-			expected:      []string{"IMAGE=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT=", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/push", "IMAGE_TAG=tag", "KUBECONTEXT=mycluster"},
+			expected:      []string{"IMAGE=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT=", "PLATFORMS=", "SKIP_TEST=false", "IMAGE_REPO=gcr.io/image/push", "IMAGE_TAG=tag", "KUBECONTEXT=mycluster"},
 		},
 	}
 	for _, test := range tests {
@@ -70,7 +81,7 @@ func TestRetrieveEnv(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.buildContext, nil })
 
 			builder := NewArtifactBuilder(nil, nil, test.pushImages, false, test.additionalEnv)
-			actual, err := builder.retrieveEnv(&latestV2.Artifact{}, test.tag)
+			actual, err := builder.retrieveEnv(&latestV2.Artifact{}, test.tag, test.platforms)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -98,8 +109,8 @@ func TestRetrieveCmd(t *testing.T) {
 				},
 			},
 			tag:               "image:tag",
-			expected:          expectedCmd("workspace", "sh", []string{"-c", "./build.sh"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
-			expectedOnWindows: expectedCmd("workspace", "cmd.exe", []string{"/C", "./build.sh"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
+			expected:          expectedCmd("workspace", "sh", []string{"-c", "./build.sh"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace", "PLATFORMS=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
+			expectedOnWindows: expectedCmd("workspace", "cmd.exe", []string{"/C", "./build.sh"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace", "PLATFORMS=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
 		},
 		{
 			description: "buildcommand with multiple args",
@@ -111,8 +122,8 @@ func TestRetrieveCmd(t *testing.T) {
 				},
 			},
 			tag:               "image:tag",
-			expected:          expectedCmd("", "sh", []string{"-c", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
-			expectedOnWindows: expectedCmd("", "cmd.exe", []string{"/C", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
+			expected:          expectedCmd("", "sh", []string{"-c", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "PLATFORMS=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
+			expectedOnWindows: expectedCmd("", "cmd.exe", []string{"/C", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "PLATFORMS=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag"}),
 		},
 		{
 			description: "buildcommand with go template",
@@ -125,8 +136,8 @@ func TestRetrieveCmd(t *testing.T) {
 			},
 			tag:               "image:tag",
 			env:               []string{"FLAG=some-flag"},
-			expected:          expectedCmd("", "sh", []string{"-c", "./build.sh --flag=some-flag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag", "FLAG=some-flag"}),
-			expectedOnWindows: expectedCmd("", "cmd.exe", []string{"/C", "./build.sh --flag=some-flag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag", "FLAG=some-flag"}),
+			expected:          expectedCmd("", "sh", []string{"-c", "./build.sh --flag=some-flag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "PLATFORMS=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag", "FLAG=some-flag"}),
+			expectedOnWindows: expectedCmd("", "cmd.exe", []string{"/C", "./build.sh --flag=some-flag"}, []string{"IMAGE=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "PLATFORMS=", "SKIP_TEST=true", "IMAGE_REPO=image", "IMAGE_TAG=tag", "FLAG=some-flag"}),
 		},
 	}
 	for _, test := range tests {
@@ -135,7 +146,7 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(nil, nil, false, true, nil)
-			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag)
+			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
 
 			t.CheckNoError(err)
 			if runtime.GOOS == "windows" {

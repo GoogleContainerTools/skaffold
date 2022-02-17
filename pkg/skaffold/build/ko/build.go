@@ -28,6 +28,7 @@ import (
 	"github.com/google/ko/pkg/publish"
 	"golang.org/x/tools/go/packages"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
@@ -36,7 +37,10 @@ import (
 // Build prints the image name to the out io.Writer and returns the image
 // identifier. The image identifier is the tag or digest for pushed images, or
 // the docker image ID for sideloaded images.
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, ref string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, ref string, platforms platform.Matcher) (string, error) {
+	if b.pushImages && strings.HasPrefix(ref, build.StrictScheme) {
+		return "", fmt.Errorf("default repo must be set when using the 'ko://' prefix and pushing to a registry: %s, see https://skaffold.dev/docs/environment/image-registries/", a.ImageName)
+	}
 	koBuilder, err := b.newKoBuilder(ctx, a)
 	if err != nil {
 		return "", fmt.Errorf("error creating ko builder: %w", err)
@@ -52,10 +56,11 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact
 	if err != nil {
 		return "", fmt.Errorf("could not build and publish ko image %q: %w", a.ImageName, err)
 	}
-	fmt.Fprintln(out, imageRef.Name())
 
 	return b.getImageIdentifier(ctx, imageRef, ref)
 }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
 // buildAndPublish the image using the ko builder and publisher.
 func (b *Builder) buildAndPublish(ctx context.Context, a *latestV2.Artifact, koBuilder build.Interface, koPublisher publish.Interface) (name.Reference, error) {

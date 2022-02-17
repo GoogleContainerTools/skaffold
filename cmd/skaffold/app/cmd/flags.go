@@ -386,6 +386,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
 	},
 	{
+		Name:          "platform",
+		Usage:         "The platform to target for the build artifacts",
+		Value:         &opts.Platforms,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
+	},
+	{
 		Name:          "minikube-profile",
 		Usage:         "forces skaffold use the given minikube-profile and forces building against the docker daemon inside that minikube profile",
 		Value:         &opts.MinikubeProfile,

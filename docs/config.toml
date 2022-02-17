@@ -82,7 +82,7 @@ weight = 1
 copyright = "Skaffold Authors"
 privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v2beta26"
+skaffold_version = "skaffold/v2beta27"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 # gcs_engine_id = "013756393218025596041:3nojel67sum"
@@ -104,7 +104,10 @@ breadcrumb_disable = false
 	icon = "fab fa-github"
 [[params.links.developer]]
 	name = "Slack"
-	url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
+        # don't link to the slack channel as the join process is
+        # confusing for newcomers
+	#url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
+	url = "/docs/resources/#community"
 	icon = "fab fa-slack"
 [[params.links.developer]]
 	name = "Mailing List"
@@ -133,6 +136,6 @@ breadcrumb_disable = false
 	[[menu.main]]
 		identifier = "slack"
 		pre = "<i class='fab fa-slack'></i>"
-		url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
+                url = "/docs/resources/#community"
 		icon = "fab fa-slack"
 		weight = -200

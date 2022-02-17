@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -87,7 +88,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 				ArtifactType: latestV2.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag")
+			}, "img:tag", platform.All)
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -152,7 +153,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 				ArtifactType: latestV2.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag")
+			}, "img:tag", platform.All)
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {

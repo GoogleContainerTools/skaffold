@@ -17,10 +17,14 @@ limitations under the License.
 package ko
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/ko/pkg/build"
+	"github.com/google/ko/pkg/commands/options"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -28,16 +32,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const (
+	testKoBuildOptionsEnvVar = "TEST_KO_BUILDER_IMAGE_LABEL_ENV_VAR"
+)
+
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
-		description          string
-		artifact             latestV2.Artifact
-		runMode              config.RunMode
-		wantDebugOptions     bool
-		wantLabels           []string
-		wantPlatform         string
-		wantWorkingDirectory string
-		wantImportPath       string
+		description string
+		artifact    latestV2.Artifact
+		envVarValue string
+		runMode     config.RunMode
+		wantBo      options.BuildOptions
 	}{
 		{
 			description: "all zero value",
@@ -46,128 +51,110 @@ func TestBuildOptions(t *testing.T) {
 					KoArtifact: &latestV2.KoArtifact{},
 				},
 			},
+			wantBo: options.BuildOptions{
+				ConcurrentBuilds: 1,
+				Trimpath:         true,
+				UserAgent:        version.UserAgentWithClient(),
+			},
 		},
 		{
-			description: "base image",
+			description: "all options",
 			artifact: latestV2.Artifact{
 				ArtifactType: latestV2.ArtifactType{
 					KoArtifact: &latestV2.KoArtifact{
 						BaseImage: "gcr.io/distroless/base:nonroot",
-					},
-				},
-				ImageName: "ko://example.com/foo",
-			},
-		},
-		{
-			description: "empty platforms",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
-						Platforms: []string{},
-					},
-				},
-				ImageName: "ko://example.com/foo",
-			},
-		},
-		{
-			description: "multiple platforms",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
+						Dir:       "gomoddir",
+						Env: []string{
+							"FOO=BAR",
+							fmt.Sprintf("frob={{.%s}}", testKoBuildOptionsEnvVar),
+						},
+						Flags: []string{
+							"-v",
+							fmt.Sprintf("-flag-{{.%s}}", testKoBuildOptionsEnvVar),
+							fmt.Sprintf("-flag2-{{.Env.%s}}", testKoBuildOptionsEnvVar),
+						},
+						Labels: map[string]string{
+							"foo":  "bar",
+							"frob": fmt.Sprintf("{{.%s}}", testKoBuildOptionsEnvVar),
+						},
+						Ldflags: []string{
+							"-s",
+							fmt.Sprintf("-ldflag-{{.%s}}", testKoBuildOptionsEnvVar),
+							fmt.Sprintf("-ldflag2-{{.Env.%s}}", testKoBuildOptionsEnvVar),
+						},
+						Main:      "cmd/app",
 						Platforms: []string{"linux/amd64", "linux/arm64"},
 					},
 				},
 				ImageName: "ko://example.com/foo",
+				Workspace: "workdir",
 			},
-			wantPlatform: "linux/amd64,linux/arm64",
-		},
-		{
-			description: "workspace",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{},
-				},
-				ImageName: "ko://example.com/foo",
-				Workspace: "my-app-subdirectory",
-			},
-			wantWorkingDirectory: "my-app-subdirectory",
-		},
-		{
-			description: "source dir",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
-						Dir: "my-go-mod-is-here",
+			envVarValue: "baz",
+			runMode:     config.RunModes.Debug,
+			wantBo: options.BuildOptions{
+				BaseImage: "gcr.io/distroless/base:nonroot",
+				BuildConfigs: map[string]build.Config{
+					"example.com/foo": {
+						ID:      "ko://example.com/foo",
+						Dir:     ".",
+						Env:     []string{"FOO=BAR", "frob=baz"},
+						Flags:   build.FlagArray{"-v", "-flag-baz", "-flag2-baz"},
+						Ldflags: build.StringArray{"-s", "-ldflag-baz", "-ldflag2-baz"},
+						Main:    "cmd/app",
 					},
 				},
-				ImageName: "ko://example.com/foo",
+				ConcurrentBuilds:     1,
+				DisableOptimizations: true,
+				Labels:               []string{"foo=bar", "frob=baz"},
+				Platform:             "linux/amd64,linux/arm64",
+				Trimpath:             false,
+				UserAgent:            version.UserAgentWithClient(),
+				WorkingDirectory:     "workdir" + string(filepath.Separator) + "gomoddir",
 			},
-			wantWorkingDirectory: "my-go-mod-is-here",
-			wantImportPath:       "example.com/foo",
 		},
 		{
-			description: "workspace and source dir",
+			description: "compatibility with ko envvar expansion syntax for flags and ldflags",
 			artifact: latestV2.Artifact{
 				ArtifactType: latestV2.ArtifactType{
 					KoArtifact: &latestV2.KoArtifact{
-						Dir: "my-go-mod-is-here",
-					},
-				},
-				ImageName: "ko://example.com/foo",
-				Workspace: "my-app-subdirectory",
-			},
-			wantWorkingDirectory: "my-app-subdirectory" + string(filepath.Separator) + "my-go-mod-is-here",
-			wantImportPath:       "example.com/foo",
-		},
-		{
-			description: "remove trimpath flag and add flags that disable compiler optimizations for debug",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{},
-				},
-				ImageName: "ko://example.com/foo",
-			},
-			runMode:          config.RunModes.Debug,
-			wantDebugOptions: true,
-		},
-		{
-			description: "labels",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
-						Labels: map[string]string{
-							"foo":  "bar",
-							"frob": "baz",
+						Flags: []string{
+							"-v",
+							fmt.Sprintf("-flag-{{.Env.%s}}", testKoBuildOptionsEnvVar),
+						},
+						Ldflags: []string{
+							"-s",
+							fmt.Sprintf("-ldflag-{{.Env.%s}}", testKoBuildOptionsEnvVar),
 						},
 					},
 				},
 				ImageName: "ko://example.com/foo",
 			},
-			wantLabels: []string{"foo=bar", "frob=baz"},
+			envVarValue: "xyzzy",
+			wantBo: options.BuildOptions{
+				BuildConfigs: map[string]build.Config{
+					"example.com/foo": {
+						ID:      "ko://example.com/foo",
+						Dir:     ".",
+						Flags:   build.FlagArray{"-v", "-flag-xyzzy"},
+						Ldflags: build.StringArray{"-s", "-ldflag-xyzzy"},
+					},
+				},
+				ConcurrentBuilds: 1,
+				Trimpath:         true,
+				UserAgent:        version.UserAgentWithClient(),
+			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			bo, err := buildOptions(&test.artifact, test.runMode)
+			os.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
+			gotBo, err := buildOptions(&test.artifact, test.runMode)
+			defer os.Unsetenv(testKoBuildOptionsEnvVar)
 			t.CheckErrorAndFailNow(false, err)
-			t.CheckDeepEqual(test.artifact.KoArtifact.BaseImage, bo.BaseImage)
-			if bo.ConcurrentBuilds < 1 {
-				t.Errorf("ConcurrentBuilds must always be >= 1 for the ko builder")
-			}
-			t.CheckDeepEqual(test.wantPlatform, bo.Platform)
-			t.CheckDeepEqual(version.UserAgentWithClient(), bo.UserAgent)
-			t.CheckDeepEqual(test.wantWorkingDirectory, bo.WorkingDirectory)
-			t.CheckDeepEqual(test.wantDebugOptions, bo.DisableOptimizations)
-			t.CheckDeepEqual(test.wantDebugOptions, !bo.Trimpath)
-			t.CheckDeepEqual(test.wantLabels, bo.Labels,
+			t.CheckDeepEqual(test.wantBo, *gotBo,
+				cmpopts.EquateEmpty(),
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }),
-				cmpopts.EquateEmpty())
-			if test.wantImportPath != "" && len(bo.BuildConfigs) != 1 {
-				t.Fatalf("expected exactly one build config, got %d", len(bo.BuildConfigs))
-			}
-			for importpath := range bo.BuildConfigs {
-				t.CheckDeepEqual(test.wantImportPath, importpath)
-			}
+			)
 		})
 	}
 }

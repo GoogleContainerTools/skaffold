@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
@@ -31,26 +34,29 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
-func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, runCtx *v2.RunContext) *Builder {
+func NewBuilder(builder build.Builder, tagger tag.Tagger, platforms platform.Resolver, cache cache.Cache, runCtx *v2.RunContext) *Builder {
 	return &Builder{
-		Builder: builder,
-		tagger:  tagger,
-		cache:   cache,
-		runCtx:  runCtx,
+		Builder:   builder,
+		tagger:    tagger,
+		platforms: platforms,
+		cache:     cache,
+		runCtx:    runCtx,
 	}
 }
 
 type Builder struct {
-	Builder build.Builder
-	tagger  tag.Tagger
-	cache   cache.Cache
-	Builds  []graph.Artifact
+	Builder   build.Builder
+	tagger    tag.Tagger
+	platforms platform.Resolver
+	cache     cache.Cache
+	Builds    []graph.Artifact
 
 	hasBuilt bool
 	runCtx   *v2.RunContext
@@ -96,14 +102,16 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV
 	default:
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, r.platforms, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV2.Artifact, platforms platform.Resolver) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
 
 		r.hasBuilt = true
-
-		bRes, err := r.Builder.Build(ctx, out, tags, artifacts)
+		if err != nil {
+			return nil, err
+		}
+		bRes, err := r.Builder.Build(ctx, out, tags, platforms, artifacts)
 		if err != nil {
 			return nil, err
 		}
@@ -152,15 +160,23 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 // imageTags generates tags for a list of artifacts
 func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latestV2.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
+	maxWorkers := runtime.GOMAXPROCS(0)
 	output.Default.Fprintln(out, "Generating tags...")
 
 	tagErrs := make([]chan tagErr, len(artifacts))
 
+	// Use a weighted semaphore as a counting semaphore to limit the number of simultaneous taggers.
+	sem := semaphore.NewWeighted(int64(maxWorkers))
 	for i := range artifacts {
 		tagErrs[i] = make(chan tagErr, 1)
 
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+
 		i := i
 		go func() {
+			defer sem.Release(1)
 			_tag, err := tag.GenerateFullyQualifiedImageName(ctx, r.tagger, *artifacts[i])
 			tagErrs[i] <- tagErr{tag: _tag, err: err}
 		}()

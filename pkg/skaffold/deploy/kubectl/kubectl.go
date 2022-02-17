@@ -74,6 +74,7 @@ type Deployer struct {
 	globalConfig       string
 	gcsManifestDir     string
 	defaultRepo        *string
+	multiLevelRepo     *bool
 	kubectl            CLI
 	insecureRegistries map[string]bool
 	labeller           *label.DefaultLabeller
@@ -116,6 +117,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.Kubect
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
+		multiLevelRepo:     cfg.MultiLevelRepo(),
 		kubectl:            kubectl,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),

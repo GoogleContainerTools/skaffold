@@ -16,6 +16,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 List of fields that support templating:
 
 * `build.artifacts.[].docker.buildArgs` (see [builders]({{< relref "/docs/pipeline-stages/builders" >}}))
+* `build.artifacts.[].ko.{env,flags,labels,ldflags}` (see [`ko` builder]({{< relref "/docs/pipeline-stages/builders/ko" >}}))
 * `build.tagPolicy.envTemplate.template` (see [envTemplate tagger]({{< relref "/docs/pipeline-stages/taggers#envtemplate-using-values-of-environment-variables-as-tags)" >}}))
 * `deploy.helm.releases.setValueTemplates` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
 * `deploy.helm.releases.name` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
@@ -23,6 +24,7 @@ List of fields that support templating:
 * `deploy.helm.releases.version` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
 * `deploy.kubectl.defaultNamespace`
 * `deploy.kustomize.defaultNamespace`
+* `deploy.kustomize.paths.[]`
 * `portForward.namespace`
 * `portForward.resourceName`
 

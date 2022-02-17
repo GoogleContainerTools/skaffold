@@ -206,6 +206,7 @@ Options:
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
+      --platform=[]: The platform to target for the build artifacts
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
@@ -247,6 +248,7 @@ Env vars:
 * `SKAFFOLD_MUTE_LOGS` (same as `--mute-logs`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
+* `SKAFFOLD_PLATFORM` (same as `--platform`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
@@ -332,6 +334,9 @@ Examples:
   # Globally set the default image repository
   skaffold config set default-repo <myrepo>
 
+  # Globally set multi-level repo support
+  skaffold config set multi-level-repo true
+
   # Disable pushing images for a given Kubernetes context
   skaffold config set --kube-context <mycluster> local-cluster true
 
@@ -415,6 +420,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
+      --platform=[]: The platform to target for the build artifacts
       --port-forward=user,debug: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -471,6 +477,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
+* `SKAFFOLD_PLATFORM` (same as `--platform`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
@@ -585,6 +592,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
+      --platform=[]: The platform to target for the build artifacts
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -630,6 +638,7 @@ Env vars:
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_MUTE_LOGS` (same as `--mute-logs`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PLATFORM` (same as `--platform`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
@@ -682,6 +691,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
+      --platform=[]: The platform to target for the build artifacts
       --port-forward=user: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -738,6 +748,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
+* `SKAFFOLD_PLATFORM` (same as `--platform`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
@@ -1017,6 +1028,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
+      --platform=[]: The platform to target for the build artifacts
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -1068,6 +1080,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
+* `SKAFFOLD_PLATFORM` (same as `--platform`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
