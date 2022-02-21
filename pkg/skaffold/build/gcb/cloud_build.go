@@ -152,7 +152,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		})
 	}
 
-	buildSpec, err := b.buildSpec(ctx, artifact, tag, cbBucket, buildObject)
+	buildSpec, err := b.buildSpec(ctx, artifact, tag, platform, cbBucket, buildObject)
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR,
