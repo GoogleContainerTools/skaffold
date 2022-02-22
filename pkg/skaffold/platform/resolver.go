@@ -63,7 +63,7 @@ func NewResolver(ctx context.Context, pipelines []latestV1.Pipeline, cliPlatform
 		fromClusterNodes, err = getClusterPlatforms(ctx, kubeContext, runMode == config.RunModes.Dev || runMode == config.RunModes.Debug)
 		if err != nil {
 			log.Entry(ctx).Debugf("failed to get cluster node details: %v", err)
-			log.Entry(ctx).Warnln("failed to detect active kubernetes cluter node platform. Specify the correct build platform in the `skaffold.yaml` file or using the `--platform` flag")
+			log.Entry(ctx).Warnln("failed to detect active kubernetes cluster node platform. Specify the correct build platform in the `skaffold.yaml` file or using the `--platform` flag")
 		}
 	}
 	log.Entry(ctx).Debugf("platforms detected from active kubernetes cluster nodes: %q", fromClusterNodes)
