@@ -78,7 +78,7 @@ func TestIsMultiOrCrossPlatform(t *testing.T) {
 		},
 		{
 			description:     "single platform target",
-			m:               Matcher{Platforms: []v1.Platform{{Architecture: "arm64"}}},
+			m:               Matcher{Platforms: []v1.Platform{{Architecture: "arm", OS: "freebsd"}}},
 			isMultiPlatform: false,
 			isCrossPlatform: true,
 		},
