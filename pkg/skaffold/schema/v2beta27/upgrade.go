@@ -34,5 +34,18 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	// move: artifact.ko.Platforms
+	//   to: artifact.Platforms
+	for i, newArtifact := range newBuild.Artifacts {
+		oldArtifact := oldBuild.Artifacts[i]
+		if oldArtifact.KoArtifact == nil || len(oldArtifact.KoArtifact.Platforms) == 0 {
+			continue
+		}
+		newArtifact.Platforms = oldArtifact.KoArtifact.Platforms
+	}
+
 	return nil
 }
