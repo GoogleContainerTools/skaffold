@@ -27,20 +27,21 @@ import (
 	"github.com/google/ko/pkg/commands/options"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact) (build.Interface, error) {
-	bo, err := buildOptions(a, b.runMode)
+func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact, platforms platform.Matcher) (build.Interface, error) {
+	bo, err := buildOptions(a, b.runMode, platforms)
 	if err != nil {
 		return nil, fmt.Errorf("could not construct ko build options: %v", err)
 	}
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(a *latestV1.Artifact, runMode config.RunMode) (*options.BuildOptions, error) {
+func buildOptions(a *latestV1.Artifact, runMode config.RunMode, platforms platform.Matcher) (*options.BuildOptions, error) {
 	buildconfig, err := buildConfig(a)
 	if err != nil {
 		return nil, fmt.Errorf("could not create ko build config: %v", err)
@@ -55,7 +56,7 @@ func buildOptions(a *latestV1.Artifact, runMode config.RunMode) (*options.BuildO
 		ConcurrentBuilds:     1, // we could plug in Skaffold's max builds here, but it'd be incorrect if users build more than one artifact
 		DisableOptimizations: runMode == config.RunModes.Debug,
 		Labels:               imageLabels,
-		Platform:             strings.Join(a.KoArtifact.Platforms, ","),
+		Platform:             platforms.String(),
 		Trimpath:             runMode != config.RunModes.Debug,
 		UserAgent:            version.UserAgentWithClient(),
 		WorkingDirectory:     filepath.Join(a.Workspace, a.KoArtifact.Dir),

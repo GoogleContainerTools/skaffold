@@ -76,14 +76,8 @@ a shell, you can use this configuration:
 
 The ko builder supports building multi-platform images. The default platform
 is `linux/amd64`, but you can configure a list of platforms using the
-`platforms` configuration field, e.g.:
-
-```yaml
-    ko:
-      platforms:
-      - linux/amd64
-      - linux/arm64
-```
+artifact's `platforms` configuration field, e.g.:
+{{% readfile file="samples/builders/ko-platforms.yaml" %}}
 
 You can also supply `["all"]` as the value of `platforms`. `all` means that the
 ko builder builds images for all platforms supported by the base image.

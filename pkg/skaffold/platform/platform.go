@@ -89,6 +89,9 @@ func (m Matcher) Intersect(other Matcher) Matcher {
 func Parse(ps []string) (Matcher, error) {
 	var sl []specs.Platform
 	for _, p := range ps {
+		if strings.ToLower(p) == "all" {
+			return All, nil
+		}
 		platform, err := platforms.Parse(p)
 		if err != nil {
 			return Matcher{}, UnknownPlatformCLIFlag(p, err)

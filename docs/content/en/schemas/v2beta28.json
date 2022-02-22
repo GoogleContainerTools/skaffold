@@ -2714,15 +2714,6 @@
           "type": "string",
           "description": "location of the main package. It is the pattern passed to `go build`. If main is specified as a relative path, it is relative to the `context` directory. If main is empty, the ko builder uses a default value of `.`. If main is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails. Main is ignored if the `ImageName` starts with `ko://`. Example: `./cmd/foo`.",
           "x-intellij-html-description": "location of the main package. It is the pattern passed to <code>go build</code>. If main is specified as a relative path, it is relative to the <code>context</code> directory. If main is empty, the ko builder uses a default value of <code>.</code>. If main is a pattern with wildcards, such as <code>./...</code>, the expansion must contain only one main package, otherwise ko fails. Main is ignored if the <code>ImageName</code> starts with <code>ko://</code>. Example: <code>./cmd/foo</code>."
-        },
-        "platforms": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "list of platforms to build images for. Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`. Use `[\"all\"]` to build for all platforms supported by the base image. If empty, the builder uses the ko default (`[\"linux/amd64\"]`). Example: `[\"linux/amd64\", \"linux/arm64\"]`.",
-          "x-intellij-html-description": "list of platforms to build images for. Each platform is of the format <code>os[/arch[/variant]]</code>, e.g., <code>linux/amd64</code>. Use <code>[&quot;all&quot;]</code> to build for all platforms supported by the base image. If empty, the builder uses the ko default (<code>[&quot;linux/amd64&quot;]</code>). Example: <code>[&quot;linux/amd64&quot;, &quot;linux/arm64&quot;]</code>.",
-          "default": "[]"
         }
       },
       "preferredOrder": [
@@ -2733,8 +2724,7 @@
         "flags",
         "labels",
         "ldflags",
-        "main",
-        "platforms"
+        "main"
       ],
       "additionalProperties": false,
       "type": "object",

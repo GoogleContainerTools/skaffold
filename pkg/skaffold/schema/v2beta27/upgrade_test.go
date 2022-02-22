@@ -51,7 +51,8 @@ build:
     sync:
       auto: true
   - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
-    ko: {}
+    ko:
+      platforms: ['linux/arm64', 'linux/amd64']
   googleCloudBuild:
     projectId: test-project
 test:
@@ -133,6 +134,7 @@ build:
       auto: true
   - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
     ko: {}
+    platforms: ['linux/arm64', 'linux/amd64']
   googleCloudBuild:
     projectId: test-project
 test:

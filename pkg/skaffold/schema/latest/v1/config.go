@@ -1403,13 +1403,6 @@ type KoArtifact struct {
 	// Main is ignored if the `ImageName` starts with `ko://`.
 	// Example: `./cmd/foo`.
 	Main string `yaml:"main,omitempty"`
-
-	// Platforms is the list of platforms to build images for.
-	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
-	// Use `["all"]` to build for all platforms supported by the base image.
-	// If empty, the builder uses the ko default (`["linux/amd64"]`).
-	// Example: `["linux/amd64", "linux/arm64"]`.
-	Platforms []string `yaml:"platforms,omitempty"`
 }
 
 // KoDependencies is used to specify dependencies for an artifact built by ko.
