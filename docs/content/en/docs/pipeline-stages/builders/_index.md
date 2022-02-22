@@ -184,8 +184,8 @@ The final list of target platforms need to ultimately be supported by the target
 
 |    | Local Build | In Cluster Build | Remote on Google Cloud Build |
 |----|:-----------:|:----------------:|:----------------------------:|
-| **Dockerfile** | Cross platform supported | Cross platform supported but platform should match cluster node running the pod. Not yet implemented | Can support. Not yet implemented |
-| **Jib Maven and Gradle** | Cross platform supported | - | Can support. Not yet implemented |
+| **Dockerfile** | Cross platform supported | Cross platform supported but platform should match cluster node running the pod. Not yet implemented | Cross platform supported |
+| **Jib Maven and Gradle** | Cross platform supported | - | Cross platform supported |
 | **Cloud Native Buildpacks** | Only supports `linux/amd64` | - | Only supports `linux/amd64` |
 | **Bazel** | Cross platform supported but requires explicit platform specific rules. Not yet implemented | - | - |
 | **ko** | Cross platform supported | - | - |
