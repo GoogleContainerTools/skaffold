@@ -77,7 +77,6 @@ func New(config *latestV2.RenderConfig, workingDir, hydrationDir string,
 }
 
 func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, output string) error {
-
 	kptfilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	kfConfig := &kptfile.KptFile{}
 
