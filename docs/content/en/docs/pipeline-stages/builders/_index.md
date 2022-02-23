@@ -184,13 +184,13 @@ The final list of target platforms need to ultimately be supported by the target
 
 |    | Local Build | In Cluster Build | Remote on Google Cloud Build |
 |----|:-----------:|:----------------:|:----------------------------:|
-| **Dockerfile** | Cross platform supported | Cross platform supported but platform should match cluster node running the pod. Not yet implemented | Cross platform supported |
+| **Dockerfile** | Cross platform supported | Cross platform supported but platform should match cluster node running the pod. | Cross platform supported |
 | **Jib Maven and Gradle** | Cross platform supported | - | Cross platform supported |
 | **Cloud Native Buildpacks** | Only supports `linux/amd64` | - | Only supports `linux/amd64` |
 | **Bazel** | Cross platform supported but requires explicit platform specific rules. Not yet implemented | - | - |
 | **ko** | Cross platform supported | - | - |
-| **Custom Script** | Cross platform supported but requires user to implement it in the build script | Can support. Not yet implemented | - |
+| **Custom Script** | Cross platform supported but requires user to implement it in the build script | Cross platform supported but requires user to implement it in the build script | - |
 
 {{< alert title="Note" >}}
-Multi-arch image build is not yet supported for any builders other than the [jib builder]({{<relref "/docs/pipeline-stages/builders/jib" >}}) and [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}) in Skaffold 
+Multi-arch image build is not yet supported for any builders other than the [jib builder]({{<relref "/docs/pipeline-stages/builders/jib" >}}), the [ko builder]({{<relref "/docs/pipeline-stages/builders/ko">}}) and the [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}) in Skaffold. 
 {{< /alert >}}
