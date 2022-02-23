@@ -402,6 +402,14 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 			args = append(args, "--version", r.Version)
 		}
 
+		namespace, err := h.releaseNamespace(r)
+		if err != nil {
+			return err
+		}
+		if namespace != "" {
+			args = append(args, "--namespace", namespace)
+		}
+
 		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 		if err != nil {
 			return err
