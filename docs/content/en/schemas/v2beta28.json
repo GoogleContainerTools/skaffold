@@ -1526,8 +1526,8 @@
         },
         "noCache": {
           "type": "boolean",
-          "description": "used to pass in --no-cache to docker build to prevent caching.",
-          "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
+          "description": "set to true to pass in --no-cache to docker build, which will prevent caching.",
+          "x-intellij-html-description": "set to true to pass in --no-cache to docker build, which will prevent caching.",
           "default": "false"
         },
         "pullParent": {

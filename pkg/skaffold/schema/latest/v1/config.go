@@ -1327,7 +1327,7 @@ type DockerArtifact struct {
 	// PullParent is used to attempt pulling the parent image even if an older image exists locally.
 	PullParent bool `yaml:"pullParent,omitempty"`
 
-	// NoCache used to pass in --no-cache to docker build to prevent caching.
+	// NoCache set to true to pass in --no-cache to docker build, which will prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 
 	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
