@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package renderer
+package kpt
 
 import (
 	"bytes"
@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
+	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -168,7 +169,7 @@ pipeline:
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Touch("empty.ignored").
 				Chdir()
-			r, err := NewSkaffoldRenderer(test.renderConfig, tmpDirObj.Root(),
+			r, err := New(test.renderConfig, tmpDirObj.Root(),
 				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
@@ -178,7 +179,7 @@ pipeline:
 			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true, "")
 			t.CheckNoError(err)
-			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, rUtil.DryFileName), []byte(labeledPodYaml))
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
 		})
 	}
@@ -231,7 +232,7 @@ inventory:
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Chdir()
-			r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
+			r, err := New(&latestV2.RenderConfig{
 				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, tmpDirObj.Root(),
 				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
