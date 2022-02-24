@@ -99,6 +99,41 @@ func TestIsMultiOrCrossPlatform(t *testing.T) {
 	}
 }
 
+func TestArray(t *testing.T) {
+	tests := []struct {
+		description string
+		m           Matcher
+		expected    []string
+	}{
+		{
+			description: "all matcher",
+			m:           Matcher{All: true},
+			expected:    []string{"all"},
+		}, {
+			description: "multiple platform targets",
+			m: Matcher{Platforms: []v1.Platform{
+				{OS: "linux", Architecture: "amd64"},
+				{OS: "linux", Architecture: "arm64"},
+			}},
+			expected: []string{"linux/amd64", "linux/arm64"},
+		},
+		{
+			description: "single platform target",
+			m:           Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}}},
+			expected:    []string{"linux/arm64"},
+		},
+		{
+			description: "no platform target",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, test.m.Array())
+		})
+	}
+}
+
 func TestString(t *testing.T) {
 	tests := []struct {
 		description string
