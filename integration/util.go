@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
@@ -115,7 +115,8 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 		t.Fatalf("creating namespace: %s", err)
 	}
 
-	logrus.Infoln("Namespace:", ns.Name)
+	ctx := context.Background()
+	log.Entry(ctx).Infoln("Namespace:", ns.Name)
 
 	nsClient := &NSKubernetesClient{
 		t:      t,
@@ -124,7 +125,7 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 	}
 
 	t.Cleanup(func() {
-		client.CoreV1().Namespaces().Delete(context.Background(), ns.Name, metav1.DeleteOptions{})
+		client.CoreV1().Namespaces().Delete(ctx, ns.Name, metav1.DeleteOptions{})
 	})
 
 	return ns, nsClient
@@ -197,7 +198,7 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 		return false
 	}
 	result := k.waitForPods(f, podNames...)
-	logrus.Infof("Pods marked as ready: %v", result)
+	log.Entry(context.Background()).Infof("Pods marked as ready: %v", result)
 }
 
 // WaitForPodsInPhase waits for a list of pods to reach the given phase.
@@ -206,7 +207,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 		return pod.Status.Phase == expectedPhase
 	}
 	result := k.waitForPods(f, podNames...)
-	logrus.Infof("Pods in phase %q: %v", expectedPhase, result)
+	log.Entry(context.Background()).Infof("Pods in phase %q: %v", expectedPhase, result)
 }
 
 // waitForPods waits for a list of pods to become ready.
@@ -223,9 +224,9 @@ func (k *NSKubernetesClient) waitForPods(podReady func(*v1.Pod) bool, podNames .
 
 	waitForAllPods := len(podNames) == 0
 	if waitForAllPods {
-		logrus.Infof("Waiting for all pods in namespace %q to be ready", k.ns)
+		log.Entry(ctx).Infof("Waiting for all pods in namespace %q to be ready", k.ns)
 	} else {
-		logrus.Infoln("Waiting for pods", podNames, "to be ready")
+		log.Entry(ctx).Infoln("Waiting for pods", podNames, "to be ready")
 	}
 
 	podsReady = map[string]bool{}
@@ -264,11 +265,11 @@ func (k *NSKubernetesClient) waitForPods(podReady func(*v1.Pod) bool, podNames .
 				}
 			}
 			if len(waiting) > 0 {
-				logrus.Infof("Still waiting for pods %v", waiting)
+				log.Entry(ctx).Infof("Still waiting for pods %v", waiting)
 				break waitLoop
 			} else if l := len(w.ResultChan()); l > 0 {
 				// carry on when there are pending messages in case a new pod has been created
-				logrus.Infof("%d pending pod update messages", l)
+				log.Entry(ctx).Infof("%d pending pod update messages", l)
 				break waitLoop
 			}
 			return
@@ -312,10 +313,10 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 		return
 	}
 
-	logrus.Infoln("Waiting for deployments", depNames, "to stabilize")
-
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), timeout)
 	defer cancelTimeout()
+
+	log.Entry(ctx).Infoln("Waiting for deployments", depNames, "to stabilize")
 
 	w, err := k.Deployments().Watch(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -338,7 +339,7 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 		case event := <-w.ResultChan():
 			dp := event.Object.(*appsv1.Deployment)
 			desiredReplicas := *(dp.Spec.Replicas)
-			logrus.Infof("Deployment %s: Generation %d/%d, Replicas %d/%d, Available %d/%d",
+			log.Entry(ctx).Infof("Deployment %s: Generation %d/%d, Replicas %d/%d, Available %d/%d",
 				dp.Name,
 				dp.Status.ObservedGeneration, dp.Generation,
 				dp.Status.Replicas, desiredReplicas,
@@ -352,7 +353,7 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 				}
 			}
 
-			logrus.Infoln("Deployments", depNames, "are stable")
+			log.Entry(ctx).Infoln("Deployments", depNames, "are stable")
 			return
 		}
 	}
@@ -361,14 +362,14 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 // debug is used to print all the details about pods or deployments
 func (k *NSKubernetesClient) debug(entities string) {
 	cmd := exec.Command("kubectl", "-n", k.ns, "get", entities, "-oyaml")
-	logrus.Warnln(cmd.Args)
+	log.Entry(context.Background()).Warnln(cmd.Args)
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out)) // Use fmt.Println, not logrus, for prettier output
 }
 
 func (k *NSKubernetesClient) printDiskFreeSpace() {
 	cmd := exec.Command("df", "-h")
-	logrus.Warnln(cmd.Args)
+	log.Entry(context.Background()).Warnln(cmd.Args)
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
 }
@@ -377,7 +378,7 @@ func (k *NSKubernetesClient) printDiskFreeSpace() {
 func (k *NSKubernetesClient) logs(entity string, names []string) {
 	for _, n := range names {
 		cmd := exec.Command("kubectl", "-n", k.ns, "logs", entity+"/"+n)
-		logrus.Warnln(cmd.Args)
+		log.Entry(context.Background()).Warnln(cmd.Args)
 		out, _ := cmd.CombinedOutput()
 		fmt.Println(string(out)) // Use fmt.Println, not logrus, for prettier output
 	}

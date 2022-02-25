@@ -72,6 +72,6 @@ func TestGetAvailablePort(t *testing.T) {
 	wg.Wait()
 
 	for port, err := range errors {
-		t.Errorf("available port (%d) couldn't be used: %w", port, err)
+		t.Errorf("available port (%d) couldn't be used: %v", port, err)
 	}
 }

@@ -20,15 +20,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPartitions(t *testing.T) {
-	level := logrus.GetLevel()
-	defer logrus.SetLevel(level)
-	logrus.SetLevel(logrus.TraceLevel)
+	level := log.GetLevel()
+	defer log.SetLevel(level)
+	log.SetLevel(log.TraceLevel)
 	partitions, lastPartition := Partitions()
 	testutil.CheckDeepEqual(t, len(partitions), len(timings))
 	var bins []bin
