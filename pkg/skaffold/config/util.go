@@ -257,10 +257,6 @@ func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
 
 	var defaultRepo = opts.DefaultRepo
 
-	if defaultRepo.Value() != nil && cfg.DefaultRepo != "" {
-		defaultRepo = NewStringOrUndefined(&cfg.DefaultRepo)
-	}
-
 	if local && defaultRepo.Value() == nil {
 		registry, err := DiscoverLocalRegistry(ctx, kubeContext)
 		switch {
