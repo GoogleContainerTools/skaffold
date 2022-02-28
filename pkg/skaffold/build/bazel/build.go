@@ -38,7 +38,7 @@ import (
 func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, matcher platform.Matcher) (string, error) {
 	// TODO: Implement building multi-platform images
 	if matcher.IsMultiPlatform() {
-		log.Entry(ctx).Println("skaffold doesn't yet support multi platform builds for the bazel builder")
+		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the bazel builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", matcher.String(), artifact.ImageName)
 	}
 
 	a := artifact.ArtifactType.BazelArtifact
