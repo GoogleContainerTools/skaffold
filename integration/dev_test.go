@@ -28,7 +28,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
@@ -111,10 +113,14 @@ func TestDevGracefulCancel(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ns, client := SetupNamespace(t)
-			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
-			client.WaitForPodsReady(test.pods...)
-			client.WaitForDeploymentsToStabilize(test.deployments...)
+			ns, _ := SetupNamespace(t)
+			rpcPort := randomPort()
+			p, err := skaffold.Dev("--rpc-port", rpcPort).InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
+			if err != nil {
+				t.Logf("unexpected error %v", err)
+				t.Fail()
+			}
+			waitForDevLoopComplete(t, rpcPort)
 
 			defer func() {
 				state, _ := p.Wait()
@@ -445,4 +451,61 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 
 	yaml, err := clientcmd.Write(*kubeConfig)
 	return yaml, contextName, err
+}
+
+func waitForDevLoopComplete(t *testing.T, rpcPort string) {
+	// start a grpc client and make sure we can connect properly
+	var (
+		conn   *grpc.ClientConn
+		err    error
+		client proto.SkaffoldServiceClient
+	)
+
+	// connect to the skaffold grpc server
+	for i := 0; i < connectionRetries; i++ {
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", rpcPort), grpc.WithInsecure())
+		if err != nil {
+			t.Logf("unable to establish skaffold grpc connection: retrying...")
+			time.Sleep(waitTime)
+			continue
+		}
+		defer conn.Close()
+
+		client = proto.NewSkaffoldServiceClient(conn)
+		break
+	}
+
+	if client == nil {
+		t.Fatalf("error establishing skaffold grpc connection")
+	}
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
+
+	// read the event log stream from the skaffold grpc server
+	var stream proto.SkaffoldService_EventsClient
+	for i := 0; i < readRetries; i++ {
+		stream, err = client.Events(ctx, &empty.Empty{})
+		if err != nil {
+			t.Logf("waiting for connection...")
+			time.Sleep(waitTime)
+			continue
+		}
+	}
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+	for {
+		entry, err := stream.Recv()
+		if err != nil {
+			t.Errorf("error receiving entry from stream: %s", err)
+		}
+
+		switch entry.Event.GetEventType().(type) {
+		case *proto.Event_DevLoopEvent:
+			if entry.Event.GetDevLoopEvent().Status != "In Progress" {
+				return
+			}
+		}
+	}
 }

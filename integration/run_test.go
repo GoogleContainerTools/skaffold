@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -159,13 +160,12 @@ func TestRun(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ns, client := SetupNamespace(t)
-
-			args := append(test.args, "--cache-artifacts=false")
+			ns, _ := SetupNamespace(t)
+			rpcPort := randomPort()
+			args := append(test.args, "--cache-artifacts=false", fmt.Sprintf("--rpc-port=%s", rpcPort))
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
-			client.WaitForPodsReady(test.pods...)
-			client.WaitForDeploymentsToStabilize(test.deployments...)
+			waitForDevLoopComplete(t, rpcPort)
 
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
@@ -311,12 +311,13 @@ func TestRunGCPOnly(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ns, client := SetupNamespace(t)
+			ns, _ := SetupNamespace(t)
 
-			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+			rpcPort := randomPort()
+			args := append(test.args, fmt.Sprintf("--rpc-port=%s", rpcPort))
+			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
-			client.WaitForPodsReady(test.pods...)
-			client.WaitForDeploymentsToStabilize(test.deployments...)
+			waitForDevLoopComplete(t, rpcPort)
 
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 		})
@@ -436,10 +437,12 @@ func TestRunTest(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			defer os.Remove(test.testFile)
 
-			ns, client := SetupNamespace(t)
-			skaffold.Run(test.args...).InDir(test.testDir).InNs(ns.Name).RunLive(t)
+			ns, _ := SetupNamespace(t)
+			rpcPort := randomPort()
+			args := append(test.args, fmt.Sprintf("--rpc-port=%s", rpcPort))
+			skaffold.Run(args...).InDir(test.testDir).InNs(ns.Name).RunLive(t)
 
-			client.WaitForPodsReady("custom-test-example")
+			waitForDevLoopComplete(t, rpcPort)
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				_, e := os.Stat(test.testFile)

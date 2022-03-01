@@ -211,7 +211,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 
 // waitForPods waits for a list of pods to become ready.
 func (k *NSKubernetesClient) waitForPods(podReady func(*v1.Pod) bool, podNames ...string) (podsReady map[string]bool) {
-	ctx, cancelTimeout := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
 	pods := k.Pods()
