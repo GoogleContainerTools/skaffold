@@ -121,6 +121,8 @@ func TestDockerDebug(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	t.Run("debug docker deployment", func(t *testing.T) {
+		skaffold.Build("-p", "docker").InDir("testdata/debug").RunOrFail(t)
+		
 		skaffold.Debug("-p", "docker").InDir("testdata/debug").RunBackground(t)
 		defer skaffold.Delete("-p", "docker").InDir("testdata/debug").RunBackground(t)
 
@@ -223,7 +225,7 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	
+
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
