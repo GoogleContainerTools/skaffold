@@ -122,7 +122,7 @@ func TestDockerDebug(t *testing.T) {
 
 	t.Run("debug docker deployment", func(t *testing.T) {
 		skaffold.Build("-p", "docker").InDir("testdata/debug").RunOrFail(t)
-		
+
 		skaffold.Debug("-p", "docker").InDir("testdata/debug").RunBackground(t)
 		defer skaffold.Delete("-p", "docker").InDir("testdata/debug").RunBackground(t)
 
