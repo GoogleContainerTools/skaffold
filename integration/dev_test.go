@@ -260,7 +260,6 @@ func TestDevPortForward(t *testing.T) {
 		{dir: "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-
 		ns, _ := SetupNamespace(t)
 
 		rpcAddr := randomPort()
@@ -496,16 +495,12 @@ func waitForDevLoopComplete(t *testing.T, rpcPort string) {
 		t.Fatalf("error retrieving event log: %v\n", err)
 	}
 	for {
-		entry, err := stream.Recv()
-		if err != nil {
+		entry, errS := stream.Recv()
+		if errS != nil {
 			t.Errorf("error receiving entry from stream: %s", err)
 		}
-
-		switch entry.Event.GetEventType().(type) {
-		case *proto.Event_DevLoopEvent:
-			if entry.Event.GetDevLoopEvent().Status != "In Progress" {
-				return
-			}
+		if e := entry.Event.GetDevLoopEvent(); e != nil && e.Status != "In Progress" {
+			return
 		}
 	}
 }

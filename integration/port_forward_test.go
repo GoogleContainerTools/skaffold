@@ -133,7 +133,6 @@ func TestDevPortForwardDeletePod(t *testing.T) {
 		{dir: "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-
 		ns, _ := SetupNamespace(t)
 
 		rpcAddr := randomPort()
