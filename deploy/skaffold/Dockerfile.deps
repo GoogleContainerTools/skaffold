@@ -30,7 +30,7 @@ RUN chmod +x kubectl
 FROM alpine:3.10 as download-helm
 ARG ARCH
 RUN echo arch=$ARCH
-ENV HELM_VERSION v3.7.1
+ENV HELM_VERSION v3.8.0
 ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
 COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
 RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
