@@ -461,7 +461,7 @@ func waitForDevLoopComplete(t *testing.T, rpcPort string) {
 		if errS != nil {
 			t.Errorf("error receiving entry from stream: %s", err)
 		}
-		if e := entry.Event.GetDevLoopEvent(); e != nil && e.Status != "In Progress" {
+		if e := entry.GetEvent(); e != nil && e.GetDevLoopEvent() != nil && e.GetDevLoopEvent().Status != "In Progress" {
 			return
 		}
 	}
