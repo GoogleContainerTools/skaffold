@@ -436,9 +436,6 @@ func TestRunTest(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			defer os.Remove(test.testFile)
 
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir(test.testDir).RunOrFail(t)
-
 			ns, client := SetupNamespace(t)
 			skaffold.Run(test.args...).InDir(test.testDir).InNs(ns.Name).RunLive(t)
 

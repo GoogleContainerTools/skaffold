@@ -59,9 +59,6 @@ func TestDevSync(t *testing.T) {
 
 	for _, test := range syncTests {
 		t.Run(test.description, func(t *testing.T) {
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
-
 			ns, client := SetupNamespace(t)
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).InNs(ns.Name).RunBackground(t)
@@ -85,9 +82,6 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 
 	for _, test := range syncTests {
 		t.Run(test.description, func(t *testing.T) {
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
-
 			_, client := DefaultNamespace(t)
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).RunBackground(t)
@@ -130,9 +124,6 @@ func TestDevAutoSync(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().WithConfig(test.configFile).InDir(dir).RunOrFail(t)
-
 			ns, client := SetupNamespace(t)
 
 			output := skaffold.Dev("--trigger", "notify").WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunLive(t)
@@ -196,9 +187,6 @@ func TestDevSyncAPITrigger(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
-
-	skaffold.Build().InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunOrFail(t)
-
 	rpcAddr := randomPort()
 	skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
 
@@ -227,8 +215,6 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
-
-	skaffold.Build().InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunOrFail(t)
 
 	rpcAddr := randomPort()
 	skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)

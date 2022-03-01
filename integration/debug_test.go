@@ -78,9 +78,6 @@ func TestDebug(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
-
 			ns, client := SetupNamespace(t)
 
 			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
@@ -124,8 +121,6 @@ func TestDockerDebug(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	t.Run("debug docker deployment", func(t *testing.T) {
-		skaffold.Build("-p", "docker").InDir("testdata/debug").RunOrFail(t)
-
 		skaffold.Debug("-p", "docker").InDir("testdata/debug").RunBackground(t)
 		defer skaffold.Delete("-p", "docker").InDir("testdata/debug").RunBackground(t)
 
@@ -218,9 +213,6 @@ func TestFilterWithDebugging(t *testing.T) {
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
-
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
@@ -231,10 +223,7 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
-
+	
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()

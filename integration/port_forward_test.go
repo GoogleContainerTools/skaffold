@@ -133,8 +133,6 @@ func TestDevPortForwardDeletePod(t *testing.T) {
 		{dir: "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-		// pre-build images to avoid tripping the 1-minute timeout in getLocalPortFromPortForwardEvent()
-		skaffold.Build().InDir(test.dir).RunOrFail(t)
 
 		ns, _ := SetupNamespace(t)
 

@@ -61,9 +61,6 @@ func TestDevNotification(t *testing.T) {
 			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 			defer Run(t, "testdata/dev", "rm", "foo")
 
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir("testdata/dev").RunOrFail(t)
-
 			ns, client := SetupNamespace(t)
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
@@ -142,9 +139,6 @@ func TestDevAPITriggers(t *testing.T) {
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
-
 	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
@@ -191,9 +185,6 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
-
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
 	ns, client := SetupNamespace(t)
 
@@ -263,8 +254,6 @@ func TestDevPortForward(t *testing.T) {
 		{dir: "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-		// Run skaffold build first to fail quickly on a build failure
-		skaffold.Build().InDir(test.dir).RunOrFail(t)
 
 		ns, _ := SetupNamespace(t)
 
@@ -290,9 +279,6 @@ func TestDevPortForward(t *testing.T) {
 func TestDevPortForwardDefaultNamespace(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
-
 	rpcAddr := randomPort()
 	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").RunBackground(t)
 
@@ -314,9 +300,6 @@ func TestDevPortForwardDefaultNamespace(t *testing.T) {
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
-
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
 
 	ns, _ := SetupNamespace(t)
 

@@ -40,9 +40,6 @@ func TestCustomTest(t *testing.T) {
 		os.Truncate(testFile, 0)
 	}()
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir(testDir).WithConfig(config).RunOrFail(t)
-
 	ns, client := SetupNamespace(t)
 
 	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunLive(t)

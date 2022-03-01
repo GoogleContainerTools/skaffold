@@ -64,9 +64,6 @@ func TestTestEvents(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build(test.args...).InDir(test.testDir).WithConfig(test.config).RunOrFail(t)
-
 			ns, client := SetupNamespace(t)
 			rpcAddr := randomPort()
 

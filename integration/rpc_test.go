@@ -354,9 +354,6 @@ func retrieveHTTPState(t *testing.T, httpAddr string) *proto.State {
 func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
-
 	// start a skaffold dev loop on an example
 	ns, _ := SetupNamespace(t)
 
