@@ -41,7 +41,7 @@ const initContainer = "kaniko-init-container"
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latestV1.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
 	// TODO: Implement building multi-platform images for cluster builder
 	if platforms.IsMultiPlatform() {
-		log.Entry(ctx).Warnf("Multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the cluster builder.", platforms.String(), artifactName)
+		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the docker builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", platforms.String(), artifactName)
 	}
 
 	generatedEnvs, err := generateEnvFromImage(tag)
