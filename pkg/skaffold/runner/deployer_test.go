@@ -133,6 +133,59 @@ func TestGetDeployer(tOuter *testing.T) {
 					&kpt.Deployer{},
 				}, false),
 			},
+			{
+				description: "apply does not allow multiple deployers when a helm namespace is set",
+				apply:       true,
+				cfg: latestV1.DeployType{
+					HelmDeploy: &latestV1.HelmDeploy{
+						Releases: []latestV1.HelmRelease{
+							{
+								Namespace: "foo",
+							},
+						},
+					},
+					KubectlDeploy: &latestV1.KubectlDeploy{},
+				},
+				shouldErr: true,
+			},
+			{
+				description: "apply does not allow multiple helm releases with different namespaces set",
+				apply:       true,
+				cfg: latestV1.DeployType{
+					HelmDeploy: &latestV1.HelmDeploy{
+						Releases: []latestV1.HelmRelease{
+							{
+								Namespace: "foo",
+							},
+							{
+								Namespace: "bar",
+							},
+						},
+					},
+				},
+				shouldErr: true,
+			},
+			{
+				description: "apply does allow multiple helm releases with the same namespace set",
+				apply:       true,
+				cfg: latestV1.DeployType{
+					HelmDeploy: &latestV1.HelmDeploy{
+						Releases: []latestV1.HelmRelease{
+							{
+								Namespace: "foo",
+							},
+							{
+								Namespace: "foo",
+							},
+						},
+					},
+				},
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
+				}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{
+					Flags: latestV1.KubectlFlags{},
+				})).(deploy.Deployer),
+			},
 		}
 		for _, test := range tests {
 			testutil.Run(tOuter, test.description, func(t *testutil.T) {
