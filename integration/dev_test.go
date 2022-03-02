@@ -295,7 +295,7 @@ func TestDevPortForwardDefaultNamespace(t *testing.T) {
 
 	rpcAddr := randomPort()
 	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").RunBackground(t)
-
+	defer skaffold.Delete().InDir("examples/microservices").RunBackground(t)
 	_, entries := apiEvents(t, rpcAddr)
 
 	// No namespace was provided to `skaffold dev`, so we assume "default"
