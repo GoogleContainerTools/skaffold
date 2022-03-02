@@ -163,7 +163,7 @@ func TestRun(t *testing.T) {
 			ns, _ := SetupNamespace(t)
 			rpcPort := randomPort()
 			args := append(test.args, "--cache-artifacts=false", fmt.Sprintf("--rpc-port=%s", rpcPort))
-			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunBackground(t)
 
 			waitForDevLoopComplete(t, rpcPort)
 
