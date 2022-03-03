@@ -27,23 +27,23 @@ var (
 	NilSuggestion = proto.Suggestion{SuggestionCode: proto.SuggestionCode_NIL}
 )
 
-func (r ContainerError) Make(errCode proto.StatusCode) proto.Suggestion {
+func (r ContainerError) Make(errCode proto.StatusCode) *proto.Suggestion {
 	switch errCode {
 	case proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED:
-		return proto.Suggestion{
+		return &proto.Suggestion{
 			SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
 			Action:         "Try checking container logs",
 		}
 	case proto.StatusCode_STATUSCHECK_UNHEALTHY:
-		return proto.Suggestion{
+		return &proto.Suggestion{
 			SuggestionCode: proto.SuggestionCode_CHECK_READINESS_PROBE,
 			Action:         "Try checking container config `readinessProbe`",
 		}
 	case proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR:
-		return proto.Suggestion{
+		return &proto.Suggestion{
 			SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_IMAGE,
 			Action:         "Try checking container config `image`",
 		}
 	}
-	return NilSuggestion
+	return &NilSuggestion
 }

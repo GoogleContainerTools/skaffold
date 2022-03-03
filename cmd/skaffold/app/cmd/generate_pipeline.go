@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 var (
@@ -44,7 +44,7 @@ func NewCmdGeneratePipeline() *cobra.Command {
 }
 
 func doGeneratePipeline(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		if err := r.GeneratePipeline(ctx, out, configs, configFiles, "pipeline.yaml"); err != nil {
 			return fmt.Errorf("generating : %w", err)
 		}

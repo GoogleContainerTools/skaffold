@@ -16,9 +16,9 @@ Multiple types of sync are supported by Skaffold:
  + `manual`: The user must specify both the files in their local workspace and the destination in the running container.
    This is supported by every type of artifact.
 
- + `infer`: The destinations for each changed file is inferred from instructions in a Dockerfile.
-   This is supported by docker and kaniko artifacts and also for custom artifacts that declare a
-   dependency on a Dockerfile.
+ + `infer`: The destinations for each changed file is inferred from the builder.
+   The docker and kaniko builders examine instructions in a Dockerfile.
+   This inference is also supported for custom artifacts that **explicitly declare a dependency on a Dockerfile.**
 
 + `auto`: Skaffold automatically configures the sync.  This mode is only supported by Jib and Buildpacks artifacts.
    Auto sync mode is enabled by default for Buildpacks artifacts.
@@ -47,7 +47,8 @@ The following example showcases manual filesync:
 
 ### Inferred sync mode
 
-For docker artifacts, Skaffold knows how to infer the desired destination from the artifact's `Dockerfile`.
+For docker artifacts, Skaffold knows how to infer the desired destination from the artifact's `Dockerfile`
+by examining the `ADD` and `COPY` instructions.
 To enable syncing, you only need to specify which files are eligible for syncing in the sync rules.
 The sync rules for inferred sync mode is just a list of glob patterns.
 The following example showcases this filesync mode:
@@ -76,6 +77,9 @@ And a `skaffold.yaml` with the following sync configuration:
   
 Inferred sync mode only applies to modified and added files.
 File deletion will always cause a complete rebuild.
+
+For multi-stage Dockerfiles, Skaffold only examines the last stage.
+Use manual sync rules to sync file copies from other stages.
 
 ### Auto sync mode
 
@@ -115,7 +119,7 @@ artifacts:
 Skaffold requires special collaboration from buildpacks for the `auto` sync to work.
 
 Cloud Native Buildpacks set a `io.buildpacks.build.metadata` label on the images they create.
-This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/master/buildpack.md#bill-of-materials-toml) of the build.
+This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/main/buildpack.md#bill-of-materials-toml) of the build.
 In the BOM, under the `metadata.devmode.sync` key, Buildpacks that want to collaborate with Skaffold
 have to output the sync rules based on their exploration of the source and the build process they had to apply to it.
 Those sync rules will then be used by Skaffold without the user having to configure them manually.
@@ -128,7 +132,7 @@ signal to change the way the application is built so that it reloads the changes
 
 Jib integration with Skaffold allows for zero-config `auto` sync. In this mode, Jib will sync your class files, resource files, and Jib's "extra directories" files to a remote container as changes are made. It can only be used with Jib in the default build mode (exploded) for non-WAR applications. It was primarily designed around [Spring Boot Developer Tools](https://docs.spring.io/spring-boot/docs/current/reference/html/using-spring-boot.html#using-boot-devtools), but can work with any embedded server that can reload/restart.
 
-Check out the [Jib Sync example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/jib-sync) for more details.
+Check out the [Jib Sync example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/jib-sync) for more details.
 
 ## Limitations
 

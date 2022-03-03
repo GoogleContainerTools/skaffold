@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
 )
 
-const baseRef = "origin/master"
+const baseRef = "origin/main"
 
 func RunSchemaCheckOnChangedFiles() error {
 	git, err := newGit(baseRef)
@@ -41,6 +41,13 @@ func RunSchemaCheckOnChangedFiles() error {
 	}
 	var changedConfigFiles []string
 	for _, file := range changedFiles {
+		if strings.Contains(file, "v3alpha") {
+			continue
+		}
+		if strings.Contains(file, "latest/v2") {
+			continue
+		}
+
 		if strings.Contains(file, "config.go") {
 			changedConfigFiles = append(changedConfigFiles, file)
 		}
@@ -88,7 +95,7 @@ func RunSchemaCheckOnChangedFiles() error {
 			continue
 		}
 
-		logrus.Warnf("Detected changes to the latest config. Checking on Github if it's released...")
+		logrus.Warn("Detected changes to the latest config. Checking on Github if it's released...")
 		latestVersion, isReleased := GetLatestVersion()
 		if !isReleased {
 			logrus.Infof("Schema %q is not yet released. Changes are ok.", latestVersion)
@@ -102,7 +109,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		fmt.Printf(" + Check if a new unreleased version has been created:\n")
 		fmt.Printf("     - Ensure that your branch is up-to-date with the %q branch.\n", baseRef)
 		fmt.Printf("     - Check for a pending PR to create a new version.\n")
-		fmt.Printf(" + Create a separate PR with just the result of running the 'hack/new_version.sh' script.\n")
+		fmt.Printf(" + Create a separate PR with just the result of running the 'hack/new-version.sh' script.\n")
 
 		filesInError = append(filesInError, configFile)
 	}

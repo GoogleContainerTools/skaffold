@@ -26,75 +26,103 @@ import (
 	"strings"
 
 	"github.com/segmentio/textio"
-	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	k8slogger "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // Deployer deploys workflows using kubectl CLI.
 type Deployer struct {
 	*latestV1.KubectlDeploy
 
-	accessor access.Accessor
-	debugger debug.Debugger
-	logger   log.Logger
-
-	originalImages     []graph.Artifact
+	accessor           access.Accessor
+	imageLoader        loader.ImageLoader
+	logger             k8slogger.Logger
+	debugger           debug.Debugger
+	statusMonitor      kstatus.Monitor
+	syncer             sync.Syncer
+	hookRunner         hooks.Runner
+	originalImages     []graph.Artifact // the set of images marked as "local" by the Runner
+	localImages        []graph.Artifact // the set of images parsed from the Deployer's manifest set
 	podSelector        *kubernetes.ImageList
 	hydratedManifests  []string
 	workingDir         string
 	globalConfig       string
 	gcsManifestDir     string
 	defaultRepo        *string
+	multiLevelRepo     *bool
 	kubectl            CLI
 	insecureRegistries map[string]bool
-	labels             map[string]string
+	labeller           *label.DefaultLabeller
 	skipRender         bool
+
+	namespaces *[]string
 }
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KubectlDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
 	podSelector := kubernetes.NewImageList()
+	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
+	}
+	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 
 	return &Deployer{
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
-		accessor:           provider.Accessor.GetKubernetesAccessor(podSelector),
-		debugger:           provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:             provider.Logger.GetKubernetesLogger(podSelector),
+		namespaces:         &namespaces,
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:        component.NewImageLoader(cfg, kubectl.CLI),
+		logger:             logger,
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
+		hookRunner:         hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
-		kubectl:            NewCLI(cfg, d.Flags, defaultNamespace),
+		multiLevelRepo:     cfg.MultiLevelRepo(),
+		kubectl:            kubectl,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
-		labels:             labels,
+		labeller:           labeller,
 		hydratedManifests:  cfg.HydratedManifests(),
-	}, podSelector, nil
+	}, nil
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -109,52 +137,91 @@ func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
 }
 
+func (k *Deployer) GetStatusMonitor() status.Monitor {
+	return k.statusMonitor
+}
+
+func (k *Deployer) GetSyncer() sync.Syncer {
+	return k.syncer
+}
+
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
+}
+
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
 	k.logger.RegisterArtifacts(artifacts)
 }
 
+func (k *Deployer) trackNamespaces(namespaces []string) {
+	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
+}
+
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	var (
 		manifests manifest.ManifestList
 		err       error
+		childCtx  context.Context
+		endTrace  func(...trace.SpanOption)
 	)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
 
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(k.kubectl.KubeContext); err != nil {
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
 	// if any hydrated manifests are passed to `skaffold apply`, only deploy these
 	// also, manually set the labels to ensure the runID is added
 	switch {
 	case len(k.hydratedManifests) > 0:
-		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_createManifestList")
-		manifests, err = createManifestList(k.hydratedManifests)
+		_, endTrace = instrumentation.StartTrace(ctx, "Deploy_readHydratedManifests")
+		manifests, err = k.kubectl.ReadManifests(ctx, k.hydratedManifests)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
+			return err
 		}
-		manifests, err = manifests.SetLabels(k.labels)
+		manifests, err = manifests.SetLabels(k.labeller.Labels())
 		endTrace()
 	case k.skipRender:
-		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_readManifests")
+		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
 		manifests, err = k.readManifests(childCtx, false)
+		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
+			return err
+		}
+		manifests, err = manifests.SetLabels(k.labeller.Labels())
 		endTrace()
 	default:
-		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 		manifests, err = k.renderManifests(childCtx, out, builds, false)
 		endTrace()
 	}
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if len(manifests) == 0 {
-		return nil, nil
+		return nil
 	}
-	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
+	endTrace()
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
@@ -162,22 +229,48 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
 	if err := k.kubectl.WaitForDeletions(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_KubectlApply")
 	if err := k.kubectl.Apply(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	k.TrackBuildArtifacts(builds)
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
-	return namespaces, nil
+	k.trackNamespaces(namespaces)
+	return nil
+}
+
+func (k *Deployer) HasRunnableHooks() bool {
+	return len(k.KubectlDeploy.LifecycleHooks.PreHooks) > 0 || len(k.KubectlDeploy.LifecycleHooks.PostHooks) > 0
+}
+
+func (k *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
+	if err := k.hookRunner.RunPreHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
+}
+
+func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PostHooks")
+	if err := k.hookRunner.RunPostHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
 }
 
 func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
@@ -214,9 +307,9 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	var filteredManifests []string
 	for _, f := range list {
 		if !kubernetes.HasKubernetesFileExtension(f) {
-			if !util.StrSliceContains(manifests, f) {
-				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
-				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+			if !stringslice.Contains(manifests, f) {
+				olog.Entry(context.TODO()).Infof("refusing to deploy/delete non {json, yaml} file %s", f)
+				olog.Entry(context.TODO()).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
 			}
 		}
@@ -305,6 +398,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
@@ -322,8 +416,8 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 	if err != nil {
 		return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
 	}
-
-	manifests, err := k.readManifests(ctx, offline)
+	var localManifests, remoteManifests manifest.ManifestList
+	localManifests, err = k.readManifests(ctx, offline)
 	if err != nil {
 		return nil, err
 	}
@@ -334,17 +428,19 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 			return nil, err
 		}
 
-		manifests = append(manifests, manifest)
+		remoteManifests = append(remoteManifests, manifest)
 	}
 
+	originalManifests := append(localManifests, remoteManifests...)
+
 	if len(k.originalImages) == 0 {
-		k.originalImages, err = manifests.GetImages()
+		k.originalImages, err = originalManifests.GetImages()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if len(manifests) == 0 {
+	if len(originalManifests) == 0 {
 		return nil, nil
 	}
 
@@ -360,21 +456,30 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 			})
 		}
 	}
+	if len(remoteManifests) > 0 {
+		remoteManifests, err = remoteManifests.ReplaceRemoteManifestImages(ctx, builds)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(localManifests) > 0 {
+		localManifests, err = localManifests.ReplaceImages(ctx, builds)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	manifests, err = manifests.ReplaceImages(ctx, builds)
-	if err != nil {
+	modifiedManifests := append(localManifests, remoteManifests...)
+
+	if modifiedManifests, err = manifest.ApplyTransforms(modifiedManifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
 		return nil, err
 	}
 
-	if manifests, err = manifest.ApplyTransforms(manifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
-		return nil, err
-	}
-
-	return manifests.SetLabels(k.labels)
+	return modifiedManifests.SetLabels(k.labeller.Labels())
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
@@ -382,7 +487,12 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-
+	if dryRun {
+		for _, manifest := range manifests {
+			output.White.Fprintf(out, "---\n%s", manifest)
+		}
+		return nil
+	}
 	// revert remote manifests
 	// TODO(dgageot): That seems super dangerous and I don't understand
 	// why we need to update resources just before we delete them.
@@ -396,7 +506,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			rm = append(rm, manifest)
 		}
 
-		upd, err := rm.ReplaceImages(ctx, k.originalImages)
+		upd, err := rm.ReplaceRemoteManifestImages(ctx, k.originalImages)
 		if err != nil {
 			return err
 		}

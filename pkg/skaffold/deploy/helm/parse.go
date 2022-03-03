@@ -19,18 +19,22 @@ package helm
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
-func parseReleaseInfo(namespace string, b *bufio.Reader) []types.Artifact {
+// parseReleaseManifests parses a set of Kubernetes manifests extracting a set of
+// objects with their corresponding namespace.  If no namespace is specified,
+// then assume `namespace`.
+func parseReleaseManifests(namespace string, b *bufio.Reader) []types.Artifact {
 	var results []types.Artifact
 
 	r := k8syaml.NewYAMLReader(b)
@@ -40,22 +44,20 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []types.Artifact {
 			break
 		}
 		if err != nil {
-			logrus.Infof("error parsing object from string: %s", err.Error())
+			log.Entry(context.TODO()).Infof("error parsing object %d from string: %s", i, err.Error())
 			continue
 		}
 		objNamespace, err := getObjectNamespaceIfDefined(doc, namespace)
 		if err != nil {
-			logrus.Infof("error parsing object from string: %s", err.Error())
+			log.Entry(context.TODO()).Infof("error parsing object %d from string: %s", i, err.Error())
 			continue
 		}
 		obj, err := parseRuntimeObject(objNamespace, doc)
 		if err != nil {
-			if i > 0 {
-				logrus.Infof(err.Error())
-			}
+			log.Entry(context.TODO()).Infof("error parsing object %d from string: %s", i, err.Error())
 		} else {
 			results = append(results, *obj)
-			logrus.Debugf("found deployed object: %+v", obj.Obj)
+			log.Entry(context.TODO()).Debugf("found deployed object %d: %+v", i, obj.Obj)
 		}
 	}
 

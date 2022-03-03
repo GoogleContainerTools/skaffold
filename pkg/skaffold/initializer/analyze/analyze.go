@@ -17,16 +17,17 @@ limitations under the License.
 package analyze
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/karrick/godirwalk"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -35,7 +36,7 @@ import (
 // It can manage state and react to walking events assuming a breadth first search.
 type analyzer interface {
 	enterDir(dir string)
-	analyzeFile(file string) error
+	analyzeFile(ctx context.Context, file string) error
 	exitDir(dir string)
 }
 
@@ -147,7 +148,7 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 				continue
 			}
 			if stat.Size() > a.maxFileSize {
-				logrus.Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
+				log.Entry(context.TODO()).Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
 				continue
 			}
 		}
@@ -155,7 +156,7 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
 		filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 		for _, analyzer := range a.analyzers() {
-			if err := analyzer.analyzeFile(filePath); err != nil {
+			if err := analyzer.analyzeFile(context.Background(), filePath); err != nil {
 				return err
 			}
 		}

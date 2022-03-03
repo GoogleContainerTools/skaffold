@@ -31,6 +31,12 @@ type Options struct {
 	OutFormat string
 	// Modules is the module filter for specific commands
 	Modules []string
+	// Profiles is the slice of profile names to activate.
+	Profiles []string
+	// Profile is a target profile to create or edit
+	Profile string
+	// PropagateProfiles specifies if profiles specified by the '--profile' flag should be searched across config dependencies. Otherwise only profiles defined directly in the target 'skaffold.yaml' file are activated.
+	PropagateProfiles bool
 	// Strict specifies the error-tolerance for specific commands
 	Strict bool
 
@@ -53,10 +59,6 @@ type ProfilesOptions struct {
 
 // BuildEnvOptions holds flag values for various `skaffold inspect build-env` commands
 type BuildEnvOptions struct {
-	// Profiles is the slice of profile names to activate.
-	Profiles []string
-	// Profile is a target profile to create or edit
-	Profile string
 	// Push specifies if images should be pushed to a registry.
 	Push *bool
 	// TryImportMissing specifies whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache

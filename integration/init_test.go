@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -138,6 +139,23 @@ func TestInitWithCLIArtifact(t *testing.T) {
 	})
 }
 
+func TestInitWithCLIArtifactAndManifestGeneration(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	testutil.Run(t, "init with cli artifact and manifests", func(t *testutil.T) {
+		ns, _ := SetupNamespace(t.T)
+		dir := "testdata/init/hello"
+
+		initArgs := append([]string{"--force"},
+			`--artifact={"builder":"Docker","payload":{"path":"./Dockerfile"},"image":"dockerfile-image","manifest":{"generate":true,"port":8080}}`)
+		skaffold.Init(initArgs...).InDir(dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
+
+		checkGeneratedManifests(t, dir, []string{"deployment.yaml"})
+
+		skaffold.Run().InDir(dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+	})
+}
+
 func checkGeneratedConfig(t *testutil.T, dir string) {
 	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
 	t.CheckNoError(err)
@@ -149,7 +167,7 @@ func checkGeneratedConfig(t *testutil.T, dir string) {
 
 func checkGeneratedManifests(t *testutil.T, dir string, manifestPaths []string) {
 	for _, path := range manifestPaths {
-		expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, path+".expected"))
+		expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, strings.Join([]string{".", path, ".expected"}, "")))
 		t.CheckNoError(err)
 
 		output, err := ioutil.ReadFile(filepath.Join(dir, path))

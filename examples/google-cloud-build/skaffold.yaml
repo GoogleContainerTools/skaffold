@@ -1,7 +1,8 @@
-apiVersion: skaffold/v2beta17
+apiVersion: skaffold/v2beta27
 kind: Config
 build:
   googleCloudBuild:
+    # Change `k8s-skaffold` with your PROJECT_ID
     projectId: k8s-skaffold
   artifacts:
   - image: skaffold-example

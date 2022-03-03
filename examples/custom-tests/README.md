@@ -1,5 +1,7 @@
 ### Example: Running custom tests on built images
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/custom-tests)
+
 This example shows how to run _custom tests_ on newly built images in the skaffold dev loop. 
 
 Custom tests are associated with single image artifacts. When test dependencies change, no build will happen but tests would get re-run. Tests are configured in the `skaffold.yaml` in the `test` stanza, e.g.
@@ -15,7 +17,7 @@ test:
           - <paths glob>
 ```
 
-As tests take time, you might prefer to configure tests using [profiles](https://skaffold.dev/docs/https://skaffold.dev/docs/environment/profiles/) so that they can be automatically enabled or disabled, e.g.
+As tests take time, you might prefer to configure tests using [profiles](https://skaffold.dev/docs/environment/profiles/) so that they can be automatically enabled or disabled, e.g.
 If the `command` exits with a non-zero return code then the test will have failed, and deployment will not continue.
 
 ```yaml

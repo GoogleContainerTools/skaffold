@@ -19,11 +19,8 @@ package buildpacks
 import (
 	"io"
 
-	"github.com/buildpacks/pack/logging"
-	"github.com/mattn/go-colorable"
+	"github.com/buildpacks/pack/pkg/logging"
 	"github.com/sirupsen/logrus"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // logger exists to meet the requirements of the pack logger.
@@ -33,11 +30,6 @@ type logger struct {
 }
 
 func NewLogger(out io.Writer) logging.Logger {
-	// If out is not a terminal, let's make sure no colors are printed.
-	if _, isTerm := util.IsTerminal(out); !isTerm {
-		out = colorable.NewNonColorable(out)
-	}
-
 	l := logrus.New()
 	l.SetOutput(out)
 

@@ -21,7 +21,6 @@ RESET='\033[0m'
 echo "Running validation scripts..."
 scripts=(
     "hack/check-schema-changes.sh"
-    "hack/check-skaffold-builder.sh"
     "hack/check-samples.sh"
     "hack/check-docs.sh"
     "hack/test-generated-proto.sh"

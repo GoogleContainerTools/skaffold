@@ -50,22 +50,22 @@ func TestBuildDependenciesOrder(t *testing.T) {
 		{
 			description: "invalid dependency",
 			args:        []string{"-p", "invalid-dependency"},
-			failure:     `invalid skaffold config: unknown build dependency "image5" for artifact "image1"`,
+			failure:     `unknown build dependency "image5" for artifact "image1"`,
 		},
 		{
 			description: "circular dependency",
 			args:        []string{"-p", "circular-dependency"},
-			failure:     `invalid skaffold config: cycle detected in build dependencies involving "image1"`,
+			failure:     `cycle detected in build dependencies involving "image1"`,
 		},
 		{
 			description: "build failure with concurrency=1",
 			args:        []string{"-p", "failed-dependency"},
-			failure:     `unable to stream build output: The command '/bin/sh -c [ "${FAIL}" == "0" ] || false' returned a non-zero code: 1`,
+			failure:     `docker build failure: The command '/bin/sh -c [ "${FAIL}" == "0" ] || false' returned a non-zero code: 1`,
 		},
 		{
 			description: "build failure with concurrency=0",
 			args:        []string{"-p", "failed-dependency", "-p", "concurrency-0"},
-			failure:     `unable to stream build output: The command '/bin/sh -c [ "${FAIL}" == "0" ] || false' returned a non-zero code: 1`,
+			failure:     `docker build failure: The command '/bin/sh -c [ "${FAIL}" == "0" ] || false' returned a non-zero code: 1`,
 		},
 	}
 

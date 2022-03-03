@@ -26,9 +26,9 @@ import (
 
 type LoggerMux []Logger
 
-func (l LoggerMux) Start(ctx context.Context, out io.Writer, namespaces []string) error {
+func (l LoggerMux) Start(ctx context.Context, out io.Writer) error {
 	for _, logger := range l {
-		if err := logger.Start(ctx, out, namespaces); err != nil {
+		if err := logger.Start(ctx, out); err != nil {
 			return err
 		}
 	}

@@ -36,6 +36,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 		key              string
 		value            string
 		kubecontext      string
+		surveyID         string
 		global           bool
 		survey           bool
 		shouldErr        bool
@@ -50,6 +51,27 @@ func TestSetAndUnsetConfig(t *testing.T) {
 					{
 						Kubecontext: "this_is_a_context",
 						DefaultRepo: "value",
+					},
+				},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
+					},
+				},
+			},
+		},
+		{
+			description: "set multi-level repo",
+			key:         "multi-level-repo",
+			value:       "false",
+			kubecontext: "this_is_a_context",
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext:    "this_is_a_context",
+						MultiLevelRepo: util.BoolPtr(false),
 					},
 				},
 			},
@@ -103,6 +125,22 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo: "global",
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
+		{
+			description: "set global multi-level repo",
+			key:         "multi-level-repo",
+			value:       "true",
+			global:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					MultiLevelRepo: util.BoolPtr(true),
 				},
 				ContextConfigs: []*config.ContextConfig{},
 			},
@@ -301,6 +339,31 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				ContextConfigs: []*config.ContextConfig{},
 			},
 		},
+		{
+			description: "set global survey id taken for a key",
+			key:         "taken",
+			value:       "true",
+			global:      true,
+			survey:      true,
+			surveyID:    "helm",
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					Survey: &config.SurveyConfig{
+						UserSurveys: []*config.UserSurvey{
+							{ID: "helm", Taken: util.BoolPtr(true)}}},
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					Survey: &config.SurveyConfig{
+						UserSurveys: []*config.UserSurvey{
+							{ID: "helm"}},
+					},
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -311,6 +374,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			t.Override(&configFile, cfg)
 			t.Override(&global, test.global)
 			t.Override(&survey, test.survey)
+			t.Override(&surveyID, test.surveyID)
 			if test.kubecontext != "" {
 				t.Override(&kubecontext, test.kubecontext)
 			} else {
@@ -351,7 +415,7 @@ func TestGetConfigStructWithIndex(t *testing.T) {
 			description: "survey flag set",
 			cfg:         &config.ContextConfig{},
 			survey:      true,
-			expectedIdx: []int{6},
+			expectedIdx: []int{7},
 		},
 		{
 			description: "no survey flag set",

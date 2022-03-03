@@ -20,9 +20,9 @@ import "context"
 
 type DebuggerMux []Debugger
 
-func (d DebuggerMux) Start(ctx context.Context, namespaces []string) error {
+func (d DebuggerMux) Start(ctx context.Context) error {
 	for _, debugger := range d {
-		if err := debugger.Start(ctx, namespaces); err != nil {
+		if err := debugger.Start(ctx); err != nil {
 			return err
 		}
 	}

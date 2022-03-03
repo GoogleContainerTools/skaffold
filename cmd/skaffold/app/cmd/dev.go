@@ -21,11 +21,12 @@ import (
 	"errors"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // for testing
@@ -60,17 +61,19 @@ func runDev(ctx context.Context, out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			err := withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
+			// Note: The latestV1.SkaffoldConfig is used for both latestV1 schema and latestV2 schema because
+			// the latestV1 and latestV2 use the same Build struct. Ideally they should be separated.
+			err := withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 				var artifacts []*latestV1.Artifact
 				for _, cfg := range configs {
-					artifacts = append(artifacts, cfg.Build.Artifacts...)
+					artifacts = append(artifacts, cfg.(*latestV1.SkaffoldConfig).Build.Artifacts...)
 				}
 				err := r.Dev(ctx, out, artifacts)
 
 				if r.HasDeployed() {
 					cleanup = func() {
-						if err := r.Cleanup(context.Background(), out); err != nil {
-							logrus.Warnln("deployer cleanup:", err)
+						if err := r.Cleanup(context.Background(), out, false); err != nil {
+							log.Entry(ctx).Warn("deployer cleanup:", err)
 						}
 					}
 				}
@@ -78,7 +81,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 				if r.HasBuilt() {
 					prune = func() {
 						if err := r.Prune(context.Background(), out); err != nil {
-							logrus.Warnln("builder cleanup:", err)
+							log.Entry(ctx).Warn("builder cleanup:", err)
 						}
 					}
 				}

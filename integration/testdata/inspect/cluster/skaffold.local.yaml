@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta18
+apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
@@ -6,7 +6,6 @@ build:
   local:
     concurrency: 1
     tryImportMissing: false
-    useBuildkit: false
     useDockerCLI: false
 profiles:
 - name: cluster

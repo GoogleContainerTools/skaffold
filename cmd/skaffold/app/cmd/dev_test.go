@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -57,7 +58,7 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
 }
@@ -96,8 +97,8 @@ func TestDoDev(t *testing.T) {
 				hasDeployed: test.hasDeployed,
 				errDev:      context.Canceled,
 			}
-			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV1.SkaffoldConfig, *runcontext.RunContext, error) {
-				return mockRunner, []*latestV1.SkaffoldConfig{{}}, nil, nil
+			t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
+				return mockRunner, []util.VersionedConfig{&latestV1.SkaffoldConfig{}}, nil, nil
 			})
 			t.Override(&opts, config.SkaffoldOptions{
 				Cleanup: true,
@@ -138,7 +139,7 @@ func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer) error {
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool) error {
 	return nil
 }
 
@@ -146,8 +147,8 @@ func TestDevConfigChange(t *testing.T) {
 	testutil.Run(t, "test config change", func(t *testutil.T) {
 		mockRunner := &mockConfigChangeRunner{}
 
-		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latestV1.SkaffoldConfig, *runcontext.RunContext, error) {
-			return mockRunner, []*latestV1.SkaffoldConfig{{}}, nil, nil
+		t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
+			return mockRunner, []util.VersionedConfig{&latestV1.SkaffoldConfig{}}, nil, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{
 			Cleanup: true,
@@ -175,6 +176,5 @@ func TestNewCmdDev(t *testing.T) {
 
 		t.CheckDeepEqual(true, opts.Tail)
 		t.CheckDeepEqual(false, opts.Force)
-		t.CheckDeepEqual(true, opts.EnableRPC)
 	})
 }

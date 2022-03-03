@@ -18,15 +18,17 @@ package kubernetes
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -52,10 +54,6 @@ func HasKubernetesFileExtension(n string) bool {
 
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
-	if !HasKubernetesFileExtension(file) {
-		return false
-	}
-
 	_, err := parseKubernetesObjects(file)
 	return err == nil
 }
@@ -120,7 +118,7 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 func hasRequiredK8sManifestFields(doc map[string]interface{}) bool {
 	for _, field := range requiredFields {
 		if _, ok := doc[field]; !ok {
-			logrus.Debugf("%s not present in yaml, continuing", field)
+			log.Entry(context.TODO()).Debugf("%s not present in yaml, continuing", field)
 			return false
 		}
 	}
@@ -150,4 +148,16 @@ func parseImagesFromYaml(obj interface{}) []string {
 	}
 
 	return images
+}
+
+// FailIfClusterIsNotReachable checks that Kubernetes is reachable.
+// This gives a clear early error when the cluster can't be reached.
+func FailIfClusterIsNotReachable(kubeContext string) error {
+	c, err := client.Client(kubeContext)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Discovery().ServerVersion()
+	return err
 }

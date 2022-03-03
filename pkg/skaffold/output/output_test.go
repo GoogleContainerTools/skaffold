@@ -18,10 +18,13 @@ package output
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
@@ -125,7 +128,6 @@ func TestWithEventContext(t *testing.T) {
 		writer    io.Writer
 		phase     constants.Phase
 		subtaskID string
-		origin    string
 
 		expected io.Writer
 	}{
@@ -133,14 +135,13 @@ func TestWithEventContext(t *testing.T) {
 			name: "skaffoldWriter update info",
 			writer: skaffoldWriter{
 				MainWriter:  ioutil.Discard,
-				EventWriter: eventV2.NewLogger(constants.Build, "1", "skaffold-test"),
+				EventWriter: eventV2.NewLogger(constants.Build, "1"),
 			},
 			phase:     constants.Test,
 			subtaskID: "2",
-			origin:    "skaffold-test-change",
 			expected: skaffoldWriter{
 				MainWriter:  ioutil.Discard,
-				EventWriter: eventV2.NewLogger(constants.Test, "2", "skaffold-test-change"),
+				EventWriter: eventV2.NewLogger(constants.Test, "2"),
 			},
 		},
 		{
@@ -152,8 +153,68 @@ func TestWithEventContext(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			got := WithEventContext(test.writer, test.phase, test.subtaskID, test.origin)
-			t.CheckDeepEqual(test.expected, got)
+			got, _ := WithEventContext(context.Background(), test.writer, test.phase, test.subtaskID)
+			t.CheckDeepEqual(test.expected, got, cmpopts.IgnoreTypes(false, "", constants.DevLoop))
+		})
+	}
+}
+
+func TestWriteWithTimeStamps(t *testing.T) {
+	tests := []struct {
+		name        string
+		writer      func(io.Writer) io.Writer
+		expectedLen int
+	}{
+		{
+			name: "skaffold writer with color and timestamps",
+			writer: func(out io.Writer) io.Writer {
+				return skaffoldWriter{
+					MainWriter:  colorableWriter{out},
+					EventWriter: ioutil.Discard,
+					timestamps:  true,
+				}
+			},
+			expectedLen: len(timestampFormat) + len(" \u001B[32mtesting!\u001B[0m"),
+		},
+		{
+			name: "skaffold writer with color and no timestamps",
+			writer: func(out io.Writer) io.Writer {
+				return skaffoldWriter{
+					MainWriter:  colorableWriter{out},
+					EventWriter: ioutil.Discard,
+				}
+			},
+			expectedLen: len("\u001B[32mtesting!\u001B[0m"),
+		},
+		{
+			name: "skaffold writer with timestamps and no color",
+			writer: func(out io.Writer) io.Writer {
+				return skaffoldWriter{
+					MainWriter:  out,
+					EventWriter: ioutil.Discard,
+					timestamps:  true,
+				}
+			},
+			expectedLen: len(timestampFormat) + len(" testing!"),
+		},
+		{
+			name: "skaffold writer with no color and no timestamps",
+			writer: func(out io.Writer) io.Writer {
+				return skaffoldWriter{
+					MainWriter:  out,
+					EventWriter: ioutil.Discard,
+				}
+			},
+			expectedLen: len("testing!"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			out := test.writer(&buf)
+			Default.Fprintf(out, "testing!")
+			testutil.CheckDeepEqual(t, test.expectedLen, len(buf.String()))
 		})
 	}
 }

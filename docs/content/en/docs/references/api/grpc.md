@@ -23,7 +23,7 @@ We also generate the [reference doc for the HTTP layer]({{<relref "/docs/referen
 
 ## v1/skaffold.proto
 
-You can find the source for v1/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/v1/v1/skaffold.proto).
+You can find the source for v1/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/v1/skaffold.proto).
 
 
 
@@ -384,6 +384,7 @@ Intent represents user intents for a given phase.
 | build | [bool](#bool) |  | in case skaffold dev is ran with autoBuild=false, a build intent enables building once |
 | sync | [bool](#bool) |  | in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once |
 | deploy | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once |
+| devloop | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, autoSync=false and autoBuild=false a devloop intent enables the entire dev loop once |
 
 
 
@@ -816,6 +817,7 @@ Enum indicating builders used
 | CUSTOM | 4 | Custom Builder |
 | KANIKO | 5 | Kaniko Builder |
 | DOCKER | 6 | Docker Builder |
+| KO | 7 | Ko Builder |
 
 
 
@@ -861,6 +863,23 @@ Enum indicating the log level of a line of output
 | ERROR | 3 | Error Level |
 | FATAL | 4 | Fatal Level |
 | PANIC | 5 | Panic Level |
+| TRACE | 6 | Trace Level |
+| STANDARD | 7 | User-visible output level |
+
+
+
+<a name="proto.enums.RenderType"></a>
+
+### RenderType
+Enum indicating render manifests type
+
+| Name | Number | Description |
+| ---- |:------:| ----------- |
+| UNKNOWN_RENDER_TYPE | 0 | Could not determine Render Type |
+| RAWK8S | 1 | Raw Manifests |
+| KUSTOMIZE_MANIFEST | 2 | kustomize manifests |
+| HELM_CHART | 3 | helm charts |
+| KPT_MANIFEST | 4 | kpt manifests |
 
 
 
@@ -909,13 +928,34 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST | 124 | Docker build error indicating the container referenced does not exists in the docker context used. |
 | INIT_DOCKER_NETWORK_INVALID_MODE | 125 | Docker Network invalid mode |
 | INIT_DOCKER_NETWORK_PARSE_ERR | 126 | Error parsing Docker Network mode |
+| BUILD_GCB_CREATE_BUILD_ERR | 128 | GCB Create Build Error |
+| BUILD_GCB_GET_BUILD_ID_ERR | 129 | GCB error indicating an error to fetch build id. |
+| BUILD_GCB_GET_BUILD_STATUS_ERR | 130 | GCB error indicating an error to fetch build status. |
+| BUILD_GCB_GET_BUILD_LOG_ERR | 131 | GCB error indicating an error to fetch build logs. |
+| BUILD_GCB_COPY_BUILD_LOG_ERR | 132 | GCB error indicating an error to fetch build status. |
+| BUILD_GCB_GET_BUILT_IMAGE_ERR | 133 | GCB error indicating an error retrieving the built image id. |
+| BUILD_GCB_BUILD_FAILED | 134 | GCB error indicating build failure. |
+| BUILD_GCB_BUILD_INTERNAL_ERR | 135 | GCB error indicating build failure due to internal errror. |
+| BUILD_GCB_BUILD_TIMEOUT | 136 | GCB error indicating build failure due to timeout. |
+| BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR | 137 | GCB error to generate the build descriptor. |
+| BUILD_GCB_UPLOAD_TO_GCS_ERR | 138 | GCB error to upload to GCS. |
+| BUILD_GCB_JIB_DEPENDENCY_ERR | 139 | GCB error to fetch jib artifact dependency. |
+| BUILD_GCB_GET_DEPENDENCY_ERR | 140 | GCB error to fetch artifact dependency. |
+| BUILD_GCB_GET_GCS_BUCKET_ERR | 141 | GCB error to get GCS bucket. |
+| BUILD_GCB_CREATE_BUCKET_ERR | 142 | GCB error to create a GCS bucket. |
+| BUILD_GCB_EXTRACT_PROJECT_ID | 143 | GCB error to extract Project ID. |
+| BUILD_GET_CLOUD_STORAGE_CLIENT_ERR | 144 | GCB error to get cloud storage client to perform GCS operation. |
+| BUILD_GET_CLOUD_BUILD_CLIENT_ERR | 145 | GCB error to get cloud build client to perform GCB operations. |
+| BUILD_UNKNOWN_PLATFORM_FLAG | 150 | Value provided to --platform flag cannot be parsed |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
 | STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
+| STATUSCHECK_STANDALONE_PODS_PENDING | 305 | Standalone pods pending to stabilize |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
 | STATUSCHECK_UNHEALTHY | 357 | Readiness probe failed |
+| STATUSCHECK_CONTAINER_EXEC_ERROR | 358 | Executable binary format error |
 | STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
 | STATUSCHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
@@ -928,12 +968,20 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR | 411 | Kubectl client fetch err |
 | STATUSCHECK_DEPLOYMENT_FETCH_ERR | 412 |  |
+| STATUSCHECK_STANDALONE_PODS_FETCH_ERR | 413 |  |
+| STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR | 414 |  |
+| STATUSCHECK_STATEFULSET_FETCH_ERR | 415 |  |
 | STATUSCHECK_POD_INITIALIZING | 451 | Pod Initializing |
+| STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS | 452 | The actual state of the resource has not yet reached the desired state |
+| STATUSCHECK_CONFIG_CONNECTOR_FAILED | 453 | The process of reconciling the actual state with the desired state has encountered an error |
+| STATUSCHECK_CONFIG_CONNECTOR_TERMINATING | 454 | The resource is in the process of being deleted |
+| STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND | 455 | The resource does not exist |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
 | STATUSCHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
 | STATUSCHECK_UNKNOWN_EVENT | 509 | Container event reason unknown |
+| STATUSCHECK_INTERNAL_ERROR | 514 | Status Check internal error |
 | DEPLOY_UNKNOWN | 504 | Deploy failed due to unknown reason |
 | SYNC_UNKNOWN | 505 | SYNC failed due to known reason |
 | BUILD_UNKNOWN | 506 | Build failed due to unknown reason |
@@ -942,6 +990,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INIT_UNKNOWN | 510 | Initialization of the Skaffold session failed due to unknown reason(s) |
 | BUILD_DOCKER_UNKNOWN | 511 | Build failed due to docker unknown error |
 | TEST_UNKNOWN | 512 | Test failed due to unknown reason |
+| BUILD_GCB_BUILD_UNKNOWN_STATUS | 513 | GCB error indicating build failed due to unknown status. |
 | SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
 | DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
@@ -954,6 +1003,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
 | BUILD_DOCKER_CANCELLED | 804 | Docker build cancelled. |
 | BUILD_DOCKER_DEADLINE | 805 | Build error due to docker deadline was reached before the docker action completed |
+| BUILD_GCB_BUILD_CANCELLED | 806 | GCB Build cancelled. |
 | INIT_CREATE_TAGGER_ERROR | 901 | Skaffold was unable to create the configured tagger |
 | INIT_MINIKUBE_PAUSED_ERROR | 902 | Skaffold was unable to start as Minikube appears to be paused |
 | INIT_MINIKUBE_NOT_RUNNING_ERROR | 903 | Skaffold was unable to start as Minikube appears to be stopped |
@@ -1019,6 +1069,8 @@ For Cancelled Error code, use range 800 to 850.<br>
 | CONFIG_UNKNOWN_API_VERSION_ERR | 1213 | Config API version not found |
 | CONFIG_UNKNOWN_VALIDATOR | 1214 | The validator is not allowed in skaffold-managed mode. |
 | CONFIG_UNKNOWN_TRANSFORMER | 1215 | The transformer is not allowed in skaffold-managed mode. |
+| CONFIG_MISSING_MANIFEST_FILE_ERR | 1216 | Manifest file not found |
+| CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR | 1217 | Remote config repository cache not found and sync disabled |
 | INSPECT_UNKNOWN_ERR | 1301 | Catch-all `skaffold inspect` command error |
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
 | INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR | 1303 | Trying to modify build environment that doesn't exist |
@@ -1051,6 +1103,7 @@ Enum for Suggestion codes
 | FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME | 114 | Executing extractContainerNameFromNetworkMode with a non valid mode (only container mode allowed) |
 | RUN_DOCKER_PRUNE | 115 | Prune Docker image |
 | SET_CLEANUP_FLAG | 116 | Set Cleanup flag for skaffold command. |
+| BUILD_FIX_UNKNOWN_PLATFORM_FLAG | 117 | Build platform error suggestion codes |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
@@ -1087,6 +1140,8 @@ Enum for Suggestion codes
 | CONFIG_FIX_API_VERSION | 707 | Fix config API version or upgrade the skaffold binary |
 | CONFIG_ALLOWLIST_VALIDATORS | 708 | Only the allow listed validators are acceptable in skaffold-managed mode. |
 | CONFIG_ALLOWLIST_transformers | 709 | Only the allow listed transformers are acceptable in skaffold-managed mode. |
+| CONFIG_FIX_MISSING_MANIFEST_FILE | 710 | Check mising manifest file section of config and fix as needed. |
+| CONFIG_ENABLE_REMOTE_REPO_SYNC | 711 | Enable remote repo sync, or clone manually |
 | INSPECT_USE_MODIFY_OR_NEW_PROFILE | 800 | Create new build env in a profile instead, or use the 'modify' command |
 | INSPECT_USE_ADD_BUILD_ENV | 801 | Check profile selection, or use the 'add' command instead |
 | INSPECT_CHECK_INPUT_PROFILE | 802 | Check profile flag value |

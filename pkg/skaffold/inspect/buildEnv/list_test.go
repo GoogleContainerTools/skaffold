@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -100,11 +100,11 @@ func TestPrintBuildEnvsList(t *testing.T) {
 						{Name: "local", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
 					}}, SourceFile: "path/to/cfg2"},
 			}
-			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(ctx context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
 				var set parser.SkaffoldConfigSet
 				for _, c := range configSet {
-					if len(opts.ConfigurationFilter) > 0 && !util.StrSliceContains(opts.ConfigurationFilter, c.Metadata.Name) {
+					if len(opts.ConfigurationFilter) > 0 && !stringslice.Contains(opts.ConfigurationFilter, c.Metadata.Name) {
 						continue
 					}
 					for _, pName := range opts.Profiles {
@@ -120,8 +120,8 @@ func TestPrintBuildEnvsList(t *testing.T) {
 				return set, test.err
 			})
 			var buf bytes.Buffer
-			err := PrintBuildEnvsList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, BuildEnvOptions: inspect.BuildEnvOptions{Profiles: test.profiles}})
-			t.CheckNoError(err)
+			err := PrintBuildEnvsList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, Profiles: test.profiles})
+			t.CheckError(test.err != nil, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}

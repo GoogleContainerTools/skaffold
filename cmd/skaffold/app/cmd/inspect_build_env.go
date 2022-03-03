@@ -29,8 +29,6 @@ import (
 )
 
 var buildEnvFlags = struct {
-	profile string
-
 	// Common
 	timeout     string
 	concurrency int
@@ -163,7 +161,7 @@ func addClusterBuildEnv(ctx context.Context, out io.Writer) error {
 }
 
 func cmdBuildEnvAddFlags(f *pflag.FlagSet) {
-	f.StringVarP(&buildEnvFlags.profile, "profile", "p", "", `Profile name to add the new build env definition in. If the profile name doesn't exist then the profile will be created in all the target configs. If this flag is not specified then the build env is added to the default pipeline of the target configs.`)
+	f.StringVarP(&inspectFlags.profile, "profile", "p", "", `Profile name to add the new build env definition in. If the profile name doesn't exist then the profile will be created in all the target configs. If this flag is not specified then the build env is added to the default pipeline of the target configs.`)
 }
 
 func cmdBuildEnvLocalFlags(f *pflag.FlagSet) {
@@ -181,7 +179,7 @@ func cmdBuildEnvLocalFlags(f *pflag.FlagSet) {
 }
 
 func cmdBuildEnvModifyFlags(f *pflag.FlagSet) {
-	f.StringVarP(&buildEnvFlags.profile, "profile", "p", "", `If specified then the modify actions are performed on all pipelines from profiles that match flag value. It must match at least one existing profile name. If unspecified then only the default pipeline in the target 'skaffold.yaml' file are modified`)
+	f.StringVarP(&inspectFlags.profile, "profile", "p", "", `If specified then the modify actions are performed on all pipelines from profiles that match flag value. It must match at least one existing profile name. If unspecified then only the default pipeline in the target 'skaffold.yaml' file are modified`)
 	f.BoolVar(&inspectFlags.strict, "strict", true, "If set to 'false' then do not fail on mismatch of build env type or missing definitions. If set to 'true' then all default pipelines or those matching the `--profile` flag need to match the build env type exactly. Defaults to 'true'")
 }
 
@@ -221,17 +219,17 @@ func cmdBuildEnvFlags(f *pflag.FlagSet) {
 
 func cmdBuildEnvListFlags(f *pflag.FlagSet) {
 	f.StringSliceVarP(&inspectFlags.profiles, "profile", "p", nil, `Profile names to activate`)
+	f.BoolVar(&inspectFlags.propagateProfiles, "propagate-profiles", true, `Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.`)
 }
 
 func printBuildEnvsListOptions() inspect.Options {
 	return inspect.Options{
-		Filename:     inspectFlags.filename,
-		RepoCacheDir: inspectFlags.repoCacheDir,
-		OutFormat:    inspectFlags.outFormat,
-		Modules:      inspectFlags.modules,
-		BuildEnvOptions: inspect.BuildEnvOptions{
-			Profiles: inspectFlags.profiles,
-		},
+		Filename:          inspectFlags.filename,
+		RepoCacheDir:      inspectFlags.repoCacheDir,
+		OutFormat:         inspectFlags.outFormat,
+		Modules:           inspectFlags.modules,
+		Profiles:          inspectFlags.profiles,
+		PropagateProfiles: inspectFlags.propagateProfiles,
 	}
 }
 
@@ -241,8 +239,8 @@ func localBuildEnvOptions() inspect.Options {
 		RepoCacheDir: inspectFlags.repoCacheDir,
 		OutFormat:    inspectFlags.outFormat,
 		Modules:      inspectFlags.modules,
+		Profile:      inspectFlags.profile,
 		BuildEnvOptions: inspect.BuildEnvOptions{
-			Profile:          buildEnvFlags.profile,
 			Push:             buildEnvFlags.push.Value(),
 			TryImportMissing: buildEnvFlags.tryImportMissing.Value(),
 			UseDockerCLI:     buildEnvFlags.useDockerCLI.Value(),
@@ -257,8 +255,8 @@ func gcbBuildEnvOptions() inspect.Options {
 		Filename:  inspectFlags.filename,
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
+		Profile:   inspectFlags.profile,
 		BuildEnvOptions: inspect.BuildEnvOptions{
-			Profile:            buildEnvFlags.profile,
 			ProjectID:          buildEnvFlags.projectID,
 			DiskSizeGb:         buildEnvFlags.diskSizeGb,
 			MachineType:        buildEnvFlags.machineType,
@@ -278,8 +276,8 @@ func addClusterBuildEnvOptions() inspect.Options {
 		RepoCacheDir: inspectFlags.repoCacheDir,
 		OutFormat:    inspectFlags.outFormat,
 		Modules:      inspectFlags.modules,
+		Profile:      inspectFlags.profile,
 		BuildEnvOptions: inspect.BuildEnvOptions{
-			Profile:                  buildEnvFlags.profile,
 			PullSecretPath:           buildEnvFlags.pullSecretPath,
 			PullSecretName:           buildEnvFlags.pullSecretName,
 			PullSecretMountPath:      buildEnvFlags.pullSecretMountPath,

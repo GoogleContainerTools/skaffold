@@ -26,12 +26,15 @@ import (
 type Config interface {
 	docker.Config
 
+	GetNamespace() string
 	GetPipelines() []latestV1.Pipeline
 	GetWorkingDir() string
 	GlobalConfig() string
 	ConfigurationFile() string
 	DefaultRepo() *string
+	MultiLevelRepo() *bool
 	SkipRender() bool
+	TransformableAllowList() []latestV1.ResourceFilter
 }
 
 // Artifact contains all information about a completed deployment

@@ -22,11 +22,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
@@ -34,27 +32,23 @@ import (
 type SkaffoldRunner struct {
 	runner.Builder
 	runner.Pruner
-	test.Tester
+	tester test.Tester
 
 	deployer deploy.Deployer
-	syncer   sync.Syncer
 	monitor  filemon.Monitor
 	listener runner.Listener
 
-	kubectlCLI         *kubectl.CLI
 	cache              cache.Cache
 	changeSet          runner.ChangeSet
 	runCtx             *runcontext.RunContext
 	labeller           *label.DefaultLabeller
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
-	// podSelector is used to determine relevant pods for logging and portForwarding
-	podSelector kubernetes.ImageListMux
-
-	devIteration int
-	isLocalImage func(imageName string) (bool, error)
-	hasDeployed  bool
-	intents      *runner.Intents
+	platforms          platform.Resolver
+	devIteration       int
+	isLocalImage       func(imageName string) (bool, error)
+	hasDeployed        bool
+	intents            *runner.Intents
 }
 
 // HasDeployed returns true if this runner has deployed something.

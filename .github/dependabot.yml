@@ -1,33 +1,23 @@
 version: 2
+# dependabot ignores can be configured here or via `@dependabot ignore` rules 
+# in PRs.  See those list by searching:
+# https://github.com/GoogleContainerTools/skaffold/search?q=%22%40dependabot+ignore%22+in%3Acomments
 updates:
-  - directory: "/examples"
-    package-ecosystem: "npm"
-    schedule:
-      interval: "daily"
-  - directory: "/examples"
-    package-ecosystem: "bundler"
-    schedule:
-      interval: "daily"
-  - directory: "/examples"
-    package-ecosystem: "composer"
-    schedule:
-      interval: "daily"
-  - directory: "/examples"
-    package-ecosystem: "pip"
-    schedule:
-      interval: "daily"
-  - directory: "/examples"
-    package-ecosystem: "maven"
-    schedule:
-      interval: "daily"
-  - directory: "/examples"
-    package-ecosystem: "gradle"
-    schedule:
-      interval: "daily"
-  - directory: "/examples"
+  # check Skaffold dependencies
+  - directory: "/"
     package-ecosystem: "gomod"
     schedule:
       interval: "daily"
+    # Security updates have their own PR limit, so setting this to 0 will only
+    # allow security updates through.
+    open-pull-requests-limit: 0
+
+  # check for updates to github actions
+  - directory: "/"
+    package-ecosystem: "github-actions"
+    schedule:
+      interval: "daily"
+
   - directory: "/integration/examples"
     package-ecosystem: "npm"
     schedule:
@@ -53,6 +43,35 @@ updates:
     schedule:
       interval: "daily"
   - directory: "/integration/examples"
+    package-ecosystem: "gomod"
+    schedule:
+      interval: "daily"
+
+  - directory: "/examples"
+    package-ecosystem: "npm"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "bundler"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "composer"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "maven"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "gradle"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
     package-ecosystem: "gomod"
     schedule:
       interval: "daily"

@@ -19,6 +19,8 @@ enum BuilderType {
     KANIKO = 5;
     // Docker Builder
     DOCKER = 6;
+    // Ko Builder
+    KO = 7;
 }
 
 // Enum indicating build type i.e. local, cluster vs GCB
@@ -41,6 +43,20 @@ enum TesterType {
     UNIT = 1;
     // Container Structure tests
     CONTAINER_STRUCTURE_TEST = 2;
+}
+
+// Enum indicating render manifests type
+enum RenderType {
+    // Could not determine Render Type
+    UNKNOWN_RENDER_TYPE = 0;
+    // Raw Manifests
+    RAWK8S = 1;
+    // kustomize manifests
+    KUSTOMIZE_MANIFEST = 2;
+    // helm charts
+    HELM_CHART = 3;
+    // kpt manifests
+    KPT_MANIFEST = 4;
 }
 
 // Enum indicating deploy tools used
@@ -83,6 +99,10 @@ enum LogLevel {
     FATAL = 4;
     // Panic Level
     PANIC = 5;
+    // Trace Level
+    TRACE = 6;
+    // User-visible output level
+    STANDARD = 7;
 }
 
 // Enum for Status codes<br>
@@ -167,6 +187,47 @@ enum StatusCode {
     // Error parsing Docker Network mode
     INIT_DOCKER_NETWORK_PARSE_ERR = 126;
 
+    // GCB Create Build Error
+    BUILD_GCB_CREATE_BUILD_ERR = 128;
+    // GCB error indicating an error to fetch build id.
+    BUILD_GCB_GET_BUILD_ID_ERR = 129;
+    // GCB error indicating an error to fetch build status.
+    BUILD_GCB_GET_BUILD_STATUS_ERR = 130;
+    // GCB error indicating an error to fetch build logs.
+    BUILD_GCB_GET_BUILD_LOG_ERR = 131;
+    // GCB error indicating an error to fetch build status.
+    BUILD_GCB_COPY_BUILD_LOG_ERR = 132;
+    // GCB error indicating an error retrieving the built image id.
+    BUILD_GCB_GET_BUILT_IMAGE_ERR = 133;
+    // GCB error indicating build failure.
+    BUILD_GCB_BUILD_FAILED = 134;
+    // GCB error indicating build failure due to internal errror.
+    BUILD_GCB_BUILD_INTERNAL_ERR = 135;
+    // GCB error indicating build failure due to timeout.
+    BUILD_GCB_BUILD_TIMEOUT = 136;
+    // GCB error to generate the build descriptor.
+    BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR = 137;
+    // GCB error to upload to GCS.
+    BUILD_GCB_UPLOAD_TO_GCS_ERR = 138;
+    // GCB error to fetch jib artifact dependency.
+    BUILD_GCB_JIB_DEPENDENCY_ERR = 139;
+    // GCB error to fetch artifact dependency.
+    BUILD_GCB_GET_DEPENDENCY_ERR = 140;
+    // GCB error to get GCS bucket.
+    BUILD_GCB_GET_GCS_BUCKET_ERR = 141;
+    // GCB error to create a GCS bucket.
+    BUILD_GCB_CREATE_BUCKET_ERR = 142;
+    // GCB error to extract Project ID.
+    BUILD_GCB_EXTRACT_PROJECT_ID = 143;
+    // GCB error to get cloud storage client to perform GCS operation.
+    BUILD_GET_CLOUD_STORAGE_CLIENT_ERR= 144;
+    // GCB error to get cloud build client to perform GCB operations.
+    BUILD_GET_CLOUD_BUILD_CLIENT_ERR = 145;
+
+    // Build platform errors
+
+    // Value provided to --platform flag cannot be parsed
+    BUILD_UNKNOWN_PLATFORM_FLAG = 150;
 
     // Container errors
 
@@ -180,10 +241,14 @@ enum StatusCode {
     STATUSCHECK_CONTAINER_TERMINATED = 303;
     // Deployment waiting for rollout
     STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 304;
+    // Standalone pods pending to stabilize
+    STATUSCHECK_STANDALONE_PODS_PENDING = 305;
     // Container restarting error
     STATUSCHECK_CONTAINER_RESTARTING = 356;
     // Readiness probe failed
     STATUSCHECK_UNHEALTHY = 357;
+    // Executable binary format error
+    STATUSCHECK_CONTAINER_EXEC_ERROR = 358;
 
     // K8 infra errors
 
@@ -213,11 +278,26 @@ enum StatusCode {
     // Kubectl client fetch err
     STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR = 411;
     STATUSCHECK_DEPLOYMENT_FETCH_ERR = 412;
+    STATUSCHECK_STANDALONE_PODS_FETCH_ERR = 413;
+    STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR = 414;
+    STATUSCHECK_STATEFULSET_FETCH_ERR = 415;
 
     // Pod States
 
     // Pod Initializing
     STATUSCHECK_POD_INITIALIZING = 451;
+
+    // Config Connector resource states
+    // Maps to https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus#statuses
+
+    // The actual state of the resource has not yet reached the desired state
+    STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS = 452;
+    // The process of reconciling the actual state with the desired state has encountered an error
+    STATUSCHECK_CONFIG_CONNECTOR_FAILED = 453;
+    // The resource is in the process of being deleted
+    STATUSCHECK_CONFIG_CONNECTOR_TERMINATING = 454;
+    // The resource does not exist
+    STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND = 455;
 
     // Unknown Error Codes
 
@@ -231,6 +311,8 @@ enum StatusCode {
     STATUSCHECK_CONTAINER_WAITING_UNKNOWN = 503;
     // Container event reason unknown
     STATUSCHECK_UNKNOWN_EVENT = 509;
+    // Status Check internal error
+    STATUSCHECK_INTERNAL_ERROR = 514;
 
     // Deploy failed due to unknown reason
     DEPLOY_UNKNOWN = 504;
@@ -248,6 +330,8 @@ enum StatusCode {
     BUILD_DOCKER_UNKNOWN = 511;
     // Test failed due to unknown reason
     TEST_UNKNOWN = 512;
+    // GCB error indicating build failed due to unknown status.
+    BUILD_GCB_BUILD_UNKNOWN_STATUS = 513;
 
 
     // FILE_SYNC Failures
@@ -283,6 +367,8 @@ enum StatusCode {
     BUILD_DOCKER_CANCELLED = 804;
     // Build error due to docker deadline was reached before the docker action completed
     BUILD_DOCKER_DEADLINE = 805;
+    // GCB Build cancelled.
+    BUILD_GCB_BUILD_CANCELLED = 806;
 
     // Skaffold Initialization Phase session errors
 
@@ -427,6 +513,10 @@ enum StatusCode {
     CONFIG_UNKNOWN_VALIDATOR = 1214;
     // The transformer is not allowed in skaffold-managed mode.
     CONFIG_UNKNOWN_TRANSFORMER = 1215;
+    // Manifest file not found
+    CONFIG_MISSING_MANIFEST_FILE_ERR = 1216;
+    // Remote config repository cache not found and sync disabled
+    CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR = 1217;
 
     // Inspect command errors
 
@@ -483,6 +573,8 @@ enum SuggestionCode {
     // Set Cleanup flag for skaffold command.
     SET_CLEANUP_FLAG = 116;
 
+    // Build platform error suggestion codes
+    BUILD_FIX_UNKNOWN_PLATFORM_FLAG = 117;
 
 
     // Deploy error suggestion codes
@@ -581,6 +673,10 @@ enum SuggestionCode {
     CONFIG_ALLOWLIST_VALIDATORS = 708;
     // Only the allow listed transformers are acceptable in skaffold-managed mode.
     CONFIG_ALLOWLIST_transformers = 709;
+    // Check mising manifest file section of config and fix as needed.
+    CONFIG_FIX_MISSING_MANIFEST_FILE = 710;
+    // Enable remote repo sync, or clone manually
+    CONFIG_ENABLE_REMOTE_REPO_SYNC = 711;
 
     // `skaffold inspect` command error suggestion codes
 
@@ -590,7 +686,7 @@ enum SuggestionCode {
     INSPECT_USE_ADD_BUILD_ENV = 801;
     // Check profile flag value
     INSPECT_CHECK_INPUT_PROFILE = 802;
-    
+
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
 

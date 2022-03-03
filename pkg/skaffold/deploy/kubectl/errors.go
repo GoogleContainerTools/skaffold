@@ -31,13 +31,13 @@ const (
 
 func versionGetErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: deployerr.MissingToolErr(toolName, err),
 			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_VERSION_ERR,
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_INSTALL_KUBECTL,
-					Action:         fmt.Sprintf("Please install kubeclt via %s", installLink),
+					Action:         fmt.Sprintf("Please install kubectl via %s", installLink),
 				},
 			},
 		})
@@ -45,7 +45,7 @@ func versionGetErr(err error) error {
 
 func offlineModeErr() error {
 	return sErrors.NewErrorWithStatusCode(
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: "Cannot use offline mode if URL manifests are configured",
 			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_OFFLINE_MODE_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -59,7 +59,7 @@ func offlineModeErr() error {
 
 func waitForDeletionErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("waiting for deletion: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_ERR_WAITING_FOR_DELETION,
 		})
@@ -67,7 +67,7 @@ func waitForDeletionErr(err error) error {
 
 func readManifestErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -75,7 +75,7 @@ func readManifestErr(err error) error {
 
 func readRemoteManifestErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_REMOTE_MANIFEST_ERR,
 		})
@@ -83,7 +83,7 @@ func readRemoteManifestErr(err error) error {
 
 func listManifestErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_LIST_MANIFEST_ERR,
 		})

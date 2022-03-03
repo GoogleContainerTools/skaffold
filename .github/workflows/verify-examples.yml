@@ -1,0 +1,65 @@
+name: Verify examples
+
+# Triggers the workflow on push or pull request events
+on: [pull_request]
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: true
+
+jobs:
+  dependabot:
+    name: Verify changes to examples
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17.*
+      id: go
+
+    # Skip changes not affecting examples or integration/examples
+    - name: Computes number of changes to examples
+      # can't use github.event.before as it may represent
+      run: |
+        git diff --name-only ${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}} \
+             | sed -n -e 's;^examples/\([^/]*\)/.*;examples/\1;p' -e 's;^integration/examples/\([^/]*\)/.*;integration/examples/\1;p' \
+             | sort -u > /tmp/changed
+        CHANGED_EXAMPLES=$(tr '\012' ' ' < /tmp/changed)
+        echo "CHANGED_EXAMPLES=$CHANGED_EXAMPLES"
+        echo "CHANGED_EXAMPLES=$CHANGED_EXAMPLES" >> $GITHUB_ENV
+        CHANGED_EXAMPLES_COUNT=$(wc -l < /tmp/changed)
+        echo CHANGED_EXAMPLES_COUNT=$CHANGED_EXAMPLES_COUNT
+        echo "CHANGED_EXAMPLES_COUNT=$CHANGED_EXAMPLES_COUNT" >> $GITHUB_ENV
+
+    #- name: Install Minikube from minikube master branch @HEAD and start cluster
+    #  run: |
+    #   curl -Lo minikube https://storage.googleapis.com/minikube-builds/master/minikube-linux-amd64
+    #    sudo install minikube /usr/local/bin/minikube
+    #    minikube start --profile=minikube --driver=docker
+
+    - name: Build Skaffold from HEAD
+      if: ${{ env.CHANGED_EXAMPLES_COUNT > 0 }}
+      run: |
+        make
+        echo SKAFFOLD_BINARY=$PWD/out/skaffold >> $GITHUB_ENV
+        out/skaffold config set --global collect-metrics false
+
+    - name: Build changed examples
+      if: ${{ env.CHANGED_EXAMPLES_COUNT > 0 }}
+      run: |
+        for dir in $CHANGED_EXAMPLES; do
+            (cd $dir && echo ">> $dir" && \
+                if [ $(expr "$($SKAFFOLD_BINARY inspect build-env list)" : '.*"type":"local".*') -gt 0 ]; then \
+                    $SKAFFOLD_BINARY build --push=false; \
+                else \
+                    echo "skipping $dir: not local build-env"; \
+                fi) \
+             || exit 1;
+        done

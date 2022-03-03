@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly DOCS_CHANGES=`git diff --name-status master | grep "docs/" | wc -l`
+readonly DOCS_CHANGES=`git diff --name-status main | grep "docs/" | wc -l`
 
 if [ $DOCS_CHANGES -gt 0 ]; then
   echo "There are $DOCS_CHANGES changes in docs, testing site generation..."

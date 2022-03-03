@@ -25,7 +25,7 @@ import (
 
 func replaceImageErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("replacing images in manifest: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_REPLACE_IMAGE_ERR,
 		})
@@ -33,7 +33,7 @@ func replaceImageErr(err error) error {
 
 func transformManifestErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to transform manifests: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_TRANSFORM_MANIFEST_ERR,
 		})
@@ -41,7 +41,7 @@ func transformManifestErr(err error) error {
 
 func labelSettingErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("setting labels in manifests: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_SET_LABEL_ERR,
 		})
@@ -52,7 +52,7 @@ func parseImagesInManifestErr(err error) error {
 		return err
 	}
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("parsing images in manifests: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_PARSE_MANIFEST_IMAGES_ERR,
 		})
@@ -60,7 +60,7 @@ func parseImagesInManifestErr(err error) error {
 
 func writeErr(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_MANIFEST_WRITE_ERR,
 		})

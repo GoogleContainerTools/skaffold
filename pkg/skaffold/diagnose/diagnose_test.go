@@ -86,7 +86,7 @@ func TestCheckArtifacts(t *testing.T) {
 				Workspace: tmpDir.Root(),
 				ArtifactType: latestV1.ArtifactType{
 					DockerArtifact: &latestV1.DockerArtifact{
-						DockerfilePath: tmpDir.Path("Dockerfile"),
+						DockerfilePath: "Dockerfile",
 					},
 				},
 			}},
@@ -105,6 +105,12 @@ func (c *mockConfig) PipelineForImage() latestV1.Pipeline {
 	var pipeline latestV1.Pipeline
 	pipeline.Build.Artifacts = c.artifacts
 	return pipeline
+}
+
+func (c *mockConfig) GetPipelines() []latestV1.Pipeline {
+	var pipelines []latestV1.Pipeline
+	pipelines = append(pipelines, c.PipelineForImage())
+	return pipelines
 }
 
 func (c *mockConfig) Artifacts() []*latestV1.Artifact {

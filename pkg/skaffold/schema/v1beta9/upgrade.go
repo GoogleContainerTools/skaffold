@@ -17,11 +17,11 @@ limitations under the License.
 package v1beta9
 
 import (
+	"context"
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta10"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -110,7 +110,7 @@ func convertSyncRules(artifacts []*Artifact) [][]*next.SyncRule {
 		a.Sync = nil
 	}
 	if len(incompatiblePatterns) > 0 {
-		logrus.Warnf(incompatibleSyncWarning, incompatiblePatterns)
+		log.Entry(context.TODO()).Warnf(incompatibleSyncWarning, incompatiblePatterns)
 	}
 	return newSync
 }

@@ -17,16 +17,17 @@ limitations under the License.
 package helm
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"strconv"
 
 	"github.com/blang/semver"
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -42,6 +43,7 @@ type installOpts struct {
 	helmVersion  semver.Version
 	postRenderer string
 	repo         string
+	version      string
 }
 
 // constructOverrideArgs creates the command line arguments for overrides
@@ -73,7 +75,7 @@ func constructOverrideArgs(r *latestV1.HelmRelease, builds []graph.Artifact, arg
 			envMap[k+suffix] = v
 		}
 	}
-	logrus.Debugf("EnvVarMap: %+v\n", envMap)
+	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
 
 	for _, k := range sortKeys(r.SetValueTemplates) {
 		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
@@ -146,8 +148,8 @@ func (h *Deployer) installArgs(r latestV1.HelmRelease, builds []graph.Artifact, 
 	// 2) Package chart into a .tgz archive with specific version and then deploy
 	//    that packaged chart. This way user can apply any version and appVersion
 	//    for the chart.
-	if r.Packaged == nil && r.Version != "" {
-		args = append(args, "--version", r.Version)
+	if r.Packaged == nil && o.version != "" {
+		args = append(args, "--version", o.version)
 	}
 
 	args = append(args, o.chartPath)
@@ -173,10 +175,6 @@ func (h *Deployer) installArgs(r latestV1.HelmRelease, builds []graph.Artifact, 
 		return nil, err
 	}
 
-	if len(r.Overrides.Values) != 0 {
-		args = append(args, "-f", constants.HelmOverridesFilename)
-	}
-
 	for k, v := range params {
 		var value string
 
@@ -196,6 +194,10 @@ func (h *Deployer) installArgs(r latestV1.HelmRelease, builds []graph.Artifact, 
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(r.Overrides.Values) != 0 {
+		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
 	if r.Wait {

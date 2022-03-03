@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -56,6 +57,7 @@ func TestGetHashForArtifact(t *testing.T) {
 		dependencies []string
 		artifact     *latestV1.Artifact
 		mode         config.RunMode
+		platforms    platform.Resolver
 		expected     string
 	}{
 		{
@@ -159,7 +161,7 @@ func TestGetHashForArtifact(t *testing.T) {
 			}
 
 			depLister := stubDependencyLister(test.dependencies)
-			actual, err := newArtifactHasher(nil, depLister, test.mode).hash(context.Background(), test.artifact)
+			actual, err := newArtifactHasher(nil, depLister, test.mode).hash(context.Background(), test.artifact, test.platforms)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -243,7 +245,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 				return test.fileDeps[a.ImageName], nil
 			}
 
-			actual, err := newArtifactHasher(g, depLister, test.mode).hash(context.Background(), test.artifacts[0])
+			actual, err := newArtifactHasher(g, depLister, test.mode).hash(context.Background(), test.artifacts[0], platform.Resolver{})
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -306,21 +308,21 @@ func TestBuildArgs(t *testing.T) {
 			}
 			t.Override(&fileHasherFunc, mockCacheHasher)
 			t.Override(&artifactConfigFunc, fakeArtifactConfig)
-			actual, err := newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact)
+			actual, err := newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change order of buildargs
 			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": util.StringPtr("2"), "one": util.StringPtr("1")}
-			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact)
+			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change build args, get different hash
 			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": util.StringPtr("1")}
-			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact)
+			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
 
 			t.CheckNoError(err)
 			if actual == test.expected {
@@ -353,7 +355,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		t.Override(&artifactConfigFunc, fakeArtifactConfig)
 
 		depLister := stubDependencyLister([]string{"graph"})
-		hash1, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact)
+		hash1, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact, platform.Resolver{})
 
 		t.CheckNoError(err)
 
@@ -363,7 +365,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			return []string{"FOO=baz"}
 		}
 
-		hash2, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact)
+		hash2, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact, platform.Resolver{})
 
 		t.CheckNoError(err)
 		if hash1 == hash2 {
@@ -420,7 +422,7 @@ func TestCacheHasher(t *testing.T) {
 			path := originalFile
 			depLister := stubDependencyLister([]string{tmpDir.Path(originalFile)})
 
-			oldHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latestV1.Artifact{})
+			oldHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latestV1.Artifact{}, platform.Resolver{})
 			t.CheckNoError(err)
 
 			test.update(originalFile, tmpDir)
@@ -429,7 +431,7 @@ func TestCacheHasher(t *testing.T) {
 			}
 
 			depLister = stubDependencyLister([]string{tmpDir.Path(path)})
-			newHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latestV1.Artifact{})
+			newHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latestV1.Artifact{}, platform.Resolver{})
 
 			t.CheckNoError(err)
 			t.CheckFalse(test.differentHash && oldHash == newHash)

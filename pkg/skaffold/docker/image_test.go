@@ -139,6 +139,7 @@ func TestBuild(t *testing.T) {
 				Target:      "target",
 				NetworkMode: "None",
 				NoCache:     true,
+				PullParent:  true,
 			},
 			mode: config.RunModes.Dev,
 			expected: types.ImageBuildOptions{
@@ -154,6 +155,7 @@ func TestBuild(t *testing.T) {
 				Target:      "target",
 				NetworkMode: "none",
 				NoCache:     true,
+				PullParent:  true,
 			},
 		},
 		{
@@ -309,6 +311,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--cache-from", "gcr.io/foo/bar", "--cache-from", "baz:latest"},
 		},
 		{
+			description: "additional CLI flags",
+			artifact: &latestV1.DockerArtifact{
+				CliFlags: []string{"--foo", "--bar"},
+			},
+			want: []string{"--foo", "--bar"},
+		},
+		{
 			description: "target",
 			artifact: &latestV1.DockerArtifact{
 				Target: "stage1",
@@ -330,6 +339,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--no-cache"},
 		},
 		{
+			description: "pullParent",
+			artifact: &latestV1.DockerArtifact{
+				PullParent: true,
+			},
+			want: []string{"--pull"},
+		},
+		{
 			description: "squash",
 			artifact: &latestV1.DockerArtifact{
 				Squash: true,
@@ -339,21 +355,39 @@ func TestGetBuildArgs(t *testing.T) {
 		{
 			description: "secret with no source",
 			artifact: &latestV1.DockerArtifact{
-				Secret: &latestV1.DockerSecret{
-					ID: "mysecret",
+				Secrets: []*latestV1.DockerSecret{
+					{ID: "mysecret"},
 				},
 			},
 			want: []string{"--secret", "id=mysecret"},
 		},
 		{
-			description: "secret with source",
+			description: "secret with file source",
 			artifact: &latestV1.DockerArtifact{
-				Secret: &latestV1.DockerSecret{
-					ID:     "mysecret",
-					Source: "foo.src",
+				Secrets: []*latestV1.DockerSecret{
+					{ID: "mysecret", Source: "foo.src"},
 				},
 			},
 			want: []string{"--secret", "id=mysecret,src=foo.src"},
+		},
+		{
+			description: "secret with env source",
+			artifact: &latestV1.DockerArtifact{
+				Secrets: []*latestV1.DockerSecret{
+					{ID: "mysecret", Env: "FOO"},
+				},
+			},
+			want: []string{"--secret", "id=mysecret,env=FOO"},
+		},
+		{
+			description: "multiple secrets",
+			artifact: &latestV1.DockerArtifact{
+				Secrets: []*latestV1.DockerSecret{
+					{ID: "mysecret", Source: "foo.src"},
+					{ID: "anothersecret", Source: "bar.src"},
+				},
+			},
+			want: []string{"--secret", "id=mysecret,src=foo.src", "--secret", "id=anothersecret,src=bar.src"},
 		},
 		{
 			description: "ssh with no source",
@@ -371,8 +405,10 @@ func TestGetBuildArgs(t *testing.T) {
 				CacheFrom:   []string{"foo"},
 				Target:      "stage1",
 				NetworkMode: "None",
+				CliFlags:    []string{"--foo", "--bar"},
+				PullParent:  true,
 			},
-			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1", "--network", "none"},
+			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--foo", "--bar", "--target", "stage1", "--network", "none", "--pull"},
 		},
 	}
 	for _, test := range tests {
@@ -500,6 +536,10 @@ func TestTagWithImageID(t *testing.T) {
 			description: "invalid",
 			imageName:   "!!invalid!!",
 			shouldErr:   true,
+		},
+		{
+			description: "empty image id",
+			imageName:   "ref",
 		},
 	}
 	for _, test := range tests {

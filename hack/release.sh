@@ -20,6 +20,8 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXAMPLES_DIR=${DIR}/../examples
 INTEGRATION_EXAMPLES_DIR=${DIR}/../integration/examples
 
+go run hack/release/changelog/main.go
+
 if ! [[ -x "${DIR}/release-notes" ]]; then
   echo >&2 'Installing release-notes'
   cd "${DIR}/tools"
@@ -29,6 +31,8 @@ fi
 
 # you can pass your github token with --token here if you run out of requests
 "${DIR}/release-notes" GoogleContainerTools skaffold
+# remove binary when done
+rm "${DIR}/release-notes"
 
 # sync files from integration examples to examples/
 rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*

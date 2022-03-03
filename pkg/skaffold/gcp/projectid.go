@@ -32,7 +32,7 @@ func ExtractProjectID(imageName string) (string, error) {
 	}
 
 	registry := ref.Context().Registry.Name()
-	if registry == "gcr.io" || strings.HasSuffix(registry, ".gcr.io") {
+	if registry == "gcr.io" || strings.HasSuffix(registry, ".gcr.io") || strings.HasSuffix(registry, "-docker.pkg.dev") {
 		parts := strings.Split(imageName, "/")
 		if len(parts) >= 2 {
 			return parts[1], nil

@@ -21,12 +21,14 @@ var (
 )
 
 type Server struct {
-	BuildIntentCallback  func()
-	SyncIntentCallback   func()
-	DeployIntentCallback func()
-	AutoBuildCallback    func(bool)
-	AutoSyncCallback     func(bool)
-	AutoDeployCallback   func(bool)
+	BuildIntentCallback   func()
+	SyncIntentCallback    func()
+	DeployIntentCallback  func()
+	DevloopIntentCallback func()
+	AutoBuildCallback     func(bool)
+	AutoSyncCallback      func(bool)
+	AutoDeployCallback    func(bool)
+	AutoDevloopCallback   func(bool)
 }
 
 // TODO(marlongamez): Add Set*Callback() funcs once going for v1 feature parity

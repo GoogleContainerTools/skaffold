@@ -28,7 +28,6 @@ import (
 
 	cstorage "cloud.google.com/go/storage"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
@@ -37,11 +36,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
@@ -66,19 +69,25 @@ func (b *Builder) Concurrency() int {
 	return b.GoogleCloudBuild.Concurrency
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, platform platform.Matcher) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"Destination": instrumentation.PII(tag),
 	})
 	// TODO: [#4922] Implement required artifact resolution from the `artifactStore`
-	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
+	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions(ctx)...)
 	if err != nil {
-		return "", fmt.Errorf("getting cloudbuild client: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GET_CLOUD_BUILD_CLIENT_ERR,
+			Message: fmt.Sprintf("getting cloudbuild client: %s", err),
+		})
 	}
 
-	c, err := cstorage.NewClient(ctx, gcp.ClientOptions()...)
+	c, err := cstorage.NewClient(ctx, gcp.ClientOptions(ctx)...)
 	if err != nil {
-		return "", fmt.Errorf("getting cloud storage client: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GET_CLOUD_STORAGE_CLIENT_ERR,
+			Message: fmt.Sprintf("getting cloud storage client: %s", err),
+		})
 	}
 	defer c.Close()
 
@@ -86,25 +95,38 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	if projectID == "" {
 		guessedProjectID, err := gcp.ExtractProjectID(tag)
 		if err != nil {
-			return "", fmt.Errorf("extracting projectID from image name: %w", err)
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_EXTRACT_PROJECT_ID,
+				Message: fmt.Sprintf("extracting projectID from image name: %s", err),
+			})
 		}
 
 		projectID = guessedProjectID
 	}
+	log.Entry(ctx).Debugf("project id set to %s", projectID)
 
 	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
 	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", projectID, uuid.New().String())
 
 	if err := b.createBucketIfNotExists(ctx, c, projectID, cbBucket); err != nil {
-		return "", fmt.Errorf("creating bucket if not exists: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_CREATE_BUCKET_ERR,
+			Message: fmt.Sprintf("creating bucket if not exists: %s", err),
+		})
 	}
 	if err := b.checkBucketProjectCorrect(ctx, c, projectID, cbBucket); err != nil {
-		return "", fmt.Errorf("checking bucket is in correct project: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_GET_GCS_BUCKET_ERR,
+			Message: fmt.Sprintf("checking bucket is in correct project: %s", err),
+		})
 	}
 
 	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact)
 	if err != nil {
-		return "", fmt.Errorf("getting dependencies for %q: %w", artifact.ImageName, err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_GET_DEPENDENCY_ERR,
+			Message: fmt.Sprintf("getting dependencies for %q: %s", artifact.ImageName, err),
+		})
 	}
 
 	output.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
@@ -115,30 +137,46 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	if artifact.JibArtifact != nil {
 		deps, err := jibAddWorkspaceToDependencies(artifact.Workspace, dependencies)
 		if err != nil {
-			return "", fmt.Errorf("walking workspace for Jib projects: %w", err)
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_JIB_DEPENDENCY_ERR,
+				Message: fmt.Sprintf("walking workspace for Jib projects: %s", err),
+			})
 		}
 		dependencies = deps
 	}
 
 	if err := sources.UploadToGCS(ctx, c, artifact, cbBucket, buildObject, dependencies); err != nil {
-		return "", fmt.Errorf("uploading source archive: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_UPLOAD_TO_GCS_ERR,
+			Message: fmt.Sprintf("uploading source archive: %s", err),
+		})
 	}
 
-	buildSpec, err := b.buildSpec(artifact, tag, cbBucket, buildObject)
+	buildSpec, err := b.buildSpec(ctx, artifact, tag, platform, cbBucket, buildObject)
 	if err != nil {
-		return "", fmt.Errorf("could not create build description: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR,
+			Message: fmt.Sprintf("could not create build description: %s", err),
+		})
 	}
-
 	call := cbclient.Projects.Builds.Create(projectID, &buildSpec)
 	op, err := call.Context(ctx).Do()
+
 	if err != nil {
-		return "", fmt.Errorf("could not create build: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_CREATE_BUILD_ERR,
+			Message: fmt.Sprintf("error creating build: %s", err),
+		})
 	}
 
 	remoteID, err := getBuildID(op)
 	if err != nil {
-		return "", fmt.Errorf("getting build ID from op: %w", err)
+		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+			ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_ID_ERR,
+			Message: err.Error(),
+		})
 	}
+
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
 	output.Default.Fprintf(out, "Logs are available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
 
@@ -148,7 +186,7 @@ watch:
 	for {
 		var cb *cloudbuild.Build
 		var err error
-		logrus.Debugf("current offset %d", offset)
+		log.Entry(ctx).Debugf("current offset %d", offset)
 		backoff := NewStatusBackoff()
 		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
 			time.Sleep(backoff.Step())
@@ -162,23 +200,38 @@ watch:
 			}
 			return false, err
 		}); waitErr != nil {
-			return "", fmt.Errorf("getting build status: %w", waitErr)
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_STATUS_ERR,
+				Message: fmt.Sprintf("error getting build status: %s", waitErr),
+			})
 		}
 		if err != nil {
-			return "", fmt.Errorf("getting build status: %w", err)
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_STATUS_ERR,
+				Message: fmt.Sprintf("error getting build status %s", err),
+			})
 		}
 		if cb == nil {
-			return "", errors.New("getting build status")
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_STATUS_ERR,
+				Message: "error getting build status",
+			})
 		}
 
 		r, err := b.getLogs(ctx, c, offset, cbBucket, logsObject)
 		if err != nil {
-			return "", fmt.Errorf("getting logs: %w", err)
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_LOG_ERR,
+				Message: fmt.Sprintf("error getting logs: %s", err),
+			})
 		}
 		if r != nil {
 			written, err := io.Copy(out, r)
 			if err != nil {
-				return "", fmt.Errorf("copying logs to stdout: %w", err)
+				return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+					ErrCode: proto.StatusCode_BUILD_GCB_COPY_BUILD_LOG_ERR,
+					Message: fmt.Sprintf("error copying logs to stdout: %s", err),
+				})
 			}
 			offset += written
 			r.Close()
@@ -188,22 +241,46 @@ watch:
 		case StatusSuccess:
 			digest, err = b.getDigest(cb, tag)
 			if err != nil {
-				return "", fmt.Errorf("getting image id from finished build: %w", err)
+				return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+					ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILT_IMAGE_ERR,
+					Message: fmt.Sprintf("error getting image id from finished build: %s", err),
+				})
 			}
 			break watch
-		case StatusFailure, StatusInternalError, StatusTimeout, StatusCancelled:
-			return "", fmt.Errorf("cloud build failed: %s", cb.Status)
+		case StatusFailure:
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_BUILD_FAILED,
+				Message: fmt.Sprintf(" cloud build failed: %s", cb.Status),
+			})
+		case StatusInternalError:
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_BUILD_INTERNAL_ERR,
+				Message: fmt.Sprintf("cloud build failed due to internal error: %s", cb.Status),
+			})
+		case StatusTimeout:
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_BUILD_TIMEOUT,
+				Message: fmt.Sprintf("cloud build timedout: %s", cb.Status),
+			})
+		case StatusCancelled:
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_BUILD_CANCELLED,
+				Message: fmt.Sprintf("cloud build cancelled: %s", cb.Status),
+			})
 		default:
-			return "", fmt.Errorf("unknown status: %s", cb.Status)
+			return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_GCB_BUILD_UNKNOWN_STATUS,
+				Message: fmt.Sprintf("cloud build status unknown: %s", cb.Status),
+			})
 		}
 
 		time.Sleep(RetryDelay)
 	}
 
 	if err := c.Bucket(cbBucket).Object(buildObject).Delete(ctx); err != nil {
-		logrus.Warnf("Unable to deleting source archive after build: %q: %v", buildObject, err)
+		log.Entry(ctx).Warnf("Unable to deleting source archive after build: %q: %v", buildObject, err)
 	} else {
-		logrus.Infof("Deleted source archive %s", buildObject)
+		log.Entry(ctx).Infof("Deleted source archive %s", buildObject)
 	}
 
 	return build.TagWithDigest(tag, digest), nil
@@ -241,12 +318,12 @@ func (b *Builder) getLogs(ctx context.Context, c *cstorage.Client, offset int64,
 			switch gerr.Code {
 			// case http.
 			case 404, 416, 429, 503:
-				logrus.Debugf("Status Code: %d, %s", gerr.Code, gerr.Body)
+				log.Entry(ctx).Debugf("Status Code: %d, %s", gerr.Code, gerr.Body)
 				return nil, nil
 			}
 		}
 		if err == cstorage.ErrObjectNotExist {
-			logrus.Debugf("Logs for %s %s not uploaded yet...", bucket, objectName)
+			log.Entry(ctx).Debugf("Logs for %s %s not uploaded yet...", bucket, objectName)
 			return nil, nil
 		}
 		return nil, fmt.Errorf("unknown error: %w", err)
@@ -294,7 +371,7 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 	if e, ok := err.(*googleapi.Error); ok {
 		if e.Code == http.StatusConflict {
 			// 409 errors are ok, there could have been a race condition or eventual consistency.
-			logrus.Debugf("Not creating bucket, got a 409 error indicating it already exists.")
+			log.Entry(ctx).Debug("Not creating bucket, got a 409 error indicating it already exists.")
 			return nil
 		}
 	}
@@ -302,6 +379,6 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Created bucket %s in %s", bucket, projectID)
+	log.Entry(ctx).Debugf("Created bucket %s in %s", bucket, projectID)
 	return nil
 }

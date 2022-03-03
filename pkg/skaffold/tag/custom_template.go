@@ -18,11 +18,11 @@ package tag
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"text/template"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -46,8 +46,8 @@ func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, er
 }
 
 // GenerateTag generates a tag from a template referencing tagging strategies.
-func (t *customTemplateTagger) GenerateTag(image latestV1.Artifact) (string, error) {
-	customMap, err := t.EvaluateComponents(image)
+func (t *customTemplateTagger) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
+	customMap, err := t.EvaluateComponents(ctx, image)
 	if err != nil {
 		return "", err
 	}
@@ -62,14 +62,14 @@ func (t *customTemplateTagger) GenerateTag(image latestV1.Artifact) (string, err
 }
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
-func (t *customTemplateTagger) EvaluateComponents(image latestV1.Artifact) (map[string]string, error) {
+func (t *customTemplateTagger) EvaluateComponents(ctx context.Context, image latestV1.Artifact) (map[string]string, error) {
 	customMap := map[string]string{}
 
 	gitTagger, _ := NewGitCommit("", "", false)
 	dateTimeTagger := NewDateTimeTagger("", "")
 
 	for k, v := range map[string]Tagger{"GIT": gitTagger, "DATE": dateTimeTagger, "SHA": &ChecksumTagger{}} {
-		tag, _ := v.GenerateTag(image)
+		tag, _ := v.GenerateTag(ctx, image)
 		customMap[k] = tag
 	}
 
@@ -77,7 +77,7 @@ func (t *customTemplateTagger) EvaluateComponents(image latestV1.Artifact) (map[
 		if _, ok := v.(*customTemplateTagger); ok {
 			return nil, fmt.Errorf("invalid component specified in custom template: %v", v)
 		}
-		tag, err := v.GenerateTag(image)
+		tag, err := v.GenerateTag(ctx, image)
 		if err != nil {
 			return nil, fmt.Errorf("evaluating custom template component: %w", err)
 		}
@@ -94,7 +94,7 @@ func ParseCustomTemplate(t string) (*template.Template, error) {
 // ExecuteCustomTemplate executes a customTemplate against a custom map.
 func ExecuteCustomTemplate(customTemplate *template.Template, customMap map[string]string) (string, error) {
 	var buf bytes.Buffer
-	logrus.Debugf("Executing custom template %v with custom map %v", customTemplate, customMap)
+	log.Entry(context.TODO()).Debugf("Executing custom template %v with custom map %v", customTemplate, customMap)
 	if err := customTemplate.Execute(&buf, customMap); err != nil {
 		return "", fmt.Errorf("executing template: %w", err)
 	}

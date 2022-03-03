@@ -25,8 +25,9 @@ source projects use ko.
 
 ## Proposal
 
-This proposal adds a new `ko` builder to Skaffold, based on the `ko publish`
-command. The integration does _not_ include other ko functionality related to
+This proposal adds a new `ko` builder to Skaffold, based on the `ko build`
+command (a.k.a. `ko publish`). The integration does _not_ include other ko
+functionality related to
 [rendering](https://github.com/google/ko#ko-resolve) manifests,
 [deploying](https://github.com/google/ko#ko-apply) to Kubernetes clusters, and
 [file watching](https://github.com/google/ko/blob/f7df8106196518df5c6c35432843421e33990329/pkg/commands/resolver.go#L240).
@@ -83,6 +84,189 @@ The ko builder supports and enhances these Skaffold
   installing additional tools or keeping toolchain versions in sync across
   local development and CI/CD.
 
+## Background: ko image names and Go import paths
+
+Ko uses Go import paths to build images. The
+[`ko build`](https://github.com/google/ko#build-an-image) command is similar
+to `go build` and takes a positional argument, which can be either a local
+file path or a Go  import path. If the argument is a local file path (as per
+[`go/build.IsLocalImport()`](https://pkg.go.dev/go/build#IsLocalImport))
+then, ko resolves the local file path to a Go import path (see
+[`github.com/google/ko/pkg/build`](https://github.com/google/ko/blob/ab4d264103bd4931c6721d52bfc9d1a2e79c81d1/pkg/build/gobuild.go#L261)).
+
+The import path must be of the package than contains the `main()` function.
+For instance, to build Skaffold using ko, from the repository root directory:
+
+```sh
+ko build ./cmd/skaffold
+```
+
+or
+
+```sh
+ko build github.com/GoogleContainerTools/skaffold/cmd/skaffold
+```
+
+When the ko CLI is used to
+[populate the image name in templated Kubernetes resource files](https://github.com/google/ko#kubernetes-integration),
+only the Go import path option can be used, and the import path must be
+prefixed by the `ko://` scheme, e.g.,
+`ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold`.
+
+Ko determines the image name from the container image registry (provided by the
+`KO_DOCKER_REPO` environment variable) and the Go import path. The Go import
+path is appended in one of these ways:
+
+- The last path segment (e.g., `skaffold`), followed by a hyphen and a MD5
+  hash. This is the default behavior of the `ko build` command.
+
+- The last path segment (e.g., `skaffold`) only, if `ko build` is invoked
+  with the `-B` or `--base-import-paths` flag.
+
+- The full import path, lowercased (e.g.,
+  `github.com/googlecontainertools/skaffold/cmd/skaffold`), if `ko build` is
+  invoked with the `-P` or `--preserve-import-paths` flag. This is the option
+  used by projects such as Knative (see the
+  [`release.sh` script](https://github.com/knative/serving/blob/v0.24.0/vendor/knative.dev/hack/release.sh#L98))
+  and Tekton
+  (see the pipeline in
+  [publish.yaml](https://github.com/tektoncd/pipeline/blob/v0.25.0/tekton/publish.yaml#L137)).
+
+- No import path (just `KO_DOCKER_REPO`), if `ko build` is invoked with the
+  `--bare` flag.
+
+## Supporting existing Skaffold users
+
+The Skaffold ko builder follows the existing Skaffold image naming logic. This
+means that the image naming behavior doesn't change for existing Skaffold users
+who migrate from other builders to the ko builder.
+
+The ko builder achieves this by using ko's
+[`Bare`](https://github.com/google/ko/blob/ab4d264103bd4931c6721d52bfc9d1a2e79c81d1/pkg/commands/options/publish.go#L60)
+naming option.
+
+By using this option, the image name is not tied to the Go import path. If the
+Skaffold
+[default repo](https://skaffold.dev/docs/environment/image-registries/) value
+is `gcr.io/k8s-skaffold` and the value of the `image` field in `skaffold.yaml`
+is `skaffold`, the resulting image name will be `gcr.io/k8s-skaffold/skaffold`.
+
+It is still necessary to resolve the Go import path for the underlying ko
+implementation. To do so, the ko builder determines the import path based on
+the value of the `main` config field. The `main` config field refers to the
+location of a main package and corresponds to a `go build` pattern, e.g.,
+`go build ./cmd/skaffold`. Using the `main` field results in deterministic
+behavior even in cases where there are multiple main packages in different
+directories.
+
+If `main` is a relative path (and it will be most of the time), it is
+relative to the current
+[`context`](https://skaffold.dev/docs/references/yaml/#build-artifacts-context)
+(a.k.a.
+[`Workspace`](https://github.com/GoogleContainerTools/skaffold/blob/v1.27.0/pkg/skaffold/schema/latest/v1/config.go#L832))
+directory.
+
+For example, to build Skaffold itself, with `package main` in the
+`./cmd/skaffold/` subdirectory, the config would be as follows:
+
+```yaml
+apiVersion: skaffold/v2beta26
+kind: Config
+build:
+  artifacts:
+  - image: skaffold
+    context: .
+    ko:
+      main: ./cmd/skaffold
+```
+
+Users can specify a `main` value using a pattern with the `...` wildcard, such
+as `./...`. In this case, ko locates the main package. If there are multiple
+main packages,
+[ko fails](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/build/gobuild.go#L270).
+
+Implementation note: The value of `main` will be the input when invoking
+[`QualifyImport()`](https://github.com/GoogleContainerTools/skaffold/blob/953594000be68fa8fad0ec4636ab03f8153a1c08/pkg/skaffold/build/ko/build.go#L93).
+
+If the Go sources and the `go.mod` file are in a subdirectory of the `context`
+directory, users can use the `dir` config field to specify the path where the
+ko builder runs the `go` tool.
+
+## Supporting existing ko users
+
+To support existing ko users moving to Skaffold, the ko builder also supports
+`image` names in `skaffold.yaml` that use the Go import path, prefixed by the
+`ko://` scheme. Examples of such image references in Kubernetes manifest files
+can be seen in projects such as
+[Knative](https://github.com/knative/serving/blob/main/config/core/deployments/activator.yaml#L41)
+and
+[Tekton](https://github.com/tektoncd/pipeline/blob/v0.25.0/config/controller.yaml#L66).
+
+In the case of `ko://`-prefixed image names, the Skaffold ko builder
+constructs the image name by:
+
+1.  Removing the `ko://` scheme prefix.
+2.  Transforming the import path to a valid image name using the function
+    [`SanitizeImageName()`](https://github.com/GoogleContainerTools/skaffold/blob/v1.27.0/pkg/skaffold/docker/reference.go#L83)
+    (from the package
+    `github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker`).
+3.  Combining the Skaffold default repo with the transformed import path as per
+    existing Skaffold image naming logic.
+
+This will result in image names that match those produced by the `ko` CLI when
+using the `-P` or `--preserve-import-paths` flag. For example, if the Skaffold
+default repo is `gcr.io/k8s-skaffold` and the `image` name in `skaffold.yaml`
+is `ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold`, the resulting
+image name will be
+`gcr.io/k8s-skaffold/github.com/googlecontainertools/skaffold/cmd/skaffold`.
+
+Real-world examples of image names that follow this naming convention can be
+found in the Tekton and Knative release manifests. For instance, view the
+images in the Knative Serving release YAMLs:
+
+```sh
+curl -sL https://github.com/knative/serving/releases/download/v0.24.0/serving-core.yaml | grep 'image: '
+```
+
+If the `image` field in `skaffold.yaml` starts with the `ko://` scheme prefix,
+the Skaffold ko builder uses the Go import path that follows the prefix. For
+example, to build Skaffold itself, with `package main` in the `./cmd/skaffold/`
+subdirectory, the config would be as follows:
+
+```yaml
+apiVersion: skaffold/v2beta26
+kind: Config
+build:
+  artifacts:
+  - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
+    context: .
+    ko: {}
+```
+
+The `main` field is ignored if the `image` field starts with the `ko://`
+scheme prefix.
+
+## Debugging ko images using Skaffold
+
+Ko provides the
+[`DisableOptimizations`](https://github.com/google/ko/blob/780c2812926cd706423e2ba65aeb1beb842c04af/pkg/commands/options/build.go#L34)
+build option to
+[set `gcflags` to disable optimizations and inlining](https://github.com/google/ko/blob/335c1ac8a6fdcc5eb0bb26579e4b44b4c62a9565/pkg/build/gobuild.go#L709-L712).
+The ko builder sets `DisableOptimizations` to `true` when the Skaffold
+`runMode` is `Debug`.
+
+Skaffold can
+[recognize Go-based container images](https://skaffold.dev/docs/workflows/debug/#go-runtime-go-protocols-dlv)
+built by ko by the presence of the
+[`KO_DATA_PATH` environment variable](https://github.com/google/ko/blob/9a256a4b1920ed5fd5fbf77d987fddbfb9733c40/pkg/build/gobuild.go#L803-L810).
+This allows Skaffold to transform Pod specifications to enable remote
+debugging.
+
+The ko builder implementation work will add `KO_DATA_PATH` to
+[the set of environment variables used to detect Go-based applications](https://github.com/GoogleContainerTools/skaffold/blob/c75c55133e709b2fee906eb158be13c7ccfa72cd/pkg/skaffold/debug/transform_go.go#L67-L72)
+and updating the associated unit tests and
+[documentation](https://github.com/GoogleContainerTools/skaffold/blob/01a833614efd780ddece99198aa7fdcf3f355706/docs/content/en/docs/workflows/debug.md#L103).
+
 ## Design
 
 Adding the ko builder requires making config changes to the Skaffold schema.
@@ -92,48 +276,65 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     ```go
     // KoArtifact builds images using [ko](https://github.com/google/ko).
     type KoArtifact struct {
-    	// Asmflags are assembler flags passed to the builder.
-    	Asmflags []string `yaml:"asmflags,omitempty"`
+        // Asmflags are assembler flags passed to the builder.
+        Asmflags []string `yaml:"asmflags,omitempty"`
 
-    	// BaseImage overrides the default ko base image.
-    	// Corresponds to, and overrides, the `defaultBaseImage` in `.ko.yaml`.
-    	BaseImage string `yaml:"fromImage,omitempty"`
+        // BaseImage overrides the default ko base image.
+        // Corresponds to, and overrides, the `defaultBaseImage` in `.ko.yaml`.
+        BaseImage string `yaml:"fromImage,omitempty"`
 
-    	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
-    	Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
+        // Dependencies are the file dependencies that Skaffold should watch for both
+        // rebuilding and file syncing for this artifact.
+        Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
 
-    	// Env are environment variables, in the `key=value` form, passed to the build.
-    	// These environment variables are only used at build time.
-    	// They are _not_ set in the resulting container image.
-    	Env []string `yaml:"env,omitempty"`
+        // Dir is the directory where the `go` tool will be run.
+        // The value is a directory path relative to the `context` directory.
+        // If empty, the `go` tool will run in the `context` directory.
+        // Examples: `live-at-head`, `compat-go114`
+        Dir string `yaml:"dir,omitempty"`
 
-    	// Flags are additional build flags passed to the builder.
-    	// For example: `["-trimpath", "-v"]`.
-    	Flags []string `yaml:"args,omitempty"`
+        // Env are environment variables, in the `key=value` form, passed to the build.
+        // These environment variables are only used at build time.
+        // They are _not_ set in the resulting container image.
+        // For example: `["GOPRIVATE=source.developers.google.com", "GOCACHE=/workspace/.gocache"]`.
+        Env []string `yaml:"env,omitempty"`
 
-    	// Gcflags are Go compiler flags passed to the builder.
-    	// For example: `["-m"]`.
-    	Gcflags []string `yaml:"gcflags,omitempty"`
+        // Flags are additional build flags passed to the builder.
+        // For example: `["-trimpath", "-v"]`.
+        Flags []string `yaml:"flags,omitempty"`
 
-    	// Labels are key-value string pairs to add to the image config.
-    	// For example: `{"foo":"bar"}`.
-    	Labels map[string]string `yaml:"labels,omitempty"`
+        // Gcflags are Go compiler flags passed to the builder.
+        // For example: `["-m"]`.
+        Gcflags []string `yaml:"gcflags,omitempty"`
 
-    	// Ldflags are linker flags passed to the builder.
-    	// For example: `["-buildid=", "-s", "-w"]`.
-    	Ldflags []string `yaml:"ldflags,omitempty"`
+        // Labels are key-value string pairs to add to the image config.
+        // For example: `{"org.opencontainers.image.source":"https://github.com/GoogleContainerTools/skaffold"}`.
+        Labels map[string]string `yaml:"labels,omitempty"`
 
-    	// Platforms is the list of platforms to build images for. Each platform
-    	// is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
-    	// By default, the ko builder builds for `all` platforms supported by the
-    	// base image.
-    	Platforms []string `yaml:"platforms,omitempty"`
+        // Ldflags are linker flags passed to the builder.
+        // For example: `["-buildid=", "-s", "-w"]`.
+        Ldflags []string `yaml:"ldflags,omitempty"`
 
-    	// SourceDateEpoch is the `created` time of the container image.
-    	// Specify as the number of seconds since January 1st 1970, 00:00 UTC.
-    	// You can override this value by setting the `SOURCE_DATE_EPOCH`
-    	// environment variable.
-    	SourceDateEpoch uint64 `yaml:"sourceDateEpoch,omitempty"`
+        // Main is the location of the main package. It is the pattern passed to `go build`.
+        // If main is specified as a relative path, it is relative to the `context` directory.
+        // If main is empty, the ko builder uses a default value of `.`.
+        // If main is a pattern with wildcards, such as `./...`,
+        // the expansion must contain only one main package, otherwise ko fails.
+        // Main is ignored if the `ImageName` starts with `ko://`.
+        // Example: `./cmd/foo`
+        Main string `yaml:"main,omitempty"`
+
+        // Platforms is the list of platforms to build images for. Each platform
+        // is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+        // By default, the ko builder builds for `all` platforms supported by the
+        // base image.
+        Platforms []string `yaml:"platforms,omitempty"`
+
+        // SourceDateEpoch is the `created` time of the container image.
+        // Specify as the number of seconds since January 1st 1970, 00:00 UTC.
+        // You can override this value by setting the `SOURCE_DATE_EPOCH`
+        // environment variable.
+        SourceDateEpoch uint64 `yaml:"sourceDateEpoch,omitempty"`
     }
     ```
 
@@ -142,8 +343,8 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     ```go
     type ArtifactType struct {
       [...]
-    	// KoArtifact builds images using [ko](https://github.com/google/ko).
-    	KoArtifact *KoArtifact `yaml:"ko,omitempty" yamltags:"oneOf=artifact"`
+        // KoArtifact builds images using [ko](https://github.com/google/ko).
+        KoArtifact *KoArtifact `yaml:"ko,omitempty" yamltags:"oneOf=artifact"`
     }
     ```
 
@@ -152,13 +353,15 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     ```go
     // KoDependencies is used to specify dependencies for an artifact built by ko.
     type KoDependencies struct {
-	  	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
-	  	// Defaults to {"go.mod", "**.go"}
-	  	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+        // Paths should be set to the file dependencies for this artifact,
+        // so that the Skaffold file watcher knows when to rebuild and perform file synchronization.
+        // Defaults to ["**/*.go"].
+        Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
-	  	// Ignore specifies the paths that should be ignored by skaffold's file watcher.
-    	// If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
-	  	Ignore []string `yaml:"ignore,omitempty"`
+        // Ignore specifies the paths that should be ignored by Skaffold's file watcher.
+        // If a file exists in both `paths` and in `ignore`, it will be ignored,
+        // and will be excluded from both rebuilds and file synchronization.
+        Ignore []string `yaml:"ignore,omitempty"`
     }
     ```
 
@@ -185,19 +388,16 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     }
     ```
 
-5.  In `skaffold init`, default to the ko builder for any images where the
-    name starts with the ko prefix `ko://`.
-
 ### Builder config schema
 
 Example basic config, this will be sufficient for many users:
 
 ```yaml
-apiVersion: skaffold/v2beta15
+apiVersion: skaffold/v2beta26
 kind: Config
 build:
   artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko
+  - image: skaffold-example-ko
     ko: {}
 ```
 
@@ -207,20 +407,21 @@ The value of the `image` field is the Go import path of the app entry point,
 A more comprehensive example config:
 
 ```yaml
-apiVersion: skaffold/v2beta15
+apiVersion: skaffold/v2beta26
 kind: Config
 build:
   artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko-complete
+  - image: skaffold-example-ko-comprehensive
     ko:
-      asmflags: []
-      fromImage: gcr.io/distroless/static-debian10:nonroot
+      fromImage: gcr.io/distroless/base:nonroot
       dependencies:
         paths:
         - go.mod
         - "**.go"
-      env: []
-      args:
+      dir: '.'
+      env:
+      - GOPRIVATE=source.developers.google.com
+      flags:
       - -trimpath
       - -v
       gcflags:
@@ -232,6 +433,7 @@ build:
       - -buildid=
       - -s
       - -w
+      main: ./cmd/foo
       platforms:
       - linux/amd64
       - linux/arm64
@@ -243,9 +445,11 @@ environment variable to specify where container images are pushed. The Skaffold
 [default repo](https://skaffold.dev/docs/environment/image-registries/)
 maps directly to this value.
 
-### Open questions
+### Resolved questions
 
-1.  Should Skaffold embed ko (as a Go module), or shell out?
+1.  Should Skaffold embed ko as a Go module, or shell out?
+
+     __Resolved:__ Embed as a Go module
 
     Benefits of embedding:
 
@@ -283,43 +487,46 @@ maps directly to this value.
       need to release a new version of Skaffold for this fix.
 
     Shelling out to ko would require some stability guarantees for the
-    `ko publish` subcommand.
+    `ko build` subcommand.
 
-    Suggest embedding as a Go module. __Not Yet Resolved__
+    Suggest embedding as a Go module.
 
-2.  Should the ko builder be the default for `skaffold init`, instead of
-    buildpacks, for Go apps, when there's no Dockerfile and no Bazel workspace
-    file?
-
-    Suggest yes, to make Skaffold a compelling choice for Go developers.
-    __Not Yet Resolved__
-
-3.  Should Skaffold use base image settings from
+2.  Should Skaffold use base image settings from
     [`.ko.yaml`](https://github.com/google/ko#configuration) if the ko builder
     definition in `skaffold.yaml` doesn't specify a base image?
 
-    Suggest yes to simplify adoption of Skaffold for existing ko users.
-    __Not Yet Resolved__
+    __Resolved:__ Yes, to simplify adoption of Skaffold for existing ko users.
+
+3.  If a config value is set both as an environment variable, and as a config
+    value, which takes precedence? E.g., `ko.sourceDateEpoch` vs
+    `SOURCE_DATE_EPOCH`.
+
+    __Resolved:__ Follow existing Skaffold patterns.
 
 4.  Should the ko builder have a config option for
     [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/specs/source-date-epoch/),
     or should users specify the value via an environment variable?
 
-    __Not Yet Resolved__
+    __Resolved__: Specify via the reproducible builds spec environment variable
+    `SOURCE_DATE_EPOCH`, see
+    <https://github.com/google/ko#why-are-my-images-all-created-in-1970> and
+    <https://reproducible-builds.org/docs/source-date-epoch/>.
 
-5.  If a config value is set both as an environment variable, and as a config
-    value, which takes precedence? E.g., `ko.sourceDateEpoch` vs
-    `SOURCE_DATE_EPOCH`.
+5.  Should we default dependency paths to `["go.mod", "**.go"]` instead of
+    `["."]`.?
 
-    Follow existing Skaffold pattern - is there one? __Not Yet Resolved__
+    The former is a useful default for many (most?) Go apps, and it's used
+    in the `custom` example. The latter is the default for some other builders.
+
+    __Resolved__: Default to `["**/*.go"]`, see
+    [#6617](https://github.com/GoogleContainerTools/skaffold/pull/6617#discussion_r719804744).
 
 6.  Add a Google Cloud Build (`gcb`) support for the ko builder?
-    Other builders that support `gcb` have default public builder images.
-    The image `gcr.io/tekton-releases/ko-ci` is public, but do we want to
-    rely on it? Once ko is embedded in Skaffold, we could use
-    `gcr.io/k8s-skaffold/skaffold` as a default image.`
 
-    __Not Yet Resolved__
+    By embedding ko as a module, there is no need for a ko-specific Skaffold
+    builder image.
+
+    __Resolved__: Add remote builder support.
 
 7.  File sync support: Should we limit this to
     [ko static assets](https://github.com/google/ko#static-assets) only?
@@ -327,45 +534,133 @@ maps directly to this value.
     This is the only way to include additional files in a container image
     built by ko.
 
+    __Resolved__: Implement file sync (for the Beta stage).
+
+### Open questions
+
+1.  Should the ko builder be the default for `skaffold init`, instead of
+    buildpacks, for Go apps, when there's no Dockerfile and no Bazel workspace
+    file?
+
+    Suggest yes, to make Skaffold a compelling choice for Go developers.
+
+    If no, we can still consider configuring the ko builder if `skaffold init`
+    finds a `.ko.yaml` configuration file.
+
     __Not Yet Resolved__
 
-8.  Should we default dependency paths to `{"go.mod", "**.go"}` instead of
-    `{"."}`.?
+## Approach
 
-    The former is a useful default for many (most?) Go apps, and it's used
-    in the `custom` example. The latter is the default for some other builders.
+Implement the ko builder as a series of small PRs that can be merged one by one.
+The PRs should not surface any new user-visible behavior until the feature is
+ready.
 
-    __Not Yet Resolved__
+This approach has a lower risk than implementing the entire feature on a
+separate branch before merging all at once.
+
+The steps roughly outlined:
+
+1.  Add dependency on the `github.com/google/ko` module.
+
+2.  Implement the core ko build and publish logic, including unit tests in the
+    package `github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko`.
+
+    Support this implementation with "dummy" schema definitions for types such
+    as `KoArtifact` in a separate "temporary" package. This package only exists
+    until the definitions are merged into the latest `v1` schema, and it allows
+    for evolution of the types until they are committed to the schema.
+
+3.  Add integration test for the ko builder to the `integration` package, and
+    an example app + config to a new `integration/examples/ko` directory.
+
+    To avoid failures in schema unit tests from the new example in the
+    integration directory, add an `if` statement to `TestParseExamples` in the
+    package `github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema` that
+    skips directories called `ko`.
+
+4.  Add the ko builder schema types (`KoArtifact` and `KoDependency`) to the
+    latest unreleased schema.
+
+    For the `ArtifactType` struct, add a `KoArtifact` field, but set its
+    YAML flag key to `"-"`
+    (full syntax `` `yaml:"-,omitempty" yamltags:"oneOf=artifact"` ``).
+
+    Do _not_ yet add the `KO = 7;` entry to the `BuilderType` enum in
+    `proto/enums/enums.proto`.
+
+5.  Plumb the code in the package `pkg/skaffold/build/ko` into the other parts
+    of the Skaffold codebase that interacts with the config schema.
+
+    E.g., a `case` statement for `a.KoArtifact` in the `newPerArtifactBuilder`
+    function in `pkg/skaffold/build/local` (file `types.go`).
+
+6.  When we are ready to add the ko builder as an alpha feature to an upcoming
+    Skaffold release, set the `KoArtifact` YAML flag key to `ko` and add `KO`
+    to the `BuilderType` enum.
 
 ## Implementation plan
 
-1.  Define integration points in the ko codebase that allows ko to be used from
-    Skaffold without duplicating existing ko CLI code.
+1.  [Done] Define integration points in the ko codebase that allows ko to be
+    used from Skaffold without duplicating existing ko CLI code.
 
     In the package `github.com/google/ko/pkg/commands`:
 
+    [`resolver.go`](https://github.com/google/ko/blob/ee23538378722e060a2f7c7800f226e0b82e09e7/pkg/commands/resolver.go#L110)
     ```go
-    // SetDefaultBaseImage enables programmatically overriding the base image,
-    // as an alternative to specifying it in a `.ko.yaml` file.
-    func SetDefaultBaseImage(baseImage string) error // maps to the fromImage option
-
-    var UserAgent func () string // allow overriding with the Skaffold user agent
-
-    // MakeBuilder creates a build.Interface, delegates to the existing makeBuilder()
-    func MakeBuilder(ctx context.Context, bo *options.BuildOptions) (build.Interface, error)
-
-    // MakePublisher creates a publish.Interface, delegates to the existing makePublisher()
-    func MakePublisher(po *options.PublishOptions) (publish.Interface, error)
+    // NewBuilder creates a ko builder
+    func NewBuilder(ctx context.Context, bo *options.BuildOptions) (build.Interface, error)
     ```
 
-    In the package `github.com/google/ko/pkg/commands/options`, allow
-    specifying the default repo as a flag:
+    [`resolver.go`](https://github.com/google/ko/blob/ee23538378722e060a2f7c7800f226e0b82e09e7/pkg/commands/resolver.go#L146)
+    ```go
+    // NewPublisher creates a ko publisher
+    func NewPublisher(po *options.PublishOptions) (publish.Interface, error)
+    ```
 
+    [`publisher.go`](https://github.com/google/ko/blob/ee23538378722e060a2f7c7800f226e0b82e09e7/pkg/commands/publisher.go#L28)
+    ```go
+    // PublishImages publishes images
+    func PublishImages(ctx context.Context, importpaths []string, pub publish.Interface, b build.Interface) (map[string]name.Reference, error)
+    ```
+
+    Add build and publish options to support Skaffold config propagating to
+    ko. In the package `github.com/google/ko/pkg/commands/options`:
+
+    [`build.go`](https://github.com/google/ko/blob/ee23538378722e060a2f7c7800f226e0b82e09e7/pkg/commands/options/build.go#L25)
+    ```go
+    type BuildOptions struct {
+          // BaseImage enables setting the default base image programmatically.
+          // If non-empty, this takes precedence over the value in `.ko.yaml`.
+          BaseImage string
+
+          // WorkingDirectory allows for setting the working directory for invocations of the `go` tool.
+          // Empty string means the current working directory.
+          WorkingDirectory string
+
+        // UserAgent enables overriding the default value of the `User-Agent` HTTP
+          // request header used when retrieving the base image.
+          UserAgent string
+
+        [...]
+    }
+    ```
+
+    [`publish.go`](https://github.com/google/ko/blob/ee23538378722e060a2f7c7800f226e0b82e09e7/pkg/commands/options/publish.go#L29)
     ```go
     type PublishOptions struct {
-    	// DockerRepo overrides the KO_DOCKER_REPO environment variable, if present
-    	DockerRepo string
-      [...]
+          // DockerRepo configures the destination image repository.
+          // In normal ko usage, this is populated with the value of $KO_DOCKER_REPO.
+          DockerRepo string
+
+          // LocalDomain overrides the default domain for images loaded into the local Docker daemon.
+          // Use with Local=true.
+          LocalDomain string
+
+          // UserAgent enables overriding the default value of the `User-Agent` HTTP
+          // request header used when pushing the built image to an image registry.
+          UserAgent string
+
+        [...]
     }
     ```
 
@@ -374,52 +669,87 @@ maps directly to this value.
 
     Config options supported, all are optional:
 
-    -   `dependencies`, for Skaffold file watching.
+    -   `fromImage`, to override the default distroless base image
+    -   `dependencies`, for Skaffold file watching
+    -   `dir`, if Go sources are not in the `context` directory
     -   `env`, to support ko CLI users who currently set environment variables
         such as `GOFLAGS` when running ko.
-    -   `fromImage`, to override the default distroless base image
-    -   `labels`
+    -   `labels`, e.g., to
+        [link an image to a Git repository](https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys)
     -   `platforms`
     -   `sourceDateEpoch`
+    -   `flags`, e.g., `-v`, `-trimpath`
+    -   `ldflags`, e.g., `-s`
 
     Example `skaffold.yaml` supported at this stage:
 
     ```yaml
-    apiVersion: skaffold/v2beta15
+    apiVersion: skaffold/v2beta26
     kind: Config
     build:
       artifacts:
-      - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko
+      - image: skaffold-ko
         ko:
-          fromImage: gcr.io/distroless/static-debian10:nonroot
+          fromImage: gcr.io/distroless/base:nonroot
           dependencies:
             paths:
             - go.mod
             - "**.go"
-          env: []
+          dir: '.'
+          env:
+          - GOPRIVATE=source.developers.google.com
           labels:
             foo: bar
             baz: frob
+          ldflags:
+          - -s
+          main: ./cmd/foo
           platforms:
           - linux/amd64
           - linux/arm64
     ```
 
-3.  Implement support for additional config options in ko:
+3.  Implement Skaffold config support for additional ko config options not
+    currently supported by ko:
 
-    -   `args`, e.g., `-v`, `-trimpath`
     -   `asmflags`
     -   `gcflags`
-    -   `ldflags`
 
-    See related discussion in
-    [google/ko#316](https://github.com/google/ko/issues/316).
-
-4.  Add support for the additional ko config options from step 2 in Skaffold.
     Provide this as a feature in an upcoming Skaffold release.
 
-    This will enable support for all the config options shown in the
-    comprehensive example above.
+## Release plan
+
+The ko builder will go through the release stages Alpha -> Beta -> Stable.
+
+The following features will be released at each stage:
+
+**Alpha**
+
+- Support for the Skaffold lifecycle subcommands that build images:
+  - `build`
+  - `debug`
+  - `dev`
+  - `run`
+- Images built using the ko builder are automatically detected as Go images
+  for debugging support.
+- File watch support for `dev` mode.
+- Local builder only (no `gcb` or `cluster` builder at this stage).
+- Multi-platform images support, including support for
+  [`all`](https://github.com/google/ko#multi-platform-images), which builds
+  images for all platforms supported by the base image).
+- Image names following standard Skaffold naming, for existing Skaffold
+  users.
+- Support for `ko://`-prefixed image names, for existing ko users.
+
+**Beta**
+
+- File sync support.
+- Remote builders support.
+- `skaffold init` support, behind a `--enableKoInit` flag.
+
+**Stable**
+
+- Cloud Code integration
 
 ## Integration test plan
 
@@ -436,5 +766,3 @@ Please describe what new test cases you are going to consider.
 
 3.  Add basic and comprehensive ko examples to the `integration/examples`
     directory.
-
-4.  TBC

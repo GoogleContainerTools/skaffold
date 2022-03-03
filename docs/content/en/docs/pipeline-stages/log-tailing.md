@@ -15,7 +15,7 @@ Log Tailing is **disabled by default** for `run` mode; it can be enabled with th
 
 
 ## Log Structure
-To view log structure, run `skaffold run --tail` in [`examples/microservices`](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
+To view log structure, run `skaffold run --tail` in [`examples/microservices`](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/microservices)
 
 ```bash
 skaffold run --tail
@@ -59,3 +59,31 @@ spec:
 
 Skaffold will choose a unique color for each container to make it easy for users to read the logs.
 
+## JSON Parsing
+In some cases, logs may simply be JSON objects.
+If you know this ahead of time and know that you'd like to only get specific fields from these objects,
+you can add a `deploy.logs.jsonParse` stanza to your `skaffold.yaml` file to configure which fields you'd like to see.
+
+```yaml
+apiVersion: skaffold/v2beta27
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+deploy:
+  logs:
+    jsonParse:
+      fields: ["message", "severity"]
+  kubectl:
+    manifests:
+      - k8s-*
+```
+In the above example, only the fields `message` and `severity` will be gathered from the incoming JSON logs.
+So, if the logs coming through were structured like so:
+```
+[getting-started] {"timestampSeconds":1643740871,"timestampNanos":446000000,"severity":"INFO","thread":"main","message":"Hello World!","context":"default"}
+```
+with the `deploy.logs.jsonParse` config added, they would look like this:
+```
+[getting-started] message: Hello World!, severity: INFO
+```

@@ -27,9 +27,10 @@ import (
 
 func ModifyGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.BoolPtr(false)})
+	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.BoolPtr(false)})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 	if opts.Profile == "" {
 		// empty profile flag implies that only modify the default pipelines in the target `skaffold.yaml`
@@ -37,7 +38,8 @@ func ModifyGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options)
 		for _, cfg := range cfgs {
 			if cfg.Build.GoogleCloudBuild == nil {
 				if opts.Strict {
-					return formatter.WriteErr(inspect.BuildEnvNotFound(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, ""))
+					formatter.WriteErr(inspect.BuildEnvNotFound(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, ""))
+					return err
 				}
 				continue
 			}
@@ -61,7 +63,8 @@ func ModifyGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options)
 			profileFound = true
 			if cfg.Profiles[index].Build.GoogleCloudBuild == nil {
 				if opts.Strict {
-					return formatter.WriteErr(inspect.BuildEnvNotFound(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, opts.Profile))
+					formatter.WriteErr(inspect.BuildEnvNotFound(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, opts.Profile))
+					return err
 				}
 				continue
 			}
@@ -70,7 +73,8 @@ func ModifyGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options)
 			cfg.Profiles[index].Build.Cluster = nil
 		}
 		if !profileFound {
-			return formatter.WriteErr(inspect.ProfileNotFound(opts.Profile))
+			formatter.WriteErr(inspect.ProfileNotFound(opts.Profile))
+			return err
 		}
 	}
 	return inspect.MarshalConfigSet(cfgs)

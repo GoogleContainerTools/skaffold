@@ -36,14 +36,16 @@ type buildEnvEntry struct {
 
 func PrintBuildEnvsList(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{
+	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		RepoCacheDir:        opts.RepoCacheDir,
 		Profiles:            opts.Profiles,
+		PropagateProfiles:   opts.PropagateProfiles,
 		ConfigurationFilter: opts.Modules,
 	})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 
 	l := &buildEnvList{BuildEnvs: []buildEnvEntry{}}

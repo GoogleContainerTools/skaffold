@@ -17,14 +17,15 @@ limitations under the License.
 package build
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -49,7 +50,7 @@ var (
 			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
 			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 			Description: func(err error) string {
-				logrus.Tracef("error building %s", err)
+				log.Entry(context.TODO()).Tracef("error building %s", err)
 				return "Build Failed. No push access to specified image repository"
 			},
 			Suggestion: suggestBuildPushAccessDeniedAction,
@@ -65,7 +66,7 @@ var (
 		{
 			Regexp: re(unknownProjectErr),
 			Description: func(err error) string {
-				logrus.Tracef("error building %s", err)
+				log.Entry(context.TODO()).Tracef("error building %s", err)
 				matchExp := re(unknownProjectErr)
 				if match := matchExp.FindStringSubmatch(err.Error()); len(match) >= 2 {
 					return fmt.Sprintf("Build Failed. %s", match[1])
@@ -84,7 +85,7 @@ var (
 			Regexp:  re(dockerConnectionFailed),
 			ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
 			Description: func(err error) string {
-				logrus.Tracef("error building %s", err)
+				log.Entry(context.TODO()).Tracef("error building %s", err)
 				matchExp := re(dockerConnectionFailed)
 				if match := matchExp.FindStringSubmatch(err.Error()); len(match) >= 2 {
 					return fmt.Sprintf("Build Failed. %s", match[1])
@@ -136,19 +137,32 @@ func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
 
 	return []*proto.Suggestion{{
 		SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
-		Action:         "Trying running with `--default-repo` flag",
+		Action:         "Try running with `--default-repo` flag",
 	}}
 }
 
 func makeAuthSuggestionsForRepo(repo string) *proto.Suggestion {
-	if re(`(.+\.)?gcr\.io.*`).MatchString(repo) || re(`.+-docker\.pkg\.dev.*`).MatchString(repo) {
+	// parse off the registry component; should have already been validated so unlikely to fail
+	if ref, _ := docker.ParseReference(repo); ref != nil {
+		repo = ref.Domain
+	}
+
+	if re(`(.+\.)?gcr\.io`).MatchString(repo) || re(`.+-docker\.pkg\.dev`).MatchString(repo) {
 		return &proto.Suggestion{
 			SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
-			Action:         "try `gcloud auth configure-docker`",
+			Action:         fmt.Sprintf("try `gcloud auth configure-docker%s`", withSpace(repo)),
 		}
 	}
 	return &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
-		Action:         "try `docker login`",
+		Action:         fmt.Sprintf("try `docker login%s`", withSpace(repo)),
 	}
+}
+
+// withSpace returns the given value with a space prepended when not empty.
+func withSpace(value string) string {
+	if len(value) > 0 {
+		return " " + value
+	}
+	return value
 }

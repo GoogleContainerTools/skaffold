@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 /*
@@ -19,6 +20,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -44,6 +46,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 		variantAbbrevCommitSha string
 		variantTreeSha         string
 		variantAbbrevTreeSha   string
+		variantBranches        string
 		createGitRepo          func(string)
 		subDir                 string
 		shouldErr              bool
@@ -56,6 +59,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "eefe1b9",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
 			variantAbbrevTreeSha:   "3bed02c",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -70,6 +74,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "aea33bc",
 			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
 			variantAbbrevTreeSha:   "bc69d50",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -83,12 +88,46 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			},
 		},
 		{
+			description:            "clean worktree with a branch",
+			variantTags:            "589c4dc",
+			variantCommitSha:       "589c4dcf52df66d058c705db39f871dceacf6471",
+			variantAbbrevCommitSha: "589c4dc",
+			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
+			variantAbbrevTreeSha:   "3bed02c",
+			variantBranches:        "branch",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					branch("branch").
+					commit("second")
+			},
+		},
+		{
+			description:            "clean worktree with a branch containing a slash",
+			variantTags:            "eefe1b9",
+			variantCommitSha:       "eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed",
+			variantAbbrevCommitSha: "eefe1b9",
+			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
+			variantAbbrevTreeSha:   "3bed02c",
+			variantBranches:        "branch_withslash",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					branch("branch/withslash")
+			},
+		},
+		{
 			description:            "dirty worktree with tag containing a slash",
 			variantTags:            "v_2-dirty",
 			variantCommitSha:       "aea33bcc86b5af8c8570ff45d8a643202d63c808-dirty",
 			variantAbbrevCommitSha: "aea33bc-dirty",
 			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e-dirty",
 			variantAbbrevTreeSha:   "bc69d50-dirty",
+			variantBranches:        "master-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -109,6 +148,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "aea33bc",
 			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
 			variantAbbrevTreeSha:   "bc69d50",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -130,6 +170,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "aea33bc",
 			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
 			variantAbbrevTreeSha:   "bc69d50",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -149,6 +190,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "aea33bc",
 			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
 			variantAbbrevTreeSha:   "bc69d50",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -169,6 +211,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "b2f7a7d",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
 			variantAbbrevTreeSha:   "3bed02c",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "other code").
@@ -187,6 +230,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "eefe1b9-dirty",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c-dirty",
 			variantAbbrevTreeSha:   "3bed02c-dirty",
+			variantBranches:        "master-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -202,6 +246,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "eefe1b9-dirty",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c-dirty",
 			variantAbbrevTreeSha:   "3bed02c-dirty",
+			variantBranches:        "master-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -218,6 +263,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "eefe1b9-dirty",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c-dirty",
 			variantAbbrevTreeSha:   "3bed02c-dirty",
+			variantBranches:        "master-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -233,6 +279,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "3cec6b9",
 			variantTreeSha:         "81eea360f7f81bc5c187498a8d6c4337e0361374",
 			variantAbbrevTreeSha:   "81eea36",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -251,6 +298,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "279d53f-dirty",
 			variantTreeSha:         "039c20a072ceb72fb72d5883315df91659bb8ae4-dirty",
 			variantAbbrevTreeSha:   "039c20a-dirty",
+			variantBranches:        "master-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source1.go", "code1").
@@ -267,6 +315,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "eefe1b9-dirty",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c-dirty",
 			variantAbbrevTreeSha:   "3bed02c-dirty",
+			variantBranches:        "master-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -282,6 +331,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "b610928",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
 			variantAbbrevTreeSha:   "3bed02c",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", "code").
@@ -298,6 +348,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "b610928",
 			variantTreeSha:         "36651c832d8bf5ca1e84c6dc23bb8678fa51cf3e",
 			variantAbbrevTreeSha:   "36651c8",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", "code").
@@ -314,6 +365,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "b610928",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
 			variantAbbrevTreeSha:   "3bed02c",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", "code").
@@ -331,6 +383,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "b610928-dirty",
 			variantTreeSha:         "36651c832d8bf5ca1e84c6dc23bb8678fa51cf3e-dirty",
 			variantAbbrevTreeSha:   "36651c8-dirty",
+			variantBranches:        "master-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", "code").
@@ -348,6 +401,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "0d16f59",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
 			variantAbbrevTreeSha:   "3bed02c",
+			variantBranches:        "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", "code").
@@ -368,7 +422,8 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "git repo with no commit",
+			description:     "git repo with no commit",
+			variantBranches: "master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir)
 			},
@@ -395,13 +450,16 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 				"AbbrevCommitSha": test.variantAbbrevCommitSha,
 				"TreeSha":         test.variantTreeSha,
 				"AbbrevTreeSha":   test.variantAbbrevTreeSha,
+				"Branches":        test.variantBranches,
 			} {
 				tagger, err := NewGitCommit("", variant, test.ignoreChanges)
 				t.CheckNoError(err)
 
-				tag, err := tagger.GenerateTag(image)
+				tag, err := tagger.GenerateTag(context.Background(), image)
 
-				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
+				// If we explicitly expect a tag for a variant, it should not err
+				shouldErr := test.shouldErr && expectedTag == ""
+				t.CheckErrorAndDeepEqual(shouldErr, err, expectedTag, tag)
 			}
 		})
 	}
@@ -415,6 +473,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		variantAbbrevCommitSha string
 		variantTreeSha         string
 		variantAbbrevTreeSha   string
+		variantBranches        string
 		createGitRepo          func(string)
 		subDir                 string
 		shouldErr              bool
@@ -426,6 +485,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			variantAbbrevCommitSha: "test:eefe1b9",
 			variantTreeSha:         "test:3bed02ca656e336307e4eb4d80080d7221cba62c",
 			variantAbbrevTreeSha:   "test:3bed02c",
+			variantBranches:        "test:master",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -457,11 +517,12 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				"AbbrevCommitSha": test.variantAbbrevCommitSha,
 				"TreeSha":         test.variantTreeSha,
 				"AbbrevTreeSha":   test.variantAbbrevTreeSha,
+				"Branches":        test.variantBranches,
 			} {
 				tagger, err := NewGitCommit("", variant, false)
 				t.CheckNoError(err)
 
-				tag, err := GenerateFullyQualifiedImageName(tagger, image)
+				tag, err := GenerateFullyQualifiedImageName(context.Background(), tagger, image)
 
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
@@ -517,7 +578,7 @@ func TestGitCommit_CustomTemplate(t *testing.T) {
 
 			t.CheckNoError(err)
 
-			tag, err := c.GenerateTag(image)
+			tag, err := c.GenerateTag(context.Background(), image)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, tag)
@@ -536,30 +597,30 @@ func TestGitCommitSubDirectory(t *testing.T) {
 
 		tagger, err := NewGitCommit("", "Tags", false)
 		t.CheckNoError(err)
-		tag, err := tagger.GenerateTag(image)
+		tag, err := tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "CommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(image)
+		tag, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 
 		tagger, err = NewGitCommit("", "AbbrevCommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(image)
+		tag, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "TreeSha", false)
 		t.CheckNoError(err)
-		_, err = tagger.GenerateTag(image)
+		_, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "AbbrevTreeSha", false)
 		t.CheckNoError(err)
-		_, err = tagger.GenerateTag(image)
+		_, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
 	})
 }
@@ -575,13 +636,13 @@ func TestPrefix(t *testing.T) {
 
 		tagger, err := NewGitCommit("tag-", "Tags", false)
 		t.CheckNoError(err)
-		tag, err := tagger.GenerateTag(image)
+		tag, err := tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("tag-a7b32a6", tag)
 
 		tagger, err = NewGitCommit("commit-", "CommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(image)
+		tag, err = tagger.GenerateTag(context.Background(), image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("commit-a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 	})
@@ -693,6 +754,20 @@ func (g *gitRepo) tag(tag string) *gitRepo {
 	t := plumbing.NewHashReference(n, head.Hash())
 
 	err = g.repo.Storer.SetReference(t)
+	failNowIfError(g.t, err)
+
+	return g
+}
+
+func (g *gitRepo) branch(newBranchName string) *gitRepo {
+	refName := plumbing.NewBranchReferenceName(newBranchName)
+	headRef, err := g.repo.Head()
+	failNowIfError(g.t, err)
+	ref := plumbing.NewHashReference(refName, headRef.Hash())
+	err = g.repo.Storer.SetReference(ref)
+	failNowIfError(g.t, err)
+
+	err = g.workTree.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
 	failNowIfError(g.t, err)
 
 	return g

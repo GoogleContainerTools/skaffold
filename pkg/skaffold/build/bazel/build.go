@@ -28,12 +28,19 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds an artifact with Bazel.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, matcher platform.Matcher) (string, error) {
+	// TODO: Implement building multi-platform images
+	if matcher.IsMultiPlatform() {
+		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the bazel builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", matcher.String(), artifact.ImageName)
+	}
+
 	a := artifact.ArtifactType.BazelArtifact
 
 	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a)
@@ -46,6 +53,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.A
 	}
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
 func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latestV1.BazelArtifact) (string, error) {
 	if !strings.HasSuffix(a.BuildTarget, ".tar") {
@@ -67,7 +76,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(ctx, cmd); err != nil {
 		return "", fmt.Errorf("running command: %w", err)
 	}
 
@@ -107,7 +116,7 @@ func bazelBin(ctx context.Context, workspace string, a *latestV1.BazelArtifact) 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace
 
-	buf, err := util.RunCmdOut(cmd)
+	buf, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return "", err
 	}

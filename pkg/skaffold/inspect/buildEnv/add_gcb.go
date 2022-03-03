@@ -25,18 +25,20 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{
+	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		RepoCacheDir:        opts.RepoCacheDir,
 		ConfigurationFilter: opts.Modules,
 		SkipConfigDefaults:  true,
 		MakePathsAbsolute:   util.BoolPtr(false)})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 	if opts.Profile == "" {
 		// empty profile flag implies that the new build env needs to be added to the default pipeline.
@@ -44,7 +46,8 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 		cfgs = cfgs.SelectRootConfigs()
 		for _, cfg := range cfgs {
 			if cfg.Build.GoogleCloudBuild != nil && (*cfg.Build.GoogleCloudBuild != latestV1.GoogleCloudBuild{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, ""))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, ""))
+				return err
 			}
 			cfg.Build.GoogleCloudBuild = constructGcbDefinition(cfg.Build.GoogleCloudBuild, opts.BuildEnvOptions)
 			cfg.Build.LocalBuild = nil
@@ -64,7 +67,8 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 				cfg.Profiles = append(cfg.Profiles, latestV1.Profile{Name: opts.Profile})
 			}
 			if cfg.Profiles[index].Build.GoogleCloudBuild != nil && (*cfg.Profiles[index].Build.GoogleCloudBuild != latestV1.GoogleCloudBuild{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, opts.Profile))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.GoogleCloudBuild, cfg.SourceFile, opts.Profile))
+				return err
 			}
 			cfg.Profiles[index].Build.GoogleCloudBuild = constructGcbDefinition(cfg.Profiles[index].Build.GoogleCloudBuild, opts.BuildEnvOptions)
 			cfg.Profiles[index].Build.LocalBuild = nil
@@ -116,7 +120,7 @@ func addProfileActivationStanza(cfg *parser.SkaffoldConfigEntry, profileName str
 		}
 		for j := range cfg.Dependencies[i].ActiveProfiles {
 			if cfg.Dependencies[i].ActiveProfiles[j].Name == profileName {
-				if !util.StrSliceContains(cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy, profileName) {
+				if !stringslice.Contains(cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy, profileName) {
 					cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy = append(cfg.Dependencies[i].ActiveProfiles[j].ActivatedBy, profileName)
 				}
 				return

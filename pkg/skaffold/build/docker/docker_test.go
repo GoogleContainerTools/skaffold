@@ -21,14 +21,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/errdefs"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -39,11 +42,13 @@ func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description     string
 		localBuild      latestV1.LocalBuild
+		cliFlags        []string
 		cfg             mockConfig
 		extraEnv        []string
 		expectedEnv     []string
 		err             error
 		expectedErr     error
+		wantDockerCLI   bool
 		expectedErrCode proto.StatusCode
 	}{
 		{
@@ -59,22 +64,32 @@ func TestDockerCLIBuild(t *testing.T) {
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE"},
 		},
 		{
-			description: "buildkit",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
-			expectedEnv: []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
+			description:   "buildkit",
+			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			wantDockerCLI: true,
+			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
-			description: "buildkit and extra env",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
-			extraEnv:    []string{"OTHER=VALUE"},
-			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
+			description:   "cliFlags",
+			cliFlags:      []string{"--platform", "linux/amd64"},
+			localBuild:    latestV1.LocalBuild{},
+			wantDockerCLI: true,
+			expectedEnv:   []string{"KEY=VALUE"},
 		},
 		{
-			description: "env var collisions",
-			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
-			extraEnv:    []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
-			// env var collisions are handled by cmd.Run(). Last one wins.
-			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
+			description:   "buildkit and extra env",
+			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			wantDockerCLI: true,
+			extraEnv:      []string{"OTHER=VALUE"},
+			expectedEnv:   []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
+		},
+		{
+			description:   "env var collisions",
+			localBuild:    latestV1.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			wantDockerCLI: true,
+			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
+			// DOCKER_BUILDKIT should be overridden
+			expectedEnv: []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "docker build internal error",
@@ -135,11 +150,13 @@ func TestDockerCLIBuild(t *testing.T) {
 					test.err,
 				)
 				t.Override(&util.DefaultExecCommand, mockCmd)
-			} else if test.localBuild.UseBuildkit || test.localBuild.UseDockerCLI {
-				mockCmd = testutil.CmdRunEnv(
-					"docker build . --file "+dockerfilePath+" -t tag",
-					test.expectedEnv,
-				)
+			}
+			if test.wantDockerCLI {
+				cmdLine := "docker build . --file " + dockerfilePath + " -t tag"
+				if len(test.cliFlags) > 0 {
+					cmdLine += " " + strings.Join(test.cliFlags, " ")
+				}
+				mockCmd = testutil.CmdRunEnv(cmdLine, test.expectedEnv)
 				t.Override(&util.DefaultExecCommand, mockCmd)
 			}
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
@@ -151,23 +168,83 @@ func TestDockerCLIBuild(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
+						CliFlags:       test.cliFlags,
 					},
 				},
 			}
 
-			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag")
+			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag", platform.Matcher{})
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
 			}
 			if test.err != nil && test.expectedErrCode != 0 {
-				if ae, ok := err.(sErrors.ErrDef); ok {
-					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode())
+				if ae, ok := err.(*sErrors.ErrDef); ok {
+					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode(), protocmp.Transform())
 					t.CheckErrorContains(test.expectedErr.Error(), ae)
 				} else {
 					t.Fatalf("expected to find an actionable error. not found")
 				}
 			}
+		})
+	}
+}
+
+func TestDockerCLICheckCacheFromArgs(t *testing.T) {
+	tests := []struct {
+		description       string
+		artifact          *latestV1.Artifact
+		tag               string
+		expectedCacheFrom []string
+	}{
+		{
+			description: "multiple cache-from images",
+			artifact: &latestV1.Artifact{
+				ImageName: "gcr.io/k8s-skaffold/test",
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
+						CacheFrom: []string{"from/image1", "from/image2"},
+					},
+				},
+			},
+			tag:               "tag",
+			expectedCacheFrom: []string{"from/image1", "from/image2"},
+		},
+		{
+			description: "cache-from self uses tagged image",
+			artifact: &latestV1.Artifact{
+				ImageName: "gcr.io/k8s-skaffold/test",
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
+						CacheFrom: []string{"gcr.io/k8s-skaffold/test"},
+					},
+				},
+			},
+			tag:               "gcr.io/k8s-skaffold/test:tagged",
+			expectedCacheFrom: []string{"gcr.io/k8s-skaffold/test:tagged"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("Dockerfile").Chdir()
+			dockerfilePath, _ := filepath.Abs("Dockerfile")
+			a := *test.artifact
+			a.Workspace = "."
+			a.DockerArtifact.DockerfilePath = dockerfilePath
+			t.Override(&docker.DefaultAuthHelper, stubAuth{})
+			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+				return args, nil
+			})
+
+			mockCmd := testutil.CmdRun(
+				"docker build . --file " + dockerfilePath + " -t " + test.tag + " --cache-from " + strings.Join(test.expectedCacheFrom, " --cache-from "),
+			)
+			t.Override(&util.DefaultExecCommand, mockCmd)
+
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.BoolPtr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
+			_, err := builder.Build(context.Background(), ioutil.Discard, &a, test.tag, platform.Matcher{})
+			t.CheckNoError(err)
 		})
 	}
 }
@@ -206,6 +283,10 @@ func (m mockConfig) GetKubeContext() string {
 	return ""
 }
 
+func (m mockConfig) GlobalConfig() string {
+	return ""
+}
+
 func (m mockConfig) MinikubeProfile() string {
 	return ""
 }
@@ -220,4 +301,8 @@ func (m mockConfig) Mode() config.RunMode {
 
 func (m mockConfig) Prune() bool {
 	return m.prune
+}
+
+func (m mockConfig) ContainerDebugging() bool {
+	return false
 }

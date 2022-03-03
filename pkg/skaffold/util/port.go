@@ -17,12 +17,13 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"sort"
 	"sync"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // Loopback network address. Skaffold should not bind to 0.0.0.0
@@ -99,8 +100,10 @@ func (f *PortSet) List() []int {
 //
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
 func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
+	log.Entry(context.TODO()).Tracef("looking for port: %s:%d", address, port)
 	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
+			log.Entry(context.TODO()).Debugf("found open port: %d", port)
 			return port
 		}
 
@@ -108,7 +111,7 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 		for i := 0; i < 10; i++ {
 			port++
 			if getPortIfAvailable(address, port, usedPorts) {
-				logrus.Debugf("found open port: %d", port)
+				log.Entry(context.TODO()).Debugf("found open port: %d", port)
 				return port
 			}
 		}
@@ -116,7 +119,7 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 
 	for port = 4503; port <= 4533; port++ {
 		if getPortIfAvailable(address, port, usedPorts) {
-			logrus.Debugf("found open port: %d", port)
+			log.Entry(context.TODO()).Debugf("found open port: %d", port)
 			return port
 		}
 	}
@@ -135,6 +138,7 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 
 func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
 	if alreadySet := usedPorts.LoadOrSet(p); alreadySet {
+		log.Entry(context.TODO()).Tracef("port %d already allocated", p)
 		return false
 	}
 
@@ -144,18 +148,53 @@ func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
 func IsPortFree(address string, p int) bool {
 	// Ensure the port is available across all interfaces
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
-	if err != nil || l == nil {
+	if err != nil {
+		log.Entry(context.TODO()).Tracef("port INADDR_ANY:%d already bound: %v", p, err)
+		return false
+	} else if l == nil {
+		log.Entry(context.TODO()).Tracef("port INADDR_ANY:%d nil listener", p)
 		return false
 	}
 	l.Close()
+	log.Entry(context.TODO()).Tracef("was able to obtain INADDR_ANY:%d", p)
 
 	if address != Any {
 		// Ensure the port is available on the specific interface too
 		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p))
-		if err != nil || l == nil {
+		if err != nil {
+			log.Entry(context.TODO()).Tracef("port %s:%d already bound: %v", address, p, err)
+			return false
+		} else if l == nil {
+			log.Entry(context.TODO()).Tracef("port %s:%d nil listener", address, p)
 			return false
 		}
 		l.Close()
+		log.Entry(context.TODO()).Tracef("was able to obtain %s:%d", address, p)
 	}
 	return true
+}
+
+// AllocatePort looks for a port close to desiredPort, using the provided implementation of
+// isPortAvailable to determine what ports can be used.
+// We deal with wrapping and avoid allocating ports < 1024
+// TODO(nkubala)[09/14/21]: plumb through context from callers
+func AllocatePort(isPortAvailable func(int32) bool, desiredPort int32) int32 {
+	var maxPort int32 = 65535 // ports are normally [1-65535]
+	if desiredPort < 1024 || desiredPort > maxPort {
+		log.Entry(context.TODO()).Debugf("skipping reserved port %d", desiredPort)
+		desiredPort = 1024 // skip reserved ports
+	}
+	// We assume ports are rather sparsely allocated, so even if desiredPort
+	// is allocated, desiredPort+1 or desiredPort+2 are likely to be free
+	for port := desiredPort; port < maxPort; port++ {
+		if isPortAvailable(port) {
+			return port
+		}
+	}
+	for port := desiredPort; port > 1024; port-- {
+		if isPortAvailable(port) {
+			return port
+		}
+	}
+	panic("cannot find available port") // exceedingly unlikely
 }

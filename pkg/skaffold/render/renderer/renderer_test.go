@@ -68,20 +68,8 @@ func TestRender(t *testing.T) {
 		{
 			description: "single manifests, no hydration rule",
 			renderConfig: &latestV2.RenderConfig{
-				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 			},
-			originalKptfile: initKptfile,
-			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
-kind: Kptfile
-metadata:
-  name: skaffold
-pipeline: {}
-`,
-		},
-
-		{
-			description:     "manifests not given.",
-			renderConfig:    &latestV2.RenderConfig{},
 			originalKptfile: initKptfile,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -93,7 +81,7 @@ pipeline: {}
 		{
 			description: "single manifests with validation rule.",
 			renderConfig: &latestV2.RenderConfig{
-				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
 			},
 			originalKptfile: initKptfile,
@@ -109,7 +97,7 @@ pipeline:
 		{
 			description: "Validation rule needs to be updated.",
 			renderConfig: &latestV2.RenderConfig{
-				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
 			},
 			originalKptfile: `apiVersion: kpt.dev/v1alpha2
@@ -127,6 +115,49 @@ metadata:
 pipeline:
   validators:
   - image: gcr.io/kpt-fn/kubeval:v0.1
+`,
+		},
+		{
+			description: "manifests with transformation rule.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
+			},
+			originalKptfile: initKptfile,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/set-labels:v0.1
+    configMap:
+      owner: tester
+`,
+		},
+		{
+			description: "manifests with updated transformation rule.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
+			},
+			originalKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
+`,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/set-labels:v0.1
+    configMap:
+      owner: tester
 `,
 		},
 	}
@@ -153,7 +184,7 @@ pipeline:
 func TestRender_UserErr(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
-			Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+			Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
 			Validate: &[]latestV2.Validator{{Name: "kubeval"}},
 		}, "")
 		t.CheckNoError(err)

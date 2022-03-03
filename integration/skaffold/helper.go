@@ -32,6 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
 // RunBuilder is used to build a command line to run `skaffold`.
@@ -137,7 +138,11 @@ func GeneratePipeline(args ...string) *RunBuilder {
 }
 
 func withDefaults(command string, args []string) *RunBuilder {
-	return &RunBuilder{command: command, args: args, repo: "gcr.io/k8s-skaffold"}
+	repo := os.Getenv("DEFAULT_REPO")
+	if repo == "" {
+		repo = "gcr.io/k8s-skaffold"
+	}
+	return &RunBuilder{command: command, args: args, repo: repo}
 }
 
 // InDir sets the directory in which skaffold is running.
@@ -197,6 +202,9 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 }
 
 // RunLive runs the skaffold command in the background with live output.
+// !!Warning!! RunLive blocks the skaffold command until the caller reads from
+// the returned `PipeReader`. Please use `WaitForLogs` or similar to read
+// continuously from the returned `PipeReader`.
 func (b *RunBuilder) RunLive(t *testing.T) io.ReadCloser {
 	t.Helper()
 	pr, pw := io.Pipe()
@@ -205,6 +213,12 @@ func (b *RunBuilder) RunLive(t *testing.T) io.ReadCloser {
 		pr.Close()
 	})
 	return pr
+}
+
+// RunInBackgroundWithOutput runs the skaffold command in the background.
+func (b *RunBuilder) RunInBackgroundWithOutput(t *testing.T, out io.Writer) {
+	t.Helper()
+	b.runForked(t, out)
 }
 
 // runForked runs the skaffold command in the background with stdout sent to the provided writer.
@@ -224,8 +238,10 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 
 	go func() {
 		cmd.Wait()
-		logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
+		logrus.Infof("Ran %s in %v", cmd.Args, timeutil.Humanize(time.Since(start)))
 	}()
+
+	waitAndTriggerStacktrace(ctx, t, cmd.Process)
 
 	t.Cleanup(func() {
 		cancel()
@@ -278,7 +294,7 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 	if err != nil {
 		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
+	logrus.Infof("Ran %s in %v", cmd.Args, timeutil.Humanize(time.Since(start)))
 	return out, nil
 }
 
@@ -300,7 +316,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
-	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
+	logrus.Infof("Ran %s in %v", cmd.Args, timeutil.Humanize(time.Since(start)))
 	return out
 }
 

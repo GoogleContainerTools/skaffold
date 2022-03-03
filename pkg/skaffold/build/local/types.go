@@ -21,18 +21,19 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	dockerbuilder "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -69,6 +70,7 @@ type Config interface {
 	Mode() config.RunMode
 	NoPruneChildren() bool
 	Muted() config.Muted
+	PushImages() config.BoolOrUndefined
 }
 
 type BuilderContext interface {
@@ -78,19 +80,24 @@ type BuilderContext interface {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(bCtx)
+func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(ctx, bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
 	cluster := bCtx.GetCluster()
+	pushFlag := bCtx.PushImages()
 
 	var pushImages bool
-	if buildCfg.Push == nil {
+	switch {
+	case pushFlag.Value() != nil:
+		pushImages = *pushFlag.Value()
+		log.Entry(context.TODO()).Debugf("push value set via skaffold build --push flag, --push=%t", *pushFlag.Value())
+	case buildCfg.Push == nil:
 		pushImages = cluster.PushImages
-		logrus.Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
-	} else {
+		log.Entry(context.TODO()).Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
+	default:
 		pushImages = *buildCfg.Push
 	}
 
@@ -133,7 +140,8 @@ func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 
 // artifactBuilder represents a per artifact builder interface
 type artifactBuilder interface {
-	Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error)
+	Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error)
+	SupportedPlatforms() platform.Matcher
 }
 
 // newPerArtifactBuilder returns an instance of `artifactBuilder`
@@ -151,10 +159,13 @@ func newPerArtifactBuilder(b *Builder, a *latestV1.Artifact) (artifactBuilder, e
 	case a.CustomArtifact != nil:
 		// required artifacts as environment variables
 		dependencies := util.EnvPtrMapToSlice(docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true), "=")
-		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, append(b.retrieveExtraEnv(), dependencies...)), nil
+		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests, append(b.retrieveExtraEnv(), dependencies...)), nil
 
 	case a.BuildpackArtifact != nil:
 		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.artifactStore), nil
+
+	case a.KoArtifact != nil:
+		return ko.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.insecureRegistries), nil
 
 	default:
 		return nil, fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

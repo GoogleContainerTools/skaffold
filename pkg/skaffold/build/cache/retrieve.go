@@ -22,21 +22,22 @@ import (
 	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
-func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
+func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -47,7 +48,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	defer endTrace()
 
 	lookup := make(chan []cacheDetails)
-	go func() { lookup <- c.lookupArtifacts(ctx, tags, artifacts) }()
+	go func() { lookup <- c.lookupArtifacts(ctx, tags, platforms, artifacts) }()
 
 	var results []cacheDetails
 	select {
@@ -61,6 +62,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
 		eventV2.CacheCheckInProgress(artifact.ImageName)
+		out, ctx := output.WithEventContext(ctx, out, constants.Build, artifact.ImageName)
 		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
 		result := results[i]
@@ -137,21 +139,21 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		})
 	}
 
-	logrus.Infoln("Cache check completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Cache check completed in", timeutil.Humanize(time.Since(start)))
 
-	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
+	bRes, err := buildAndTest(ctx, out, tags, needToBuild, platforms)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
 
 	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {
-		logrus.Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
+		log.Entry(ctx).Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
 		return append(bRes, alreadyBuilt...), nil
 	}
 
 	if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
-		logrus.Warnf("error saving cache file; caching may not work as expected: %v", err)
+		log.Entry(ctx).Warnf("error saving cache file; caching may not work as expected: %v", err)
 		return append(bRes, alreadyBuilt...), nil
 	}
 

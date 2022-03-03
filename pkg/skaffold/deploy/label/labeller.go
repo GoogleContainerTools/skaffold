@@ -22,15 +22,14 @@ import (
 )
 
 const (
-	K8sManagedByLabelKey = "app.kubernetes.io/managed-by"
-	RunIDLabel           = "skaffold.dev/run-id"
+	RunIDLabel = "skaffold.dev/run-id"
 )
 
 type Config interface {
 	RunIDSelector() string
 }
 
-// DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
+// DefaultLabeller adds a run-specific UUID label
 type DefaultLabeller struct {
 	addSkaffoldLabels bool
 	customLabels      []string
@@ -49,7 +48,6 @@ func (d *DefaultLabeller) Labels() map[string]string {
 	labels := map[string]string{}
 
 	if d.addSkaffoldLabels {
-		labels[K8sManagedByLabelKey] = "skaffold"
 		labels[RunIDLabel] = d.runID
 	}
 

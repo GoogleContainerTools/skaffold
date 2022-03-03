@@ -1,0 +1,44 @@
+name: Run Performance Comparison
+
+on:
+  pull_request:
+    types: [ labeled ]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: ${{ github.event.label.name == 'help:run-comparisonstats' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Remove run-performance-comparison label
+      uses: actions-ecosystem/action-remove-labels@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        labels: help:run-comparisonstats
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
+    - name: Parse comment template into gh output
+      id: parse-comment-template-into-gh-output
+      working-directory: ./hack/comparisonstats/comment-text
+      run: |
+        body=$(cat comment.txt)
+        body="${body//'%'/'%25'}"
+        body="${body//$'\n'/'%0A'}"
+        body="${body//$'\r'/'%0D'}" 
+        echo ::set-output name=body::$body
+    
+    - name: Create comment
+      uses: peter-evans/create-or-update-comment@a35cf36e5301d70b76f316e867e7788a55a31dae
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: "${{ steps.parse-comment-template-into-gh-output.outputs.body }}"

@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -114,22 +114,22 @@ func TestPrintProfilesList(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(ctx context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				if len(opts.ConfigurationFilter) == 0 {
 					return test.configSet, test.err
 				}
 				var set parser.SkaffoldConfigSet
-				if util.StrSliceContains(opts.ConfigurationFilter, "cfg1") {
+				if stringslice.Contains(opts.ConfigurationFilter, "cfg1") {
 					set = append(set, test.configSet[0])
 				}
-				if util.StrSliceContains(opts.ConfigurationFilter, "cfg2") {
+				if stringslice.Contains(opts.ConfigurationFilter, "cfg2") {
 					set = append(set, test.configSet[1])
 				}
 				return set, test.err
 			})
 			var buf bytes.Buffer
 			err := PrintProfilesList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, ProfilesOptions: inspect.ProfilesOptions{BuildEnv: test.buildEnv}})
-			t.CheckNoError(err)
+			t.CheckError(test.err != nil, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}

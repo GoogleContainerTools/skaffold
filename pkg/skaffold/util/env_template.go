@@ -18,18 +18,23 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 	"text/template"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // For testing
 var (
 	OSEnviron = os.Environ
+	funcsMap  = template.FuncMap{
+		"default": defaultFunc,
+	}
 )
 
 // ExpandEnvTemplate parses and executes template s with an optional environment map
@@ -53,7 +58,7 @@ func ExpandEnvTemplateOrFail(s string, envMap map[string]string) (string, error)
 
 // ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {
-	return template.New("envTemplate").Parse(t)
+	return template.New("envTemplate").Funcs(funcsMap).Parse(t)
 }
 
 // ExecuteEnvTemplate executes an envTemplate based on OS environment variables and a custom map
@@ -69,7 +74,7 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 	}
 
 	var buf bytes.Buffer
-	logrus.Debugf("Executing template %v with environment %v", envTemplate, envMap)
+	log.Entry(context.TODO()).Debugf("Executing template %v with environment %v", envTemplate, envMap)
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
 		return "", err
 	}
@@ -130,4 +135,28 @@ func MapToFlag(m map[string]*string, flag string) ([]string, error) {
 	}
 
 	return kvFlags, nil
+}
+
+// defaultFunc is a template function that behaves as sprig's default function.
+// See https://masterminds.github.io/sprig/defaults.html#default
+func defaultFunc(dflt, value interface{}) interface{} {
+	if value == nil {
+		return dflt
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Array, reflect.Slice:
+		if v.Len() == 0 {
+			return dflt
+		}
+	case reflect.Ptr:
+		if v.IsNil() {
+			return dflt
+		}
+	default:
+		if v.IsZero() {
+			return dflt
+		}
+	}
+	return value
 }

@@ -18,15 +18,15 @@ package event
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
+	pbuf "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -53,6 +53,7 @@ var handler = newHandler()
 func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan firedEvent),
+		state:     &proto.State{},
 	}
 	go func() {
 		for {
@@ -67,11 +68,11 @@ func newHandler() *eventHandler {
 }
 
 type eventHandler struct {
-	eventLog []proto.LogEntry
+	eventLog []*proto.LogEntry
 	logLock  sync.Mutex
 	cfg      Config
 
-	state     proto.State
+	state     *proto.State
 	stateLock sync.Mutex
 	eventChan chan firedEvent
 	listeners []*listener
@@ -89,8 +90,7 @@ type listener struct {
 }
 
 func GetState() (*proto.State, error) {
-	state := handler.getState()
-	return &state, nil
+	return handler.getState(), nil
 }
 
 func ForEachEvent(callback func(*proto.LogEntry) error) error {
@@ -104,19 +104,14 @@ func Handle(event *proto.Event) error {
 	return nil
 }
 
-func (ev *eventHandler) getState() proto.State {
+func (ev *eventHandler) getState() *proto.State {
 	ev.stateLock.Lock()
-	// Deep copy
-	buf, _ := json.Marshal(ev.state)
+	state := pbuf.Clone(ev.state).(*proto.State)
 	ev.stateLock.Unlock()
-
-	var state proto.State
-	json.Unmarshal(buf, &state)
-
 	return state
 }
 
-func (ev *eventHandler) logEvent(entry proto.LogEntry) {
+func (ev *eventHandler) logEvent(entry *proto.LogEntry) {
 	ev.logLock.Lock()
 
 	for _, listener := range ev.listeners {
@@ -124,7 +119,7 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 			continue
 		}
 
-		if err := listener.callback(&entry); err != nil {
+		if err := listener.callback(entry); err != nil {
 			listener.errors <- err
 			listener.closed = true
 		}
@@ -142,14 +137,14 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 
 	ev.logLock.Lock()
 
-	oldEvents := make([]proto.LogEntry, len(ev.eventLog))
+	oldEvents := make([]*proto.LogEntry, len(ev.eventLog))
 	copy(oldEvents, ev.eventLog)
 	ev.listeners = append(ev.listeners, listener)
 
 	ev.logLock.Unlock()
 
 	for i := range oldEvents {
-		if err := callback(&oldEvents[i]); err != nil {
+		if err := callback(oldEvents[i]); err != nil {
 			// listener should maybe be closed
 			return err
 		}
@@ -158,7 +153,7 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(cfg Config) proto.State {
+func emptyState(cfg Config) *proto.State {
 	builds := map[string]string{}
 	for _, p := range cfg.GetPipelines() {
 		for _, a := range p.Build.Artifacts {
@@ -169,8 +164,8 @@ func emptyState(cfg Config) proto.State {
 	return emptyStateWithArtifacts(builds, metadata, cfg.AutoBuild(), cfg.AutoDeploy(), cfg.AutoSync())
 }
 
-func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) proto.State {
-	return proto.State{
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) *proto.State {
+	return &proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts:   builds,
 			AutoTrigger: autoBuild,
@@ -268,7 +263,7 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
+func ResourceStatusCheckEventCompleted(r string, ae *proto.ActionableErr) {
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		resourceStatusCheckEventFailed(r, ae)
 		return
@@ -285,23 +280,23 @@ func resourceStatusCheckEventSucceeded(r string) {
 	})
 }
 
-func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
+func resourceStatusCheckEventFailed(r string, ae *proto.ActionableErr) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource:      r,
 		Status:        Failed,
 		Err:           ae.Message,
 		StatusCode:    ae.ErrCode,
-		ActionableErr: &ae,
+		ActionableErr: ae,
 	})
 }
 
-func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
+func ResourceStatusCheckEventUpdated(r string, ae *proto.ActionableErr) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource:      r,
 		Status:        InProgress,
 		Message:       ae.Message,
 		StatusCode:    ae.ErrCode,
-		ActionableErr: &ae,
+		ActionableErr: ae,
 	})
 }
 
@@ -489,7 +484,7 @@ func DebuggingContainerTerminated(podName, containerName, namespace, artifact, r
 	})
 }
 
-func (ev *eventHandler) setState(state proto.State) {
+func (ev *eventHandler) setState(state *proto.State) {
 	ev.stateLock.Lock()
 	ev.state = state
 	ev.stateLock.Unlock()
@@ -553,8 +548,8 @@ func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 
 func LogMetaEvent() {
 	metadata := handler.state.Metadata
-	handler.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
+	handler.logEvent(&proto.LogEntry{
+		Timestamp: timestamppb.Now(),
 		Event: &proto.Event{
 			EventType: &proto.Event_MetaEvent{
 				MetaEvent: &proto.MetaEvent{
@@ -567,21 +562,19 @@ func LogMetaEvent() {
 }
 
 func (ev *eventHandler) handle(event *proto.Event) {
-	go func(t *timestamp.Timestamp) {
-		ev.eventChan <- firedEvent{
-			event: event,
-			ts:    t,
-		}
-		if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
-			// close the event channel indicating there are no more events to all the
-			// receivers
-			close(ev.eventChan)
-		}
-	}(ptypes.TimestampNow())
+	ev.eventChan <- firedEvent{
+		event: event,
+		ts:    timestamppb.Now(),
+	}
+	if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
+		// close the event channel indicating there are no more events to all the
+		// receivers
+		close(ev.eventChan)
+	}
 }
 
 func (ev *eventHandler) handleExec(f firedEvent) {
-	logEntry := &proto.LogEntry{
+	logEntry := proto.LogEntry{
 		Timestamp: f.ts,
 		Event:     f.event,
 	}
@@ -722,7 +715,7 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 			logEntry.Entry = fmt.Sprintf("Update failed with error code %v", de.Err.ErrCode)
 		}
 	}
-	ev.logEvent(*logEntry)
+	ev.logEvent(&logEntry)
 }
 
 // ResetStateOnBuild resets the build, test, deploy and sync state
@@ -823,7 +816,7 @@ func SaveEventsToFile(fp string) error {
 	marshaller := jsonpb.Marshaler{}
 	for _, ev := range handler.eventLog {
 		contents := bytes.NewBuffer([]byte{})
-		if err := marshaller.Marshal(contents, &ev); err != nil {
+		if err := marshaller.Marshal(contents, ev); err != nil {
 			return fmt.Errorf("marshalling event: %w", err)
 		}
 		if _, err := f.WriteString(contents.String() + "\n"); err != nil {

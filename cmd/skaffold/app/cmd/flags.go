@@ -17,21 +17,22 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 var (
 	fromBuildOutputFile flags.BuildOutputFileFlag
+	preBuiltImages      flags.Images
 )
 
 // Nillable is used to reset objects that implement pflag's `Value` and `SliceValue`.
@@ -148,6 +149,19 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
+		Name:     "sync-remote-cache",
+		Usage:    "Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.",
+		Value:    &opts.SyncRemoteCache,
+		DefValue: "always",
+		DefValuePerCommand: map[string]interface{}{
+			"inspect":  "missing",
+			"diagnose": "missing",
+			"fix":      "missing",
+		},
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"all"},
+	},
+	{
 		Name:          "insecure-registry",
 		Usage:         "Target registries for built images which are not secure",
 		Value:         &opts.InsecureRegistries,
@@ -156,21 +170,27 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
 	},
 	{
-		Name:     "enable-rpc",
-		Usage:    "Enable gRPC for exposing Skaffold events",
-		Value:    &opts.EnableRPC,
-		DefValue: false,
-		DefValuePerCommand: map[string]interface{}{
-			"dev":   true,
-			"debug": true,
-		},
+		Name:          "enable-rpc",
+		Usage:         "Enable gRPC or HTTP APIs for exposing Skaffold events",
+		Value:         &opts.EnableRPC,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
+		IsEnum:        true,
+		Deprecated:    "flags --rpc-port or --rpc-http-port now imply --enable-rpc=true, so please use only those instead",
+	},
+	{
+		Name:          "wait-for-connection",
+		Usage:         "Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit",
+		Value:         &opts.WaitForConnection,
+		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
 		IsEnum:        true,
 	},
 	{
 		Name:          "event-log-file",
-		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true",
+		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --rpc-port or --rpc-http-port",
 		Hidden:        true,
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
@@ -178,19 +198,28 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply"},
 	},
 	{
+		Name:          "last-log-file",
+		Usage:         "Save Skaffold output to the provided file after skaffold has finished executing, requires --rpc-port or --rpc-http-port (defaults to $HOME/.skaffold/repos)",
+		Hidden:        true,
+		Value:         &opts.LastLogFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply"},
+	},
+	{
 		Name:          "rpc-port",
-		Usage:         "tcp port to expose event API",
+		Usage:         "tcp port to expose the Skaffold API over gRPC",
 		Value:         &opts.RPCPort,
-		DefValue:      constants.DefaultRPCPort,
-		FlagAddMethod: "IntVar",
+		DefValue:      nil,
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
 	},
 	{
 		Name:          "rpc-http-port",
-		Usage:         "tcp port to expose event REST API over HTTP",
+		Usage:         "tcp port to expose the Skaffold API over HTTP REST",
 		Value:         &opts.RPCHTTPPort,
-		DefValue:      constants.DefaultRPCHTTPPort,
-		FlagAddMethod: "IntVar",
+		DefValue:      nil,
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
 	},
 	{
@@ -287,11 +316,19 @@ var flagRegistry = []Flag{
 		Name:          "status-check",
 		Usage:         "Wait for deployed resources to stabilize",
 		Value:         &opts.StatusCheck,
-		DefValue:      true,
+		DefValue:      nil,
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
-		NoOptDefVal:   "true",
+	},
+	{
+		Name:          "iterative-status-check",
+		Usage:         "Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).",
+		Value:         &opts.IterativeStatusCheck,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "render-only",
@@ -344,6 +381,14 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
+	},
+	{
+		Name:          "platform",
+		Usage:         "The platform to target for the build artifacts",
+		Value:         &opts.Platforms,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
 		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
 	},
 	{
@@ -443,19 +488,6 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "debug"},
 	},
 	{
-		Name:     "add-skaffold-labels",
-		Usage:    "Add Skaffold-specific labels to rendered manifest. Custom labels will still be applied. Helpful for GitOps model where Skaffold is not the deployer.",
-		Value:    &opts.AddSkaffoldLabels,
-		DefValue: true,
-		DefValuePerCommand: map[string]interface{}{
-			"render": false,
-		},
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug", "render", "run"},
-		IsEnum:        true,
-		Deprecated:    "Adding Skaffold-specific labels in `render` is deprecated.",
-	},
-	{
 		Name:          "mute-logs",
 		Usage:         "mute logs for specified stages in pipeline (build, deploy, status-check, none, all)",
 		Value:         &opts.Muted.Phases,
@@ -514,8 +546,19 @@ var flagRegistry = []Flag{
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"test", "deploy"},
+		DefinedOn:     []string{"deploy", "render", "test"},
 	},
+
+	{
+		Name:          "images",
+		Shorthand:     "i",
+		Usage:         "A list of pre-built images to deploy, either tagged images or NAME=TAG pairs",
+		Value:         &preBuiltImages,
+		DefValue:      nil,
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"deploy", "render", "test"},
+	},
+
 	{
 		Name:          "auto-create-config",
 		Usage:         "If true, skaffold will try to create a config for the user's run if it doesn't find one",
@@ -543,15 +586,6 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
 	{
-		Name:          "v2",
-		Usage:         "Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.",
-		Value:         &opts.Experimental,
-		DefValue:      false,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"apply", "debug", "deploy", "dev", "run"},
-		IsEnum:        true,
-	},
-	{
 		Name:          "digest-source",
 		Usage:         "Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.",
 		Value:         &opts.DigestSource,
@@ -564,6 +598,14 @@ var flagRegistry = []Flag{
 		},
 		IsEnum: true,
 	},
+	{
+		Name:          "load-images",
+		Usage:         "If true, skaffold will force load the container images into the local cluster.",
+		Value:         &opts.ForceLoadImages,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {
@@ -571,6 +613,8 @@ func methodNameByType(v reflect.Value) string {
 	switch t {
 	case reflect.Bool:
 		return "BoolVar"
+	case reflect.Int:
+		return "IntVar"
 	case reflect.String:
 		return "StringVar"
 	case reflect.Slice:
@@ -652,7 +696,7 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	} else if val, ok := v.(pflag.Value); ok {
 		val.Set(fmt.Sprintf("%v", d))
 	} else {
-		logrus.Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
+		log.Entry(context.TODO()).Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
 	}
 }
 

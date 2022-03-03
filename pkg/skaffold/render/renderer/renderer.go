@@ -24,14 +24,15 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -54,15 +55,16 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Rend
 	// TODO(yuwenma): The current work directory may not be accurate if users use --filepath flag.
 	hydrationDir := filepath.Join(workingDir, DefaultHydrationDir)
 
-	var generator *generate.Generator
-	if config.Generate == nil {
+	generator := generate.NewGenerator(workingDir, config.Generate)
+	/* TODO(yuwenma): Apply new UX
+		if config.Generate == nil {
 		// If render.generate is not given, default to current working directory.
 		defaultManifests := filepath.Join(workingDir, "*.yaml")
 		generator = generate.NewGenerator(workingDir, latestV2.Generate{Manifests: []string{defaultManifests}})
 	} else {
 		generator = generate.NewGenerator(workingDir, *config.Generate)
 	}
-
+	*/
 	var validator *validate.Validator
 	if config.Validate != nil {
 		var err error
@@ -74,12 +76,24 @@ func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Rend
 		validator, _ = validate.NewValidator([]latestV2.Validator{})
 	}
 
-	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, workingDir: workingDir, hydrationDir: hydrationDir}, nil
+	var transformer *transform.Transformer
+	if config.Transform != nil {
+		var err error
+		transformer, err = transform.NewTransformer(*config.Transform)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
+	}
+	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, Transformer: *transformer,
+		workingDir: workingDir, hydrationDir: hydrationDir}, nil
 }
 
 type SkaffoldRenderer struct {
 	generate.Generator
 	validate.Validator
+	transform.Transformer
 	workingDir   string
 	hydrationDir string
 	labels       map[string]string
@@ -91,7 +105,7 @@ type SkaffoldRenderer struct {
 // hydrated in place.
 func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 	if _, err := os.Stat(r.hydrationDir); os.IsNotExist(err) {
-		logrus.Debugf("creating render directory: %v", r.hydrationDir)
+		log.Entry(ctx).Debugf("creating render directory: %v", r.hydrationDir)
 		if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
 			return fmt.Errorf("creating render directory for hydration: %w", err)
 		}
@@ -99,9 +113,9 @@ func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 	kptFilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	if _, err := os.Stat(kptFilePath); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
-		if _, err := util.RunCmdOut(cmd); err != nil {
+		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
 			return sErrors.NewError(err,
-				proto.ActionableErr{
+				&proto.ActionableErr{
 					Message: fmt.Sprintf("unable to initialize Kptfile in %v", r.hydrationDir),
 					ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
 					Suggestions: []*proto.Suggestion{
@@ -147,7 +161,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	kfConfig := &kptfile.KptFile{}
 	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
 		return sErrors.NewError(err,
-			proto.ActionableErr{
+			&proto.ActionableErr{
 				Message: fmt.Sprintf("unable to parse Kptfile in %v", r.hydrationDir),
 				ErrCode: proto.StatusCode_RENDER_KPTFILE_INVALID_YAML_ERR,
 				Suggestions: []*proto.Suggestion{
@@ -164,7 +178,10 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	}
 
 	kfConfig.Pipeline.Validators = r.GetDeclarativeValidators()
-	// TODO: Update the Kptfile with the new mutators.
+	kfConfig.Pipeline.Mutators, err = r.GetDeclarativeTransformers()
+	if err != nil {
+		return err
+	}
 
 	configByte, err := yaml.Marshal(kfConfig)
 	if err != nil {

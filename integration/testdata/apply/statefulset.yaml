@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zz-image-doesnt-exist
+spec:
+  serviceName: foo
+  replicas: 2
+  selector:
+    matchLabels:
+      app: apply-status-check-failure
+  template:
+    metadata:
+      labels:
+        app: apply-status-check-failure
+    spec:
+      containers:
+      - name: apply-status-check-failure
+        image: zz-image-doesnt-exist

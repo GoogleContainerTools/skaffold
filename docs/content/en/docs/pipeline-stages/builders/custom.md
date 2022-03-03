@@ -17,6 +17,8 @@ Skaffold will pass in the following additional environment variables to the cust
 | $IMAGE     | The fully qualified image name. For example, "gcr.io/image1:tag" | The custom build script is expected to build this image and tag it with the name provided in $IMAGE. The image should also be pushed if `$PUSH_IMAGE=true`. | 
 | $PUSH_IMAGE      | Set to true if the image in `$IMAGE` is expected to exist in a remote registry. Set to false if the image is expected to exist locally.      |   The custom build script will push the image `$IMAGE` if `$PUSH_IMAGE=true` | 
 | $BUILD_CONTEXT  | An absolute path to the directory this artifact is meant to be built from. Specified by artifact `context` in the skaffold.yaml.      | None. | 
+| $PLATFORMS  | A comma-separated string of platforms to build the image for. For example, `linux/arm64,linux/amd64`.      | If there's only a single platform specified the custom build script should build for that platform. If multiple platforms are specified then the custom build script should build a multi-arch image comprising all those platforms. | 
+| $SKIP_TEST  | Whether to skip the tests after building.      | None. | 
 | Local environment variables | The current state of the local environment (e.g. `$HOST`, `$PATH)`. Determined by the golang [os.Environ](https://golang.org/pkg/os#Environ) function.| None. |
 
 As described above, the custom build script is expected to:

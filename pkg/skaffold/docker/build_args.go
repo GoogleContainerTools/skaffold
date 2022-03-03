@@ -17,12 +17,12 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -108,7 +108,7 @@ func ResolveDependencyImages(deps []*latestV1.ArtifactDependency, r ArtifactReso
 		case found:
 			m[d.Alias] = &t
 		case missingIsFatal:
-			logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+			log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 		default:
 			m[d.Alias] = nil
 		}

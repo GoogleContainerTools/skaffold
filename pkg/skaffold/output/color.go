@@ -17,15 +17,16 @@ limitations under the License.
 package output
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
 
 	colors "github.com/heroku/color"
 	"github.com/mattn/go-colorable"
-	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/term"
 )
 
 // Maintain compatibility with the old color coding.
@@ -36,12 +37,26 @@ func init() {
 	colors.Disable(true)
 }
 
+var DefaultColorCodes = []Color{
+	LightRed,
+	LightGreen,
+	LightYellow,
+	LightBlue,
+	LightPurple,
+	Red,
+	Green,
+	Yellow,
+	Blue,
+	Purple,
+	Cyan,
+}
+
 // SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
-func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
-	_, isTerm := util.IsTerminal(out)
-	supportsColor, err := util.SupportsColor()
+func SetupColors(ctx context.Context, out io.Writer, defaultColor int, forceColors bool) io.Writer {
+	_, isTerm := term.IsTerminal(out)
+	supportsColor, err := term.SupportsColor(ctx)
 	if err != nil {
-		logrus.Debugf("error checking for color support: %v", err)
+		log.Entry(context.TODO()).Debugf("error checking for color support: %v", err)
 	}
 
 	useColors := (isTerm && supportsColor) || forceColors

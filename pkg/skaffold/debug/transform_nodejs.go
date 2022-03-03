@@ -17,20 +17,24 @@ limitations under the License.
 package debug
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 type nodeTransformer struct{}
 
+//nolint:golint
+func NewNodeTransformer() containerTransformer {
+	return nodeTransformer{}
+}
+
 func init() {
-	containerTransforms = append(containerTransforms, nodeTransformer{})
+	RegisterContainerTransformer(NewNodeTransformer())
 
 	// the `node` image's "docker-entrypoint.sh" launches the command
 	entrypointLaunchers = append(entrypointLaunchers, "docker-entrypoint.sh")
@@ -59,45 +63,46 @@ func isLaunchingNpm(args []string) bool {
 	return len(args) > 0 && (args[0] == "npm" || strings.HasSuffix(args[0], "/npm"))
 }
 
-func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
+func (t nodeTransformer) IsApplicable(config ImageConfiguration) bool {
 	// NODE_VERSION defined in Official Docker `node` image
 	// NODEJS_VERSION defined in RedHat's node base image
 	// NODE_ENV is a common var found to toggle debug and production
 	for _, v := range []string{"NODE_VERSION", "NODEJS_VERSION", "NODE_ENV"} {
-		if _, found := config.env[v]; found {
+		if _, found := config.Env[v]; found {
 			return true
 		}
 	}
-	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
-		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)
+	if len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint) {
+		return isLaunchingNode(config.Entrypoint) || isLaunchingNpm(config.Entrypoint)
 	}
-	return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
+	return isLaunchingNode(config.Arguments) || isLaunchingNpm(config.Arguments)
 }
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (annotations.ContainerDebugConfiguration, string, error) {
-	logrus.Infof("Configuring %q for node.js debugging", container.Name)
+func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+	container := adapter.GetContainer()
+	log.Entry(context.TODO()).Infof("Configuring %q for node.js debugging", container.Name)
 
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
 	if spec == nil {
 		spec = &inspectSpec{host: "0.0.0.0", port: portAlloc(defaultDevtoolsPort)}
 		switch {
-		case isLaunchingNode(config.entrypoint):
-			container.Command = rewriteNodeCommandLine(config.entrypoint, *spec)
+		case isLaunchingNode(config.Entrypoint):
+			container.Command = rewriteNodeCommandLine(config.Entrypoint, *spec)
 
-		case isLaunchingNpm(config.entrypoint):
-			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
+		case isLaunchingNpm(config.Entrypoint):
+			container.Command = rewriteNpmCommandLine(config.Entrypoint, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNode(config.arguments):
-			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
+		case (len(config.Entrypoint) == 0 || isEntrypointLauncher(config.Entrypoint)) && isLaunchingNode(config.Arguments):
+			container.Args = rewriteNodeCommandLine(config.Arguments, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNpm(config.arguments):
-			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
+		case (len(config.Entrypoint) == 0 || isEntrypointLauncher(config.Entrypoint)) && isLaunchingNpm(config.Arguments):
+			container.Args = rewriteNpmCommandLine(config.Arguments, *spec)
 
 		default:
-			if v, found := config.env["NODE_OPTIONS"]; found {
+			if v, found := config.Env["NODE_OPTIONS"]; found {
 				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", v+" "+spec.String())
 			} else {
 				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", spec.String())
@@ -106,7 +111,7 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 	}
 
 	// Add our debug-helper path to resolve to our node wrapper
-	if v, found := config.env["PATH"]; found {
+	if v, found := config.Env["PATH"]; found {
 		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin:"+v)
 	} else {
 		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin")
@@ -114,24 +119,24 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 
 	container.Ports = exposePort(container.Ports, "devtools", spec.port)
 
-	return annotations.ContainerDebugConfiguration{
+	return types.ContainerDebugConfiguration{
 		Runtime: "nodejs",
 		Ports:   map[string]uint32{"devtools": uint32(spec.port)},
 	}, "nodejs", nil
 }
 
-func retrieveNodeInspectSpec(config imageConfiguration) *inspectSpec {
-	for _, arg := range config.entrypoint {
+func retrieveNodeInspectSpec(config ImageConfiguration) *inspectSpec {
+	for _, arg := range config.Entrypoint {
 		if spec := extractInspectArg(arg); spec != nil {
 			return spec
 		}
 	}
-	for _, arg := range config.arguments {
+	for _, arg := range config.Arguments {
 		if spec := extractInspectArg(arg); spec != nil {
 			return spec
 		}
 	}
-	if value, found := config.env["NODE_OPTIONS"]; found {
+	if value, found := config.Env["NODE_OPTIONS"]; found {
 		if spec := extractInspectArg(value); spec != nil {
 			return spec
 		}
@@ -164,7 +169,7 @@ func extractInspectArg(arg string) *inspectSpec {
 		if split := strings.SplitN(address, ":", 2); len(split) == 1 {
 			port, err := strconv.ParseInt(split[0], 10, 32)
 			if err != nil {
-				logrus.Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
+				log.Entry(context.TODO()).Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -172,7 +177,7 @@ func extractInspectArg(arg string) *inspectSpec {
 			spec.host = split[0]
 			port, err := strconv.ParseInt(split[1], 10, 32)
 			if err != nil {
-				logrus.Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
+				log.Entry(context.TODO()).Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -208,7 +213,7 @@ func rewriteNpmCommandLine(commandLine []string, spec inspectSpec) []string {
 	// Assumes that commandLine[0] is "npm"
 	newOption := "--node-options=" + spec.String()
 	// see if there is "--" for end of npm arguments
-	if index := util.StrSliceIndex(commandLine, "--"); index > 0 {
+	if index := stringslice.Index(commandLine, "--"); index > 0 {
 		commandLine = append(commandLine, "")
 		copy(commandLine[index+1:], commandLine[index:]) // shift
 		commandLine[index] = newOption

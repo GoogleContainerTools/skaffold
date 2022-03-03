@@ -17,28 +17,23 @@ limitations under the License.
 package runcontext
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-)
-
-const (
-	emptyNamespace = ""
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 type RunContext struct {
 	Opts               config.SkaffoldOptions
 	Pipelines          Pipelines
 	KubeContext        string
-	Namespaces         []string
 	WorkingDir         string
 	InsecureRegistries map[string]bool
 	Cluster            config.Cluster
@@ -96,10 +91,10 @@ func (ps Pipelines) DeployConfigs() []latestV1.DeployConfig {
 	return cfgs
 }
 
-func (ps Pipelines) Deployers() []latestV1.DeployType {
-	var deployers []latestV1.DeployType
+func (ps Pipelines) Deployers() []latestV1.DeployConfig {
+	var deployers []latestV1.DeployConfig
 	for _, p := range ps.pipelines {
-		deployers = append(deployers, p.Deploy.DeployType)
+		deployers = append(deployers, p.Deploy)
 	}
 	return deployers
 }
@@ -112,26 +107,15 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 	return tests
 }
 
-func (ps Pipelines) StatusCheck() (*bool, error) {
-	var enabled, disabled bool
+// TransformableAllowList returns combined allowlist from pipelines
+func (ps Pipelines) TransformableAllowList() []latestV1.ResourceFilter {
+	var allowList []latestV1.ResourceFilter
 	for _, p := range ps.pipelines {
-		if p.Deploy.StatusCheck != nil {
-			if *p.Deploy.StatusCheck {
-				enabled = true
-			} else {
-				disabled = true
-			}
-			if enabled && disabled {
-				return nil, fmt.Errorf("cannot explicitly enable StatusCheck in one pipeline and explicitly disable it in another pipeline, see https://skaffold.dev/docs/workflows/ci-cd/#waiting-for-skaffold-deployments-using-healthcheck")
-			}
+		if p.Deploy.TransformableAllowList != nil {
+			allowList = append(allowList, p.Deploy.TransformableAllowList...)
 		}
 	}
-	// set the group status check to disabled if any pipeline has StatusCheck
-	// set to false.
-	if disabled {
-		return util.BoolPtr(false), nil
-	}
-	return util.BoolPtr(true), nil
+	return allowList
 }
 
 func (ps Pipelines) StatusCheckDeadlineSeconds() int {
@@ -166,47 +150,50 @@ func (rc *RunContext) Artifacts() []*latestV1.Artifact { return rc.Pipelines.Art
 
 func (rc *RunContext) DeployConfigs() []latestV1.DeployConfig { return rc.Pipelines.DeployConfigs() }
 
-func (rc *RunContext) Deployers() []latestV1.DeployType { return rc.Pipelines.Deployers() }
+func (rc *RunContext) Deployers() []latestV1.DeployConfig { return rc.Pipelines.Deployers() }
 
 func (rc *RunContext) TestCases() []*latestV1.TestCase { return rc.Pipelines.TestCases() }
-
-func (rc *RunContext) StatusCheck() (*bool, error) {
-	scOpts := rc.Opts.StatusCheck.Value()
-	scConfig, err := rc.Pipelines.StatusCheck()
-	if err != nil {
-		return nil, err
-	}
-	switch {
-	case scOpts != nil:
-		return util.BoolPtr(*scOpts), nil
-	case scConfig != nil:
-		return util.BoolPtr(*scConfig), nil
-	default:
-		return util.BoolPtr(true), nil
-	}
-}
 
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
 }
 
+func (rc *RunContext) SkipTests() bool {
+	return rc.Opts.SkipTests
+}
+
+func (rc *RunContext) IsTestPhaseActive() bool {
+	return !rc.SkipTests() && len(rc.TestCases()) != 0
+}
+
+func (rc *RunContext) TransformableAllowList() []latestV1.ResourceFilter {
+	return rc.Pipelines.TransformableAllowList()
+}
+
+// AddSkaffoldLabels tells the Runner whether to add skaffold-specific labels.
+// We only ever skip adding labels during a `skaffold render`.
+func (rc *RunContext) AddSkaffoldLabels() bool {
+	return rc.Opts.Mode() != config.RunModes.Render
+}
+
 func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
-func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }
 func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
-func (rc *RunContext) AddSkaffoldLabels() bool                       { return rc.Opts.AddSkaffoldLabels }
+func (rc *RunContext) GetNamespace() string                          { return rc.Opts.Namespace }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
 func (rc *RunContext) AutoSync() bool                                { return rc.Opts.AutoSync }
+func (rc *RunContext) ContainerDebugging() bool                      { return rc.Opts.ContainerDebugging }
 func (rc *RunContext) CacheArtifacts() bool                          { return rc.Opts.CacheArtifacts }
 func (rc *RunContext) CacheFile() string                             { return rc.Opts.CacheFile }
 func (rc *RunContext) ConfigurationFile() string                     { return rc.Opts.ConfigurationFile }
 func (rc *RunContext) CustomLabels() []string                        { return rc.Opts.CustomLabels }
 func (rc *RunContext) CustomTag() string                             { return rc.Opts.CustomTag }
-func (rc *RunContext) DefaultRepo() *string                          { return rc.Opts.DefaultRepo.Value() }
+func (rc *RunContext) DefaultRepo() *string                          { return rc.Cluster.DefaultRepo.Value() }
+func (rc *RunContext) MultiLevelRepo() *bool                         { return rc.Opts.MultiLevelRepo }
 func (rc *RunContext) Mode() config.RunMode                          { return rc.Opts.Mode() }
 func (rc *RunContext) DigestSource() string                          { return rc.Opts.DigestSource }
 func (rc *RunContext) DryRun() bool                                  { return rc.Opts.DryRun }
@@ -215,6 +202,8 @@ func (rc *RunContext) GetKubeConfig() string                         { return rc
 func (rc *RunContext) GetKubeNamespace() string                      { return rc.Opts.Namespace }
 func (rc *RunContext) GlobalConfig() string                          { return rc.Opts.GlobalConfig }
 func (rc *RunContext) HydratedManifests() []string                   { return rc.Opts.HydratedManifests }
+func (rc *RunContext) LoadImages() bool                              { return rc.Cluster.LoadImages }
+func (rc *RunContext) ForceLoadImages() bool                         { return rc.Opts.ForceLoadImages }
 func (rc *RunContext) MinikubeProfile() string                       { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) Muted() config.Muted                           { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                         { return rc.Opts.NoPruneChildren }
@@ -225,20 +214,28 @@ func (rc *RunContext) Prune() bool                                   { return rc
 func (rc *RunContext) RenderOnly() bool                              { return rc.Opts.RenderOnly }
 func (rc *RunContext) RenderOutput() string                          { return rc.Opts.RenderOutput }
 func (rc *RunContext) SkipRender() bool                              { return rc.Opts.SkipRender }
-func (rc *RunContext) SkipTests() bool                               { return rc.Opts.SkipTests }
+func (rc *RunContext) StatusCheck() *bool                            { return rc.Opts.StatusCheck.Value() }
+func (rc *RunContext) IterativeStatusCheck() bool                    { return rc.Opts.IterativeStatusCheck }
 func (rc *RunContext) Tail() bool                                    { return rc.Opts.Tail }
 func (rc *RunContext) Trigger() string                               { return rc.Opts.Trigger }
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions     { return rc.Opts.WaitForDeletions }
 func (rc *RunContext) WatchPollInterval() int                        { return rc.Opts.WatchPollInterval }
 func (rc *RunContext) BuildConcurrency() int                         { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                           { return rc.Pipelines.IsMultiPipeline() }
+func (rc *RunContext) IsDefaultKubeContext() bool                    { return rc.Opts.KubeContext == "" }
 func (rc *RunContext) GetRunID() string                              { return rc.RunID }
+func (rc *RunContext) RPCPort() *int                                 { return rc.Opts.RPCPort.Value() }
+func (rc *RunContext) RPCHTTPPort() *int                             { return rc.Opts.RPCHTTPPort.Value() }
+func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
+func (rc *RunContext) JSONParseConfig() latestV1.JSONParseConfig {
+	return rc.DefaultPipeline().Deploy.Logs.JSONParse
+}
 
-func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) (*RunContext, error) {
+func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latestV1.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
-			pipelines = append(pipelines, cfg.Pipeline)
+			pipelines = append(pipelines, cfg.(*latestV1.SkaffoldConfig).Pipeline)
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()
@@ -246,7 +243,7 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConf
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
-	logrus.Infof("Using kubectl context: %s", kubeContext)
+	log.Entry(context.TODO()).Infof("Using kubectl context: %s", kubeContext)
 
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
@@ -254,15 +251,10 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConf
 		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, pipelines)
-	if err != nil {
-		return nil, fmt.Errorf("getting namespace list: %w", err)
-	}
-
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
-		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
+		log.Entry(context.TODO()).Warn("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
 	var regList []string
 	regList = append(regList, opts.InsecureRegistries...)
@@ -279,7 +271,12 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConf
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	cluster, err := config.GetCluster(opts.GlobalConfig, opts.MinikubeProfile, opts.DetectMinikube)
+	cluster, err := config.GetCluster(ctx, config.GetClusterOpts{
+		ConfigFile:      opts.GlobalConfig,
+		DefaultRepo:     opts.DefaultRepo,
+		MinikubeProfile: opts.MinikubeProfile,
+		DetectMinikube:  opts.DetectMinikube,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("getting cluster: %w", err)
 	}
@@ -291,19 +288,8 @@ func GetRunContext(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConf
 		Pipelines:          ps,
 		WorkingDir:         cwd,
 		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 		Cluster:            cluster,
 		RunID:              runID,
 	}, nil
-}
-
-func (rc *RunContext) UpdateNamespaces(ns []string) {
-	if len(ns) == 0 {
-		return
-	}
-	namespaces := util.NewStringSet()
-	namespaces.Insert(append(rc.Namespaces, ns...)...)
-	namespaces.Delete(emptyNamespace)
-	rc.Namespaces = namespaces.ToList()
 }

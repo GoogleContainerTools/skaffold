@@ -22,10 +22,10 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -39,12 +39,13 @@ var (
 // Skaffold-Jib depends on functionality introduced with Jib-Maven 1.4.0
 const MinimumJibMavenVersion = "1.4.0"
 const MinimumJibMavenVersionForSync = "2.0.0"
+const MinimumJibMavenVersionForCrossPlatform = "3.2.0"
 
 // MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
-func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
+	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, platforms, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}
@@ -52,8 +53,8 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
+func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
+	args := GenerateMavenBuildArgs("build", tag, artifact, platforms, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}
@@ -67,8 +68,8 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(&cmd); err != nil {
+	log.Entry(ctx).Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(ctx, &cmd); err != nil {
 		return fmt.Errorf("maven build failed: %w", err)
 	}
 
@@ -78,11 +79,11 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 // getDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func getDependenciesMaven(ctx context.Context, workspace string, a *latestV1.JibArtifact) ([]string, error) {
-	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
+	deps, err := getDependencies(ctx, workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
 		return nil, dependencyErr(JibMaven, workspace, err)
 	}
-	logrus.Debugf("Found dependencies for jib maven artifact: %v", deps)
+	log.Entry(ctx).Debugf("Found dependencies for jib maven artifact: %v", deps)
 	return deps, nil
 }
 
@@ -99,8 +100,12 @@ func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latestV1.J
 }
 
 // GenerateMavenBuildArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenBuildArgs(goal string, imageName string, a *latestV1.JibArtifact, skipTests, pushImages bool, deps []*latestV1.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
-	args := mavenBuildArgsFunc(goal, a, skipTests, showColors, MinimumJibMavenVersion)
+func GenerateMavenBuildArgs(goal, imageName string, a *latestV1.JibArtifact, platforms platform.Matcher, skipTests, pushImages bool, deps []*latestV1.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
+	minVersion := MinimumJibMavenVersion
+	if platforms.IsCrossPlatform() {
+		minVersion = MinimumJibMavenVersionForCrossPlatform
+	}
+	args := mavenBuildArgsFunc(goal, a, skipTests, showColors, minVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
@@ -108,8 +113,10 @@ func GenerateMavenBuildArgs(goal string, imageName string, a *latestV1.JibArtifa
 	if baseImg, found := baseImageArg(a, r, deps, pushImages); found {
 		args = append(args, baseImg)
 	}
+	if platforms.IsNotEmpty() {
+		args = append(args, fmt.Sprintf("-Djib.from.platforms=%s", platforms.String()))
+	}
 	args = append(args, "-Dimage="+imageName)
-
 	return args
 }
 

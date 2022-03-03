@@ -68,14 +68,14 @@ func TestDevNotification(t *testing.T) {
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-			dep := client.GetDeployment("test-dev")
+			dep := client.GetDeployment(testDev)
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-				newDep := client.GetDeployment("test-dev")
+				newDep := client.GetDeployment(testDev)
 				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
@@ -115,7 +115,7 @@ func TestDevGracefulCancel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
-			p, _ := skaffold.Dev().InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
+			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
@@ -157,7 +157,7 @@ func TestDevAPITriggers(t *testing.T) {
 		<-entries
 	}
 
-	dep := client.GetDeployment("test-dev")
+	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -172,7 +172,7 @@ func TestDevAPITriggers(t *testing.T) {
 	// Ensure we see a build triggered in the event log
 	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
 	})
 	failNowIfError(t, err)
 
@@ -207,7 +207,7 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 		<-entries
 	}
 
-	dep := client.GetDeployment("test-dev")
+	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -223,7 +223,7 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	// Ensure we see a build triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
 	})
 	failNowIfError(t, err)
 
@@ -247,7 +247,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 
 	// Make sure the old Deployment and the new Deployment are different
 	err = wait.Poll(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		newDep := client.GetDeployment("test-dev")
+		newDep := client.GetDeployment(testDev)
 		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
@@ -256,18 +256,50 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 
 func TestDevPortForward(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	tests := []struct {
+		dir string
+	}{
+		{dir: "examples/microservices"},
+		{dir: "examples/multi-config-microservices"},
+	}
+	for _, test := range tests {
+		// Run skaffold build first to fail quickly on a build failure
+		skaffold.Build().InDir(test.dir).RunOrFail(t)
+
+		ns, _ := SetupNamespace(t)
+
+		rpcAddr := randomPort()
+		skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+
+		_, entries := apiEvents(t, rpcAddr)
+
+		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
+
+		original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
+		failNowIfError(t, fErr)
+		defer func() {
+			if original != nil {
+				ioutil.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
+			}
+		}()
+
+		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
+	}
+}
+
+func TestDevPortForwardDefaultNamespace(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
 
-	ns, _ := SetupNamespace(t)
-
 	rpcAddr := randomPort()
-	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
-
+	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").RunBackground(t)
+	defer skaffold.Delete().InDir("examples/microservices").RunBackground(t)
 	_, entries := apiEvents(t, rpcAddr)
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
+	// No namespace was provided to `skaffold dev`, so we assume "default"
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", "default", "leeroooooy app!!\n")
 
 	original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", "examples/microservices/leeroy-app/app.go")
 	failNowIfError(t, fErr)
@@ -277,7 +309,7 @@ func TestDevPortForward(t *testing.T) {
 		}
 	}()
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", "default", "test string\n")
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
@@ -306,7 +338,7 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 		case e := <-entries:
 			switch e.Event.GetEventType().(type) {
 			case *proto.Event_PortEvent:
-				t.Logf("event received %v", e)
+				t.Logf("port event received: %v", e)
 				if e.Event.GetPortEvent().ResourceName == resourceName &&
 					e.Event.GetPortEvent().ResourceType == resourceType &&
 					e.Event.GetPortEvent().Namespace == namespace {
@@ -316,12 +348,13 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 					return address, int(port)
 				}
 			default:
-				t.Logf("event received %v", e)
+				t.Logf("event received: %v", e)
 			}
 		}
 	}
 }
 
+//nolint:unparam
 func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace, expected string) {
 	address, port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType, namespace)
 	assertResponseFromPort(t, address, port, expected)

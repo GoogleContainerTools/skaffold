@@ -52,10 +52,10 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				SkipDeploy:             false,
 				Force:                  false,
 				Analyze:                false,
-				EnableJibInit:          false,
+				EnableJibInit:          true,
 				EnableJibGradleInit:    false,
-				EnableBuildpacksInit:   false,
-				EnableNewInitFormat:    false,
+				EnableBuildpacksInit:   true,
+				EnableNewInitFormat:    true,
 				BuildpacksBuilder:      "gcr.io/buildpacks/builder:v1",
 				Opts:                   opts,
 				MaxFileSize:            maxFileSize,
@@ -114,7 +114,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				Force:                  false,
 				Analyze:                false,
 				EnableJibInit:          true,
-				EnableBuildpacksInit:   false,
+				EnableBuildpacksInit:   true,
 				EnableNewInitFormat:    true,
 				BuildpacksBuilder:      "gcr.io/buildpacks/builder:v1",
 				Opts:                   opts,
@@ -135,7 +135,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				SkipDeploy:             false,
 				Force:                  false,
 				Analyze:                false,
-				EnableJibInit:          false,
+				EnableJibInit:          true,
 				EnableBuildpacksInit:   true,
 				EnableNewInitFormat:    true,
 				BuildpacksBuilder:      "gcr.io/buildpacks/builder:v1",
@@ -157,7 +157,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 
 			// we ignore Skaffold options
 			test.expectedConfig.Opts = capturedConfig.Opts
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig, cmp.AllowUnexported(cfg.StringOrUndefined{}, cfg.BoolOrUndefined{}))
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig, cmp.AllowUnexported(cfg.StringOrUndefined{}, cfg.BoolOrUndefined{}, cfg.IntOrUndefined{}, cfg.SyncRemoteCacheOption{}))
 		})
 	}
 }

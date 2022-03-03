@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/sirupsen/logrus"
+	"context"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
@@ -71,7 +72,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newKubectlDeploy *next.KubectlDeploy
 	if config.Deploy.DeployType.KubectlDeploy != nil {
 		var newManifests []string
-		logrus.Warn("Ignoring manifest parameters when transforming v1alpha1 config; check Kubernetes yaml before running skaffold")
+		log.Entry(context.TODO()).Warn("Ignoring manifest parameters when transforming v1alpha1 config; check Kubernetes yaml before running skaffold")
 		for _, manifest := range config.Deploy.DeployType.KubectlDeploy.Manifests {
 			newManifests = append(newManifests, manifest.Paths...)
 		}

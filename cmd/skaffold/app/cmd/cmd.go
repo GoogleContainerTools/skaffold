@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -31,9 +30,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	event "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation/prompt"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
@@ -62,8 +64,9 @@ const (
 
 func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
-	surveyPrompt := make(chan bool, 1)
+	surveyPrompt := make(chan string, 1)
 	var metricsPrompt bool
+	var s *survey.Runner
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -77,23 +80,22 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.Root().SilenceUsage = true
 
-			opts.Command = cmd.Use
-			instrumentation.SetCommand(cmd.Use)
-			out := output.GetWriter(out, defaultColor, forceColors)
-			if timestamps {
-				l := logrus.New()
-				l.SetOutput(out)
-				l.SetFormatter(&logrus.TextFormatter{
-					DisableTimestamp: false,
-				})
-				out = l.Writer()
-			}
-			cmd.Root().SetOutput(out)
+			opts.Command = cmd.Name()
+			// Don't redirect output for Cobra internal `__complete` and `__completeNoDesc` commands.
+			// These are used for command completion and send debug messages on stderr.
+			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
+				instrumentation.SetCommand(cmd.Name())
+				out := output.GetWriter(context.Background(), out, defaultColor, forceColors, timestamps)
+				cmd.Root().SetOutput(out)
 
-			// Setup logs
-			if err := setUpLogs(errOut, v, timestamps); err != nil {
-				return err
+				// Setup logs
+				if err := setUpLogs(errOut, v, timestamps); err != nil {
+					return err
+				}
 			}
+
+			// Setup kubeContext and kubeConfig
+			kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext)
 
 			// Start API Server
 			shutdown, err := server.Initialize(opts)
@@ -105,36 +107,37 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// Print version
 			versionInfo := version.Get()
 			version.SetClient(opts.User)
-			logrus.Infof("Skaffold %+v", versionInfo)
+			log.Entry(context.TODO()).Infof("Skaffold %+v", versionInfo)
 			if !isHouseKeepingMessagesAllowed(cmd) {
-				logrus.Debugf("Disable housekeeping messages for command explicitly")
+				log.Entry(context.TODO()).Debug("Disable housekeeping messages for command explicitly")
 				return nil
 			}
+			s = survey.New(opts.GlobalConfig, opts.ConfigurationFile, opts.Command)
 			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-				surveyPrompt <- config.ShouldDisplaySurveyPrompt(opts.GlobalConfig)
+				surveyPrompt <- s.NextSurveyID()
 			}()
 			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if isQuietMode() && !isHouseKeepingMessagesAllowed(cmd) {
+			if isQuietMode() || !isHouseKeepingMessagesAllowed(cmd) {
 				return
 			}
 			select {
 			case msg := <-updateMsg:
 				if err := config.UpdateMsgDisplayed(opts.GlobalConfig); err != nil {
-					logrus.Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
+					log.Entry(context.TODO()).Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
 				}
 				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
 			default:
 			}
 			// check if survey prompt needs to be displayed
 			select {
-			case shouldDisplay := <-surveyPrompt:
-				if shouldDisplay {
-					if err := survey.New(opts.GlobalConfig).DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
+			case promptSurveyID := <-surveyPrompt:
+				if promptSurveyID != "" {
+					if err := s.DisplaySurveyPrompt(cmd.OutOrStdout(), promptSurveyID); err != nil {
 						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 					}
 				}
@@ -150,7 +153,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 	groups := templates.CommandGroups{
 		{
-			Message: "End-to-end pipelines:",
+			Message: "End-to-end Pipelines:",
 			Commands: []*cobra.Command{
 				NewCmdRun(),
 				NewCmdDev(),
@@ -158,7 +161,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			},
 		},
 		{
-			Message: "Pipeline building blocks for CI/CD:",
+			Message: "Pipeline Building Blocks:",
 			Commands: []*cobra.Command{
 				NewCmdBuild(),
 				NewCmdTest(),
@@ -169,10 +172,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			},
 		},
 		{
-			Message: "Getting started with a new project:",
+			Message: "Getting Started With a New Project:",
 			Commands: []*cobra.Command{
 				NewCmdInit(),
-				NewCmdFix(),
 			},
 		},
 	}
@@ -180,6 +182,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 	// other commands
 	rootCmd.AddCommand(NewCmdVersion())
+	rootCmd.AddCommand(NewCmdFix())
 	rootCmd.AddCommand(NewCmdCompletion())
 	rootCmd.AddCommand(NewCmdConfig())
 	rootCmd.AddCommand(NewCmdFindConfigs())
@@ -192,14 +195,16 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdGeneratePipeline())
 	rootCmd.AddCommand(NewCmdSurvey())
 	rootCmd.AddCommand(NewCmdInspect())
+	rootCmd.AddCommand(NewCmdLint())
+	rootCmd.AddCommand(NewCmdLSP())
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.DefaultLogLevel.String(), fmt.Sprintf("Log level: one of %v", log.AllLevels))
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(output.DefaultColorCode), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().BoolVar(&interactive, "interactive", true, "Allow user prompts for more information")
 	rootCmd.PersistentFlags().BoolVar(&update.EnableCheck, "update-check", true, "Check for a more recent version of Skaffold")
-	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamps in logs.")
+	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamps in logs")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
 
 	setFlagsFromEnvVariables(rootCmd)
@@ -232,7 +237,7 @@ func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
 			// special case for backward compatibility.
 			if f.Name == "namespace" {
 				if val, present := os.LookupEnv("SKAFFOLD_DEPLOY_NAMESPACE"); present {
-					logrus.Warnln("Using SKAFFOLD_DEPLOY_NAMESPACE env variable is deprecated. Please use SKAFFOLD_NAMESPACE instead.")
+					log.Entry(context.TODO()).Warn("Using SKAFFOLD_DEPLOY_NAMESPACE env variable is deprecated. Please use SKAFFOLD_NAMESPACE instead.")
 					cmd.Flags().Set(f.Name, val)
 				}
 			}
@@ -250,16 +255,7 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 }
 
 func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
-	logrus.SetOutput(stdErr)
-	lvl, err := logrus.ParseLevel(level)
-	if err != nil {
-		return fmt.Errorf("parsing log level: %w", err)
-	}
-	logrus.SetLevel(lvl)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: timestamp,
-	})
-	return nil
+	return log.SetupLogs(stdErr, level, timestamp, event.NewLogHook())
 }
 
 // alwaysSucceedWhenCancelled returns nil if the context was cancelled.
@@ -306,31 +302,42 @@ func preReleaseVersion(s string) bool {
 func isQuietMode() bool {
 	switch {
 	case !interactive:
-		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
+		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
 		return true
 	case quietFlag:
-		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
+		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
 		return true
 	case analyze:
-		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
+		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
 		return true
 	default:
 		return false
 	}
 }
 
+func apiServerShutdownHook(err error) error {
+	// Clean up server at end of the execution since cobra post run hooks
+	// are only executed if RunE is successful.
+	// Also sends out error message on event stream before shutting down server.
+	if shutdownAPIServer != nil {
+		event.SendErrorMessageOnce(constants.DevLoop, constants.SubtaskIDNone, err)
+		shutdownAPIServer()
+	}
+	return err
+}
+
 func updateCheckForReleasedVersionsIfNotDisabled(s string) string {
 	if preReleaseVersion(s) {
-		logrus.Debug("Skipping update check for pre-release version")
+		log.Entry(context.TODO()).Debug("Skipping update check for pre-release version")
 		return ""
 	}
 	if !update.EnableCheck {
-		logrus.Debug("Skipping update check for flag `--update-check` set to false")
+		log.Entry(context.TODO()).Debug("Skipping update check for flag `--update-check` set to false")
 		return ""
 	}
 	msg, err := updateCheck(opts.GlobalConfig)
 	if err != nil {
-		logrus.Infof("update check failed: %s", err)
+		log.Entry(context.TODO()).Infof("update check failed: %s", err)
 	}
 	return msg
 }

@@ -27,13 +27,12 @@ import (
 	"strings"
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
-	"github.com/buildpacks/pack"
-	packcfg "github.com/buildpacks/pack/config"
-	"github.com/buildpacks/pack/project"
-	"github.com/sirupsen/logrus"
+	pack "github.com/buildpacks/pack/pkg/client"
+	packimg "github.com/buildpacks/pack/pkg/image"
+	"github.com/buildpacks/pack/pkg/project"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -97,7 +96,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 
 	builderImage, runImage, pullPolicy := resolveDependencyImages(artifact, b.artifacts, a.Dependencies, b.pushImages)
 
-	if err := runPackBuildFunc(ctx, output.GetUnderlyingWriter(out), b.localDocker, pack.BuildOptions{
+	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
 		AppPath:         workspace,
 		Builder:         builderImage,
 		RunImage:        runImage,
@@ -105,7 +104,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 		Env:             env,
 		Image:           latest,
 		PullPolicy:      pullPolicy,
-		TrustBuilder:    artifact.TrustBuilder,
+		TrustBuilder:    func(_ string) bool { return artifact.TrustBuilder },
 		ContainerConfig: cc,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },
@@ -158,16 +157,6 @@ func mapLifecycleStatusCode(code int) string {
 		return "incompatible version of Platform API"
 	case lifecycle.CodeIncompatibleBuildpackAPI:
 		return "incompatible version of Buildpacks API"
-	case lifecycle.CodeFailedDetect, lifecycle.CodeFailedDetectWithErrors:
-		return "buildpacks could not determine application type"
-	case lifecycle.CodeAnalyzeError:
-		return "buildpacks failed analyzing metadata from previous builds"
-	case lifecycle.CodeRestoreError:
-		return "buildpacks failed to restoring cached layers"
-	case lifecycle.CodeFailedBuildWithErrors, lifecycle.CodeBuildError:
-		return "buildpacks failed to build image"
-	case lifecycle.CodeExportError:
-		return "buildpacks failed to save image and cache layers"
 	default:
 		// we should never see CodeRebaseError or CodeLaunchError
 		return fmt.Sprintf("lifecycle failed with status code %d", code)
@@ -187,7 +176,7 @@ func envMap(env []string) map[string]string {
 
 // resolveDependencyImages replaces the provided builder and run images with built images from the required artifacts if specified.
 // The return values are builder image, run image, and if remote pull is required.
-func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactResolver, deps []*latestV1.ArtifactDependency, pushImages bool) (string, string, packcfg.PullPolicy) {
+func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactResolver, deps []*latestV1.ArtifactDependency, pushImages bool) (string, string, packimg.PullPolicy) {
 	builderImage, runImage := artifact.Builder, artifact.RunImage
 	builderImageLocal, runImageLocal := false, false
 
@@ -195,21 +184,21 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 	// (tracked via images.AreAlreadyPulled()), but we never pull on
 	// subsequent builds.  And if either the builder or run image are
 	// dependent images then we do not pull and use PullIfNecessary.
-	pullPolicy := packcfg.PullAlways
+	pullPolicy := packimg.PullAlways
 
 	var found bool
 	for _, d := range deps {
 		if builderImage == d.Alias {
 			builderImage, found = r.GetImageTag(d.ImageName)
 			if !found {
-				logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			builderImageLocal = true
 		}
 		if runImage == d.Alias {
 			runImage, found = r.GetImageTag(d.ImageName)
 			if !found {
-				logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+				log.Entry(context.TODO()).Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
 			}
 			runImageLocal = true
 		}
@@ -217,23 +206,23 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 
 	if builderImageLocal && runImageLocal {
 		// if both builder and run image are built locally, there's nothing to pull.
-		pullPolicy = packcfg.PullNever
+		pullPolicy = packimg.PullNever
 	} else if builderImageLocal || runImageLocal {
 		// if only one of builder or run image is built locally, we can enable remote image pull only if that image is also pushed to remote.
-		pullPolicy = packcfg.PullIfNotPresent
+		pullPolicy = packimg.PullIfNotPresent
 
 		// if remote image pull is disabled then the image that is not fetched from the required artifacts might not be latestV1.
 		if !pushImages && builderImageLocal {
-			logrus.Warnln("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
 		}
 		if !pushImages && runImageLocal {
-			logrus.Warnln("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
 		}
 	}
 
 	// if remote pull is enabled ensure that same images aren't pulled twice.
-	if pullPolicy == packcfg.PullAlways && images.AreAlreadyPulled(builderImage, runImage) {
-		pullPolicy = packcfg.PullNever
+	if pullPolicy == packimg.PullAlways && images.AreAlreadyPulled(builderImage, runImage) {
+		pullPolicy = packimg.PullNever
 	}
 
 	return builderImage, runImage, pullPolicy

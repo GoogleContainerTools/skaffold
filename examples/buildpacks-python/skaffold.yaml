@@ -1,10 +1,11 @@
-apiVersion: skaffold/v2beta17
+apiVersion: skaffold/v2beta27
 kind: Config
 build:
   artifacts:
   - image: skaffold-buildpacks
     buildpacks:
       builder: "gcr.io/buildpacks/builder:v1"
+      trustBuilder: true
 profiles:
 - name: gcb
   build:

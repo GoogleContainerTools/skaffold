@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"google.golang.org/protobuf/testing/protocmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -96,7 +98,7 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			actual := sErrors.ShowAIError(&cfg, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(&cfg, constants.Deploy, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqual(test.expectedAE, actualAE, protocmp.Transform())
 		})
 	}
 }
@@ -106,14 +108,18 @@ type mockConfig struct {
 	kubeContext string
 }
 
-func (m mockConfig) MinikubeProfile() string                { return m.minikube }
-func (m mockConfig) GetPipelines() []latestV1.Pipeline      { return []latestV1.Pipeline{} }
-func (m mockConfig) GetWorkingDir() string                  { return "" }
-func (m mockConfig) GlobalConfig() string                   { return "" }
-func (m mockConfig) ConfigurationFile() string              { return "" }
-func (m mockConfig) DefaultRepo() *string                   { return &m.minikube }
-func (m mockConfig) SkipRender() bool                       { return true }
-func (m mockConfig) Prune() bool                            { return true }
-func (m mockConfig) GetKubeContext() string                 { return m.kubeContext }
-func (m mockConfig) GetInsecureRegistries() map[string]bool { return map[string]bool{} }
-func (m mockConfig) Mode() config.RunMode                   { return config.RunModes.Dev }
+func (m mockConfig) MinikubeProfile() string                           { return m.minikube }
+func (m mockConfig) GetPipelines() []latestV1.Pipeline                 { return []latestV1.Pipeline{} }
+func (m mockConfig) GetWorkingDir() string                             { return "" }
+func (m mockConfig) GetNamespace() string                              { return "" }
+func (m mockConfig) GlobalConfig() string                              { return "" }
+func (m mockConfig) ConfigurationFile() string                         { return "" }
+func (m mockConfig) DefaultRepo() *string                              { return &m.minikube }
+func (m mockConfig) MultiLevelRepo() *bool                             { return nil }
+func (m mockConfig) SkipRender() bool                                  { return true }
+func (m mockConfig) Prune() bool                                       { return true }
+func (m mockConfig) ContainerDebugging() bool                          { return false }
+func (m mockConfig) GetKubeContext() string                            { return m.kubeContext }
+func (m mockConfig) GetInsecureRegistries() map[string]bool            { return map[string]bool{} }
+func (m mockConfig) Mode() config.RunMode                              { return config.RunModes.Dev }
+func (m mockConfig) TransformableAllowList() []latestV1.ResourceFilter { return nil }

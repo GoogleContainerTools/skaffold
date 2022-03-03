@@ -18,19 +18,21 @@ package v2
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
+
+	"github.com/acarl005/stripansi"
 
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/mitchellh/go-homedir"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/proto/enums"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -44,8 +46,6 @@ const (
 	Succeeded  = "Succeeded"
 	Terminated = "Terminated"
 	Canceled   = "Canceled"
-
-	SubtaskIDNone = "-1"
 )
 
 var handler = newHandler()
@@ -53,6 +53,8 @@ var handler = newHandler()
 func newHandler() *eventHandler {
 	h := &eventHandler{
 		eventChan: make(chan *proto.Event),
+		wait:      make(chan bool, 1),
+		state:     &proto.State{},
 	}
 	go func() {
 		for {
@@ -67,21 +69,20 @@ func newHandler() *eventHandler {
 }
 
 type eventHandler struct {
-	eventLog            []proto.Event
+	eventLog            []*proto.Event
 	logLock             sync.Mutex
-	applicationLogs     []proto.Event
+	applicationLogs     []*proto.Event
 	applicationLogsLock sync.Mutex
-	skaffoldLogs        []proto.Event
-	skaffoldLogsLock    sync.Mutex
 	cfg                 Config
 
 	iteration               int
-	state                   proto.State
+	errorOnce               sync.Once
+	wait                    chan bool
+	state                   *proto.State
 	stateLock               sync.Mutex
 	eventChan               chan *proto.Event
 	eventListeners          []*listener
 	applicationLogListeners []*listener
-	skaffoldLogListeners    []*listener
 }
 
 type listener struct {
@@ -94,11 +95,6 @@ func GetIteration() int {
 	return handler.iteration
 }
 
-func GetState() (*proto.State, error) {
-	state := handler.getState()
-	return &state, nil
-}
-
 func ForEachEvent(callback func(*proto.Event) error) error {
 	return handler.forEachEvent(callback)
 }
@@ -107,8 +103,41 @@ func ForEachApplicationLog(callback func(*proto.Event) error) error {
 	return handler.forEachApplicationLog(callback)
 }
 
-func ForEachSkaffoldLog(callback func(*proto.Event) error) error {
-	return handler.forEachSkaffoldLog(callback)
+func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
+	// Unblock call to `WaitForConnection()`
+	select {
+	case handler.wait <- true:
+	default:
+	}
+	return ev.forEach(&ev.eventListeners, &ev.eventLog, &ev.logLock, callback)
+}
+
+func (ev *eventHandler) forEachApplicationLog(callback func(*proto.Event) error) error {
+	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
+}
+
+func (ev *eventHandler) forEach(listeners *[]*listener, log *[]*proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
+	listener := &listener{
+		callback: callback,
+		errors:   make(chan error),
+	}
+
+	lock.Lock()
+
+	oldEvents := make([]*proto.Event, len(*log))
+	copy(oldEvents, *log)
+	*listeners = append(*listeners, listener)
+
+	lock.Unlock()
+
+	for i := range oldEvents {
+		if err := callback(oldEvents[i]); err != nil {
+			// listener should maybe be closed
+			return err
+		}
+	}
+
+	return <-listener.errors
 }
 
 func Handle(event *proto.Event) error {
@@ -118,19 +147,20 @@ func Handle(event *proto.Event) error {
 	return nil
 }
 
-func (ev *eventHandler) getState() proto.State {
-	ev.stateLock.Lock()
-	// Deep copy
-	buf, _ := json.Marshal(ev.state)
-	ev.stateLock.Unlock()
-
-	var state proto.State
-	json.Unmarshal(buf, &state)
-
-	return state
+// WaitForConnection will block execution until the server receives a connection
+func WaitForConnection() {
+	<-handler.wait
 }
 
-func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]proto.Event, lock sync.Locker) {
+func (ev *eventHandler) logEvent(event *proto.Event) {
+	ev.log(event, &ev.eventListeners, &ev.eventLog, &ev.logLock)
+}
+
+func (ev *eventHandler) logApplicationLog(event *proto.Event) {
+	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
+}
+
+func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]*proto.Event, lock sync.Locker) {
 	lock.Lock()
 
 	for _, listener := range *listeners {
@@ -143,206 +173,9 @@ func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]p
 			listener.closed = true
 		}
 	}
-	*log = append(*log, *event)
+	*log = append(*log, event)
 
 	lock.Unlock()
-}
-
-func (ev *eventHandler) logEvent(event *proto.Event) {
-	ev.log(event, &ev.eventListeners, &ev.eventLog, &ev.logLock)
-}
-
-func (ev *eventHandler) logApplicationLog(event *proto.Event) {
-	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
-}
-
-func (ev *eventHandler) logSkaffoldLog(event *proto.Event) {
-	ev.log(event, &ev.skaffoldLogListeners, &ev.skaffoldLogs, &ev.skaffoldLogsLock)
-}
-
-func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
-	listener := &listener{
-		callback: callback,
-		errors:   make(chan error),
-	}
-
-	lock.Lock()
-
-	oldEvents := make([]proto.Event, len(*log))
-	copy(oldEvents, *log)
-	*listeners = append(*listeners, listener)
-
-	lock.Unlock()
-
-	for i := range oldEvents {
-		if err := callback(&oldEvents[i]); err != nil {
-			// listener should maybe be closed
-			return err
-		}
-	}
-
-	return <-listener.errors
-}
-
-func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
-	return ev.forEach(&ev.eventListeners, &ev.eventLog, &ev.logLock, callback)
-}
-
-func (ev *eventHandler) forEachApplicationLog(callback func(*proto.Event) error) error {
-	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
-}
-
-func (ev *eventHandler) forEachSkaffoldLog(callback func(*proto.Event) error) error {
-	return ev.forEach(&ev.skaffoldLogListeners, &ev.skaffoldLogs, &ev.skaffoldLogsLock, callback)
-}
-
-func emptyState(cfg Config) proto.State {
-	builds := map[string]string{}
-	for _, p := range cfg.GetPipelines() {
-		for _, a := range p.Build.Artifacts {
-			builds[a.ImageName] = NotStarted
-		}
-	}
-	metadata := initializeMetadata(cfg.GetPipelines(), cfg.GetKubeContext(), cfg.GetRunID())
-	return emptyStateWithArtifacts(builds, metadata, cfg.AutoBuild(), cfg.AutoDeploy(), cfg.AutoSync())
-}
-
-func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) proto.State {
-	return proto.State{
-		BuildState: &proto.BuildState{
-			Artifacts:   builds,
-			AutoTrigger: autoBuild,
-			StatusCode:  proto.StatusCode_OK,
-		},
-		TestState: &proto.TestState{
-			Status:     NotStarted,
-			StatusCode: proto.StatusCode_OK,
-		},
-		DeployState: &proto.DeployState{
-			Status:      NotStarted,
-			AutoTrigger: autoDeploy,
-			StatusCode:  proto.StatusCode_OK,
-		},
-		StatusCheckState: emptyStatusCheckState(),
-		ForwardedPorts:   make(map[int32]*proto.PortForwardEvent),
-		FileSyncState: &proto.FileSyncState{
-			Status:      NotStarted,
-			AutoTrigger: autoSync,
-		},
-		Metadata: metadata,
-	}
-}
-
-// ResetStateOnBuild resets the build, test, deploy and sync state
-func ResetStateOnBuild() {
-	builds := map[string]string{}
-	for k := range handler.getState().BuildState.Artifacts {
-		builds[k] = NotStarted
-	}
-	autoBuild, autoDeploy, autoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
-	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoDeploy, autoSync)
-	handler.setState(newState)
-}
-
-// ResetStateOnTest resets the test, deploy, sync and status check state
-func ResetStateOnTest() {
-	newState := handler.getState()
-	newState.TestState.Status = NotStarted
-	handler.setState(newState)
-}
-
-// ResetStateOnDeploy resets the deploy, sync and status check state
-func ResetStateOnDeploy() {
-	newState := handler.getState()
-	newState.DeployState.Status = NotStarted
-	newState.DeployState.StatusCode = proto.StatusCode_OK
-	newState.StatusCheckState = emptyStatusCheckState()
-	newState.ForwardedPorts = map[int32]*proto.PortForwardEvent{}
-	newState.DebuggingContainers = nil
-	handler.setState(newState)
-}
-
-func UpdateStateAutoBuildTrigger(t bool) {
-	newState := handler.getState()
-	newState.BuildState.AutoTrigger = t
-	handler.setState(newState)
-}
-
-func UpdateStateAutoDeployTrigger(t bool) {
-	newState := handler.getState()
-	newState.DeployState.AutoTrigger = t
-	handler.setState(newState)
-}
-
-func UpdateStateAutoSyncTrigger(t bool) {
-	newState := handler.getState()
-	newState.FileSyncState.AutoTrigger = t
-	handler.setState(newState)
-}
-
-func emptyStatusCheckState() *proto.StatusCheckState {
-	return &proto.StatusCheckState{
-		Status:     NotStarted,
-		Resources:  map[string]string{},
-		StatusCode: proto.StatusCode_OK,
-	}
-}
-
-// InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(cfg Config) {
-	handler.cfg = cfg
-	handler.setState(emptyState(cfg))
-}
-
-func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
-	switch phase {
-	case constants.Build:
-		return val != handler.getState().BuildState.AutoTrigger, nil
-	case constants.Sync:
-		return val != handler.getState().FileSyncState.AutoTrigger, nil
-	case constants.Deploy:
-		return val != handler.getState().DeployState.AutoTrigger, nil
-	default:
-		return false, fmt.Errorf("unknown Phase %v not found in handler state", phase)
-	}
-}
-
-func TaskInProgress(task constants.Phase, description string) {
-	// Special casing to increment iteration and clear application and skaffold logs
-	if task == constants.DevLoop {
-		handler.iteration++
-
-		handler.applicationLogs = []proto.Event{}
-		handler.skaffoldLogs = []proto.Event{}
-	}
-
-	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:          fmt.Sprintf("%s-%d", task, handler.iteration),
-		Task:        string(task),
-		Description: description,
-		Iteration:   int32(handler.iteration),
-		Status:      InProgress,
-	})
-}
-
-func TaskFailed(task constants.Phase, err error) {
-	ae := sErrors.ActionableErrV2(handler.cfg, task, err)
-	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:            fmt.Sprintf("%s-%d", task, handler.iteration),
-		Task:          string(task),
-		Iteration:     int32(handler.iteration),
-		Status:        Failed,
-		ActionableErr: ae,
-	})
-}
-
-func TaskSucceeded(task constants.Phase) {
-	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:        fmt.Sprintf("%s-%d", task, handler.iteration),
-		Task:      string(task),
-		Iteration: int32(handler.iteration),
-		Status:    Succeeded,
-	})
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
@@ -370,39 +203,40 @@ func PortForwarded(localPort int32, remotePort util.IntOrString, podName, contai
 	})
 }
 
-func (ev *eventHandler) setState(state proto.State) {
-	ev.stateLock.Lock()
-	ev.state = state
-	ev.stateLock.Unlock()
+// SendErrorMessageOnce sends an error message to skaffold log events stream only once.
+// Use it if you want to avoid sending duplicate error messages.
+func SendErrorMessageOnce(task constants.Phase, subtaskID string, err error) {
+	handler.sendErrorMessage(task, subtaskID, err)
+}
+
+func (ev *eventHandler) sendErrorMessage(task constants.Phase, subtask string, err error) {
+	if err == nil {
+		return
+	}
+
+	ev.errorOnce.Do(func() {
+		ev.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+			TaskId:    fmt.Sprintf("%s-%d", task, handler.iteration),
+			SubtaskId: subtask,
+			Message:   fmt.Sprintf("%s\n", err),
+			Level:     enums.LogLevel_STANDARD,
+		})
+	})
 }
 
 func (ev *eventHandler) handle(event *proto.Event) {
-	go func(t *timestamp.Timestamp) {
-		event.Timestamp = t
-		ev.eventChan <- event
-		if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
-			// close the event channel indicating there are no more events to all the
-			// receivers
-			close(ev.eventChan)
-		}
-	}(ptypes.TimestampNow())
-}
-
-func (ev *eventHandler) handleTaskEvent(e *proto.TaskEvent) {
-	ev.handle(&proto.Event{
-		EventType: &proto.Event_TaskEvent{
-			TaskEvent: e,
-		},
-	})
+	event.Timestamp = timestamppb.Now()
+	ev.eventChan <- event
+	if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
+		// close the event channel indicating there are no more events to all the receivers
+		close(ev.eventChan)
+	}
 }
 
 func (ev *eventHandler) handleExec(event *proto.Event) {
 	switch e := event.GetEventType().(type) {
 	case *proto.Event_ApplicationLogEvent:
 		ev.logApplicationLog(event)
-		return
-	case *proto.Event_SkaffoldLogEvent:
-		ev.logSkaffoldLog(event)
 		return
 	case *proto.Event_BuildSubtaskEvent:
 		be := e.BuildSubtaskEvent
@@ -415,6 +249,11 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 		te := e.TestEvent
 		ev.stateLock.Lock()
 		ev.state.TestState.Status = te.Status
+		ev.stateLock.Unlock()
+	case *proto.Event_RenderEvent:
+		te := e.RenderEvent
+		ev.stateLock.Lock()
+		ev.state.RenderState.Status = te.Status
 		ev.stateLock.Unlock()
 	case *proto.Event_DeploySubtaskEvent:
 		de := e.DeploySubtaskEvent
@@ -471,7 +310,7 @@ func SaveEventsToFile(fp string) error {
 	marshaller := jsonpb.Marshaler{}
 	for _, ev := range handler.eventLog {
 		contents := bytes.NewBuffer([]byte{})
-		if err := marshaller.Marshal(contents, &ev); err != nil {
+		if err := marshaller.Marshal(contents, ev); err != nil {
 			return fmt.Errorf("marshalling event: %w", err)
 		}
 		if _, err := f.WriteString(contents.String() + "\n"); err != nil {
@@ -480,4 +319,51 @@ func SaveEventsToFile(fp string) error {
 	}
 	handler.logLock.Unlock()
 	return nil
+}
+
+// SaveLastLog writes the output from the previous run to the specified filepath
+func SaveLastLog(fp string) error {
+	handler.logLock.Lock()
+	defer handler.logLock.Unlock()
+
+	// Create file to write logs to
+	fp, err := lastLogFile(fp)
+	if err != nil {
+		return fmt.Errorf("getting last log file %w", err)
+	}
+	f, err := os.OpenFile(fp, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("opening %s: %w", fp, err)
+	}
+	defer f.Close()
+
+	// Iterate over events, grabbing contents only from SkaffoldLogEvents
+	var contents bytes.Buffer
+	for _, ev := range handler.eventLog {
+		if sle := ev.GetSkaffoldLogEvent(); sle != nil {
+			// Strip ansi color sequences as this makes it easier to deal with when pasting into github issues
+			if _, err = contents.WriteString(stripansi.Strip(sle.Message)); err != nil {
+				return fmt.Errorf("writing string to temporary buffer: %w", err)
+			}
+		}
+	}
+
+	// Write contents of temporary buffer to file
+	if _, err = f.Write(contents.Bytes()); err != nil {
+		return fmt.Errorf("writing buffer contents to file: %w", err)
+	}
+	return nil
+}
+
+func lastLogFile(fp string) (string, error) {
+	if fp != "" {
+		return fp, nil
+	}
+
+	// last log location unspecified, use ~/.skaffold/last.log
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", fmt.Errorf("retrieving home directory: %w", err)
+	}
+	return filepath.Join(home, constants.DefaultSkaffoldDir, "last.log"), nil
 }

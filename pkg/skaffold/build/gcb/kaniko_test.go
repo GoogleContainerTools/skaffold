@@ -17,14 +17,17 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"testing"
 
 	"google.golang.org/api/cloudbuild/v1"
+	kv1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -35,6 +38,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		description  string
 		artifact     *latestV1.KanikoArtifact
 		expectedArgs []string
+		expectedEnv  []string
 	}{
 		{
 			description: "simple build",
@@ -58,6 +62,14 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 		},
 		{
+			description: "with Env",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Env:            []kv1.EnvVar{{Name: "KEY1", Value: "VALUE1"}, {Name: "KEY2", Value: "VALUE2"}},
+			},
+			expectedEnv: []string{"KEY1=VALUE1", "KEY2=VALUE2"},
+		},
+		{
 			description: "with Cache",
 			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
@@ -65,6 +77,17 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 			expectedArgs: []string{
 				kaniko.CacheFlag,
+			},
+		},
+		{
+			description: "with Cache Copy Layers",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latestV1.KanikoCache{CacheCopyLayers: true},
+			},
+			expectedArgs: []string{
+				kaniko.CacheFlag,
+				kaniko.CacheCopyLayersFlag,
 			},
 		},
 		{
@@ -95,6 +118,16 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 			expectedArgs: []string{
 				kaniko.ForceFlag,
+			},
+		},
+		{
+			description: "with ImageFSExtractRetry",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath:      "Dockerfile",
+				ImageFSExtractRetry: "5",
+			},
+			expectedArgs: []string{
+				"--image-fs-extract-retry", "5",
 			},
 		},
 		{
@@ -291,6 +324,16 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 		},
 		{
+			description: "with PushRetry",
+			artifact: &latestV1.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				PushRetry:      "9",
+			},
+			expectedArgs: []string{
+				"--push-retry", "9",
+			},
+		},
+		{
 			description: "with TarPath",
 			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
@@ -396,7 +439,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				}
 				return m, nil
 			})
-			desc, err := builder.buildSpec(artifact, "gcr.io/nginx", "bucket", "object")
+			desc, err := builder.buildSpec(context.Background(), artifact, "gcr.io/nginx", platform.Matcher{}, "bucket", "object")
 
 			expected := cloudbuild.Build{
 				LogsBucket: "bucket",
@@ -409,6 +452,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Steps: []*cloudbuild.BuildStep{{
 					Name: "gcr.io/kaniko-project/executor",
 					Args: append(append(defaultExpectedArgs, imageArgs...), test.expectedArgs...),
+					Env:  test.expectedEnv,
 				}},
 				Options: &cloudbuild.BuildOptions{
 					DiskSizeGb:  100,

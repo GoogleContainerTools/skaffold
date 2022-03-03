@@ -38,10 +38,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -116,19 +118,30 @@ func (t *TestBench) GetLogger() log.Logger {
 	return &log.NoopLogger{}
 }
 
+func (t *TestBench) GetStatusMonitor() status.Monitor {
+	return &status.NoopMonitor{}
+}
+
+func (t *TestBench) GetSyncer() sync.Syncer {
+	return t
+}
+
+func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
-func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }
-func (t *TestBench) Dependencies() ([]string, error)                       { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error      { return nil }
-func (t *TestBench) Prune(ctx context.Context, out io.Writer) error        { return nil }
+func (t *TestBench) TestDependencies(context.Context, *latestV1.Artifact) ([]string, error) {
+	return nil, nil
+}
+func (t *TestBench) Dependencies() ([]string, error)                               { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error { return nil }
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error                { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, _ platform.Resolver, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -151,7 +164,7 @@ func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artif
 	return builds, nil
 }
 
-func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
+func (t *TestBench) Sync(_ context.Context, _ io.Writer, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]
@@ -177,17 +190,17 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) ([]string, error) {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return t.namespaces, nil
+	return nil
 }
 
 func (t *TestBench) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
@@ -248,6 +261,12 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	if autoTriggers == nil {
 		autoTriggers = &triggerState{true, true, true}
 	}
+	var tests []*latestV1.TestCase
+	for _, a := range artifacts {
+		tests = append(tests, &latestV1.TestCase{
+			ImageName: a.ImageName,
+		})
+	}
 	cfg := &latestV1.SkaffoldConfig{
 		Pipeline: latestV1.Pipeline{
 			Build: latestV1.BuildConfig{
@@ -257,6 +276,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 				},
 				Artifacts: artifacts,
 			},
+			Test:   tests,
 			Deploy: latestV1.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
@@ -272,13 +292,12 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			AutoDeploy:        autoTriggers.deploy,
 		},
 	}
-	runner, err := NewForConfig(runCtx)
+	runner, err := NewForConfig(context.Background(), runCtx)
 	t.CheckNoError(err)
 
 	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
 	runner.Builder.Builder = testBench
-	runner.syncer = testBench
-	runner.Tester = testBench
+	runner.tester = testBench
 	runner.deployer = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
@@ -406,6 +425,27 @@ func TestNewForConfig(t *testing.T) {
 			cacheArtifacts:   true,
 		},
 		{
+			description: "transformableAllowList",
+			pipeline: latestV1.Pipeline{
+				Build: latestV1.BuildConfig{
+					TagPolicy: latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}},
+					BuildType: latestV1.BuildType{
+						LocalBuild: &latestV1.LocalBuild{},
+					},
+				},
+				Deploy: latestV1.DeployConfig{
+					DeployType: latestV1.DeployType{
+						KubectlDeploy: &latestV1.KubectlDeploy{},
+					},
+					TransformableAllowList: []latestV1.ResourceFilter{
+						{Type: "example.com/Application"},
+					},
+				},
+			},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &kubectl.Deployer{},
+		},
+		{
 			description: "multiple deployers",
 			pipeline: latestV1.Pipeline{
 				Build: latestV1.BuildConfig{
@@ -423,17 +463,19 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester: &test.FullTester{},
-			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
+			expectedDeployer: deploy.NewDeployerMux([]deploy.Deployer{
 				&helm.Deployer{},
 				&kubectl.Deployer{},
 				&kustomize.Deployer{},
-			}),
+			}, false),
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
+			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
+				return "", semver.Version{}, errors.New("not found")
+			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
 				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
@@ -444,8 +486,15 @@ func TestNewForConfig(t *testing.T) {
 					Trigger: "polling",
 				},
 			}
+			// Test transformableAllowList
+			filters := runCtx.TransformableAllowList()
+			if test.pipeline.Deploy.TransformableAllowList != nil {
+				t.CheckDeepEqual(test.pipeline.Deploy.TransformableAllowList, filters)
+			} else {
+				t.CheckEmpty(filters)
+			}
 
-			cfg, err := NewForConfig(runCtx)
+			cfg, err := NewForConfig(context.Background(), runCtx)
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
@@ -454,7 +503,7 @@ func TestNewForConfig(t *testing.T) {
 				} else {
 					t.CheckNoError(err)
 					t.CheckTypeEquality(b, cfg.Pruner.Builder)
-					t.CheckTypeEquality(_t, cfg.Tester)
+					t.CheckTypeEquality(_t, cfg.tester)
 					t.CheckTypeEquality(d, cfg.deployer)
 				}
 			}
@@ -532,7 +581,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 			}
-			r, _ := NewForConfig(&runcontext.RunContext{
+			r, _ := NewForConfig(context.Background(), &runcontext.RunContext{
 				Opts:      opts,
 				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{pipeline}),
 			})

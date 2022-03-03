@@ -9,7 +9,7 @@ This doc explains the development workflow so you can get started
 You must install these tools:
 
 1. [`go`](https://golang.org/doc/install): The language skaffold is
-   built in (version >= go 1.14)
+   built in (version >= go 1.17)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
 
@@ -18,8 +18,7 @@ You must install these tools:
 First you will need to setup your GitHub account and create a fork:
 
 1. Create [a GitHub account](https://github.com/join)
-1. Setup [GitHub access via
-   SSH](https://help.github.com/articles/connecting-to-github-with-ssh/)
+1. Setup [GitHub access via SSH](https://help.github.com/articles/connecting-to-github-with-ssh/)
 1. [Create and checkout a repo fork](#checkout-your-fork)
 
 Once you have those, you can iterate on skaffold:
@@ -30,8 +29,6 @@ Once you have those, you can iterate on skaffold:
 1. [Build docs](#building-skaffold-docs) if you are making doc changes
 
 When you're ready, you can [create a PR](#creating-a-pr)!
-
-You may also be interested in [contributing to the docs](#contributing-to-skaffold-docs).
 
 ## Checkout your fork
 
@@ -47,29 +44,33 @@ Once you've done this, clone your fork to your local machine:
    git remote set-url --push upstream no_push
    ```
 
-   _Adding the `upstream` remote sets you up nicely for regularly [syncing your
-   fork](https://help.github.com/articles/syncing-a-fork/)._
+   _Adding the `upstream` remote sets you up nicely for regularly [syncing your fork](https://help.github.com/articles/syncing-a-fork/)._
 
-## IDE setup 
+## Creating a PR
 
-Skaffold uses go modules and we commit to the `vendor` directory all our dependencies to make CI faster.  
-We recommend checking out Skaffold outside of the `GOPATH`. 
+When you have changes you would like to propose to skaffold, you will need to:
 
-JetBrains Goland: 
-1. `File > Open...` (choose your skaffold directory) 
-2. ensure `Go > Go modules > Vendoring mode` is checked
+1. Ensure the commit message(s) follow the [conventional commits guidelines](https://www.conventionalcommits.org/en/v1.0.0/). The Skaffold repo has a bot to check that commit messages follow this style.
+2. Ensure the PR description describes what issue you are fixing and how you are fixing it
+   (include references to [issue numbers](https://help.github.com/articles/closing-issues-using-keywords/)
+   if appropriate)
+3. Add unit tests. Unit test coverage should increase or stay the same with every PR.
+4. Add integration test if applicable
+5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
 
-JetBrains IntelliJ with [Go plugin](https://plugins.jetbrains.com/plugin/9568-go): 
-1. `File > Open...` (choose your skaffold directory) 
-  
-Visual Studio Code with [Go plugin](https://github.com/Microsoft/vscode-go): 
-1. `File > Open...` 
+Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md) for quicker response time.
+
+### Reviews
+
+Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
+to a PR to kick off [the integration tests](#integration-tests), which must pass for the PR
+to be submitted.
 
 ## Making a config change
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Open the latest Config at [pkg/skaffold/schema/latest/config.go](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L28) and inspect the comment at [L28](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L28)
+* Open the latest Config at [pkg/skaffold/schema/latest/v1/config.go](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/v1/config.go) and inspect the comment at [L28](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/v1/config.go#L28)
 * If the line mentions the config version is not released, proceed making your changes.
   ```
   // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
@@ -80,7 +81,7 @@ Some changes to the skaffold code require a change to the skaffold config. These
   // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
   ```
   
-  * Run `./hack/new_version.sh` to create a new version.
+  * Run `./hack/new-version.sh` to create a new version.
 
   * Run `make test` to verify changes.
   
@@ -101,58 +102,60 @@ For more details behind the logic of config changes see [the Skaffold config man
 
 ## Making changes to the Skaffold API
 
-We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. When adding new message types, make changes to [proto/v1/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/v1/skaffold.proto), and when adding new enum types, make changes to [proto/enums/enums.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/enums/enums.proto). When changing either of these files, you can run `./hack/generate-proto.sh` to generate the equivalent Go code.
+We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. When adding new message types, make changes to [proto/v2/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v2/skaffold.proto), and when adding new enum types, make changes to [proto/enums/enums.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/enums/enums.proto). When changing either of these files, you can run `./hack/generate-proto.sh` to generate the equivalent Go code.
 
 ## Adding actionable error messages to code.
 Skaffold has a built-in framework to provide actionable error messages for user to help bootstrap skaffold errors.
 
 Also, [v1.19.0](https://github.com/GoogleContainerTools/skaffold/releases/tag/v1.19.0) onwards, skaffold is collecting failure error codes to help the team get more insights into common failure scenarios.
 
-To take advantage of this framework, contributors can simply use the [`ErrDef`](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/errors/err_def.go#L32) struct to throw meaningful actionable error messages and 
+To take advantage of this framework, contributors can simply use the [`ErrDef`](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/errors/err_def.go#L32) struct to throw meaningful actionable error messages and
 improve user experience.
 
-e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5273), 
-1. The contributor created 3 distinct error codes in [skaffold.proto](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3883fe4549a47ae73a7a3a0afc00896b197d5ba8570906ba423769cf5a93a26f)
+e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5953), 
+1. The contributor created distinct error codes in [enums.proto](https://github.com/GoogleContainerTools/skaffold/commit/59edbda57ae7d2f5d0b53c075497bca480f555f5#diff-b9c28b2c93efad2841c587b3e93d2d83722c9ae26f5f9c961f87e1ca716b0e69R388)
    ```
-    // Docker build error when listing containers.
-    INIT_DOCKER_NETWORK_LISTING_CONTAINERS = 122;
-    // Docker build error indicating an invalid container name (or id).
-    INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME = 123;
-    // Docker build error indicating the container referenced does not exists in the docker context used.
-    INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST = 124
+    // The Kptfile cannot be created via `kpt pkg init`.
+    RENDER_KPTFILE_INIT_ERR = 1501;
+    // The Kptfile is not a valid yaml file
+    RENDER_KPTFILE_INVALID_YAML_ERR = 1401;
+    // The Kptfile is not a valid API schema
+    RENDER_KPTFILE_INVALID_SCHEMA_ERR = 1402;
    ```
    The `INIT` in this case stands for skaffold `INIT` phase which includes, parsing of skaffold config and creating a skaffold runner. 
    The other valid phases are `BUILD`, `DEPLOY`, `STATUSCHECK`. Complete list [here](https://skaffold.dev/docs/references/api/grpc/#statuscode)
-2. Run `hack/generate_proto.sh`. These will generate go code and structs for the newly added proto fields.
+2. Run `hack/generate-proto.sh`. These will generate go code and structs for the newly added proto fields.
    ```shell script
     git status
 	   modified:   docs/content/en/api/skaffold.swagger.json
 	   modified:   docs/content/en/docs/references/api/grpc.md
-	   modified:   proto/skaffold.pb.go
-	   modified:   proto/skaffold.proto
+	   modified:   proto/enums/enums.pb.go
+	   modified:   proto/enums/enums.proto
    ```
-3. The contributor then used these error codes when creating an error in their [proposed code change](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3fc5246574bf7367a232c6d682b22a4e22795d52eb1c81fe2c27ff052939d507R220).
-   They used the constructor `sErrors.NewError` in [pkg/skaffold/errors](https://github.com/GoogleContainerTools/skaffold/blob/54466ff6983e9fcf977d6e549119b4c1c4dc9e2b/pkg/skaffold/errors/err_def.go#L57) to inantiate an object of struct `ErrDef`. 
+3. The contributor then used these error codes when creating an error in their [proposed code change](https://github.com/GoogleContainerTools/skaffold/pull/5953/files#diff-4d18270998dbca6b8378ad2e7720a797044d1357d2c5a7a61f2af56b9f2d1a5dR152).
+   They used the constructor `sErrors.NewErrorWithStatusCode` in [pkg/skaffold/errors](https://github.com/GoogleContainerTools/skaffold/blob/54466ff6983e9fcf977d6e549119b4c1c4dc9e2b/pkg/skaffold/errors/err_def.go#L65) to instantiate an object of struct `ErrDef`. 
    `ErrDef` implements the golang `error` interface.
    ```
-    err :=  sErrors.NewError(fmt.Errorf(errMsg), 
-      proto.ActionableErr{
-	    Message: errMsg,
-	    ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
-		  Suggestions: []*proto.Suggestion{
-	  	    {
-			  SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
-			  Action:         "Please fix the docker network container name and try again",
-		    },
-		  },
-	  }))
+    err :=  sErrors.NewErrorWithStatusCode(
+	proto.ActionableErr{
+	  Message: fmt.Sprintf("unsupported validator %q", c.Name),
+	  ErrCode: proto.StatusCode_CONFIG_UNKNOWN_VALIDATOR,
+	  Suggestions: []*proto.Suggestion{
+	    {
+	       SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS,
+	       Action: fmt.Sprintf(
+		  	"please only use the following validators in skaffold-managed mode: %v. "+
+			 "to use custom validators, please use kpt-managed mode.", AllowlistedValidators),
+	   },
+	  },
+    })
    ```
 
 With above two changes, skaffold will now show a meaning full error message when this error condition is met. 
-```shell script
+```shell
 skaffold dev 
-invalid skaffold config: container 'does-not-exits' not found, required by image 'skaffold-example' for docker network stack sharing.
-Please fix the docker network container name and try again.
+unsupported validator "foo" please only use the following validators in skaffold-managed mode: [kubeval].
+To use custom validators, please use kpt-managed mode.
 ```
 
 ## Building skaffold
@@ -199,6 +202,12 @@ skaffold has both [unit tests](#unit-tests) and [integration tests](#integration
 The unit tests live with the code they test and can be run with:
 
 ```shell
+make quicktest
+```
+
+You can also run a larger suite of tests/checks (unit tests, docs check, linters check) using:
+
+```shell
 make test
 ```
 
@@ -210,7 +219,7 @@ RUN hack/linter.sh
 ERRO Running error: no such linter "gocritic"
 ```
 
-re-run the `hack/install_golint.sh` script to upgrade `golangci-lint`.
+re-run the `hack/install-golint.sh` script to upgrade `golangci-lint`.
 
 ### Integration tests
 
@@ -272,47 +281,30 @@ which at release time will be published with the latest release to https://skaff
 
 Mark your PR with `docs-modifications` label. Our PR review process will answer in comments in ~5 minutes with the URL of your preview and will remove the label.
 
-## Testing the Skaffold binary release process
+## Testing the Skaffold release image building process
 
-Skaffold release process works with Google Cloud Build within our own project `k8s-skaffold` and the skaffold release bucket, `gs://skaffold`.
+Skaffold's release image build process works with Google Cloud Build within our own project `k8s-skaffold`.
 
-In order to be able to iterate/fix the release process you can pass in your own project and bucket as parameters to the build.
+In order to be able to iterate/fix the release process you can pass in your own project as a parameter to the build.
 
-We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to master.
+We continuously release edge images under `gcr.io/k8s-skaffold/skaffold:edge`. This is done by triggering `cloudbuild.yaml` on every push to `main`.
 
 To run a build on your own project:
 
 ```
-gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,COMMIT_SHA=$(git rev-parse HEAD) --project <personalproject>
+gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=COMMIT_SHA=$(git rev-parse HEAD) --project <personal_project>
 ```
 
-We **release** stable versions under `gs://skaffold/releases`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
+We build the latest stable release image under `gcr.io/k8s-skaffold/skaffold:latest`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
 
 To test a release on your own project:
 
 ```
-gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234 --project <personalproject>
+gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=TAG_NAME=<release_tag> --project <personal_project>
 ```
 
-To just run a release without Google Cloud Build only using your local Docker daemon, you can run:
+To just run a release image build without Google Cloud Build only using your local Docker daemon, you can run:
 
 ```
-make -j release GCP_PROJECT=<personalproject> RELEASE_BUCKET=<personal-bucket>
+make -j release GCP_PROJECT=<personalproject>
 ```
-
-## Creating a PR
-
-When you have changes you would like to propose to skaffold, you will need to:
-
-1. Ensure the commit message(s) describe what issue you are fixing and how you are fixing it
-   (include references to [issue numbers](https://help.github.com/articles/closing-issues-using-keywords/)
-   if appropriate)
-1. Add unit tests. Unit test coverage should increase or stay the same with every PR.
-1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
-
-Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md) for quicker response time.
-### Reviews
-
-Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
-to a PR to kick off [the integration tests](#integration-tests), which must pass for the PR
-to be submitted.

@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zz-image-doesnt-exist
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apply-status-check-failure
+  template:
+    metadata:
+      labels:
+        app: apply-status-check-failure
+    spec:
+      containers:
+      - image: zz-image-doesnt-exist
+        name: apply-status-check-failure

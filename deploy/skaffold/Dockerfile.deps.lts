@@ -1,0 +1,104 @@
+# Copyright 2019 The Skaffold Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG ARCH=amd64
+
+# Download kubectl
+FROM alpine:3.10 as download-kubectl
+ARG ARCH
+# Track default version installed by Google Cloud SDK: 358.0.0 moved to 1.20(.10)
+# https://cloud.google.com/sdk/docs/release-notes
+ENV KUBECTL_VERSION v1.20.10
+ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
+# SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
+COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
+RUN wget -O kubectl "${KUBECTL_URL}" && sha512sum -c kubectl.${ARCH}.sha512
+RUN chmod +x kubectl
+
+# Download helm (see https://github.com/helm/helm/releases/latest)
+FROM alpine:3.10 as download-helm
+ARG ARCH
+RUN echo arch=$ARCH
+ENV HELM_VERSION v3.8.0
+ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
+COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
+RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
+RUN tar -xvf helm.tar.gz --strip-components 1
+
+# Download kustomize
+FROM alpine:3.10 as download-kustomize
+ARG ARCH
+ENV KUSTOMIZE_VERSION 4.4.0
+ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
+COPY deploy/skaffold/digests/kustomize.${ARCH}.sha256 .
+RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}" && sha256sum -c kustomize.${ARCH}.sha256
+RUN tar -xvf kustomize.tar.gz
+
+# Download kpt
+FROM alpine:3.10 as download-kpt
+ARG ARCH
+ENV KPT_VERSION 0.39.3
+ENV KPT_URL https://github.com/GoogleContainerTools/kpt/releases/download/v${KPT_VERSION}/kpt_linux_amd64
+COPY deploy/skaffold/digests/kpt.${ARCH}.sha256 .
+RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
+RUN chmod +x kpt
+
+# Download gcloud
+FROM alpine:3.10 as download-gcloud
+ARG ARCH
+ENV GCLOUD_VERSION 360.0.0
+ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
+# SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
+COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
+RUN \
+    GCLOUDARCH=$(case "${ARCH}" in amd64) echo x86_64;; *) echo ${ARCH};; esac); \
+    wget -O gcloud.tar.gz $(echo "${GCLOUD_URL}" | sed "s/GCLOUDARCH/${GCLOUDARCH}/g") && \
+    sha256sum -c gcloud.${ARCH}.sha256
+RUN tar -zxf gcloud.tar.gz
+
+
+FROM gcr.io/gcp-runtimes/ubuntu_20_0_4 as runtime_deps
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends --no-install-suggests -y \
+    git python unzip && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=download-kubectl kubectl /usr/local/bin/
+COPY --from=download-helm helm /usr/local/bin/
+COPY --from=download-kustomize kustomize /usr/local/bin/
+COPY --from=download-kpt kpt /usr/local/bin/
+COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
+
+# Finish installation of gcloud
+RUN /google-cloud-sdk/install.sh \
+    --usage-reporting=false \
+    --bash-completion=false \
+    --disable-installation-options
+ENV PATH=$PATH:/google-cloud-sdk/bin
+RUN gcloud auth configure-docker && \
+    gcloud components install gke-gcloud-auth-plugin
+
+FROM runtime_deps
+RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
+    build-essential \
+    python-setuptools \
+    lsb-release \
+    openjdk-11-jdk \
+    software-properties-common \
+    jq \
+    apt-transport-https && \
+    rm -rf /var/lib/apt/lists/*
+COPY --from=golang:1.17.3 /usr/local/go /usr/local/go
+ENV PATH /usr/local/go/bin:/root/go/bin:$PATH

@@ -29,7 +29,7 @@ import (
 
 func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{
+	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		RepoCacheDir:        opts.RepoCacheDir,
 		ConfigurationFilter: opts.Modules,
@@ -37,7 +37,8 @@ func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options
 		MakePathsAbsolute:   util.BoolPtr(false),
 	})
 	if err != nil {
-		return formatter.WriteErr(err)
+		formatter.WriteErr(err)
+		return err
 	}
 	if opts.Profile == "" {
 		// empty profile flag implies that the new build env needs to be added to the default pipeline.
@@ -45,7 +46,8 @@ func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options
 		cfgs = cfgs.SelectRootConfigs()
 		for _, cfg := range cfgs {
 			if cfg.Build.Cluster != nil && !reflect.DeepEqual(cfg.Build.Cluster, &latestV1.ClusterDetails{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Cluster, cfg.SourceFile, ""))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Cluster, cfg.SourceFile, ""))
+				return err
 			}
 			cfg.Build.GoogleCloudBuild = nil
 			cfg.Build.LocalBuild = nil
@@ -65,7 +67,8 @@ func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options
 				cfg.Profiles = append(cfg.Profiles, latestV1.Profile{Name: opts.Profile})
 			}
 			if cfg.Profiles[index].Build.Cluster != nil && !reflect.DeepEqual(cfg.Profiles[index].Build.Cluster, &latestV1.ClusterDetails{}) {
-				return formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Cluster, cfg.SourceFile, opts.Profile))
+				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Cluster, cfg.SourceFile, opts.Profile))
+				return err
 			}
 			cfg.Profiles[index].Build.GoogleCloudBuild = nil
 			cfg.Profiles[index].Build.LocalBuild = nil

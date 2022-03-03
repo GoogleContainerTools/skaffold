@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -149,7 +150,7 @@ DOCKER_HOST`),
 			t.Override(&util.DefaultExecCommand, test.command)
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 
-			env, _, err := newMinikubeAPIClient("minikube")
+			env, _, err := newMinikubeAPIClient(context.Background(), "minikube")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedEnv, env)
 		})
@@ -170,7 +171,7 @@ func (e *driverConflictErr) ExitCode() int { return 51 }
 
 type fakeMinikubeClient struct{}
 
-func (fakeMinikubeClient) IsMinikube(string) bool { return false }
-func (fakeMinikubeClient) MinikubeExec(arg ...string) (*exec.Cmd, error) {
+func (fakeMinikubeClient) IsMinikube(context.Context, string) bool { return false }
+func (fakeMinikubeClient) MinikubeExec(ctx context.Context, arg ...string) (*exec.Cmd, error) {
 	return exec.Command("minikube", arg...), nil
 }

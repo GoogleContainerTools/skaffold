@@ -3,9 +3,8 @@
 
 ---------------------
 
-[![Build Status](https://travis-ci.com/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.com/GoogleContainerTools/skaffold)
-[![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
-[![LICENSE](https://img.shields.io/github/license/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/blob/master/LICENSE)
+[![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/main/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
+[![LICENSE](https://img.shields.io/github/license/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/blob/main/LICENSE)
 [![Releases](https://img.shields.io/github/release-pre/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/releases)
 
 Skaffold is a command line tool that facilitates continuous development for
@@ -42,6 +41,14 @@ Or, check out our [Github Releases](https://github.com/GoogleContainerTools/skaf
 
 ### Check out our [examples page](./examples) for more complex workflows!
 
+## IDE integrations
+
+For a managed experience of Skaffold you can install the Google `Cloud Code` extensions:
+- for [Visual Studio Code](https://cloud.google.com/code/docs/vscode/quickstart-k8s#installing)
+- for [JetBrains IDEs](https://cloud.google.com/code/docs/intellij/quickstart-k8s#installing_the_plugin). 
+
+It can manage and keep Skaffold  up-to-date while providing a more guided startup experience, along with providing and managing other common dependencies, and works with any kubernetes cluster. 
+
 ## Contributing to Skaffold
 
 We welcome any contributions from the community with open arms - Skaffold wouldn't be where it is today without contributions from the community! Have a look at our [contribution guide](./CONTRIBUTING.md) for more information on how to get started on sending your first PR.
@@ -56,7 +63,7 @@ We welcome any contributions from the community with open arms - Skaffold wouldn
 
 **Office Hours**
 
-We hold open office hours every other Wednesday at 9:30 AM Pacific Time. This is an open forum for anyone to show up and bring ideas, concerns, or just in general come hang out with the team! This is also a great time to get direct feedback on contributions, or give us feedback on ways you think we can improve the project. Come show us how you're using Skaffold!
+We hold open office hours on the last Wednesday of the month at 9:30 AM Pacific Time. This is an open forum for anyone to show up and bring ideas, concerns, or just in general come hang out with the team! This is also a great time to get direct feedback on contributions, or give us feedback on ways you think we can improve the project. Come show us how you're using Skaffold!
 
 Join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.
 You can access the hangouts invite directly from this calendar invite.
@@ -71,3 +78,7 @@ Survey Link - https://forms.gle/BMTbGQXLWSdn7vEs6
 
 Skaffold is generally available and considered production ready.
 Detailed feature maturity information and how we deprecate features are described in our [Deprecation Policy](https://skaffold.dev/docs/references/deprecation).
+
+## Security Disclosures
+
+Please see our [security disclosure process](SECURITY.md).  All [security advisories](https://github.com/GoogleContainerTools/skaffold/security/advisories) are managed on Github.

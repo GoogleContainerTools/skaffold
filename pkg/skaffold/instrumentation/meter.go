@@ -25,10 +25,16 @@ import (
 	flag "github.com/spf13/pflag"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+)
+
+const (
+	gke    = "gke"
+	others = "others"
 )
 
 var (
@@ -39,15 +45,16 @@ var (
 		Builders:          map[string]int{},
 		BuildDependencies: map[string]int{},
 		SyncType:          map[string]bool{},
+		Hooks:             map[HookPhase]int{},
 		DevIterations:     []devIteration{},
 		StartTime:         time.Now(),
 		Version:           version.Get().Version,
 		ExitCode:          0,
 		ErrorCode:         proto.StatusCode_OK,
 	}
-	MeteredCommands     = util.NewStringSet()
-	doesBuild           = util.NewStringSet()
-	doesDeploy          = util.NewStringSet()
+	MeteredCommands     = stringset.New()
+	doesBuild           = stringset.New()
+	doesDeploy          = stringset.New()
 	initExporter        = initCloudMonitoringExporterMetrics
 	isOnline            bool
 	ShouldExportMetrics bool
@@ -74,11 +81,11 @@ func SetOnlineStatus() {
 	}()
 }
 
-func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user string) {
+func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user, deployCtx string) {
 	var platforms []string
 	for _, config := range configs {
 		pl := yamltags.GetYamlTag(config.Build.BuildType)
-		if !util.StrSliceContains(platforms, pl) {
+		if !stringslice.Contains(platforms, pl) {
 			platforms = append(platforms, pl)
 		}
 		for _, artifact := range config.Pipeline.Build.Artifacts {
@@ -86,19 +93,29 @@ func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user string) {
 			if len(artifact.Dependencies) > 0 {
 				meter.BuildDependencies[yamltags.GetYamlTag(artifact.ArtifactType)]++
 			}
+			meter.Hooks[HookPhases.PreBuild] += len(artifact.LifecycleHooks.PreHooks)
+			meter.Hooks[HookPhases.PostBuild] += len(artifact.LifecycleHooks.PostHooks)
+
 			if artifact.Sync != nil {
 				meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
+				meter.Hooks[HookPhases.PreSync] += len(artifact.Sync.LifecycleHooks.PreHooks)
+				meter.Hooks[HookPhases.PostSync] += len(artifact.Sync.LifecycleHooks.PostHooks)
 			}
 		}
 		meter.Deployers = append(meter.Deployers, yamltags.GetYamlKeys(config.Deploy.DeployType)...)
 		if h := config.Deploy.HelmDeploy; h != nil {
 			meter.HelmReleasesCount = len(h.Releases)
 		}
+		if k := config.Deploy.KubectlDeploy; k != nil {
+			meter.Hooks[HookPhases.PreDeploy] += len(k.LifecycleHooks.PreHooks)
+			meter.Hooks[HookPhases.PostDeploy] += len(k.LifecycleHooks.PostHooks)
+		}
 		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
 	meter.PlatformType = strings.Join(platforms, ":")
 	meter.ConfigCount = len(configs)
 	meter.User = strings.ToLower(user)
+	meter.ClusterType = getClusterType(deployCtx)
 }
 
 func SetCommand(cmd string) {
@@ -126,4 +143,12 @@ func AddFlag(flag *flag.Flag) {
 	if flag.Changed {
 		meter.EnumFlags[flag.Name] = flag.Value.String()
 	}
+}
+
+func getClusterType(deployCtx string) string {
+	if strings.HasPrefix(deployCtx, "gke_") {
+		return gke
+	}
+	// TODO (tejaldesai): Add minikube detection.
+	return others
 }

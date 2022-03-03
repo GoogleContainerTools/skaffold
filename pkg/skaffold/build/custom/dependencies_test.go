@@ -57,8 +57,11 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 
 func TestGetDependenciesCommand(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+		workspace := "test/workspace"
+
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunDirOut(
 			"echo [\"file1\",\"file2\",\"file3\"]",
+			workspace,
 			"[\"file1\",\"file2\",\"file3\"]",
 		))
 
@@ -69,7 +72,7 @@ func TestGetDependenciesCommand(t *testing.T) {
 		}
 
 		expected := []string{"file1", "file2", "file3"}
-		deps, err := GetDependencies(context.Background(), "", "test", customArtifact, nil)
+		deps, err := GetDependencies(context.Background(), workspace, "test", customArtifact, nil)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, deps)

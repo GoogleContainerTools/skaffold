@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -224,7 +225,7 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemon(test.api), nil
 			})
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
@@ -238,14 +239,13 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}})
 
-			builder, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()},
-				&latestV1.LocalBuild{
-					Push:        util.BoolPtr(test.pushImages),
-					Concurrency: &constants.DefaultLocalConcurrency,
-				})
+			builder, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV1.LocalBuild{
+				Push:        util.BoolPtr(test.pushImages),
+				Concurrency: &constants.DefaultLocalConcurrency,
+			})
 			t.CheckNoError(err)
 			ab := builder.Build(context.Background(), ioutil.Discard, test.artifact)
-			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag)
+			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())
@@ -265,32 +265,55 @@ func TestNewBuilder(t *testing.T) {
 		shouldErr     bool
 		expectedPush  bool
 		cluster       config.Cluster
+		pushFlag      config.BoolOrUndefined
 		localBuild    latestV1.LocalBuild
-		localDockerFn func(docker.Config) (docker.LocalDaemon, error)
+		localDockerFn func(context.Context, docker.Config) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return nil, errors.New("dummy docker error")
 			},
 			shouldErr: true,
 		},
 		{
-			description: "pushImages becomes cluster.PushImages when local:push is not defined",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			description: "pushImages becomes cluster.PushImages when local:push and --push is not defined",
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			cluster:      config.Cluster{PushImages: true},
 			expectedPush: true,
 		},
 		{
-			description: "pushImages defined in config (local:push)",
-			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+			description: "pushImages becomes config (local:push) when --push is not defined",
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			cluster: config.Cluster{PushImages: true},
 			localBuild: latestV1.LocalBuild{
 				Push: util.BoolPtr(false),
+			},
+			shouldErr:    false,
+			expectedPush: false,
+		},
+		{
+			description: "pushImages defined in flags (--push=false), ignores cluster.PushImages",
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
+			},
+			cluster:      config.Cluster{PushImages: true},
+			pushFlag:     config.NewBoolOrUndefined(util.BoolPtr(false)),
+			shouldErr:    false,
+			expectedPush: false,
+		},
+		{
+			description: "pushImages defined in flags (--push=false), ignores config (local:push)",
+			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
+			},
+			pushFlag: config.NewBoolOrUndefined(util.BoolPtr(false)),
+			localBuild: latestV1.LocalBuild{
+				Push: util.BoolPtr(true),
 			},
 			shouldErr:    false,
 			expectedPush: false,
@@ -302,9 +325,10 @@ func TestNewBuilder(t *testing.T) {
 				t.Override(&docker.NewAPIClient, test.localDockerFn)
 			}
 
-			builder, err := NewBuilder(&mockBuilderContext{
-				local:   test.localBuild,
-				cluster: test.cluster,
+			builder, err := NewBuilder(context.Background(), &mockBuilderContext{
+				local:    test.localBuild,
+				cluster:  test.cluster,
+				pushFlag: test.pushFlag,
 			}, &test.localBuild)
 
 			t.CheckError(test.shouldErr, err)
@@ -375,14 +399,14 @@ func TestGetArtifactBuilder(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemon(&testutil.FakeAPIClient{}), nil
 			})
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 				return args, nil
 			})
 
-			b, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV1.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
+			b, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV1.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
 			t.CheckNoError(err)
 
 			builder, err := newPerArtifactBuilder(b, test.artifact)
@@ -413,6 +437,7 @@ type mockBuilderContext struct {
 	local                 latestV1.LocalBuild
 	mode                  config.RunMode
 	cluster               config.Cluster
+	pushFlag              config.BoolOrUndefined
 	artifactStore         build.ArtifactStore
 	sourceDepsResolver    func() graph.SourceDependenciesCache
 }
@@ -423,6 +448,10 @@ func (c *mockBuilderContext) Mode() config.RunMode {
 
 func (c *mockBuilderContext) GetCluster() config.Cluster {
 	return c.cluster
+}
+
+func (c *mockBuilderContext) PushImages() config.BoolOrUndefined {
+	return c.pushFlag
 }
 
 func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore {

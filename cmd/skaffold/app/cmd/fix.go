@@ -25,32 +25,48 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-var toVersion string
+var (
+	toVersion     string
+	fixOutputPath string
+)
 
 func NewCmdFix() *cobra.Command {
 	return NewCmd("fix").
 		WithDescription("Update old configuration to a newer schema version").
 		WithExample("Update \"skaffold.yaml\" in the current folder to the latest version", "fix").
 		WithExample("Update \"skaffold.yaml\" in the current folder to version \"skaffold/v1\"", "fix --version skaffold/v1").
+		WithExample("Update \"skaffold.yaml\" in the current folder in-place", "fix --overwrite").
+		WithExample("Update \"skaffold.yaml\" and write the output to a new file", "fix --output skaffold.new.yaml").
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
 			{Value: &toVersion, Name: "version", DefValue: latestV1.Version, Usage: "Target schema version to upgrade to"},
+			{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
 		}).
 		NoArgs(doFix)
 }
 
 func doFix(_ context.Context, out io.Writer) error {
-	return fix(out, opts.ConfigurationFile, toVersion, overwrite)
+	if overwrite && fixOutputPath != "" {
+		return fmt.Errorf("--overwrite and --output/-o cannot be used together")
+	}
+	var toFile string
+	if fixOutputPath != "" {
+		toFile = fixOutputPath
+	} else if overwrite {
+		toFile = opts.ConfigurationFile
+	}
+	return fix(out, opts.ConfigurationFile, toFile, toVersion)
 }
 
-func fix(out io.Writer, configFile string, toVersion string, overwrite bool) error {
+func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 	parsedCfgs, err := schema.ParseConfig(configFile)
 	if err != nil {
 		return err
@@ -81,11 +97,14 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 	// TODO(dgageot): We should be able run validations on any schema version
 	// but that's not the case. They can only run on the latest version for now.
 	if toVersion == latestV1.Version {
-		var cfgs []*latestV1.SkaffoldConfig
+		var cfgs parser.SkaffoldConfigSet
 		for _, cfg := range versionedCfgs {
-			cfgs = append(cfgs, cfg.(*latestV1.SkaffoldConfig))
+			cfgs = append(cfgs, &parser.SkaffoldConfigEntry{
+				SkaffoldConfig: cfg.(*latestV1.SkaffoldConfig),
+				SourceFile:     configFile,
+				IsRootConfig:   true})
 		}
-		if err := validation.Process(cfgs); err != nil {
+		if err := validation.Process(cfgs, validation.GetValidationOpts(opts)); err != nil {
 			return fmt.Errorf("validating upgraded config: %w", err)
 		}
 	}
@@ -93,11 +112,11 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 	if err != nil {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}
-	if overwrite {
-		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
+	if outFile != "" {
+		if err := ioutil.WriteFile(outFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
-		output.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, opts.ConfigurationFile)
+		output.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, outFile)
 	} else {
 		out.Write(newCfg)
 	}

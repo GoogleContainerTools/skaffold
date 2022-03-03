@@ -17,8 +17,6 @@ limitations under the License.
 package constants
 
 import (
-	"github.com/sirupsen/logrus"
-
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -28,15 +26,13 @@ const (
 	Init        = Phase("Init")
 	Build       = Phase("Build")
 	Test        = Phase("Test")
+	Render      = Phase("Render")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
 	PortForward = Phase("PortForward")
 	Sync        = Phase("Sync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
-
-	// DefaultLogLevel is the default global verbosity
-	DefaultLogLevel = logrus.WarnLevel
 
 	// DefaultDockerfilePath is the dockerfile path is given relative to the
 	// context directory
@@ -60,9 +56,6 @@ const (
 	DefaultCacheFile   = "cache"
 	DefaultMetricFile  = "metrics"
 
-	DefaultRPCPort     = 50051
-	DefaultRPCHTTPPort = 50052
-
 	DefaultPortForwardAddress = "127.0.0.1"
 
 	DefaultProjectDescriptor = "project.toml"
@@ -72,6 +65,13 @@ const (
 	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
 
 	Windows = "windows"
+
+	// HaTS is the HaTS Survey ID
+	HaTS = "hats"
+
+	// SubtaskIDNone is the value used for Event API messages when there is no
+	// corresponding subtask
+	SubtaskIDNone = "-1"
 )
 
 type Phase string
@@ -93,6 +93,12 @@ var (
 	// BuildContext is the absolute path to a directory this artifact is meant to be built from for custom artifacts
 	BuildContext = "BUILD_CONTEXT"
 
+	// SkipTest is Whether to skip the tests after building passing into a custom build script
+	SkipTest = "SKIP_TEST"
+
+	// Platforms is the set of platforms to build the image for.
+	Platforms = "PLATFORMS"
+
 	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
 	KubeContext = "KUBE_CONTEXT"
 
@@ -109,10 +115,13 @@ var (
 	Timeout = "TIMEOUT"
 
 	AllowedUsers = map[string]struct{}{
-		"vsc":      {},
-		"intellij": {},
-		"gcloud":   {},
+		"vsc":          {},
+		"intellij":     {},
+		"gcloud":       {},
+		"cloud-deploy": {},
 	}
+
+	AllowedUserPattern = `^%v(\/.+)?$`
 )
 
 var ImageRef = struct {

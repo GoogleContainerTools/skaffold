@@ -1,5 +1,7 @@
 global:
   default-repo: global-repository
+  multi-level-repo: false
 kubeContexts:
 - kube-context: test-context
   default-repo: context-local-repository
+  multi-level-repo: true

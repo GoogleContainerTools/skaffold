@@ -28,7 +28,7 @@ import (
 // Logger implementations are platform-specific, and are controlled by a single Deployer.
 type Logger interface {
 	// Start starts the logger.
-	Start(context.Context, io.Writer, []string) error
+	Start(context.Context, io.Writer) error
 
 	// Stop stops the logger.
 	Stop()
@@ -52,7 +52,7 @@ type Logger interface {
 // NoopLogger is used in tests. It will never retrieve any logs from any resources.
 type NoopLogger struct{}
 
-func (n *NoopLogger) Start(context.Context, io.Writer, []string) error { return nil }
+func (n *NoopLogger) Start(context.Context, io.Writer) error { return nil }
 
 func (n *NoopLogger) Stop() {}
 

@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -41,7 +42,7 @@ func TestDiagnoseRenderApply(t *testing.T) {
 
 		tmpDir.Write("skaffold-diagnose.yaml", string(out))
 
-		out = skaffold.Render("--digest-source=local", "--add-skaffold-labels=false", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
+		out = skaffold.Render("--digest-source=local", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
 		tmpDir.Write("render.yaml", string(out))
 
 		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
@@ -66,7 +67,7 @@ func TestRenderApplyHelmDeployment(t *testing.T) {
 
 		tmpDir.Write("skaffold-diagnose.yaml", string(out))
 
-		out = skaffold.Render("--digest-source=local", "--add-skaffold-labels=false", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
+		out = skaffold.Render("--digest-source=local", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
 		tmpDir.Write("render.yaml", string(out))
 
 		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
@@ -74,4 +75,38 @@ func TestRenderApplyHelmDeployment(t *testing.T) {
 		depApp := client.GetDeployment("skaffold-helm")
 		t.CheckNotNil(depApp)
 	})
+}
+
+// Ensure that an intentionally broken deployment fails the status check in `skaffold apply`.
+func TestApplyStatusCheckFailure(t *testing.T) {
+	tests := []struct {
+		description string
+		profile     string
+	}{
+		{
+			description: "status check for deployment resources",
+			profile:     "deployment",
+		},
+		{
+			description: "status check for statefulset resources",
+			profile:     "statefulset",
+		},
+		{
+			description: "status check for config connector resources",
+			profile:     "configconnector",
+		},
+		{
+			description: "status check for standalone pods",
+			profile:     "pod",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, NeedsGcp)
+			ns, _ := SetupNamespace(t.T)
+			defer skaffold.Delete("-p", test.profile).InDir("testdata/apply").InNs(ns.Name).Run(t.T)
+			err := skaffold.Apply(fmt.Sprintf("%s.yaml", test.profile)).InDir("testdata/apply").InNs(ns.Name).Run(t.T)
+			t.CheckError(true, err)
+		})
+	}
 }

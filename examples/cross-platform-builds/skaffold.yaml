@@ -1,0 +1,10 @@
+apiVersion: skaffold/v2beta27
+kind: Config
+build:
+  platforms: ["linux/amd64"]
+  artifacts:
+  - image: skaffold-example
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*

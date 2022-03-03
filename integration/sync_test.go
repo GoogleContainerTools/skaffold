@@ -32,31 +32,32 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+var syncTests = []struct {
+	description string
+	trigger     string
+	config      string
+}{
+	{
+		description: "manual sync with polling trigger",
+		trigger:     "polling",
+		config:      "skaffold-manual.yaml",
+	},
+	{
+		description: "manual sync with notify trigger",
+		trigger:     "notify",
+		config:      "skaffold-manual.yaml",
+	},
+	{
+		description: "inferred sync with notify trigger",
+		trigger:     "notify",
+		config:      "skaffold-infer.yaml",
+	},
+}
+
 func TestDevSync(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	tests := []struct {
-		description string
-		trigger     string
-		config      string
-	}{
-		{
-			description: "manual sync with polling trigger",
-			trigger:     "polling",
-			config:      "skaffold-manual.yaml",
-		},
-		{
-			description: "manual sync with notify trigger",
-			trigger:     "notify",
-			config:      "skaffold-manual.yaml",
-		},
-		{
-			description: "inferred sync with notify trigger",
-			trigger:     "notify",
-			config:      "skaffold-infer.yaml",
-		},
-	}
-	for _, test := range tests {
+	for _, test := range syncTests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
@@ -72,6 +73,33 @@ func TestDevSync(t *testing.T) {
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", "foo").Output()
+				return string(out) == "foo", nil
+			})
+			failNowIfError(t, err)
+		})
+	}
+}
+
+func TestDevSyncDefaultNamespace(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	for _, test := range syncTests {
+		t.Run(test.description, func(t *testing.T) {
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
+
+			_, client := DefaultNamespace(t)
+
+			skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).RunBackground(t)
+			defer skaffold.Delete().InDir("testdata/file-sync").WithConfig(test.config).RunBackground(t)
+
+			client.WaitForPodsReady("test-file-sync")
+
+			ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
+			defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
+
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "--", "cat", "foo").Output()
 				return string(out) == "foo", nil
 			})
 			failNowIfError(t, err)

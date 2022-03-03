@@ -17,9 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -75,7 +72,6 @@ func (k *kubectl) Validate() error {
 }
 
 func (k *kubectl) AddManifestForImage(path, image string) {
-	fmt.Fprintf(os.Stdout, "adding manifest path %s for image %s\n", path, image)
 	k.configs = append(k.configs, path)
 	k.images = append(k.images, image)
 }

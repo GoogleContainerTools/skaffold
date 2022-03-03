@@ -18,17 +18,17 @@ package schema
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
@@ -69,7 +69,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta15"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta16"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta17"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta18"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta19"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta20"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta21"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta22"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta23"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta24"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta25"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta26"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta27"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta5"
@@ -138,13 +148,23 @@ var SchemaVersionsV1 = Versions{
 	{v2beta15.Version, v2beta15.NewSkaffoldConfig},
 	{v2beta16.Version, v2beta16.NewSkaffoldConfig},
 	{v2beta17.Version, v2beta17.NewSkaffoldConfig},
+	{v2beta18.Version, v2beta18.NewSkaffoldConfig},
+	{v2beta19.Version, v2beta19.NewSkaffoldConfig},
+	{v2beta20.Version, v2beta20.NewSkaffoldConfig},
+	{v2beta21.Version, v2beta21.NewSkaffoldConfig},
+	{v2beta22.Version, v2beta22.NewSkaffoldConfig},
+	{v2beta23.Version, v2beta23.NewSkaffoldConfig},
+	{v2beta24.Version, v2beta24.NewSkaffoldConfig},
+	{v2beta25.Version, v2beta25.NewSkaffoldConfig},
+	{v2beta26.Version, v2beta26.NewSkaffoldConfig},
+	{v2beta27.Version, v2beta27.NewSkaffoldConfig},
 	{latestV1.Version, latestV1.NewSkaffoldConfig},
 }
 
 // SchemaVersionsV2 refers to all the supported API Schemas for skaffold v2 executables. The API schema versions are
 // in the range of v3alpha*.
 var SchemaVersionsV2 = Versions{
-	{v3alpha1.Version, v1alpha1.NewSkaffoldConfig},
+	{v3alpha1.Version, v3alpha1.NewSkaffoldConfig},
 	{latestV2.Version, latestV2.NewSkaffoldConfig},
 }
 
@@ -168,10 +188,6 @@ func (v *Versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 
 // IsSkaffoldConfig is for determining if a file is skaffold config file.
 func IsSkaffoldConfig(file string) bool {
-	if !kubernetes.HasKubernetesFileExtension(file) {
-		return false
-	}
-
 	if config, err := ParseConfig(file); err == nil && config != nil {
 		return true
 	}
@@ -366,7 +382,7 @@ func UpgradeTo(configs []util.VersionedConfig, toVersion string) ([]util.Version
 	if !upgradeNeeded {
 		return configs, nil
 	}
-	logrus.Debugf("config version out of date: upgrading to latest %q", toVersion)
+	log.Entry(context.TODO()).Debugf("config version out of date: upgrading to latest %q", toVersion)
 	var err error
 	var upgraded []util.VersionedConfig
 	for _, cfg := range configs {

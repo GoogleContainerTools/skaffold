@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta18"
+const Version string = "skaffold/v2beta28"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -124,14 +124,15 @@ type ResourceType string
 
 // PortForwardResource describes a resource to port forward.
 type PortForwardResource struct {
-	// Type is the Kubernetes type that should be port forwarded.
-	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Type is the resource type that should be port forwarded.
+	// Acceptable resource types include kubernetes types: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Standalone `Container` is also valid for Docker deployments.
 	Type ResourceType `yaml:"resourceType,omitempty"`
 
-	// Name is the name of the Kubernetes resource to port forward.
+	// Name is the name of the Kubernetes resource or local container to port forward.
 	Name string `yaml:"resourceName,omitempty"`
 
-	// Namespace is the namespace of the resource to port forward.
+	// Namespace is the namespace of the resource to port forward. Does not apply to local containers.
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
@@ -157,6 +158,13 @@ type BuildConfig struct {
 	// A few strategies are provided here, although you most likely won't need to care!
 	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
+
+	// Platforms is the list of platforms to build all artifact images for.
+	// It can be overridden by the individual artifact's `platforms` property.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
 
 	BuildType `yaml:",inline"`
 }
@@ -279,8 +287,8 @@ type LocalBuild struct {
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
 	UseDockerCLI bool `yaml:"useDockerCLI,omitempty"`
 
-	// UseBuildkit use BuildKit to build Docker images.
-	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
+	// UseBuildkit use BuildKit to build Docker images. If unspecified, uses the Docker default.
+	UseBuildkit *bool `yaml:"useBuildkit,omitempty"`
 
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `1`.
@@ -371,6 +379,8 @@ type KanikoCache struct {
 	HostPath string `yaml:"hostPath,omitempty"`
 	// TTL Cache timeout in hours.
 	TTL string `yaml:"ttl,omitempty"`
+	// CacheCopyLayers enables caching of copy layers.
+	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -410,6 +420,9 @@ type ClusterDetails struct {
 
 	// Tolerations describes the Kubernetes tolerations for the pod.
 	Tolerations []v1.Toleration `yaml:"tolerations,omitempty"`
+
+	// NodeSelector describes the Kubernetes node selector for the pod.
+	NodeSelector map[string]string `yaml:"nodeSelector,omitempty"`
 
 	// Annotations describes the Kubernetes annotations for the pod.
 	Annotations map[string]string `yaml:"annotations,omitempty"`
@@ -491,6 +504,10 @@ type TestCase struct {
 	// to run on that artifact.
 	// For example: `["./test/*"]`.
 	StructureTests []string `yaml:"structureTests,omitempty" skaffold:"filepath"`
+
+	// StructureTestArgs lists additional configuration arguments passed to `container-structure-test` binary.
+	// For example: `["--driver=tar", "--no-color", "-q"]`.
+	StructureTestArgs []string `yaml:"structureTestsArgs,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.
@@ -509,12 +526,18 @@ type DeployConfig struct {
 
 	// Logs configures how container logs are printed as a result of a deployment.
 	Logs LogsConfig `yaml:"logs,omitempty"`
+
+	// TransformableAllowList configures an allowlist for transforming manifests.
+	TransformableAllowList []ResourceFilter `yaml:"-"`
 }
 
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. All three deployer types can be used at the same
 // time for hybrid workflows.
 type DeployType struct {
+	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
+	DockerDeploy *DockerDeploy `yaml:"docker,omitempty"`
+
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
@@ -527,6 +550,15 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+}
+
+// DockerDeploy uses the `docker` CLI to create application containers in Docker.
+type DockerDeploy struct {
+	// UseCompose tells skaffold whether or not to deploy using `docker-compose`.
+	UseCompose bool `yaml:"useCompose,omitempty"`
+
+	// Images are the container images to run in Docker.
+	Images []string `yaml:"images" yamltags:"required"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -544,6 +576,9 @@ type KubectlDeploy struct {
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -572,6 +607,9 @@ type HelmDeploy struct {
 	// Flags are additional option flags that are passed on the command
 	// line to `helm`.
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // HelmDeployFlags are additional option flags that are passed on the command
@@ -601,6 +639,9 @@ type KustomizeDeploy struct {
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }
 
 // KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
@@ -616,6 +657,9 @@ type KptDeploy struct {
 
 	// Live adds additional configurations for `kpt live`.
 	Live KptLive `yaml:"live,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"-"`
 }
 
 // KptFn adds additional configurations used when calling `kpt fn`.
@@ -813,6 +857,15 @@ type LogsConfig struct {
 	// `none`: don't add a prefix.
 	// Defaults to `auto`.
 	Prefix string `yaml:"prefix,omitempty"`
+
+	// JSONParse defines the rules for parsing/outputting json logs.
+	JSONParse JSONParseConfig `yaml:"jsonParse,omitempty"`
+}
+
+// JSONParseConfig defines the rules for parsing/outputting json logs.
+type JSONParseConfig struct {
+	// Fields specifies which top level fields should be printed.
+	Fields []string `yaml:"fields,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which
@@ -837,6 +890,16 @@ type Artifact struct {
 
 	// Dependencies describes build artifacts that this artifact depends on.
 	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each build of the target artifact.
+	LifecycleHooks BuildHooks `yaml:"hooks,omitempty"`
+
+	// Platforms is the list of platforms to build this artifact image for.
+	// It overrides the values inferred through heuristics or provided in the top level `platforms` property or in the global config.
+	// If the target builder cannot build for atleast one of the specified platforms, then the build fails.
+	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
+	// Example: `["linux/amd64", "linux/arm64"]`.
+	Platforms []string `yaml:"platforms,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -857,6 +920,9 @@ type Sync struct {
 	// Auto delegates discovery of sync rules to the build system.
 	// Only available for jib and buildpacks.
 	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after each file sync action on the target artifact's containers.
+	LifecycleHooks SyncHooks `yaml:"hooks,omitempty"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -941,6 +1007,9 @@ type ArtifactType struct {
 	// BazelArtifact *beta* requires bazel CLI to be installed and the sources to
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
+
+	// KoArtifact builds images using [ko](https://github.com/google/ko).
+	KoArtifact *KoArtifact `yaml:"ko,omitempty" yamltags:"oneOf=artifact"`
 
 	// JibArtifact builds images using the
 	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
@@ -1159,6 +1228,9 @@ type KanikoArtifact struct {
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
+	// ImageFSExtractRetry is the number of retries that should happen for extracting an image filesystem.
+	ImageFSExtractRetry string `yaml:"imageFSExtractRetry,omitempty"`
+
 	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
@@ -1174,6 +1246,9 @@ type KanikoArtifact struct {
 
 	// SnapshotMode is how Kaniko will snapshot the filesystem.
 	SnapshotMode string `yaml:"snapshotMode,omitempty"`
+
+	// PushRetry Set this flag to the number of retries that should happen for the push of an image to a remote destination.
+	PushRetry string `yaml:"pushRetry,omitempty"`
 
 	// TarPath is path to save the image as a tarball at path instead of pushing the image.
 	TarPath string `yaml:"tarPath,omitempty"`
@@ -1245,28 +1320,36 @@ type DockerArtifact struct {
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
 
-	// NoCache used to pass in --no-cache to docker build to prevent caching.
+	// CliFlags are any additional flags to pass to the local daemon during a build.
+	// These flags are only used during a build through the Docker CLI.
+	CliFlags []string `yaml:"cliFlags,omitempty"`
+
+	// PullParent is used to attempt pulling the parent image even if an older image exists locally.
+	PullParent bool `yaml:"pullParent,omitempty"`
+
+	// NoCache set to true to pass in --no-cache to docker build, which will prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 
 	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
 	Squash bool `yaml:"squash,omitempty"`
 
-	// Secret contains information about a local secret passed to `docker build`,
-	// along with optional destination information.
-	Secret *DockerSecret `yaml:"secret,omitempty"`
+	// Secrets is used to pass in --secret to docker build, `useBuildKit: true` is required.
+	Secrets []*DockerSecret `yaml:"secrets,omitempty"`
 
 	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
 	SSH string `yaml:"ssh,omitempty"`
 }
 
-// DockerSecret contains information about a local secret passed to `docker build`,
-// along with optional destination information.
+// DockerSecret is used to pass in --secret to docker build, `useBuildKit: true` is required.
 type DockerSecret struct {
 	// ID is the id of the secret.
 	ID string `yaml:"id,omitempty" yamltags:"required"`
 
 	// Source is the path to the secret on the host machine.
-	Source string `yaml:"src,omitempty"`
+	Source string `yaml:"src,omitempty" yamltags:"oneOf=secretSource"`
+
+	// Env is the environment variable name containing the secret value.
+	Env string `yaml:"env,omitempty" yamltags:"oneOf=secretSource"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
@@ -1278,6 +1361,59 @@ type BazelArtifact struct {
 	// BuildArgs are additional args to pass to `bazel build`.
 	// For example: `["-flag", "--otherflag"]`.
 	BuildArgs []string `yaml:"args,omitempty"`
+}
+
+// KoArtifact builds images using [ko](https://github.com/google/ko).
+type KoArtifact struct {
+	// BaseImage overrides the default ko base image (`gcr.io/distroless/static:nonroot`).
+	// Corresponds to, and overrides, the `defaultBaseImage` in `.ko.yaml`.
+	BaseImage string `yaml:"fromImage,omitempty"`
+
+	// Dependencies are the file dependencies that Skaffold should watch for both rebuilding and file syncing for this artifact.
+	Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
+
+	// Dir is the directory where the `go` tool will be run.
+	// The value is a directory path relative to the `context` directory.
+	// If empty, the `go` tool will run in the `context` directory.
+	// Example: `./my-app-sources`.
+	Dir string `yaml:"dir,omitempty"`
+
+	// Env are environment variables, in the `key=value` form, passed to the build.
+	// These environment variables are only used at build time.
+	// They are _not_ set in the resulting container image.
+	// For example: `["GOPRIVATE=git.example.com", "GOCACHE=/workspace/.gocache"]`.
+	Env []string `yaml:"env,omitempty"`
+
+	// Flags are additional build flags passed to `go build`.
+	// For example: `["-trimpath", "-v"]`.
+	Flags []string `yaml:"flags,omitempty"`
+
+	// Labels are key-value string pairs to add to the image config.
+	// For example: `{"foo":"bar"}`.
+	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Ldflags are linker flags passed to the builder.
+	// For example: `["-buildid=", "-s", "-w"]`.
+	Ldflags []string `yaml:"ldflags,omitempty"`
+
+	// Main is the location of the main package. It is the pattern passed to `go build`.
+	// If main is specified as a relative path, it is relative to the `context` directory.
+	// If main is empty, the ko builder uses a default value of `.`.
+	// If main is a pattern with wildcards, such as `./...`, the expansion must contain only one main package, otherwise ko fails.
+	// Main is ignored if the `ImageName` starts with `ko://`.
+	// Example: `./cmd/foo`.
+	Main string `yaml:"main,omitempty"`
+}
+
+// KoDependencies is used to specify dependencies for an artifact built by ko.
+type KoDependencies struct {
+	// Paths should be set to the file dependencies for this artifact, so that the Skaffold file watcher knows when to rebuild and perform file synchronization.
+	// Defaults to `["**/*.go"]`.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+
+	// Ignore specifies the paths that should be ignored by Skaffold's file watcher.
+	// If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	Ignore []string `yaml:"ignore,omitempty"`
 }
 
 // JibArtifact builds images using the
@@ -1297,6 +1433,83 @@ type JibArtifact struct {
 
 	// BaseImage overrides the configured jib base image.
 	BaseImage string `yaml:"fromImage,omitempty"`
+}
+
+// BuildHooks describes the list of lifecycle hooks to execute before and after each artifact build step.
+type BuildHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each artifact build step.
+	PreHooks []HostHook `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each artifact build step.
+	PostHooks []HostHook `yaml:"after,omitempty"`
+}
+
+// SyncHookItem describes a single lifecycle hook to execute before or after each artifact sync step.
+type SyncHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=sync_hook"`
+	// ContainerHook describes a single lifecycle hook to run on a container.
+	ContainerHook *ContainerHook `yaml:"container,omitempty" yamltags:"oneOf=sync_hook"`
+}
+
+// SyncHooks describes the list of lifecycle hooks to execute before and after each artifact sync step.
+type SyncHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each artifact sync step.
+	PreHooks []SyncHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each artifact sync step.
+	PostHooks []SyncHookItem `yaml:"after,omitempty"`
+}
+
+// DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.
+type DeployHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=deploy_hook"`
+	// ContainerHook describes a single lifecycle hook to run on a container.
+	ContainerHook *NamedContainerHook `yaml:"container,omitempty" yamltags:"oneOf=deploy_hook"`
+}
+
+// DeployHooks describes the list of lifecycle hooks to execute before and after each deployer step.
+type DeployHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each deployer step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
+	PreHooks []DeployHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each deployer step.
+	PostHooks []DeployHookItem `yaml:"after,omitempty"`
+}
+
+// HostHook describes a lifecycle hook definition to execute on the host machine.
+type HostHook struct {
+	// Command is the command to execute.
+	Command []string `yaml:"command" yamltags:"required"`
+	// OS is an optional slice of operating system names. If the host machine OS is different, then it skips execution.
+	OS []string `yaml:"os,omitempty"`
+	// Dir specifies the working directory of the command.
+	// If empty, the command runs in the calling process's current directory.
+	Dir string `yaml:"dir,omitempty" skaffold:"filepath"`
+}
+
+// ContainerHook describes a lifecycle hook definition to execute on a container. The container name is inferred from the scope in which this hook is defined.
+type ContainerHook struct {
+	// Command is the command to execute.
+	Command []string `yaml:"command" yamltags:"required"`
+}
+
+// NamedContainerHook describes a lifecycle hook definition to execute on a named container.
+type NamedContainerHook struct {
+	// ContainerHook describes a lifecycle hook definition to execute on a container.
+	ContainerHook `yaml:",inline" yamlTags:"skipTrim"`
+	// PodName is the name of the pod to execute the command in.
+	PodName string `yaml:"podName" yamltags:"required"`
+	// ContainerName is the name of the container to execute the command in.
+	ContainerName string `yaml:"containerName,omitempty"`
+}
+
+// ResourceFilter contains definition to filter which resource to transform.
+type ResourceFilter struct {
+	// Type is the compact format of a resource type.
+	Type string `yaml:"type" yamltags:"required"`
+	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
+	Image []string `yaml:"image,omitempty"`
+	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
+	Labels []string `yaml:"labels,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

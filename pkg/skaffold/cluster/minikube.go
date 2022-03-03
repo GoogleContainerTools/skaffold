@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,11 +28,11 @@ import (
 	"sync"
 
 	"github.com/blang/semver"
-	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	kctx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -44,7 +45,7 @@ var (
 // To override during tests
 var (
 	FindMinikubeBinary    = minikubeBinary
-	getClusterInfo        = context.GetClusterInfo
+	getClusterInfo        = kctx.GetClusterInfo
 	GetCurrentVersionFunc = getCurrentVersion
 
 	findOnce sync.Once
@@ -57,9 +58,9 @@ var (
 
 type Client interface {
 	// IsMinikube returns true if the given kubeContext maps to a minikube cluster
-	IsMinikube(kubeContext string) bool
+	IsMinikube(ctx context.Context, kubeContext string) bool
 	// MinikubeExec returns the Cmd struct to execute minikube with given arguments
-	MinikubeExec(arg ...string) (*exec.Cmd, error)
+	MinikubeExec(ctx context.Context, arg ...string) (*exec.Cmd, error)
 }
 
 type clientImpl struct{}
@@ -68,9 +69,9 @@ func getClient() Client {
 	return clientImpl{}
 }
 
-func (clientImpl) IsMinikube(kubeContext string) bool {
-	if _, _, err := FindMinikubeBinary(); err != nil {
-		logrus.Tracef("Minikube cluster not detected: %v", err)
+func (clientImpl) IsMinikube(ctx context.Context, kubeContext string) bool {
+	if _, _, err := FindMinikubeBinary(ctx); err != nil {
+		log.Entry(context.TODO()).Tracef("Minikube cluster not detected: %v", err)
 		return false
 	}
 	// short circuit if context is 'minikube'
@@ -80,30 +81,30 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 
 	cluster, err := getClusterInfo(kubeContext)
 	if err != nil {
-		logrus.Tracef("failed to get cluster info: %v", err)
+		log.Entry(context.TODO()).Tracef("failed to get cluster info: %v", err)
 		return false
 	}
 	if matchClusterCertPath(cluster.CertificateAuthority) {
-		logrus.Debugf("Minikube cluster detected: cluster certificate for context %q found inside the minikube directory", kubeContext)
+		log.Entry(context.TODO()).Debugf("Minikube cluster detected: cluster certificate for context %q found inside the minikube directory", kubeContext)
 		return true
 	}
 
-	if ok, err := matchServerURL(cluster.Server); err != nil {
-		logrus.Tracef("failed to match server url: %v", err)
+	if ok, err := matchServerURL(ctx, cluster.Server); err != nil {
+		log.Entry(context.TODO()).Tracef("failed to match server url: %v", err)
 	} else if ok {
-		logrus.Debugf("Minikube cluster detected: server url for context %q matches minikube node ip", kubeContext)
+		log.Entry(context.TODO()).Debugf("Minikube cluster detected: server url for context %q matches minikube node ip", kubeContext)
 		return true
 	}
-	logrus.Tracef("Minikube cluster not detected for context %q", kubeContext)
+	log.Entry(context.TODO()).Tracef("Minikube cluster not detected for context %q", kubeContext)
 	return false
 }
 
-func (clientImpl) MinikubeExec(arg ...string) (*exec.Cmd, error) {
-	return minikubeExec(arg...)
+func (clientImpl) MinikubeExec(ctx context.Context, arg ...string) (*exec.Cmd, error) {
+	return minikubeExec(ctx, arg...)
 }
 
-func minikubeExec(arg ...string) (*exec.Cmd, error) {
-	b, v, err := FindMinikubeBinary()
+func minikubeExec(ctx context.Context, arg ...string) (*exec.Cmd, error) {
+	b, v, err := FindMinikubeBinary(ctx)
 	if err != nil && !errors.As(err, &versionErr{}) {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
 	} else if err == nil && supportsUserFlag(v) {
@@ -117,9 +118,9 @@ func supportsUserFlag(ver semver.Version) bool {
 }
 
 // Retrieves minikube version
-func getCurrentVersion() (semver.Version, error) {
+func getCurrentVersion(ctx context.Context) (semver.Version, error) {
 	cmd := exec.Command("minikube", "version", "--output=json")
-	out, err := util.RunCmdOut(cmd)
+	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return semver.Version{}, err
 	}
@@ -135,7 +136,7 @@ func getCurrentVersion() (semver.Version, error) {
 	return semver.Version{}, err
 }
 
-func minikubeBinary() (string, semver.Version, error) {
+func minikubeBinary(ctx context.Context) (string, semver.Version, error) {
 	findOnce.Do(func() {
 		filename, err := exec.LookPath("minikube")
 		if err != nil {
@@ -145,7 +146,7 @@ func minikubeBinary() (string, semver.Version, error) {
 			mk.err = fmt.Errorf("unable to find minikube executable. File not found %s", filename)
 		}
 		mk.path = filename
-		if v, err := GetCurrentVersionFunc(); err != nil {
+		if v, err := GetCurrentVersionFunc(ctx); err != nil {
 			mk.err = versionErr{err: err}
 		} else {
 			mk.version = v
@@ -169,9 +170,9 @@ func matchClusterCertPath(certPath string) bool {
 }
 
 // matchServerURL checks if the k8s server url is same as any of the minikube nodes IPs
-func matchServerURL(server string) (bool, error) {
-	cmd, _ := minikubeExec("profile", "list", "-o", "json")
-	out, err := util.RunCmdOut(cmd)
+func matchServerURL(ctx context.Context, server string) (bool, error) {
+	cmd, _ := minikubeExec(ctx, "profile", "list", "-o", "json")
+	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return false, fmt.Errorf("getting minikube profiles: %w", err)
 	}
@@ -183,7 +184,7 @@ func matchServerURL(server string) (bool, error) {
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
-		logrus.Tracef("invalid server url: %v", err)
+		log.Entry(context.TODO()).Tracef("invalid server url: %v", err)
 	}
 
 	for _, v := range data.Valid {

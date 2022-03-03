@@ -27,9 +27,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -51,13 +53,13 @@ spec:
 
 // Test that kpt deployer manipulate manifests in the given order and no intermediate data is
 // stored after each step:
-//	Step 1. `kp fn source` (read in the manifest as stdin),
+//	Step 1. `kpt fn source` (read in the manifest as stdin),
 //  Step 2. `kpt fn run` (validate, transform or generate the manifests via kpt functions),
 //  Step 3. `kpt fn sink` (to temp dir to run kuustomize build on),
 //  Step 4. `kustomize build` (if the temp dir from step 3 has a Kustomization hydrate the manifest),
 //  Step 5. `kpt fn sink` (store the stdout in a given dir).
 func TestKpt_Deploy(t *testing.T) {
-	sanityCheck = func(dir string, buf io.Writer) error { return nil }
+	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
 	tests := []struct {
 		description      string
 		builds           []graph.Artifact
@@ -229,9 +231,10 @@ func TestKpt_Deploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&client.Client, deployutil.MockK8sClient)
 			t.NewTempDir().Chdir()
 
-			k, _ := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt)
+			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
@@ -242,7 +245,7 @@ func TestKpt_Deploy(t *testing.T) {
 				t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 			}
 
-			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -374,7 +377,7 @@ func TestKpt_Dependencies(t *testing.T) {
 			tmpDir.WriteFiles(test.createFiles)
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k, _ := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt)
+			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
 
 			res, err := k.Dependencies()
 
@@ -425,9 +428,9 @@ func TestKpt_Cleanup(t *testing.T) {
 				t.CheckNoError(os.Mkdir(test.applyDir, 0755))
 			}
 
-			k, _ := NewDeployer(&kptConfig{
+			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, deploy.NoopComponentProvider, &latestV1.KptDeploy{
+			}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
 				Live: latestV1.KptLive{
 					Apply: latestV1.KptApplyInventory{
 						Dir: test.applyDir,
@@ -435,7 +438,7 @@ func TestKpt_Cleanup(t *testing.T) {
 				},
 			})
 
-			err := k.Cleanup(context.Background(), ioutil.Discard)
+			err := k.Cleanup(context.Background(), ioutil.Discard, false)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -443,7 +446,7 @@ func TestKpt_Cleanup(t *testing.T) {
 }
 
 func TestKpt_Render(t *testing.T) {
-	sanityCheck = func(dir string, buf io.Writer) error { return nil }
+	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
 	// The follow are outputs to `kpt fn run` commands.
 	output1 := `apiVersion: v1
 kind: Pod
@@ -489,7 +492,7 @@ spec:
 	tests := []struct {
 		description      string
 		builds           []graph.Artifact
-		labels           map[string]string
+		labels           []string
 		kpt              latestV1.KptDeploy
 		commands         util.Command
 		hasKustomization func(string) bool
@@ -534,7 +537,7 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			labels: map[string]string{"user/label": "test"},
+			labels: []string{"user/label=test"},
 			kpt: latestV1.KptDeploy{
 				Dir: "test",
 				Fn:  latestV1.KptFn{FnPath: "kpt-func.yaml"},
@@ -608,7 +611,7 @@ spec:
 					Tag:       "gcr.io/project/image1:tag1",
 				},
 			},
-			labels: map[string]string{"user/label": "test"},
+			labels: []string{"user/label=test"},
 			kpt: latestV1.KptDeploy{
 				Dir: ".",
 			},
@@ -787,7 +790,9 @@ spec:
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.NewTempDir().Chdir()
 
-			k, _ := NewDeployer(&kptConfig{workingDir: "."}, test.labels, deploy.NoopComponentProvider, &test.kpt)
+			labeller := label.NewLabeller(false, test.labels, "")
+
+			k := NewDeployer(&kptConfig{workingDir: "."}, labeller, &test.kpt)
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
@@ -862,9 +867,9 @@ func TestKpt_GetApplyDir(t *testing.T) {
 				tmpDir.Touch(".kpt-hydrated/inventory-template.yaml")
 			}
 
-			k, _ := NewDeployer(&kptConfig{
+			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, deploy.NoopComponentProvider, &latestV1.KptDeploy{
+			}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
 				Live: test.live,
 			})
 
@@ -1023,7 +1028,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, _ := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, nil)
+			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, nil)
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
@@ -1086,13 +1091,13 @@ func TestVersionCheck(t *testing.T) {
 				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
 		},
 		{
-			description: "kpt version is too new (>=1.0.0)",
+			description: "kpt version is too new (>=1.0.0-alpha)",
 			commands: testutil.
-				CmdRunOut("kpt version", `1.0.0`),
+				CmdRunOut("kpt version", `1.0.0-beta.4`),
 			kustomizations: map[string]string{"Kustomization": `resources:
 					- foo.yaml`},
 			shouldErr: true,
-			error: fmt.Errorf("you are using kpt \"v1.0.0\"\nPlease install "+
+			error: fmt.Errorf("you are using kpt \"v1.0.0-beta.4\"\nPlease install "+
 				"kpt %v <= version < %v\nSee kpt installation: %v",
 				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
 		},
@@ -1150,7 +1155,7 @@ func TestVersionCheck(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
 			tmpDir.WriteFiles(test.kustomizations)
-			err := versionCheck("", io.Writer(&buf))
+			err := versionCheck(context.Background(), "", io.Writer(&buf))
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				testutil.CheckDeepEqual(t.T, test.error.Error(), err.Error())
@@ -1169,7 +1174,8 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, commands)
-		k, _ := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, deploy.NoopComponentProvider, &latestV1.KptDeploy{
+		t.Override(&client.Client, deployutil.MockK8sClient)
+		k := NewDeployer(&kptConfig{config: "testConfigPath"}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
 			Dir: ".",
 			Live: latestV1.KptLive{
 				Apply: latestV1.KptApplyInventory{
@@ -1179,7 +1185,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 		})
 		t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 		defer os.RemoveAll(k.Live.Apply.Dir)
-		_, err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
+		err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
 		t.CheckNoError(err)
 	})
 }
@@ -1190,7 +1196,8 @@ type kptConfig struct {
 	config                string
 }
 
-func (c *kptConfig) WorkingDir() string       { return c.workingDir }
-func (c *kptConfig) GetKubeContext() string   { return kubectl.TestKubeContext }
-func (c *kptConfig) GetKubeNamespace() string { return kubectl.TestNamespace }
-func (c *kptConfig) GetKubeConfig() string    { return c.config }
+func (c *kptConfig) WorkingDir() string                                    { return c.workingDir }
+func (c *kptConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
+func (c *kptConfig) GetKubeNamespace() string                              { return kubectl.TestNamespace }
+func (c *kptConfig) GetKubeConfig() string                                 { return c.config }
+func (c *kptConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }

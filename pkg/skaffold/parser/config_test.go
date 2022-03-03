@@ -17,16 +17,22 @@ limitations under the License.
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -93,28 +99,34 @@ func TestGetAllConfigs(t *testing.T) {
 		makePathsAbsolute        *bool
 		errCode                  proto.StatusCode
 		applyProfilesRecursively bool
-		expected                 func(base string) []*latestV1.SkaffoldConfig
+		expected                 func(base string) []schemaUtil.VersionedConfig
 	}{
 		{
 			description: "makePathsAbsolute unspecified; no dependencies",
 			documents:   []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}}}},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg00", "image00", ".", nil)}
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg00", "image00", ".", nil),
+				}
 			},
 		},
 		{
 			description: "makePathsAbsolute unspecified; no dependencies, config flag",
 			documents:   []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg01", "image01", ".", nil)}
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg01", "image01", ".", nil),
+				}
 			},
 			configFilter: []string{"cfg01"},
 		},
 		{
 			description: "makePathsAbsolute unspecified; no dependencies, config flag, profiles flag",
 			documents:   []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg01", "pf0image01", ".", nil)}
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg01", "pf0image01", ".", nil),
+				}
 			},
 			configFilter: []string{"cfg01"},
 			profiles:     []string{"pf0"},
@@ -132,8 +144,8 @@ requires:
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: ""}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
@@ -156,8 +168,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -177,8 +189,8 @@ requires:
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: ""}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg01", "image01", ".", nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Names: []string{"cfg01"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
@@ -197,8 +209,8 @@ requires:
   - configs: [cfg11]
 `}, {name: "cfg11", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Names: []string{"cfg11"}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1"}}),
@@ -224,8 +236,8 @@ requires:
     configs: [cfg00]
 `}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), []latestV1.ConfigDependency{{Path: base, Names: []string{"cfg00"}}}),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -249,8 +261,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -280,8 +292,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
 					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
@@ -308,8 +320,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf1image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf1"}}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0"}}}}),
@@ -365,8 +377,8 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 				}
@@ -444,8 +456,8 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
@@ -458,16 +470,20 @@ requires:
 			description:       "makePathsAbsolute false; no dependencies",
 			makePathsAbsolute: util.BoolPtr(false),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}}}},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg00", "image00", ".", nil)}
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg00", "image00", ".", nil),
+				}
 			},
 		},
 		{
 			description:       "makePathsAbsolute false; no dependencies, config flag",
 			makePathsAbsolute: util.BoolPtr(false),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg01", "image01", ".", nil)}
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg01", "image01", ".", nil),
+				}
 			},
 			configFilter: []string{"cfg01"},
 		},
@@ -475,8 +491,10 @@ requires:
 			description:       "makePathsAbsolute false; no dependencies, config flag, profiles flag",
 			makePathsAbsolute: util.BoolPtr(false),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg01", "pf0image01", ".", nil)}
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg01", "pf0image01", ".", nil),
+				}
 			},
 			configFilter: []string{"cfg01"},
 			profiles:     []string{"pf0"},
@@ -495,8 +513,8 @@ requires:
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: ""}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg10", "image10", ".", nil),
 					createCfg("cfg21", "image21", ".", nil),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
@@ -520,8 +538,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
 					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -542,8 +560,8 @@ requires:
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: ""}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg01", "image01", ".", nil),
 					createCfg("cfg21", "image21", ".", nil),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Names: []string{"cfg01"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
@@ -563,8 +581,8 @@ requires:
   - configs: [cfg11]
 `}, {name: "cfg11", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg11", "image11", ".", nil),
 					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Names: []string{"cfg11"}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1"}}),
@@ -591,8 +609,8 @@ requires:
     configs: [cfg00]
 `}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", []latestV1.ConfigDependency{{Path: "../", Names: []string{"cfg00"}}}),
 					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -617,8 +635,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
 					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -649,8 +667,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", ".", nil),
 					createCfg("cfg10", "pf0image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
 					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
@@ -678,8 +696,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf1image21", ".", nil),
 					createCfg("cfg10", "pf0image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf1"}}}}),
 					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0"}}}}),
@@ -737,8 +755,8 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
 					createCfg("cfg11", "image11", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
 				}
@@ -820,8 +838,8 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
 					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
 					createCfg("cfg11", "image11", ".", []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
@@ -834,16 +852,20 @@ requires:
 			description:       "makePathsAbsolute true; no dependencies",
 			makePathsAbsolute: util.BoolPtr(true),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}}}},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg00", "image00", base, nil)}
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg00", "image00", base, nil),
+				}
 			},
 		},
 		{
 			description:       "makePathsAbsolute true; no dependencies, config flag",
 			makePathsAbsolute: util.BoolPtr(true),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg01", "image01", base, nil)}
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg01", "image01", base, nil),
+				}
 			},
 			configFilter: []string{"cfg01"},
 		},
@@ -851,8 +873,10 @@ requires:
 			description:       "makePathsAbsolute true; no dependencies, config flag, profiles flag",
 			makePathsAbsolute: util.BoolPtr(true),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{createCfg("cfg01", "pf0image01", base, nil)}
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
+					createCfg("cfg01", "pf0image01", base, nil),
+				}
 			},
 			configFilter: []string{"cfg01"},
 			profiles:     []string{"pf0"},
@@ -871,8 +895,8 @@ requires:
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: ""}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}, {Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
@@ -896,8 +920,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
@@ -918,8 +942,8 @@ requires:
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: ""}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg01", "image01", base, nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Names: []string{"cfg01"}}, {Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
@@ -939,8 +963,8 @@ requires:
   - configs: [cfg11]
 `}, {name: "cfg11", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Names: []string{"cfg11"}}}),
 					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1")}}),
@@ -967,8 +991,8 @@ requires:
     configs: [cfg00]
 `}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), []latestV1.ConfigDependency{{Path: base, Names: []string{"cfg00"}}}),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
@@ -993,8 +1017,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "pf0image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
@@ -1025,8 +1049,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
 					createCfg("cfg00", "pf0image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
@@ -1054,8 +1078,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf1image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf1"}}}}),
 					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0"}}}}),
@@ -1113,8 +1137,8 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 				}
@@ -1196,8 +1220,8 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
@@ -1223,8 +1247,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -1250,8 +1274,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", ".", nil),
 					createCfg("cfg10", "pf0image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
@@ -1277,8 +1301,8 @@ requires:
 `}, {name: "cfg11", requiresStanza: ""}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			expected: func(base string) []*latestV1.SkaffoldConfig {
-				return []*latestV1.SkaffoldConfig{
+			expected: func(base string) []schemaUtil.VersionedConfig {
+				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
 					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg00", "pf0image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
@@ -1300,13 +1324,15 @@ requires:
 				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
 			}
 			tmpDir.Chdir()
-			var expected []*latestV1.SkaffoldConfig
+			var expected []schemaUtil.VersionedConfig
 			if test.expected != nil {
 				wd, _ := util.RealWorkDir()
 				expected = test.expected(wd)
 			}
-			t.Override(&git.SyncRepo, func(g latestV1.GitInfo, _ config.SkaffoldOptions) (string, error) { return g.Repo, nil })
-			cfgs, err := GetAllConfigs(config.SkaffoldOptions{
+			t.Override(&git.SyncRepo, func(ctx context.Context, g latestV1.GitInfo, _ config.SkaffoldOptions) (string, error) {
+				return g.Repo, nil
+			})
+			cfgs, err := GetAllConfigs(context.Background(), config.SkaffoldOptions{
 				Command:             "dev",
 				ConfigurationFile:   test.documents[0].path,
 				ConfigurationFilter: test.configFilter,
@@ -1324,6 +1350,215 @@ requires:
 					t.Fail()
 				}
 			}
+		})
+	}
+}
+
+var testSkaffoldYaml = `apiVersion: skaffold/v2beta26
+kind: Config
+build:
+  artifacts:
+    - image: app-0
+deploy:
+  kubectl:
+    manifests:
+      - manifests-0
+profiles:
+  - name: profile-0
+    build:
+      artifacts:
+        - image: app-0-profile
+          context: app-0-profile
+    deploy:
+      kubectl:
+        manifests:
+          - manifests-0-profile
+    patches:
+      - op: replace
+        path: /build/artifacts/0
+        value:
+          image: app-0-patch
+      - op: add
+        path: /deploy/kubectl/manifests/1
+        value: 'manifests-1'
+  - name: profile-1
+    build:
+      artifacts:
+        - image: app-1-profile
+          context: app-1-profile
+    deploy:
+      kubectl:
+        manifests:
+          - manifests-1-profile
+`
+
+func TestConfigLocationsParse(t *testing.T) {
+	tests := []struct {
+		description      string
+		skaffoldYamlText string
+		profiles         []string
+		missingNodeCount int
+		expected         [][]kyaml.Filter
+	}{
+		{
+			description:      "find all expected yaml nodes for input skaffold.yaml file",
+			skaffoldYamlText: testSkaffoldYaml,
+			profiles:         []string{},
+			expected: [][]kyaml.Filter{
+				{kyaml.Lookup("apiVersion")},
+				{kyaml.Lookup("kind")},
+				{kyaml.Lookup("build")},
+				{kyaml.Lookup("build", "artifacts")},
+				{kyaml.Lookup("deploy")},
+				{kyaml.Lookup("deploy", "kubectl")},
+				{kyaml.Lookup("deploy", "kubectl", "manifests")},
+			},
+		},
+		{
+			description:      "verify profile nodes not in yaml nodes when there is no profile",
+			skaffoldYamlText: testSkaffoldYaml,
+			profiles:         []string{},
+			expected: [][]kyaml.Filter{
+				{kyaml.Lookup("apiVersion")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("build"), kyaml.Lookup("artifacts")},
+			},
+			missingNodeCount: 1,
+		},
+		{
+			description:      "find all expected yaml nodes for input skaffold.yaml file and input profile",
+			skaffoldYamlText: testSkaffoldYaml,
+			profiles:         []string{"profile-0"},
+			expected: [][]kyaml.Filter{
+				{kyaml.Lookup("apiVersion")},
+				{kyaml.Lookup("kind")},
+				{kyaml.Lookup("build")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("build"), kyaml.Lookup("artifacts")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}),
+					kyaml.Lookup("patches"), kyaml.GetElementByIndex(0), kyaml.Lookup("value"), kyaml.Lookup("image")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}),
+					kyaml.Lookup("patches"), kyaml.GetElementByIndex(1), kyaml.Lookup("value")},
+				{kyaml.Lookup("deploy")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("deploy"), kyaml.Lookup("kubectl")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("deploy"), kyaml.Lookup("kubectl"), kyaml.Lookup("manifests")},
+			},
+		},
+		{
+			description:      "verify default nodes not in yaml nodes when there is an active profile overwriting the default node",
+			skaffoldYamlText: testSkaffoldYaml,
+			profiles:         []string{},
+			expected: [][]kyaml.Filter{
+				{kyaml.Lookup("apiVersion")},
+				{kyaml.Lookup("build", "artifacts")},
+			},
+			missingNodeCount: 1,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			missingNodeCount := 0
+
+			fp := t.TempFile("skaffoldyaml-", []byte(test.skaffoldYamlText))
+			cfgs, err := GetConfigSet(context.TODO(), config.SkaffoldOptions{ConfigurationFile: fp, Profiles: test.profiles})
+			if err != nil {
+				t.Fatalf(err.Error())
+			}
+			root, err := kyaml.Parse(test.skaffoldYamlText)
+			if err != nil {
+				t.Fatalf(err.Error())
+			}
+			var seen bool
+			for _, filters := range test.expected {
+				seen = false
+				expectedNode := root
+				var err error
+				for _, filter := range filters {
+					expectedNode, err = expectedNode.Pipe(filter)
+					if err != nil {
+						t.Fatalf(err.Error())
+					}
+				}
+				if expectedNode == nil {
+					t.Errorf("test query led to nil node, should not be the case for kyaml filters: %v", filters)
+				}
+				for _, yamlInfos := range cfgs[0].YAMLInfos.GetYamlInfosCopy() {
+					for _, v := range yamlInfos {
+						if reflect.DeepEqual(expectedNode, v.RNode) {
+							seen = true
+						}
+					}
+				}
+				if seen != true && test.missingNodeCount == 0 {
+					str, _ := expectedNode.String()
+					t.Errorf("unable to find expected yaml node text: %q in the generated yaml node map: %v", str, cfgs[0].YAMLInfos.GetYamlInfosCopy())
+				}
+				if seen != true && test.missingNodeCount > 0 {
+					missingNodeCount++
+					if missingNodeCount > test.missingNodeCount {
+						t.Errorf("expected %d missing nodes in test, found %d missing nodes", test.missingNodeCount, missingNodeCount)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestConfigLocationsLocate(t *testing.T) {
+	tests := []struct {
+		description      string
+		skaffoldYamlText string
+		profiles         []string
+		expected         []configlocations.Location
+	}{
+		{
+			description:      "verify location for SkaffoldConfig.Build.Artifacts[0] is as expected",
+			skaffoldYamlText: testSkaffoldYaml,
+			profiles:         []string{},
+			expected: []configlocations.Location{
+				{
+					StartLine:   5,
+					StartColumn: 14,
+					EndLine:     6,
+					EndColumn:   0,
+				},
+			},
+		},
+		{
+			description:      "verify location for SkaffoldConfig.Build.Artifacts[0] is as expected with active profile with a patch",
+			skaffoldYamlText: testSkaffoldYaml,
+			profiles:         []string{"profile-0"},
+			expected: []configlocations.Location{
+				{
+					StartLine:   24,
+					StartColumn: 18,
+					EndLine:     25,
+					EndColumn:   0,
+				},
+			},
+		},
+		{
+			description:      "verify location for SkaffoldConfig.Build.Artifacts[0] is as expected with active profile with no patch",
+			skaffoldYamlText: testSkaffoldYaml,
+			profiles:         []string{"profile-1"},
+			expected: []configlocations.Location{
+				{
+					StartLine:   31,
+					StartColumn: 18,
+					EndLine:     32,
+					EndColumn:   0,
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			fp := t.TempFile("skaffoldyaml-", []byte(test.skaffoldYamlText))
+			cfgs, err := GetConfigSet(context.TODO(), config.SkaffoldOptions{ConfigurationFile: fp, Profiles: test.profiles})
+			if err != nil {
+				t.Fatalf(err.Error())
+			}
+			artifact0Location := cfgs.Locate(cfgs[0].SkaffoldConfig.Build.Artifacts[0])
+			artifact0Location.SourceFile = ""
+			t.CheckDeepEqual(&test.expected[0], artifact0Location)
 		})
 	}
 }

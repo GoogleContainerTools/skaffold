@@ -17,7 +17,9 @@ limitations under the License.
 package manifest
 
 import (
-	"github.com/sirupsen/logrus"
+	"context"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // SetLabels add labels to a list of Kubernetes manifests.
@@ -32,7 +34,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 		return nil, labelSettingErr(err)
 	}
 
-	logrus.Debugln("manifests with labels", updated.String())
+	log.Entry(context.TODO()).Debugln("manifests with labels", updated.String())
 
 	return updated, nil
 }
@@ -47,7 +49,7 @@ func newLabelsSetter(labels map[string]string) *labelsSetter {
 	}
 }
 
-func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) bool {
+func (r *labelsSetter) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
 	if k != "metadata" {
 		return true
 	}

@@ -17,10 +17,12 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"testing"
 
 	"google.golang.org/api/cloudbuild/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -193,7 +195,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latestV1.GoogleCloudBuild{
 				PackImage: "pack/image",
 			})
-			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", platform.Matcher{}, "bucket", "object")
 			t.CheckError(test.shouldErr, err)
 
 			if !test.shouldErr {

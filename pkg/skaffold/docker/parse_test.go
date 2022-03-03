@@ -36,6 +36,8 @@ func TestUnquote(t *testing.T) {
 	testutil.CheckDeepEqual(t, `scratch`, unquote(`'scratch'`))
 	testutil.CheckDeepEqual(t, `scratch`, unquote(`''scratch''`))
 	testutil.CheckDeepEqual(t, `'scratch'`, unquote(`"'scratch'"`))
+	testutil.CheckDeepEqual(t, `golang:1.15`, unquote(`golang:"1.15"`))
+	testutil.CheckDeepEqual(t, `golang:1.15`, unquote(`golang:'1.15'`))
 }
 
 func TestRemoveExtraBuildArgs(t *testing.T) {

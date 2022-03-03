@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -60,9 +61,8 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 	return nil
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
-	// TODO: [#4922] Implement required artifact resolution from the `artifactStore`
-	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag)
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, m platform.Matcher) (string, error) {
+	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag, m)
 	if err != nil {
 		return "", err
 	}
@@ -74,15 +74,15 @@ func (b *Builder) Concurrency() int {
 	return b.ClusterDetails.Concurrency
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	// required artifacts as build-args
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {
 	case a.KanikoArtifact != nil:
-		return b.buildWithKaniko(ctx, out, a.Workspace, a.ImageName, a.KanikoArtifact, tag, requiredImages)
+		return b.buildWithKaniko(ctx, out, a.Workspace, a.ImageName, a.KanikoArtifact, tag, requiredImages, platforms)
 
 	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(nil, b.cfg, true, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag)
+		return custom.NewArtifactBuilder(nil, b.cfg, true, b.skipTests, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag, platforms)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for in-cluster artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

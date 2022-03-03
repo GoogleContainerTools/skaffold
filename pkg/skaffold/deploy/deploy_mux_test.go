@@ -30,6 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
@@ -37,14 +39,25 @@ import (
 func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
 
 type MockDeployer struct {
-	labels           map[string]string
-	deployNamespaces []string
-	deployErr        error
-	dependencies     []string
-	dependenciesErr  error
-	cleanupErr       error
-	renderResult     string
-	renderErr        error
+	labels          map[string]string
+	deployErr       error
+	dependencies    []string
+	dependenciesErr error
+	cleanupErr      error
+	renderResult    string
+	renderErr       error
+}
+
+func (m *MockDeployer) HasRunnableHooks() bool {
+	return true
+}
+
+func (m *MockDeployer) PreDeployHooks(context.Context, io.Writer) error {
+	return nil
+}
+
+func (m *MockDeployer) PostDeployHooks(context.Context, io.Writer) error {
+	return nil
 }
 
 func (m *MockDeployer) GetAccessor() access.Accessor {
@@ -59,13 +72,23 @@ func (m *MockDeployer) GetLogger() log.Logger {
 	return &log.NoopLogger{}
 }
 
+func (m *MockDeployer) GetStatusMonitor() status.Monitor {
+	return &status.NoopMonitor{}
+}
+
+func (m *MockDeployer) GetSyncer() sync.Syncer {
+	return &sync.NoopSyncer{}
+}
+
+func (m *MockDeployer) RegisterLocalImages(_ []graph.Artifact) {}
+
 func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}
 
 func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
 
-func (m *MockDeployer) Cleanup(context.Context, io.Writer) error {
+func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool) error {
 	return m.cleanupErr
 }
 
@@ -94,18 +117,13 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error) {
-	return m.deployNamespaces, m.deployErr
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) error {
+	return m.deployErr
 }
 
 func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []graph.Artifact, _ bool, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
-}
-
-func (m *MockDeployer) WithDeployNamespaces(namespaces []string) *MockDeployer {
-	m.deployNamespaces = namespaces
-	return m
 }
 
 func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
@@ -129,32 +147,14 @@ func TestDeployerMux_Deploy(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			name:        "disjoint namespaces are combined",
-			namespaces1: []string{"ns-a"},
-			namespaces2: []string{"ns-b"},
-			expectedNs:  []string{"ns-a", "ns-b"},
+			name:      "short-circuits when first call fails",
+			err1:      fmt.Errorf("failed in first"),
+			shouldErr: true,
 		},
 		{
-			name:        "repeated namespaces are not duplicated",
-			namespaces1: []string{"ns-a", "ns-c"},
-			namespaces2: []string{"ns-b", "ns-c"},
-			expectedNs:  []string{"ns-a", "ns-b", "ns-c"},
-		},
-		{
-			name:        "short-circuits when first call fails",
-			namespaces1: []string{"ns-a"},
-			err1:        fmt.Errorf("failed in first"),
-			namespaces2: []string{"ns-b"},
-			expectedNs:  nil,
-			shouldErr:   true,
-		},
-		{
-			name:        "when second call fails",
-			namespaces1: []string{"ns-a"},
-			namespaces2: []string{"ns-b"},
-			err2:        fmt.Errorf("failed in second"),
-			expectedNs:  nil,
-			shouldErr:   true,
+			name:      "when second call fails",
+			err2:      fmt.Errorf("failed in second"),
+			shouldErr: true,
 		},
 	}
 
@@ -168,14 +168,14 @@ func TestDeployerMux_Deploy(t *testing.T) {
 					},
 				}}})
 
-			deployerMux := DeployerMux([]Deployer{
-				NewMockDeployer().WithDeployNamespaces(test.namespaces1).WithDeployErr(test.err1),
-				NewMockDeployer().WithDeployNamespaces(test.namespaces2).WithDeployErr(test.err2),
-			})
+			deployerMux := NewDeployerMux([]Deployer{
+				NewMockDeployer().WithDeployErr(test.err1),
+				NewMockDeployer().WithDeployErr(test.err2),
+			}, false)
 
-			namespaces, err := deployerMux.Deploy(context.Background(), nil, nil)
+			err := deployerMux.Deploy(context.Background(), nil, nil)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedNs, namespaces)
+			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }
@@ -220,10 +220,10 @@ func TestDeployerMux_Dependencies(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			deployerMux := DeployerMux([]Deployer{
+			deployerMux := NewDeployerMux([]Deployer{
 				NewMockDeployer().WithDependencies(test.deps1).WithDependenciesErr(test.err1),
 				NewMockDeployer().WithDependencies(test.deps2).WithDependenciesErr(test.err2),
-			})
+			}, false)
 
 			dependencies, err := deployerMux.Dependencies()
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDeps, dependencies)
@@ -265,10 +265,10 @@ func TestDeployerMux_Render(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("output to writer "+test.name, func(t *testing.T) {
-			deployerMux := DeployerMux([]Deployer{
+			deployerMux := NewDeployerMux([]Deployer{
 				NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
 				NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
-			})
+			}, false)
 
 			buf := &bytes.Buffer{}
 			err := deployerMux.Render(context.Background(), buf, nil, true, "")
@@ -282,10 +282,10 @@ func TestDeployerMux_Render(t *testing.T) {
 
 		tmpDir := testutil.NewTempDir(t)
 
-		deployerMux := DeployerMux([]Deployer{
+		deployerMux := NewDeployerMux([]Deployer{
 			NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
 			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
-		})
+		}, false)
 
 		err := deployerMux.Render(context.Background(), nil, nil, true, tmpDir.Path("render"))
 		testutil.CheckError(t, false, err)

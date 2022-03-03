@@ -23,15 +23,17 @@ type Builder struct {
 	localDocker   docker.LocalDaemon
 	cfg           docker.Config
 	pushImages    bool
+	skipTest      bool
 	additionalEnv []string
 }
 
 // NewArtifactBuilder returns a new custom artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, pushImages bool, additionalEnv []string) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, pushImages bool, skipTest bool, additionalEnv []string) *Builder {
 	return &Builder{
 		localDocker:   localDocker,
 		cfg:           cfg,
 		pushImages:    pushImages,
+		skipTest:      skipTest,
 		additionalEnv: additionalEnv,
 	}
 }

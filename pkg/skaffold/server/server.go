@@ -18,27 +18,26 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/sirupsen/logrus"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	protoV1 "github.com/GoogleContainerTools/skaffold/proto/v1"
 	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
-
-const maxTryListen = 10
 
 var (
 	srv *server
@@ -48,17 +47,25 @@ var (
 )
 
 type server struct {
-	buildIntentCallback  func()
-	syncIntentCallback   func()
-	deployIntentCallback func()
-	autoBuildCallback    func(bool)
-	autoSyncCallback     func(bool)
-	autoDeployCallback   func(bool)
+	buildIntentCallback   func()
+	syncIntentCallback    func()
+	deployIntentCallback  func()
+	devloopIntentCallback func()
+	autoBuildCallback     func(bool)
+	autoSyncCallback      func(bool)
+	autoDeployCallback    func(bool)
+	autoDevloopCallback   func(bool)
 }
 
 func SetBuildCallback(callback func()) {
 	if srv != nil {
 		srv.buildIntentCallback = callback
+	}
+}
+
+func SetDevloopCallback(callback func()) {
+	if srv != nil {
+		srv.devloopIntentCallback = callback
 	}
 }
 
@@ -80,6 +87,12 @@ func SetAutoBuildCallback(callback func(bool)) {
 	}
 }
 
+func SetAutoDevloopCallback(callback func(bool)) {
+	if srv != nil {
+		srv.autoDevloopCallback = callback
+	}
+}
+
 func SetAutoDeployCallback(callback func(bool)) {
 	if srv != nil {
 		srv.autoDeployCallback = callback
@@ -96,19 +109,31 @@ func SetAutoSyncCallback(callback func(bool)) {
 // It returns a shutdown callback for tearing down the grpc server,
 // which the runner is responsible for calling.
 func Initialize(opts config.SkaffoldOptions) (func() error, error) {
-	if !opts.EnableRPC || opts.RPCPort == -1 {
-		return func() error { return nil }, nil
+	emptyCallback := func() error { return nil }
+	if !opts.EnableRPC && opts.RPCPort.Value() == nil && opts.RPCHTTPPort.Value() == nil {
+		log.Entry(context.TODO()).Debug("skaffold API not starting as it's not requested")
+		return emptyCallback, nil
 	}
 
-	var usedPorts util.PortSet
-
-	grpcCallback, rpcPort, err := newGRPCServer(opts.RPCPort, &usedPorts)
+	preferredGRPCPort := 0 // bind to an available port atomically
+	if opts.RPCPort.Value() != nil {
+		preferredGRPCPort = *opts.RPCPort.Value()
+	}
+	grpcCallback, grpcPort, err := newGRPCServer(preferredGRPCPort)
 	if err != nil {
 		return grpcCallback, fmt.Errorf("starting gRPC server: %w", err)
 	}
 
-	httpCallback, err := newHTTPServer(opts.RPCHTTPPort, rpcPort, &usedPorts)
+	httpCallback := emptyCallback
+	if opts.RPCHTTPPort.Value() != nil {
+		httpCallback, err = newHTTPServer(*opts.RPCHTTPPort.Value(), grpcPort)
+	}
 	callback := func() error {
+		// Optionally pause execution until endpoint hit
+		if opts.WaitForConnection {
+			eventV2.WaitForConnection()
+		}
+
 		httpErr := httpCallback()
 		grpcErr := grpcCallback()
 		errStr := ""
@@ -123,51 +148,65 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 			if logFileErr != nil {
 				errStr += fmt.Sprintf("event log file error: %s\n", logFileErr.Error())
 			}
+
+			v2EventLogFile := fmt.Sprintf(`%s.v2`, opts.EventLogFile)
+			logFileV2Err := eventV2.SaveEventsToFile(v2EventLogFile)
+			if logFileV2Err != nil {
+				errStr += fmt.Sprintf("eventV2 log file error: %s\n", logFileV2Err.Error())
+			}
 		}
+
+		// Save logs from current run to file
+		eventV2.SaveLastLog(opts.LastLogFile)
+
 		return errors.New(errStr)
 	}
 	if err != nil {
 		return callback, fmt.Errorf("starting HTTP server: %w", err)
 	}
 
+	if opts.EnableRPC && opts.RPCPort.Value() == nil && opts.RPCHTTPPort.Value() == nil {
+		log.Entry(context.TODO()).Warnf("started skaffold gRPC API on random port %d", grpcPort)
+	}
+
 	return callback, nil
 }
 
-func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, int, error) {
-	l, port, err := listenOnAvailablePort(preferredPort, usedPorts)
+func newGRPCServer(preferredPort int) (func() error, int, error) {
+	l, port, err := listenPort(preferredPort)
 	if err != nil {
 		return func() error { return nil }, 0, fmt.Errorf("creating listener: %w", err)
 	}
 
-	if port != preferredPort {
-		logrus.Warnf("starting gRPC server on port %d. (%d is already in use)", port, preferredPort)
-	} else {
-		logrus.Infof("starting gRPC server on port %d", port)
-	}
+	log.Entry(context.TODO()).Infof("starting gRPC server on port %d", port)
 
 	s := grpc.NewServer()
 	srv = &server{
-		buildIntentCallback:  func() {},
-		deployIntentCallback: func() {},
-		syncIntentCallback:   func() {},
-		autoBuildCallback:    func(bool) {},
-		autoSyncCallback:     func(bool) {},
-		autoDeployCallback:   func(bool) {},
+		buildIntentCallback:   func() {},
+		deployIntentCallback:  func() {},
+		syncIntentCallback:    func() {},
+		devloopIntentCallback: func() {},
+		autoBuildCallback:     func(bool) {},
+		autoSyncCallback:      func(bool) {},
+		autoDeployCallback:    func(bool) {},
+		autoDevloopCallback:   func(bool) {},
 	}
 	v2.Srv = &v2.Server{
-		BuildIntentCallback:  func() {},
-		DeployIntentCallback: func() {},
-		SyncIntentCallback:   func() {},
-		AutoBuildCallback:    func(bool) {},
-		AutoSyncCallback:     func(bool) {},
-		AutoDeployCallback:   func(bool) {},
+		BuildIntentCallback:   func() {},
+		DeployIntentCallback:  func() {},
+		SyncIntentCallback:    func() {},
+		DevloopIntentCallback: func() {},
+		AutoBuildCallback:     func(bool) {},
+		AutoSyncCallback:      func(bool) {},
+		AutoDeployCallback:    func(bool) {},
+		AutoDevloopCallback:   func(bool) {},
 	}
-	proto.RegisterSkaffoldServiceServer(s, srv)
+	protoV1.RegisterSkaffoldServiceServer(s, srv)
 	protoV2.RegisterSkaffoldV2ServiceServer(s, v2.Srv)
 
 	go func() {
 		if err := s.Serve(l); err != nil {
-			logrus.Errorf("failed to start grpc server: %s", err)
+			log.Entry(context.TODO()).Errorf("failed to start grpc server: %s", err)
 		}
 	}()
 	return func() error {
@@ -189,29 +228,36 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 	}, port, nil
 }
 
-func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func() error, error) {
-	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler), runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
+func newHTTPServer(preferredPort, proxyPort int) (func() error, error) {
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
+			Marshaler: &runtime.JSONPb{
+				MarshalOptions: protojson.MarshalOptions{
+					UseProtoNames:   true,
+					EmitUnpopulated: true,
+				},
+				UnmarshalOptions: protojson.UnmarshalOptions{
+					DiscardUnknown: true,
+				},
+			},
+		}),
+	)
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	err := protoV1.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, net.JoinHostPort(util.Loopback, strconv.Itoa(proxyPort)), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
-	err = protoV2.RegisterSkaffoldV2ServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	err = protoV2.RegisterSkaffoldV2ServiceHandlerFromEndpoint(context.Background(), mux, net.JoinHostPort(util.Loopback, strconv.Itoa(proxyPort)), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
 
-	l, port, err := listenOnAvailablePort(preferredPort, usedPorts)
+	l, port, err := listenPort(preferredPort)
 	if err != nil {
 		return func() error { return nil }, fmt.Errorf("creating listener: %w", err)
 	}
 
-	if port != preferredPort {
-		logrus.Warnf("starting gRPC HTTP server on port %d. (%d is already in use)", port, preferredPort)
-	} else {
-		logrus.Infof("starting gRPC HTTP server on port %d", port)
-	}
-
+	log.Entry(context.TODO()).Infof("starting gRPC HTTP server on port %d (proxying to %d)", port, proxyPort)
 	server := &http.Server{
 		Handler: mux,
 	}
@@ -225,35 +271,10 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 	}, nil
 }
 
-type errResponse struct {
-	Err string `json:"error,omitempty"`
-}
-
-func errorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, _ *http.Request, err error) {
-	writer.Header().Set("Content-type", marshaler.ContentType())
-	s, _ := status.FromError(err)
-	writer.WriteHeader(runtime.HTTPStatusFromCode(s.Code()))
-	if err := json.NewEncoder(writer).Encode(errResponse{
-		Err: s.Message(),
-	}); err != nil {
-		writer.Write([]byte(`{"error": "failed to marshal error message"}`))
+func listenPort(port int) (net.Listener, int, error) {
+	l, err := net.Listen("tcp", net.JoinHostPort(util.Loopback, strconv.Itoa(port)))
+	if err != nil {
+		return nil, 0, err
 	}
-}
-
-func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.Listener, int, error) {
-	for try := 1; ; try++ {
-		port := util.GetAvailablePort(util.Loopback, preferredPort, usedPorts)
-
-		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
-		if err != nil {
-			if try >= maxTryListen {
-				return nil, 0, err
-			}
-
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		return l, port, nil
-	}
+	return l, l.Addr().(*net.TCPAddr).Port, nil
 }

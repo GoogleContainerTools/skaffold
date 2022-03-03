@@ -1,4 +1,6 @@
-### Example: use image values in templated fields for build and deploy 
+### Example: use image values in templated fields for build and deploy
+
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/templated-fields)
 
 This example shows how `IMAGE_REPO` and `IMAGE_TAG` keywords are available in templated fields for custom build and helm deploy
 
@@ -15,33 +17,35 @@ To learn more about how to set up, see the [getting started docs](https://skaffo
 
 This tutorial will demonstrate how Skaffold can inject image repo and image tag values into the build and deploy stanzas.
 
-First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [templated-fields example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/templated-fields) for sample code:
+First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [templated-fields example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/templated-fields) for sample code:
 
-```shell
-$ git clone https://github.com/GoogleContainerTools/skaffold
-$ cd skaffold/examples/templated-fields
+```sh
+git clone https://github.com/GoogleContainerTools/skaffold
+```
+```sh
+cd skaffold/examples/templated-fields
 ```
 
-`IMAGE_REPO` and `IMAGE_TAG` are available as templated fields in `build.sh` file
+`IMAGE_REPO` and `IMAGE_TAG` are available as templated fields in `build.sh` file:
 
-```shell
-#from build.sh, line 13
+[embedmd]:# (build.sh bash /^img=/ /$/)
+```bash
 img="${IMAGE_REPO}:${IMAGE_TAG}"
 ```
 
 and also in the `helm` deploy section of the skaffold config, which configures artifact `skaffold-templated` to build with `build.sh`:
 
+[embedmd]:# (skaffold.yaml yaml /^.*setValueTemplates:/ /imageTag: .*$/)
 ```yaml
-// from skaffold.yaml, line 22-24
       setValueTemplates:
-          imageRepo: "{{.IMAGE_REPO}}"
-          imageTag: "{{.IMAGE_TAG}}"
+        imageRepo: "{{.IMAGE_REPO}}"
+        imageTag: "{{.IMAGE_TAG}}"
 ```
 
 These values are then being set as container environment variables `FOO_IMAGE_REPO` and `FOO_IMAGE_TAG` in the helm template `deployment.yaml` file, just as an example to show how they can be added to your helm templates.
 
+[embedmd]:# (charts/templates/deployment.yaml yaml /^.*containers:/ $)
 ```yaml
-// from charts/templates/deployment.yaml, line 16-24
       containers:
       - name: {{ .Chart.Name }}
         image: {{ .Values.image }}
@@ -56,21 +60,21 @@ For more information about how this works, see the Skaffold [custom builder](htt
 
 Now, use Skaffold to deploy this application to your Kubernetes cluster:
 
-```shell
-$ skaffold run --tail --default-repo <your repo>
+```sh
+skaffold run --tail --default-repo <your repo>
 ```
 
 With this command, Skaffold will build the `skaffold-templated` artifact with ko and deploy the application to Kubernetes using helm.
 You should be able to see something like:
 
-```shell
+```terminal
 Running image skaffold-templated:a866d5efd634062ea74662b20e172cd6e2d645f9f33f929bfaf8e856ec66bd94
 ```
 
  printed every second in the Skaffold logs, since the code being executed is `main.go`.
- 
+
+[embedmd]:# (main.go go /fmt\.Printf/ /$/)
 ```go
-// from main.go, line 12
 fmt.Printf("Running image %v:%v\n", os.Getenv("FOO_IMAGE_REPO"), os.Getenv("FOO_IMAGE_TAG"))
 ```
 
@@ -78,6 +82,6 @@ fmt.Printf("Running image %v:%v\n", os.Getenv("FOO_IMAGE_REPO"), os.Getenv("FOO_
 
 To clean up your Kubernetes cluster, run:
 
-```shell
-$ skaffold delete
+```sh
+skaffold delete
 ```

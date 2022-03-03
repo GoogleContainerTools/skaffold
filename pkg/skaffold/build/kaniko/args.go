@@ -55,6 +55,9 @@ func Args(artifact *latestV1.KanikoArtifact, tag, context string) ([]string, err
 		if artifact.Cache.TTL != "" {
 			args = append(args, CacheTTLFlag, artifact.Cache.TTL)
 		}
+		if artifact.Cache.CacheCopyLayers {
+			args = append(args, CacheCopyLayersFlag)
+		}
 	}
 
 	if artifact.Target != "" {
@@ -71,6 +74,10 @@ func Args(artifact *latestV1.KanikoArtifact, tag, context string) ([]string, err
 
 	if artifact.Force {
 		args = append(args, ForceFlag)
+	}
+
+	if artifact.ImageFSExtractRetry != "" {
+		args = append(args, ImageFSExtractRetryFlag, artifact.ImageFSExtractRetry)
 	}
 
 	if artifact.ImageNameWithDigestFile != "" {
@@ -132,6 +139,10 @@ func Args(artifact *latestV1.KanikoArtifact, tag, context string) ([]string, err
 
 	if artifact.SnapshotMode != "" {
 		args = append(args, SnapshotModeFlag, artifact.SnapshotMode)
+	}
+
+	if artifact.PushRetry != "" {
+		args = append(args, PushRetryFlag, artifact.PushRetry)
 	}
 
 	if artifact.TarPath != "" {

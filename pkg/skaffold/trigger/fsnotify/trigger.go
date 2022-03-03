@@ -18,15 +18,15 @@ package fsnotify
 
 import (
 	"context"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"path/filepath"
 	"time"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/rjeczalik/notify"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -91,7 +91,7 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 	// Watch folders that are typed with absolute
 	for _, pattern := range t.absGlobs {
 		// Find dir with doublestar.glob
-		paths,err := doublestar.Glob(pattern)
+		paths, err := doublestar.Glob(pattern)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +109,15 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 			continue
 		}
 
-		if err := t.watchFunc(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
+		// Workspace paths may already have been converted to absolute paths (e.g. in a multi-config project).
+		var path string
+		if filepath.IsAbs(w) {
+			path = w
+		} else {
+			path = filepath.Join(wd, w)
+		}
+
+		if err := t.watchFunc(filepath.Join(path, "..."), c, notify.All); err != nil {
 			return nil, err
 		}
 	}
@@ -131,7 +139,7 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 				if !t.isActive() && t.Ignore(e) {
 					continue
 				}
-				logrus.Debugln("Change detected", e)
+				log.Entry(ctx).Debug("Change detected", e)
 
 				// Wait t.Ienterval before triggering.
 				// This way, rapid stream of events will be grouped.

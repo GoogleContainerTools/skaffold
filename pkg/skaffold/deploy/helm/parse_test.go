@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestParseReleaseInfo(t *testing.T) {
+func TestParseReleaseManifests(t *testing.T) {
 	tests := []struct {
 		description string
 		yaml        []byte
@@ -139,7 +139,7 @@ spec:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			r := bufio.NewReader(bytes.NewBuffer(test.yaml))
 
-			actual := parseReleaseInfo("testNamespace", r)
+			actual := parseReleaseManifests("testNamespace", r)
 
 			t.CheckDeepEqual(test.expected, actual, cmpopts.IgnoreFields(types.Artifact{}, "Obj"))
 		})

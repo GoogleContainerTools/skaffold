@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
 func matchBuildersToImages(builders []InitBuilder, images []string) ([]ArtifactInfo, []InitBuilder, []string) {
@@ -65,6 +65,10 @@ func Artifacts(artifactInfos []ArtifactInfo) []*latestV1.Artifact {
 	var artifacts []*latestV1.Artifact
 
 	for _, info := range artifactInfos {
+		// Don't create artifact build config for "None" builder
+		if info.Builder.Name() == NoneBuilderName {
+			continue
+		}
 		workspace := info.Workspace
 		if workspace == "" {
 			workspace = filepath.Dir(info.Builder.Path())

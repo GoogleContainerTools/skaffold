@@ -19,11 +19,13 @@ package cluster
 import (
 	"testing"
 
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -238,9 +240,11 @@ func TestKanikoPodSpec(t *testing.T) {
 					TolerationSeconds: nil,
 				},
 			},
+			NodeSelector: map[string]string{"kubernetes.io/os": "linux"},
 		},
 	}
-	pod, _ := builder.kanikoPodSpec(artifact, "tag")
+	matcher := platform.Matcher{Platforms: []specs.Platform{{OS: "linux", Architecture: "arm64"}}}
+	pod, _ := builder.kanikoPodSpec(artifact, "tag", matcher)
 
 	expectedPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -377,6 +381,7 @@ func TestKanikoPodSpec(t *testing.T) {
 					TolerationSeconds: nil,
 				},
 			},
+			NodeSelector: map[string]string{"kubernetes.io/os": "linux", "kubernetes.io/arch": "arm64"},
 		},
 	}
 

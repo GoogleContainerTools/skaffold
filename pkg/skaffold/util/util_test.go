@@ -19,7 +19,6 @@ package util
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/mitchellh/go-homedir"
 
@@ -282,25 +281,6 @@ func TestIsHiddenFile(t *testing.T) {
 	}
 }
 
-func TestRemoveFromSlice(t *testing.T) {
-	testutil.CheckDeepEqual(t, []string{""}, RemoveFromSlice([]string{""}, "ANY"))
-	testutil.CheckDeepEqual(t, []string{"A", "B", "C"}, RemoveFromSlice([]string{"A", "B", "C"}, "ANY"))
-	testutil.CheckDeepEqual(t, []string{"A", "C"}, RemoveFromSlice([]string{"A", "B", "C"}, "B"))
-	testutil.CheckDeepEqual(t, []string{"B", "C"}, RemoveFromSlice([]string{"A", "B", "C"}, "A"))
-	testutil.CheckDeepEqual(t, []string{"A", "C"}, RemoveFromSlice([]string{"A", "B", "B", "C"}, "B"))
-	testutil.CheckDeepEqual(t, []string{}, RemoveFromSlice([]string{"B", "B"}, "B"))
-}
-
-func TestStrSliceInsert(t *testing.T) {
-	testutil.CheckDeepEqual(t, []string{"d", "e"}, StrSliceInsert(nil, 0, []string{"d", "e"}))
-	testutil.CheckDeepEqual(t, []string{"d", "e"}, StrSliceInsert([]string{}, 0, []string{"d", "e"}))
-	testutil.CheckDeepEqual(t, []string{"a", "d", "e", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, []string{"d", "e"}))
-	testutil.CheckDeepEqual(t, []string{"d", "e", "a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, []string{"d", "e"}))
-	testutil.CheckDeepEqual(t, []string{"a", "b", "c", "d", "e"}, StrSliceInsert([]string{"a", "b", "c"}, 3, []string{"d", "e"}))
-	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, nil))
-	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, nil))
-}
-
 func TestEnvMapToSlice(t *testing.T) {
 	tests := []struct {
 		description string
@@ -468,37 +448,4 @@ func TestIsURL(t *testing.T) {
 
 func stringPointer(s string) *string {
 	return &s
-}
-
-func TestShowHumanizeTime(t *testing.T) {
-	duration1, err := time.ParseDuration("1h58m30.918273645s")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-	duration2, err := time.ParseDuration("5.23494327s")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-	tests := []struct {
-		description string
-		value       time.Duration
-		expected    string
-	}{
-		{
-			description: "Case for 1h58m30.918273645s",
-			value:       duration1,
-			expected:    "1 hour 58 minutes 30.918 seconds",
-		},
-		{
-			description: "Case for 5.23494327s",
-			value:       duration2,
-			expected:    "5.234 seconds",
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			humanizedValue := ShowHumanizeTime(test.value)
-			t.CheckDeepEqual(test.expected, humanizedValue)
-		})
-	}
 }

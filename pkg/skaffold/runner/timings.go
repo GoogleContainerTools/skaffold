@@ -21,16 +21,16 @@ import (
 	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
@@ -52,18 +52,18 @@ type withTimings struct {
 	cacheArtifacts bool
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil
 	}
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting build...")
 
-	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
+	bRes, err := w.Builder.Build(ctx, out, tags, platforms, artifacts)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infoln("Build completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Build completed in", timeutil.Humanize(time.Since(start)))
 	return bRes, nil
 }
 
@@ -75,31 +75,31 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Test completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Test completed in", timeutil.Humanize(time.Since(start)))
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting deploy...")
 
-	ns, err := w.Deployer.Deploy(ctx, out, builds)
-	if err != nil {
-		return nil, err
-	}
-	logrus.Infoln("Deploy completed in", util.ShowHumanizeTime(time.Since(start)))
-	return ns, err
-}
-
-func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
-	start := time.Now()
-	output.Default.Fprintln(out, "Cleaning up...")
-
-	err := w.Deployer.Cleanup(ctx, out)
+	err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Cleanup completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Deploy completed in", timeutil.Humanize(time.Since(start)))
+	return err
+}
+
+func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+	start := time.Now()
+	output.Default.Fprintln(out, "Cleaning up...")
+
+	err := w.Deployer.Cleanup(ctx, out, dryRun)
+	if err != nil {
+		return err
+	}
+	log.Entry(ctx).Infoln("Cleanup completed in", timeutil.Humanize(time.Since(start)))
 	return nil
 }
 
@@ -111,6 +111,6 @@ func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Image prune completed in", util.ShowHumanizeTime(time.Since(start)))
+	log.Entry(ctx).Infoln("Image prune completed in", timeutil.Humanize(time.Since(start)))
 	return nil
 }

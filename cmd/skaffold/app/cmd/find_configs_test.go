@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -55,7 +56,7 @@ func TestFindConfigs(t *testing.T) {
 		testutil.Run(t, "", func(t *testutil.T) {
 			tmpDir := t.NewTempDir().WriteFiles(test.files)
 
-			pathToVersion, err := findConfigs(tmpDir.Root())
+			pathToVersion, err := findConfigs(context.TODO(), tmpDir.Root())
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(len(test.expected), len(pathToVersion))

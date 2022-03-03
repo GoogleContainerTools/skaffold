@@ -12,78 +12,110 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ARG ARCH=amd64
+
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
-# Track default version installed by Google Cloud SDK: 335.0.0 moved to 1.17(.17)
-ENV KUBECTL_VERSION v1.17.17
-ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
-RUN wget -O kubectl "${KUBECTL_URL}"
+ARG ARCH
+# Track default version installed by Google Cloud SDK: 358.0.0 moved to 1.20(.10)
+# https://cloud.google.com/sdk/docs/release-notes
+ENV KUBECTL_VERSION v1.20.10
+ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
+# SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
+COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
+RUN wget -O kubectl "${KUBECTL_URL}" && sha512sum -c kubectl.${ARCH}.sha512
 RUN chmod +x kubectl
 
 # Download helm (see https://github.com/helm/helm/releases/latest)
 FROM alpine:3.10 as download-helm
-ENV HELM_VERSION v3.5.4
-ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
-RUN wget -O helm.tar.gz "${HELM_URL}"
+ARG ARCH
+RUN echo arch=$ARCH
+ENV HELM_VERSION v3.8.0
+ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
+COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
+RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
 RUN tar -xvf helm.tar.gz --strip-components 1
 
 # Download kustomize
 FROM alpine:3.10 as download-kustomize
-ENV KUSTOMIZE_VERSION 4.1.2
-ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
-RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}"
+ARG ARCH
+ENV KUSTOMIZE_VERSION 4.4.0
+ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
+COPY deploy/skaffold/digests/kustomize.${ARCH}.sha256 .
+RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}" && sha256sum -c kustomize.${ARCH}.sha256
 RUN tar -xvf kustomize.tar.gz
 
 # Download kpt
 FROM alpine:3.10 as download-kpt
-ENV KPT_VERSION 1.0.0-alpha.2
+ARG ARCH
+ENV KPT_VERSION 0.39.3
 ENV KPT_URL https://github.com/GoogleContainerTools/kpt/releases/download/v${KPT_VERSION}/kpt_linux_amd64
-RUN wget -O kpt "${KPT_URL}"
+COPY deploy/skaffold/digests/kpt.${ARCH}.sha256 .
+RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
 RUN chmod +x kpt
 
 # Download kompose
 FROM alpine:3.10 as download-kompose
-ENV KOMPOSE_VERSION v1.22.0
+ARG ARCH
+ENV KOMPOSE_VERSION v1.26.0
 ENV KOMPOSE_URL https://github.com/kubernetes/kompose/releases/download/${KOMPOSE_VERSION}/kompose-linux-amd64
-RUN wget -O kompose "${KOMPOSE_URL}"
+COPY deploy/skaffold/digests/kompose.${ARCH}.sha256 .
+RUN wget -O kompose "${KOMPOSE_URL}" && sha256sum -c kompose.${ARCH}.sha256
 RUN chmod +x kompose
 
 # Download container-structure-test (https://github.com/GoogleContainerTools/container-structure-test/releases/latest)
 FROM alpine:3.10 as download-container-structure-test
+ARG ARCH
 ENV CONTAINER_STRUCTURE_TEST_VERSION v1.10.0
-ENV CONTAINER_STRUCTURE_TEST_URL https://storage.googleapis.com/container-structure-test/${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-amd64
-RUN wget -O container-structure-test "${CONTAINER_STRUCTURE_TEST_URL}"
+ENV CONTAINER_STRUCTURE_TEST_URL https://storage.googleapis.com/container-structure-test/${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-${ARCH}
+COPY deploy/skaffold/digests/container-structure-test.${ARCH}.sha512 .
+RUN wget -O container-structure-test "${CONTAINER_STRUCTURE_TEST_URL}" && sha512sum -c container-structure-test.${ARCH}.sha512
 RUN chmod +x container-structure-test
 
 # Download kind
 FROM alpine:3.10 as download-kind
-ENV KIND_VERSION v0.10.0
-ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64
-RUN wget -O kind "${KIND_URL}"
+ARG ARCH
+ENV KIND_VERSION v0.11.1
+ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}
+COPY deploy/skaffold/digests/kind.${ARCH}.sha512 .
+RUN wget -O kind "${KIND_URL}" && sha512sum -c kind.${ARCH}.sha512
 RUN chmod +x kind
 
 # Download k3d
 FROM alpine:3.10 as download-k3d
-ENV K3D_VERSION v4.4.2
+ARG ARCH
+ENV K3D_VERSION v5.0.3
 ENV K3D_URL https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
-RUN wget -O k3d "${K3D_URL}"
+COPY deploy/skaffold/digests/k3d.${ARCH}.sha256 .
+RUN wget -O k3d "${K3D_URL}" && sha256sum -c k3d.${ARCH}.sha256
 RUN chmod +x k3d
 
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
-ENV GCLOUD_VERSION 335.0.0
-ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz
-RUN wget -O gcloud.tar.gz "${GCLOUD_URL}"
+ARG ARCH
+ENV GCLOUD_VERSION 360.0.0
+ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
+# SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
+COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
+RUN \
+    GCLOUDARCH=$(case "${ARCH}" in amd64) echo x86_64;; *) echo ${ARCH};; esac); \
+    wget -O gcloud.tar.gz $(echo "${GCLOUD_URL}" | sed "s/GCLOUDARCH/${GCLOUDARCH}/g") && \
+    sha256sum -c gcloud.${ARCH}.sha256
 RUN tar -zxf gcloud.tar.gz
 
 # Download bazel
 FROM alpine:3.10 as download-bazel
-ENV BAZEL_VERSION 4.0.0
-ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64
-RUN wget -O bazel "${BAZEL_URL}"
+ARG ARCH
+ENV BAZEL_VERSION 4.2.1
+ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-BAZELARCH
+COPY deploy/skaffold/digests/bazel.${ARCH}.sha256 .
+RUN \
+    BAZELARCH=$(case "${ARCH}" in amd64) echo x86_64;; *) echo ${ARCH};; esac); \
+    wget -O bazel $(echo "${BAZEL_URL}" | sed "s/BAZELARCH/${BAZELARCH}/g") && \
+    sha256sum -c bazel.${ARCH}.sha256
 RUN chmod +x bazel
 
-FROM gcr.io/gcp-runtimes/ubuntu_18_0_4 as runtime_deps
+FROM gcr.io/gcp-runtimes/ubuntu_20_0_4 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
@@ -111,7 +143,8 @@ RUN /google-cloud-sdk/install.sh \
     --bash-completion=false \
     --disable-installation-options
 ENV PATH=$PATH:/google-cloud-sdk/bin
-RUN gcloud auth configure-docker
+RUN gcloud auth configure-docker && \
+    gcloud components install gke-gcloud-auth-plugin
 
 FROM runtime_deps
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
@@ -123,5 +156,5 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.15 /usr/local/go /usr/local/go
+COPY --from=golang:1.17.3 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH

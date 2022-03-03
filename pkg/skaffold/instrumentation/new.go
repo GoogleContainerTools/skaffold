@@ -19,22 +19,21 @@ package instrumentation
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Init initializes the skaffold metrics and trace tooling built on top of open-telemetry (otel)
-func Init(configs []*latestV1.SkaffoldConfig, user string, opts ...TraceExporterOption) {
-	InitMeterFromConfig(configs, user)
+func Init(configs []*latestV1.SkaffoldConfig, user, deployCtx string, opts ...TraceExporterOption) {
+	InitMeterFromConfig(configs, user, deployCtx)
 	InitTraceFromEnvVar()
 }
 
 func ShutdownAndFlush(ctx context.Context, exitCode int) {
 	if err := ExportMetrics(exitCode); err != nil {
-		logrus.Debugf("error exporting metrics %v", err)
+		log.Entry(ctx).Debugf("error exporting metrics %v", err)
 	}
 	if err := TracerShutdown(ctx); err != nil {
-		logrus.Debugf("error shutting down tracer %v", err)
+		log.Entry(ctx).Debugf("error shutting down tracer %v", err)
 	}
 }

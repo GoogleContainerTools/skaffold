@@ -22,6 +22,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -104,6 +105,7 @@ func (m *mockConfig) DefaultRepo() *string {
 	}
 	return nil
 }
+func (m *mockConfig) MultiLevelRepo() *bool { return nil }
 func (m *mockConfig) BuildConcurrency() int { return -1 }
 
 type mockPipelineBuilder struct {
@@ -122,6 +124,10 @@ func (m *mockPipelineBuilder) PostBuild(ctx context.Context, out io.Writer) erro
 func (m *mockPipelineBuilder) Concurrency() int { return m.concurrency }
 
 func (m *mockPipelineBuilder) Prune(context.Context, io.Writer) error { return nil }
+
+func (m *mockPipelineBuilder) PushImages() bool { return false }
+
+func (m *mockPipelineBuilder) SupportedPlatforms() platform.Matcher { return platform.All }
 
 func newMockPipelineBuilder(p latestV1.Pipeline) (PipelineBuilder, error) {
 	switch {

@@ -750,15 +750,19 @@ func TestNewSyncItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, docker.Config) (string, error) { return test.workingDir, nil })
-			t.Override(&SyncMap, func(*latestV1.Artifact, docker.Config) (map[string][]string, error) { return test.dependencies, nil })
-			t.Override(&Labels, func(string, docker.Config) (map[string]string, error) { return test.labels, nil })
+			t.Override(&WorkingDir, func(context.Context, string, docker.Config) (string, error) { return test.workingDir, nil })
+			t.Override(&SyncMap, func(context.Context, *latestV1.Artifact, docker.Config) (map[string][]string, error) {
+				return test.dependencies, nil
+			})
+			t.Override(&Labels, func(context.Context, string, docker.Config) (map[string]string, error) { return test.labels, nil })
 			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latestV1.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
 				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
 			})
 
 			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, &mockConfig{}, 0)
-
+			if test.expected != nil {
+				test.expected.Artifact = test.artifact
+			}
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
@@ -848,7 +852,7 @@ func TestIntersect(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, err := intersect(test.context, test.workingDir, test.syncRules, test.files)
+			actual, err := intersect(context.TODO(), test.context, test.workingDir, test.syncRules, test.files)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -860,7 +864,7 @@ type TestCmdRecorder struct {
 	err  error
 }
 
-func (t *TestCmdRecorder) RunCmd(cmd *exec.Cmd) error {
+func (t *TestCmdRecorder) RunCmd(ctx context.Context, cmd *exec.Cmd) error {
 	if t.err != nil {
 		return t.err
 	}
@@ -868,11 +872,11 @@ func (t *TestCmdRecorder) RunCmd(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
-	return nil, t.RunCmd(cmd)
+func (t *TestCmdRecorder) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	return nil, t.RunCmd(ctx, cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec.Cmd {
+func fakeCmd(ctx context.Context, _ v1.Pod, _ v1.Container, files syncMap) *exec.Cmd {
 	var args []string
 
 	for src, dsts := range files {
@@ -887,9 +891,6 @@ func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec
 var pod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
-		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold",
-		},
 	},
 	Status: v1.PodStatus{
 		Phase: v1.PodRunning,
@@ -907,9 +908,6 @@ var pod = &v1.Pod{
 var nonRunningPod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
-		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold",
-		},
 	},
 	Status: v1.PodStatus{
 		Phase: v1.PodPending,
@@ -984,11 +982,11 @@ func TestPerform(t *testing.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
 
 			t.Override(&util.DefaultExecCommand, cmdRecord)
-			t.Override(&client.Client, func() (kubernetes.Interface, error) {
+			t.Override(&client.Client, func(string) (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(test.pod), test.clientErr
 			})
 
-			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
+			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""}, "")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
@@ -1065,7 +1063,7 @@ func TestSyncMap(t *testing.T) {
 			t.Override(&docker.RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().WriteFiles(test.files).Chdir()
 
-			syncMap, err := SyncMap(&latestV1.Artifact{ArtifactType: test.artifactType}, nil)
+			syncMap, err := SyncMap(context.Background(), &latestV1.Artifact{ArtifactType: test.artifactType}, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedMap, syncMap)
@@ -1075,7 +1073,7 @@ func TestSyncMap(t *testing.T) {
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(image string, _ docker.Config) (*registryv1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(context.Context, string, docker.Config) (*registryv1.ConfigFile, error) {
 	return &registryv1.ConfigFile{}, nil
 }
 

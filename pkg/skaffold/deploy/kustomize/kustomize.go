@@ -30,19 +30,27 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -100,27 +108,34 @@ type secretGenerator struct {
 type Deployer struct {
 	*latestV1.KustomizeDeploy
 
-	accessor access.Accessor
-	debugger debug.Debugger
-	logger   log.Logger
+	accessor      access.Accessor
+	logger        log.Logger
+	imageLoader   loader.ImageLoader
+	debugger      debug.Debugger
+	statusMonitor kstatus.Monitor
+	syncer        sync.Syncer
+	hookRunner    hooks.Runner
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact
+	originalImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubectl             kubectl.CLI
 	insecureRegistries  map[string]bool
 	labels              map[string]string
 	globalConfig        string
 	useKubectlKustomize bool
+
+	namespaces *[]string
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KustomizeDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
@@ -129,18 +144,32 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.C
 	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	podSelector := kubernetes.NewImageList()
+	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+	if err != nil {
+		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
+	}
+	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
-		accessor:            provider.Accessor.GetKubernetesAccessor(podSelector),
-		debugger:            provider.Debugger.GetKubernetesDebugger(podSelector),
-		logger:              provider.Logger.GetKubernetesLogger(podSelector),
+		namespaces:          &namespaces,
+		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		hookRunner:          hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
+		logger:              logger,
+		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:              component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
-		labels:              labels,
+		labels:              labeller.Labels(),
 		useKubectlKustomize: useKubectlKustomize,
-	}, podSelector, nil
+	}, nil
+}
+
+func (k *Deployer) trackNamespaces(namespaces []string) {
+	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -155,6 +184,18 @@ func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
 }
 
+func (k *Deployer) GetStatusMonitor() status.Monitor {
+	return k.statusMonitor
+}
+
+func (k *Deployer) GetSyncer() sync.Syncer {
+	return k.syncer
+}
+
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
+}
+
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
 	k.logger.RegisterArtifacts(artifacts)
@@ -165,6 +206,30 @@ func kustomizeBinaryExists() bool {
 	_, err := exec.LookPath("kustomize")
 
 	return err == nil
+}
+
+func (k *Deployer) HasRunnableHooks() bool {
+	return len(k.KustomizeDeploy.LifecycleHooks.PreHooks) > 0 || len(k.KustomizeDeploy.LifecycleHooks.PostHooks) > 0
+}
+
+func (k *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
+	if err := k.hookRunner.RunPreHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
+}
+
+func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PostHooks")
+	if err := k.hookRunner.RunPostHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
 }
 
 // Check that kubectl version is valid to use kubectl kustomize
@@ -178,21 +243,35 @@ func kubectlVersionCheck(kubectl kubectl.CLI) bool {
 }
 
 // Deploy runs `kubectl apply` on the manifest generated by kustomize.
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kustomize",
 	})
+
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := kubernetes.FailIfClusterIsNotReachable(k.kubectl.KubeContext); err != nil {
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
 	manifests, err := k.renderManifests(childCtx, out, builds)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	if len(manifests) == 0 {
 		endTrace()
-		return nil, nil
+		return nil
+	}
+	endTrace()
+
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
+	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
 	}
 	endTrace()
 
@@ -207,20 +286,22 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
 	if err := k.kubectl.WaitForDeletions(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 	endTrace()
 
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_Apply")
 	if err := k.kubectl.Apply(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, err
+		return err
 	}
 
 	k.TrackBuildArtifacts(builds)
+	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 
-	return namespaces, nil
+	k.trackNamespaces(namespaces)
+	return nil
 }
 
 func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []graph.Artifact) (manifest.ManifestList, error) {
@@ -263,7 +344,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kustomize",
 	})
@@ -271,7 +352,12 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-
+	if dryRun {
+		for _, manifest := range manifests {
+			output.White.Fprintf(out, "---\n%s", manifest)
+		}
+		return nil
+	}
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return err
 	}
@@ -281,9 +367,13 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Dependencies lists all the files that describe what needs to be deployed.
 func (k *Deployer) Dependencies() ([]string, error) {
-	deps := util.NewStringSet()
+	deps := stringset.New()
 	for _, kustomizePath := range k.KustomizePaths {
-		depsForKustomization, err := DependenciesForKustomization(kustomizePath)
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
 		if err != nil {
 			return nil, userErr(err)
 		}
@@ -303,6 +393,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	k.statusMonitor.RegisterDeployManifests(manifests)
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
 	defer endTrace()
@@ -354,11 +445,16 @@ func (k *Deployer) readManifests(ctx context.Context) (manifest.ManifestList, er
 		var out []byte
 		var err error
 
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+
 		if k.useKubectlKustomize {
-			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, kustomizePath))
+			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, expandedKustomizePath))
 		} else {
-			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, kustomizePath)...)...)
-			out, err = util.RunCmdOut(cmd)
+			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, expandedKustomizePath)...)...)
+			out, err = util.RunCmdOut(ctx, cmd)
 		}
 
 		if err != nil {

@@ -42,6 +42,7 @@ func LogMetaEvent() {
 func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID string) *proto.Metadata {
 	m := &proto.Metadata{
 		Build:  &proto.BuildMetadata{},
+		Render: &proto.RenderMetadata{},
 		Deploy: &proto.DeployMetadata{},
 		RunID:  runID,
 	}
@@ -75,6 +76,7 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string, runID
 			Cluster:   getClusterType(kubeContext),
 		}
 	}
+	// TODO(v2 render): Add the renderMetadata initialization once the pipeline is switched to latestV2.Pipeline
 	return m
 }
 
@@ -82,7 +84,8 @@ func getArtifacts(b latestV1.BuildConfig) []*proto.BuildMetadata_Artifact {
 	result := []*proto.BuildMetadata_Artifact{}
 	for _, a := range b.Artifacts {
 		artifact := &proto.BuildMetadata_Artifact{
-			Name: a.ImageName,
+			Name:    a.ImageName,
+			Context: a.Workspace,
 		}
 		switch {
 		case a.BazelArtifact != nil:
@@ -93,10 +96,14 @@ func getArtifacts(b latestV1.BuildConfig) []*proto.BuildMetadata_Artifact {
 			artifact.Type = proto.BuilderType_CUSTOM
 		case a.DockerArtifact != nil:
 			artifact.Type = proto.BuilderType_DOCKER
+			artifact.Dockerfile = a.DockerArtifact.DockerfilePath
 		case a.JibArtifact != nil:
 			artifact.Type = proto.BuilderType_JIB
 		case a.KanikoArtifact != nil:
 			artifact.Type = proto.BuilderType_KANIKO
+			artifact.Dockerfile = a.KanikoArtifact.DockerfilePath
+		case a.KoArtifact != nil:
+			artifact.Type = proto.BuilderType_KO
 		default:
 			artifact.Type = proto.BuilderType_UNKNOWN_BUILDER_TYPE
 		}

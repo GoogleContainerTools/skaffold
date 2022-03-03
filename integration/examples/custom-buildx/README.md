@@ -1,5 +1,7 @@
 ### Example: use the custom builder with `docker buildx`
 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_open_in_editor=README.md&cloudshell_workspace=examples/custom-buildx)
+
 [Docker Buildx](https://github.com/docker/buildx#buildx) is an
 experimental feature for building container images for multiple
 platforms.  This example shows how `docker buildx` can be used as
@@ -27,7 +29,7 @@ cluster.
 ##### Step 1: Obtain the example
 
 First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold)
-and navigate to the [`custom-buildx` example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom) for sample code:
+and navigate to the [`custom-buildx` example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom) for sample code:
 
 ```shell
 $ git clone https://github.com/GoogleContainerTools/skaffold

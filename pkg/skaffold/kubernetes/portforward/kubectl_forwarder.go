@@ -25,9 +25,9 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,16 +36,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type EntryForwarder interface {
+	Start(io.Writer)
 	Forward(parentCtx context.Context, pfe *portForwardEntry) error
 	Terminate(p *portForwardEntry)
 }
 
 type KubectlForwarder struct {
+	started int32
 	out     io.Writer
 	kubectl *kubectl.CLI
 }
@@ -66,24 +69,46 @@ var (
 	waitErrorLogs       = 1 * time.Second
 )
 
-// Forward port-forwards a pod using kubectl port-forward in the background
+func (k *KubectlForwarder) Start(out io.Writer) {
+	atomic.StoreInt32(&k.started, 1)
+	k.out = out
+}
+
+// Forward port-forwards a pod using kubectl port-forward in the background.
 // It kills the command on errors in the kubectl port-forward log
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
 	errChan := make(chan error, 1)
 	go k.forward(parentCtx, pfe, errChan)
-	return <-errChan
+	l := log.Entry(parentCtx)
+	resourceName := ""
+	if pfe != nil {
+		resourceName = pfe.resource.Name
+	}
+	l.Tracef("KubectlForwarder.Forward(%s): waiting on errChan", resourceName)
+	select {
+	case <-parentCtx.Done():
+		l.Tracef("KubectlForwarder.Forward(%s): parentCtx canceled, returning nil error", resourceName)
+		return nil
+	case err := <-errChan:
+		l.Tracef("KubectlForwarder.Forward(%s): got error on errChan, returning: %+v", resourceName, err)
+		return err
+	}
 }
 
-func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry, errChan chan error) {
+func (k *KubectlForwarder) forward(ctx context.Context, pfe *portForwardEntry, errChan chan error) {
+	if atomic.LoadInt32(&k.started) == 0 {
+		errChan <- fmt.Errorf("Forward() called before kubectl forwarder was started")
+		return
+	}
 	var notifiedUser bool
 	defer deferFunc()
 
 	for {
 		pfe.terminationLock.Lock()
 		if pfe.terminated {
-			logrus.Debugf("port forwarding %v was cancelled...", pfe)
+			log.Entry(ctx).Debugf("port forwarding %v was cancelled...", pfe)
 			pfe.terminationLock.Unlock()
 			errChan <- nil
 			return
@@ -104,23 +129,23 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			notifiedUser = false
 		}
 
-		ctx, cancel := context.WithCancel(parentCtx)
+		ctx, cancel := context.WithCancel(ctx)
 		pfe.cancel = cancel
 
-		args := portForwardArgs(ctx, pfe)
+		args := portForwardArgs(ctx, k.kubectl.KubeContext, pfe)
 		var buf bytes.Buffer
 		cmd := k.kubectl.CommandWithStrictCancellation(ctx, "port-forward", args...)
 		cmd.Stdout = &buf
 		cmd.Stderr = &buf
 
-		logrus.Debugf("Running command: %s", cmd.Args)
+		log.Entry(ctx).Debugf("Running command: %s", cmd.Args)
 		if err := cmd.Start(); err != nil {
 			if ctx.Err() == context.Canceled {
-				logrus.Debugf("couldn't start %v due to context cancellation", pfe)
+				log.Entry(ctx).Debugf("couldn't start %v due to context cancellation", pfe)
 				return
 			}
 			// Retry on exit at Start()
-			logrus.Debugf("error starting port forwarding %v: %s, output: %s", pfe, err, buf.String())
+			log.Entry(ctx).Debugf("error starting port forwarding %v: %s, output: %s", pfe, err, buf.String())
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
@@ -129,14 +154,14 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		go k.monitorLogs(ctx, &buf, cmd, pfe, errChan)
 		if err := cmd.Wait(); err != nil {
 			if ctx.Err() == context.Canceled {
-				logrus.Debugf("terminated %v due to context cancellation", pfe)
+				log.Entry(ctx).Debugf("terminated %v due to context cancellation", pfe)
 				return
 			}
 			// To make sure that the log monitor gets cleared up
 			cancel()
 
 			s := buf.String()
-			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, s)
+			log.Entry(ctx).Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, s)
 			if !strings.Contains(s, "address already in use") {
 				select {
 				case errChan <- fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, s):
@@ -148,19 +173,19 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 	}
 }
 
-func portForwardArgs(ctx context.Context, pfe *portForwardEntry) []string {
+func portForwardArgs(ctx context.Context, kubeContext string, pfe *portForwardEntry) []string {
 	args := []string{"--pod-running-timeout", "1s", "--namespace", pfe.resource.Namespace}
 
 	_, disableServiceForwarding := os.LookupEnv("SKAFFOLD_DISABLE_SERVICE_FORWARDING")
 	switch {
 	case pfe.resource.Type == "service" && !disableServiceForwarding:
 		// Services need special handling: https://github.com/GoogleContainerTools/skaffold/issues/4522
-		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port)
+		podName, remotePort, err := findNewestPodForSvc(ctx, kubeContext, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port)
 		if err == nil {
 			args = append(args, fmt.Sprintf("pod/%s", podName), fmt.Sprintf("%d:%d", pfe.localPort, remotePort))
 			break
 		}
-		logrus.Warnf("could not map pods to service %s/%s/%s: %v", pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port.String(), err)
+		log.Entry(ctx).Warnf("could not map pods to service %s/%s/%s: %v", pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port.String(), err)
 		fallthrough // and let kubectl try to handle it
 
 	default:
@@ -175,7 +200,7 @@ func portForwardArgs(ctx context.Context, pfe *portForwardEntry) []string {
 
 // Terminate terminates an existing kubectl port-forward command using SIGTERM
 func (*KubectlForwarder) Terminate(p *portForwardEntry) {
-	logrus.Debugf("Terminating port-forward %v", p)
+	log.Entry(context.TODO()).Debugf("Terminating port-forward %v", p)
 
 	p.terminationLock.Lock()
 	defer p.terminationLock.Unlock()
@@ -204,15 +229,15 @@ func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *k
 				continue
 			}
 
-			logrus.Tracef("[port-forward] %s", s)
+			log.Entry(ctx).Tracef("[port-forward] %s", s)
 
 			if strings.Contains(s, "error forwarding port") ||
 				strings.Contains(s, "unable to forward") ||
 				strings.Contains(s, "error upgrading connection") {
 				// kubectl is having an error. retry the command
-				logrus.Tracef("killing port forwarding %v", p)
+				log.Entry(ctx).Tracef("killing port forwarding %v", p)
 				if err := cmd.Terminate(); err != nil {
-					logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
+					log.Entry(ctx).Tracef("failed to kill port forwarding %v, err: %s", p, err)
 				}
 				select {
 				case err <- fmt.Errorf("port forwarding %v got terminated: output: %s", p, s):
@@ -232,8 +257,8 @@ func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *k
 // findNewestPodForService queries the cluster to find a pod that fulfills the given service, giving
 // preference to pods that were most recently created.  This is in contrast to the selection algorithm
 // used by kubectl (see https://github.com/GoogleContainerTools/skaffold/issues/4522 for details).
-func findNewestPodForService(ctx context.Context, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
-	client, err := kubernetesclient.Client()
+func findNewestPodForService(ctx context.Context, kubeContext, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
+	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return "", -1, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -265,17 +290,17 @@ func findNewestPodForService(ctx context.Context, ns, serviceName string, servic
 	}
 	sort.Slice(pods, newestPodsFirst(pods))
 
-	if logrus.IsLevelEnabled((logrus.TraceLevel)) {
+	if log.IsTraceLevelEnabled() {
 		var names []string
 		for _, p := range pods {
 			names = append(names, fmt.Sprintf("(pod:%q phase:%v created:%v)", p.Name, p.Status.Phase, p.CreationTimestamp))
 		}
-		logrus.Tracef("service %s/%s maps to %d pods: %v", serviceName, servicePort.String(), len(pods), names)
+		log.Entry(ctx).Tracef("service %s/%s maps to %d pods: %v", serviceName, servicePort.String(), len(pods), names)
 	}
 
 	for _, p := range pods {
 		if targetPort := findTargetPort(svcPort, p); targetPort > 0 {
-			logrus.Debugf("Forwarding service %s/%s to pod %s/%d", serviceName, servicePort.String(), p.Name, targetPort)
+			log.Entry(ctx).Debugf("Forwarding service %s/%s to pod %s/%d", serviceName, servicePort.String(), p.Name, targetPort)
 			return p.Name, targetPort, nil
 		}
 	}

@@ -53,7 +53,7 @@ You can define dependency on other artifacts using the `requires` keyword. This 
 
 **Example**
 
-See the [Skaffold-Jib demo project](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/jib/)
+See the [Skaffold-Jib demo project](https://github.com/GoogleContainerTools/skaffold/blob/main/examples/jib/)
 for an example.
 
 ### Multi-Module Projects
@@ -106,3 +106,29 @@ Following configuration instructs skaffold to build
  `gcr.io/k8s-skaffold/project1` with Google Cloud Build using Jib builder:
 
 {{% readfile file="samples/builders/gcb-jib.yaml" %}}
+
+## Advanced usage
+
+### Additional arguments
+
+The `jib` build artifact supports an [`args`](https://skaffold.dev/docs/references/yaml/#build-artifacts-jib-args) field to provide additional arguments to the Maven or Gradle command-line.  For example, a Gradle user may choose to use:
+```
+artifacts:
+- image: jib-gradle-image
+  jib:
+    args: [--no-daemon]
+```
+
+### Using the `custom` builder
+
+Some users may have more complicated builds that may be better suited to using the [`custom` builder](https://skaffold.dev/docs/pipeline-stages/builders/custom/).  For example, the `jib` builder normally invokes the `prepare-package` goal rather than `package` as Jib packages the `.class` files rather than package in the jar.  But some plugins require the `package` goal.
+```
+artifacts:
+- image: jib-gradle-image
+  custom:
+    buildCommand: mvn -Dimage=$IMAGE package $(if [ $PUSH_IMAGE = true ]; then echo jib:build; else echo jib:dockerBuild; fi)
+    dependencies:
+      paths:
+      - src/**
+```
+

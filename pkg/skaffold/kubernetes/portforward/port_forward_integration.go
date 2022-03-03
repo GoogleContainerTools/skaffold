@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -49,11 +49,11 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 	em.forwardPortForwardEntry(ctx, os.Stdout, pfe)
 	em.Stop()
 
-	logrus.Info("waiting for the same port to become available...")
+	log.Entry(ctx).Info("waiting for the same port to become available...")
 	if err := wait.Poll(100*time.Millisecond, 5*time.Second, func() (done bool, err error) {
 		nextPort := retrieveAvailablePort(util.Loopback, localPort, &em.forwardedPorts)
 
-		logrus.Infof("next port %d", nextPort)
+		log.Entry(ctx).Infof("next port %d", nextPort)
 
 		// theoretically we should be able to bind to the very same port
 		// this might get flaky when multiple tests are ran. However

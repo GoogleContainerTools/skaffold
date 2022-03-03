@@ -49,7 +49,7 @@ const (
 // 		2. A container to run hugo server
 // and one emptyDir volume to hold the git repository
 func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP string) (*appsv1.Deployment, error) {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -125,7 +125,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 
 // WaitForDeploymentToStabilize waits till the Deployment has stabilized
 func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}

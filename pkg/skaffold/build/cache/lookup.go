@@ -22,15 +22,15 @@ import (
 	"io/ioutil"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latestV1.Artifact) []cacheDetails {
+func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV1.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
 	// Create a new `artifactHasher` on every new dev loop.
 	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
@@ -44,7 +44,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], h)
+			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], platforms, h)
 			wg.Done()
 		}()
 	}
@@ -53,13 +53,13 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, h artifactHasher) cacheDetails {
+func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, platforms platform.Resolver, h artifactHasher) cacheDetails {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "lookup_CacheLookupOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
-	hash, err := h.hash(ctx, a)
+	hash, err := h.hash(ctx, a, platforms)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
@@ -69,7 +69,7 @@ func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, h 
 	c.cacheMutex.RUnlock()
 	if !cacheHit {
 		if entry, err = c.tryImport(ctx, a, tag, hash); err != nil {
-			logrus.Debugf("Could not import artifact from Docker, building instead (%s)", err)
+			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
 			return needsBuilding{hash: hash}
 		}
 	}
@@ -141,13 +141,13 @@ func (c *cache) tryImport(ctx context.Context, a *latestV1.Artifact, tag string,
 	}
 
 	if !c.client.ImageExists(ctx, tag) {
-		logrus.Debugf("Importing artifact %s from docker registry", tag)
+		log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
 		err := c.client.Pull(ctx, ioutil.Discard, tag)
 		if err != nil {
 			return entry, err
 		}
 	} else {
-		logrus.Debugf("Importing artifact %s from local docker", tag)
+		log.Entry(ctx).Debugf("Importing artifact %s from local docker", tag)
 	}
 
 	imageID, err := c.client.ImageID(ctx, tag)
@@ -160,7 +160,7 @@ func (c *cache) tryImport(ctx context.Context, a *latestV1.Artifact, tag string,
 	}
 
 	if digest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
-		logrus.Debugf("Added digest for %s to cache entry", tag)
+		log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
 		entry.Digest = digest
 	}
 

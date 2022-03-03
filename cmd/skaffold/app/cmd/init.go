@@ -51,7 +51,7 @@ var initEntrypoint = initializer.DoInit
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit() *cobra.Command {
 	return NewCmd("init").
-		WithDescription("[alpha] Generate configuration for deploying an application").
+		WithDescription("Generate configuration for deploying an application").
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &skipBuild, Name: "skip-build", DefValue: false, Usage: "Skip generating build artifacts in Skaffold config", IsEnum: true},
@@ -63,9 +63,9 @@ func NewCmdInit() *cobra.Command {
 			{Value: &cliKubernetesManifests, Name: "kubernetes-manifest", FlagAddMethod: "StringArrayVar", Shorthand: "k", DefValue: []string{}, Usage: "A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml"},
 			{Value: &analyze, Name: "analyze", DefValue: false, Usage: "Print all discoverable Dockerfiles and images in JSON format to stdout", IsEnum: true},
 			{Value: &enableNewInitFormat, Name: "XXenableNewInitFormat", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
-			{Value: &enableJibInit, Name: "XXenableJibInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableJibInit, Name: "XXenableJibInit", DefValue: true, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &enableJibGradleInit, Name: "XXenableJibGradleInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
-			{Value: &enableBuildpacksInit, Name: "XXenableBuildpacksInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableBuildpacksInit, Name: "XXenableBuildpacksInit", DefValue: true, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &buildpacksBuilder, Name: "XXdefaultBuildpacksBuilder", DefValue: "gcr.io/buildpacks/builder:v1", Usage: "", Hidden: true},
 			{Value: &enableManifestGeneration, Name: "generate-manifests", DefValue: false, Usage: "Allows skaffold to try and generate basic kubernetes resources to get your project started", IsEnum: true},
 		}).

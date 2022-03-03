@@ -3,11 +3,14 @@ title: "Quickstart"
 linkTitle: "Quickstart"
 weight: 20
 ---
+{{% tabs %}}
 
-Follow this tutorial to learn about Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
+{{% tab "STANDALONE" %}}
+
+Follow this tutorial if you're using the Skaffold [standalone binary]({{< relref "../install/#standalone-binary" >}}). It walks through running Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
 and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)! 
 
-This tutorial uses minikube as Skaffold knows to build the app using the Docker daemon hosted
+This tutorial uses minikube as Skaffold knows how to build the app using the Docker daemon hosted
 inside minikube and thus avoiding any need for a registry to host the app's container images.
 
 
@@ -26,22 +29,19 @@ In this quickstart, you will:
 
 ## Set up
 
-{{< alert title="New!" >}}
-
-Skip this setup step by using Google Cloud Platform's [_Cloud Shell_](http://cloud.google.com/shell),
-which provides a [browser-based terminal/CLI and editor](https://cloud.google.com/shell#product-demo).
-Cloud Shell comes with Skaffold, Minikube, and Docker pre-installed, and is free
-(requires a [Google Account](https://accounts.google.com/SignUp)).
-
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_git_repo=https%3A%2F%2Fgithub.com%2FGoogleContainerTools%2Fskaffold&cloudshell_working_dir=examples%2Fgetting-started)
-
-{{< /alert >}}
-
 This tutorial requires Skaffold, Minikube, and Kubectl.
 
 * [Install Skaffold]({{< relref "/docs/install" >}})
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * [Install minikube](https://minikube.sigs.k8s.io/docs/start/)
+
+### Start Minikube
+
+```
+minikube start --profile custom
+skaffold config set --global local-cluster true
+eval $(minikube -p custom docker-env)
+```
 
 {{< alert title="Note">}}
 If you want to deploy against a different Kubernetes cluster then you will have to install Docker to build this app.
@@ -170,6 +170,39 @@ is completed, you should see the changes reflected in the output in the terminal
 If you prefer building and deploying once at a time, run `skaffold run`.
 Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
 
+{{% /tab %}}
+
+{{% tab "CLOUD CODE" %}}
+
+Follow these quickstart guides if you're using Skaffold with the [Cloud Code]({{< relref "../install/#managed-ide" >}}) IDE extensions:
+
+### [Cloud Code for VSCode](https://cloud.google.com/code/docs/vscode/quickstart-k8s)
+
+Create, locally develop, debug, and run a Kubernetes application with Cloud Code for VSCode.
+
+<a href="https://cloud.google.com/code/docs/vscode/quickstart-k8s">![vscode](/images/cloud-code-quick-deploy.gif)</a>
+
+<br />
+
+### [Cloud Code for IntelliJ](https://cloud.google.com/code/docs/intellij/quickstart-k8s)
+
+Create, locally develop, debug, and run a Kubernetes application with Cloud Code for IntelliJ.
+
+<a href="https://cloud.google.com/code/docs/intellij/quickstart-k8s">![intellij](/images/intellij-quickstart-runthrough.gif)</a>
+
+{{% /tab %}}
+{{% tab "CLOUD SHELL" %}}
+
+Skip any setup by using Google Cloud Platform's [_Cloud Shell_](http://cloud.google.com/shell),
+which provides a [browser-based terminal/CLI and editor](https://cloud.google.com/shell#product-demo).
+Cloud Shell comes with Skaffold, Minikube, and Docker pre-installed, and is free
+(requires a [Google Account](https://accounts.google.com/SignUp)).
+
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ide.cloud.google.com/?walkthrough_tutorial_url=https%3A%2F%2Fwalkthroughs.googleusercontent.com%2Fcontent%2Fgke_cloud_code_create_app%2Fgke_cloud_code_create_app.md)
+
+{{% /tab %}}
+{{% /tabs %}}
+
 ## What's next
 
 For getting started with your project, see the [Getting Started With Your Project]({{<relref "/docs/workflows/getting-started-with-your-project" >}}) workflow.
@@ -181,5 +214,7 @@ To learn more about how Skaffold builds, tags, and deploys your app, see the How
 using [Builders]({{<relref "/docs/pipeline-stages/builders" >}}), [Taggers]({{< relref "/docs/pipeline-stages/taggers">}}), and [Deployers]({{< relref "/docs/pipeline-stages/deployers" >}}).
 
 [Skaffold Tutorials]({{< relref "/docs/tutorials" >}}) details some of the common use cases of Skaffold.
+
+Questions?  See our [Community section]({{< relref "/docs/resources#Community" >}}) for ways to get in touch.
 
 :mega: **Please fill out our [quick 5-question survey](https://forms.gle/BMTbGQXLWSdn7vEs6)** to tell us how satisfied you are with Skaffold, and what improvements we should make. Thank you! :dancers:

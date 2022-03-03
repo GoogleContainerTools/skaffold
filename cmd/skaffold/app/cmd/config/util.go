@@ -17,12 +17,12 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	kctx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -31,13 +31,13 @@ func resolveKubectlContext() {
 		return
 	}
 
-	config, err := context.CurrentConfig()
+	config, err := kctx.CurrentConfig()
 	switch {
 	case err != nil:
-		logrus.Warn("unable to retrieve current kubectl context, using global values")
+		log.Entry(context.TODO()).Warn("unable to retrieve current kubectl context, using global values")
 		global = true
 	case config.CurrentContext == "":
-		logrus.Infof("no kubectl context currently set, using global values")
+		log.Entry(context.TODO()).Info("no kubectl context currently set, using global values")
 		global = true
 	default:
 		kubecontext = config.CurrentContext

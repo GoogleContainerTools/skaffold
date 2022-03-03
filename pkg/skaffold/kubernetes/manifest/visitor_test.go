@@ -18,6 +18,7 @@ package manifest
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -29,7 +30,7 @@ type mockVisitor struct {
 	replaceWith interface{}
 }
 
-func (m *mockVisitor) Visit(o map[string]interface{}, k string, v interface{}) bool {
+func (m *mockVisitor) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
 	s := fmt.Sprintf("%+v", v)
 	if len(s) > 4 {
 		s = s[:4] + "..."
@@ -261,6 +262,115 @@ spec:
 				}
 				t.CheckDeepEqual(expectedManifests.String(), actual.String())
 			}
+		})
+	}
+}
+
+func TestWildcardedGroupKind(t *testing.T) {
+	tests := []struct {
+		description string
+		pattern     wildcardGroupKind
+		group       string
+		kind        string
+		expected    bool
+	}{
+		{
+			description: "exact match",
+			pattern:     wildcardGroupKind{Group: regexp.MustCompile("group"), Kind: regexp.MustCompile("kind")},
+			group:       "group",
+			kind:        "kind",
+			expected:    true,
+		},
+		{
+			description: "use real regexp",
+			pattern:     wildcardGroupKind{Group: regexp.MustCompile(".*"), Kind: regexp.MustCompile(".*")},
+			group:       "group",
+			kind:        "kind",
+			expected:    true,
+		},
+		{
+			description: "null group and kind should match all",
+			pattern:     wildcardGroupKind{},
+			group:       "group",
+			kind:        "kind",
+			expected:    true,
+		},
+		{
+			description: "null group should match all",
+			pattern:     wildcardGroupKind{Kind: regexp.MustCompile("kind")},
+			group:       "group",
+			kind:        "kind",
+			expected:    true,
+		},
+		{
+			description: "null kind should match all",
+			pattern:     wildcardGroupKind{Group: regexp.MustCompile("group")},
+			group:       "group",
+			kind:        "kind",
+			expected:    true,
+		},
+		{
+			description: "no match",
+			pattern:     wildcardGroupKind{Group: regexp.MustCompile("xxx"), Kind: regexp.MustCompile("xxx")},
+			group:       "group",
+			kind:        "kind",
+			expected:    false,
+		},
+		{
+			description: "no kind match",
+			pattern:     wildcardGroupKind{Group: regexp.MustCompile("group"), Kind: regexp.MustCompile("xxx")},
+			group:       "group",
+			kind:        "kind",
+			expected:    false,
+		},
+		{
+			description: "no group match",
+			pattern:     wildcardGroupKind{Group: regexp.MustCompile("xxx"), Kind: regexp.MustCompile("kind")},
+			group:       "group",
+			kind:        "kind",
+			expected:    false,
+		},
+	}
+	for _, test := range tests {
+		result := test.pattern.Matches(test.group, test.kind)
+		t.Run(test.description, func(t *testing.T) {
+			if result != test.expected {
+				t.Errorf("got %v, expected %v", result, test.expected)
+			}
+		})
+	}
+}
+
+func TestShouldTransformManifest(t *testing.T) {
+	tests := []struct {
+		manifest map[string]interface{}
+		expected bool
+	}{
+		{manifest: map[string]interface{}{}, expected: false},
+		{manifest: map[string]interface{}{"xxx": "v1", "yyy": "Pod"}, expected: false}, // non-KRM
+		{manifest: map[string]interface{}{"apiVersion": "v1", "kind": "Pod"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "apps/v1", "kind": "DaemonSet"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "apps/v1", "kind": "Deployment"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "apps/v1", "kind": "ReplicaSet"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "extensions/v1beta1", "kind": "Deployment"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "extensions/v1beta1", "kind": "DaemonSet"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "extensions/v1beta1", "kind": "ReplicaSet"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "batch/v1", "kind": "CronJob"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "batch/v1", "kind": "Job"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "serving.knative.dev/v1", "kind": "Service"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "agones.dev/v1", "kind": "Fleet"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "agones.dev/v1", "kind": "GameServer"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "argoproj.io/v1", "kind": "Rollout"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "foo.cnrm.cloud.google.com/v1", "kind": "Service"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "foo.bar.cnrm.cloud.google.com/v1", "kind": "Service"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "foo/v1", "kind": "Blah"}, expected: false},
+		{manifest: map[string]interface{}{"apiVersion": "foo.bar.cnrm.cloud.google.com/v1", "kind": "Other"}, expected: true},
+	}
+	for _, test := range tests {
+		testutil.Run(t, fmt.Sprintf("%v", test.manifest), func(t *testutil.T) {
+			result := shouldTransformManifest(test.manifest)
+			t.CheckDeepEqual(test.expected, result)
 		})
 	}
 }

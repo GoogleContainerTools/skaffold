@@ -1,3 +1,6 @@
 window.onload = function(){
-    document.getElementById('fadein').style.opacity = 1;
+    var fadeIn = document.getElementById('fadein');
+    if(fadeIn){
+        fadeIn.style.opacity = 1;
+    }
 }

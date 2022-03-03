@@ -26,7 +26,7 @@ import (
 // ConfigParsingError returns a generic config parsing error
 func ConfigParsingError(err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("error parsing skaffold configuration file: %v", err),
 			ErrCode: proto.StatusCode_CONFIG_FILE_PARSING_ERR,
 		})
@@ -35,7 +35,7 @@ func ConfigParsingError(err error) error {
 // MainConfigFileNotFoundErr specifies main configuration file not found
 func MainConfigFileNotFoundErr(file string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("unable to find configuration file %q: %v", file, err),
 			ErrCode: proto.StatusCode_CONFIG_FILE_NOT_FOUND_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -50,7 +50,7 @@ func MainConfigFileNotFoundErr(file string, err error) error {
 // DependencyConfigFileNotFoundErr specifies dependency configuration file not found
 func DependencyConfigFileNotFoundErr(depFile, parentFile string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("could not find skaffold config file %q that is referenced as a dependency in config file %q: %v", depFile, parentFile, err),
 			ErrCode: proto.StatusCode_CONFIG_DEPENDENCY_NOT_FOUND_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -66,7 +66,7 @@ func DependencyConfigFileNotFoundErr(depFile, parentFile string, err error) erro
 func BadConfigFilterErr(filter []string) error {
 	msg := fmt.Sprintf("did not find any configs matching selection %v", filter)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_BAD_FILTER_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -82,7 +82,7 @@ func BadConfigFilterErr(filter []string) error {
 func ZeroConfigsParsedErr(file string) error {
 	msg := fmt.Sprintf("failed to get any valid configs from file %q", file)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_ZERO_FOUND_ERR,
 		})
@@ -92,7 +92,7 @@ func ZeroConfigsParsedErr(file string) error {
 func DuplicateConfigNamesInSameFileErr(config, file string) error {
 	msg := fmt.Sprintf("multiple skaffold configs named %q found in file %q", config, file)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_DUPLICATE_NAMES_SAME_FILE_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -108,7 +108,7 @@ func DuplicateConfigNamesInSameFileErr(config, file string) error {
 func DuplicateConfigNamesAcrossFilesErr(config, file1, file2 string) error {
 	msg := fmt.Sprintf("skaffold config named %q found in multiple files: %q and %q", config, file1, file2)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_DUPLICATE_NAMES_ACROSS_FILES_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -123,7 +123,7 @@ func DuplicateConfigNamesAcrossFilesErr(config, file1, file2 string) error {
 // ConfigProfileActivationErr specifies that profile activation failed for this config
 func ConfigProfileActivationErr(config, file string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("failed to apply profiles to config %q defined in file %q: %v", config, file, err),
 			ErrCode: proto.StatusCode_CONFIG_APPLY_PROFILES_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -138,7 +138,7 @@ func ConfigProfileActivationErr(config, file string, err error) error {
 // ConfigSetDefaultValuesErr specifies that default values failed to be applied for this config
 func ConfigSetDefaultValuesErr(config, file string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("failed to set default values for config %q defined in file %q: %v", config, file, err),
 			ErrCode: proto.StatusCode_CONFIG_DEFAULT_VALUES_ERR,
 		})
@@ -147,7 +147,7 @@ func ConfigSetDefaultValuesErr(config, file string, err error) error {
 // ConfigSetAbsFilePathsErr specifies that substituting absolute filepaths failed for this config
 func ConfigSetAbsFilePathsErr(config, file string, err error) error {
 	return sErrors.NewError(err,
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: fmt.Sprintf("failed to set absolute filepaths for config %q defined in file %q: %v", config, file, err),
 			ErrCode: proto.StatusCode_CONFIG_FILE_PATHS_SUBSTITUTION_ERR,
 		})
@@ -157,7 +157,7 @@ func ConfigSetAbsFilePathsErr(config, file string, err error) error {
 func ConfigProfilesNotMatchedErr(profiles []string) error {
 	msg := fmt.Sprintf("profile selection %q did not match those defined in any configurations", profiles)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_PROFILES_NOT_FOUND_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -173,7 +173,7 @@ func ConfigProfilesNotMatchedErr(profiles []string) error {
 func ConfigProfileConflictErr(config, file string) error {
 	msg := fmt.Sprintf("config %q defined in file %q imported multiple times with different set of profiles", config, file)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR,
 			Suggestions: []*proto.Suggestion{
@@ -189,7 +189,7 @@ func ConfigProfileConflictErr(config, file string) error {
 func ConfigUnknownAPIVersionErr(version string) error {
 	msg := fmt.Sprintf("unknown skaffold config API version %q", version)
 	return sErrors.NewError(fmt.Errorf(msg),
-		proto.ActionableErr{
+		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_UNKNOWN_API_VERSION_ERR,
 			Suggestions: []*proto.Suggestion{

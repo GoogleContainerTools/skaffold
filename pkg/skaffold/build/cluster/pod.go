@@ -17,20 +17,28 @@ limitations under the License.
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string) (*v1.Pod, error) {
+const (
+	// kubernetes.io/arch and kubernetes.io/os are known node labels. See https://kubernetes.io/docs/reference/labels-annotations-taints/
+	nodeOperatingSystemLabel = "kubernetes.io/os"
+	nodeArchitectureLabel    = "kubernetes.io/arch"
+)
+
+func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string, platforms platform.Matcher) (*v1.Pod, error) {
 	args, err := kanikoArgs(artifact, tag, b.cfg.GetInsecureRegistries())
 	if err != nil {
 		return nil, fmt.Errorf("building args list: %w", err)
@@ -107,6 +115,25 @@ func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string) (
 	// Add Tolerations for kaniko pod setup
 	if len(b.ClusterDetails.Tolerations) > 0 {
 		pod.Spec.Tolerations = b.ClusterDetails.Tolerations
+	}
+
+	// Add nodeSelector for kaniko pod setup
+	if b.ClusterDetails.NodeSelector != nil {
+		pod.Spec.NodeSelector = b.ClusterDetails.NodeSelector
+	}
+
+	// Add nodeSelector for image target platform.
+	// Kaniko doesn't support building cross platform images, so the pod platform needs to match the image target platform.
+	if len(platforms.Platforms) == 1 {
+		if pod.Spec.NodeSelector == nil {
+			pod.Spec.NodeSelector = make(map[string]string)
+		}
+		if _, found := pod.Spec.NodeSelector[nodeArchitectureLabel]; !found {
+			pod.Spec.NodeSelector[nodeArchitectureLabel] = platforms.Platforms[0].Architecture
+		}
+		if _, found := pod.Spec.NodeSelector[nodeOperatingSystemLabel]; !found {
+			pod.Spec.NodeSelector[nodeOperatingSystemLabel] = platforms.Platforms[0].OS
+		}
 	}
 
 	// Add used-defines Volumes
@@ -249,7 +276,7 @@ func kanikoArgs(artifact *latestV1.KanikoArtifact, tag string, insecureRegistrie
 		return nil, fmt.Errorf("unable build kaniko args: %w", err)
 	}
 
-	logrus.Trace("kaniko arguments are ", strings.Join(args, " "))
+	log.Entry(context.TODO()).Trace("kaniko arguments are ", strings.Join(args, " "))
 
 	return args, nil
 }

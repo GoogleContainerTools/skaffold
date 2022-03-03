@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -90,7 +90,8 @@ profiles:
 		},
 		{
 			description:  "add to existing profile",
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p1"},
+			profile:      "p1",
+			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -149,7 +150,8 @@ profiles:
 		},
 		{
 			description:  "add to new profile",
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -218,7 +220,8 @@ profiles:
 		{
 			description:  "add to new profile in selected modules",
 			modules:      []string{"cfg1_1"},
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -279,7 +282,8 @@ profiles:
 		{
 			description:  "add to new profile in nested module",
 			modules:      []string{"cfg2"},
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			profile:      "p2",
+			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{"",
 				`apiVersion: ""
 kind: ""
@@ -336,18 +340,18 @@ profiles:
 						{Name: "p1", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
 					}}, SourceFile: pathToCfg2, SourceIndex: 0},
 			}
-			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(ctx context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				if test.err != nil {
 					return nil, test.err
 				}
 				var sets parser.SkaffoldConfigSet
-				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg2") || util.StrSliceContains(opts.ConfigurationFilter, "cfg1_1") {
+				if len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, "cfg2") || stringslice.Contains(opts.ConfigurationFilter, "cfg1_1") {
 					sets = append(sets, configSet[2])
 				}
-				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg1_0") {
+				if len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, "cfg1_0") {
 					sets = append(sets, configSet[0])
 				}
-				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg1_1") {
+				if len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, "cfg1_1") {
 					sets = append(sets, configSet[1])
 				}
 				return sets, nil
@@ -375,8 +379,8 @@ profiles:
 			})
 
 			var buf bytes.Buffer
-			err := AddGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, BuildEnvOptions: test.buildEnvOpts})
-			t.CheckNoError(err)
+			err := AddGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, Profile: test.profile, BuildEnvOptions: test.buildEnvOpts})
+			t.CheckError(test.err != nil, err)
 			if test.err == nil {
 				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)
 				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2)

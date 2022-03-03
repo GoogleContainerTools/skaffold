@@ -28,6 +28,7 @@ type GlobalConfig struct {
 type ContextConfig struct {
 	Kubecontext        string   `yaml:"kube-context,omitempty"`
 	DefaultRepo        string   `yaml:"default-repo,omitempty"`
+	MultiLevelRepo     *bool    `yaml:"multi-level-repo,omitempty"`
 	LocalCluster       *bool    `yaml:"local-cluster,omitempty"`
 	InsecureRegistries []string `yaml:"insecure-registries,omitempty"`
 	// DebugHelpersRegistry is the registry from which the debug helper images are used.
@@ -42,9 +43,15 @@ type ContextConfig struct {
 
 // SurveyConfig is the survey config information
 type SurveyConfig struct {
-	DisablePrompt *bool  `yaml:"disable-prompt,omitempty"`
-	LastTaken     string `yaml:"last-taken,omitempty"`
-	LastPrompted  string `yaml:"last-prompted,omitempty"`
+	DisablePrompt *bool         `yaml:"disable-prompt,omitempty"`
+	LastTaken     string        `yaml:"last-taken,omitempty"`
+	LastPrompted  string        `yaml:"last-prompted,omitempty"`
+	UserSurveys   []*UserSurvey `yaml:"user-surveys,omitempty"`
+}
+
+type UserSurvey struct {
+	ID    string `yaml:"id"`
+	Taken *bool  `yaml:"taken,omitempty"`
 }
 
 // UpdateConfig is the update config information

@@ -18,10 +18,11 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type cmdError struct {
@@ -52,24 +53,24 @@ var DefaultExecCommand Command = &Commander{}
 // Command is an interface used to run commands. All packages should use this
 // interface instead of calling exec.Cmd directly.
 type Command interface {
-	RunCmdOut(cmd *exec.Cmd) ([]byte, error)
-	RunCmd(cmd *exec.Cmd) error
+	RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error)
+	RunCmd(ctx context.Context, cmd *exec.Cmd) error
 }
 
-func RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
-	return DefaultExecCommand.RunCmdOut(cmd)
+func RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	return DefaultExecCommand.RunCmdOut(ctx, cmd)
 }
 
-func RunCmd(cmd *exec.Cmd) error {
-	return DefaultExecCommand.RunCmd(cmd)
+func RunCmd(ctx context.Context, cmd *exec.Cmd) error {
+	return DefaultExecCommand.RunCmd(ctx, cmd)
 }
 
 // Commander is the exec.Cmd implementation of the Command interface
 type Commander struct{}
 
 // RunCmdOut runs an exec.Command and returns the stdout and error.
-func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
-	logrus.Debugf("Running command: %s", cmd.Args)
+func (*Commander) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	log.Entry(ctx).Debugf("Running command: %s", cmd.Args)
 
 	stdout := bytes.Buffer{}
 	cmd.Stdout = &stdout
@@ -90,16 +91,16 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	}
 
 	if stderr.Len() > 0 {
-		logrus.Debugf("Command output: [%s], stderr: %s", stdout.String(), stderr.String())
+		log.Entry(ctx).Debugf("Command output: [%s], stderr: %s", stdout.String(), stderr.String())
 	} else {
-		logrus.Debugf("Command output: [%s]", stdout.String())
+		log.Entry(ctx).Debugf("Command output: [%s]", stdout.String())
 	}
 
 	return stdout.Bytes(), nil
 }
 
 // RunCmd runs an exec.Command.
-func (*Commander) RunCmd(cmd *exec.Cmd) error {
-	logrus.Debugf("Running command: %s", cmd.Args)
+func (*Commander) RunCmd(ctx context.Context, cmd *exec.Cmd) error {
+	log.Entry(ctx).Debugf("Running command: %s", cmd.Args)
 	return cmd.Run()
 }

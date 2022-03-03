@@ -19,11 +19,12 @@ package ko
 import (
 	"testing"
 
-	kobuild "github.com/google/ko/pkg/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
-func TestStub(t *testing.T) {
-	if KoScheme != kobuild.StrictScheme {
-		t.Fatal()
+func TestNewArtifactBuilderCanPublishImages(t *testing.T) {
+	b := NewArtifactBuilder(nil, true, config.RunModes.Build, nil)
+	if b.publishImages == nil {
+		t.Errorf("constructor function should populate publishImages func")
 	}
 }

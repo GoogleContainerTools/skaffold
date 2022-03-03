@@ -25,24 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
-
-// logLevel makes sure kaniko logs at least at Info level and at most Debug level (trace doesn't work with Kaniko)
-func logLevel() logrus.Level {
-	level := logrus.GetLevel()
-	if level < logrus.InfoLevel {
-		return logrus.InfoLevel
-	}
-	if level > logrus.DebugLevel {
-		return logrus.DebugLevel
-	}
-	return level
-}
 
 func streamLogs(ctx context.Context, out io.Writer, name string, pods corev1.PodInterface) func() {
 	var wg sync.WaitGroup
@@ -59,7 +47,7 @@ func streamLogs(ctx context.Context, out io.Writer, name string, pods corev1.Pod
 				Container: kaniko.DefaultContainerName,
 			}).Stream(ctx)
 			if err != nil {
-				logrus.Debugln("unable to get kaniko pod logs:", err)
+				log.Entry(ctx).Debug("unable to get kaniko pod logs:", err)
 				time.Sleep(1 * time.Second)
 				continue
 			}

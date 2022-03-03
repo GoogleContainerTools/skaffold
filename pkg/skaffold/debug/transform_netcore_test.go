@@ -19,59 +19,56 @@ package debug
 import (
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNetcoreTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
-		source      imageConfiguration
+		source      ImageConfiguration
 		launcher    string
 		result      bool
 	}{
 		{
 			description: "ASPNETCORE_URLS",
-			source:      imageConfiguration{env: map[string]string{"ASPNETCORE_URLS": "http://+:80"}},
+			source:      ImageConfiguration{Env: map[string]string{"ASPNETCORE_URLS": "http://+:80"}},
 			result:      true,
 		},
 		{
 			description: "DOTNET_RUNNING_IN_CONTAINER",
-			source:      imageConfiguration{env: map[string]string{"DOTNET_RUNNING_IN_CONTAINER": "true"}},
+			source:      ImageConfiguration{Env: map[string]string{"DOTNET_RUNNING_IN_CONTAINER": "true"}},
 			result:      true,
 		},
 		{
 			description: "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT",
-			source:      imageConfiguration{env: map[string]string{"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "true"}},
+			source:      ImageConfiguration{Env: map[string]string{"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "true"}},
 			result:      true,
 		},
 		{
 			description: "entrypoint with dotnet",
-			source:      imageConfiguration{entrypoint: []string{"dotnet", "myapp.dll"}},
+			source:      ImageConfiguration{Entrypoint: []string{"dotnet", "myapp.dll"}},
 			result:      true,
 		},
 		{
 			description: "entrypoint /bin/sh",
-			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
+			source:      ImageConfiguration{Entrypoint: []string{"/bin/sh"}},
 			result:      false,
 		},
 		{
 			description: "launcher entrypoint exec",
-			source:      imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"exec", "dotnet", "myapp.dll"}},
+			source:      ImageConfiguration{Entrypoint: []string{"launcher"}, Arguments: []string{"exec", "dotnet", "myapp.dll"}},
 			launcher:    "launcher",
 			result:      true,
 		},
 		{
 			description: "launcher entrypoint and random dotnet string",
-			source:      imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"echo", "dotnet"}},
+			source:      ImageConfiguration{Entrypoint: []string{"launcher"}, Arguments: []string{"echo", "dotnet"}},
 			launcher:    "launcher",
 			result:      false,
 		},
 		{
 			description: "nothing",
-			source:      imageConfiguration{},
+			source:      ImageConfiguration{},
 			result:      false,
 		},
 	}
@@ -82,51 +79,6 @@ func TestNetcoreTransformer_IsApplicable(t *testing.T) {
 			result := netcoreTransformer{}.IsApplicable(test.source)
 
 			t.CheckDeepEqual(test.result, result)
-		})
-	}
-}
-
-func TestNetcoreTransformerApply(t *testing.T) {
-	tests := []struct {
-		description   string
-		containerSpec v1.Container
-		configuration imageConfiguration
-		shouldErr     bool
-		result        v1.Container
-		debugConfig   annotations.ContainerDebugConfiguration
-		image         string
-	}{
-		{
-			description:   "empty",
-			containerSpec: v1.Container{},
-			configuration: imageConfiguration{},
-
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "netcore"},
-			image:       "netcore",
-			shouldErr:   false,
-		},
-		{
-			description:   "basic",
-			containerSpec: v1.Container{},
-			configuration: imageConfiguration{entrypoint: []string{"dotnet", "myapp.dll"}},
-
-			result:      v1.Container{},
-			debugConfig: annotations.ContainerDebugConfiguration{Runtime: "netcore"},
-			image:       "netcore",
-			shouldErr:   false,
-		},
-	}
-	var identity portAllocator = func(port int32) int32 {
-		return port
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := netcoreTransformer{}.Apply(&test.containerSpec, test.configuration, identity, nil)
-
-			t.CheckError(test.shouldErr, err)
-			t.CheckDeepEqual(test.result, test.containerSpec)
-			t.CheckDeepEqual(test.debugConfig, config)
-			t.CheckDeepEqual(test.image, image)
 		})
 	}
 }

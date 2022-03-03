@@ -17,6 +17,7 @@ limitations under the License.
 package git
 
 import (
+	"context"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -55,18 +56,18 @@ func TestDefaultRef(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var f *testutil.FakeCmd
 			if test.masterExists {
-				f = testutil.CmdRunOut("git ls-remote https://github.com/foo.git master", "8be3f718c015a5fe190bebf356079a25afe0ca57  refs/heads/master")
+				f = testutil.CmdRunOut("git ls-remote --heads https://github.com/foo.git master", "8be3f718c015a5fe190bebf356079a25afe0ca57  refs/heads/master")
 			} else {
-				f = testutil.CmdRunOut("git ls-remote https://github.com/foo.git master", "")
+				f = testutil.CmdRunOut("git ls-remote --heads https://github.com/foo.git master", "")
 			}
 			if test.mainExists {
-				f = f.AndRunOut("git ls-remote https://github.com/foo.git main", "8be3f718c015a5fe190bebf356079a25afe0ca58  refs/heads/main")
+				f = f.AndRunOut("git ls-remote --heads https://github.com/foo.git main", "8be3f718c015a5fe190bebf356079a25afe0ca58  refs/heads/main")
 			} else {
-				f = f.AndRunOut("git ls-remote https://github.com/foo.git main", "")
+				f = f.AndRunOut("git ls-remote --heads https://github.com/foo.git main", "")
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
-			ref, err := defaultRef("https://github.com/foo.git")
+			ref, err := defaultRef(context.Background(), "https://github.com/foo.git")
 			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, ref)
 		})
 	}
@@ -77,6 +78,7 @@ func TestSyncRepo(t *testing.T) {
 		description string
 		g           latestV1.GitInfo
 		cmds        []cmdResponse
+		syncFlag    string
 		existing    bool
 		shouldErr   bool
 		expected    string
@@ -85,17 +87,25 @@ func TestSyncRepo(t *testing.T) {
 			description: "first time repo clone succeeds",
 			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			cmds: []cmdResponse{
-				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1"},
+				{cmd: "git clone http://github.com/foo.git ./iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1"},
 			},
+			syncFlag: "always",
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
 			description: "first time repo clone fails",
 			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			cmds: []cmdResponse{
-				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1", err: errors.New("error")},
+				{cmd: "git clone http://github.com/foo.git ./iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1", err: errors.New("error")},
 			},
+			syncFlag:  "always",
 			shouldErr: true,
+		},
+		{
+			description: "first time repo clone with sync off via flag fails",
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			syncFlag:    "never",
+			shouldErr:   true,
 		},
 		{
 			description: "existing repo update succeeds",
@@ -104,10 +114,9 @@ func TestSyncRepo(t *testing.T) {
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master"},
-				{cmd: "git diff --name-only --ignore-submodules HEAD"},
-				{cmd: "git diff --name-only --ignore-submodules origin/master..."},
 				{cmd: "git reset --hard origin/master"},
 			},
+			syncFlag: "always",
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
@@ -117,6 +126,17 @@ func TestSyncRepo(t *testing.T) {
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", err: errors.New("error")},
 			},
+			syncFlag:  "always",
+			shouldErr: true,
+		},
+		{
+			description: "existing repo with no remotes fails",
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v"},
+			},
+			syncFlag:  "always",
 			shouldErr: true,
 		},
 		{
@@ -126,31 +146,42 @@ func TestSyncRepo(t *testing.T) {
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 			},
+			syncFlag: "always",
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
-			description: "existing repo with uncommitted changes and sync on fails",
-			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			description: "existing dirty repo with sync off via flag succeeds",
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
-				{cmd: "git fetch origin master"},
-				{cmd: "git diff --name-only --ignore-submodules HEAD", out: "pkg/foo\npkg/bar"},
 			},
-			shouldErr: true,
+			syncFlag: "missing",
+			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
-			description: "existing repo with unpushed commits and sync on fails",
+			description: "existing repo with uncommitted changes and sync on resets",
 			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master"},
-				{cmd: "git diff --name-only --ignore-submodules HEAD"},
-				{cmd: "git diff --name-only --ignore-submodules origin/master...", out: "pkg/foo\npkg/bar"},
 				{cmd: "git reset --hard origin/master"},
 			},
-			shouldErr: true,
+			syncFlag: "always",
+			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
+		},
+		{
+			description: "existing repo with unpushed commits and sync on resets",
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git reset --hard origin/master"},
+			},
+			syncFlag: "always",
+			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
 			description: "existing repo update fails on fetch",
@@ -160,29 +191,7 @@ func TestSyncRepo(t *testing.T) {
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master", err: errors.New("error")},
 			},
-			shouldErr: true,
-		},
-		{
-			description: "existing repo update fails on diff remote",
-			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
-			existing:    true,
-			cmds: []cmdResponse{
-				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
-				{cmd: "git fetch origin master"},
-				{cmd: "git diff --name-only --ignore-submodules HEAD"},
-				{cmd: "git diff --name-only --ignore-submodules origin/master...", err: errors.New("error")},
-			},
-			shouldErr: true,
-		},
-		{
-			description: "existing repo update fails on diff working dir",
-			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
-			existing:    true,
-			cmds: []cmdResponse{
-				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
-				{cmd: "git fetch origin master"},
-				{cmd: "git diff --name-only --ignore-submodules HEAD", err: errors.New("error")},
-			},
+			syncFlag:  "always",
 			shouldErr: true,
 		},
 		{
@@ -192,10 +201,9 @@ func TestSyncRepo(t *testing.T) {
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master"},
-				{cmd: "git diff --name-only --ignore-submodules HEAD"},
-				{cmd: "git diff --name-only --ignore-submodules origin/master..."},
 				{cmd: "git reset --hard origin/master", err: errors.New("error")},
 			},
+			syncFlag:  "always",
 			shouldErr: true,
 		},
 	}
@@ -206,7 +214,9 @@ func TestSyncRepo(t *testing.T) {
 			if test.existing {
 				td.Touch("iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl/.git/")
 			}
-			opts := config.SkaffoldOptions{RepoCacheDir: td.Root()}
+			syncRemote := &config.SyncRemoteCacheOption{}
+			_ = syncRemote.Set(test.syncFlag)
+			opts := config.SkaffoldOptions{RepoCacheDir: td.Root(), SyncRemoteCache: *syncRemote}
 			var f *testutil.FakeCmd
 			for _, v := range test.cmds {
 				if f == nil {
@@ -217,7 +227,7 @@ func TestSyncRepo(t *testing.T) {
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
-			path, err := syncRepo(test.g, opts)
+			path, err := syncRepo(context.Background(), test.g, opts)
 			var expected string
 			if !test.shouldErr {
 				expected = filepath.Join(td.Root(), test.expected)

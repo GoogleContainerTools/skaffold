@@ -17,8 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -87,6 +89,48 @@ func TestDeploy(t *testing.T) {
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
 }
 
+func TestDeployWithBuildArtifacts(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	ns, client := SetupNamespace(t)
+
+	// first build the artifacts and output to file
+	skaffold.Build("--file-output=images.json", "--default-repo=").InDir("examples/getting-started").RunOrFail(t)
+
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	skaffold.Deploy("--build-artifacts=images.json", "--default-repo=", "--load-images=true").InDir("examples/getting-started").InNs(ns.Name).RunOrFail(t)
+
+	pod := client.GetPod("getting-started")
+	testutil.CheckContains(t, "skaffold-example", pod.Spec.Containers[0].Image)
+}
+
+func TestDeployWithImages(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	ns, client := SetupNamespace(t)
+
+	// first build the artifacts and output to file
+	skaffold.Build("--file-output=artifacts.json", "--default-repo=").InDir("examples/getting-started").RunOrFail(t)
+
+	var artifacts flags.BuildOutput
+	if ba, err := ioutil.ReadFile("examples/getting-started/artifacts.json"); err != nil {
+		t.Fatal("could not read artifacts.json", err)
+	} else if err := json.Unmarshal(ba, &artifacts); err != nil {
+		t.Fatal("could not decode artifacts.json", err)
+	}
+
+	var images []string
+	for _, a := range artifacts.Builds {
+		images = append(images, a.ImageName+"="+a.Tag)
+	}
+
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	skaffold.Deploy("--images="+strings.Join(images, ","), "--default-repo=", "--load-images=true").InDir("examples/getting-started").InNs(ns.Name).RunOrFail(t)
+
+	pod := client.GetPod("getting-started")
+	testutil.CheckContains(t, "skaffold-example", pod.Spec.Containers[0].Image)
+}
+
 func TestDeployTail(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -95,6 +139,16 @@ func TestDeployTail(t *testing.T) {
 	// `--default-repo=` is used to cancel the default repo that is set by default.
 	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunLive(t)
 
+	WaitForLogs(t, out, "Hello world!")
+}
+
+func TestDeployTailDefaultNamespace(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").RunLive(t)
+
+	defer skaffold.Delete().InDir("testdata/deploy-hello-tail").RunBackground(t)
 	WaitForLogs(t, out, "Hello world!")
 }
 

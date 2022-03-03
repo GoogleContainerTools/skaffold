@@ -37,7 +37,10 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/integration/binpack"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
@@ -98,7 +101,7 @@ func Run(t *testing.T, dir, command string, args ...string) {
 
 // SetupNamespace creates a Kubernetes namespace to run a test.
 func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
-	client, err := kubernetesclient.Client()
+	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
 		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)
 	}
@@ -125,6 +128,22 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 	})
 
 	return ns, nsClient
+}
+
+func DefaultNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
+	client, err := kubernetesclient.DefaultClient()
+	if err != nil {
+		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)
+	}
+	ns, err := client.CoreV1().Namespaces().Get(context.Background(), "default", metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("getting default namespace: %s", err)
+	}
+	return ns, &NSKubernetesClient{
+		t:      t,
+		client: client,
+		ns:     ns.Name,
+	}
 }
 
 // NSKubernetesClient wraps a Kubernetes Client for a given namespace.
@@ -413,3 +432,31 @@ func WaitForLogs(t *testing.T, out io.Reader, firstMessage string, moreMessages 
 		}
 	}
 }
+
+// SetupDockerClient creates a client against the local docker daemon
+func SetupDockerClient(t *testing.T) docker.LocalDaemon {
+	kubeConfig, err := kubectx.CurrentConfig()
+	if err != nil {
+		t.Log("unable to get current cluster context: %w", err)
+		t.Logf("test might not be running against the right docker daemon")
+	}
+	kubeContext := kubeConfig.CurrentContext
+
+	client, err := docker.NewAPIClient(context.Background(), fakeDockerConfig{kubeContext: kubeContext})
+	if err != nil {
+		t.Fail()
+	}
+	return client
+}
+
+type fakeDockerConfig struct {
+	kubeContext string
+}
+
+func (d fakeDockerConfig) GetKubeContext() string                 { return d.kubeContext }
+func (d fakeDockerConfig) MinikubeProfile() string                { return "" }
+func (d fakeDockerConfig) GlobalConfig() string                   { return "" }
+func (d fakeDockerConfig) Prune() bool                            { return false }
+func (d fakeDockerConfig) ContainerDebugging() bool               { return false }
+func (d fakeDockerConfig) GetInsecureRegistries() map[string]bool { return nil }
+func (d fakeDockerConfig) Mode() config.RunMode                   { return "" }

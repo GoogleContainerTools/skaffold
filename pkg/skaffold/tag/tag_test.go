@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -97,6 +98,18 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			tagger:      customTemplateExample,
 			expected:    "test:" + dateTimeExpected + "_latest",
 		},
+		{
+			description: "error on invalid image tag",
+			imageName:   "test",
+			tagger:      &CustomTag{Tag: "bar:bar"},
+			shouldErr:   true,
+		},
+		{
+			description: "error on invalid image tag inside imageName",
+			imageName:   "test:bar:bar",
+			tagger:      &ChecksumTagger{},
+			shouldErr:   true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -108,7 +121,7 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 				ImageName: test.imageName,
 			}
 
-			tag, err := GenerateFullyQualifiedImageName(test.tagger, image)
+			tag, err := GenerateFullyQualifiedImageName(context.Background(), test.tagger, image)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

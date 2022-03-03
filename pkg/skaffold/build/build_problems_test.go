@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"google.golang.org/protobuf/testing/protocmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -31,19 +33,19 @@ func TestMakeAuthSuggestionsForRepo(t *testing.T) {
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `docker login`",
-	}, makeAuthSuggestionsForRepo(""))
+	}, makeAuthSuggestionsForRepo(""), protocmp.Transform())
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
-		Action:         "try `gcloud auth configure-docker`",
-	}, makeAuthSuggestionsForRepo("gcr.io/test"))
+		Action:         "try `gcloud auth configure-docker gcr.io`",
+	}, makeAuthSuggestionsForRepo("gcr.io/test"), protocmp.Transform())
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
-		Action:         "try `gcloud auth configure-docker`",
-	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"))
+		Action:         "try `gcloud auth configure-docker eu.gcr.io`",
+	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"), protocmp.Transform())
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
-		Action:         "try `gcloud auth configure-docker`",
-	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"))
+		Action:         "try `gcloud auth configure-docker us-docker.pkg.dev`",
+	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"), protocmp.Transform())
 }
 
 func TestBuildProblems(t *testing.T) {
@@ -58,13 +60,13 @@ func TestBuildProblems(t *testing.T) {
 		{
 			description: "Push access denied when neither default repo or global config is defined",
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
-			expected:    "Build Failed. No push access to specified image repository. Trying running with `--default-repo` flag.",
+			expected:    "Build Failed. No push access to specified image repository. Try running with `--default-repo` flag.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 				Message: "skaffold build failed: could not push image: denied: push access to resource",
 				Suggestions: []*proto.Suggestion{{
 					SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
-					Action:         "Trying running with `--default-repo` flag",
+					Action:         "Try running with `--default-repo` flag",
 				},
 				}},
 		},
@@ -72,7 +74,7 @@ func TestBuildProblems(t *testing.T) {
 			description: "Push access denied when default repo is defined",
 			optRepo:     "gcr.io/test",
 			err:         fmt.Errorf("skaffold build failed: could not push image image1 : denied: push access to resource"),
-			expected:    "Build Failed. No push access to specified image repository. Check your `--default-repo` value or try `gcloud auth configure-docker`.",
+			expected:    "Build Failed. No push access to specified image repository. Check your `--default-repo` value or try `gcloud auth configure-docker gcr.io`.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 				Message: "skaffold build failed: could not push image image1 : denied: push access to resource",
@@ -81,7 +83,7 @@ func TestBuildProblems(t *testing.T) {
 					Action:         "Check your `--default-repo` value",
 				}, {
 					SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
-					Action:         "try `gcloud auth configure-docker`",
+					Action:         "try `gcloud auth configure-docker gcr.io`",
 				},
 				},
 			},
@@ -90,7 +92,7 @@ func TestBuildProblems(t *testing.T) {
 			description: "Push access denied when global repo is defined",
 			context:     config.ContextConfig{DefaultRepo: "docker.io/global"},
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
-			expected:    "Build Failed. No push access to specified image repository. Check your default-repo setting in skaffold config or try `docker login`.",
+			expected:    "Build Failed. No push access to specified image repository. Check your default-repo setting in skaffold config or try `docker login docker.io`.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 				Message: "skaffold build failed: could not push image: denied: push access to resource",
@@ -99,7 +101,7 @@ func TestBuildProblems(t *testing.T) {
 					Action:         "Check your default-repo setting in skaffold config",
 				}, {
 					SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
-					Action:         "try `docker login`",
+					Action:         "try `docker login docker.io`",
 				},
 				},
 			},
@@ -190,7 +192,7 @@ func TestBuildProblems(t *testing.T) {
 			actual := sErrors.ShowAIError(&cfg, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(&cfg, constants.Build, test.err)
-			t.CheckDeepEqual(test.expectedAE, actualAE)
+			t.CheckDeepEqual(test.expectedAE, actualAE, protocmp.Transform())
 		})
 	}
 }

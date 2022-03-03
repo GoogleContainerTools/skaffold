@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
 type Config interface {
@@ -66,19 +66,22 @@ func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 			fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 			fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-			timeSyncMap1, err := timeToConstructSyncMap(artifact, cfg)
-			if err != nil {
-				if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-					return fmt.Errorf("construct artifact dependencies: %w", err)
+			// Only check sync map if inferred sync is configured on artifact
+			if artifact.Sync != nil && len(artifact.Sync.Infer) > 0 {
+				timeSyncMap1, err := timeToConstructSyncMap(ctx, artifact, cfg)
+				if err != nil {
+					if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
+						return fmt.Errorf("constructing inferred sync map: %w", err)
+					}
 				}
-			}
-			timeSyncMap2, err := timeToConstructSyncMap(artifact, cfg)
-			if err != nil {
-				if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-					return fmt.Errorf("construct artifact dependencies: %w", err)
+				timeSyncMap2, err := timeToConstructSyncMap(ctx, artifact, cfg)
+				if err != nil {
+					if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
+						return fmt.Errorf("constructing inferred sync map: %w", err)
+					}
+				} else {
+					fmt.Fprintf(out, " - Time to construct sync map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
 				}
-			} else {
-				fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
 			}
 
 			timeMTimes1, err := timeToComputeMTimes(deps)
@@ -110,6 +113,8 @@ func typeOfArtifact(a *latestV1.Artifact) string {
 		return "Custom artifact"
 	case a.BuildpackArtifact != nil:
 		return "Buildpack artifact"
+	case a.KoArtifact != nil:
+		return "Ko artifact"
 	default:
 		panic("Unknown artifact")
 	}
@@ -120,13 +125,13 @@ func timeToListDependencies(ctx context.Context, a *latestV1.Artifact, cfg Confi
 	g := graph.ToArtifactGraph(cfg.Artifacts())
 	sourceDependencies := graph.NewSourceDependenciesCache(cfg, nil, g)
 	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a)
-	return util.ShowHumanizeTime(time.Since(start)), paths, err
+	return timeutil.Humanize(time.Since(start)), paths, err
 }
 
-func timeToConstructSyncMap(a *latestV1.Artifact, cfg docker.Config) (string, error) {
+func timeToConstructSyncMap(ctx context.Context, a *latestV1.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
-	_, err := sync.SyncMap(a, cfg)
-	return util.ShowHumanizeTime(time.Since(start)), err
+	_, err := sync.SyncMap(ctx, a, cfg)
+	return timeutil.Humanize(time.Since(start)), err
 }
 
 func timeToComputeMTimes(deps []string) (string, error) {
@@ -135,7 +140,7 @@ func timeToComputeMTimes(deps []string) (string, error) {
 	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
 		return "nil", fmt.Errorf("computing modTimes: %w", err)
 	}
-	return util.ShowHumanizeTime(time.Since(start)), nil
+	return timeutil.Humanize(time.Since(start)), nil
 }
 
 func sizeOfDockerContext(ctx context.Context, a *latestV1.Artifact, cfg docker.Config) (int64, error) {

@@ -17,12 +17,14 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // These are the list of accepted port-forward modes.
@@ -128,7 +130,7 @@ func (p *PortForwardOptions) Replace(options []string) error {
 	p.reset()
 	for _, o := range options {
 		if err := p.Append(o); err != nil {
-			logrus.Fatal(err) // should never happen since we validated the options
+			log.Entry(context.TODO()).Fatal(err) // should never happen since we validated the options
 		}
 	}
 	return nil

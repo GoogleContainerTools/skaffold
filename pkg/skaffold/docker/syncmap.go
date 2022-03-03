@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -28,14 +29,14 @@ import (
 // SyncMap creates a map of syncable files by looking at the COPY/ADD commands in the Dockerfile.
 // All keys are relative to the Skaffold root, the destinations are absolute container paths.
 // TODO(corneliusweig) destinations are not resolved across stages in multistage dockerfiles. Is there a use-case for that?
-func SyncMap(workspace string, dockerfilePath string, buildArgs map[string]*string, cfg Config) (map[string][]string, error) {
+func SyncMap(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, cfg Config) (map[string][]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
 	// only the COPY/ADD commands from the last image are syncable
-	fts, err := readCopyCmdsFromDockerfile(true, absDockerfilePath, workspace, buildArgs, cfg)
+	fts, err := ReadCopyCmdsFromDockerfile(ctx, true, absDockerfilePath, workspace, buildArgs, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func SyncMap(workspace string, dockerfilePath string, buildArgs map[string]*stri
 // walkWorkspaceWithDestinations walks the given host directories and determines their
 // location in the container. It returns a map of host path by container destination.
 // Note: if you change this function, you might also want to modify `WalkWorkspace`.
-func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []fromTo) (map[string]string, error) {
+func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []FromTo) (map[string]string, error) {
 	dockerIgnored, err := NewDockerIgnorePredicate(workspace, excludes)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []fr
 	// Walk the workspace
 	srcByDest := make(map[string]string)
 	for _, ft := range fts {
-		absFrom := filepath.Join(workspace, ft.from)
+		absFrom := filepath.Join(workspace, ft.From)
 
 		fi, err := os.Stat(absFrom)
 		if err != nil {
@@ -99,23 +100,23 @@ func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []fr
 					return err
 				}
 
-				srcByDest[path.Join(ft.to, filepath.ToSlash(relBase))] = relPath
+				srcByDest[path.Join(ft.To, filepath.ToSlash(relBase))] = relPath
 				return nil
 			}); err != nil {
 				return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 			}
 		case mode.IsRegular():
-			ignored, err := dockerIgnored(filepath.Join(workspace, ft.from), fi)
+			ignored, err := dockerIgnored(filepath.Join(workspace, ft.From), fi)
 			if err != nil {
 				return nil, err
 			}
 
 			if !ignored {
-				if ft.toIsDir {
-					base := filepath.Base(ft.from)
-					srcByDest[path.Join(ft.to, base)] = ft.from
+				if ft.ToIsDir {
+					base := filepath.Base(ft.From)
+					srcByDest[path.Join(ft.To, base)] = ft.From
 				} else {
-					srcByDest[ft.to] = ft.from
+					srcByDest[ft.To] = ft.From
 				}
 			}
 		}

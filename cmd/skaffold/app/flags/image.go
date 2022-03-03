@@ -122,6 +122,16 @@ func convertImageToArtifact(value string) (*graph.Artifact, error) {
 	if value == "" {
 		return nil, errors.New("cannot add an empty image value")
 	}
+	if c := strings.SplitN(value, "=", 2); len(c) == 2 {
+		_, err := docker.ParseReference(c[1])
+		if err != nil {
+			return nil, err
+		}
+		return &graph.Artifact{
+			ImageName: c[0],
+			Tag:       c[1],
+		}, nil
+	}
 	parsed, err := docker.ParseReference(value)
 	if err != nil {
 		return nil, err

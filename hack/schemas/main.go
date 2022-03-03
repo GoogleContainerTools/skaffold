@@ -32,6 +32,7 @@ import (
 	"sync"
 
 	blackfriday "github.com/russross/blackfriday/v2"
+	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
@@ -48,7 +49,7 @@ var (
 
 	// patterns for enum-type values
 	enumValuePattern     = "^[ \t]*`(?P<name>[^`]+)`([ \t]*\\(default\\))?: .*$"
-	regexpEnumDefinition = regexp.MustCompile("(?m).*Valid [a-z]+ are((\\n" + enumValuePattern + ")*)")
+	regexpEnumDefinition = regexp.MustCompile("(?m).*Valid [a-z]+ are:?((\\n" + enumValuePattern + ")*)")
 	regexpEnumValues     = regexp.MustCompile("(?m)" + enumValuePattern)
 )
 
@@ -474,7 +475,23 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		Definitions: definitions,
 	}
 
-	return toJSON(schema)
+	buf, err := toJSON(schema)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := validate(buf); err != nil {
+		return nil, fmt.Errorf("invalid schema generated: %v", err.Error())
+	}
+
+	return buf, nil
+}
+
+// Validate generated schema
+func validate(data []byte) error {
+	schemaLoader := gojsonschema.NewBytesLoader(data)
+	_, err := gojsonschema.NewSchema(schemaLoader)
+	return err
 }
 
 // Make sure HTML description are not encoded

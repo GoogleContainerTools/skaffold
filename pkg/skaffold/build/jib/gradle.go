@@ -22,10 +22,10 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -39,12 +39,13 @@ var (
 // Skaffold-Jib depends on functionality introduced with Jib-Gradle 1.4.0
 const MinimumJibGradleVersion = "1.4.0"
 const MinimumJibGradleVersionForSync = "2.0.0"
+const MinimumJibGradleVersionForCrossPlatform = "3.2.0"
 
 // GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
-func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
+func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
+	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, platforms, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}
@@ -52,8 +53,8 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
+func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
+	args := GenerateGradleBuildArgs("jib", tag, artifact, platforms, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}
@@ -67,8 +68,8 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(&cmd); err != nil {
+	log.Entry(ctx).Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(ctx, &cmd); err != nil {
 		return fmt.Errorf("gradle build failed: %w", err)
 	}
 
@@ -79,11 +80,11 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 // All paths are absolute.
 func getDependenciesGradle(ctx context.Context, workspace string, a *latestV1.JibArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getDependencies(workspace, cmd, a)
+	deps, err := getDependencies(ctx, workspace, cmd, a)
 	if err != nil {
 		return nil, dependencyErr(JibGradle, workspace, err)
 	}
-	logrus.Debugf("Found dependencies for jib-gradle artifact: %v", deps)
+	log.Entry(ctx).Debugf("Found dependencies for jib-gradle artifact: %v", deps)
 	return deps, nil
 }
 
@@ -98,14 +99,21 @@ func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latestV1.
 }
 
 // GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
-func GenerateGradleBuildArgs(task string, imageName string, a *latestV1.JibArtifact, skipTests, pushImages bool, deps []*latestV1.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
-	args := gradleBuildArgsFunc(task, a, skipTests, showColors, MinimumJibGradleVersion)
+func GenerateGradleBuildArgs(task, imageName string, a *latestV1.JibArtifact, platforms platform.Matcher, skipTests, pushImages bool, deps []*latestV1.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
+	minVersion := MinimumJibGradleVersion
+	if platforms.IsCrossPlatform() {
+		minVersion = MinimumJibGradleVersionForCrossPlatform
+	}
+	args := gradleBuildArgsFunc(task, a, skipTests, showColors, minVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
 	}
 	if baseImg, found := baseImageArg(a, r, deps, pushImages); found {
 		args = append(args, baseImg)
+	}
+	if platforms.IsNotEmpty() {
+		args = append(args, fmt.Sprintf("-Djib.from.platforms=%s", platforms.String()))
 	}
 	args = append(args, "--image="+imageName)
 	return args

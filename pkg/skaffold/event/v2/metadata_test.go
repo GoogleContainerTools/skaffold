@@ -20,6 +20,8 @@ import (
 	"sort"
 	"testing"
 
+	"google.golang.org/protobuf/testing/protocmp"
+
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -52,6 +54,7 @@ func TestEmptyState(t *testing.T) {
 					Type:      proto.BuildType_LOCAL,
 					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-1"}},
 				},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster: proto.ClusterType_MINIKUBE,
 					Deployers: []*proto.DeployMetadata_Deployer{
@@ -89,6 +92,7 @@ func TestEmptyState(t *testing.T) {
 						{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-2"},
 					},
 				},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_GKE,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
@@ -112,6 +116,7 @@ func TestEmptyState(t *testing.T) {
 					Type:      proto.BuildType_GCB,
 					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_KANIKO, Name: "artifact-1"}},
 				},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{},
 				RunID:  "run-id",
 			},
@@ -127,7 +132,8 @@ func TestEmptyState(t *testing.T) {
 			},
 			cluster: "some-private",
 			expected: &proto.Metadata{
-				Build: &proto.BuildMetadata{},
+				Build:  &proto.BuildMetadata{},
+				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_OTHER,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
@@ -146,7 +152,7 @@ func TestEmptyState(t *testing.T) {
 
 			// sort and compare
 			sort.Slice(artifacts, func(i, j int) bool { return artifacts[i].Type < artifacts[j].Type })
-			t.CheckDeepEqual(metadata, test.expected)
+			t.CheckDeepEqual(metadata, test.expected, protocmp.Transform())
 		})
 	}
 }

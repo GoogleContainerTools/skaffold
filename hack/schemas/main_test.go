@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -46,6 +45,7 @@ func TestGenerators(t *testing.T) {
 		{name: "inline"},
 		{name: "inline-anyof"},
 		{name: "inline-hybrid"},
+		{name: "inline-skiptrim"},
 		{name: "integer"},
 	}
 	for _, test := range tests {
@@ -65,13 +65,34 @@ func TestGenerators(t *testing.T) {
 
 			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
 
-			schemaLoader := gojsonschema.NewBytesLoader(actual)
-			_, err = gojsonschema.NewSchema(schemaLoader)
-			t.CheckNoError(err)
-
 			if diff := cmp.Diff(string(actual), string(expected)); diff != "" {
 				t.Errorf("%T differ (-got, +want): %s\n actual:\n%s", string(expected), diff, string(actual))
 				return
+			}
+		})
+	}
+}
+
+func TestGeneratorErrors(t *testing.T) {
+	tests := []struct {
+		name          string
+		shouldErr     bool
+		expectedError string
+	}{
+		{name: "invalid-schema", shouldErr: true, expectedError: "Object has no key 'InlineStruct'"},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			input := filepath.Join("testdata", test.name, "input.go")
+
+			generator := schemaGenerator{
+				strict: false,
+			}
+
+			_, err := generator.Apply(input)
+			t.CheckError(test.shouldErr, err)
+			if test.expectedError != "" {
+				t.CheckErrorContains(test.expectedError, err)
 			}
 		})
 	}

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io/ioutil"
 	"runtime"
 	"sort"
 	"strings"
@@ -69,6 +70,7 @@ func TestUnavailablePort(t *testing.T) {
 		}
 		pfe := newPortForwardEntry(0, latestV1.PortForwardResource{}, "", "", "", "", 8080, false)
 
+		k.Start(&buf)
 		go k.Forward(context.Background(), pfe)
 
 		// wait for isPortFree to be called
@@ -233,11 +235,11 @@ func TestPortForwardArgs(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			t.Override(&findNewestPodForSvc, func(ctx context.Context, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
+			t.Override(&findNewestPodForSvc, func(ctx context.Context, kCtx, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
 				return test.servicePod, test.servicePort, test.serviceErr
 			})
 
-			args := portForwardArgs(ctx, test.input)
+			args := portForwardArgs(ctx, "", test.input)
 			t.CheckDeepEqual(test.result, args)
 		})
 	}
@@ -414,11 +416,11 @@ func TestFindNewestPodForService(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			t.Override(&client.Client, func() (kubernetes.Interface, error) {
+			t.Override(&client.Client, func(string) (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(test.clientResources...), test.clientErr
 			})
 
-			pod, port, err := findNewestPodForService(ctx, "", test.serviceName, schemautil.FromInt(test.servicePort))
+			pod, port, err := findNewestPodForService(ctx, "", "", test.serviceName, schemautil.FromInt(test.servicePort))
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPod, pod)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPort, port)
 		})
@@ -449,5 +451,55 @@ func mockPod(name string, ports []corev1.ContainerPort, creationTime time.Time) 
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,
 		},
+	}
+}
+
+func TestStartAndForward(t *testing.T) {
+	tests := []struct {
+		description string
+		startFirst  bool
+	}{
+		{
+			description: "Forward() before Start() errors",
+			startFirst:  false,
+		}, {
+			description: "Start() before Forward()",
+			startFirst:  true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(_ *testutil.T) {
+			k := &KubectlForwarder{}
+			if test.startFirst {
+				k.Start(ioutil.Discard)
+				testutil.CheckDeepEqual(t, k.started, int32(1))
+			} else {
+				err := k.Forward(context.Background(), nil)
+				testutil.CheckError(t, true, err)
+			}
+		})
+	}
+}
+
+func TestForwardReturnsNilOnContextCancelled(t *testing.T) {
+	k := NewKubectlForwarder(&kubectl.CLI{})
+	k.Start(ioutil.Discard)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{}, 1)
+	go func() {
+		pfe := newPortForwardEntry(0, latestV1.PortForwardResource{}, "", "", "", "", 8080, false)
+		err := k.Forward(ctx, pfe)
+		if err != nil {
+			t.Errorf("expected nil error, got %+v", err)
+		}
+		close(done)
+	}()
+	cancel()
+	select {
+	case <-done:
+		// expected
+	case <-time.After(3 * time.Second):
+		t.Fatalf("forwarder did not return on context cancel")
 	}
 }

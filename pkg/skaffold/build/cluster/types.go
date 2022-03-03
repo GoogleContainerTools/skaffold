@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -39,6 +40,7 @@ type Builder struct {
 	timeout       time.Duration
 	artifactStore build.ArtifactStore
 	teardownFunc  []func()
+	skipTests     bool
 }
 
 type Config interface {
@@ -48,6 +50,7 @@ type Config interface {
 	GetKubeContext() string
 	Muted() config.Muted
 	Mode() config.RunMode
+	SkipTests() bool
 }
 
 type BuilderContext interface {
@@ -69,9 +72,16 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.ClusterDetails) (*Builde
 		mode:           bCtx.Mode(),
 		timeout:        timeout,
 		artifactStore:  bCtx.ArtifactStore(),
+		skipTests:      bCtx.SkipTests(),
 	}, nil
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil
+}
+
+func (b *Builder) PushImages() bool { return true }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher {
+	return platform.All
 }

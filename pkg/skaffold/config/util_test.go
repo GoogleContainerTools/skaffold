@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -24,7 +25,13 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
+	kubeclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -33,7 +40,8 @@ import (
 func TestReadConfig(t *testing.T) {
 	baseConfig := &GlobalConfig{
 		Global: &ContextConfig{
-			DefaultRepo: "test-repository",
+			DefaultRepo:    "test-repository",
+			MultiLevelRepo: util.BoolPtr(false),
 		},
 		ContextConfigs: []*ContextConfig{
 			{
@@ -41,6 +49,7 @@ func TestReadConfig(t *testing.T) {
 				InsecureRegistries: []string{"bad.io", "worse.io"},
 				LocalCluster:       util.BoolPtr(true),
 				DefaultRepo:        "context-local-repository",
+				MultiLevelRepo:     util.BoolPtr(true),
 			},
 		},
 	}
@@ -105,11 +114,13 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 		InsecureRegistries: []string{"bad.io", "worse.io"},
 		LocalCluster:       util.BoolPtr(true),
 		DefaultRepo:        "my-private-registry",
+		MultiLevelRepo:     util.BoolPtr(true),
 	}
 	sampleConfig2 := &ContextConfig{
-		Kubecontext:  "another_context",
-		LocalCluster: util.BoolPtr(false),
-		DefaultRepo:  "my-public-registry",
+		Kubecontext:    "another_context",
+		LocalCluster:   util.BoolPtr(false),
+		DefaultRepo:    "my-public-registry",
+		MultiLevelRepo: util.BoolPtr(false),
 	}
 
 	tests := []struct {
@@ -125,6 +136,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 					InsecureRegistries: []string{"mediocre.io"},
 					LocalCluster:       util.BoolPtr(true),
 					DefaultRepo:        "my-private-registry",
+					MultiLevelRepo:     util.BoolPtr(true),
 				},
 				ContextConfigs: []*ContextConfig{
 					{
@@ -137,6 +149,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 				InsecureRegistries: []string{"mediocre.io"},
 				LocalCluster:       util.BoolPtr(true),
 				DefaultRepo:        "my-private-registry",
+				MultiLevelRepo:     util.BoolPtr(true),
 			},
 		},
 		{
@@ -181,9 +194,10 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 				},
 			},
 			expectedConfig: &ContextConfig{
-				Kubecontext:  someKubeContext,
-				LocalCluster: util.BoolPtr(false),
-				DefaultRepo:  "my-public-registry",
+				Kubecontext:    someKubeContext,
+				LocalCluster:   util.BoolPtr(false),
+				DefaultRepo:    "my-public-registry",
+				MultiLevelRepo: util.BoolPtr(false),
 			},
 		},
 		{
@@ -191,9 +205,10 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			kubecontext: someKubeContext,
 			cfg:         &GlobalConfig{Global: sampleConfig2},
 			expectedConfig: &ContextConfig{
-				Kubecontext:  someKubeContext,
-				LocalCluster: util.BoolPtr(false),
-				DefaultRepo:  "my-public-registry",
+				Kubecontext:    someKubeContext,
+				LocalCluster:   util.BoolPtr(false),
+				DefaultRepo:    "my-public-registry",
+				MultiLevelRepo: util.BoolPtr(false),
 			},
 		},
 		{
@@ -267,13 +282,19 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 
 type fakeClient struct{}
 
-func (fakeClient) IsMinikube(kubeContext string) bool        { return kubeContext == "minikube" }
-func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
+func (fakeClient) IsMinikube(ctx context.Context, kubeContext string) bool {
+	return kubeContext == "minikube"
+}
+func (fakeClient) MinikubeExec(context.Context, ...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestGetCluster(t *testing.T) {
+	var defaultRepo = "localhost:4000"
+
 	tests := []struct {
 		description string
 		cfg         *ContextConfig
+		defaultRepo StringOrUndefined
+		registry    *string
 		profile     string
 		expected    Cluster
 	}{
@@ -281,6 +302,18 @@ func TestGetCluster(t *testing.T) {
 			description: "kind",
 			cfg:         &ContextConfig{Kubecontext: "kind-other"},
 			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			description: "kind with registry config",
+			cfg:         &ContextConfig{Kubecontext: "kind-other"},
+			registry:    &defaultRepo,
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&defaultRepo)},
+		},
+		{
+			description: "kind with default-repo=localhost:4000",
+			cfg:         &ContextConfig{Kubecontext: "kind-other"},
+			defaultRepo: NewStringOrUndefined(&defaultRepo),
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false, DefaultRepo: NewStringOrUndefined(&defaultRepo)},
 		},
 		{
 			description: "kind with local-cluster=false",
@@ -358,16 +391,35 @@ func TestGetCluster(t *testing.T) {
 			cfg:         &ContextConfig{Kubecontext: "not-k3d"},
 			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
+		{
+			description: "generic cluster, default repo already defined",
+			cfg:         &ContextConfig{Kubecontext: "anything-else", DefaultRepo: "myrepo"},
+			defaultRepo: NewStringOrUndefined(&defaultRepo),
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&defaultRepo)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			ctx := context.Background()
+
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+			t.Override(&DiscoverLocalRegistry, func(context.Context, string) (*string, error) { return test.registry, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
-			cluster, _ := GetCluster("dummyname", test.profile, true)
+			cluster, _ := GetCluster(ctx, GetClusterOpts{
+				ConfigFile:      "dummyname",
+				DefaultRepo:     test.defaultRepo,
+				MinikubeProfile: test.profile,
+				DetectMinikube:  true,
+			})
 			t.CheckDeepEqual(test.expected, cluster)
 
-			cluster, _ = GetCluster("dummyname", test.profile, false)
+			cluster, _ = GetCluster(ctx, GetClusterOpts{
+				ConfigFile:      "dummyname",
+				DefaultRepo:     test.defaultRepo,
+				MinikubeProfile: test.profile,
+				DetectMinikube:  false,
+			})
 			t.CheckDeepEqual(test.expected, cluster)
 		})
 	}
@@ -451,155 +503,6 @@ func TestK3dClusterName(t *testing.T) {
 	}
 }
 
-func TestIsSurveyPromptDisabled(t *testing.T) {
-	tests := []struct {
-		description string
-		cfg         *ContextConfig
-		readErr     error
-		expected    bool
-	}{
-		{
-			description: "config disable-prompt is nil returns false",
-			cfg:         &ContextConfig{},
-		},
-		{
-			description: "config disable-prompt is true",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
-			expected:    true,
-		},
-		{
-			description: "config disable-prompt is false",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
-		},
-		{
-			description: "disable prompt is nil",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{}},
-		},
-		{
-			description: "config is nil",
-			cfg:         nil,
-		},
-		{
-			description: "config has err",
-			cfg:         nil,
-			readErr:     fmt.Errorf("error while reading"),
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, test.readErr })
-			_, actual := isSurveyPromptDisabled("dummyconfig")
-			t.CheckDeepEqual(test.expected, actual)
-		})
-	}
-}
-
-func TestLessThan(t *testing.T) {
-	tests := []struct {
-		description string
-		date        string
-		duration    time.Duration
-		expected    bool
-	}{
-		{
-			description: "date is less than 10 days from 01/30/2019",
-			date:        "2019-01-22T13:04:05Z",
-			duration:    10 * 24 * time.Hour,
-			expected:    true,
-		},
-		{
-			description: "date is not less than 10 days from 01/30/2019",
-			date:        "2019-01-19T13:04:05Z",
-			duration:    10 * 24 * time.Hour,
-		},
-		{
-			description: "date is not right format",
-			date:        "01-19=20129",
-			expected:    false,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&current, func() time.Time {
-				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
-				return t
-			})
-			t.CheckDeepEqual(test.expected, lessThan(test.date, test.duration))
-		})
-	}
-}
-
-func TestShouldDisplayPrompt(t *testing.T) {
-	tests := []struct {
-		description string
-		cfg         *ContextConfig
-		expected    bool
-	}{
-		{
-			description: "should not display prompt when prompt is disabled",
-			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
-		},
-		{
-			description: "should not display prompt when last prompted is less than 2 weeks",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-22T00:00:00Z",
-				},
-			},
-		},
-		{
-			description: "should not display prompt when last taken in less than 3 months",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2018-11-22T00:00:00Z",
-				},
-			},
-		},
-		{
-			description: "should display prompt when last prompted is before 2 weeks",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-10T00:00:00Z",
-				},
-			},
-			expected: true,
-		},
-		{
-			description: "should display prompt when last taken is before than 3 months ago",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2017-11-10T00:00:00Z",
-				},
-			},
-			expected: true,
-		},
-		{
-			description: "should not display prompt when last taken is recent than 3 months ago",
-			cfg: &ContextConfig{
-				Survey: &SurveyConfig{
-					DisablePrompt: util.BoolPtr(false),
-					LastTaken:     "2019-01-10T00:00:00Z",
-					LastPrompted:  "2019-01-10T00:00:00Z",
-				},
-			},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
-			t.Override(&current, func() time.Time {
-				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
-				return t
-			})
-			t.CheckDeepEqual(test.expected, ShouldDisplaySurveyPrompt("dummyconfig"))
-		})
-	}
-}
-
 func TestGetDefaultRepo(t *testing.T) {
 	tests := []struct {
 		description  string
@@ -638,9 +541,108 @@ func TestGetDefaultRepo(t *testing.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 
 			defaultRepo, err := GetDefaultRepo("config", test.cliValue)
-
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
+		})
+	}
+}
+
+func TestGetMultiLevelRepo(t *testing.T) {
+	tests := []struct {
+		description   string
+		cfg           *ContextConfig
+		expectedValue *bool
+		shouldErr     bool
+	}{
+		{
+			description:   "empty",
+			cfg:           &ContextConfig{},
+			expectedValue: (*bool)(nil),
+		},
+		{
+			description:   "from global config",
+			cfg:           &ContextConfig{MultiLevelRepo: util.BoolPtr(true)},
+			expectedValue: util.BoolPtr(true),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+
+			multiLevelRepo, err := GetMultiLevelRepo("config")
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedValue, multiLevelRepo)
+		})
+	}
+}
+
+func TestDiscoverLocalRegistry(t *testing.T) {
+	var defaultRepo = "localhost:4000"
+
+	tests := []struct {
+		description        string
+		registryConfigData map[string]string
+		expectedRegistry   *string
+		expectedErr        string
+	}{
+		{
+			description: "no config map",
+		},
+		{
+			description:        "missing data",
+			registryConfigData: make(map[string]string),
+			expectedErr:        "invalid local-registry-hosting ConfigMap",
+		},
+		{
+			description: "invalid data",
+			registryConfigData: map[string]string{
+				"localRegistryHosting.v1": `invalid`,
+			},
+			expectedErr: "invalid local-registry-hosting ConfigMap",
+		},
+		{
+			description: "empty data",
+			registryConfigData: map[string]string{
+				"localRegistryHosting.v1": `{}`,
+			},
+		},
+		{
+			description: "valid data",
+			registryConfigData: map[string]string{
+				"localRegistryHosting.v1": `{host: "localhost:4000"}`,
+			},
+			expectedRegistry: &defaultRepo,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			ctx := context.Background()
+			fakeKubeClient := fake.NewSimpleClientset()
+
+			if test.registryConfigData != nil {
+				configMap := &v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "local-registry-hosting",
+					},
+					Data: test.registryConfigData,
+				}
+
+				_, err := fakeKubeClient.CoreV1().ConfigMaps("kube-public").Create(ctx, configMap, metav1.CreateOptions{})
+				t.CheckError(false, err)
+			}
+
+			t.Override(&kubeclient.Client, func(kubeContext string) (kubernetes.Interface, error) { return fakeKubeClient, nil })
+
+			registry, err := DiscoverLocalRegistry(ctx, "dummyname")
+			t.CheckDeepEqual(test.expectedRegistry, registry)
+
+			if test.expectedErr != "" {
+				t.CheckErrorContains(test.expectedErr, err)
+			} else {
+				t.CheckError(false, err)
+			}
 		})
 	}
 }
@@ -693,7 +695,7 @@ kubeContexts: []`,
 			})
 
 			// update the time
-			err := UpdateGlobalSurveyTaken(cfg)
+			err := UpdateHaTSSurveyTaken(cfg)
 			t.CheckNoError(err)
 
 			actualConfig, cfgErr := ReadConfigFile(cfg)
@@ -796,16 +798,31 @@ kubeContexts: []`,
 			},
 		},
 		{
-			description: "update global context when update config last taken is in past",
+			description: "don't add LastPrompted if UpdateCheck is disabled",
 			cfg: `
 global:
-  update-config:
-    last-taken: "some date in past"
+  update-check: false
 kubeContexts: []`,
 			expectedCfg: &GlobalConfig{
 				Global: &ContextConfig{
+					UpdateCheck: util.BoolPtr(false),
+				},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "don't update LastPrompted if UpdateCheck is disabled",
+			cfg: `
+global:
+  update-check: false
+  update:
+    last-prompted: "some date"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					UpdateCheck: util.BoolPtr(false),
 					UpdateCheckConfig: &UpdateConfig{
-						LastPrompted: "2021-01-01T00:00:00Z"},
+						LastPrompted: "some date"},
 				},
 				ContextConfigs: []*ContextConfig{},
 			},
@@ -831,9 +848,8 @@ kubeContexts: []`,
 }
 
 func TestShouldDisplayUpdateMsg(t *testing.T) {
-	today, _ := time.Parse(time.RFC3339, "2021-01-01T12:04:05Z")
-	todayStr := "2021-01-01T00:00:00Z"
-	yesterday := "2020-12-22T00:00:00Z"
+	todayStr := time.Now().Format(time.RFC3339)
+	yesterday := time.Now().AddDate(0, 0, -1).Format(time.RFC3339)
 	tests := []struct {
 		description string
 		cfg         *ContextConfig
@@ -856,10 +872,81 @@ func TestShouldDisplayUpdateMsg(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
-			t.Override(&current, func() time.Time {
-				return today
-			})
 			t.CheckDeepEqual(test.expected, ShouldDisplayUpdateMsg("dummyconfig"))
+		})
+	}
+}
+
+func TestUpdateUserSurveyTaken(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         string
+		id          string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when user survey is empty",
+			id:          "foo",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{UserSurveys: []*UserSurvey{
+						{ID: "foo", Taken: util.BoolPtr(true)},
+					}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "append user survey when not nil",
+			cfg: `
+global:
+  survey:
+    user-surveys:
+      - id: "foo1"
+        taken: true
+kubeContexts: []`,
+			id: "foo2",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{
+						UserSurveys: []*UserSurvey{
+							{ID: "foo1", Taken: util.BoolPtr(true)},
+							{ID: "foo2", Taken: util.BoolPtr(true)},
+						}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update entry for a key in user survey",
+			cfg: `
+global:
+  survey:
+    user-surveys:
+      - id: "foo" 
+        taken: false
+kubeContexts: []`,
+			id: "foo",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					Survey: &SurveyConfig{
+						UserSurveys: []*UserSurvey{
+							{ID: "foo", Taken: util.BoolPtr(true)},
+						}}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := t.TempFile("config", []byte(test.cfg))
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+
+			// update the time
+			err := UpdateUserSurveyTaken(cfg, test.id)
+			t.CheckNoError(err)
+
+			actualConfig, cfgErr := ReadConfigFile(cfg)
+			t.CheckNoError(cfgErr)
+			t.CheckDeepEqual(test.expectedCfg, actualConfig)
 		})
 	}
 }

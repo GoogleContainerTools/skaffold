@@ -1411,9 +1411,8 @@
         },
         "useBuildkit": {
           "type": "boolean",
-          "description": "use BuildKit to build Docker images.",
-          "x-intellij-html-description": "use BuildKit to build Docker images.",
-          "default": "false"
+          "description": "use BuildKit to build Docker images. If unspecified, uses the Docker default.",
+          "x-intellij-html-description": "use BuildKit to build Docker images. If unspecified, uses the Docker default."
         },
         "useDockerCLI": {
           "type": "boolean",

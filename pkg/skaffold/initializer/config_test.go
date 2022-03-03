@@ -67,7 +67,7 @@ func (s stubBuildInitializer) BuildConfig() (latestV1.BuildConfig, []*latestV1.P
 	}, nil
 }
 
-func (s stubBuildInitializer) GenerateManifests(io.Writer, bool) (map[build.GeneratedArtifactInfo][]byte, error) {
+func (s stubBuildInitializer) GenerateManifests(io.Writer, bool, bool) (map[build.GeneratedArtifactInfo][]byte, error) {
 	panic("no thank you")
 }
 

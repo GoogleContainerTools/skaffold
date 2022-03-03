@@ -30,7 +30,7 @@ import (
 // a single test run.
 type Tester interface {
 	Test(context.Context, io.Writer, []graph.Artifact) error
-	TestDependencies(*latestV1.Artifact) ([]string, error)
+	TestDependencies(ctx context.Context, artifact *latestV1.Artifact) ([]string, error)
 }
 
 type Muted interface {
@@ -56,7 +56,7 @@ type FullTester struct {
 type ImageTester interface {
 	Test(ctx context.Context, out io.Writer, tag string) error
 
-	TestDependencies() ([]string, error)
+	TestDependencies(ctx context.Context) ([]string, error)
 }
 
 // ImageTesters is a collection of imageTester interfaces grouped by the target image name

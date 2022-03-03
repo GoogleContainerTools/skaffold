@@ -26,11 +26,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // for tests
@@ -43,7 +44,7 @@ func NewCmdFilter() *cobra.Command {
 
 	return NewCmd("filter").
 		Hidden(). // internal command
-		WithDescription("[alpha] Filter and transform a set of Kubernetes manifests from stdin").
+		WithDescription("Filter and transform a set of Kubernetes manifests from stdin").
 		WithLongDescription("Unlike `render`, this command does not build artifacts.").
 		WithCommonFlags().
 		WithFlags([]*Flag{
@@ -58,7 +59,7 @@ func NewCmdFilter() *cobra.Command {
 // runFilter loads the Kubernetes manifests from stdin and applies the debug transformations.
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
 func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []graph.Artifact) error {
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		manifestList, err := manifest.Load(os.Stdin)
 		if err != nil {
 			return fmt.Errorf("loading manifests: %w", err)
@@ -87,7 +88,7 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 	})
 }
 
-func getInsecureRegistries(opts config.SkaffoldOptions, configs []*latestV1.SkaffoldConfig) (map[string]bool, error) {
+func getInsecureRegistries(opts config.SkaffoldOptions, configs []util.VersionedConfig) (map[string]bool, error) {
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func getInsecureRegistries(opts config.SkaffoldOptions, configs []*latestV1.Skaf
 
 	regList = append(regList, opts.InsecureRegistries...)
 	for _, cfg := range configs {
-		regList = append(regList, cfg.Build.InsecureRegistries...)
+		regList = append(regList, cfg.(*latestV1.SkaffoldConfig).Build.InsecureRegistries...)
 	}
 	regList = append(regList, cfgRegistries...)
 	insecureRegistries := make(map[string]bool, len(regList))
