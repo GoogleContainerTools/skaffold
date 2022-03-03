@@ -83,6 +83,7 @@ endif
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
 	mkdir -p $(GOPATH)/bin
+	rm -f $(GOBIN)/$(PROJECT)
 	cp $(BUILD_DIR)/$(PROJECT) $(GOBIN)/$(PROJECT)
 
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
