@@ -369,7 +369,11 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 func (k *Deployer) Dependencies() ([]string, error) {
 	deps := stringset.New()
 	for _, kustomizePath := range k.KustomizePaths {
-		depsForKustomization, err := DependenciesForKustomization(kustomizePath)
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
 		if err != nil {
 			return nil, userErr(err)
 		}
@@ -441,10 +445,15 @@ func (k *Deployer) readManifests(ctx context.Context) (manifest.ManifestList, er
 		var out []byte
 		var err error
 
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+
 		if k.useKubectlKustomize {
-			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, kustomizePath))
+			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, expandedKustomizePath))
 		} else {
-			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, kustomizePath)...)...)
+			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, expandedKustomizePath)...)...)
 			out, err = util.RunCmdOut(ctx, cmd)
 		}
 

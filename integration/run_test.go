@@ -203,10 +203,8 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 
 			args := append(test.args, "--tail")
 			out := skaffold.Run(args...).InDir(test.dir).WithEnv(test.env).RunLive(t)
-
+			defer skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
 			WaitForLogs(t, out, test.targetLog)
-
-			skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
 		})
 	}
 }

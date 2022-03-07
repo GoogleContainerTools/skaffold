@@ -32,11 +32,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error)
+type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error)
 
 type scheduler struct {
 	artifacts       []*latestV1.Artifact
@@ -45,6 +46,7 @@ type scheduler struct {
 	logger          logAggregator
 	results         ArtifactStore
 	concurrencySem  countingSemaphore
+	reportFailure   bool
 }
 
 func newScheduler(artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilder, concurrency int, out io.Writer, store ArtifactStore) *scheduler {
@@ -55,11 +57,14 @@ func newScheduler(artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilde
 		logger:          newLogAggregator(out, len(artifacts), concurrency),
 		results:         store,
 		concurrencySem:  newCountingSemaphore(concurrency),
+
+		// avoid visual stutters from reporting failures inline and Skaffold's final command output
+		reportFailure: concurrency != 1 && len(artifacts) > 1,
 	}
 	return &s
 }
 
-func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]graph.Artifact, error) {
+func (s *scheduler) run(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver) ([]graph.Artifact, error) {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	for i := range s.artifacts {
@@ -69,7 +74,7 @@ func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]graph.Artifa
 		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
 		// Wrap in an error group so that all other builds are cancelled as soon as any one fails.
 		g.Go(func() error {
-			return s.build(gCtx, tags, i)
+			return s.build(gCtx, tags, platforms, i)
 		})
 	}
 	// print output for all artifact builds in order
@@ -81,7 +86,7 @@ func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]graph.Artifa
 	return s.results.GetArtifacts(s.artifacts)
 }
 
-func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error {
+func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver, i int) error {
 	n := s.nodes[i]
 	a := s.artifacts[i]
 	err := n.waitForDependencies(ctx)
@@ -112,19 +117,24 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	defer closeFn()
 
 	w, ctx = output.WithEventContext(ctx, w, constants.Build, a.ImageName)
-	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
+	output.Default.Fprintf(w, "Building [%s]...\n", a.ImageName)
+	finalTag, err := performBuild(ctx, w, tags, platforms, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
-		if errors.Is(ctx.Err(), context.Canceled) {
-			output.Yellow.Fprintf(w, "Canceled build for %s\n", a.ImageName)
-			eventV2.BuildCanceled(a.ImageName, err)
-		} else {
-			eventV2.BuildFailed(a.ImageName, err)
-		}
 		endTrace(instrumentation.TraceEndError(err))
-		return err
+		if errors.Is(ctx.Err(), context.Canceled) {
+			output.Yellow.Fprintf(w, "Build [%s] was canceled\n", a.ImageName)
+			eventV2.BuildCanceled(a.ImageName, err)
+			return err
+		}
+		if s.reportFailure {
+			output.Red.Fprintf(w, "Build [%s] failed: %v\n", a.ImageName, err)
+		}
+		eventV2.BuildFailed(a.ImageName, err)
+		return fmt.Errorf("build [%s] failed: %w", a.ImageName, err)
 	}
 
+	output.Default.Fprintf(w, "Build [%s] succeeded\n", a.ImageName)
 	s.results.Record(a, finalTag)
 	n.markComplete()
 	event.BuildComplete(a.ImageName)
@@ -133,7 +143,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 }
 
 // InOrder builds a list of artifacts in dependency order.
-func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]graph.Artifact, error) {
+func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV1.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]graph.Artifact, error) {
 	// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then all builds can run in parallel.
 	if concurrency == 0 {
 		concurrency = len(artifacts)
@@ -144,15 +154,18 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	s := newScheduler(artifacts, artifactBuilder, concurrency, out, store)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	return s.run(ctx, tags)
+	return s.run(ctx, tags, platforms)
 }
 
-func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latestV1.Artifact, build ArtifactBuilder) (string, error) {
-	output.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
+func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifact *latestV1.Artifact, build ArtifactBuilder) (string, error) {
 	tag, present := tags[artifact.ImageName]
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
 	}
+	pl := platforms.GetPlatforms(artifact.ImageName)
+	if pl.IsNotEmpty() {
+		output.Default.Fprintf(cw, "Target platforms: [%s]\n", pl)
+	}
 	tag = docker.SanitizeImageName(tag)
-	return build(ctx, cw, artifact, tag)
+	return build(ctx, cw, artifact, tag, pl)
 }

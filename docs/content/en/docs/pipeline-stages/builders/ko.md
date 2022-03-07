@@ -76,14 +76,8 @@ a shell, you can use this configuration:
 
 The ko builder supports building multi-platform images. The default platform
 is `linux/amd64`, but you can configure a list of platforms using the
-`platforms` configuration field, e.g.:
-
-```yaml
-    ko:
-      platforms:
-      - linux/amd64
-      - linux/arm64
-```
+artifact's `platforms` configuration field, e.g.:
+{{% readfile file="samples/builders/ko-platforms.yaml" %}}
 
 You can also supply `["all"]` as the value of `platforms`. `all` means that the
 ko builder builds images for all platforms supported by the base image.
@@ -242,6 +236,10 @@ Useful tips for existing `ko` users:
   [Skaffold image naming strategy]({{< relref "/docs/environment/image-registries" >}}).
   Skaffold removes the `ko://` prefix, if present, before determining the image
   name.
+
+- If your image references use the `ko://` prefix _and_ you are pushing the
+  images to a registry, you must set the
+  [default repo]({{< relref "/docs/environment/image-registries" >}}).
 
 - The ko builder supports reading
   [base image configuration](https://github.com/google/ko#overriding-base-images)

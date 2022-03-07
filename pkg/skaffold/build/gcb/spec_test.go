@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -49,7 +50,7 @@ func TestBuildSpecFail(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			builder := NewBuilder(&mockBuilderContext{}, &latestV1.GoogleCloudBuild{})
 
-			_, err := builder.buildSpec(context.Background(), test.artifact, "tag", "bucket", "object")
+			_, err := builder.buildSpec(context.Background(), test.artifact, "tag", platform.Matcher{}, "bucket", "object")
 
 			t.CheckError(true, err)
 		})

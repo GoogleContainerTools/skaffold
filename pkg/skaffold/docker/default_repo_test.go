@@ -19,16 +19,18 @@ package docker
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestImageReplaceDefaultRepo(t *testing.T) {
 	tests := []struct {
-		description   string
-		image         string
-		defaultRepo   string
-		expectedImage string
-		shouldErr     bool
+		description    string
+		image          string
+		defaultRepo    string
+		multiLevelRepo *bool
+		expectedImage  string
+		shouldErr      bool
 	}{
 		{
 			description:   "basic GCR concatenation",
@@ -37,10 +39,24 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "gcr.io/default/gcr.io/some/registry",
 		},
 		{
+			description:    "basic GCR concatenation without multi-level",
+			image:          "gcr.io/some/registry",
+			defaultRepo:    "gcr.io/default",
+			multiLevelRepo: util.BoolPtr(false),
+			expectedImage:  "gcr.io/default/gcr.io/some/registry",
+		},
+		{
 			description:   "basic AR concatenation",
 			image:         "github.com/org/app",
 			defaultRepo:   "us-central1-docker.pkg.dev/default",
 			expectedImage: "us-central1-docker.pkg.dev/default/github.com/org/app",
+		},
+		{
+			description:    "basic AR concatenation without multi-level",
+			image:          "github.com/org/app",
+			defaultRepo:    "us-central1-docker.pkg.dev/default",
+			multiLevelRepo: util.BoolPtr(false),
+			expectedImage:  "us-central1-docker.pkg.dev/default/github.com/org/app",
 		},
 		{
 			description:   "no default repo set",
@@ -72,6 +88,13 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_some_registry",
 		},
 		{
+			description:    "aws multi-level",
+			image:          "gcr.io/some/registry",
+			defaultRepo:    "aws_account_id.dkr.ecr.region.amazonaws.com",
+			multiLevelRepo: util.BoolPtr(true),
+			expectedImage:  "aws_account_id.dkr.ecr.region.amazonaws.com/gcr.io/some/registry",
+		},
+		{
 			description:   "aws over 255 chars",
 			image:         "gcr.io/herewehaveanincrediblylongregistryname/herewealsohaveanabnormallylongimagename/doubtyouveseenanimagethislong/butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere/goodluckpushingthistoanyregistrymyfriend",
 			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
@@ -96,10 +119,17 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "gcr.io/default/example.com/cmd/app",
 		},
 		{
-			description:   "ko with not GCR",
+			description:   "ko not with GCR",
 			image:         "ko://example.com/cmd/app",
 			defaultRepo:   "myrepo",
 			expectedImage: "myrepo/example_com_cmd_app",
+		},
+		{
+			description:    "ko multi-level not with GCR",
+			image:          "ko://example.com/cmd/app",
+			defaultRepo:    "myrepo",
+			multiLevelRepo: util.BoolPtr(true),
+			expectedImage:  "myrepo/example.com/cmd/app",
 		},
 		{
 			description:   "keep tag",
@@ -128,7 +158,7 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			replaced, err := SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image)
+			replaced, err := SubstituteDefaultRepoIntoImage(test.defaultRepo, test.multiLevelRepo, test.image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImage, replaced)
 		})

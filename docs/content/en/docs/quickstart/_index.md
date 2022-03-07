@@ -10,7 +10,7 @@ weight: 20
 Follow this tutorial if you're using the Skaffold [standalone binary]({{< relref "../install/#standalone-binary" >}}). It walks through running Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
 and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)! 
 
-This tutorial uses minikube as Skaffold knows to build the app using the Docker daemon hosted
+This tutorial uses minikube as Skaffold knows how to build the app using the Docker daemon hosted
 inside minikube and thus avoiding any need for a registry to host the app's container images.
 
 

@@ -21,11 +21,12 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Build builds an artifact with Jib.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "jib",
 		"Context":     instrumentation.PII(artifact.Workspace),
@@ -40,17 +41,19 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.A
 	switch t {
 	case JibMaven:
 		if b.pushImages {
-			return b.buildJibMavenToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
+			return b.buildJibMavenToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag, platforms)
 		}
-		return b.buildJibMavenToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
+		return b.buildJibMavenToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag, platforms)
 
 	case JibGradle:
 		if b.pushImages {
-			return b.buildJibGradleToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
+			return b.buildJibGradleToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag, platforms)
 		}
-		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
+		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag, platforms)
 
 	default:
 		return "", unknownPluginType(artifact.Workspace)
 	}
 }
+
+func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }

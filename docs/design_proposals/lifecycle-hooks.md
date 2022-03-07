@@ -227,6 +227,11 @@ deploy: ...
 <td>All</td>
 </tr>
 <tr>
+<td>$SKAFFOLD_MULTI_LEVEL_REPO</td>
+<td>The multi-level support of the repository</td>
+<td>All</td>
+</tr>
+<tr>
 <td>$SKAFFOLD_NAMESPACES</td>
 <td>Comma separated list of Kubernetes namespaces</td>
 <td>All</td>

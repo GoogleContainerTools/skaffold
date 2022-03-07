@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -43,7 +44,7 @@ func TestBuildBazel(t *testing.T) {
 		}
 
 		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
-		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
+		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckNoError(err)
 	})
@@ -60,7 +61,7 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 		}
 
 		builder := NewArtifactBuilder(nil, &mockConfig{}, false)
-		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
+		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckErrorContains("the bazel build target should end with .tar", err)
 	})

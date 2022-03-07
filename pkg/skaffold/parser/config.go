@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
@@ -56,6 +57,7 @@ type record struct {
 	appliedProfiles  map[string]string      // config -> list of applied profiles
 	configNameToFile map[string]string      // configName -> file path
 	cachedRepos      map[string]interface{} // git repo -> cache path or error
+	allProfiles      []string               // list of all profiles, from all configuration files
 }
 
 func newRecord() *record {
@@ -80,7 +82,7 @@ func GetAllConfigs(ctx context.Context, opts config.SkaffoldOptions) ([]schemaUt
 func GetConfigSet(ctx context.Context, opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
 	r := newRecord()
-	cfgs, err := getConfigs(ctx, cOpts, opts, r)
+	cfgs, fieldsOverrodeByProfile, err := getConfigs(ctx, cOpts, opts, r)
 	if err != nil {
 		return nil, err
 	}
@@ -91,42 +93,60 @@ func GetConfigSet(ctx context.Context, opts config.SkaffoldOptions) (SkaffoldCon
 		return nil, sErrors.ZeroConfigsParsedErr(opts.ConfigurationFile)
 	}
 
-	if unmatched := unmatchedProfiles(r.appliedProfiles, opts.Profiles); len(unmatched) != 0 {
+	if unmatched := unmatchedProfiles(r.allProfiles, opts.Profiles); len(unmatched) != 0 {
 		return nil, sErrors.ConfigProfilesNotMatchedErr(unmatched)
 	}
+
+	for _, c := range cfgs {
+		yinfos, err := configlocations.Parse(c.SourceFile, c.SkaffoldConfig, fieldsOverrodeByProfile)
+		if err != nil {
+			return nil, err
+		}
+		c.YAMLInfos = yinfos
+	}
+
 	return cfgs, nil
 }
 
 // getConfigs recursively parses all configs and their dependencies in the specified `skaffold.yaml`
-func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
+func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, map[string]configlocations.YAMLOverrideInfo, error) {
+	fieldsOverrodeByProfile := map[string]configlocations.YAMLOverrideInfo{}
+
 	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, sErrors.MainConfigFileNotFoundErr(cfgOpts.file, err)
+			return nil, nil, sErrors.MainConfigFileNotFoundErr(cfgOpts.file, err)
 		}
-		return nil, sErrors.ConfigParsingError(err)
+		return nil, nil, sErrors.ConfigParsingError(err)
 	}
 
-	if !util.IsURL(cfgOpts.file) && !filepath.IsAbs(cfgOpts.file) {
+	if !util.IsURL(cfgOpts.file) && !filepath.IsAbs(cfgOpts.file) && cfgOpts.file != "-" {
 		cwd, _ := util.RealWorkDir()
 		// convert `file` path to absolute value as it's used as a map key in several places.
 		cfgOpts.file = filepath.Join(cwd, cfgOpts.file)
 	}
 
 	if len(parsed) == 0 {
-		return nil, sErrors.ZeroConfigsParsedErr(cfgOpts.file)
+		return nil, nil, sErrors.ZeroConfigsParsedErr(cfgOpts.file)
 	}
 	log.Entry(context.TODO()).Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
-	// validate that config names are unique if specified
+	// add profiles to record and validate that config names are unique if specified
 	seen := make(map[string]bool)
 	for _, cfg := range parsed {
-		cfgName := cfg.(*latestV1.SkaffoldConfig).Metadata.Name
+		config := cfg.(*latestV1.SkaffoldConfig)
+		for _, profile := range config.Profiles {
+			if !stringslice.Contains(r.allProfiles, profile.Name) {
+				r.allProfiles = append(r.allProfiles, profile.Name)
+			}
+		}
+
+		cfgName := config.Metadata.Name
 		if cfgName == "" {
 			continue
 		}
 		if seen[cfgName] {
-			return nil, sErrors.DuplicateConfigNamesInSameFileErr(cfgName, cfgOpts.file)
+			return nil, nil, sErrors.DuplicateConfigNamesInSameFileErr(cfgName, cfgOpts.file)
 		}
 		seen[cfgName] = true
 	}
@@ -134,18 +154,18 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 	var configs SkaffoldConfigSet
 	for i, cfg := range parsed {
 		config := cfg.(*latestV1.SkaffoldConfig)
-		processed, err := processEachConfig(ctx, config, cfgOpts, opts, r, i)
+		processed, err := processEachConfig(ctx, config, cfgOpts, opts, r, i, fieldsOverrodeByProfile)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		configs = append(configs, processed...)
 	}
-	return configs, nil
+	return configs, fieldsOverrodeByProfile, nil
 }
 
 // processEachConfig processes each parsed config by applying profiles and recursively processing its dependencies.
 // The `index` parameter specifies the index of the current config in its `skaffold.yaml` file. We use the `index` instead of the config `metadata.name` property to uniquely identify each config since not all configs define `name`.
-func processEachConfig(ctx context.Context, config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) (SkaffoldConfigSet, error) {
+func processEachConfig(ctx context.Context, config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo) (SkaffoldConfigSet, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
 		prevConfig, found := r.configNameToFile[config.Metadata.Name]
@@ -164,7 +184,7 @@ func processEachConfig(ctx context.Context, config *latestV1.SkaffoldConfig, cfg
 	// `requiredConfigs` specifies if we are already in the dependency-tree of a required config, so all selected configs are required even if they are not explicitly named via the configuration flag.
 	required := cfgOpts.isRequired || len(opts.ConfigurationFilter) == 0 || stringslice.Contains(opts.ConfigurationFilter, config.Metadata.Name)
 
-	profiles, err := schema.ApplyProfiles(config, opts, cfgOpts.profiles)
+	profiles, _, err := schema.ApplyProfiles(config, fieldsOverrodeByProfile, opts, cfgOpts.profiles)
 	if err != nil {
 		return nil, sErrors.ConfigProfileActivationErr(config.Metadata.Name, cfgOpts.file, err)
 	}
@@ -279,7 +299,7 @@ func processEachDependency(ctx context.Context, d latestV1.ConfigDependency, cfg
 	cfgOpts.isDependency = cfgOpts.isDependency || path != cfgOpts.file
 	cfgOpts.file = path
 	cfgOpts.selection = d.Names
-	depConfigs, err := getConfigs(ctx, cfgOpts, opts, r)
+	depConfigs, _, err := getConfigs(ctx, cfgOpts, opts, r)
 	if err != nil {
 		return nil, err
 	}
@@ -330,14 +350,10 @@ func checkRevisit(config *latestV1.SkaffoldConfig, profiles []string, appliedPro
 	return false, nil
 }
 
-func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string) []string {
-	var allActivated []string
-	for _, profiles := range activatedProfiles {
-		allActivated = append(allActivated, strings.Split(profiles, ",")...)
-	}
+func unmatchedProfiles(configProfiles []string, optsProfiles []string) []string {
 	var unmatched []string
-	for _, p := range allProfiles {
-		if !stringslice.Contains(allActivated, p) {
+	for _, p := range optsProfiles {
+		if !stringslice.Contains(configProfiles, strings.TrimPrefix(p, "-")) {
 			unmatched = append(unmatched, p)
 		}
 	}

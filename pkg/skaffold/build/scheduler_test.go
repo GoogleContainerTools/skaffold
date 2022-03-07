@@ -30,6 +30,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -47,7 +48,7 @@ func TestGetBuild(t *testing.T) {
 	}{
 		{
 			description: "build succeeds",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				out.Write([]byte("build succeeds"))
 				return fmt.Sprintf("%s@sha256:abac", tag), nil
 			},
@@ -56,11 +57,11 @@ func TestGetBuild(t *testing.T) {
 				"skaffold/image2": "skaffold/image2:v0.0.2",
 			},
 			expectedTag: "skaffold/image1:v0.0.1@sha256:abac",
-			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
+			expectedOut: "build succeeds",
 		},
 		{
 			description: "tag with ko scheme prefix and Go import path with uppercase characters is sanitized",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				out.Write([]byte("build succeeds"))
 				return fmt.Sprintf("%s@sha256:abac", tag), nil
 			},
@@ -68,23 +69,23 @@ func TestGetBuild(t *testing.T) {
 				"skaffold/image1": "ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold:v0.0.1",
 			},
 			expectedTag: "github.com/googlecontainertools/skaffold/cmd/skaffold:v0.0.1@sha256:abac",
-			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
+			expectedOut: "build succeeds",
 		},
 		{
 			description: "build fails",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				return "", fmt.Errorf("build fails")
 			},
 			tags: tag.ImageTags{
 				"skaffold/image1": "",
 			},
-			expectedOut: "Building [skaffold/image1]...\n",
+			expectedOut: "",
 			shouldErr:   true,
 		},
 		{
 			description: "tag not found",
 			tags:        tag.ImageTags{},
-			expectedOut: "Building [skaffold/image1]...\n",
+			expectedOut: "",
 			shouldErr:   true,
 		},
 	}
@@ -93,7 +94,7 @@ func TestGetBuild(t *testing.T) {
 			out := new(bytes.Buffer)
 
 			artifact := &latestV1.Artifact{ImageName: "skaffold/image1"}
-			got, err := performBuild(context.Background(), out, test.tags, artifact, test.buildArtifact)
+			got, err := performBuild(context.Background(), out, test.tags, platform.Resolver{}, artifact, test.buildArtifact)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedTag, got)
 			t.CheckDeepEqual(test.expectedOut, out.String())
@@ -159,9 +160,9 @@ func TestInOrder(t *testing.T) {
 	}{
 		{
 			description: "short and nice build log",
-			expected:    "Building 2 artifacts in parallel\nBuilding [skaffold/image1]...\nshort\nBuilding [skaffold/image2]...\nshort\n",
-			buildFunc: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
-				out.Write([]byte("short"))
+			expected:    "Building 2 artifacts in parallel\nBuilding [skaffold/image1]...\nshort\nBuild [skaffold/image1] succeeded\nBuilding [skaffold/image2]...\nshort\nBuild [skaffold/image2] succeeded\n",
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
+				out.Write([]byte("short\n"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
 		},
@@ -171,12 +172,14 @@ func TestInOrder(t *testing.T) {
 Building [skaffold/image1]...
 This is a long string more than 10 bytes.
 And new lines
+Build [skaffold/image1] succeeded
 Building [skaffold/image2]...
 This is a long string more than 10 bytes.
 And new lines
+Build [skaffold/image2] succeeded
 `,
-			buildFunc: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
-				out.Write([]byte("This is a long string more than 10 bytes.\nAnd new lines"))
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
+				out.Write([]byte("This is a long string more than 10 bytes.\nAnd new lines\n"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
 		},
@@ -194,7 +197,7 @@ And new lines
 			}
 			initializeEvents()
 
-			InOrder(context.Background(), out, tags, artifacts, test.buildFunc, 0, NewArtifactStore())
+			InOrder(context.Background(), out, tags, platform.Resolver{}, artifacts, test.buildFunc, 0, NewArtifactStore())
 
 			t.CheckDeepEqual(test.expected, out.String())
 		})
@@ -238,7 +241,7 @@ func TestInOrderConcurrency(t *testing.T) {
 
 			var actualConcurrency int32
 
-			builder := func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string) (string, error) {
+			builder := func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				if atomic.AddInt32(&actualConcurrency, 1) > int32(test.maxConcurrency) {
 					return "", fmt.Errorf("only %d build can run at a time", test.maxConcurrency)
 				}
@@ -249,7 +252,7 @@ func TestInOrderConcurrency(t *testing.T) {
 			}
 
 			initializeEvents()
-			results, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit, NewArtifactStore())
+			results, err := InOrder(context.Background(), ioutil.Discard, tags, platform.Resolver{}, artifacts, builder, test.limit, NewArtifactStore())
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.artifacts, len(results))
@@ -269,7 +272,7 @@ func TestInOrderForArgs(t *testing.T) {
 	}{
 		{
 			description: "runs in parallel for 2 artifacts with no dependency",
-			buildArtifact: func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				return tag, nil
 			},
 			artifactLen: 2,
@@ -280,7 +283,7 @@ func TestInOrderForArgs(t *testing.T) {
 		},
 		{
 			description: "runs in parallel for 5 artifacts with dependencies",
-			buildArtifact: func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				return tag, nil
 			},
 			dependency: map[int][]int{
@@ -300,7 +303,7 @@ func TestInOrderForArgs(t *testing.T) {
 		},
 		{
 			description: "runs with max concurrency of 2 for 5 artifacts with dependencies",
-			buildArtifact: func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				return tag, nil
 			},
 			dependency: map[int][]int{
@@ -326,7 +329,7 @@ func TestInOrderForArgs(t *testing.T) {
 		},
 		{
 			description: "build fails for artifacts without dependencies",
-			buildArtifact: func(c context.Context, _ io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(c context.Context, _ io.Writer, a *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				if a.ImageName == "artifact2" {
 					return "", fmt.Errorf(`some error occurred while building "artifact2"`)
 				}
@@ -339,11 +342,11 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			expected:    nil,
-			err:         fmt.Errorf(`some error occurred while building "artifact2"`),
+			err:         fmt.Errorf(`build [artifact2] failed: %w`, fmt.Errorf(`some error occurred while building "artifact2"`)),
 		},
 		{
 			description: "build fails for artifacts with dependencies",
-			buildArtifact: func(_ context.Context, _ io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+			buildArtifact: func(_ context.Context, _ io.Writer, a *latestV1.Artifact, tag string, _ platform.Matcher) (string, error) {
 				if a.ImageName == "artifact2" {
 					return "", fmt.Errorf(`some error occurred while building "artifact2"`)
 				}
@@ -357,7 +360,7 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			expected:    nil,
-			err:         fmt.Errorf(`some error occurred while building "artifact2"`),
+			err:         fmt.Errorf(`build [artifact2] failed: %w`, fmt.Errorf(`some error occurred while building "artifact2"`)),
 		},
 	}
 	for _, test := range tests {
@@ -372,7 +375,7 @@ func TestInOrderForArgs(t *testing.T) {
 
 			setDependencies(artifacts, test.dependency)
 			initializeEvents()
-			actual, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency, NewArtifactStore())
+			actual, err := InOrder(context.Background(), ioutil.Discard, tags, platform.Resolver{}, artifacts, test.buildArtifact, test.concurrency, NewArtifactStore())
 
 			t.CheckDeepEqual(test.expected, actual)
 			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))

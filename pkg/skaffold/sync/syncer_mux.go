@@ -19,15 +19,27 @@ package sync
 import (
 	"context"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 type SyncerMux []Syncer
 
 func (s SyncerMux) Sync(ctx context.Context, out io.Writer, item *Item) error {
+	var errs []error
 	for _, syncer := range s {
 		if err := syncer.Sync(ctx, out, item); err != nil {
-			return err
+			errs = append(errs, err)
 		}
+	}
+
+	// Return an error only if all syncers fail
+	if len(errs) == len(s) {
+		var err error
+		for _, e := range errs {
+			err = errors.Wrap(err, e.Error())
+		}
+		return err
 	}
 	return nil
 }

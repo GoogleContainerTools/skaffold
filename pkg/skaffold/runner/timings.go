@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -51,14 +52,14 @@ type withTimings struct {
 	cacheArtifacts bool
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil
 	}
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting build...")
 
-	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
+	bRes, err := w.Builder.Build(ctx, out, tags, platforms, artifacts)
 	if err != nil {
 		return nil, err
 	}

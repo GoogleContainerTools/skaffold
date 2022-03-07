@@ -122,6 +122,26 @@ func TestKustomizeDeploy(t *testing.T) {
 			kustomizeCmdPresent: true,
 		},
 		{
+			description: "deploy success (kustomizePaths with env template)",
+			kustomize: latestV1.KustomizeDeploy{
+				KustomizePaths: []string{"/a/b/{{ .MYENV }}"},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectl.KubectlVersion118).
+				AndRunOut("kustomize build /a/b/c", kubectl.DeploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", kubectl.DeploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
+			builds: []graph.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:v1",
+			}},
+			forceDeploy: true,
+			envs: map[string]string{
+				"MYENV": "c",
+			},
+			kustomizeCmdPresent: true,
+		},
+		{
 			description: "deploy success with multiple kustomizations",
 			kustomize: latestV1.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},

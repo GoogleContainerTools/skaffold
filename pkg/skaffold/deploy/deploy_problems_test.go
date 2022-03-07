@@ -115,6 +115,7 @@ func (m mockConfig) GetNamespace() string                              { return 
 func (m mockConfig) GlobalConfig() string                              { return "" }
 func (m mockConfig) ConfigurationFile() string                         { return "" }
 func (m mockConfig) DefaultRepo() *string                              { return &m.minikube }
+func (m mockConfig) MultiLevelRepo() *bool                             { return nil }
 func (m mockConfig) SkipRender() bool                                  { return true }
 func (m mockConfig) Prune() bool                                       { return true }
 func (m mockConfig) ContainerDebugging() bool                          { return false }

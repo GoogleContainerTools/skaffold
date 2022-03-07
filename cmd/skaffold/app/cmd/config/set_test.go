@@ -63,6 +63,27 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
+			description: "set multi-level repo",
+			key:         "multi-level-repo",
+			value:       "false",
+			kubecontext: "this_is_a_context",
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext:    "this_is_a_context",
+						MultiLevelRepo: util.BoolPtr(false),
+					},
+				},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
+					},
+				},
+			},
+		},
+		{
 			description: "set local cluster",
 			key:         "local-cluster",
 			value:       "false",
@@ -104,6 +125,22 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo: "global",
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
+		{
+			description: "set global multi-level repo",
+			key:         "multi-level-repo",
+			value:       "true",
+			global:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					MultiLevelRepo: util.BoolPtr(true),
 				},
 				ContextConfigs: []*config.ContextConfig{},
 			},
@@ -378,7 +415,7 @@ func TestGetConfigStructWithIndex(t *testing.T) {
 			description: "survey flag set",
 			cfg:         &config.ContextConfig{},
 			survey:      true,
-			expectedIdx: []int{6},
+			expectedIdx: []int{7},
 		},
 		{
 			description: "no survey flag set",

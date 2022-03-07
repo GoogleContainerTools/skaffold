@@ -86,19 +86,26 @@ type SkaffoldOptions struct {
 	SkipConfigDefaults    bool
 	Tail                  bool
 	WaitForConnection     bool
-
-	BuildConcurrency  int
-	DefaultRepo       StringOrUndefined
+	// Add Skaffold-specific labels including runID, deployer labels, etc.
+	// `CustomLabels` are still applied if this is false. Must only be used in
+	// commands which don't deploy (e.g. `skaffold render`) since the runID
+	// label isn't available.
+	AddSkaffoldLabels bool
 	MakePathsAbsolute *bool
-	Muted             Muted
+	StatusCheck       BoolOrUndefined
 	PortForward       PortForwardOptions
+	DefaultRepo       StringOrUndefined
 	PushImages        BoolOrUndefined
+	Platforms         []string
+	Muted             Muted
+	BuildConcurrency  int
+	WatchPollInterval int
 	RPCPort           IntOrUndefined
 	RPCHTTPPort       IntOrUndefined
-	StatusCheck       BoolOrUndefined
-	SyncRemoteCache   SyncRemoteCacheOption
-	WaitForDeletions  WaitForDeletions
-	WatchPollInterval int
+
+	MultiLevelRepo   *bool
+	SyncRemoteCache  SyncRemoteCacheOption
+	WaitForDeletions WaitForDeletions
 }
 
 type RunMode string

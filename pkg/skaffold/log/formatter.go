@@ -16,10 +16,45 @@ limitations under the License.
 
 package log
 
-import "io"
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"strings"
+
+	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+)
 
 type Formatter interface {
 	Name() string
 
 	PrintLine(io.Writer, string)
+}
+
+func ParseJSON(config latestV1.JSONParseConfig, line string) string {
+	if len(config.Fields) == 0 {
+		return line
+	}
+
+	js := map[string]interface{}{}
+	trimmed := strings.Trim(line, "\n")
+	if err := json.Unmarshal([]byte(trimmed), &js); err != nil {
+		olog.Entry(context.TODO()).Debugf("failed to unmarshal json: %s", err)
+		return line
+	}
+
+	result := ""
+	for _, field := range config.Fields {
+		if val, ok := js[field]; ok {
+			result += fmt.Sprintf("%s: %v, ", field, val)
+		}
+	}
+
+	// If none of the fields specified were in the json object, just return the original line
+	if result == "" {
+		return line
+	}
+	return strings.TrimSuffix(result, ", ") + "\n"
 }

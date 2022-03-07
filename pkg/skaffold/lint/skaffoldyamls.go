@@ -19,7 +19,6 @@ package lint
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -122,7 +121,7 @@ var skaffoldYamlLintRules = []Rule{
 					return explanationInfo{}, err
 				}
 				for _, relPath := range expanded {
-					b, err := ioutil.ReadFile(relPath)
+					b, err := util.ReadFile(relPath)
 					if err != nil {
 						return explanationInfo{}, err
 					}
@@ -168,7 +167,7 @@ func GetSkaffoldYamlsLintResults(ctx context.Context, opts Options) (*[]Result, 
 	}
 	l := []Result{}
 	for _, c := range cfgs {
-		b, err := ioutil.ReadFile(c.SourceFile)
+		b, err := util.ReadFile(c.SourceFile)
 		if err != nil {
 			return nil, err
 		}

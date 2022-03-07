@@ -21,29 +21,51 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+
+	"github.com/spf13/afero"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
+// Fs is the underlying filesystem to use for reading skaffold project files & configuration.  OS FS by default
+var Fs = afero.NewOsFs()
+
+var stdin []byte
+
 // ReadConfiguration reads a `skaffold.yaml` configuration and
 // returns its content.
-func ReadConfiguration(filename string) ([]byte, error) {
+func ReadConfiguration(filePath string) ([]byte, error) {
 	switch {
-	case filename == "":
+	case filePath == "":
 		return nil, errors.New("filename not specified")
-	case filename == "-":
-		return ioutil.ReadAll(os.Stdin)
-	case IsURL(filename):
-		return Download(filename)
+	case filePath == "-":
+		if len(stdin) == 0 {
+			var err error
+			stdin, err = ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				return []byte{}, err
+			}
+		}
+		return stdin, nil
+	case IsURL(filePath):
+		return Download(filePath)
 	default:
-		contents, err := ioutil.ReadFile(filename)
+		if !filepath.IsAbs(filePath) {
+			dir, err := os.Getwd()
+			if err != nil {
+				return []byte{}, err
+			}
+			filePath = filepath.Join(dir, filePath)
+		}
+		contents, err := afero.ReadFile(Fs, filePath)
 		if err != nil {
 			// If the config file is the default `skaffold.yaml`,
 			// then we also try to read `skaffold.yml`.
-			if filename == "skaffold.yaml" {
+			if filepath.Base(filePath) == "skaffold.yaml" {
 				log.Entry(context.TODO()).Infof("Could not open skaffold.yaml: \"%s\"", err)
 				log.Entry(context.TODO()).Info("Trying to read from skaffold.yml instead")
-				contents, errIgnored := ioutil.ReadFile("skaffold.yml")
+				contents, errIgnored := afero.ReadFile(Fs, filepath.Join(filepath.Dir(filePath), "skaffold.yml"))
 				if errIgnored != nil {
 					// Return original error because it's the one that matters
 					return nil, err
@@ -55,4 +77,15 @@ func ReadConfiguration(filename string) ([]byte, error) {
 
 		return contents, err
 	}
+}
+
+func ReadFile(filename string) ([]byte, error) {
+	if !filepath.IsAbs(filename) {
+		dir, err := os.Getwd()
+		if err != nil {
+			return []byte{}, err
+		}
+		filename = filepath.Join(dir, filename)
+	}
+	return afero.ReadFile(Fs, filename)
 }
