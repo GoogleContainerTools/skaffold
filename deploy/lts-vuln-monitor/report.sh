@@ -26,6 +26,10 @@ if [ -z "$_REPO" ]; then
   _REPO="GoogleContainerTools/skaffold"
 fi
 
+if [ -z "$_REF_ISSUE" ]; then
+  _REF_ISSUE="7169"
+fi
+
 TITLE_OS="LTS image has OS vulnerability!"
 OS_VULN_FILE=/workspace/os_vuln.txt
 IMAGES_TO_REPORT_FILE=/workspace/images_to_report.txt
@@ -52,7 +56,7 @@ init_body_file(){
  # Only pick the last patched version.
  cat "$OS_VULN_FILE" |sort -nr | awk -F'[:.]' '$3$4!=p&&p=$3$4' >> "$IMAGES_TO_REPORT_FILE"
 
- append "\nOnce the patched images are available, please ping Cloud Deploy team until, there is an automated way to notify." "$IMAGES_TO_REPORT_FILE"
+ append "\nOnce the patched images are available, please ping Cloud Deploy team until there is an automated way to notify (issue#$_REF_ISSUE)." "$IMAGES_TO_REPORT_FILE"
 }
 
 create_issue() {
