@@ -64,6 +64,9 @@ type skaffoldMeter struct {
 	// Builders Enum values for all the builders used to build the artifacts built.
 	Builders map[string]int
 
+	// BuildWithPlatforms Enum values for all the builders with target platform constraints.
+	BuildWithPlatforms map[string]int
+
 	// BuildDependencies Enum values for all the builders using build dependencies.
 	BuildDependencies map[string]int
 
@@ -92,6 +95,15 @@ type skaffoldMeter struct {
 
 	// ClusterType reports if user cluster is a GKE cluster or not.
 	ClusterType string
+
+	// ResolvedBuildTargetPlatforms represents the set of resolved build target platforms for each pipeline
+	ResolvedBuildTargetPlatforms []string
+
+	// CliBuildTargetPlatforms represents the build target platforms specified via command line flag `--platform`
+	CliBuildTargetPlatforms string
+
+	// DeployNodePlatforms represents the set of kubernetes cluster node platforms
+	DeployNodePlatforms string
 }
 
 // devIteration describes how an iteration and started and if an error happened.

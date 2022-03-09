@@ -135,8 +135,11 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KptDeploy != nil {
-			deployer := kpt.NewDeployer(dCtx, labeller, d.KptDeploy)
-			deployers = append(deployers, deployer)
+			k, err := kpt.NewDeployer(dCtx, labeller, d.KptDeploy)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, k)
 		}
 
 		if d.KubectlDeploy != nil {

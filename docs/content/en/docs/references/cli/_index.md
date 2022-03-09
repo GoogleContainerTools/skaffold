@@ -422,6 +422,7 @@ Options:
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --protocols=[]: Priority sorted order of debugger protocols to support.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
@@ -478,6 +479,7 @@ Env vars:
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_PROTOCOLS` (same as `--protocols`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -588,6 +590,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-render=false: Don't render the manifests, just deploy them
@@ -632,6 +635,7 @@ Env vars:
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_RENDER` (same as `--skip-render`)
@@ -684,6 +688,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
@@ -740,6 +745,7 @@ Env vars:
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -934,6 +940,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
@@ -962,6 +969,7 @@ Env vars:
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
 
@@ -1009,6 +1017,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
@@ -1060,6 +1069,7 @@ Env vars:
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)

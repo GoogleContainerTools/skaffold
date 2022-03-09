@@ -55,7 +55,7 @@ spec:
 		},
 	}
 
-	actual, err := manifests.GetImages()
+	actual, err := manifests.GetImages(NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedImages, actual)
 }
 
@@ -121,7 +121,7 @@ spec:
 		fakeWarner := &warnings.Collect{}
 		t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-		resultManifest, err := manifests.ReplaceRemoteManifestImages(context.TODO(), builds)
+		resultManifest, err := manifests.ReplaceRemoteManifestImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
@@ -196,7 +196,7 @@ spec:
 		fakeWarner := &warnings.Collect{}
 		t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds)
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
@@ -207,7 +207,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 	manifests := ManifestList{[]byte(""), []byte("  ")}
 	expected := ManifestList{}
 
-	resultManifest, err := manifests.ReplaceImages(context.TODO(), nil)
+	resultManifest, err := manifests.ReplaceImages(context.TODO(), nil, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -215,7 +215,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 func TestReplaceInvalidManifest(t *testing.T) {
 	manifests := ManifestList{[]byte("INVALID")}
 
-	_, err := manifests.ReplaceImages(context.TODO(), nil)
+	_, err := manifests.ReplaceImages(context.TODO(), nil, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckError(t, true, err)
 }
@@ -228,7 +228,7 @@ image:
 - value2
 `)}
 
-	output, err := manifests.ReplaceImages(context.TODO(), nil)
+	output, err := manifests.ReplaceImages(context.TODO(), nil, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String())
 }

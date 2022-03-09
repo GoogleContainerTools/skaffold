@@ -73,6 +73,9 @@ type Pipeline struct {
 
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
+
+	// ResourceSelector describes user defined filters describing how skaffold should treat objects/fields during rendering.
+	ResourceSelector ResourceSelectorConfig `yaml:"resourceSelector,omitempty"`
 }
 
 // GitInfo contains information on the origin of skaffold configurations cloned from a git repository.
@@ -143,6 +146,14 @@ type PortForwardResource struct {
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int `yaml:"localPort,omitempty"`
+}
+
+// ResourceSelectorConfig contains all the configuration needed by the deploy steps.
+type ResourceSelectorConfig struct {
+	// Allow configures an allowlist for transforming manifests.
+	Allow []ResourceFilter `yaml:"allow,omitempty"`
+	// Deny configures an allowlist for transforming manifests.
+	Deny []ResourceFilter `yaml:"deny,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.
@@ -526,9 +537,6 @@ type DeployConfig struct {
 
 	// Logs configures how container logs are printed as a result of a deployment.
 	Logs LogsConfig `yaml:"logs,omitempty"`
-
-	// TransformableAllowList configures an allowlist for transforming manifests.
-	TransformableAllowList []ResourceFilter `yaml:"-"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -1504,8 +1512,8 @@ type NamedContainerHook struct {
 
 // ResourceFilter contains definition to filter which resource to transform.
 type ResourceFilter struct {
-	// Type is the compact format of a resource type.
-	Type string `yaml:"type" yamltags:"required"`
+	// GroupKind is the compact format of a resource type.
+	GroupKind string `yaml:"groupKind" yamltags:"required"`
 	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
 	Image []string `yaml:"image,omitempty"`
 	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
