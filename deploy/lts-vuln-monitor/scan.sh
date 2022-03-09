@@ -24,7 +24,7 @@ if [ -z "$_IMAGE" ]; then
   _IMAGE="skaffold"
 fi
 if [ -z "$_TAG_FILTER" ]; then
-  _TAG_FILTER="v*lts"
+  _TAG_FILTER="v.*lts"
 fi
 if [ -z "$_SEVERITIES" ]; then
   _SEVERITIES="HIGH CRITICAL"
@@ -46,8 +46,7 @@ check_vulnerability(){
   tags=$5
 
   if [ -z "$tags" ]; then
-    # Gets the last 5 images if _TAGS is not set.
-    tags=$(gcloud container images list-tags "$base_image" --filter="tags~$tags_filter" --limit=5 --format='value(tags)')
+    tags=$(gcloud container images list-tags "$base_image" --filter="tags~$tags_filter" --format='value(tags)')
   fi
   grep_args=""
   for s in $severities; do
