@@ -39,18 +39,19 @@ const (
 
 var (
 	meter = skaffoldMeter{
-		OS:                runtime.GOOS,
-		Arch:              runtime.GOARCH,
-		EnumFlags:         map[string]string{},
-		Builders:          map[string]int{},
-		BuildDependencies: map[string]int{},
-		SyncType:          map[string]bool{},
-		Hooks:             map[HookPhase]int{},
-		DevIterations:     []devIteration{},
-		StartTime:         time.Now(),
-		Version:           version.Get().Version,
-		ExitCode:          0,
-		ErrorCode:         proto.StatusCode_OK,
+		OS:                 runtime.GOOS,
+		Arch:               runtime.GOARCH,
+		EnumFlags:          map[string]string{},
+		Builders:           map[string]int{},
+		BuildDependencies:  map[string]int{},
+		BuildWithPlatforms: map[string]int{},
+		SyncType:           map[string]bool{},
+		Hooks:              map[HookPhase]int{},
+		DevIterations:      []devIteration{},
+		StartTime:          time.Now(),
+		Version:            version.Get().Version,
+		ExitCode:           0,
+		ErrorCode:          proto.StatusCode_OK,
 	}
 	MeteredCommands     = stringset.New()
 	doesBuild           = stringset.New()
@@ -92,6 +93,9 @@ func InitMeterFromConfig(configs []*latestV1.SkaffoldConfig, user, deployCtx str
 			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
 			if len(artifact.Dependencies) > 0 {
 				meter.BuildDependencies[yamltags.GetYamlTag(artifact.ArtifactType)]++
+			}
+			if len(config.Pipeline.Build.Platforms) > 0 || len(artifact.Platforms) > 0 {
+				meter.BuildWithPlatforms[yamltags.GetYamlTag(artifact.ArtifactType)]++
 			}
 			meter.Hooks[HookPhases.PreBuild] += len(artifact.LifecycleHooks.PreHooks)
 			meter.Hooks[HookPhases.PostBuild] += len(artifact.LifecycleHooks.PostHooks)
@@ -143,6 +147,23 @@ func AddFlag(flag *flag.Flag) {
 	if flag.Changed {
 		meter.EnumFlags[flag.Name] = flag.Value.String()
 	}
+}
+
+func AddResolvedBuildTargetPlatforms(platforms string) {
+	platforms = strings.ReplaceAll(platforms, ",", ";")
+	if !stringslice.Contains(meter.ResolvedBuildTargetPlatforms, platforms) {
+		meter.ResolvedBuildTargetPlatforms = append(meter.ResolvedBuildTargetPlatforms, platforms)
+	}
+}
+
+func AddCliBuildTargetPlatforms(platforms string) {
+	platforms = strings.ReplaceAll(platforms, ",", ";")
+	meter.CliBuildTargetPlatforms = platforms
+}
+
+func AddDeployNodePlatforms(platforms string) {
+	platforms = strings.ReplaceAll(platforms, ",", ";")
+	meter.DeployNodePlatforms = platforms
 }
 
 func getClusterType(deployCtx string) string {
