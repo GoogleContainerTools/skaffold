@@ -234,7 +234,11 @@ func TestKpt_Deploy(t *testing.T) {
 			t.Override(&client.Client, deployutil.MockK8sClient)
 			t.NewTempDir().Chdir()
 
-			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
+			var err error
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
+			if err != nil {
+				t.Fatalf("unexpected error occurred attempting to create new kpt deployer")
+			}
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
@@ -245,7 +249,7 @@ func TestKpt_Deploy(t *testing.T) {
 				t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 			}
 
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -377,7 +381,10 @@ func TestKpt_Dependencies(t *testing.T) {
 			tmpDir.WriteFiles(test.createFiles)
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
+			if err != nil {
+				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
+			}
 
 			res, err := k.Dependencies()
 
@@ -428,7 +435,7 @@ func TestKpt_Cleanup(t *testing.T) {
 				t.CheckNoError(os.Mkdir(test.applyDir, 0755))
 			}
 
-			k := NewDeployer(&kptConfig{
+			k, err := NewDeployer(&kptConfig{
 				workingDir: ".",
 			}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
 				Live: latestV1.KptLive{
@@ -437,8 +444,11 @@ func TestKpt_Cleanup(t *testing.T) {
 					},
 				},
 			})
+			if err != nil {
+				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
+			}
 
-			err := k.Cleanup(context.Background(), ioutil.Discard, false)
+			err = k.Cleanup(context.Background(), ioutil.Discard, false)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -792,13 +802,17 @@ spec:
 
 			labeller := label.NewLabeller(false, test.labels, "")
 
-			k := NewDeployer(&kptConfig{workingDir: "."}, labeller, &test.kpt)
+			k, err := NewDeployer(&kptConfig{workingDir: "."}, labeller, &test.kpt)
+			if err != nil {
+				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
+			}
+
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
 
 			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, true, "")
+			err = k.Render(context.Background(), &b, test.builds, true, "")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, b.String())
 		})
@@ -867,11 +881,14 @@ func TestKpt_GetApplyDir(t *testing.T) {
 				tmpDir.Touch(".kpt-hydrated/inventory-template.yaml")
 			}
 
-			k := NewDeployer(&kptConfig{
+			k, err := NewDeployer(&kptConfig{
 				workingDir: ".",
 			}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
 				Live: test.live,
 			})
+			if err != nil {
+				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
+			}
 
 			applyDir, err := k.getApplyDir(context.Background())
 
@@ -1028,7 +1045,11 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, nil)
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, nil)
+			if err != nil {
+				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
+			}
+
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
@@ -1175,7 +1196,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, commands)
 		t.Override(&client.Client, deployutil.MockK8sClient)
-		k := NewDeployer(&kptConfig{config: "testConfigPath"}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
+		k, err := NewDeployer(&kptConfig{config: "testConfigPath"}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
 			Dir: ".",
 			Live: latestV1.KptLive{
 				Apply: latestV1.KptApplyInventory{
@@ -1183,9 +1204,13 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 				},
 			},
 		})
+		if err != nil {
+			t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
+		}
+
 		t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
 		defer os.RemoveAll(k.Live.Apply.Dir)
-		err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
+		err = k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
 		t.CheckNoError(err)
 	})
 }

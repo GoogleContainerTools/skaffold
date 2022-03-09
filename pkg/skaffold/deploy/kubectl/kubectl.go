@@ -27,6 +27,7 @@ import (
 
 	"github.com/segmentio/textio"
 	"go.opentelemetry.io/otel/trace"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -80,6 +81,9 @@ type Deployer struct {
 	skipRender         bool
 
 	namespaces *[]string
+
+	transformableAllowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
+	transformableDenylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
 }
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
@@ -101,27 +105,32 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.Kubect
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
-
+	transformableAllowlist, transformableDenylist, err := deployutil.ConsolidateTransformConfiguration(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Deployer{
-		KubectlDeploy:      d,
-		podSelector:        podSelector,
-		namespaces:         &namespaces,
-		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
-		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:        component.NewImageLoader(cfg, kubectl.CLI),
-		logger:             logger,
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
-		hookRunner:         hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
-		workingDir:         cfg.GetWorkingDir(),
-		globalConfig:       cfg.GlobalConfig(),
-		defaultRepo:        cfg.DefaultRepo(),
-		multiLevelRepo:     cfg.MultiLevelRepo(),
-		kubectl:            kubectl,
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		skipRender:         cfg.SkipRender(),
-		labeller:           labeller,
-		hydratedManifests:  cfg.HydratedManifests(),
+		KubectlDeploy:          d,
+		podSelector:            podSelector,
+		namespaces:             &namespaces,
+		accessor:               component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:            component.NewImageLoader(cfg, kubectl.CLI),
+		logger:                 logger,
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:                 component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
+		hookRunner:             hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		workingDir:             cfg.GetWorkingDir(),
+		globalConfig:           cfg.GlobalConfig(),
+		defaultRepo:            cfg.DefaultRepo(),
+		multiLevelRepo:         cfg.MultiLevelRepo(),
+		kubectl:                kubectl,
+		insecureRegistries:     cfg.GetInsecureRegistries(),
+		skipRender:             cfg.SkipRender(),
+		labeller:               labeller,
+		hydratedManifests:      cfg.HydratedManifests(),
+		transformableAllowlist: transformableAllowlist,
+		transformableDenylist:  transformableDenylist,
 	}, nil
 }
 
@@ -188,7 +197,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
-		manifests, err = manifests.SetLabels(k.labeller.Labels())
+		manifests, err = manifests.SetLabels(k.labeller.Labels(), manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 		endTrace()
 	case k.skipRender:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
@@ -197,7 +206,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
-		manifests, err = manifests.SetLabels(k.labeller.Labels())
+		manifests, err = manifests.SetLabels(k.labeller.Labels(), manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 		endTrace()
 	default:
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
@@ -434,7 +443,9 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 	originalManifests := append(localManifests, remoteManifests...)
 
 	if len(k.originalImages) == 0 {
-		k.originalImages, err = originalManifests.GetImages()
+		// TODO(aaron-prindle) maybe use different resoureselector?
+		k.originalImages, err = originalManifests.GetImages(manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
+		// k.originalImages, err = originalManifests.GetImages(k.transformableAllowlist, k.transformableDenylist)
 		if err != nil {
 			return nil, err
 		}
@@ -457,13 +468,13 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 		}
 	}
 	if len(remoteManifests) > 0 {
-		remoteManifests, err = remoteManifests.ReplaceRemoteManifestImages(ctx, builds)
+		remoteManifests, err = remoteManifests.ReplaceRemoteManifestImages(ctx, builds, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 		if err != nil {
 			return nil, err
 		}
 	}
 	if len(localManifests) > 0 {
-		localManifests, err = localManifests.ReplaceImages(ctx, builds)
+		localManifests, err = localManifests.ReplaceImages(ctx, builds, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 		if err != nil {
 			return nil, err
 		}
@@ -475,7 +486,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 		return nil, err
 	}
 
-	return modifiedManifests.SetLabels(k.labeller.Labels())
+	return modifiedManifests.SetLabels(k.labeller.Labels(), manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -506,7 +517,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 			rm = append(rm, manifest)
 		}
 
-		upd, err := rm.ReplaceRemoteManifestImages(ctx, k.originalImages)
+		upd, err := rm.ReplaceRemoteManifestImages(ctx, k.originalImages, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 		if err != nil {
 			return err
 		}
