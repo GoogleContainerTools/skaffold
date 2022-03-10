@@ -68,13 +68,17 @@ Skaffold will request matching local ports only when the remote port is `> 1023`
 User-defined port-forwards in the `skaffold.yaml` are unaffected and can bind to system ports.
 {{< /alert >}}
 
+{{< alert title="Note about user-defined port-forwarding for Docker deployments" >}}
+When [deploying to Docker]({{< relref "/pipeline-stages/deployers/docker" >}}) with a user-defined port-forward in the `skaffold.yaml`, the `resourceType` of `portForward` must be set to `container`. Otherwise, Skaffold will not tell the Docker daemon to expose that port.
+{{< /alert >}}
+
 Skaffold will run `kubectl port-forward` on each of these resources in addition to the automatic port forwarding described above.
 Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`. 
 
 
 | Field        | Values           | Mandatory  |
 | ------------- |-------------| -----|
-| resourceType     | `pod`, `service`, `deployment`, `replicaset`, `statefulset`, `replicationcontroller`, `daemonset`, `job`, `cronjob` | Yes | 
+| resourceType     | `pod`, `service`, `deployment`, `replicaset`, `statefulset`, `replicationcontroller`, `daemonset`, `job`, `cronjob`, `container` | Yes | 
 | resourceName     | Name of the resource to forward.     | Yes | 
 | namespace  | The namespace of the resource to port forward.     | No. Defaults to current namespace, or `default` if no current namespace is defined | 
 | port | Port is the resource port that will be forwarded. | Yes |
