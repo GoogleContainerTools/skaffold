@@ -39,5 +39,6 @@ func New(config *latestV2.RenderConfig, workingDir, hydrationDir string,
 	if config.Validate == nil && config.Transform == nil && config.Kpt == nil {
 		return kubectl.New(config, workingDir, hydrationDir, labels)
 	}
+
 	return kpt.New(config, workingDir, hydrationDir, labels)
 }

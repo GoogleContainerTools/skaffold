@@ -98,7 +98,7 @@ type Deployer struct {
 	hookRunner    hooks.Runner
 
 	podSelector *kubernetes.ImageList
-	// originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
+	originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
 	localImages []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubeContext string
@@ -130,7 +130,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV2.HelmDeploy) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV2.HelmDeploy, artifacts []*latestV2.Artifact) (*Deployer, error) {
 	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -147,6 +147,12 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
+	var ogImages []graph.Artifact
+	for _, artifact := range artifacts {
+		ogImages = append(ogImages, graph.Artifact{
+			ImageName: artifact.ImageName,
+		})
+	}
 	return &Deployer{
 		HelmDeploy:    h,
 		podSelector:   podSelector,
@@ -158,6 +164,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		statusMonitor: component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
 		syncer:        component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
 		hookRunner:    hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		originalImages: ogImages,
 		kubeContext:   cfg.GetKubeContext(),
 		kubeConfig:    cfg.GetKubeConfig(),
 		namespace:     cfg.GetKubeNamespace(),
@@ -199,7 +206,7 @@ func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
 }
 
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, h.localImages, h.podSelector)
+	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
 }
 

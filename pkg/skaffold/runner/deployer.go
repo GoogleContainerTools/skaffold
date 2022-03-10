@@ -81,7 +81,7 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 			dCtx := &deployerCtx{runCtx, p.Deploy}
 			h, err := helm.NewDeployer(ctx, dCtx, labeller, &latestV2.HelmDeploy{
 				Flags: p.Render.Generate.Helm.Flags,
-			})
+			}, runCtx.Artifacts())
 			if err != nil {
 				return nil, err
 			}
@@ -91,7 +91,6 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 			deployers = append(deployers, h)
 		}
 	}
-
 	deployerCfg := runCtx.Deployers()
 	localDeploy := false
 	remoteDeploy := false
@@ -116,14 +115,13 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 		}
 
 		// TODO(nkubala)[v2-merge]: add d.LegacyHelmDeploy (or something similar)
-
-		// if d.HelmDeploy != nil {
-		// 	h, err := helm.NewDeployer(dCtx, labeller, d.HelmDeploy)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	deployers = append(deployers, h)
-		// }
+		if d.HelmDeploy != nil {
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.HelmDeploy, runCtx.Artifacts())
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, h)
+		}
 
 		if d.KubectlDeploy != nil {
 			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)
