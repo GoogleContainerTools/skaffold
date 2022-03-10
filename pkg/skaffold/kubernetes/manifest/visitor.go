@@ -122,6 +122,36 @@ var TransformAllowlist = map[apimachinery.GroupKind]latestV1.ResourceFilter{
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
+	{Group: "platform.confluent.io", Kind: "Connect"}: {
+		GroupKind: "Connect.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "ControlCenter"}: {
+		GroupKind: "ControlCenter.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "Kafka"}: {
+		GroupKind: "Kafka.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "KsqlDB"}: {
+		GroupKind: "KsqlDB.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "SchemaRegistry"}: {
+		GroupKind: "SchemaRegistry.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "Zookeeper"}: {
+		GroupKind: "Zookeeper.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
 }
 
 // TransformDenylist is the default denylist on the set of kinds that can be transformed by Skaffold.
