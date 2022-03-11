@@ -22,6 +22,7 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -65,20 +66,29 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latestV1.Pipe
 
 		if cfg.BuildConcurrency() >= 0 {
 			minConcurrency = cfg.BuildConcurrency()
-		} else {
-			concurrency := b.Concurrency()
-			// set mux concurrency to be the minimum of all builders' concurrency. (concurrency = 0 means unlimited)
-			switch {
-			case minConcurrency < 0:
-				minConcurrency = concurrency
-				log.Entry(context.TODO()).Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
-			case concurrency > 0 && (minConcurrency == 0 || concurrency < minConcurrency):
-				minConcurrency = concurrency
-				log.Entry(context.TODO()).Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
-			default:
-				log.Entry(context.TODO()).Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
-			}
+			continue
 		}
+
+		if b.Concurrency() == nil {
+			continue
+		}
+		concurrency := *b.Concurrency()
+
+		// set mux concurrency to be the minimum of all builders' concurrency. (concurrency = 0 means unlimited)
+		switch {
+		case minConcurrency < 0:
+			minConcurrency = concurrency
+			log.Entry(context.TODO()).Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+		case concurrency > 0 && (minConcurrency == 0 || concurrency < minConcurrency):
+			minConcurrency = concurrency
+			log.Entry(context.TODO()).Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+		default:
+			log.Entry(context.TODO()).Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
+		}
+	}
+	if minConcurrency < 0 {
+		minConcurrency = constants.DefaultLocalConcurrency // set default concurrency to 1.
+		log.Entry(context.TODO()).Infof("build concurrency set to default value of %d", minConcurrency)
 	}
 	log.Entry(context.TODO()).Infof("final build concurrency value is %d", minConcurrency)
 

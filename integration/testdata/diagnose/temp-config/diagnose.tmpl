@@ -8,8 +8,7 @@ build:
       dockerfile: Dockerfile
   tagPolicy:
     gitCommit: {}
-  local:
-    concurrency: 1
+  local: {}
 deploy:
   kubectl:
     manifests:

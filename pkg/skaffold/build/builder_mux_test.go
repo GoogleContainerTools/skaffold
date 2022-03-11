@@ -121,7 +121,7 @@ func (m *mockPipelineBuilder) Build(ctx context.Context, out io.Writer, artifact
 
 func (m *mockPipelineBuilder) PostBuild(ctx context.Context, out io.Writer) error { return nil }
 
-func (m *mockPipelineBuilder) Concurrency() int { return m.concurrency }
+func (m *mockPipelineBuilder) Concurrency() *int { return util.IntPtr(m.concurrency) }
 
 func (m *mockPipelineBuilder) Prune(context.Context, io.Writer) error { return nil }
 
