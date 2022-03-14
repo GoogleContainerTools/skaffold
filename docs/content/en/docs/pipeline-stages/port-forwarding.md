@@ -69,7 +69,7 @@ User-defined port-forwards in the `skaffold.yaml` are unaffected and can bind to
 {{< /alert >}}
 
 {{< alert title="Note about user-defined port-forwarding for Docker deployments" >}}
-When [deploying to Docker]({{< relref "/pipeline-stages/deployers/docker" >}}) with a user-defined port-forward in the `skaffold.yaml`, the `resourceType` of `portForward` must be set to `container`. Otherwise, Skaffold will not tell the Docker daemon to expose that port.
+When [deploying to Docker]({{< relref "/docs/pipeline-stages/deployers/docker" >}}) with a user-defined port-forward in the `skaffold.yaml`, the `resourceType` of `portForward` must be set to `container`. Otherwise, Skaffold will not tell the Docker daemon to expose that port.
 {{< /alert >}}
 
 Skaffold will run `kubectl port-forward` on each of these resources in addition to the automatic port forwarding described above.
