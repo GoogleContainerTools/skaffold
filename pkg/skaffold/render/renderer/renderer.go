@@ -23,19 +23,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/noop"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
 type Renderer interface {
 	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, output string) error
-	// ManifestDeps returns the user kubenertes manifests to file watcher. In dev mode, a "redeploy" will be triggered
+	// ManifestDeps returns the user kubernetes manifests to file watcher. In dev mode, a "redeploy" will be triggered
 	// if any of the "Dependencies" manifest is changed.
 	ManifestDeps() ([]string, error)
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(config *latestV2.RenderConfig, workingDir, hydrationDir string,
-	labels map[string]string) (Renderer, error) {
+func New(config *latestV2.RenderConfig, workingDir, hydrationDir string, labels map[string]string, usingHelmDeploy bool) (Renderer, error) {
+	if usingHelmDeploy {
+		return noop.New(config, workingDir, hydrationDir, labels)
+	}
 	if config.Validate == nil && config.Transform == nil && config.Kpt == nil {
 		return kubectl.New(config, workingDir, hydrationDir, labels)
 	}
