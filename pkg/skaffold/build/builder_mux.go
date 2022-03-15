@@ -143,8 +143,9 @@ func filterBuildEnvSupportedPlatforms(supported platform.Matcher, target platfor
 }
 
 func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
+	ctx := context.TODO()
 	if cliConcurrency >= 0 {
-		log.Entry(context.TODO()).Infof("build concurrency set to cli concurrency %d", cliConcurrency)
+		log.Entry(ctx).Infof("build concurrency set to cli concurrency %d", cliConcurrency)
 		return cliConcurrency
 	}
 	minConcurrency := -1
@@ -157,18 +158,19 @@ func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
 		switch {
 		case minConcurrency < 0:
 			minConcurrency = concurrency
-			log.Entry(context.TODO()).Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+			log.Entry(ctx).Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
 		case concurrency > 0 && (minConcurrency == 0 || concurrency < minConcurrency):
 			minConcurrency = concurrency
-			log.Entry(context.TODO()).Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+			log.Entry(ctx).Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
 		default:
-			log.Entry(context.TODO()).Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
+			log.Entry(ctx).Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
 		}
 	}
 	if minConcurrency < 0 {
-		log.Entry(context.TODO()).Infof("build concurrency set to default value of %d", minConcurrency)
-		return constants.DefaultLocalConcurrency // set default concurrency to 1.
+		log.Entry(ctx).Infof("build concurrency set to default value of %d", minConcurrency)
+		// set default concurrency to 1 for local builder. For GCB and Cluster build the default value is 0
+		return constants.DefaultLocalConcurrency
 	}
-	log.Entry(context.TODO()).Infof("final build concurrency value is %d", minConcurrency)
+	log.Entry(ctx).Infof("final build concurrency value is %d", minConcurrency)
 	return minConcurrency
 }
