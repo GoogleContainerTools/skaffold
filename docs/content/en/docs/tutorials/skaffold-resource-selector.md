@@ -1,13 +1,13 @@
 ---
-title: "Skaffold Resource Selector - Configure Which Resources and Which Fields In Those Resources Skaffold Manages"
-linkTitle: "Skaffold Resource Selector - Configure Which Resources and Which Fields In Those Resources Skaffold Manages"
+title: "Manage CRDs w/ Skaffold - Configuring Which K8s Resources & Fields Skaffold Manages"
+linkTitle: "Manage CRDs w/ Skaffold - Configuring Which K8s Resources & Fields Skaffold Manages"
 weight: 90
 featureId: skaffold-resource-selector
 aliases: [/docs/how-tos/skaffold-resource-selector]
 ---
 
 Common Use Cases This Page Helps Resolve:
-* Users who want skaffold to properly manage the rendering and deployment of their Custom CRDs (as skaffold does with K8s objects like Pod, Deployment.apps, etc.)
+* Users who want skaffold to properly manage the rendering and deployment of their custom CRDs (as skaffold does with K8s objects like Pod, Deployment.apps, etc.)
   * Additionally users w/ a CRD that uses a different field name for `image:` (eg: `foo:`) and want skaffold to properly modify the value to instead have the image label for the image skaffold recently built
 * Users who are seeing issues with skaffold's default resource field overwriting for a given resource - eg: skaffold errors as it tries to mutate immutable config on re-deployment
 
