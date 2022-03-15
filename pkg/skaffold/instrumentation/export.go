@@ -204,6 +204,9 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		if doesDeploy.Contains(meter.Command) {
 			deployerMetrics(ctx, meter, m, sharedLabels...)
 		}
+		if doesDeploy.Contains(meter.Command) || meter.Command == "render" {
+			resourceSelectorMetrics(ctx, meter, m, sharedLabels...)
+		}
 	}
 
 	if meter.ErrorCode != 0 {
@@ -264,6 +267,15 @@ func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, l
 	if meter.HelmReleasesCount > 0 {
 		multiReleasesCounter := metric.Must(m).NewInt64ValueRecorder("helmReleases", metric.WithDescription("Multiple helm releases used"))
 		multiReleasesCounter.Record(ctx, 1, append(labels, attribute.Int("count", meter.HelmReleasesCount))...)
+	}
+}
+
+func resourceSelectorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
+	if len(meter.ResourceFilters) > 0 {
+		resourceFilters := metric.Must(m).NewInt64ValueRecorder("resource-filters", metric.WithDescription("The resource filters defined for rendering and/or deployment"))
+		for _, resourceFilter := range meter.ResourceFilters {
+			resourceFilters.Record(ctx, 1, append(labels, attribute.String("source", resourceFilter.Source), attribute.String("type", resourceFilter.Type))...)
+		}
 	}
 }
 

@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -123,11 +124,13 @@ func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]l
 
 	// add user schema values, override defaults
 	for _, rf := range cfg.TransformAllowList() {
+		instrumentation.AddResourceFilter("schema", "allow")
 		groupKind := schema.ParseGroupKind(rf.GroupKind)
 		transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
 		delete(transformableDenylist, groupKind)
 	}
 	for _, rf := range cfg.TransformDenyList() {
+		instrumentation.AddResourceFilter("schema", "deny")
 		groupKind := schema.ParseGroupKind(rf.GroupKind)
 		transformableDenylist[groupKind] = convertJSONPathIndex(rf)
 		delete(transformableAllowlist, groupKind)
@@ -146,12 +149,14 @@ func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]l
 			return nil, nil, err
 		}
 		for _, rf := range rsc.Allow {
+			instrumentation.AddResourceFilter("cli-flag", "allow")
 			groupKind := schema.ParseGroupKind(rf.GroupKind)
 			transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
 			delete(transformableDenylist, groupKind)
 		}
 
 		for _, rf := range rsc.Deny {
+			instrumentation.AddResourceFilter("cli-flag", "deny")
 			groupKind := schema.ParseGroupKind(rf.GroupKind)
 			transformableDenylist[groupKind] = convertJSONPathIndex(rf)
 			delete(transformableAllowlist, groupKind)
