@@ -63,3 +63,14 @@ profiles:
     #  context: netcore
     #  buildpacks:
     #    builder: "gcr.io/buildpacks/builder:v1"
+- name: docker
+  patches:
+  - op: remove
+    path: /deploy/kubectl
+  build:
+    artifacts:
+    - image: skaffold-debug-nodejs
+      context: nodejs
+  deploy:
+    docker:
+      images: [skaffold-debug-nodejs]

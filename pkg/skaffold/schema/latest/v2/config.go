@@ -627,7 +627,7 @@ type DeployConfig struct {
 // time for hybrid workflows.
 type DeployType struct {
 	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
-	DockerDeploy *DockerDeploy `yaml:"-,omitempty"`
+	DockerDeploy *DockerDeploy `yaml:"docker,omitempty"`
 
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
