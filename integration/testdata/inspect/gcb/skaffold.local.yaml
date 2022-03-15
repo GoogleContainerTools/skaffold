@@ -6,7 +6,6 @@ build:
   local:
     concurrency: 1
     tryImportMissing: false
-    useBuildkit: false
     useDockerCLI: false
 profiles:
 - name: gcb
