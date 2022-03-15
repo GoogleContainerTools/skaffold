@@ -70,8 +70,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	return build.TagWithDigest(tag, digest), nil
 }
 
-func (b *Builder) Concurrency() int {
-	return b.ClusterDetails.Concurrency
+func (b *Builder) Concurrency() *int {
+	return util.IntPtr(b.ClusterDetails.Concurrency)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
