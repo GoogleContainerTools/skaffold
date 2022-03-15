@@ -83,6 +83,9 @@ type skaffoldMeter struct {
 	// reasons they were triggered. The triggers can be one of sync, build, or deploy.
 	DevIterations []devIteration
 
+	// ResourceFilters represents user defined resource filters including 'source' and 'type' information
+	ResourceFilters []resourceFilter
+
 	// StartTime Start time of the Skaffold program, used to track how long Skaffold took to finish executing.
 	StartTime time.Time
 
@@ -113,6 +116,15 @@ type devIteration struct {
 
 	// ErrorCode is the error that may have occurred during the (sync/build/deploy).
 	ErrorCode proto.StatusCode
+}
+
+// resourceFilter describes a user defined resource filter.
+type resourceFilter struct {
+	// Source is the source configuration of the resource filter (cli-flag, schema)
+	Source string
+
+	// Type is the defined type of the resource filter (allow, deny)
+	Type string
 }
 
 // creds contains the Google Cloud project ID.

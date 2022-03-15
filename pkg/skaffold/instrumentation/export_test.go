@@ -81,6 +81,7 @@ func TestExportMetrics(t *testing.T) {
 		ResolvedBuildTargetPlatforms: []string{"linux/amd64"},
 		HelmReleasesCount:            2,
 		DevIterations:                []devIteration{{"sync", 0}, {"build", 400}, {"build", 0}, {"sync", 200}, {"deploy", 0}},
+		ResourceFilters:              []resourceFilter{{"schema", "allow"}, {"schema", "deny"}, {"cli-flag", "allow"}, {"cli-flag", "deny"}},
 		ErrorCode:                    proto.StatusCode_BUILD_CANCELLED,
 		StartTime:                    startTime.Add(time.Hour * 24 * 30),
 		Duration:                     time.Minute * 2,
@@ -404,6 +405,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	buildDeps := make(map[interface{}]int)
 	helmReleases := make(map[interface{}]int)
 	devIterations := make(map[interface{}]int)
+	resourceFilters := make(map[interface{}]int)
 	deployers := make(map[interface{}]int)
 	enumFlags := make(map[interface{}]int)
 	platform := make(map[interface{}]int)
@@ -412,7 +414,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	nodePlatforms := make(map[interface{}]int)
 
 	testMaps := []map[interface{}]int{
-		platform, osCount, versionCount, archCount, durationCount, commandCount, errorCount, builders, devIterations, deployers}
+		platform, osCount, versionCount, archCount, durationCount, commandCount, errorCount, builders, devIterations, resourceFilters, deployers}
 
 	for _, meter := range meters {
 		osCount[meter.OS]++
@@ -449,6 +451,11 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 				deployers[d]++
 			}
 		}
+		if doesDeploy.Contains(meter.Command) || meter.Command == "render" {
+			for _, filterI := range meter.ResourceFilters {
+				resourceFilters[filterI]++
+			}
+		}
 	}
 
 	var lines []*line
@@ -481,6 +488,8 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		case "dev/iterations", "debug/iterations":
 			e := l.Labels["error"]
 			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(proto.StatusCode_value[e])}]--
+		case "resource-filters":
+			resourceFilters[resourceFilter{l.Labels["source"], l.Labels["type"]}]--
 		case "errors":
 			e := l.Labels["error"]
 			errorCount[e]--

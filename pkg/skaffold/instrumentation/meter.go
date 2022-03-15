@@ -143,6 +143,10 @@ func AddDevIterationErr(i int, errorCode proto.StatusCode) {
 	meter.DevIterations[i].ErrorCode = errorCode
 }
 
+func AddResourceFilter(source string, typ string) {
+	meter.ResourceFilters = append(meter.ResourceFilters, resourceFilter{Source: source, Type: typ})
+}
+
 func AddFlag(flag *flag.Flag) {
 	if flag.Changed {
 		meter.EnumFlags[flag.Name] = flag.Value.String()
