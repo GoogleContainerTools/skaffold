@@ -149,10 +149,10 @@ func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
 	}
 	minConcurrency := -1
 	for i, b := range pbs {
-		if b.Concurrency() == nil {
-			continue
+		concurrency := 1
+		if b.Concurrency() != nil {
+			concurrency = *b.Concurrency()
 		}
-		concurrency := *b.Concurrency()
 		// set mux concurrency to be the minimum of all builders' concurrency. (concurrency = 0 means unlimited)
 		switch {
 		case minConcurrency < 0:
