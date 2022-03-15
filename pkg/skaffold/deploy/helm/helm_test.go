@@ -386,7 +386,7 @@ func TestNewDeployer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -940,7 +940,7 @@ func TestHelmDeploy(t *testing.T) {
 				namespace:  test.namespace,
 				force:      test.force,
 				configFile: "test.yaml",
-			}, &label.DefaultLabeller{}, &test.helm)
+			}, &label.DefaultLabeller{}, &test.helm, nil)
 			t.RequireNoError(err)
 
 			if test.configure != nil {
@@ -1027,7 +1027,7 @@ func TestHelmCleanup(t *testing.T) {
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
-			}, &label.DefaultLabeller{}, &test.helm)
+			}, &label.DefaultLabeller{}, &test.helm, nil)
 			t.RequireNoError(err)
 
 			deployer.Cleanup(context.Background(), ioutil.Discard, test.dryRun)
@@ -1140,7 +1140,7 @@ func TestHelmDependencies(t *testing.T) {
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
 				}},
-			})
+			}, nil)
 			t.RequireNoError(err)
 			deps, err := deployer.Dependencies()
 
@@ -1395,7 +1395,7 @@ func TestHelmRender(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
-			}, &label.DefaultLabeller{}, &test.helm)
+			}, &label.DefaultLabeller{}, &test.helm, nil)
 			t.RequireNoError(err)
 			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
@@ -1470,7 +1470,7 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			h, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			h, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
 			h.enableDebug = test.enableDebug
 			t.RequireNoError(err)
 			result := h.generateSkaffoldFilter(test.buildFile)
@@ -1516,7 +1516,7 @@ func TestHelmHooks(t *testing.T) {
 				return test.runner
 			})
 
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
 			t.RequireNoError(err)
 			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
 			t.CheckError(test.shouldErr, err)
@@ -1568,7 +1568,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil)
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)

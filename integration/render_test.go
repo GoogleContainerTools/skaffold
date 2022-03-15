@@ -423,7 +423,7 @@ spec:
 				}}),
 			}, &label.DefaultLabeller{}, &latestV2.HelmDeploy{
 				Releases: test.helmReleases,
-			})
+			}, nil)
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			err = deployer.Render(context.Background(), &b, test.builds, true, "")

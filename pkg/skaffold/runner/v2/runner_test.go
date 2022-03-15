@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -514,13 +513,11 @@ func TestNewForConfig(t *testing.T) {
 					DeployType: latestV2.DeployType{
 						KubectlDeploy:   &latestV2.KubectlDeploy{},
 						KustomizeDeploy: &latestV2.KustomizeDeploy{},
-						HelmDeploy:      &latestV2.HelmDeploy{},
 					},
 				},
 			},
 			expectedTester: &test.FullTester{},
 			expectedDeployer: deploy.NewDeployerMux([]deploy.Deployer{
-				&helm.Deployer{},
 				&kubectl.Deployer{},
 				&kustomize.Deployer{},
 			}, false),

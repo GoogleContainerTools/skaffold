@@ -97,9 +97,9 @@ type Deployer struct {
 	syncer        sync.Syncer
 	hookRunner    hooks.Runner
 
-	podSelector *kubernetes.ImageList
+	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact // the set of images defined in ArtifactOverrides
-	localImages []graph.Artifact // the set of images marked as "local" by the Runner
+	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
 
 	kubeContext string
 	kubeConfig  string
@@ -154,26 +154,26 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		})
 	}
 	return &Deployer{
-		HelmDeploy:    h,
-		podSelector:   podSelector,
-		namespaces:    &namespaces,
-		accessor:      component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
-		debugger:      component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:   component.NewImageLoader(cfg, kubectl),
-		logger:        logger,
-		statusMonitor: component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:        component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		hookRunner:    hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		HelmDeploy:     h,
+		podSelector:    podSelector,
+		namespaces:     &namespaces,
+		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:    component.NewImageLoader(cfg, kubectl),
+		logger:         logger,
+		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:         component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
+		hookRunner:     hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
 		originalImages: ogImages,
-		kubeContext:   cfg.GetKubeContext(),
-		kubeConfig:    cfg.GetKubeConfig(),
-		namespace:     cfg.GetKubeNamespace(),
-		forceDeploy:   cfg.ForceDeploy(),
-		configFile:    cfg.ConfigurationFile(),
-		labels:        labeller.Labels(),
-		bV:            hv,
-		enableDebug:   cfg.Mode() == config.RunModes.Debug,
-		isMultiConfig: cfg.IsMultiConfig(),
+		kubeContext:    cfg.GetKubeContext(),
+		kubeConfig:     cfg.GetKubeConfig(),
+		namespace:      cfg.GetKubeNamespace(),
+		forceDeploy:    cfg.ForceDeploy(),
+		configFile:     cfg.ConfigurationFile(),
+		labels:         labeller.Labels(),
+		bV:             hv,
+		enableDebug:    cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig:  cfg.IsMultiConfig(),
 	}, nil
 }
 

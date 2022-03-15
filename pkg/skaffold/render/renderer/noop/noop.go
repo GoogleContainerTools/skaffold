@@ -24,10 +24,9 @@ import (
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
-type Noop struct {}
+type Noop struct{}
 
-func New(config *latestV2.RenderConfig, workingDir, hydrationDir string, labels map[string]string) (Noop, error) {
-	//generator := generate.NewGenerator(workingDir, config.Generate, hydrationDir)
+func New(_ *latestV2.RenderConfig, _, _ string, _ map[string]string) (Noop, error) {
 	return Noop{}, nil
 }
 
