@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v2beta28"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
