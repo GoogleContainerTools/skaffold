@@ -82,8 +82,8 @@ func TestKanikoLogLevel(t *testing.T) {
 		{logrusLevel: logrus.PanicLevel, expected: logrus.InfoLevel},
 	}
 	for _, test := range tests {
-		defer func(l logrus.Level) { logrus.SetLevel(l) }(logrus.GetLevel())
-		logrus.SetLevel(test.logrusLevel)
+		defer func(l logrus.Level) { logger.SetLevel(l) }(logger.GetLevel())
+		logger.SetLevel(test.logrusLevel)
 
 		kanikoLevel := KanikoLogLevel()
 

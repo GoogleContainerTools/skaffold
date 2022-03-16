@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -107,7 +108,8 @@ func TestTimingsBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			b := &mockBuilder{err: test.shouldErr}
 			builder, _, _ := WithTimings(b, nil, nil, false)
@@ -143,7 +145,8 @@ func TestTimingsPrune(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			b := &mockBuilder{err: test.shouldErr}
 			builder, _, _ := WithTimings(b, nil, nil, false)
@@ -179,7 +182,8 @@ func TestTimingsTest(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			tt := &mockTester{err: test.shouldErr}
 			_, tester, _ := WithTimings(nil, tt, nil, false)
@@ -215,7 +219,8 @@ func TestTimingsDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			d := &mockDeployer{err: test.shouldErr}
 			_, _, deployer := WithTimings(nil, nil, d, false)
@@ -251,7 +256,8 @@ func TestTimingsCleanup(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			d := &mockDeployer{err: test.shouldErr}
 			_, _, deployer := WithTimings(nil, nil, d, false)

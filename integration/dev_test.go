@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
@@ -76,7 +75,7 @@ func TestDevNotification(t *testing.T) {
 			// Make sure the old Deployment and the new Deployment are different
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				newDep := client.GetDeployment(testDev)
-				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
+				t.Logf("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
 			failNowIfError(t, err)
@@ -248,7 +247,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 	// Make sure the old Deployment and the new Deployment are different
 	err = wait.Poll(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		newDep := client.GetDeployment(testDev)
-		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
+		t.Logf("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
 	failNowIfError(t, err)
