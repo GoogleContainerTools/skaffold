@@ -35,9 +35,10 @@ _The below list is derived from the values defined [here](https://github.com/Goo
 * Fleet.agones.dev
 * GameServer.agones.dev
 * Rollout.argoproj.io
-* ClusterWorkflowTemplate.argoproj.io
 * Workflow.argoproj.io
+* CronWorkflow.argoproj.io
 * WorkflowTemplate.argoproj.io
+* ClusterWorkflowTemplate.argoproj.io
 * *.cnrm.cloud.google.com
 
 _This default overwriting modifies all JSON Paths for those GroupKinds of the form:_

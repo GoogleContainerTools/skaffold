@@ -107,18 +107,23 @@ var TransformAllowlist = map[apimachinery.GroupKind]latestV1.ResourceFilter{
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
-	{Group: "argoproj.io", Kind: "ClusterWorkflowTemplate"}: {
-		GroupKind: "ClusterWorkflowTemplate.argoproj.io",
-		Image:     []string{".*"},
-		Labels:    []string{".*"},
-	},
 	{Group: "argoproj.io", Kind: "Workflow"}: {
 		GroupKind: "Workflow.argoproj.io",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
+	{Group: "argoproj.io", Kind: "CronWorkflow"}: {
+		GroupKind: "CronWorkflow.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
 	{Group: "argoproj.io", Kind: "WorkflowTemplate"}: {
 		GroupKind: "WorkflowTemplate.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "argoproj.io", Kind: "ClusterWorkflowTemplate"}: {
+		GroupKind: "ClusterWorkflowTemplate.argoproj.io",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
