@@ -564,7 +564,7 @@ func withKubeContext(kubeContext string) func(*latestV2.SkaffoldConfig) {
 
 func withHelmDeploy() func(*latestV2.SkaffoldConfig) {
 	return func(cfg *latestV2.SkaffoldConfig) {
-		cfg.Deploy.DeployType.HelmDeploy = &latestV2.HelmDeploy{}
+		cfg.Deploy.DeployType.LegacyHelmDeploy = &latestV2.LegacyHelmDeploy{}
 	}
 }
 

@@ -178,9 +178,9 @@ func (rc *RunContext) AddSkaffoldLabels() bool {
 	return rc.Opts.Mode() != config.RunModes.Render
 }
 
-func (rc *RunContext) UsingHelmDeploy() bool {
+func (rc *RunContext) UsingLegacyHelmDeploy() bool {
 	for _, config := range rc.DeployConfigs() {
-		if config.HelmDeploy != nil {
+		if config.LegacyHelmDeploy != nil {
 			return true
 		}
 	}

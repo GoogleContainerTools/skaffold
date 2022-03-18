@@ -79,7 +79,7 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 	for _, p := range pipelines {
 		if p.Render.Generate.Helm != nil {
 			dCtx := &deployerCtx{runCtx, p.Deploy}
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, &latestV2.HelmDeploy{
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, &latestV2.LegacyHelmDeploy{
 				Flags: p.Render.Generate.Helm.Flags,
 			}, runCtx.Artifacts())
 			if err != nil {
@@ -115,8 +115,8 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 		}
 
 		// TODO(nkubala)[v2-merge]: add d.LegacyHelmDeploy (or something similar)
-		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.HelmDeploy, runCtx.Artifacts())
+		if d.LegacyHelmDeploy != nil {
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts())
 			if err != nil {
 				return nil, err
 			}

@@ -415,13 +415,13 @@ spec:
 				Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
 					Deploy: latestV2.DeployConfig{
 						DeployType: latestV2.DeployType{
-							HelmDeploy: &latestV2.HelmDeploy{
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},
 					},
 				}}),
-			}, &label.DefaultLabeller{}, &latestV2.HelmDeploy{
+			}, &label.DefaultLabeller{}, &latestV2.LegacyHelmDeploy{
 				Releases: test.helmReleases,
 			}, nil)
 			t.RequireNoError(err)

@@ -127,7 +127,7 @@ func SetDefaultRenderer(c *latestV2.SkaffoldConfig) {
 	if c.Render.Generate.Helm != nil {
 		return
 	}
-	if c.Deploy.HelmDeploy != nil {
+	if c.Deploy.LegacyHelmDeploy != nil {
 		return
 	}
 	// Set default manifests to "k8s/*.yaml", same as v1.

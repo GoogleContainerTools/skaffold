@@ -87,8 +87,8 @@ func TestListDeployers(t *testing.T) {
 			description: "multiple deployers config",
 			deploy: &latestV2.DeployConfig{
 				DeployType: latestV2.DeployType{
-					HelmDeploy:    &latestV2.HelmDeploy{},
-					KubectlDeploy: &latestV2.KubectlDeploy{},
+					LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
+					KubectlDeploy:    &latestV2.KubectlDeploy{},
 				},
 			},
 			expected: []string{"helm", "kubectl"},

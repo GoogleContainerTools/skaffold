@@ -87,7 +87,7 @@ var writeBuildArtifactsFunc = writeBuildArtifacts
 
 // Deployer deploys workflows using the helm CLI
 type Deployer struct {
-	*latestV2.HelmDeploy
+	*latestV2.LegacyHelmDeploy
 
 	accessor      access.Accessor
 	debugger      debug.Debugger
@@ -130,7 +130,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV2.HelmDeploy, artifacts []*latestV2.Artifact) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV2.LegacyHelmDeploy, artifacts []*latestV2.Artifact) (*Deployer, error) {
 	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -154,26 +154,26 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		})
 	}
 	return &Deployer{
-		HelmDeploy:     h,
-		podSelector:    podSelector,
-		namespaces:     &namespaces,
-		accessor:       component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
-		debugger:       component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:    component.NewImageLoader(cfg, kubectl),
-		logger:         logger,
-		statusMonitor:  component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:         component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		hookRunner:     hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
-		originalImages: ogImages,
-		kubeContext:    cfg.GetKubeContext(),
-		kubeConfig:     cfg.GetKubeConfig(),
-		namespace:      cfg.GetKubeNamespace(),
-		forceDeploy:    cfg.ForceDeploy(),
-		configFile:     cfg.ConfigurationFile(),
-		labels:         labeller.Labels(),
-		bV:             hv,
-		enableDebug:    cfg.Mode() == config.RunModes.Debug,
-		isMultiConfig:  cfg.IsMultiConfig(),
+		LegacyHelmDeploy: h,
+		podSelector:      podSelector,
+		namespaces:       &namespaces,
+		accessor:         component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:         component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:      component.NewImageLoader(cfg, kubectl),
+		logger:           logger,
+		statusMonitor:    component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:           component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
+		hookRunner:       hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		originalImages:   ogImages,
+		kubeContext:      cfg.GetKubeContext(),
+		kubeConfig:       cfg.GetKubeConfig(),
+		namespace:        cfg.GetKubeNamespace(),
+		forceDeploy:      cfg.ForceDeploy(),
+		configFile:       cfg.ConfigurationFile(),
+		labels:           labeller.Labels(),
+		bV:               hv,
+		enableDebug:      cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig:    cfg.IsMultiConfig(),
 	}, nil
 }
 
@@ -437,7 +437,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 }
 
 func (h *Deployer) HasRunnableHooks() bool {
-	return len(h.HelmDeploy.LifecycleHooks.PreHooks) > 0 || len(h.HelmDeploy.LifecycleHooks.PostHooks) > 0
+	return len(h.LegacyHelmDeploy.LifecycleHooks.PreHooks) > 0 || len(h.LegacyHelmDeploy.LifecycleHooks.PostHooks) > 0
 }
 
 func (h *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {

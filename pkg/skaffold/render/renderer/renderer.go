@@ -35,8 +35,8 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(config *latestV2.RenderConfig, workingDir, hydrationDir string, labels map[string]string, usingHelmDeploy bool) (Renderer, error) {
-	if usingHelmDeploy {
+func New(config *latestV2.RenderConfig, workingDir, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
+	if usingLegacyHelmDeploy {
 		return noop.New(config, workingDir, hydrationDir, labels)
 	}
 	if config.Validate == nil && config.Transform == nil && config.Kpt == nil {
