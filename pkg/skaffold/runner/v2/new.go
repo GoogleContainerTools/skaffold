@@ -82,7 +82,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	}
 
 	renderer, err := renderer.New(
-		runCtx.GetRenderConfig(), runCtx.GetWorkingDir(), hydrationDir, labeller.Labels())
+		runCtx.GetRenderConfig(), runCtx.GetWorkingDir(), hydrationDir, labeller.Labels(), runCtx.UsingLegacyHelmDeploy())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating renderer: %w", err)

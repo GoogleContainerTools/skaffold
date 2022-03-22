@@ -58,8 +58,8 @@ var (
 			},
 			Deploy: latestV2.DeployConfig{
 				DeployType: latestV2.DeployType{
-					HelmDeploy:    &latestV2.HelmDeploy{},
-					KubectlDeploy: &latestV2.KubectlDeploy{},
+					LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
+					KubectlDeploy:    &latestV2.KubectlDeploy{},
 				},
 			},
 		},

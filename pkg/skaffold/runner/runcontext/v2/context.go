@@ -178,6 +178,16 @@ func (rc *RunContext) AddSkaffoldLabels() bool {
 	return rc.Opts.Mode() != config.RunModes.Render
 }
 
+func (rc *RunContext) UsingLegacyHelmDeploy() bool {
+	for _, config := range rc.DeployConfigs() {
+		if config.LegacyHelmDeploy != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (rc *RunContext) DefaultPipeline() latestV2.Pipeline            { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
 func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }

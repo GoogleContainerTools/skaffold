@@ -51,7 +51,7 @@ var testBuilds = []graph.Artifact{{
 	Tag:       "docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 }}
 
-var testDeployConfig = latestV2.HelmDeploy{
+var testDeployConfig = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -62,7 +62,7 @@ var testDeployConfig = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployNamespacedConfig = latestV2.HelmDeploy{
+var testDeployNamespacedConfig = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -74,7 +74,7 @@ var testDeployNamespacedConfig = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployEnvTemplateNamespacedConfig = latestV2.HelmDeploy{
+var testDeployEnvTemplateNamespacedConfig = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -86,7 +86,7 @@ var testDeployEnvTemplateNamespacedConfig = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployConfigRemoteRepo = latestV2.HelmDeploy{
+var testDeployConfigRemoteRepo = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -98,7 +98,7 @@ var testDeployConfigRemoteRepo = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployConfigTemplated = latestV2.HelmDeploy{
+var testDeployConfigTemplated = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -114,7 +114,7 @@ var testDeployConfigTemplated = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployConfigValuesFilesTemplated = latestV2.HelmDeploy{
+var testDeployConfigValuesFilesTemplated = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -125,7 +125,7 @@ var testDeployConfigValuesFilesTemplated = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployConfigVersionTemplated = latestV2.HelmDeploy{
+var testDeployConfigVersionTemplated = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -133,7 +133,7 @@ var testDeployConfigVersionTemplated = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployConfigSetFiles = latestV2.HelmDeploy{
+var testDeployConfigSetFiles = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -145,7 +145,7 @@ var testDeployConfigSetFiles = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployRecreatePodsConfig = latestV2.HelmDeploy{
+var testDeployRecreatePodsConfig = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -157,7 +157,7 @@ var testDeployRecreatePodsConfig = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeploySkipBuildDependenciesConfig = latestV2.HelmDeploy{
+var testDeploySkipBuildDependenciesConfig = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -169,7 +169,7 @@ var testDeploySkipBuildDependenciesConfig = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployWithPackaged = latestV2.HelmDeploy{
+var testDeployWithPackaged = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "testdata/skaffold-helm",
@@ -180,7 +180,7 @@ var testDeployWithPackaged = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployWithTemplatedName = latestV2.HelmDeploy{
+var testDeployWithTemplatedName = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "{{.USER}}-skaffold-helm",
 		ChartPath: "examples/test",
@@ -191,7 +191,7 @@ var testDeployWithTemplatedName = latestV2.HelmDeploy{
 	},
 }
 
-var testDeploySkipBuildDependencies = latestV2.HelmDeploy{
+var testDeploySkipBuildDependencies = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:                  "skaffold-helm",
 		ChartPath:             "stable/chartmuseum",
@@ -199,7 +199,7 @@ var testDeploySkipBuildDependencies = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployRemoteChart = latestV2.HelmDeploy{
+var testDeployRemoteChart = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:        "skaffold-helm-remote",
 		RemoteChart: "stable/chartmuseum",
@@ -207,7 +207,7 @@ var testDeployRemoteChart = latestV2.HelmDeploy{
 	}},
 }
 
-var testDeployRemoteChartVersion = latestV2.HelmDeploy{
+var testDeployRemoteChartVersion = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:        "skaffold-helm-remote",
 		RemoteChart: "stable/chartmuseum",
@@ -217,7 +217,7 @@ var testDeployRemoteChartVersion = latestV2.HelmDeploy{
 }
 
 var upgradeOnChangeFalse = false
-var testDeployUpgradeOnChange = latestV2.HelmDeploy{
+var testDeployUpgradeOnChange = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:            "skaffold-helm-upgradeOnChange",
 		ChartPath:       "examples/test",
@@ -225,7 +225,7 @@ var testDeployUpgradeOnChange = latestV2.HelmDeploy{
 	}},
 }
 
-var testTwoReleases = latestV2.HelmDeploy{
+var testTwoReleases = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "other",
 		ChartPath: "examples/test",
@@ -236,7 +236,7 @@ var testTwoReleases = latestV2.HelmDeploy{
 }
 
 var createNamespaceFlag = true
-var testDeployCreateNamespaceConfig = latestV2.HelmDeploy{
+var testDeployCreateNamespaceConfig = latestV2.LegacyHelmDeploy{
 	Releases: []latestV2.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
@@ -386,7 +386,7 @@ func TestNewDeployer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -406,7 +406,7 @@ func TestHelmDeploy(t *testing.T) {
 		description        string
 		commands           util.Command
 		env                []string
-		helm               latestV2.HelmDeploy
+		helm               latestV2.LegacyHelmDeploy
 		namespace          string
 		configure          func(*Deployer)
 		builds             []graph.Artifact
@@ -940,7 +940,7 @@ func TestHelmDeploy(t *testing.T) {
 				namespace:  test.namespace,
 				force:      test.force,
 				configFile: "test.yaml",
-			}, &label.DefaultLabeller{}, &test.helm)
+			}, &label.DefaultLabeller{}, &test.helm, nil)
 			t.RequireNoError(err)
 
 			if test.configure != nil {
@@ -960,7 +960,7 @@ func TestHelmCleanup(t *testing.T) {
 	tests := []struct {
 		description      string
 		commands         util.Command
-		helm             latestV2.HelmDeploy
+		helm             latestV2.LegacyHelmDeploy
 		namespace        string
 		builds           []graph.Artifact
 		expectedWarnings []string
@@ -1027,7 +1027,7 @@ func TestHelmCleanup(t *testing.T) {
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
-			}, &label.DefaultLabeller{}, &test.helm)
+			}, &label.DefaultLabeller{}, &test.helm, nil)
 			t.RequireNoError(err)
 
 			deployer.Cleanup(context.Background(), ioutil.Discard, test.dryRun)
@@ -1130,7 +1130,7 @@ func TestHelmDependencies(t *testing.T) {
 				local = tmpDir.Root()
 			}
 
-			deployer, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &latestV2.HelmDeploy{
+			deployer, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &latestV2.LegacyHelmDeploy{
 				Releases: []latestV2.HelmRelease{{
 					Name:                  "skaffold-helm",
 					ChartPath:             local,
@@ -1140,7 +1140,7 @@ func TestHelmDependencies(t *testing.T) {
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
 				}},
-			})
+			}, nil)
 			t.RequireNoError(err)
 			deps, err := deployer.Dependencies()
 
@@ -1226,7 +1226,7 @@ func TestHelmRender(t *testing.T) {
 		description string
 		shouldErr   bool
 		commands    util.Command
-		helm        latestV2.HelmDeploy
+		helm        latestV2.LegacyHelmDeploy
 		env         []string
 		outputFile  string
 		expected    string
@@ -1395,7 +1395,7 @@ func TestHelmRender(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
-			}, &label.DefaultLabeller{}, &test.helm)
+			}, &label.DefaultLabeller{}, &test.helm, nil)
 			t.RequireNoError(err)
 			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
@@ -1470,7 +1470,7 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			h, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			h, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
 			h.enableDebug = test.enableDebug
 			t.RequireNoError(err)
 			result := h.generateSkaffoldFilter(test.buildFile)
@@ -1516,7 +1516,7 @@ func TestHelmHooks(t *testing.T) {
 				return test.runner
 			})
 
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig)
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
 			t.RequireNoError(err)
 			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
 			t.CheckError(test.shouldErr, err)
@@ -1543,23 +1543,23 @@ func (c *helmConfig) PortForwardResources() []*latestV2.PortForwardResource { re
 func TestHasRunnableHooks(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         latestV2.HelmDeploy
+		cfg         latestV2.LegacyHelmDeploy
 		expected    bool
 	}{
 		{
 			description: "no hooks defined",
-			cfg:         latestV2.HelmDeploy{},
+			cfg:         latestV2.LegacyHelmDeploy{},
 		},
 		{
 			description: "has pre-deploy hook defined",
-			cfg: latestV2.HelmDeploy{
+			cfg: latestV2.LegacyHelmDeploy{
 				LifecycleHooks: latestV2.DeployHooks{PreHooks: []latestV2.DeployHookItem{{}}},
 			},
 			expected: true,
 		},
 		{
 			description: "has post-deploy hook defined",
-			cfg: latestV2.HelmDeploy{
+			cfg: latestV2.LegacyHelmDeploy{
 				LifecycleHooks: latestV2.DeployHooks{PostHooks: []latestV2.DeployHookItem{{}}},
 			},
 			expected: true,
@@ -1568,7 +1568,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil)
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)

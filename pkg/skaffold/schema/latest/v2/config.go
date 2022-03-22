@@ -629,8 +629,8 @@ type DeployType struct {
 	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
 	DockerDeploy *DockerDeploy `yaml:"docker,omitempty"`
 
-	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
-	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
+	// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
+	LegacyHelmDeploy *LegacyHelmDeploy `yaml:"helm,omitempty"`
 
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
@@ -1625,10 +1625,10 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	return m, err
 }
 
-// TODO (yuwenma): HelmDeploy and KustomizeDeploy shall be deprecated.
+// TODO (yuwenma): LegacyHelmDeploy and KustomizeDeploy shall be deprecated.
 
-// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
-type HelmDeploy struct {
+// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
+type LegacyHelmDeploy struct {
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 

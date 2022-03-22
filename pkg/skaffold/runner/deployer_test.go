@@ -269,7 +269,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 			{
 				name: "one config with helm deploy",
 				cfgs: []latestV2.DeployType{{
-					HelmDeploy: &latestV2.HelmDeploy{},
+					LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 				}},
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
 					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),

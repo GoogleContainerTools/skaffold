@@ -1485,7 +1485,7 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	return m, err
 }
 
-// TODO (yuwenma): HelmDeploy and KustomizeDeploy shall be deprecated.
+// TODO (yuwenma): LegacyHelmDeploy and KustomizeDeploy shall be deprecated.
 
 // HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 type HelmDeploy struct {

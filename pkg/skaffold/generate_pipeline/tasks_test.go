@@ -224,7 +224,7 @@ func TestGenerateDeployTasks(t *testing.T) {
 						Pipeline: latestV2.Pipeline{
 							Deploy: latestV2.DeployConfig{
 								DeployType: latestV2.DeployType{
-									HelmDeploy: &latestV2.HelmDeploy{},
+									LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 								},
 							},
 						},
@@ -236,7 +236,7 @@ func TestGenerateDeployTasks(t *testing.T) {
 						Pipeline: latestV2.Pipeline{
 							Deploy: latestV2.DeployConfig{
 								DeployType: latestV2.DeployType{
-									HelmDeploy: &latestV2.HelmDeploy{},
+									LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 								},
 							},
 						},
@@ -289,7 +289,7 @@ func TestGenerateDeployTasks(t *testing.T) {
 						Pipeline: latestV2.Pipeline{
 							Deploy: latestV2.DeployConfig{
 								DeployType: latestV2.DeployType{
-									HelmDeploy: &latestV2.HelmDeploy{},
+									LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 								},
 							},
 						},
@@ -344,7 +344,7 @@ func TestGenerateDeployTask(t *testing.T) {
 			description: "successfully generate deploy task",
 			deployConfig: latestV2.DeployConfig{
 				DeployType: latestV2.DeployType{
-					HelmDeploy: &latestV2.HelmDeploy{},
+					LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 				},
 			},
 			shouldErr: false,
@@ -353,9 +353,9 @@ func TestGenerateDeployTask(t *testing.T) {
 			description: "fail generating deploy task",
 			deployConfig: latestV2.DeployConfig{
 				DeployType: latestV2.DeployType{
-					HelmDeploy:      nil,
-					KubectlDeploy:   nil,
-					KustomizeDeploy: nil,
+					LegacyHelmDeploy: nil,
+					KubectlDeploy:    nil,
+					KustomizeDeploy:  nil,
 				},
 			},
 			shouldErr: true,
