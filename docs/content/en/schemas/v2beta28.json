@@ -871,6 +871,7 @@
           "default": "false"
         },
         "volumes": {
+          "$ref": "#/definitions/BuildpackVolume",
           "description": "support mounting host volumes into the container.",
           "x-intellij-html-description": "support mounting host volumes into the container."
         }
