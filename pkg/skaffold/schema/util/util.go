@@ -130,7 +130,7 @@ func buildFlatMap(obj map[string]interface{}, result map[string]string, currK st
 		}
 		currK = prevK
 	}
-	return
+	return err
 }
 
 func marshalInlineYaml(in interface{}) ([]byte, error) {
