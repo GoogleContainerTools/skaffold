@@ -391,6 +391,12 @@ func TestGetCluster(t *testing.T) {
 			cfg:         &ContextConfig{Kubecontext: "not-k3d"},
 			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
+		{
+			description: "generic cluster, default repo already defined",
+			cfg:         &ContextConfig{Kubecontext: "anything-else", DefaultRepo: "myrepo"},
+			defaultRepo: NewStringOrUndefined(&defaultRepo),
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&defaultRepo)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -792,16 +798,31 @@ kubeContexts: []`,
 			},
 		},
 		{
-			description: "update global context when update config last taken is in past",
+			description: "don't add LastPrompted if UpdateCheck is disabled",
 			cfg: `
 global:
-  update-config:
-    last-taken: "some date in past"
+  update-check: false
 kubeContexts: []`,
 			expectedCfg: &GlobalConfig{
 				Global: &ContextConfig{
+					UpdateCheck: util.BoolPtr(false),
+				},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "don't update LastPrompted if UpdateCheck is disabled",
+			cfg: `
+global:
+  update-check: false
+  update:
+    last-prompted: "some date"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					UpdateCheck: util.BoolPtr(false),
 					UpdateCheckConfig: &UpdateConfig{
-						LastPrompted: "2021-01-01T00:00:00Z"},
+						LastPrompted: "some date"},
 				},
 				ContextConfigs: []*ContextConfig{},
 			},

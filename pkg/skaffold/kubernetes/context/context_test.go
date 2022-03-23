@@ -21,8 +21,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -149,7 +148,7 @@ func TestGetRestClientConfig(t *testing.T) {
 	})
 
 	testutil.Run(t, "kube-config immutability", func(t *testutil.T) {
-		logrus.SetLevel(logrus.InfoLevel)
+		log.SetLevel(log.InfoLevel)
 		kubeConfig := t.TempFile("config", []byte(validKubeConfig))
 		kubeContext = clusterBarContext
 		t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})

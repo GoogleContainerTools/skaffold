@@ -21,12 +21,21 @@ import (
 	"fmt"
 	"io"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Build builds an artifact with Cloud Native Buildpacks:
 // https://buildpacks.io/
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, matcher platform.Matcher) (string, error) {
+	if matcher.IsMultiPlatform() {
+		// TODO: Implement building multiplatform images
+		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the buildpacks builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", matcher.String(), artifact.ImageName)
+	}
+
 	built, err := b.build(ctx, out, artifact, tag)
 	if err != nil {
 		return "", err
@@ -40,4 +49,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.A
 		return b.localDocker.Push(ctx, out, tag)
 	}
 	return b.localDocker.ImageID(ctx, tag)
+}
+
+func (b *Builder) SupportedPlatforms() platform.Matcher {
+	return platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}}
 }

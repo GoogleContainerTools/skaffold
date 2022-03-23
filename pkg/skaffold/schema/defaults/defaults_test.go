@@ -319,7 +319,6 @@ func TestSetDefaultsOnLocalBuild(t *testing.T) {
 	err = Set(cfg2)
 	testutil.CheckError(t, false, err)
 	SetDefaultDeployer(cfg2)
-	testutil.CheckDeepEqual(t, 1, *cfg2.Build.LocalBuild.Concurrency)
 }
 
 func TestSetPortForwardLocalPort(t *testing.T) {

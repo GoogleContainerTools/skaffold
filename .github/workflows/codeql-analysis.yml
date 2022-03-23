@@ -33,13 +33,20 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - uses: actions/cache@v2
+    # Retrieve build locations with `go env`
+    # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
+    - id: go-cache-paths
+      run: |
+        echo "::set-output name=go-build::$(go env GOCACHE)"
+        echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+
+    - uses: actions/cache@v3
       with:
         path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
+          ${{ steps.go-cache-paths.outputs.go-build }}
+          ${{ steps.go-cache-paths.outputs.go-mod }}
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-

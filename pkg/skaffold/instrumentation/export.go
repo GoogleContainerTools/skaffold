@@ -204,6 +204,9 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		if doesDeploy.Contains(meter.Command) {
 			deployerMetrics(ctx, meter, m, sharedLabels...)
 		}
+		if doesDeploy.Contains(meter.Command) || meter.Command == "render" {
+			resourceSelectorMetrics(ctx, meter, m, sharedLabels...)
+		}
 	}
 
 	if meter.ErrorCode != 0 {
@@ -267,15 +270,43 @@ func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, l
 	}
 }
 
+func resourceSelectorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
+	if len(meter.ResourceFilters) > 0 {
+		resourceFilters := metric.Must(m).NewInt64ValueRecorder("resource-filters", metric.WithDescription("The resource filters defined for rendering and/or deployment"))
+		for _, resourceFilter := range meter.ResourceFilters {
+			resourceFilters.Record(ctx, 1, append(labels, attribute.String("source", resourceFilter.Source), attribute.String("type", resourceFilter.Type))...)
+		}
+	}
+}
+
 func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
 	builderCounter := metric.Must(m).NewInt64ValueRecorder("builders", metric.WithDescription("Builders used"))
 	artifactCounter := metric.Must(m).NewInt64ValueRecorder("artifacts", metric.WithDescription("Number of artifacts used"))
 	dependenciesCounter := metric.Must(m).NewInt64ValueRecorder("artifact-dependencies", metric.WithDescription("Number of artifacts with dependencies"))
+	platformsCounter := metric.Must(m).NewInt64ValueRecorder("artifact-with-platforms", metric.WithDescription("Number of artifacts with target platforms specified"))
 	for builder, count := range meter.Builders {
 		bLabel := attribute.String("builder", builder)
 		builderCounter.Record(ctx, 1, append(labels, bLabel)...)
 		artifactCounter.Record(ctx, int64(count), append(labels, bLabel)...)
 		dependenciesCounter.Record(ctx, int64(meter.BuildDependencies[builder]), append(labels, bLabel)...)
+		platformsCounter.Record(ctx, int64(meter.BuildWithPlatforms[builder]), append(labels, bLabel)...)
+	}
+
+	if len(meter.ResolvedBuildTargetPlatforms) > 0 {
+		platforms := metric.Must(m).NewInt64ValueRecorder("build-platforms", metric.WithDescription("The resolved build target platforms for each run"))
+		for _, buildPlatform := range meter.ResolvedBuildTargetPlatforms {
+			platforms.Record(ctx, 1, append(labels, attribute.String("os_arch", buildPlatform))...)
+		}
+	}
+
+	if len(meter.CliBuildTargetPlatforms) > 0 {
+		platforms := metric.Must(m).NewInt64ValueRecorder("cli-platforms", metric.WithDescription("The build target platforms specified via CLI flag --platform"))
+		platforms.Record(ctx, 1, append(labels, attribute.String("os_arch", meter.CliBuildTargetPlatforms))...)
+	}
+
+	if len(meter.DeployNodePlatforms) > 0 {
+		platforms := metric.Must(m).NewInt64ValueRecorder("node-platforms", metric.WithDescription("The kubernetes cluster node platforms"))
+		platforms.Record(ctx, 1, append(labels, attribute.String("os_arch", meter.DeployNodePlatforms))...)
 	}
 }
 

@@ -946,6 +946,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | BUILD_GCB_EXTRACT_PROJECT_ID | 143 | GCB error to extract Project ID. |
 | BUILD_GET_CLOUD_STORAGE_CLIENT_ERR | 144 | GCB error to get cloud storage client to perform GCS operation. |
 | BUILD_GET_CLOUD_BUILD_CLIENT_ERR | 145 | GCB error to get cloud build client to perform GCB operations. |
+| BUILD_UNKNOWN_PLATFORM_FLAG | 150 | Value provided to --platform flag cannot be parsed |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -1101,6 +1102,7 @@ Enum for Suggestion codes
 | FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME | 114 | Executing extractContainerNameFromNetworkMode with a non valid mode (only container mode allowed) |
 | RUN_DOCKER_PRUNE | 115 | Prune Docker image |
 | SET_CLEANUP_FLAG | 116 | Set Cleanup flag for skaffold command. |
+| BUILD_FIX_UNKNOWN_PLATFORM_FLAG | 117 | Build platform error suggestion codes |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |

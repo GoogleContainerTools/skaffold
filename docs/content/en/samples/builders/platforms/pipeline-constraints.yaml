@@ -1,0 +1,4 @@
+build:
+  platforms: ["linux/arm64"]
+  artifacts:
+    - image: example

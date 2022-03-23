@@ -316,11 +316,10 @@ var flagRegistry = []Flag{
 		Name:          "status-check",
 		Usage:         "Wait for deployed resources to stabilize",
 		Value:         &opts.StatusCheck,
-		DefValue:      true,
+		DefValue:      nil,
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
-		NoOptDefVal:   "true",
 	},
 	{
 		Name:          "iterative-status-check",
@@ -382,6 +381,14 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
+	},
+	{
+		Name:          "platform",
+		Usage:         "The platform to target for the build artifacts",
+		Value:         &opts.Platforms,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
 		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
 	},
 	{
@@ -598,6 +605,14 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy"},
+	},
+	{
+		Name:          "resource-selector-rules-file",
+		Usage:         "Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist",
+		Value:         &opts.TransformRulesFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
 	},
 }
 

@@ -34,26 +34,29 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
-func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, runCtx *runcontext.RunContext) *Builder {
+func NewBuilder(builder build.Builder, tagger tag.Tagger, platforms platform.Resolver, cache cache.Cache, runCtx *runcontext.RunContext) *Builder {
 	return &Builder{
-		Builder: builder,
-		tagger:  tagger,
-		cache:   cache,
-		runCtx:  runCtx,
+		Builder:   builder,
+		tagger:    tagger,
+		platforms: platforms,
+		cache:     cache,
+		runCtx:    runCtx,
 	}
 }
 
 type Builder struct {
-	Builder build.Builder
-	tagger  tag.Tagger
-	cache   cache.Cache
-	Builds  []graph.Artifact
+	Builder   build.Builder
+	tagger    tag.Tagger
+	platforms platform.Resolver
+	cache     cache.Cache
+	Builds    []graph.Artifact
 
 	hasBuilt bool
 	runCtx   *runcontext.RunContext
@@ -99,14 +102,16 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV
 	default:
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, r.platforms, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact, platforms platform.Resolver) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
 
 		r.hasBuilt = true
-
-		bRes, err := r.Builder.Build(ctx, out, tags, artifacts)
+		if err != nil {
+			return nil, err
+		}
+		bRes, err := r.Builder.Build(ctx, out, tags, platforms, artifacts)
 		if err != nil {
 			return nil, err
 		}

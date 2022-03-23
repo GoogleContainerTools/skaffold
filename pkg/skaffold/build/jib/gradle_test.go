@@ -23,11 +23,15 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -87,7 +91,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag")
+			}, "img:tag", platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -158,7 +162,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 				ArtifactType: latestV1.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag")
+			}, "img:tag", platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -343,6 +347,8 @@ func TestGenerateGradleBuildArgs(t *testing.T) {
 	tests := []struct {
 		description        string
 		in                 latestV1.JibArtifact
+		platforms          platform.Matcher
+		expectedMinVersion string
 		deps               []*latestV1.ArtifactDependency
 		image              string
 		skipTests          bool
@@ -358,6 +364,9 @@ func TestGenerateGradleBuildArgs(t *testing.T) {
 		{description: "multi module without tests with insecure registries", in: latestV1.JibArtifact{Project: "project"}, image: "registry.tld/image", skipTests: true, insecureRegistries: map[string]bool{"registry.tld": true}, out: []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image"}},
 		{description: "single module with custom base image", in: latestV1.JibArtifact{BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
 		{description: "multi module with custom base image", in: latestV1.JibArtifact{Project: "project", BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-gradleBuildArgs-for-project-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
+		{description: "host platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: runtime.GOOS, Architecture: runtime.GOARCH}}}, out: []string{"fake-gradleBuildArgs-for-testTask", fmt.Sprintf("-Djib.from.platforms=%s/%s", runtime.GOOS, runtime.GOARCH), "--image=image"}},
+		{description: "cross-platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: "freebsd", Architecture: "arm"}}}, out: []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.platforms=freebsd/arm", "--image=image"}, expectedMinVersion: MinimumJibGradleVersionForCrossPlatform},
+		{description: "multi-platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "darwin", Architecture: "arm64"}}}, out: []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.platforms=linux/amd64,darwin/arm64", "--image=image"}, expectedMinVersion: MinimumJibGradleVersionForCrossPlatform},
 		{
 			description: "single module with local base image from required artifacts",
 			in:          latestV1.JibArtifact{BaseImage: "alias"},
@@ -394,8 +403,12 @@ func TestGenerateGradleBuildArgs(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, MinimumJibGradleVersion))
-			command := GenerateGradleBuildArgs("testTask", test.image, &test.in, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries, false)
+			minVersion := MinimumJibGradleVersion
+			if test.expectedMinVersion != "" {
+				minVersion = test.expectedMinVersion
+			}
+			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, minVersion))
+			command := GenerateGradleBuildArgs("testTask", test.image, &test.in, test.platforms, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries, false)
 			t.CheckDeepEqual(test.out, command)
 		})
 	}

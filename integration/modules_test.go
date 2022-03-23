@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -49,9 +48,9 @@ func TestModules_BuildDependency(t *testing.T) {
 			newDep1 := client.GetDeployment("app1")
 			newDep2 := client.GetDeployment("app2")
 			newDep3 := client.GetDeployment("app3")
-			logrus.Infof("app1 - old gen: %d, new gen: %d", dep1.GetGeneration(), newDep1.GetGeneration())
-			logrus.Infof("app2 - old gen: %d, new gen: %d", dep2.GetGeneration(), newDep2.GetGeneration())
-			logrus.Infof("app3 - old gen: %d, new gen: %d", dep3.GetGeneration(), newDep3.GetGeneration())
+			t.Logf("app1 - old gen: %d, new gen: %d", dep1.GetGeneration(), newDep1.GetGeneration())
+			t.Logf("app2 - old gen: %d, new gen: %d", dep2.GetGeneration(), newDep2.GetGeneration())
+			t.Logf("app3 - old gen: %d, new gen: %d", dep3.GetGeneration(), newDep3.GetGeneration())
 			return dep1.GetGeneration() != newDep1.GetGeneration() &&
 				dep2.GetGeneration() != newDep2.GetGeneration() &&
 				dep3.GetGeneration() != newDep3.GetGeneration(), nil

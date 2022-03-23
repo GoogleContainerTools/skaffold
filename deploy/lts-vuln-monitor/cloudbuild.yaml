@@ -25,8 +25,8 @@ steps:
   - '_REPO=$_REPO'
 substitutions:
   _IMAGE: skaffold
-  _TAG_FILTER: v*lts
+  _TAG_FILTER: v.*lts
   _SEVERITIES: HIGH CRITICAL
   _OS_VULN_LABEL: lts os vuln
   _REPO: GoogleContainerTools/skaffold
-  _GITHUB_TOKEN: LTS_IMAGE_GITHUB_TOKEN
+  _GITHUB_TOKEN: LTS_IMAGE_CD_BOT_GITHUB_TOKEN

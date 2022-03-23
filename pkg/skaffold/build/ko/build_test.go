@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -72,7 +73,7 @@ func TestBuild(t *testing.T) {
 				},
 				ImageName: importPath,
 			}
-			gotImageIdentifier, err := b.Build(context.Background(), nil, artifact, test.imageRef)
+			gotImageIdentifier, err := b.Build(context.Background(), nil, artifact, test.imageRef, platform.All)
 			t.CheckErrorAndFailNow(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedImageIdentifier, gotImageIdentifier)
 		})

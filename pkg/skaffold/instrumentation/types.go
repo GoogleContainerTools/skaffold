@@ -64,6 +64,9 @@ type skaffoldMeter struct {
 	// Builders Enum values for all the builders used to build the artifacts built.
 	Builders map[string]int
 
+	// BuildWithPlatforms Enum values for all the builders with target platform constraints.
+	BuildWithPlatforms map[string]int
+
 	// BuildDependencies Enum values for all the builders using build dependencies.
 	BuildDependencies map[string]int
 
@@ -80,6 +83,9 @@ type skaffoldMeter struct {
 	// reasons they were triggered. The triggers can be one of sync, build, or deploy.
 	DevIterations []devIteration
 
+	// ResourceFilters represents user defined resource filters including 'source' and 'type' information
+	ResourceFilters []resourceFilter
+
 	// StartTime Start time of the Skaffold program, used to track how long Skaffold took to finish executing.
 	StartTime time.Time
 
@@ -92,6 +98,15 @@ type skaffoldMeter struct {
 
 	// ClusterType reports if user cluster is a GKE cluster or not.
 	ClusterType string
+
+	// ResolvedBuildTargetPlatforms represents the set of resolved build target platforms for each pipeline
+	ResolvedBuildTargetPlatforms []string
+
+	// CliBuildTargetPlatforms represents the build target platforms specified via command line flag `--platform`
+	CliBuildTargetPlatforms string
+
+	// DeployNodePlatforms represents the set of kubernetes cluster node platforms
+	DeployNodePlatforms string
 }
 
 // devIteration describes how an iteration and started and if an error happened.
@@ -101,6 +116,15 @@ type devIteration struct {
 
 	// ErrorCode is the error that may have occurred during the (sync/build/deploy).
 	ErrorCode proto.StatusCode
+}
+
+// resourceFilter describes a user defined resource filter.
+type resourceFilter struct {
+	// Source is the source configuration of the resource filter (cli-flag, schema)
+	Source string
+
+	// Type is the defined type of the resource filter (allow, deny)
+	Type string
 }
 
 // creds contains the Google Cloud project ID.

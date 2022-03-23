@@ -41,8 +41,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -64,11 +66,11 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 	return nil
 }
 
-func (b *Builder) Concurrency() int {
-	return b.GoogleCloudBuild.Concurrency
+func (b *Builder) Concurrency() *int {
+	return util.IntPtr(b.GoogleCloudBuild.Concurrency)
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, platform platform.Matcher) (string, error) {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"Destination": instrumentation.PII(tag),
 	})
@@ -151,7 +153,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		})
 	}
 
-	buildSpec, err := b.buildSpec(ctx, artifact, tag, cbBucket, buildObject)
+	buildSpec, err := b.buildSpec(ctx, artifact, tag, platform, cbBucket, buildObject)
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR,

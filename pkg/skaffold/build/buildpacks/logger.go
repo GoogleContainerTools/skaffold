@@ -19,7 +19,7 @@ package buildpacks
 import (
 	"io"
 
-	"github.com/buildpacks/pack/logging"
+	"github.com/buildpacks/pack/pkg/logging"
 	"github.com/sirupsen/logrus"
 )
 

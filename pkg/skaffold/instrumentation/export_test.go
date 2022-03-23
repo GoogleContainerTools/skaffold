@@ -46,52 +46,64 @@ var testKey = `{
 func TestExportMetrics(t *testing.T) {
 	startTime, _ := time.Parse(time.ANSIC, "Mon Jan 2 15:04:05 -0700 MST 2006")
 	buildMeter := skaffoldMeter{
-		Command:           "build",
-		BuildArtifacts:    5,
-		Version:           "vTest.0",
-		Arch:              "test arch",
-		OS:                "test os",
-		ConfigCount:       1,
-		Deployers:         []string{"test kubectl"},
-		Builders:          map[string]int{"docker": 1, "buildpacks": 1},
-		BuildDependencies: map[string]int{"docker": 1},
-		EnumFlags:         map[string]string{"test": "test_value"},
-		StartTime:         startTime,
-		Duration:          time.Minute,
+		Command:                      "build",
+		BuildArtifacts:               5,
+		Version:                      "vTest.0",
+		Arch:                         "test arch",
+		OS:                           "test os",
+		ConfigCount:                  1,
+		Deployers:                    []string{"test kubectl"},
+		Builders:                     map[string]int{"docker": 1, "buildpacks": 1},
+		BuildWithPlatforms:           map[string]int{"docker": 1},
+		BuildDependencies:            map[string]int{"docker": 1},
+		EnumFlags:                    map[string]string{"test": "test_value"},
+		DeployNodePlatforms:          "linux/amd64",
+		CliBuildTargetPlatforms:      "linux/amd64;linux/arm64",
+		ResolvedBuildTargetPlatforms: []string{"linux/amd64"},
+		StartTime:                    startTime,
+		Duration:                     time.Minute,
 	}
 	devMeter := skaffoldMeter{
-		Command:           "dev",
-		Version:           "vTest.1",
-		Arch:              "test arch 2",
-		OS:                "test os 2",
-		ConfigCount:       2,
-		PlatformType:      "test platform 1:test platform 2",
-		Deployers:         []string{"test helm", "test kpt"},
-		SyncType:          map[string]bool{"manual": true},
-		EnumFlags:         map[string]string{"test_run": "test_run_value"},
-		Builders:          map[string]int{"kustomize": 3, "buildpacks": 2},
-		BuildDependencies: map[string]int{"docker": 1},
-		HelmReleasesCount: 2,
-		DevIterations:     []devIteration{{"sync", 0}, {"build", 400}, {"build", 0}, {"sync", 200}, {"deploy", 0}},
-		ErrorCode:         proto.StatusCode_BUILD_CANCELLED,
-		StartTime:         startTime.Add(time.Hour * 24 * 30),
-		Duration:          time.Minute * 2,
+		Command:                      "dev",
+		Version:                      "vTest.1",
+		Arch:                         "test arch 2",
+		OS:                           "test os 2",
+		ConfigCount:                  2,
+		PlatformType:                 "test platform 1:test platform 2",
+		Deployers:                    []string{"test helm", "test kpt"},
+		SyncType:                     map[string]bool{"manual": true},
+		EnumFlags:                    map[string]string{"test_run": "test_run_value"},
+		Builders:                     map[string]int{"kustomize": 3, "buildpacks": 2},
+		BuildWithPlatforms:           map[string]int{"kustomize": 3},
+		BuildDependencies:            map[string]int{"docker": 1},
+		DeployNodePlatforms:          "linux/amd64",
+		CliBuildTargetPlatforms:      "linux/amd64;linux/arm64",
+		ResolvedBuildTargetPlatforms: []string{"linux/amd64"},
+		HelmReleasesCount:            2,
+		DevIterations:                []devIteration{{"sync", 0}, {"build", 400}, {"build", 0}, {"sync", 200}, {"deploy", 0}},
+		ResourceFilters:              []resourceFilter{{"schema", "allow"}, {"schema", "deny"}, {"cli-flag", "allow"}, {"cli-flag", "deny"}},
+		ErrorCode:                    proto.StatusCode_BUILD_CANCELLED,
+		StartTime:                    startTime.Add(time.Hour * 24 * 30),
+		Duration:                     time.Minute * 2,
 	}
 	debugMeter := skaffoldMeter{
-		Command:       "debug",
-		Version:       "vTest.2",
-		Arch:          "test arch 1",
-		OS:            "test os 2",
-		ConfigCount:   2,
-		PlatformType:  "test platform",
-		Deployers:     []string{"test helm", "test kpt"},
-		SyncType:      map[string]bool{"manual": true, "sync": true},
-		EnumFlags:     map[string]string{"test_run": "test_run_value"},
-		Builders:      map[string]int{"jib": 3, "buildpacks": 2},
-		DevIterations: []devIteration{{"build", 104}, {"build", 0}, {"sync", 0}, {"deploy", 1014}},
-		ErrorCode:     proto.StatusCode_BUILD_CANCELLED,
-		StartTime:     startTime.Add(time.Hour * 24 * 10),
-		Duration:      time.Minute * 4,
+		Command:                      "debug",
+		Version:                      "vTest.2",
+		Arch:                         "test arch 1",
+		OS:                           "test os 2",
+		ConfigCount:                  2,
+		PlatformType:                 "test platform",
+		Deployers:                    []string{"test helm", "test kpt"},
+		SyncType:                     map[string]bool{"manual": true, "sync": true},
+		EnumFlags:                    map[string]string{"test_run": "test_run_value"},
+		Builders:                     map[string]int{"jib": 3, "buildpacks": 2},
+		DeployNodePlatforms:          "linux/amd64",
+		CliBuildTargetPlatforms:      "linux/amd64;linux/arm64",
+		ResolvedBuildTargetPlatforms: []string{"linux/amd64"},
+		DevIterations:                []devIteration{{"build", 104}, {"build", 0}, {"sync", 0}, {"deploy", 1014}},
+		ErrorCode:                    proto.StatusCode_BUILD_CANCELLED,
+		StartTime:                    startTime.Add(time.Hour * 24 * 10),
+		Duration:                     time.Minute * 4,
 	}
 	metersBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter, debugMeter})
 	fs := &testutil.FakeFileSystem{
@@ -389,15 +401,20 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	commandCount := make(map[interface{}]int)
 	errorCount := make(map[interface{}]int)
 	builders := make(map[interface{}]int)
+	buildersWithPlatforms := make(map[interface{}]int)
 	buildDeps := make(map[interface{}]int)
 	helmReleases := make(map[interface{}]int)
 	devIterations := make(map[interface{}]int)
+	resourceFilters := make(map[interface{}]int)
 	deployers := make(map[interface{}]int)
 	enumFlags := make(map[interface{}]int)
 	platform := make(map[interface{}]int)
+	buildPlatforms := make(map[interface{}]int)
+	cliPlatforms := make(map[interface{}]int)
+	nodePlatforms := make(map[interface{}]int)
 
 	testMaps := []map[interface{}]int{
-		platform, osCount, versionCount, archCount, durationCount, commandCount, errorCount, builders, devIterations, deployers}
+		platform, osCount, versionCount, archCount, durationCount, commandCount, errorCount, builders, devIterations, resourceFilters, deployers}
 
 	for _, meter := range meters {
 		osCount[meter.OS]++
@@ -417,6 +434,9 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			for k, v := range meter.Builders {
 				builders[k] += v
 			}
+			for k, v := range meter.BuildWithPlatforms {
+				buildersWithPlatforms[k] += v
+			}
 			for k, v := range meter.BuildDependencies {
 				buildDeps[k] += v
 			}
@@ -429,6 +449,11 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		if doesDeploy.Contains(meter.Command) {
 			for _, d := range meter.Deployers {
 				deployers[d]++
+			}
+		}
+		if doesDeploy.Contains(meter.Command) || meter.Command == "render" {
+			for _, filterI := range meter.ResourceFilters {
+				resourceFilters[filterI]++
 			}
 		}
 	}
@@ -452,6 +477,8 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			durationCount[fmt.Sprintf("%s:%f", l.Labels["command"], l.value().(float64))]--
 		case "artifacts":
 			builders[l.Labels["builder"]] -= int(l.value().(float64)) - 1
+		case "artifact-with-platforms":
+			buildersWithPlatforms[l.Labels["builder"]] -= int(l.value().(float64)) - 1
 		case "artifact-dependencies":
 			buildDeps[l.Labels["builder"]] -= int(l.value().(float64)) - 1
 		case "builders":
@@ -461,6 +488,8 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		case "dev/iterations", "debug/iterations":
 			e := l.Labels["error"]
 			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(proto.StatusCode_value[e])}]--
+		case "resource-filters":
+			resourceFilters[resourceFilter{l.Labels["source"], l.Labels["type"]}]--
 		case "errors":
 			e := l.Labels["error"]
 			errorCount[e]--
@@ -468,6 +497,12 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			enumFlags[l.Labels["flag_name"]+":"+l.Labels["value"]]--
 		case "helmReleases":
 			helmReleases[l.Labels["helmReleases"]]++
+		case "build-platforms":
+			buildPlatforms[l.Labels["build-platforms"]]++
+		case "node-platforms":
+			nodePlatforms[l.Labels["node-platforms"]]++
+		case "cli-platforms":
+			cliPlatforms[l.Labels["cli-platforms"]]++
 		default:
 			switch {
 			case MeteredCommands.Contains(l.Name):

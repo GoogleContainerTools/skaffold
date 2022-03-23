@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
-	cnb "github.com/buildpacks/lifecycle"
 	cnbl "github.com/buildpacks/lifecycle/launch"
+	cnb "github.com/buildpacks/lifecycle/platform"
 	shell "github.com/kballard/go-shellquote"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"

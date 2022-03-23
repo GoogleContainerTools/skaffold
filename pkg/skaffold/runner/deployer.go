@@ -59,13 +59,50 @@ func (d *deployerCtx) StatusCheck() *bool {
 	return d.deploy.StatusCheck
 }
 
+// JsonParseType returns the JsonParseType field from the underlying deployConfig struct
+func (d *deployerCtx) JSONParseConfig() v1.JSONParseConfig {
+	return d.deploy.Logs.JSONParse
+}
+
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
 func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
+	deployerCfg := runCtx.Deployers()
+
 	if runCtx.Opts.Apply {
+		helmNamespaces := make(map[string]bool)
+		nonHelmDeployFound := false
+
+		for _, d := range deployerCfg {
+			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
+				nonHelmDeployFound = true
+			}
+
+			if d.HelmDeploy != nil {
+				for _, release := range d.HelmDeploy.Releases {
+					if release.Namespace != "" {
+						helmNamespaces[release.Namespace] = true
+					}
+				}
+			}
+		}
+
+		if len(helmNamespaces) > 1 || (nonHelmDeployFound && len(helmNamespaces) == 1) {
+			return nil, errors.New("skaffold apply called with conflicting namespaces set via skaffold.yaml. This is likely due to the use of the 'deploy.helm.releases.*.namespace' field which is not supported in apply.  Remove the 'deploy.helm.releases.*.namespace' field(s) and run skaffold apply again")
+		}
+
+		if len(helmNamespaces) == 1 && !nonHelmDeployFound {
+			if runCtx.Opts.Namespace == "" {
+				// if skaffold --namespace flag not set, use the helm namespace value
+				for k := range helmNamespaces {
+					// map only has 1 (k,v) from length check in if condition
+					runCtx.Opts.Namespace = k
+				}
+			}
+		}
+
 		return getDefaultDeployer(runCtx, labeller)
 	}
 
-	deployerCfg := runCtx.Deployers()
 	localDeploy := false
 	remoteDeploy := false
 
@@ -98,8 +135,11 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KptDeploy != nil {
-			deployer := kpt.NewDeployer(dCtx, labeller, d.KptDeploy)
-			deployers = append(deployers, deployer)
+			k, err := kpt.NewDeployer(dCtx, labeller, d.KptDeploy)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, k)
 		}
 
 		if d.KubectlDeploy != nil {

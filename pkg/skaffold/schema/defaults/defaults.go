@@ -76,13 +76,6 @@ func Set(c *latestV1.SkaffoldConfig) error {
 		}
 	}
 
-	withLocalBuild(c, func(lb *latestV1.LocalBuild) {
-		// don't set build concurrency if there are no artifacts in the current config
-		if len(c.Build.Artifacts) > 0 {
-			setDefaultConcurrency(lb)
-		}
-	})
-
 	withCloudBuildConfig(c,
 		setDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
@@ -134,20 +127,6 @@ func defaultToKubectlDeploy(c *latestV1.SkaffoldConfig) {
 
 	log.Entry(context.TODO()).Debug("Defaulting deploy type to kubectl")
 	c.Deploy.DeployType.KubectlDeploy = &latestV1.KubectlDeploy{}
-}
-
-func withLocalBuild(c *latestV1.SkaffoldConfig, operations ...func(*latestV1.LocalBuild)) {
-	if local := c.Build.LocalBuild; local != nil {
-		for _, operation := range operations {
-			operation(local)
-		}
-	}
-}
-
-func setDefaultConcurrency(local *latestV1.LocalBuild) {
-	if local.Concurrency == nil {
-		local.Concurrency = &constants.DefaultLocalConcurrency
-	}
 }
 
 func withCloudBuildConfig(c *latestV1.SkaffoldConfig, operations ...func(*latestV1.GoogleCloudBuild)) {

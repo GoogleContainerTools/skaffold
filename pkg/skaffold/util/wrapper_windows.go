@@ -20,7 +20,7 @@ import (
 	"context"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // CreateCommand creates an `exec.Cmd` that is configured to call the
@@ -33,7 +33,7 @@ func (cw CommandWrapper) CreateCommand(ctx context.Context, workingDir string, a
 		for _, extension := range []string{".cmd", ".bat"} {
 			wrapper := cw.Wrapper + extension
 			if wrapperExecutable, err := AbsFile(workingDir, wrapper); err == nil {
-				logrus.Debugf("Using wrapper %s for %s", wrapper, cw.Executable)
+				log.Entry(ctx).Debugf("Using wrapper %s for %s", wrapper, cw.Executable)
 				executable = "cmd"
 				args = append([]string{"/c", wrapperExecutable}, args...)
 				break

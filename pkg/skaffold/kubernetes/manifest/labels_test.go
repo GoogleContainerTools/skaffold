@@ -19,6 +19,9 @@ package manifest
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -51,7 +54,7 @@ spec:
 	resultManifest, err := manifests.SetLabels(map[string]string{
 		"key1": "value1",
 		"key2": "value2",
-	})
+	}, NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -89,7 +92,7 @@ spec:
 		"key0": "should-be-ignored",
 		"key1": "value1",
 		"key2": "value2",
-	})
+	}, NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -117,7 +120,7 @@ spec:
     name: example
 `)}
 
-	resultManifest, err := manifests.SetLabels(nil)
+	resultManifest, err := manifests.SetLabels(nil, NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -136,7 +139,7 @@ metadata:
   name: getting-started
 `)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{"key0": "value0"})
+	resultManifest, err := manifests.SetLabels(map[string]string{"key0": "value0"}, NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), resultManifest.String())
 }
@@ -184,7 +187,13 @@ spec:
 	resultManifest, err := manifests.SetLabels(map[string]string{
 		"key0": "value0",
 		"key1": "value1",
-	})
+	}, NewResourceSelectorLabels(map[schema.GroupKind]v1.ResourceFilter{
+		{Group: "apiextensions.k8s.io", Kind: "CustomResourceDefinition"}: {
+			GroupKind: "CustomResourceDefinition.apiextensions.k8s.io",
+			Image:     []string{".*"},
+			Labels:    []string{".metadata.labels"},
+		},
+	}, nil))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }

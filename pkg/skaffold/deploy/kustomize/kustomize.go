@@ -26,6 +26,7 @@ import (
 
 	"github.com/segmentio/textio"
 	yamlv3 "gopkg.in/yaml.v3"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -127,6 +128,9 @@ type Deployer struct {
 	useKubectlKustomize bool
 
 	namespaces *[]string
+
+	transformableAllowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
+	transformableDenylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
 }
 
 func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV1.KustomizeDeploy) (*Deployer, error) {
@@ -149,22 +153,28 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
+	transformableAllowlist, transformableDenylist, err := deployutil.ConsolidateTransformConfiguration(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Deployer{
-		KustomizeDeploy:     d,
-		podSelector:         podSelector,
-		namespaces:          &namespaces,
-		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
-		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		hookRunner:          hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
-		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
-		logger:              logger,
-		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:              component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
-		kubectl:             kubectl,
-		insecureRegistries:  cfg.GetInsecureRegistries(),
-		globalConfig:        cfg.GlobalConfig(),
-		labels:              labeller.Labels(),
-		useKubectlKustomize: useKubectlKustomize,
+		KustomizeDeploy:        d,
+		podSelector:            podSelector,
+		namespaces:             &namespaces,
+		accessor:               component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		hookRunner:             hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		imageLoader:            component.NewImageLoader(cfg, kubectl.CLI),
+		logger:                 logger,
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:                 component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
+		kubectl:                kubectl,
+		insecureRegistries:     cfg.GetInsecureRegistries(),
+		globalConfig:           cfg.GlobalConfig(),
+		labels:                 labeller.Labels(),
+		useKubectlKustomize:    useKubectlKustomize,
+		transformableAllowlist: transformableAllowlist,
+		transformableDenylist:  transformableDenylist,
 	}, nil
 }
 
@@ -325,13 +335,13 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 	}
 
 	if len(k.originalImages) == 0 {
-		k.originalImages, err = manifests.GetImages()
+		k.originalImages, err = manifests.GetImages(manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	manifests, err = manifests.ReplaceImages(ctx, builds)
+	manifests, err = manifests.ReplaceImages(ctx, builds, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +350,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 		return nil, err
 	}
 
-	return manifests.SetLabels(k.labels)
+	return manifests.SetLabels(k.labels, manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -369,7 +379,11 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 func (k *Deployer) Dependencies() ([]string, error) {
 	deps := stringset.New()
 	for _, kustomizePath := range k.KustomizePaths {
-		depsForKustomization, err := DependenciesForKustomization(kustomizePath)
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
 		if err != nil {
 			return nil, userErr(err)
 		}
@@ -441,10 +455,15 @@ func (k *Deployer) readManifests(ctx context.Context) (manifest.ManifestList, er
 		var out []byte
 		var err error
 
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+
 		if k.useKubectlKustomize {
-			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, kustomizePath))
+			out, err = k.kubectl.Kustomize(ctx, BuildCommandArgs(k.BuildArgs, expandedKustomizePath))
 		} else {
-			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, kustomizePath)...)...)
+			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, BuildCommandArgs(k.BuildArgs, expandedKustomizePath)...)...)
 			out, err = util.RunCmdOut(ctx, cmd)
 		}
 

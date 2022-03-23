@@ -46,12 +46,13 @@ type SkaffoldOptions struct {
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
-	MinikubeProfile string
-	Namespace       string
-	RenderOutput    string
-	RepoCacheDir    string
-	Trigger         string
-	User            string
+	MinikubeProfile    string
+	Namespace          string
+	RenderOutput       string
+	RepoCacheDir       string
+	Trigger            string
+	User               string
+	TransformRulesFile string
 
 	ConfigurationFilter []string
 	CustomLabels        []string
@@ -86,20 +87,26 @@ type SkaffoldOptions struct {
 	SkipConfigDefaults    bool
 	Tail                  bool
 	WaitForConnection     bool
-
-	BuildConcurrency  int
-	DefaultRepo       StringOrUndefined
-	MultiLevelRepo    *bool
+	// Add Skaffold-specific labels including runID, deployer labels, etc.
+	// `CustomLabels` are still applied if this is false. Must only be used in
+	// commands which don't deploy (e.g. `skaffold render`) since the runID
+	// label isn't available.
+	AddSkaffoldLabels bool
 	MakePathsAbsolute *bool
-	Muted             Muted
+	StatusCheck       BoolOrUndefined
 	PortForward       PortForwardOptions
+	DefaultRepo       StringOrUndefined
 	PushImages        BoolOrUndefined
+	Platforms         []string
+	Muted             Muted
+	BuildConcurrency  int
+	WatchPollInterval int
 	RPCPort           IntOrUndefined
 	RPCHTTPPort       IntOrUndefined
-	StatusCheck       BoolOrUndefined
-	SyncRemoteCache   SyncRemoteCacheOption
-	WaitForDeletions  WaitForDeletions
-	WatchPollInterval int
+
+	MultiLevelRepo   *bool
+	SyncRemoteCache  SyncRemoteCacheOption
+	WaitForDeletions WaitForDeletions
 }
 
 type RunMode string
