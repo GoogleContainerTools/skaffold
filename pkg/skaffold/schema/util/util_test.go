@@ -127,3 +127,50 @@ val2.val5.val6: bar2
   val2.val5.val6: bar2
 `, string(out))
 }
+
+func TestFlatMap_UnmarshalYAMLNested(t *testing.T) {
+	y1 := `
+val1: foo1
+values:
+  val2:
+    - val4: bar1
+      val5: foo2
+    - val6: bar2
+      val7: foo3
+  val3:
+    - val8: bar3
+      val9: foo4
+`
+	y2 := `val1: foo1
+values.val2[0].val4: bar1
+values.val2[0].val5: foo2
+values.val2[1].val6: bar2
+values.val2[1].val7: foo3
+values.val3[0].val8: bar3
+values.val3[0].val9: foo4
+`
+	f1 := &FlatMap{}
+	f2 := &FlatMap{}
+
+	err := yaml.Unmarshal([]byte(y1), &f1)
+	testutil.CheckError(t, false, err)
+
+	err = yaml.Unmarshal([]byte(y2), &f2)
+	testutil.CheckError(t, false, err)
+
+	testutil.CheckDeepEqual(t, *f1, *f2)
+
+	out, err := yaml.Marshal(struct {
+		M *FlatMap `yaml:"value,omitempty"`
+	}{f1})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, `value:
+  val1: foo1
+  values.val2[0].val4: bar1
+  values.val2[0].val5: foo2
+  values.val2[1].val6: bar2
+  values.val2[1].val7: foo3
+  values.val3[0].val8: bar3
+  values.val3[0].val9: foo4
+`, string(out))
+}
