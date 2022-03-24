@@ -269,6 +269,7 @@ integration-in-docker: skaffold-builder
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
+		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		make integration
 
