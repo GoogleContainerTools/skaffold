@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -195,7 +194,8 @@ watch:
 			if err == nil {
 				return true, nil
 			}
-			if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
+			// Error code 429 is the error code for quota exceeded https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+			if apiErr, ok := err.(*googleapi.Error); ok && apiErr.Code == 429 {
 				// if we hit the rate limit, continue to retry
 				return false, nil
 			}
