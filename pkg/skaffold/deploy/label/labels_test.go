@@ -104,7 +104,7 @@ func TestApplyLabels(t *testing.T) {
 				}},
 			})
 			t.Override(&kubernetesclient.Client, mockClient(client))
-			dynClient := fakedynclient.NewSimpleDynamicClient(scheme.Scheme, dep)
+			dynClient := fakedynclient.NewSimpleDynamicClientWithCustomListKinds(scheme.Scheme, nil, dep)
 			t.Override(&kubernetesclient.DynamicClient, mockDynamicClient(dynClient))
 
 			// Patch labels
