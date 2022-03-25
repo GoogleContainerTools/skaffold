@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
@@ -76,9 +77,9 @@ func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []Fr
 		switch mode := fi.Mode(); {
 		case mode.IsDir():
 			keepFile := func(path string, info walk.Dirent) (bool, error) {
-				// Always keep root folders.
-				if info.IsDir() && path == absFrom {
-					return true, nil
+				// Ignore non empty dirs
+				if info.IsDir() && !util.IsEmptyDir(path) {
+					return false, nil
 				}
 
 				ignored, err := dockerIgnored(path, info)
