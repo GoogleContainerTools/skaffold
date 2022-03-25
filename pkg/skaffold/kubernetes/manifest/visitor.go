@@ -25,6 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
+const metadataField = "metadata"
+
 type ResourceSelector interface {
 	allowByGroupKind(apimachinery.GroupKind) bool
 	allowByNavpath(apimachinery.GroupKind, string, string) (string, bool)
