@@ -18,43 +18,166 @@ package manifest
 
 import (
 	"fmt"
-	"path"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-// transformableAllowlist is the set of kinds that can be transformed by Skaffold.
-var transformableAllowlist = map[apimachinery.GroupKind]bool{
-	{Group: "", Kind: "Pod"}:                                true,
-	{Group: "apps", Kind: "DaemonSet"}:                      true,
-	{Group: "apps", Kind: "Deployment"}:                     true, // v1beta1, v1beta2: deprecated in K8s 1.9, removed in 1.16
-	{Group: "apps", Kind: "ReplicaSet"}:                     true,
-	{Group: "apps", Kind: "StatefulSet"}:                    true,
-	{Group: "batch", Kind: "CronJob"}:                       true,
-	{Group: "batch", Kind: "Job"}:                           true,
-	{Group: "extensions", Kind: "DaemonSet"}:                true, // v1beta1: deprecated in K8s 1.9, removed in 1.16
-	{Group: "extensions", Kind: "Deployment"}:               true, // v1beta1: deprecated in K8s 1.9, removed in 1.16
-	{Group: "extensions", Kind: "ReplicaSet"}:               true, // v1beta1: deprecated in K8s 1.9, removed in 1.16
-	{Group: "serving.knative.dev", Kind: "Service"}:         true,
-	{Group: "agones.dev", Kind: "Fleet"}:                    true,
-	{Group: "agones.dev", Kind: "GameServer"}:               true,
-	{Group: "argoproj.io", Kind: "Rollout"}:                 true,
-	{Group: "argoproj.io", Kind: "ClusterWorkflowTemplate"}: true,
-	{Group: "argoproj.io", Kind: "Workflow"}:                true,
-	{Group: "argoproj.io", Kind: "WorkflowTemplate"}:        true,
+const metadataField = "metadata"
+
+type ResourceSelector interface {
+	allowByGroupKind(apimachinery.GroupKind) bool
+	allowByNavpath(apimachinery.GroupKind, string, string) (string, bool)
+}
+
+// TransformAllowlist is the default allowlist of kinds that can be transformed by Skaffold.
+var TransformAllowlist = map[apimachinery.GroupKind]latestV1.ResourceFilter{
+	{Group: "", Kind: "Pod"}: {
+		GroupKind: "Pod",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "", Kind: "Service"}: {
+		GroupKind: "Service",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "apps", Kind: "DaemonSet"}: {
+		GroupKind: "DaemonSet.apps",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "apps", Kind: "Deployment"}: {
+		GroupKind: "Deployment.apps",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "apps", Kind: "ReplicaSet"}: {
+		GroupKind: "ReplicaSet.apps",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "apps", Kind: "StatefulSet"}: {
+		GroupKind: "StatefulSet.apps",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "batch", Kind: "CronJob"}: {
+		GroupKind: "CronJob.batch",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "batch", Kind: "Job"}: {
+		GroupKind: "Job.batch",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "extensions", Kind: "DaemonSet"}: {
+		GroupKind: "DaemonSet.extensions",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "extensions", Kind: "Deployment"}: {
+		GroupKind: "Deployment.extensions",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "extensions", Kind: "ReplicaSet"}: {
+		GroupKind: "ReplicaSet.extensions",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "serving.knative.dev", Kind: "Service"}: {
+		GroupKind: "Service.serving.knative.dev",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "agones.dev", Kind: "Fleet"}: {
+		GroupKind: "Fleet.agones.dev",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "agones.dev", Kind: "GameServer"}: {
+		GroupKind: "GameServer.agones.dev",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "argoproj.io", Kind: "Rollout"}: {
+		GroupKind: "Rollout.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "argoproj.io", Kind: "Workflow"}: {
+		GroupKind: "Workflow.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "argoproj.io", Kind: "CronWorkflow"}: {
+		GroupKind: "CronWorkflow.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "argoproj.io", Kind: "WorkflowTemplate"}: {
+		GroupKind: "WorkflowTemplate.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "argoproj.io", Kind: "ClusterWorkflowTemplate"}: {
+		GroupKind: "ClusterWorkflowTemplate.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "Connect"}: {
+		GroupKind: "Connect.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "ControlCenter"}: {
+		GroupKind: "ControlCenter.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "Kafka"}: {
+		GroupKind: "Kafka.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "KsqlDB"}: {
+		GroupKind: "KsqlDB.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "SchemaRegistry"}: {
+		GroupKind: "SchemaRegistry.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "platform.confluent.io", Kind: "Zookeeper"}: {
+		GroupKind: "Zookeeper.platform.confluent.io",
+		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+}
+
+// TransformDenylist is the default denylist on the set of kinds that can be transformed by Skaffold.
+var TransformDenylist = map[apimachinery.GroupKind]latestV1.ResourceFilter{
+	{Group: "apps", Kind: "StatefulSet"}: {
+		GroupKind: "StatefulSet.apps",
+		Labels:    []string{".spec.volumeClaimTemplates.metadata.labels"},
+	},
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
 type FieldVisitor interface {
 	// Visit is called for each transformable key contained in the object and may apply transformations/aggregations on it.
 	// It should return true to allow recursive traversal or false when the entry was transformed.
-	Visit(path string, object map[string]interface{}, key string, value interface{}) bool
+	Visit(gk apimachinery.GroupKind, navpath string, object map[string]interface{}, key string, value interface{}, rs ResourceSelector) bool
 }
 
 // Visit recursively visits all transformable object fields within the manifests and lets the visitor apply transformations/aggregations on them.
-func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
+func (l *ManifestList) Visit(visitor FieldVisitor, rs ResourceSelector) (ManifestList, error) {
 	var updated ManifestList
 
 	for _, manifest := range *l {
@@ -67,7 +190,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 			continue
 		}
 
-		traverseManifestFields(m, visitor)
+		traverseManifestFields(m, visitor, rs)
 
 		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
@@ -81,14 +204,30 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 }
 
 // traverseManifest traverses all transformable fields contained within the manifest.
-func traverseManifestFields(manifest map[string]interface{}, visitor FieldVisitor) {
-	if shouldTransformManifest(manifest) {
+func traverseManifestFields(manifest map[string]interface{}, visitor FieldVisitor, rs ResourceSelector) {
+	var groupKind apimachinery.GroupKind
+	var apiVersion string
+	if value, ok := manifest["apiVersion"].(string); ok {
+		apiVersion = value
+	}
+	var kind string
+	if value, ok := manifest["kind"].(string); ok {
+		kind = value
+	}
+
+	gvk := apimachinery.FromAPIVersionAndKind(apiVersion, kind)
+	groupKind = apimachinery.GroupKind{
+		Group: gvk.Group,
+		Kind:  gvk.Kind,
+	}
+
+	if shouldTransformManifest(manifest, rs) {
 		visitor = &recursiveVisitorDecorator{visitor}
 	}
-	visitFields("/", manifest, visitor)
+	visitFields(groupKind, "", manifest, visitor, rs)
 }
 
-func shouldTransformManifest(manifest map[string]interface{}) bool {
+func shouldTransformManifest(manifest map[string]interface{}, rs ResourceSelector) bool {
 	var apiVersion string
 	switch value := manifest["apiVersion"].(type) {
 	case string:
@@ -111,14 +250,16 @@ func shouldTransformManifest(manifest map[string]interface{}) bool {
 		Kind:  gvk.Kind,
 	}
 
-	if result, found := transformableAllowlist[groupKind]; found {
-		return result
+	if rs.allowByGroupKind(groupKind) {
+		return true
 	}
+
 	for _, w := range ConfigConnectorResourceSelector {
 		if w.Matches(gvk.Group, gvk.Kind) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -127,29 +268,25 @@ type recursiveVisitorDecorator struct {
 	delegate FieldVisitor
 }
 
-func (d *recursiveVisitorDecorator) Visit(path string, o map[string]interface{}, k string, v interface{}) bool {
-	if d.delegate.Visit(path, o, k, v) {
-		visitFields(path, v, d)
+func (d *recursiveVisitorDecorator) Visit(gk apimachinery.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
+	if d.delegate.Visit(gk, navpath, o, k, v, rs) {
+		visitFields(gk, navpath, v, d, rs)
 	}
 	return false
 }
 
 // visitFields traverses all fields and calls the visitor for each.
-// navpath: a '/' delimited path representing the fields navigated to this point
-func visitFields(navpath string, o interface{}, visitor FieldVisitor) {
+// navpath: a '.' delimited path representing the fields navigated to this point
+func visitFields(gk apimachinery.GroupKind, navpath string, o interface{}, visitor FieldVisitor, rs ResourceSelector) {
 	switch entries := o.(type) {
 	case []interface{}:
 		for _, v := range entries {
 			// this case covers lists so we don't update the navpath
-			visitFields(navpath, v, visitor)
+			visitFields(gk, navpath, v, visitor, rs)
 		}
 	case map[string]interface{}:
 		for k, v := range entries {
-			// TODO(6416) temporary fix for StatefulSet + PVC use case, need to do something similar to the proposal in #6236 for full fix
-			if navpath == "/spec/volumeClaimTemplates" {
-				continue
-			}
-			visitor.Visit(path.Join(navpath, k), entries, k, v)
+			visitor.Visit(gk, navpath+"."+k, entries, k, v, rs)
 		}
 	}
 }

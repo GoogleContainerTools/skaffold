@@ -9,7 +9,7 @@ This doc explains the development workflow so you can get started
 You must install these tools:
 
 1. [`go`](https://golang.org/doc/install): The language skaffold is
-   built in (version >= go 1.14)
+   built in (version >= go 1.17)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
 
@@ -18,8 +18,7 @@ You must install these tools:
 First you will need to setup your GitHub account and create a fork:
 
 1. Create [a GitHub account](https://github.com/join)
-1. Setup [GitHub access via
-   SSH](https://help.github.com/articles/connecting-to-github-with-ssh/)
+1. Setup [GitHub access via SSH](https://help.github.com/articles/connecting-to-github-with-ssh/)
 1. [Create and checkout a repo fork](#checkout-your-fork)
 
 Once you have those, you can iterate on skaffold:
@@ -30,8 +29,6 @@ Once you have those, you can iterate on skaffold:
 1. [Build docs](#building-skaffold-docs) if you are making doc changes
 
 When you're ready, you can [create a PR](#creating-a-pr)!
-
-You may also be interested in [contributing to the docs](#contributing-to-skaffold-docs).
 
 ## Checkout your fork
 
@@ -47,8 +44,27 @@ Once you've done this, clone your fork to your local machine:
    git remote set-url --push upstream no_push
    ```
 
-   _Adding the `upstream` remote sets you up nicely for regularly [syncing your
-   fork](https://help.github.com/articles/syncing-a-fork/)._
+   _Adding the `upstream` remote sets you up nicely for regularly [syncing your fork](https://help.github.com/articles/syncing-a-fork/)._
+
+## Creating a PR
+
+When you have changes you would like to propose to skaffold, you will need to:
+
+1. Ensure the commit message(s) follow the [conventional commits guidelines](https://www.conventionalcommits.org/en/v1.0.0/). The Skaffold repo has a bot to check that commit messages follow this style.
+2. Ensure the PR description describes what issue you are fixing and how you are fixing it
+   (include references to [issue numbers](https://help.github.com/articles/closing-issues-using-keywords/)
+   if appropriate)
+3. Add unit tests. Unit test coverage should increase or stay the same with every PR.
+4. Add integration test if applicable
+5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
+
+Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md) for quicker response time.
+
+### Reviews
+
+Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
+to a PR to kick off [the integration tests](#integration-tests), which must pass for the PR
+to be submitted.
 
 ## Making a config change
 
@@ -86,7 +102,7 @@ For more details behind the logic of config changes see [the Skaffold config man
 
 ## Making changes to the Skaffold API
 
-We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. When adding new message types, make changes to [proto/v1/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/skaffold.proto), and when adding new enum types, make changes to [proto/enums/enums.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/enums/enums.proto). When changing either of these files, you can run `./hack/generate-proto.sh` to generate the equivalent Go code.
+We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. When adding new message types, make changes to [proto/v2/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v2/skaffold.proto), and when adding new enum types, make changes to [proto/enums/enums.proto](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/enums/enums.proto). When changing either of these files, you can run `./hack/generate-proto.sh` to generate the equivalent Go code.
 
 ## Adding actionable error messages to code.
 Skaffold has a built-in framework to provide actionable error messages for user to help bootstrap skaffold errors.
@@ -136,7 +152,7 @@ e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5
    ```
 
 With above two changes, skaffold will now show a meaning full error message when this error condition is met. 
-```shell script
+```shell
 skaffold dev 
 unsupported validator "foo" please only use the following validators in skaffold-managed mode: [kubeval].
 To use custom validators, please use kpt-managed mode.
@@ -186,13 +202,13 @@ skaffold has both [unit tests](#unit-tests) and [integration tests](#integration
 The unit tests live with the code they test and can be run with:
 
 ```shell
-make test
+make quicktest
 ```
 
-You can also run a smaller set of unit tests that run quicker with:
+You can also run a larger suite of tests/checks (unit tests, docs check, linters check) using:
 
 ```shell
-make quicktest
+make test
 ```
 
 In case you see a linter error such as:
@@ -265,49 +281,30 @@ which at release time will be published with the latest release to https://skaff
 
 Mark your PR with `docs-modifications` label. Our PR review process will answer in comments in ~5 minutes with the URL of your preview and will remove the label.
 
-## Testing the Skaffold binary release process
+## Testing the Skaffold release image building process
 
-Skaffold release process works with Google Cloud Build within our own project `k8s-skaffold` and the skaffold release bucket, `gs://skaffold`.
+Skaffold's release image build process works with Google Cloud Build within our own project `k8s-skaffold`.
 
-In order to be able to iterate/fix the release process you can pass in your own project and bucket as parameters to the build.
+In order to be able to iterate/fix the release process you can pass in your own project as a parameter to the build.
 
-We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to `main`.
+We continuously release edge images under `gcr.io/k8s-skaffold/skaffold:edge`. This is done by triggering `cloudbuild.yaml` on every push to `main`.
 
 To run a build on your own project:
 
 ```
-gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,COMMIT_SHA=$(git rev-parse HEAD) --project <personalproject>
+gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=COMMIT_SHA=$(git rev-parse HEAD) --project <personal_project>
 ```
 
-We **release** stable versions under `gs://skaffold/releases`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
+We build the latest stable release image under `gcr.io/k8s-skaffold/skaffold:latest`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
 
 To test a release on your own project:
 
 ```
-gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234 --project <personalproject>
+gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=TAG_NAME=<release_tag> --project <personal_project>
 ```
 
-To just run a release without Google Cloud Build only using your local Docker daemon, you can run:
+To just run a release image build without Google Cloud Build only using your local Docker daemon, you can run:
 
 ```
-make -j release GCP_PROJECT=<personalproject> RELEASE_BUCKET=<personal-bucket>
+make -j release GCP_PROJECT=<personalproject>
 ```
-
-## Creating a PR
-
-When you have changes you would like to propose to skaffold, you will need to:
-
-1. Ensure the commit message(s) follow the [conventional commits guidelines](https://www.conventionalcommits.org/en/v1.0.0/). The Skaffold repo has a bot to check that commit messages follow this style.
-1. Ensure the PR description describes what issue you are fixing and how you are fixing it
-   (include references to [issue numbers](https://help.github.com/articles/closing-issues-using-keywords/)
-   if appropriate)
-1. Add unit tests. Unit test coverage should increase or stay the same with every PR.
-1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
-
-Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md) for quicker response time.
-
-### Reviews
-
-Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
-to a PR to kick off [the integration tests](#integration-tests), which must pass for the PR
-to be submitted.

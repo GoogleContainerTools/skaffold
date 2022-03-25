@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "production": "node src/index.js",
-    "development": "tsc-watch --onSuccess 'node ./src/index.js'"
+    "development": "tsc-watch --noClear --onSuccess 'node ./src/index.js'"
   },
   "dependencies": {
     "express": "^4.16.4"

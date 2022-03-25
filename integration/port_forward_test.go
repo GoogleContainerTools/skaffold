@@ -19,14 +19,13 @@ package integration
 import (
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
@@ -53,8 +52,7 @@ func TestPortForward(t *testing.T) {
 			},
 		}, "")
 
-		logrus.SetLevel(logrus.TraceLevel)
-		portforward.SimulateDevCycle(t, kubectlCLI, ns.Name)
+		portforward.SimulateDevCycle(t, kubectlCLI, ns.Name, log.TraceLevel)
 	}
 }
 

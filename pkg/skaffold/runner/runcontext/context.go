@@ -107,15 +107,26 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 	return tests
 }
 
-// TransformableAllowList returns combined allowlist from pipelines
-func (ps Pipelines) TransformableAllowList() []latestV1.ResourceFilter {
-	var allowList []latestV1.ResourceFilter
+// TransformAllowList returns combined allowlist from pipelines
+func (ps Pipelines) TransformAllowList() []latestV1.ResourceFilter {
+	var allowlist []latestV1.ResourceFilter
 	for _, p := range ps.pipelines {
-		if p.Deploy.TransformableAllowList != nil {
-			allowList = append(allowList, p.Deploy.TransformableAllowList...)
+		if p.ResourceSelector.Allow != nil {
+			allowlist = append(allowlist, p.ResourceSelector.Allow...)
 		}
 	}
-	return allowList
+	return allowlist
+}
+
+// TransformDenyList returns combined denylist from pipelines
+func (ps Pipelines) TransformDenyList() []latestV1.ResourceFilter {
+	var denylist []latestV1.ResourceFilter
+	for _, p := range ps.pipelines {
+		if p.ResourceSelector.Deny != nil {
+			denylist = append(denylist, p.ResourceSelector.Deny...)
+		}
+	}
+	return denylist
 }
 
 func (ps Pipelines) StatusCheckDeadlineSeconds() int {
@@ -166,8 +177,12 @@ func (rc *RunContext) IsTestPhaseActive() bool {
 	return !rc.SkipTests() && len(rc.TestCases()) != 0
 }
 
-func (rc *RunContext) TransformableAllowList() []latestV1.ResourceFilter {
-	return rc.Pipelines.TransformableAllowList()
+func (rc *RunContext) TransformAllowList() []latestV1.ResourceFilter {
+	return rc.Pipelines.TransformAllowList()
+}
+
+func (rc *RunContext) TransformDenyList() []latestV1.ResourceFilter {
+	return rc.Pipelines.TransformDenyList()
 }
 
 // AddSkaffoldLabels tells the Runner whether to add skaffold-specific labels.
@@ -227,6 +242,7 @@ func (rc *RunContext) GetRunID() string                              { return rc
 func (rc *RunContext) RPCPort() *int                                 { return rc.Opts.RPCPort.Value() }
 func (rc *RunContext) RPCHTTPPort() *int                             { return rc.Opts.RPCHTTPPort.Value() }
 func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
+func (rc *RunContext) TransformRulesFile() string                    { return rc.Opts.TransformRulesFile }
 func (rc *RunContext) JSONParseConfig() latestV1.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
 }

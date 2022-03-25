@@ -26,8 +26,17 @@ if [ -z "$_REPO" ]; then
   _REPO="GoogleContainerTools/skaffold"
 fi
 
+if [ -z "$_REF_ISSUE" ]; then
+  _REF_ISSUE="7169"
+fi
+
 TITLE_OS="LTS image has OS vulnerability!"
 OS_VULN_FILE=/workspace/os_vuln.txt
+IMAGES_TO_REPORT_FILE=/workspace/images_to_report.txt
+
+append() {
+  echo -e $1 >> $2
+}
 
 check_existing_issue() {
   label=$1
@@ -39,6 +48,15 @@ check_existing_issue() {
   else
     echo "-1"
   fi
+}
+
+init_body_file(){
+ append "Please patch the below images with instructions mentioned [here](https://docs.google.com/document/d/1gYJVoBCZiRzUTQs_-wKsfhHdskiMtJtWWQyI-t0mhC8/edit?resourcekey=0-NdLapTumfpzxH_bri0fLZQ#heading=h.p4mphzyz8m7y).\n" "$IMAGES_TO_REPORT_FILE"
+
+ # Only pick the last patched version.
+ cat "$OS_VULN_FILE" |sort -nr | awk -F'[:.]' '$3$4!=p&&p=$3$4' >> "$IMAGES_TO_REPORT_FILE"
+
+ append "\nOnce the patched images are available, please ping Cloud Deploy team until there is an automated way to notify (issue#$_REF_ISSUE)." "$IMAGES_TO_REPORT_FILE"
 }
 
 create_issue() {
@@ -56,10 +74,12 @@ update_issue() {
 
 gh auth login --with-token <token.txt
 issue_num=$(check_existing_issue "$_OS_VULN_LABEL")
+
+init_body_file
 if [ "$issue_num" -eq "-1" ]; then
   echo "Creating an issue..."
-  create_issue "$TITLE_OS" "$OS_VULN_FILE" "$_OS_VULN_LABEL"
+  create_issue "$TITLE_OS" "$IMAGES_TO_REPORT_FILE" "$_OS_VULN_LABEL"
 else
   echo "Updating issue: #""$issue_num"
-  update_issue "$issue_num" "$OS_VULN_FILE"
+  update_issue "$issue_num" "$IMAGES_TO_REPORT_FILE"
 fi

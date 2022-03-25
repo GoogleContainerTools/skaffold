@@ -25,8 +25,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/commands/options"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -40,6 +42,7 @@ func TestBuildOptions(t *testing.T) {
 	tests := []struct {
 		description string
 		artifact    latestV1.Artifact
+		platforms   platform.Matcher
 		envVarValue string
 		runMode     config.RunMode
 		wantBo      options.BuildOptions
@@ -53,6 +56,7 @@ func TestBuildOptions(t *testing.T) {
 			},
 			wantBo: options.BuildOptions{
 				ConcurrentBuilds: 1,
+				SBOM:             "none",
 				Trimpath:         true,
 				UserAgent:        version.UserAgentWithClient(),
 			},
@@ -82,13 +86,14 @@ func TestBuildOptions(t *testing.T) {
 							fmt.Sprintf("-ldflag-{{.%s}}", testKoBuildOptionsEnvVar),
 							fmt.Sprintf("-ldflag2-{{.Env.%s}}", testKoBuildOptionsEnvVar),
 						},
-						Main:      "cmd/app",
-						Platforms: []string{"linux/amd64", "linux/arm64"},
+						Main: "cmd/app",
 					},
 				},
 				ImageName: "ko://example.com/foo",
 				Workspace: "workdir",
 			},
+			platforms: platform.Matcher{Platforms: []specs.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "arm64"}}},
+
 			envVarValue: "baz",
 			runMode:     config.RunModes.Debug,
 			wantBo: options.BuildOptions{
@@ -106,7 +111,8 @@ func TestBuildOptions(t *testing.T) {
 				ConcurrentBuilds:     1,
 				DisableOptimizations: true,
 				Labels:               []string{"foo=bar", "frob=baz"},
-				Platform:             "linux/amd64,linux/arm64",
+				Platforms:            []string{"linux/amd64", "linux/arm64"},
+				SBOM:                 "none",
 				Trimpath:             false,
 				UserAgent:            version.UserAgentWithClient(),
 				WorkingDirectory:     "workdir" + string(filepath.Separator) + "gomoddir",
@@ -140,6 +146,7 @@ func TestBuildOptions(t *testing.T) {
 					},
 				},
 				ConcurrentBuilds: 1,
+				SBOM:             "none",
 				Trimpath:         true,
 				UserAgent:        version.UserAgentWithClient(),
 			},
@@ -148,7 +155,7 @@ func TestBuildOptions(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			os.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
-			gotBo, err := buildOptions(&test.artifact, test.runMode)
+			gotBo, err := buildOptions(&test.artifact, test.runMode, test.platforms)
 			defer os.Unsetenv(testKoBuildOptionsEnvVar)
 			t.CheckErrorAndFailNow(false, err)
 			t.CheckDeepEqual(test.wantBo, *gotBo,

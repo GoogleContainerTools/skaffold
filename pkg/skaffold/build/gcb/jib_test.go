@@ -22,9 +22,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -40,6 +42,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 		description  string
 		skipTests    bool
 		baseImage    string
+		platforms    platform.Matcher
 		expectedArgs []string
 	}{
 		{
@@ -64,6 +67,16 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			skipTests:    false,
 			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Djib.from.image=img2:tag -Dimage=img"},
 		},
+		{
+			description:  "cross platform",
+			platforms:    platform.Matcher{Platforms: []v1.Platform{{Architecture: "arm", OS: "freebsd"}}},
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersionForCrossPlatform + " --non-recursive prepare-package jib:build -Djib.from.platforms=freebsd/arm -Dimage=img"},
+		},
+		{
+			description:  "multi platform",
+			platforms:    platform.Matcher{Platforms: []v1.Platform{{Architecture: "arm", OS: "freebsd"}, {Architecture: "arm64", OS: "linux"}}},
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersionForCrossPlatform + " --non-recursive prepare-package jib:build -Djib.from.platforms=freebsd/arm,linux/arm64 -Dimage=img"},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -86,7 +99,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			})
 			builder.skipTests = test.skipTests
 
-			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", test.platforms, "bucket", "object")
 			t.CheckNoError(err)
 
 			expected := []*cloudbuild.BuildStep{{
@@ -105,6 +118,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 	tests := []struct {
 		description  string
 		skipTests    bool
+		platforms    platform.Matcher
 		expectedArgs []string
 	}{
 		{
@@ -116,6 +130,16 @@ func TestJibGradleBuildSpec(t *testing.T) {
 			description:  "do not skip tests",
 			skipTests:    false,
 			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME --console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersion + " :jib --image=img"},
+		},
+		{
+			description:  "cross platform",
+			platforms:    platform.Matcher{Platforms: []v1.Platform{{Architecture: "arm", OS: "freebsd"}}},
+			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME --console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersionForCrossPlatform + " :jib -Djib.from.platforms=freebsd/arm --image=img"},
+		},
+		{
+			description:  "multi platform",
+			platforms:    platform.Matcher{Platforms: []v1.Platform{{Architecture: "arm", OS: "freebsd"}, {Architecture: "arm64", OS: "linux"}}},
+			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME --console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersionForCrossPlatform + " :jib -Djib.from.platforms=freebsd/arm,linux/arm64 --image=img"},
 		},
 	}
 	for _, test := range tests {
@@ -131,7 +155,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 			})
 			builder.skipTests = test.skipTests
 
-			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", "bucket", "object")
+			buildSpec, err := builder.buildSpec(context.Background(), artifact, "img", test.platforms, "bucket", "object")
 			t.CheckNoError(err)
 
 			expected := []*cloudbuild.BuildStep{{

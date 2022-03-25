@@ -606,6 +606,14 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy"},
 	},
+	{
+		Name:          "resource-selector-rules-file",
+		Usage:         "Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist",
+		Value:         &opts.TransformRulesFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {

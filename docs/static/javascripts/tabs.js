@@ -1,6 +1,6 @@
 function initTabs() {
-    $('.tab-content').find('.tab-pane').each(function(idx, item) {
-      var navTabs = $(this).closest('.code-tabs').find('.nav-tabs'),
+    $('.tab-content').children('.tab-pane').each(function(idx, item) {
+      var navTabs = $(this).closest('.code-tabs').children('.nav-tabs'),
           title = $(this).attr('title');
       navTabs.append('<li class="nav-tab"><a href="#" class="nav-tab">'+title+'</a></li');
     });
@@ -18,8 +18,9 @@ function initTabs() {
       var tab = $(this).parent(),
           tabIndex = tab.index(),
           tabPanel = $(this).closest('.code-tabs'),
-          tabPane = tabPanel.find('.tab-pane').eq(tabIndex);
-      tabPanel.find('.active').removeClass('active');
+          tabPane = tabPanel.find('.tab-content:first').children('.tab-pane').eq(tabIndex);
+      tab.siblings().removeClass('active');
+      tabPane.siblings().removeClass('active');
       tab.addClass('active');
       tabPane.addClass('active');
     });

@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -44,6 +43,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -65,8 +65,8 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 	return nil
 }
 
-func (b *Builder) Concurrency() int {
-	return b.GoogleCloudBuild.Concurrency
+func (b *Builder) Concurrency() *int {
+	return util.IntPtr(b.GoogleCloudBuild.Concurrency)
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, platform platform.Matcher) (string, error) {
@@ -152,7 +152,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		})
 	}
 
-	buildSpec, err := b.buildSpec(ctx, artifact, tag, cbBucket, buildObject)
+	buildSpec, err := b.buildSpec(ctx, artifact, tag, platform, cbBucket, buildObject)
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_GCB_GENERATE_BUILD_DESCRIPTOR_ERR,
@@ -194,7 +194,8 @@ watch:
 			if err == nil {
 				return true, nil
 			}
-			if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
+			// Error code 429 is the error code for quota exceeded https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+			if apiErr, ok := err.(*googleapi.Error); ok && apiErr.Code == 429 {
 				// if we hit the rate limit, continue to retry
 				return false, nil
 			}

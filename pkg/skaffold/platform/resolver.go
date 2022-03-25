@@ -25,6 +25,7 @@ import (
 	coreV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -58,16 +59,17 @@ func NewResolver(ctx context.Context, pipelines []latestV1.Pipeline, cliPlatform
 		return r, fmt.Errorf("failed to parse platforms: %w", err)
 	}
 	log.Entry(ctx).Debugf("CLI platforms provided: %q", fromCli)
+	instrumentation.AddCliBuildTargetPlatforms(fromCli.String())
 
 	if runMode == config.RunModes.Dev || runMode == config.RunModes.Debug || runMode == config.RunModes.Run {
 		fromClusterNodes, err = getClusterPlatforms(ctx, kubeContext, runMode == config.RunModes.Dev || runMode == config.RunModes.Debug)
 		if err != nil {
 			log.Entry(ctx).Debugf("failed to get cluster node details: %v", err)
-			log.Entry(ctx).Warnln("failed to detect active kubernetes cluter node platform. Specify the correct build platform in the `skaffold.yaml` file or using the `--platform` flag")
+			log.Entry(ctx).Warnln("failed to detect active kubernetes cluster node platform. Specify the correct build platform in the `skaffold.yaml` file or using the `--platform` flag")
 		}
 	}
 	log.Entry(ctx).Debugf("platforms detected from active kubernetes cluster nodes: %q", fromClusterNodes)
-
+	instrumentation.AddDeployNodePlatforms(fromClusterNodes.String())
 	for _, pipeline := range pipelines {
 		platforms := fromCli
 		if platforms.IsEmpty() {
@@ -85,6 +87,7 @@ func NewResolver(ctx context.Context, pipelines []latestV1.Pipeline, cliPlatform
 				return r, fmt.Errorf("build target platforms %q do not match active kubernetes cluster node platforms %q", platforms, fromClusterNodes)
 			}
 		}
+		instrumentation.AddResolvedBuildTargetPlatforms(platforms.String())
 		for _, artifact := range pipeline.Build.Artifacts {
 			pl := platforms
 			constraints, err := Parse(artifact.Platforms)

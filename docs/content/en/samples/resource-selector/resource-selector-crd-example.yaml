@@ -1,0 +1,15 @@
+apiVersion: skaffold/v2beta28
+kind: Config
+build:
+  artifacts:
+    - image: my-image
+      context: my-image
+deploy:
+  kubectl:
+    manifests:
+      - my-manifests-*
+resourceSelector:
+  allow:
+    - groupKind: "CustomDeployment.skaffold.dev"
+      image: [".*"]
+      labels: [".*"]

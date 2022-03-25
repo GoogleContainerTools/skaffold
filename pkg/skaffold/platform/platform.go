@@ -53,15 +53,19 @@ func (m Matcher) IsCrossPlatform() bool {
 	return m.IsMultiPlatform() || (len(m.Platforms) == 1 && !platforms.Only(m.Platforms[0]).Match(platforms.DefaultSpec()))
 }
 
-func (m Matcher) String() string {
-	if m.All {
-		return "all"
-	}
+func (m Matcher) Array() []string {
 	var pl []string
+	if m.All {
+		return append(pl, "all")
+	}
 	for _, p := range m.Platforms {
 		pl = append(pl, Format(p))
 	}
-	return strings.Join(pl, ",")
+	return pl
+}
+
+func (m Matcher) String() string {
+	return strings.Join(m.Array(), ",")
 }
 
 // Intersect returns the intersection set of Matchers.
@@ -89,6 +93,9 @@ func (m Matcher) Intersect(other Matcher) Matcher {
 func Parse(ps []string) (Matcher, error) {
 	var sl []specs.Platform
 	for _, p := range ps {
+		if strings.ToLower(p) == "all" {
+			return All, nil
+		}
 		platform, err := platforms.Parse(p)
 		if err != nil {
 			return Matcher{}, UnknownPlatformCLIFlag(p, err)

@@ -391,6 +391,12 @@ func TestGetCluster(t *testing.T) {
 			cfg:         &ContextConfig{Kubecontext: "not-k3d"},
 			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
+		{
+			description: "generic cluster, default repo already defined",
+			cfg:         &ContextConfig{Kubecontext: "anything-else", DefaultRepo: "myrepo"},
+			defaultRepo: NewStringOrUndefined(&defaultRepo),
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true, DefaultRepo: NewStringOrUndefined(&defaultRepo)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

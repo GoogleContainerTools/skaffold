@@ -85,6 +85,7 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 			_, client := DefaultNamespace(t)
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).RunBackground(t)
+			defer skaffold.Delete().InDir("testdata/file-sync").WithConfig(test.config).RunBackground(t)
 
 			client.WaitForPodsReady("test-file-sync")
 

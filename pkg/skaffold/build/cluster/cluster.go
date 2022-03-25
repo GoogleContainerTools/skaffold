@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -63,11 +62,6 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, m platform.Matcher) (string, error) {
-	// TODO: Implement building multiplatform images for cluster builder
-	if m.IsMultiPlatform() {
-		log.Entry(ctx).Println("skaffold doesn't yet support multi platform builds for the cluster builder")
-	}
-
 	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag, m)
 	if err != nil {
 		return "", err
@@ -76,8 +70,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	return build.TagWithDigest(tag, digest), nil
 }
 
-func (b *Builder) Concurrency() int {
-	return b.ClusterDetails.Concurrency
+func (b *Builder) Concurrency() *int {
+	return util.IntPtr(b.ClusterDetails.Concurrency)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
@@ -85,7 +79,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {
 	case a.KanikoArtifact != nil:
-		return b.buildWithKaniko(ctx, out, a.Workspace, a.ImageName, a.KanikoArtifact, tag, requiredImages)
+		return b.buildWithKaniko(ctx, out, a.Workspace, a.ImageName, a.KanikoArtifact, tag, requiredImages, platforms)
 
 	case a.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(nil, b.cfg, true, b.skipTests, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag, platforms)

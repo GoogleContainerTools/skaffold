@@ -21,6 +21,8 @@ import (
 	"regexp"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -30,7 +32,7 @@ type mockVisitor struct {
 	replaceWith interface{}
 }
 
-func (m *mockVisitor) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
+func (m *mockVisitor) Visit(gk schema.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
 	s := fmt.Sprintf("%+v", v)
 	if len(s) > 4 {
 		s = s[:4] + "..."
@@ -249,7 +251,7 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			visitor := &mockVisitor{map[string]int{}, test.pivotKey, test.replaceWith}
-			actual, err := test.manifests.Visit(visitor)
+			actual, err := test.manifests.Visit(visitor, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 			expectedVisits := map[string]int{}
 			for _, visit := range test.expected {
 				expectedVisits[visit]++
@@ -362,6 +364,10 @@ func TestShouldTransformManifest(t *testing.T) {
 		{manifest: map[string]interface{}{"apiVersion": "agones.dev/v1", "kind": "Fleet"}, expected: true},
 		{manifest: map[string]interface{}{"apiVersion": "agones.dev/v1", "kind": "GameServer"}, expected: true},
 		{manifest: map[string]interface{}{"apiVersion": "argoproj.io/v1", "kind": "Rollout"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "argoproj.io/v1alpha1", "kind": "Workflow"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "argoproj.io/v1alpha1", "kind": "CronWorkflow"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "argoproj.io/v1alpha1", "kind": "WorkflowTemplate"}, expected: true},
+		{manifest: map[string]interface{}{"apiVersion": "argoproj.io/v1alpha1", "kind": "ClusterWorkflowTemplate"}, expected: true},
 		{manifest: map[string]interface{}{"apiVersion": "foo.cnrm.cloud.google.com/v1", "kind": "Service"}, expected: true},
 		{manifest: map[string]interface{}{"apiVersion": "foo.bar.cnrm.cloud.google.com/v1", "kind": "Service"}, expected: true},
 		{manifest: map[string]interface{}{"apiVersion": "foo/v1", "kind": "Blah"}, expected: false},
@@ -369,7 +375,7 @@ func TestShouldTransformManifest(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, fmt.Sprintf("%v", test.manifest), func(t *testutil.T) {
-			result := shouldTransformManifest(test.manifest)
+			result := shouldTransformManifest(test.manifest, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 			t.CheckDeepEqual(test.expected, result)
 		})
 	}
