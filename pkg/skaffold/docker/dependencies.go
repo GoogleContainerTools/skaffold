@@ -251,7 +251,7 @@ func readDockerignore(workspace string, absDockerfilePath string) ([]string, err
 }
 
 // WalkWorkspace walks the given host directories and records all files found.
-// Note: if you change this function, you might also want to modify `walkWorkspaceWithDestinations`.
+// Note: if you change this function, you might also want to modify walkWorkspaceWithDestinations.
 func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
 	dockerIgnored, err := NewDockerIgnorePredicate(workspace, excludes)
 	if err != nil {
@@ -264,12 +264,6 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 		absFrom := filepath.Join(workspace, dep)
 
 		keepFile := func(path string, info walk.Dirent) (bool, error) {
-			// This region was never reached
-			// Always keep root folders.
-			// if info.IsDir() && path == absFrom {
-			// 	return false, nil
-			// }
-
 			// Ignore non empty dirs
 			if info.IsDir() && !util.IsEmptyDir(path) {
 				return false, nil
