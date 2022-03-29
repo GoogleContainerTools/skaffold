@@ -21,7 +21,6 @@ import (
 	"io"
 	"time"
 
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -124,5 +123,5 @@ func (b *Builder) PushImages() bool {
 }
 
 func (b *Builder) SupportedPlatforms() platform.Matcher {
-	return platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}}
+	return platform.All
 }

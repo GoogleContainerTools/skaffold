@@ -540,6 +540,10 @@ func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID st
 		return "", err
 	}
 
+	if imageID == "" {
+		log.Entry(ctx).Debugf("generating tag for %s: empty image id\n", ref)
+		return "", nil
+	}
 	uniqueTag := parsed.BaseName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := l.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err

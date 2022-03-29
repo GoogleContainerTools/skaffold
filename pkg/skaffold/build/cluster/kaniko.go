@@ -31,13 +31,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const initContainer = "kaniko-init-container"
 
-func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latestV2.KanikoArtifact, tag string, requiredImages map[string]*string) (string, error) {
+func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latestV2.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
+	// TODO: Implement building multi-platform images for cluster builder
+	if platforms.IsMultiPlatform() {
+		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the docker builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", platforms.String(), artifactName)
+	}
+
 	generatedEnvs, err := generateEnvFromImage(tag)
 	if err != nil {
 		return "", fmt.Errorf("error processing generated env variables from image uri: %w", err)
@@ -60,7 +66,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 	pods := client.CoreV1().Pods(b.Namespace)
 
-	podSpec, err := b.kanikoPodSpec(artifact, tag)
+	podSpec, err := b.kanikoPodSpec(artifact, tag, platforms)
 	if err != nil {
 		return "", err
 	}

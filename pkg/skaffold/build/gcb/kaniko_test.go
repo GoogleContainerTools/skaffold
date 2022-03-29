@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -438,7 +439,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				}
 				return m, nil
 			})
-			desc, err := builder.buildSpec(context.Background(), artifact, "gcr.io/nginx", "bucket", "object")
+			desc, err := builder.buildSpec(context.Background(), artifact, "gcr.io/nginx", platform.Matcher{}, "bucket", "object")
 
 			expected := cloudbuild.Build{
 				LogsBucket: "bucket",

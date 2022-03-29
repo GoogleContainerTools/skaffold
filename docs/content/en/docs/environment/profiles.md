@@ -112,3 +112,13 @@ skaffold dev -p hello,world
 
 Skaffold will activate both profiles, `hello` and `world`. 
 This is e.g. useful when combined with patches to provide a composable development setup where `hello` and `world` can be added on demand.
+
+### Deactivating Profiles
+
+Profiles can also be manually deactivated by prefixing the profile name with `-` like so:
+
+```bash
+skaffold dev -p hello,-world
+```
+
+Skaffold will activate the `hello` profile, and deactivate the `world` profile, even if it had otherwise been activated through the configuration.

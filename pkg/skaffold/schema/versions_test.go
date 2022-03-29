@@ -497,9 +497,6 @@ func withLocalBuild(ops ...func(*latestV2.BuildConfig)) func(*latestV2.SkaffoldC
 		for _, op := range ops {
 			op(&b)
 		}
-		if len(b.Artifacts) > 0 {
-			b.LocalBuild.Concurrency = &constants.DefaultLocalConcurrency
-		}
 		cfg.Build = b
 	}
 }

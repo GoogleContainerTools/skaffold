@@ -34,7 +34,9 @@ type Config interface {
 	DefaultRepo() *string
 	MultiLevelRepo() *bool
 	SkipRender() bool
-	TransformableAllowList() []latestV2.ResourceFilter
+	TransformAllowList() []latestV2.ResourceFilter
+	TransformDenyList() []latestV2.ResourceFilter
+	TransformRulesFile() string
 }
 
 // Artifact contains all information about a completed deployment

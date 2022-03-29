@@ -87,6 +87,9 @@ type Pipeline struct {
 
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
+
+	// ResourceSelector describes user defined filters describing how skaffold should treat objects/fields during rendering.
+	ResourceSelector ResourceSelectorConfig `yaml:"resourceSelector,omitempty"`
 }
 
 // GitInfo contains information on the origin of skaffold configurations cloned from a git repository.
@@ -134,14 +137,15 @@ type ResourceType string
 
 // PortForwardResource describes a resource to port forward.
 type PortForwardResource struct {
-	// Type is the Kubernetes type that should be port forwarded.
-	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Type is the resource type that should be port forwarded.
+	// Acceptable resource types include kubernetes types: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	// Standalone `Container` is also valid for Docker deployments.
 	Type ResourceType `yaml:"resourceType,omitempty"`
 
-	// Name is the name of the Kubernetes resource to port forward.
+	// Name is the name of the Kubernetes resource or local container to port forward.
 	Name string `yaml:"resourceName,omitempty"`
 
-	// Namespace is the namespace of the resource to port forward.
+	// Namespace is the namespace of the resource to port forward. Does not apply to local containers.
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
@@ -152,6 +156,14 @@ type PortForwardResource struct {
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int `yaml:"localPort,omitempty"`
+}
+
+// ResourceSelectorConfig contains all the configuration needed by the deploy steps.
+type ResourceSelectorConfig struct {
+	// Allow configures an allowlist for transforming manifests.
+	Allow []ResourceFilter `yaml:"allow,omitempty"`
+	// Deny configures an allowlist for transforming manifests.
+	Deny []ResourceFilter `yaml:"deny,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.
@@ -632,15 +644,15 @@ type DeployType struct {
 	// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	LegacyHelmDeploy *LegacyHelmDeploy `yaml:"helm,omitempty"`
 
+	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
+	KptV2Deploy *KptV2Deploy `yaml:"kpt,omitempty"`
+
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
-
-	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
-	KptV2Deploy *KptV2Deploy `yaml:"kpt,omitempty"`
 }
 
 // DockerDeploy uses the `docker` CLI to create application containers in Docker.
@@ -658,7 +670,6 @@ type KubectlDeploy struct {
 	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
 	// Manifests lists the Kubernetes yaml or json manifests.
 	// Defaults to `["k8s/*.yaml"]`.
-
 	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
 	// This field is only used by v1 kubectl deployer.
@@ -691,6 +702,32 @@ type KubectlFlags struct {
 	// DisableValidation passes the `--validate=false` flag to supported
 	// `kubectl` commands when enabled.
 	DisableValidation bool `yaml:"disableValidation,omitempty"`
+}
+
+// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
+type LegacyHelmDeploy struct {
+	// Releases is a list of Helm releases.
+	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
+
+	// Flags are additional option flags that are passed on the command
+	// line to `helm`.
+	Flags HelmDeployFlags `yaml:"flags,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
+}
+
+// HelmDeployFlags are additional option flags that are passed on the command
+// line to `helm`.
+type HelmDeployFlags struct {
+	// Global are additional flags passed on every command.
+	Global []string `yaml:"global,omitempty"`
+
+	// Install are additional flags passed to (`helm install`).
+	Install []string `yaml:"install,omitempty"`
+
+	// Upgrade are additional flags passed to (`helm upgrade`).
+	Upgrade []string `yaml:"upgrade,omitempty"`
 }
 
 // KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
@@ -776,6 +813,110 @@ type KptApplyOptions struct {
 
 	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
 	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
+}
+
+// HelmRelease describes a helm release to be deployed.
+type HelmRelease struct {
+	// Name is the name of the Helm release.
+	// It accepts environment variables via the go template syntax.
+	Name string `yaml:"name,omitempty" yamltags:"required"`
+
+	// ChartPath is the local path to a packaged Helm chart or an unpacked Helm chart directory.
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath"`
+
+	// RemoteChart refers to a remote Helm chart reference or URL.
+	RemoteChart string `yaml:"remoteChart,omitempty" yamltags:"oneOf=chartSource"`
+
+	// ValuesFiles are the paths to the Helm `values` files.
+	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
+
+	// Namespace is the Kubernetes namespace.
+	Namespace string `yaml:"namespace,omitempty"`
+
+	// Version is the version of the chart.
+	Version string `yaml:"version,omitempty"`
+
+	// SetValues are key-value pairs.
+	// If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.
+	SetValues util.FlatMap `yaml:"setValues,omitempty"`
+
+	// SetValueTemplates are key-value pairs.
+	// If present, Skaffold will try to parse the value part of each key-value pair using
+	// environment variables in the system, then send `--set` flag to Helm CLI and append
+	// all parsed pairs after the flag.
+	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty"`
+
+	// SetFiles are key-value pairs.
+	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
+	SetFiles map[string]string `yaml:"setFiles,omitempty" skaffold:"filepath"`
+
+	// CreateNamespace if `true`, Skaffold will send `--create-namespace` flag to Helm CLI.
+	// `--create-namespace` flag is available in Helm since version 3.2.
+	// Defaults is `false`.
+	CreateNamespace *bool `yaml:"createNamespace,omitempty"`
+
+	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
+	// Defaults to `false`.
+	Wait bool `yaml:"wait,omitempty"`
+
+	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI
+	// when upgrading a new version of a chart in subsequent dev loop deploy.
+	// Defaults to `false`.
+	RecreatePods bool `yaml:"recreatePods,omitempty"`
+
+	// SkipBuildDependencies should build dependencies be skipped.
+	// Ignored for `remoteChart`.
+	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
+
+	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
+	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
+
+	// Repo specifies the helm repository for remote charts.
+	// If present, Skaffold will send `--repo` Helm CLI flag or flags.
+	Repo string `yaml:"repo,omitempty"`
+
+	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
+	// Default is `true` when helm chart is local (has `chartPath`).
+	// Default is `false` when helm chart is remote (has `remoteChart`).
+	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
+
+	// Overrides are key-value pairs.
+	// If present, Skaffold will build a Helm `values` file that overrides
+	// the original and use it to call Helm CLI (`--f` flag).
+	Overrides util.HelmOverrides `yaml:"overrides,omitempty"`
+
+	// Packaged parameters for packaging helm chart (`helm package`).
+	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
+}
+
+// HelmPackaged parameters for packaging helm chart (`helm package`).
+type HelmPackaged struct {
+	// Version sets the `version` on the chart to this semver version.
+	Version string `yaml:"version,omitempty"`
+
+	// AppVersion sets the `appVersion` on the chart to this version.
+	AppVersion string `yaml:"appVersion,omitempty"`
+}
+
+// HelmImageConfig describes an image configuration.
+type HelmImageConfig struct {
+	// HelmFQNConfig is the image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.
+	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty" yamltags:"oneOf=helmImageStrategy"`
+
+	// HelmConventionConfig is the image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.
+	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty" yamltags:"oneOf=helmImageStrategy"`
+}
+
+// HelmFQNConfig is the image config to use the FullyQualifiedImageName as param to set.
+type HelmFQNConfig struct {
+	// Property defines the image config.
+	Property string `yaml:"property,omitempty"`
+}
+
+// HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
+type HelmConventionConfig struct {
+	// ExplicitRegistry separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.
+	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
 }
 
 // LogsConfig configures how container logs are printed as a result of a deployment.
@@ -1257,7 +1398,7 @@ type DockerArtifact struct {
 	// PullParent is used to attempt pulling the parent image even if an older image exists locally.
 	PullParent bool `yaml:"pullParent,omitempty"`
 
-	// NoCache used to pass in --no-cache to docker build to prevent caching.
+	// NoCache set to true to pass in --no-cache to docker build, which will prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 
 	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
@@ -1270,8 +1411,7 @@ type DockerArtifact struct {
 	SSH string `yaml:"ssh,omitempty"`
 }
 
-// DockerSecret contains information about a local secret passed to `docker build`,
-// along with optional destination information.
+// DockerSecret is used to pass in --secret to docker build, `useBuildKit: true` is required.
 type DockerSecret struct {
 	// ID is the id of the secret.
 	ID string `yaml:"id,omitempty" yamltags:"required"`
@@ -1312,7 +1452,7 @@ type KoArtifact struct {
 	// Env are environment variables, in the `key=value` form, passed to the build.
 	// These environment variables are only used at build time.
 	// They are _not_ set in the resulting container image.
-	// For example: `["GOPRIVATE=source.developers.google.com", "GOCACHE=/workspace/.gocache"]`.
+	// For example: `["GOPRIVATE=git.example.com", "GOCACHE=/workspace/.gocache"]`.
 	Env []string `yaml:"env,omitempty"`
 
 	// Flags are additional build flags passed to `go build`.
@@ -1320,7 +1460,7 @@ type KoArtifact struct {
 	Flags []string `yaml:"flags,omitempty"`
 
 	// Labels are key-value string pairs to add to the image config.
-	// For example: `{"org.opencontainers.image.source":"https://github.com/GoogleContainerTools/skaffold"}`.
+	// For example: `{"foo":"bar"}`.
 	Labels map[string]string `yaml:"labels,omitempty"`
 
 	// Ldflags are linker flags passed to the builder.
@@ -1442,8 +1582,8 @@ type NamedContainerHook struct {
 
 // ResourceFilter contains definition to filter which resource to transform.
 type ResourceFilter struct {
-	// Type is the compact format of a resource type.
-	Type string `yaml:"type" yamltags:"required"`
+	// GroupKind is the compact format of a resource type.
+	GroupKind string `yaml:"groupKind" yamltags:"required"`
 	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
 	Image []string `yaml:"image,omitempty"`
 	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
@@ -1625,33 +1765,7 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	return m, err
 }
 
-// TODO (yuwenma): LegacyHelmDeploy and KustomizeDeploy shall be deprecated.
-
-// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
-type LegacyHelmDeploy struct {
-	// Releases is a list of Helm releases.
-	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
-
-	// Flags are additional option flags that are passed on the command
-	// line to `helm`.
-	Flags HelmDeployFlags `yaml:"flags,omitempty"`
-
-	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
-}
-
-// HelmDeployFlags are additional option flags that are passed on the command
-// line to `helm`.
-type HelmDeployFlags struct {
-	// Global are additional flags passed on every command.
-	Global []string `yaml:"global,omitempty"`
-
-	// Install are additional flags passed to (`helm install`).
-	Install []string `yaml:"install,omitempty"`
-
-	// Upgrade are additional flags passed to (`helm upgrade`).
-	Upgrade []string `yaml:"upgrade,omitempty"`
-}
+// TODO (yuwenma): KustomizeDeploy shall be deprecated.
 
 // KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 type KustomizeDeploy struct {
@@ -1670,108 +1784,4 @@ type KustomizeDeploy struct {
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
-}
-
-// HelmRelease describes a helm release to be deployed.
-type HelmRelease struct {
-	// Name is the name of the Helm release.
-	// It accepts environment variables via the go template syntax.
-	Name string `yaml:"name,omitempty" yamltags:"required"`
-
-	// ChartPath is the local path to a packaged Helm chart or an unpacked Helm chart directory.
-	ChartPath string `yaml:"chartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath"`
-
-	// RemoteChart refers to a remote Helm chart reference or URL.
-	RemoteChart string `yaml:"remoteChart,omitempty" yamltags:"oneOf=chartSource"`
-
-	// ValuesFiles are the paths to the Helm `values` files.
-	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
-
-	// Namespace is the Kubernetes namespace.
-	Namespace string `yaml:"namespace,omitempty"`
-
-	// Version is the version of the chart.
-	Version string `yaml:"version,omitempty"`
-
-	// SetValues are key-value pairs.
-	// If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.
-	SetValues util.FlatMap `yaml:"setValues,omitempty"`
-
-	// SetValueTemplates are key-value pairs.
-	// If present, Skaffold will try to parse the value part of each key-value pair using
-	// environment variables in the system, then send `--set` flag to Helm CLI and append
-	// all parsed pairs after the flag.
-	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty"`
-
-	// SetFiles are key-value pairs.
-	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
-	SetFiles map[string]string `yaml:"setFiles,omitempty" skaffold:"filepath"`
-
-	// CreateNamespace if `true`, Skaffold will send `--create-namespace` flag to Helm CLI.
-	// `--create-namespace` flag is available in Helm since version 3.2.
-	// Defaults is `false`.
-	CreateNamespace *bool `yaml:"createNamespace,omitempty"`
-
-	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
-	// Defaults to `false`.
-	Wait bool `yaml:"wait,omitempty"`
-
-	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI
-	// when upgrading a new version of a chart in subsequent dev loop deploy.
-	// Defaults to `false`.
-	RecreatePods bool `yaml:"recreatePods,omitempty"`
-
-	// SkipBuildDependencies should build dependencies be skipped.
-	// Ignored for `remoteChart`.
-	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
-
-	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
-	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
-
-	// Repo specifies the helm repository for remote charts.
-	// If present, Skaffold will send `--repo` Helm CLI flag or flags.
-	Repo string `yaml:"repo,omitempty"`
-
-	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
-	// Default is `true` when helm chart is local (has `chartPath`).
-	// Default is `false` when helm chart is remote (has `remoteChart`).
-	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
-
-	// Overrides are key-value pairs.
-	// If present, Skaffold will build a Helm `values` file that overrides
-	// the original and use it to call Helm CLI (`--f` flag).
-	Overrides util.HelmOverrides `yaml:"overrides,omitempty"`
-
-	// Packaged parameters for packaging helm chart (`helm package`).
-	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
-}
-
-// HelmPackaged parameters for packaging helm chart (`helm package`).
-type HelmPackaged struct {
-	// Version sets the `version` on the chart to this semver version.
-	Version string `yaml:"version,omitempty"`
-
-	// AppVersion sets the `appVersion` on the chart to this version.
-	AppVersion string `yaml:"appVersion,omitempty"`
-}
-
-// HelmImageConfig describes an image configuration.
-type HelmImageConfig struct {
-	// HelmFQNConfig is the image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.
-	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty" yamltags:"oneOf=helmImageStrategy"`
-
-	// HelmConventionConfig is the image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty" yamltags:"oneOf=helmImageStrategy"`
-}
-
-// HelmFQNConfig is the image config to use the FullyQualifiedImageName as param to set.
-type HelmFQNConfig struct {
-	// Property defines the image config.
-	Property string `yaml:"property,omitempty"`
-}
-
-// HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
-type HelmConventionConfig struct {
-	// ExplicitRegistry separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.
-	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
 }

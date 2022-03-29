@@ -33,9 +33,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/lint"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -44,7 +46,7 @@ var h Handler
 // Handler is the server handler for the skaffold LSP.  It implements the LSP spec and supports connection over TCP
 type Handler struct {
 	documentManager *DocumentManager
-	diagnostics     map[string][]protocol.Diagnostic
+	lastDiagnostics map[string][]protocol.Diagnostic
 	initialized     bool
 	conn            jsonrpc2.Conn
 }
@@ -58,8 +60,37 @@ func NewHandler(conn jsonrpc2.Conn) *Handler {
 	}
 }
 
+func sendValidationAndLintDiagnostics(ctx context.Context, opts config.SkaffoldOptions, out io.Writer, req jsonrpc2.Request, createRunner func(ctx context.Context, out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []schemautil.VersionedConfig, *runcontext.RunContext, error)) error {
+	isValidConfig := true
+	diags, err := validateFiles(ctx, opts, req)
+	if err != nil {
+		return err
+	}
+	sendDiagnostics(ctx, diags)
+
+	// there was a validation error found, config is invalid
+	if len(diags) > 0 {
+		isValidConfig = false
+	}
+
+	if isValidConfig {
+		_, _, runCtx, err := createRunner(ctx, out, opts)
+		if err != nil {
+			return err
+		}
+		// TODO(aaron-prindle) files should be linted even if skaffold.yaml file is invalid (for the lint rules that is possible for)
+		// currently this only lints when the config is valid
+		diags, err = lintFiles(ctx, runCtx, opts, req)
+		if err != nil {
+			return err
+		}
+		sendDiagnostics(ctx, diags)
+	}
+
+	return nil
+}
+
 func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, createRunner func(ctx context.Context, out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []schemautil.VersionedConfig, *runcontext.RunContext, error)) jsonrpc2.Handler {
-	var runCtx *runcontext.RunContext
 	h = *NewHandler(conn)
 	util.Fs = afero.NewCacheOnReadFs(util.Fs, h.documentManager.memMapFs, 0)
 
@@ -85,16 +116,12 @@ func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, 
 			if len(params.WorkspaceFolders) == 0 {
 				return fmt.Errorf("expected WorkspaceFolders to have at least one value, got 0")
 			}
+			// TODO(aaron-prindle) does workspace changing send a new 'initialize' or is there workspaceChange msg?  Need to make sure that is handled...
+			// and we don't keep initialize workspace always
 			err := os.Chdir(uriToFilename(uri.URI(params.WorkspaceFolders[0].URI)))
 			if err != nil {
 				return err
 			}
-
-			_, _, runCtx, err = createRunner(ctx, out, opts)
-			if err != nil {
-				return err
-			}
-
 			// TODO(aaron-prindle) might need some checks to verify the initialize requests supports these,
 			// right now assuming VS Code w/ supported methods - seems like an ok assumption for now
 			if err := reply(ctx, protocol.InitializeResult{
@@ -116,10 +143,7 @@ func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, 
 			var params protocol.InitializedParams
 			json.Unmarshal(req.Params(), &params)
 			log.Entry(ctx).Debugf("InitializedParams: %+v\n", params)
-			if err := lintFilesAndSendDiagnostics(ctx, runCtx, opts, req); err != nil {
-				return err
-			}
-			return nil
+			return sendValidationAndLintDiagnostics(ctx, opts, out, req, createRunner)
 		}
 		if !h.initialized {
 			reply(ctx, nil, jsonrpc2.Errorf(jsonrpc2.ServerNotInitialized, "not initialized yet"))
@@ -136,9 +160,7 @@ func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, 
 				if err := h.updateDocument(ctx, documentURI, params.TextDocument.Text); err != nil {
 					return err
 				}
-				if err := lintFilesAndSendDiagnostics(ctx, runCtx, opts, req); err != nil {
-					return err
-				}
+				return sendValidationAndLintDiagnostics(ctx, opts, out, req, createRunner)
 			}
 		case protocol.MethodTextDocumentDidChange:
 			var params protocol.DidChangeTextDocumentParams
@@ -149,9 +171,7 @@ func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, 
 				if err := h.updateDocument(ctx, documentURI, params.ContentChanges[0].Text); err != nil {
 					return err
 				}
-				if err := lintFilesAndSendDiagnostics(ctx, runCtx, opts, req); err != nil {
-					return err
-				}
+				return sendValidationAndLintDiagnostics(ctx, opts, out, req, createRunner)
 			}
 		case protocol.MethodTextDocumentDidSave:
 			var params protocol.DidSaveTextDocumentParams
@@ -162,9 +182,7 @@ func GetHandler(conn jsonrpc2.Conn, out io.Writer, opts config.SkaffoldOptions, 
 				if err := h.updateDocument(ctx, documentURI, params.Text); err != nil {
 					return err
 				}
-				if err := lintFilesAndSendDiagnostics(ctx, runCtx, opts, req); err != nil {
-					return err
-				}
+				return sendValidationAndLintDiagnostics(ctx, opts, out, req, createRunner)
 			}
 		// TODO(aaron-prindle) implement additional methods here - eg: lsp.MethodTextDocumentHover, etc.
 		default:
@@ -180,8 +198,96 @@ func (h *Handler) updateDocument(ctx context.Context, documentURI, content strin
 	return nil
 }
 
-func lintFilesAndSendDiagnostics(ctx context.Context, runCtx docker.Config,
-	opts config.SkaffoldOptions, req jsonrpc2.Request) error {
+func convertErrorWithLocationsToResults(errs []validation.ErrorWithLocation) []lint.Result {
+	results := []lint.Result{}
+	for _, e := range errs {
+		results = append(results,
+			lint.Result{
+				Rule: &lint.Rule{
+					RuleID:   lint.ValidationError,
+					Severity: protocol.DiagnosticSeverityError,
+				},
+				// TODO(aaron-prindle) currently there is dupe line and file information in the Explanation field, need to remove this for LSP
+				Explanation: e.Error.Error(),
+				AbsFilePath: e.Location.SourceFile,
+				StartLine:   e.Location.StartLine,
+				EndLine:     e.Location.EndLine,
+				StartColumn: e.Location.StartColumn,
+				EndColumn:   e.Location.EndColumn,
+			})
+	}
+	return results
+}
+
+func sendDiagnostics(ctx context.Context, diags map[string][]protocol.Diagnostic) {
+	// copy map to not mutate input
+	tmpDiags := map[string][]protocol.Diagnostic{}
+	for k, v := range diags {
+		tmpDiags[k] = v
+	}
+
+	for k := range h.lastDiagnostics {
+		if _, ok := tmpDiags[k]; !ok {
+			tmpDiags[k] = []protocol.Diagnostic{}
+		}
+	}
+
+	if len(tmpDiags) > 0 {
+		fmt.Fprintf(os.Stderr, "publishing diagnostics (%d).\n", len(tmpDiags))
+		for k, v := range tmpDiags {
+			fmt.Fprintf(os.Stderr, "> %s\n", k)
+			h.conn.Notify(ctx, protocol.MethodTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+				URI:         uri.File(k),
+				Diagnostics: v,
+			})
+		}
+	}
+	h.lastDiagnostics = tmpDiags
+}
+
+func validateFiles(ctx context.Context,
+	opts config.SkaffoldOptions, req jsonrpc2.Request) (map[string][]protocol.Diagnostic, error) {
+	// TODO(aaron-prindle) currently lint checks only filesystem, instead need to check VFS w/ documentManager info (validation uses VFS currently NOT lint)
+
+	// TODO(aaron-prindle) if invalid yaml and parser fails, need to handle that as well as a validation error vs server erroring
+	// OR just show nothing in this case as that would make sense vs all RED text, perhaps should just error
+	cfgs, err := parser.GetConfigSet(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	vopts := validation.GetValidationOpts(opts)
+	vopts.CheckDeploySource = true
+	errs := validation.ProcessToErrorWithLocation(cfgs, vopts)
+	results := convertErrorWithLocationsToResults(errs)
+
+	var params protocol.TextDocumentPositionParams
+	json.Unmarshal(req.Params(), &params)
+	tmpDiags := make(map[string][]protocol.Diagnostic)
+	for _, result := range results {
+		diag := protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: uint32(result.StartLine - 1), Character: uint32(result.StartColumn - 1)},
+				// TODO(aaron-prindle) should implement and pass end range from lint as well (currently a hack and just flags to end of line vs end of flagged text)
+				End: protocol.Position{Line: uint32(result.StartLine), Character: 0},
+			},
+			Severity: result.Rule.Severity,
+			Code:     result.Rule.RuleID,
+			Source:   result.AbsFilePath,
+			Message:  result.Explanation,
+		}
+		if _, ok := tmpDiags[result.AbsFilePath]; ok {
+			tmpDiags[result.AbsFilePath] = append(tmpDiags[result.AbsFilePath], diag)
+			continue
+		}
+		tmpDiags[result.AbsFilePath] = []protocol.Diagnostic{diag}
+	}
+	return tmpDiags, nil
+}
+
+func lintFiles(ctx context.Context, runCtx docker.Config,
+	opts config.SkaffoldOptions, req jsonrpc2.Request) (map[string][]protocol.Diagnostic, error) {
+	// TODO(aaron-prindle) currently lint checks only filesystem, instead need to check VFS w/ documentManager info
+	// need to make sure something like k8a-manifest.yaml comes from afero VFS and not os FS always
 	results, err := lint.GetAllLintResults(ctx, lint.Options{
 		Filename:     opts.ConfigurationFile,
 		RepoCacheDir: opts.RepoCacheDir,
@@ -191,7 +297,7 @@ func lintFilesAndSendDiagnostics(ctx context.Context, runCtx docker.Config,
 	}, runCtx)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var params protocol.TextDocumentPositionParams
@@ -215,18 +321,5 @@ func lintFilesAndSendDiagnostics(ctx context.Context, runCtx docker.Config,
 		}
 		tmpDiags[result.AbsFilePath] = []protocol.Diagnostic{diag}
 	}
-	h.diagnostics = tmpDiags
-
-	if h.diagnostics != nil && len(h.diagnostics) > 0 {
-		fmt.Fprintf(os.Stderr, "publishing diagnostics (%d).\n", len(h.diagnostics))
-		for k, v := range h.diagnostics {
-			fmt.Fprintf(os.Stderr, "> %s\n", k)
-			h.conn.Notify(ctx, protocol.MethodTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-				URI:         uri.File(k),
-				Diagnostics: v,
-			})
-		}
-		h.diagnostics = map[string][]protocol.Diagnostic{}
-	}
-	return nil
+	return tmpDiags, nil
 }

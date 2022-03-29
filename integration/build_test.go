@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"4d63.com/tz"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
@@ -136,7 +135,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 			if out, err := skaffold.Build(test.args...).InDir(test.dir).RunWithCombinedOutput(t); err == nil {
 				t.Fatal("expected build to fail")
 			} else if !strings.Contains(string(out), test.expected) {
-				logrus.Info("build output: ", string(out))
+				t.Log("build output: ", string(out))
 				t.Fatalf("build failed but for wrong reason")
 			}
 		})

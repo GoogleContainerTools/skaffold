@@ -32,7 +32,8 @@ import (
 )
 
 // SimulateDevCycle is used for testing a port forward + stop + restart in a simulated dev cycle
-func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
+func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string, level log.Level) {
+	log.SetLevel(level)
 	em := NewEntryManager(NewKubectlForwarder(kubectlCLI))
 	portForwardEventHandler := portForwardEvent
 	defer func() { portForwardEvent = portForwardEventHandler }()

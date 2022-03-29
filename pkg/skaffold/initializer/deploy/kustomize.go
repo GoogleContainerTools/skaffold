@@ -20,7 +20,7 @@ import (
 	"context"
 	"path/filepath"
 
-	pkgkustomize "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -61,7 +61,7 @@ func (k *kustomize) DeployConfig() (latestV2.DeployConfig, []latestV2.Profile) {
 	// if there's only one kustomize path, either leave it blank (if it's the default path),
 	// or generate a config with that single path and return it
 	if len(k.kustomizations) == 1 {
-		if k.kustomizations[0] == pkgkustomize.DefaultKustomizePath {
+		if k.kustomizations[0] == constants.DefaultKustomizePath {
 			kustomizeConfig = &latestV2.KustomizeDeploy{}
 		} else {
 			kustomizeConfig = &latestV2.KustomizeDeploy{

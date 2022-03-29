@@ -28,6 +28,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
@@ -38,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Kpt struct {
@@ -46,15 +48,22 @@ type Kpt struct {
 	transform.Transformer
 	hydrationDir string
 	labels       map[string]string
+
+	transformAllowlist map[apimachinery.GroupKind]latestV2.ResourceFilter
+	transformDenylist  map[apimachinery.GroupKind]latestV2.ResourceFilter
 }
 
-func New(config *latestV2.RenderConfig, workingDir, hydrationDir string,
+func New(cfg render.Config, hydrationDir string,
 	labels map[string]string) (*Kpt, error) {
-	generator := generate.NewGenerator(workingDir, config.Generate, hydrationDir)
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), cfg.GetRenderConfig().Generate, hydrationDir)
+	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
+	if err != nil {
+		return nil, err
+	}
 	var validator validate.Validator
-	if config.Validate != nil {
+	if cfg.GetRenderConfig().Validate != nil {
 		var err error
-		validator, err = validate.NewValidator(*config.Validate)
+		validator, err = validate.NewValidator(*cfg.GetRenderConfig().Validate)
 		if err != nil {
 			return nil, err
 		}
@@ -63,17 +72,24 @@ func New(config *latestV2.RenderConfig, workingDir, hydrationDir string,
 	}
 
 	var transformer transform.Transformer
-	if config.Transform != nil {
+	if cfg.GetRenderConfig().Transform != nil {
 		var err error
-		transformer, err = transform.NewTransformer(*config.Transform)
+		transformer, err = transform.NewTransformer(*cfg.GetRenderConfig().Transform)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
 	}
-	return &Kpt{Generator: generator, Validator: validator, Transformer: transformer,
-		hydrationDir: hydrationDir, labels: labels}, nil
+	return &Kpt{
+		Generator: generator,
+		Validator: validator,
+		Transformer: transformer,
+		hydrationDir: hydrationDir,
+		labels: labels,
+		transformAllowlist: transformAllowlist,
+		transformDenylist: transformDenylist,
+	}, nil
 }
 
 func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, output string) error {
@@ -122,7 +138,9 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		return errors.DeleteKptfileError(err, r.hydrationDir)
 	}
 	endTrace()
-	rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.hydrationDir, r.labels)
+	if err = rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.hydrationDir, r.labels, r.transformAllowlist, r.transformDenylist); err != nil {
+		return err
+	}
 
 	if kfConfig.Pipeline == nil {
 		kfConfig.Pipeline = &kptfile.Pipeline{}

@@ -61,6 +61,7 @@ type Config interface {
 	Tail() bool
 	PipelineForImage(imageName string) (latestV2.Pipeline, bool)
 	JSONParseConfig() latestV2.JSONParseConfig
+	GetRenderConfig() *latestV2.RenderConfig
 }
 
 func NewCLI(cfg Config, flags latestV2.KubectlFlags, defaultNamespace string) CLI {

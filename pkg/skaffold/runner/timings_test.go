@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -126,7 +127,8 @@ func TestTimingsBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			b := &mockBuilder{err: test.shouldErr}
 			builder, _, _, _ := WithTimings(b, nil, nil, nil, false)
@@ -162,7 +164,8 @@ func TestTimingsPrune(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			b := &mockBuilder{err: test.shouldErr}
 			builder, _, _, _ := WithTimings(b, nil, nil, nil, false)
@@ -198,7 +201,8 @@ func TestTimingsTest(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			tt := &mockTester{err: test.shouldErr}
 			_, tester, _, _ := WithTimings(nil, tt, nil, nil, false)
@@ -234,7 +238,8 @@ func TestTimingsRender(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			r := &mockRenderer{err: test.shouldErr}
 			_, _, render, _ := WithTimings(nil, nil, r, nil, false)
@@ -270,7 +275,8 @@ func TestTimingsDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			d := &mockDeployer{err: test.shouldErr}
 			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
@@ -306,7 +312,8 @@ func TestTimingsCleanup(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hook := logrustest.NewGlobal()
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
 
 			d := &mockDeployer{err: test.shouldErr}
 			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)

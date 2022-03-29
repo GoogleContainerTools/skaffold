@@ -639,7 +639,7 @@ func chartSource(r latestV2.HelmRelease) string {
 
 func warnAboutUnusedImages(builds []graph.Artifact, manifests manifest.ManifestList) {
 	seen := map[string]bool{}
-	images, _ := manifests.GetImages()
+	images, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
 	for _, a := range images {
 		seen[a.Tag] = true
 	}

@@ -23,9 +23,12 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
@@ -88,7 +91,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 				ArtifactType: latestV2.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag", platform.All)
+			}, "img:tag", platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -153,7 +156,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 				ArtifactType: latestV2.ArtifactType{
 					JibArtifact: test.artifact,
 				},
-			}, "img:tag", platform.All)
+			}, "img:tag", platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -329,8 +332,10 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 	tests := []struct {
 		description        string
 		a                  latestV2.JibArtifact
+		platforms          platform.Matcher
 		deps               []*latestV2.ArtifactDependency
 		image              string
+		expectedMinVersion string
 		r                  ArtifactResolver
 		skipTests          bool
 		pushImages         bool
@@ -344,6 +349,9 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 		{description: "multi module without tests with insecure-registry", a: latestV2.JibArtifact{Project: "module"}, image: "registry.tld/image", skipTests: true, insecureRegistries: map[string]bool{"registry.tld": true}, out: []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Djib.allowInsecureRegistries=true", "-Dimage=registry.tld/image"}},
 		{description: "single module with custom base image", a: latestV2.JibArtifact{BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
 		{description: "multi module with custom base image", a: latestV2.JibArtifact{Project: "module", BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
+		{description: "host platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: runtime.GOOS, Architecture: runtime.GOARCH}}}, out: []string{"fake-mavenBuildArgs-for-test-goal", fmt.Sprintf("-Djib.from.platforms=%s/%s", runtime.GOOS, runtime.GOARCH), "-Dimage=image"}},
+		{description: "cross-platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: "freebsd", Architecture: "arm"}}}, out: []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.platforms=freebsd/arm", "-Dimage=image"}, expectedMinVersion: MinimumJibMavenVersionForCrossPlatform},
+		{description: "multi-platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "darwin", Architecture: "arm64"}}}, out: []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.platforms=linux/amd64,darwin/arm64", "-Dimage=image"}, expectedMinVersion: MinimumJibMavenVersionForCrossPlatform},
 		{
 			description: "single module with local base image from required artifacts",
 			a:           latestV2.JibArtifact{BaseImage: "alias"},
@@ -381,8 +389,12 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&mavenBuildArgsFunc, getMavenBuildArgsFuncFake(t, MinimumJibMavenVersion))
-			args := GenerateMavenBuildArgs("test-goal", test.image, &test.a, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries, false)
+			minVersion := MinimumJibMavenVersion
+			if test.expectedMinVersion != "" {
+				minVersion = test.expectedMinVersion
+			}
+			t.Override(&mavenBuildArgsFunc, getMavenBuildArgsFuncFake(t, minVersion))
+			args := GenerateMavenBuildArgs("test-goal", test.image, &test.a, test.platforms, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries, false)
 			t.CheckDeepEqual(test.out, args)
 		})
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -63,6 +64,7 @@ func TestRender(t *testing.T) {
 	tests := []struct {
 		description     string
 		renderConfig    *latestV2.RenderConfig
+		config          *v2.RunContext
 		originalKptfile string
 		updatedKptfile  string
 	}{
@@ -78,6 +80,7 @@ metadata:
   name: skaffold
 pipeline: {}
 `,
+
 		},
 		{
 			description: "manifests with validation rule.",
@@ -169,8 +172,11 @@ pipeline:
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Touch("empty.ignored").
 				Chdir()
-			r, err := New(test.renderConfig, tmpDirObj.Root(),
-				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
+			mockCfg := mockConfig{
+				renderConfig: test.renderConfig,
+				workingDir: tmpDirObj.Root(),
+			}
+			r, err := New(mockCfg, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -232,10 +238,14 @@ inventory:
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Chdir()
-			r, err := New(&latestV2.RenderConfig{
-				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Validate: &[]latestV2.Validator{{Name: "kubeval"}}}, tmpDirObj.Root(),
-				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
+			mockCfg := mockConfig{
+				renderConfig: &latestV2.RenderConfig{
+					Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+					Validate: &[]latestV2.Validator{{Name: "kubeval"}},
+				},
+				workingDir: tmpDirObj.Root(),
+			}
+			r, err := New(mockCfg, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -249,3 +259,13 @@ inventory:
 		})
 	}
 }
+
+type mockConfig struct {
+	renderConfig *latestV2.RenderConfig
+	workingDir   string
+}
+func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig { return mc.renderConfig }
+func (mc mockConfig) GetWorkingDir() string { return mc.workingDir }
+func (mc mockConfig) TransformAllowList() []latestV2.ResourceFilter { return nil }
+func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter { return nil }
+func (mc mockConfig) TransformRulesFile() string { return "" }

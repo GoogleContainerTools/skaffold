@@ -492,8 +492,12 @@ func TestNewForConfig(t *testing.T) {
 					DeployType: latestV2.DeployType{
 						KubectlDeploy: &latestV2.KubectlDeploy{},
 					},
-					TransformableAllowList: []latestV2.ResourceFilter{
-						{Type: "example.com/Application"},
+				},
+				ResourceSelector: latestV2.ResourceSelectorConfig{
+					Allow: []latestV2.ResourceFilter{
+						{
+							GroupKind: "example.com/Application",
+						},
 					},
 				},
 			},
@@ -541,9 +545,9 @@ func TestNewForConfig(t *testing.T) {
 				WorkingDir: tmpDir.Root(),
 			}
 			// Test transformableAllowList
-			filters := runCtx.TransformableAllowList()
-			if tt.pipeline.Deploy.TransformableAllowList != nil {
-				t.CheckDeepEqual(tt.pipeline.Deploy.TransformableAllowList, filters)
+			filters := runCtx.TransformAllowList()
+			if tt.pipeline.ResourceSelector.Allow != nil {
+				t.CheckDeepEqual(tt.pipeline.ResourceSelector.Allow, filters)
 			} else {
 				t.CheckEmpty(filters)
 			}

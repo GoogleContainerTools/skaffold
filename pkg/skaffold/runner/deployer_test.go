@@ -157,6 +157,67 @@ func TestGetDeployer(tOuter *testing.T) {
 					&kptV2.Deployer{},
 				}, false),
 			},
+			{
+				description: "apply does not allow multiple deployers when a helm namespace is set",
+				apply:       true,
+				cfg: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{
+								Releases: []latestV2.HelmRelease{{Namespace: "foo"}},
+							},
+							KubectlDeploy: &latestV2.KubectlDeploy{},
+						},
+					},
+				},
+				shouldErr: true,
+			},
+			{
+				description: "apply does not allow multiple helm releases with different namespaces set",
+				apply:       true,
+				cfg: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{
+								Releases: []latestV2.HelmRelease{
+									{
+										Namespace: "foo",
+									},
+									{
+										Namespace: "bar",
+									},
+								},
+							},
+						},
+					},
+				},
+				shouldErr: true,
+			},
+			{
+				description: "apply does allow multiple helm releases with the same namespace set",
+				apply:       true,
+				cfg: latestV2.Pipeline{
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{
+								Releases: []latestV2.HelmRelease{
+									{
+										Namespace: "foo",
+									},
+									{
+										Namespace: "foo",
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
+					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
+					Flags: latestV2.KubectlFlags{},
+				}, "")).(deploy.Deployer),
+			},
 		}
 		for _, test := range tests {
 			testutil.Run(tOuter, test.description, func(t *testutil.T) {

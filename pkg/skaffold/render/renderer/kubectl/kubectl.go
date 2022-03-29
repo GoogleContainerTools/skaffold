@@ -21,23 +21,38 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Kubectl struct {
 	generate.Generator
 	hydrationDir string
 	labels       map[string]string
+
+	transformAllowlist map[apimachinery.GroupKind]latestV2.ResourceFilter
+	transformDenylist  map[apimachinery.GroupKind]latestV2.ResourceFilter
 }
 
-func New(config *latestV2.RenderConfig, workingDir, hydrationDir string,
-	labels map[string]string) (Kubectl, error) {
-	generator := generate.NewGenerator(workingDir, config.Generate, hydrationDir)
-	return Kubectl{Generator: generator, hydrationDir: hydrationDir, labels: labels}, nil
+func New(cfg render.Config, hydrationDir string, labels map[string]string) (Kubectl, error) {
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), cfg.GetRenderConfig().Generate, hydrationDir)
+	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
+	if err != nil {
+		return Kubectl{}, err
+	}
+	return Kubectl{
+		Generator: generator,
+		hydrationDir: hydrationDir,
+		labels: labels,
+
+		transformAllowlist: transformAllowlist,
+		transformDenylist: transformDenylist,
+	}, nil
 }
 
 func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, _ string) error {
-	return util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.hydrationDir, r.labels)
+	return util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.hydrationDir, r.labels, r.transformAllowlist, r.transformDenylist)
 }

@@ -67,7 +67,40 @@ func (d *deployerCtx) JSONParseConfig() latestV2.JSONParseConfig {
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
 func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
+	deployerCfg := runCtx.Deployers()
+
 	if runCtx.Opts.Apply {
+		helmNamespaces := make(map[string]bool)
+		nonHelmDeployFound := false
+
+		for _, d := range deployerCfg {
+			if d.DockerDeploy != nil || d.KptV2Deploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
+				nonHelmDeployFound = true
+			}
+
+			if d.LegacyHelmDeploy != nil {
+				for _, release := range d.LegacyHelmDeploy.Releases {
+					if release.Namespace != "" {
+						helmNamespaces[release.Namespace] = true
+					}
+				}
+			}
+		}
+
+		if len(helmNamespaces) > 1 || (nonHelmDeployFound && len(helmNamespaces) == 1) {
+			return nil, errors.New("skaffold apply called with conflicting namespaces set via skaffold.yaml. This is likely due to the use of the 'deploy.helm.releases.*.namespace' field which is not supported in apply.  Remove the 'deploy.helm.releases.*.namespace' field(s) and run skaffold apply again")
+		}
+
+		if len(helmNamespaces) == 1 && !nonHelmDeployFound {
+			if runCtx.Opts.Namespace == "" {
+				// if skaffold --namespace flag not set, use the helm namespace value
+				for k := range helmNamespaces {
+					// map only has 1 (k,v) from length check in if condition
+					runCtx.Opts.Namespace = k
+				}
+			}
+		}
+
 		return getDefaultDeployer(runCtx, labeller, hydrationDir)
 	}
 
@@ -91,7 +124,7 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 			deployers = append(deployers, h)
 		}
 	}
-	deployerCfg := runCtx.Deployers()
+
 	localDeploy := false
 	remoteDeploy := false
 	for _, d := range deployerCfg {

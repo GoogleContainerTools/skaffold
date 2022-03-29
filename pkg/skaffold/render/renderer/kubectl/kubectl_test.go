@@ -92,8 +92,11 @@ func TestRender(t *testing.T) {
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Touch("empty.ignored").
 				Chdir()
-			r, err := New(test.renderConfig, tmpDirObj.Root(),
-				filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), test.labels)
+			mockCfg := mockConfig {
+				renderConfig: test.renderConfig,
+				workingDir:   tmpDirObj.Root(),
+			}
+			r, err := New(mockCfg, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), test.labels)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -103,3 +106,13 @@ func TestRender(t *testing.T) {
 		})
 	}
 }
+
+type mockConfig struct {
+	renderConfig *latestV2.RenderConfig
+	workingDir   string
+}
+func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig { return mc.renderConfig }
+func (mc mockConfig) GetWorkingDir() string { return mc.workingDir }
+func (mc mockConfig) TransformAllowList() []latestV2.ResourceFilter { return nil }
+func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter { return nil }
+func (mc mockConfig) TransformRulesFile() string { return "" }

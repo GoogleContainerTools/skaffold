@@ -160,21 +160,7 @@ func syncRepo(ctx context.Context, g latestV2.GitInfo, opts config.SkaffoldOptio
 			return "", fmt.Errorf("failed to clone repo %s: unable to find any matching refs %s; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, ref, err)
 		}
 
-		// check if the downloaded repo has uncommitted changes.
-		if changes, err := r.Run(ctx, "diff", "--name-only", "--ignore-submodules", "HEAD"); err != nil {
-			return "", fmt.Errorf("failed to clone repo %s: unable to check for uncommitted changes; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, err)
-		} else if len(changes) > 0 {
-			return "", fmt.Errorf("failed to clone repo %s: there are uncommitted changes in the target directory %s; either set the repository `sync` property to false in the skaffold config, or manually commit and sync changes to remote, or revert the local changes", g.Repo, repoCacheDir)
-		}
-
-		// check if the downloaded repo has unpushed commits.
-		if changes, err := r.Run(ctx, "diff", "--name-only", "--ignore-submodules", fmt.Sprintf("origin/%s...", ref)); err != nil {
-			return "", fmt.Errorf("failed to clone repo %s: unable to check for unpushed commits; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, err)
-		} else if len(changes) > 0 {
-			return "", fmt.Errorf("failed to clone repo %s: there are unpushed commits in the target directory %s; either set the repository `sync` property to false in the skaffold config, or manually push commits to remote, or reset the local commits", g.Repo, repoCacheDir)
-		}
-
-		// reset the repo state
+		// Sync option is either nil or true, so we are resetting the repo
 		if _, err := r.Run(ctx, "reset", "--hard", fmt.Sprintf("origin/%s", ref)); err != nil {
 			return "", fmt.Errorf("failed to clone repo %s: trouble resetting branch to origin/%s; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, ref, err)
 		}

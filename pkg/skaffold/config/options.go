@@ -86,6 +86,7 @@ type SkaffoldOptions struct {
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile     string
 	RepoCacheDir        string
+	TransformRulesFile  string
 	CustomLabels        []string
 	TargetImages        []string
 	Profiles            []string

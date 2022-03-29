@@ -57,37 +57,44 @@ func TestIsEmpty(t *testing.T) {
 	}
 }
 
-func TestIsMultiPlatform(t *testing.T) {
+func TestIsMultiOrCrossPlatform(t *testing.T) {
 	tests := []struct {
-		description string
-		m           Matcher
-		expected    bool
+		description     string
+		m               Matcher
+		isMultiPlatform bool
+		isCrossPlatform bool
 	}{
 		{
-			description: "all matcher",
-			m:           Matcher{All: true},
-			expected:    true,
+			description:     "all matcher",
+			m:               Matcher{All: true},
+			isMultiPlatform: true,
+			isCrossPlatform: true,
 		},
 		{
-			description: "multiple platform targets",
-			m:           Matcher{Platforms: []v1.Platform{{Architecture: "amd64"}, {Architecture: "arm64"}}},
-			expected:    true,
+			description:     "multiple platform targets",
+			m:               Matcher{Platforms: []v1.Platform{{Architecture: "amd64"}, {Architecture: "arm64"}}},
+			isMultiPlatform: true,
+			isCrossPlatform: true,
 		},
 		{
-			description: "single platform target",
-			m:           Matcher{Platforms: []v1.Platform{{Architecture: "arm64"}}},
-			expected:    false,
+			description:     "single platform target",
+			m:               Matcher{Platforms: []v1.Platform{{Architecture: "arm", OS: "freebsd"}}},
+			isMultiPlatform: false,
+			isCrossPlatform: true,
 		},
 		{
-			description: "no platform target",
-			expected:    false,
+			description:     "no platform target",
+			isMultiPlatform: false,
+			isCrossPlatform: false,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			isMultiPlatform := test.m.IsMultiPlatform()
-			t.CheckDeepEqual(test.expected, isMultiPlatform)
+			t.CheckDeepEqual(test.isMultiPlatform, isMultiPlatform)
+			isCrossPlatform := test.m.IsCrossPlatform()
+			t.CheckDeepEqual(test.isCrossPlatform, isCrossPlatform)
 		})
 	}
 }

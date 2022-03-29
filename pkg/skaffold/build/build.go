@@ -51,7 +51,7 @@ type PipelineBuilder interface {
 	PostBuild(ctx context.Context, out io.Writer) error
 
 	// Concurrency specifies the max number of builds that can run at any one time. If concurrency is 0, then all builds can run in parallel.
-	Concurrency() int
+	Concurrency() *int
 
 	// Prune removes images built in this pipeline
 	Prune(context.Context, io.Writer) error

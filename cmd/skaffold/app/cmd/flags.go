@@ -317,11 +317,10 @@ var flagRegistry = []Flag{
 		Name:          "status-check",
 		Usage:         "Wait for deployed resources to stabilize",
 		Value:         &opts.StatusCheck,
-		DefValue:      true,
+		DefValue:      nil,
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
-		NoOptDefVal:   "true",
 	},
 	{
 		Name:          "iterative-status-check",
@@ -611,9 +610,17 @@ var flagRegistry = []Flag{
 	{
 		Name: "hydration-dir",
 		Usage: fmt.Sprintf("the directory to where the (kpt) hydration takes place. "+
-			"Default to a hidden directory %s.", constants.DefaultHydrationDir),
+		"Default to a hidden directory %s.", constants.DefaultHydrationDir),
 		Value:         &opts.HydrationDir,
 		DefValue:      constants.DefaultHydrationDir,
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
+	},
+	{
+		Name:          "resource-selector-rules-file",
+		Usage:         "Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist",
+		Value:         &opts.TransformRulesFile,
+		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
 	},

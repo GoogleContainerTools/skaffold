@@ -20,13 +20,19 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // CollectNamespaces returns all the namespaces in the manifests.
 func (l *ManifestList) CollectNamespaces() ([]string, error) {
 	replacer := newNamespaceCollector()
 
-	if _, err := l.Visit(replacer); err != nil {
+	// TODO(aaron-prindle) make sure this is ok?
+	rs := &ResourceSelectorImages{}
+	if _, err := l.Visit(replacer, rs); err != nil {
+		// if _, err := l.Visit(replacer, make(map[schema.GroupKind]latestV1.ResourceFilter), make(map[schema.GroupKind]latestV1.ResourceFilter)); err != nil {
+		// TODO(aaron-prindle) verify this doesn't need to support allow/deny list, also see if 'nil' is better option for unused inputs
 		return nil, fmt.Errorf("collecting namespaces: %w", err)
 	}
 
@@ -48,7 +54,7 @@ func newNamespaceCollector() *namespaceCollector {
 	}
 }
 
-func (r *namespaceCollector) Visit(navpath string, o map[string]interface{}, k string, v interface{}) bool {
+func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
 	if k != "metadata" {
 		return true
 	}

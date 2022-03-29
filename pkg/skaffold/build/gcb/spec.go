@@ -20,15 +20,17 @@ import (
 	"context"
 	"fmt"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
-func (b *Builder) buildSpec(ctx context.Context, artifact *latestV2.Artifact, tag, bucket, object string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpec(ctx context.Context, artifact *latestV2.Artifact, tag string, platforms platform.Matcher, bucket, object string) (cloudbuild.Build, error) {
 	// Artifact specific build spec
-	buildSpec, err := b.buildSpecForArtifact(ctx, artifact, tag)
+	buildSpec, err := b.buildSpecForArtifact(ctx, artifact, tag, platforms)
 	if err != nil {
 		return buildSpec, err
 	}
@@ -56,18 +58,22 @@ func (b *Builder) buildSpec(ctx context.Context, artifact *latestV2.Artifact, ta
 	return buildSpec, nil
 }
 
-func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latestV2.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latestV2.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
 	switch {
 	case a.KanikoArtifact != nil:
 		return b.kanikoBuildSpec(a, tag)
 
 	case a.DockerArtifact != nil:
-		return b.dockerBuildSpec(a, tag)
+		return b.dockerBuildSpec(a, tag, platforms)
 
 	case a.JibArtifact != nil:
-		return b.jibBuildSpec(ctx, a, tag)
+		return b.jibBuildSpec(ctx, a, tag, platforms)
 
 	case a.BuildpackArtifact != nil:
+		// TODO: Buildpacks only supports building for platform linux/amd64. See https://github.com/GoogleCloudPlatform/buildpacks/issues/112
+		if platforms.IsNotEmpty() && platforms.Intersect(platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}}).IsEmpty() {
+			return cloudbuild.Build{}, fmt.Errorf("buildpacks builder doesn't support building for platforms %s. Cannot build gcb artifact:\n%s", platforms.String(), misc.FormatArtifact(a))
+		}
 		return b.buildpackBuildSpec(a.BuildpackArtifact, tag, a.Dependencies)
 
 	default:

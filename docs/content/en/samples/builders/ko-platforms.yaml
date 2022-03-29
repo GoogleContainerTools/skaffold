@@ -1,0 +1,7 @@
+build:
+  artifacts:
+  - image: foo
+    ko: {}
+    platforms:
+    - linux/amd64
+    - linux/arm64

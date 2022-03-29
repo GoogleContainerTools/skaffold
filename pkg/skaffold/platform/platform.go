@@ -49,6 +49,10 @@ func (m Matcher) IsMultiPlatform() bool {
 	return m.All || len(m.Platforms) > 1
 }
 
+func (m Matcher) IsCrossPlatform() bool {
+	return m.IsMultiPlatform() || (len(m.Platforms) == 1 && !platforms.Only(m.Platforms[0]).Match(platforms.DefaultSpec()))
+}
+
 func (m Matcher) String() string {
 	if m.All {
 		return "all"
@@ -85,6 +89,9 @@ func (m Matcher) Intersect(other Matcher) Matcher {
 func Parse(ps []string) (Matcher, error) {
 	var sl []specs.Platform
 	for _, p := range ps {
+		if strings.ToLower(p) == "all" {
+			return All, nil
+		}
 		platform, err := platforms.Parse(p)
 		if err != nil {
 			return Matcher{}, UnknownPlatformCLIFlag(p, err)

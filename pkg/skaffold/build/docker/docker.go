@@ -18,7 +18,6 @@ package docker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -66,7 +66,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact
 	// we might consider a different approach in the future.
 	// use CLI for cross-platform builds
 	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 || matcher.IsNotEmpty() {
-		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, matcher)
+		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, matcher)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
 	}
@@ -84,10 +84,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latestV2.DockerArtifact, opts docker.BuildOptions, matcher platform.Matcher) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latestV2.DockerArtifact, opts docker.BuildOptions, matcher platform.Matcher) (string, error) {
 	if matcher.IsMultiPlatform() {
 		// TODO: implement multi platform build
-		return "", errors.New("skaffold doesn't yet support multi platform builds for the docker builder")
+		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the docker builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", matcher.String(), name)
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
@@ -105,7 +105,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 		args = append(args, "--force-rm")
 	}
 
-	if matcher.IsNotEmpty() {
+	if len(matcher.Platforms) == 1 {
 		args = append(args, "--platform", platform.Format(matcher.Platforms[0]))
 	}
 
@@ -117,7 +117,8 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 		} else {
 			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=0")
 		}
-	} else if matcher.IsNotEmpty() { // cross-platform builds require buildkit
+	} else if len(matcher.Platforms) == 1 { // cross-platform builds require buildkit
+		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, matcher.Platforms[0])
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out

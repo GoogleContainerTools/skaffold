@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -181,7 +181,7 @@ func isKustomizeDir(path string) (string, bool) {
 		dir = filepath.Dir(path)
 	}
 
-	for _, base := range kustomize.KustomizeFilePaths {
+	for _, base := range constants.KustomizeFilePaths {
 		if _, err := os.Stat(filepath.Join(dir, base)); os.IsNotExist(err) {
 			continue
 		}

@@ -16,7 +16,6 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.3
 )
 
-// TODO(bdealwis)[10/07/2021] CVE-2021-41103: pin github.com/containerd/containerd v1.5.7
 // TODO(bdealwis)[10/07/2021] CVE-2021-30465: pin github.com/opencontainers/runc v1.0.2
 // TODO(bdealwis)[10/07/2021] GO-2021-0113: pin golang.org/x/text v0.3.7
 
@@ -36,8 +35,9 @@ require (
 	github.com/buildpacks/lifecycle v0.13.1
 	github.com/buildpacks/pack v0.23.0
 	github.com/cenkalti/backoff/v4 v4.1.1
+	github.com/containerd/containerd v1.5.9
 	github.com/docker/cli v20.10.11+incompatible
-	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v20.10.11+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dustin/go-humanize v1.0.0
@@ -59,7 +59,6 @@ require (
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/mattn/go-colorable v0.1.12
 	github.com/mitchellh/go-homedir v1.1.0
-	// github.com/moby/buildkit v0.7.1
 	github.com/moby/buildkit v0.8.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2
@@ -136,7 +135,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.10.1 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
