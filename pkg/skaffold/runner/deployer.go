@@ -186,7 +186,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 	var logPrefix string
 	var defaultNamespace *string
 	var kubeContext string
-	statusCheckTimeout := -1
+	statusCheckTimeout := int(status.DefaultStatusCheckDeadline.Seconds())
 
 	for _, d := range deployCfgs {
 		if d.KubeContext != "" {
@@ -195,8 +195,8 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 			}
 			kubeContext = d.KubeContext
 		}
-		if d.StatusCheckDeadlineSeconds != 0 && d.StatusCheckDeadlineSeconds != int(status.DefaultStatusCheckDeadline.Seconds()) {
-			if statusCheckTimeout != -1 && statusCheckTimeout != d.StatusCheckDeadlineSeconds {
+		if d.StatusCheckDeadlineSeconds != 0 {
+			if statusCheckTimeout != int(status.DefaultStatusCheckDeadline.Seconds()) && statusCheckTimeout != d.StatusCheckDeadlineSeconds {
 				return nil, fmt.Errorf("found multiple status check timeouts in skaffold.yaml (not supported in `skaffold apply`): %d, %d", statusCheckTimeout, d.StatusCheckDeadlineSeconds)
 			}
 			statusCheckTimeout = d.StatusCheckDeadlineSeconds
