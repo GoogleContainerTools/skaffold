@@ -23,7 +23,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -80,12 +79,11 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 		return "", fmt.Errorf("running command: %w", err)
 	}
 
-	bazelBin, err := bazelBin(ctx, workspace, a)
+	tarPath, err := bazelTarPath(ctx, workspace, a)
 	if err != nil {
-		return "", fmt.Errorf("getting path of bazel-bin: %w", err)
+		return "", fmt.Errorf("getting bazel tar path: %w", err)
 	}
 
-	tarPath := filepath.Join(bazelBin, buildTarPath(a.BuildTarget))
 	return tarPath, nil
 }
 
@@ -109,8 +107,16 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	return imageID, nil
 }
 
-func bazelBin(ctx context.Context, workspace string, a *latestV1.BazelArtifact) (string, error) {
-	args := []string{"info", "bazel-bin"}
+func bazelTarPath(ctx context.Context, workspace string, a *latestV1.BazelArtifact) (string, error) {
+	args := []string{
+		"cquery",
+		a.BuildTarget,
+		"--output",
+		"starlark",
+		// Bazel docker .tar output targets have a single output file, which is
+		// the path to the image tar.
+		"--starlark:expr=\"target.files.to_list()[0].path\"",
+	}
 	args = append(args, a.BuildArgs...)
 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
@@ -131,13 +137,6 @@ func trimTarget(buildTarget string) string {
 	trimmedTarget = strings.TrimPrefix(trimmedTarget, ":")
 
 	return trimmedTarget
-}
-
-func buildTarPath(buildTarget string) string {
-	tarPath := trimTarget(buildTarget)
-	tarPath = strings.Replace(tarPath, ":", string(os.PathSeparator), 1)
-
-	return tarPath
 }
 
 func buildImageTag(buildTarget string) string {
