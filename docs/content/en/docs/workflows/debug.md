@@ -6,7 +6,7 @@ featureId: debug
 aliases: [/docs/how-tos/debug]
 ---
 
-Skaffold lets you debug your application running on a local or remote Kubernetes cluster, almost exactly how you would do it if the code were running locally on your machine. Skaffold does this by detecting the runtime of your project and transparently configuring the containers in pods for debugging against that framework.
+Skaffold lets you set breakpoints and step through your application, even when deployed to remote Kubernetes clusters, as if the code were running locally on your machine. Skaffold detects the language runtimes of your container images, reconfigures the pods for debugging, forward debugging ports, and then monitors and for when debuggable containers come online.  IDE integrations like Cloud Code leverage Skaffold's events to automatically set up debugging sessions.
 
 Debugging is currently supported for five language runtimes.
 
@@ -14,13 +14,13 @@ Debugging is currently supported for five language runtimes.
   - NodeJS (runtime ID: `nodejs`) using the NodeJS Inspector (Chrome DevTools)
   - Java and JVM languages (runtime ID: `jvm`) using JDWP
   - Python 3.5+ (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
-  - .NET Core (runtime ID: `netcore`) using `vsdbg`
+  - .NET Core (runtime ID: `netcore`) using `vsdbg` (only for VS Code)
 
-Skaffold can usually detect the correct language runtime if present. However if you encounter difficulties then checkout the [Supported Language Runtimes]({{< relref "#supported-language-runtimes">}}) section for the exact heuristics that skaffold uses and you can modify your application accordingly.
+Skaffold can usually detect the correct language runtime if present. However if you encounter difficulties then checkout the [Supported Language Runtimes]({{< relref "#supported-language-runtimes">}}) section for the exact heuristics that Skaffold uses and you can modify your application accordingly, or read about [how you can manually configure your container image]({{relref "#can-images-be-debugged-without-the-runtime-support-images"}}).
 
 ## (Recommended) Debugging using Cloud Code
 
-The easiest way to debug using Skaffold is by using the [Cloud Code IDE extension]({{< relref "../install/#managed-ide">}}) for Visual Studio Code, JetBrains IDEs, and Cloud Shell. Cloud Code will automatically configure container images for debugging so you can debug Kubernetes services just like how you would debug a local service in your IDE. 
+The easiest way to debug using Skaffold is by using the [Cloud Code IDE extension]({{< relref "../install/#managed-ide">}}) for Visual Studio Code, JetBrains IDEs, and Cloud Shell. Cloud Code will automatically configure container images for debugging so you can debug Kubernetes services just like how you would debug a local service in your IDE.
 
 For more information, see the corresponding documentation for [VS Code](https://cloud.google.com/code/docs/vscode/debug), [IntelliJ](https://cloud.google.com/code/docs/intellij/kubernetes-debugging) and [Cloud Shell](https://cloud.google.com/code/docs/shell/debug).
 
@@ -155,8 +155,8 @@ JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspe
 
 #### Python (runtime: `python`, protocols: `dap` or `pydevd`)
 
-Python applications are configured to use either  [`debugpy`](https://github.com/microsoft/debugpy/), or
-wrapper around [`pydevd`](https://github.com/fabioz/PyDev.Debugger).  `debugpy` uses the
+Python applications are configured to use either  [`debugpy`](https://github.com/microsoft/debugpy/) or
+[`pydevd`](https://github.com/fabioz/PyDev.Debugger).  `debugpy` uses the
 [_debug adapter protocol_ (DAP)](https://microsoft.github.io/debug-adapter-protocol/) which
 is supported by Visual Studio Code, [Eclipse LSP4e](https://projects.eclipse.org/projects/technology.lsp4e),
 [and other editors and IDEs](https://microsoft.github.io/debug-adapter-protocol/implementors/tools/).
@@ -412,6 +412,19 @@ WARN[0005] Image "image-name" not configured for debugging: unable to determine 
 ```
 
 See the language runtime section details on how container images are recognized.
+
+**Is your container command-line using shell constructs?**
+
+Automatic debugging of Go and Python applications requires that Skaffold
+adjust the command-line to use a specific launcher (`dlv` for Go, or our
+custom Python launcher to configure the appropriate debugging module).
+These launchers require that the container command-line invokes the
+binary or launch script (i.e., a `pip`-generated launcher script such as `gunicorn`).
+Skaffold cannot debug Go and Python applications that use user-created
+shell scripts, or that use shell constructs like `exec` or `eval`.
+Either rewrite your container image command-line or
+[manually configure your container for debugging]({{ relref "#can-images-be-debugged-without-the-runtime-support-images" }}).
+
 
 ### Why aren't my breakpoints being hit?
 
