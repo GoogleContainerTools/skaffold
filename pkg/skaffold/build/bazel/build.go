@@ -115,7 +115,8 @@ func bazelTarPath(ctx context.Context, workspace string, a *latestV1.BazelArtifa
 		"starlark",
 		// Bazel docker .tar output targets have a single output file, which is
 		// the path to the image tar.
-		"--starlark:expr=\"target.files.to_list()[0].path\"",
+		"--starlark:expr",
+		"target.files.to_list()[0].path",
 	}
 	args = append(args, a.BuildArgs...)
 

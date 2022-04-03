@@ -32,7 +32,7 @@ func TestBuildBazel(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Mkdir("bin").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
-			"bazel cquery //:app.tar --output starlark --starlark:expr=\"target.files.to_list()[0].path\"",
+			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
 			"bin/app.tar"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
@@ -72,7 +72,7 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 func TestBazelTarPath(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
-			"bazel cquery //:skaffold_example.tar --output starlark --starlark:expr=\"target.files.to_list()[0].path\" --arg1 --arg2",
+			"bazel cquery //:skaffold_example.tar --output starlark --starlark:expr target.files.to_list()[0].path --arg1 --arg2",
 			"/absolute/path/bin\n",
 		))
 
