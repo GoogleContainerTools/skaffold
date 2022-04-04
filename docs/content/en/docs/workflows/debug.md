@@ -424,6 +424,14 @@ Skaffold cannot debug Go and Python applications that use user-created
 shell scripts, or that use shell constructs like `exec` or `eval`.
 Either rewrite your container image command-line or
 [manually configure your container for debugging]({{ relref "#can-images-be-debugged-without-the-runtime-support-images" }}).
+For example:
+```
+❌ CMD launch.sh
+❌ CMD exec gunicorn app:app
+✅ CMD gunicorn app:app
+✅ CMD [gunicorn, app:app]
+✅ CMD [python, -m, gunicorn, app:app]
+```
 
 
 ### Why aren't my breakpoints being hit?
