@@ -6,7 +6,7 @@ featureId: debug
 aliases: [/docs/how-tos/debug]
 ---
 
-Skaffold lets you set breakpoints and step through your application, even when deployed to remote Kubernetes clusters, as if the code were running locally on your machine. Skaffold detects the language runtimes of your container images, reconfigures the pods for debugging, forward debugging ports, and then monitors and for when debuggable containers come online.  IDE integrations like Cloud Code leverage Skaffold's events to automatically set up debugging sessions.
+Skaffold lets you set breakpoints and step through your application, even when deployed to remote Kubernetes clusters, as if the code were running locally on your machine. Skaffold detects the language runtimes of your container images, reconfigures the pods for debugging, forwards debugging ports, and then monitors for when debuggable containers come online.  IDE integrations like Cloud Code leverage Skaffold's events to automatically set up debugging sessions.
 
 Debugging is currently supported for five language runtimes.
 
