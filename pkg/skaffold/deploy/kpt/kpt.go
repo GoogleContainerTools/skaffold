@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,138 +19,124 @@ package kpt
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strings"
 
-	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	"golang.org/x/mod/semver"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
-	k8syaml "sigs.k8s.io/yaml"
+	"sigs.k8s.io/kustomize/kyaml/fn/framework"
+	"sigs.k8s.io/kustomize/kyaml/kio"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
 const (
-	inventoryTemplate = "inventory-template.yaml"
-	kptHydrated       = ".kpt-hydrated"
-	tmpKustomizeDir   = ".kustomize"
-	kptFnAnnotation   = "config.kubernetes.io/function"
-	kptFnLocalConfig  = "config.kubernetes.io/local-config"
+	deployerName = "kptV2"
+	defaultNs    = "default"
+)
 
-	kptDownloadLink        = "https://googlecontainertools.github.io/kpt/installation/"
-	kptMinVersionInclusive = "v0.38.1"
-	kptMaxVersionExclusive = "v1.0.0-alpha.1"
-
-	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
-	kustomizeMinVersion    = "v3.2.3"
-	kustomizeVersionRegexP = `{Version:(kustomize/)?(\S+) GitCommit:\S+ BuildDate:\S+ GoOs:\S+ GoArch:\S+}`
+var (
+	openFile    = os.Open
+	kptInitFunc = kptfileInitIfNot
 )
 
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
 	*latestV2.KptDeploy
+	applyDir string
 
 	accessor      access.Accessor
 	logger        log.Logger
 	debugger      debug.Debugger
-	imageLoader   loader.ImageLoader
-	statusMonitor kstatus.Monitor
+	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
 	podSelector    *kubernetes.ImageList
-	originalImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
-	localImages    []graph.Artifact // the set of images marked as "local" by the Runner
+	labeller       *label.DefaultLabeller
+	originalImages []graph.Artifact // the set of images marked as "local" by the Runner
+	localImages    []graph.Artifact // the set of images parsed from the Deployer's manifest set
 
 	insecureRegistries map[string]bool
-	labels             map[string]string
 	globalConfig       string
-	hasKustomization   func(string) bool
 	kubeContext        string
 	kubeConfig         string
 	namespace          string
-
-	namespaces *[]string
-
-	transformableAllowlist map[apimachinery.GroupKind]latestV2.ResourceFilter
-	transformableDenylist  map[apimachinery.GroupKind]latestV2.ResourceFilter
+	namespaces         *[]string
 }
 
 type Config interface {
 	kubectl.Config
 	kstatus.Config
-	portforward.Config
-	kloader.Config
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptDeploy) (*Deployer, error) {
-	podSelector := kubernetes.NewImageList()
-	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
-	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
-	if err != nil {
-		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptDeploy, opts config.SkaffoldOptions) (*Deployer, error) {
+	defaultNamespace := ""
+	if d.DefaultNamespace != nil {
+		var err error
+		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
-	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
-	transformableAllowlist, transformableDenylist, err := renderutil.ConsolidateTransformConfiguration(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &Deployer{
-		KptDeploy:              d,
-		podSelector:            podSelector,
-		namespaces:             &namespaces,
-		accessor:               component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
-		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:            component.NewImageLoader(cfg, kubectl),
-		logger:                 logger,
-		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		insecureRegistries:     cfg.GetInsecureRegistries(),
-		labels:                 labeller.Labels(),
-		globalConfig:           cfg.GlobalConfig(),
-		hasKustomization:       hasKustomization,
-		kubeContext:            cfg.GetKubeContext(),
-		kubeConfig:             cfg.GetKubeConfig(),
-		namespace:              cfg.GetKubeNamespace(),
-		transformableAllowlist: transformableAllowlist,
-		transformableDenylist:  transformableDenylist,
-	}, nil
-}
 
-func (k *Deployer) trackNamespaces(namespaces []string) {
-	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
+	podSelector := kubernetes.NewImageList()
+	namespaces := []string{}
+
+	// TODO(nkubala)[v2-merge]: We probably shouldn't use kubectl at all here?
+	// But if we do, need to expose a `kubectlFlags` field on the kpt schema?
+	kubectl := kubectl.NewCLI(cfg, latestV2.KubectlFlags{}, defaultNamespace)
+
+	if opts.InventoryNamespace != "" {
+		d.InventoryNamespace = opts.InventoryNamespace
+	}
+	if opts.InventoryID != "" {
+		d.InventoryID = opts.InventoryID
+	}
+	if opts.InventoryName != "" {
+		d.Name = opts.InventoryName
+	}
+
+	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
+	return &Deployer{
+		KptDeploy:          d,
+		applyDir:           d.Dir,
+		podSelector:        podSelector,
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		logger:             logger,
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		labeller:           labeller,
+		globalConfig:       cfg.GlobalConfig(),
+		kubeContext:        cfg.GetKubeContext(),
+		kubeConfig:         cfg.GetKubeConfig(),
+		namespace:          cfg.GetKubeNamespace(),
+		namespaces:         &namespaces,
+	}, nil
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -173,104 +159,160 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 	return k.syncer
 }
 
-func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
-	k.localImages = images
-}
-
+// TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
 	k.logger.RegisterArtifacts(artifacts)
 }
 
-var sanityCheck = versionCheck
+func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
+	k.localImages = images
+}
 
-// versionCheck checks if the kpt and kustomize versions meet the minimum requirements.
-func versionCheck(ctx context.Context, dir string, stdout io.Writer) error {
-	kptCmd := exec.Command("kpt", "version")
-	out, err := util.RunCmdOut(ctx, kptCmd)
-	if err != nil {
-		return fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
-			kptDownloadLink)
-	}
-	// kpt follows semver but does not have "v" prefix.
-	version := "v" + strings.TrimSuffix(string(out), "\n")
-	if !semver.IsValid(version) {
-		return fmt.Errorf("unknown kpt version %v\nPlease install "+
-			"kpt %v <= version < %v\nSee kpt installation: %v",
-			string(out), kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink)
-	}
-	if semver.Compare(version, kptMinVersionInclusive) < 0 ||
-		semver.Compare(version, kptMaxVersionExclusive) >= 0 {
-		return fmt.Errorf("you are using kpt %q\nPlease install "+
-			"kpt %v <= version < %v\nSee kpt installation: %v",
-			version, kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink)
-	}
+type processor struct {
+	applyDir string
+}
 
-	// Users can choose not to use kustomize in kpt deployer mode. We only check the kustomize
-	// version when kustomization.yaml config is directed under .deploy.kpt.dir path.
-	if hasKustomization(dir) {
-		kustomizeCmd := exec.Command("kustomize", "version")
-		out, err := util.RunCmdOut(ctx, kustomizeCmd)
+func (p processor) Process(rl *framework.ResourceList) error {
+	for i := range rl.Items {
+		_, err := rl.Items[i].String()
 		if err != nil {
-			return fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
-				kustomizeDownloadLink)
-		}
-		versionInfo := strings.TrimSuffix(string(out), "\n")
-		// Kustomize version information is in the form of
-		// {Version:$VERSION GitCommit:$COMMIT BuildDate:1970-01-01T00:00:00Z GoOs:darwin GoArch:amd64}
-		re := regexp.MustCompile(kustomizeVersionRegexP)
-		match := re.FindStringSubmatch(versionInfo)
-		if len(match) != 3 {
-			output.Yellow.Fprintf(stdout, "unable to determine kustomize version from %q\n"+
-				"You can download the official kustomize (recommended >= %v) from %v\n",
-				string(out), kustomizeMinVersion, kustomizeDownloadLink)
-		} else if !semver.IsValid(match[2]) || semver.Compare(match[2], kustomizeMinVersion) < 0 {
-			output.Yellow.Fprintf(stdout, "you are using kustomize version %q "+
-				"(recommended >= %v). You can download the official kustomize from %v\n",
-				match[2], kustomizeMinVersion, kustomizeDownloadLink)
+			return sourceErr(err, p.applyDir)
 		}
 	}
 	return nil
 }
 
-// Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
-// outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
-// `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
-	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "kpt",
-	})
-
-	// Check that the cluster is reachable.
-	// This gives a better error message when the cluster can't
-	// be reached.
-	if err := kubernetes.FailIfClusterIsNotReachable(k.kubeContext); err != nil {
-		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
-	}
-
-	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_sanityCheck")
-	if err := sanityCheck(ctx, k.Dir, out); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	endTrace()
-
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_loadImages")
-	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-
-	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
-	manifests, err := k.renderManifests(childCtx, builds)
+func (k *Deployer) getManifests(ctx context.Context) (manifest.ManifestList, error) {
+	cmd := exec.CommandContext(
+		ctx, "kpt", "fn", "source", k.applyDir)
+	buf, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
-		endTrace(instrumentation.TraceEndError(err))
+		return nil, sourceErr(err, k.applyDir)
+	}
+
+	input := bytes.NewBufferString(string(buf))
+	var outBuf []byte
+	output := bytes.NewBuffer(outBuf)
+
+	rw := kio.ByteReadWriter{
+		Reader: input,
+		Writer: output,
+	}
+
+	p := processor{
+		applyDir: k.applyDir,
+	}
+
+	if err = framework.Execute(p, &rw); err != nil {
+		return nil, err
+	}
+
+	manifests := manifest.ManifestList{}
+	if len(buf) > 0 {
+		manifests.Append(buf)
+	}
+	return manifests, nil
+}
+
+// kptfileInitIfNot guarantees the Kptfile is valid.
+func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
+	kptFilePath := filepath.Join(k.applyDir, kptfile.KptFileName)
+	if _, err := os.Stat(kptFilePath); os.IsNotExist(err) {
+		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_InitKptfile")
+		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", k.applyDir)
+		cmd.Stdout = out
+		cmd.Stderr = out
+		if err := util.RunCmd(ctx, cmd); err != nil {
+			endTrace(instrumentation.TraceEndError(err))
+			return pkgInitErr(err, k.applyDir)
+		}
+	}
+	file, err := openFile(kptFilePath)
+	if err != nil {
+		return openFileErr(err, kptFilePath)
+	}
+	defer file.Close()
+	kfConfig := &kptfile.KptFile{}
+	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
+		return parseFileErr(err, kptFilePath)
+	}
+	// Kptfile may already exist but do not contain the "Inventory" field, which is mandatory for `kpt live apply`.
+	// This case happens when Kptfile is created by `kpt pkg init` and can be resolved by running `kpt live init`.
+	// If "Inventory" already exist, running `kpt live init` raises error.
+	if kfConfig.Inventory == nil {
+		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_InitKptfileInventory")
+		args := []string{"live", "init", k.applyDir}
+		args = append(args, k.KptDeploy.Flags...)
+		if k.Name != "" {
+			args = append(args, "--name", k.Name)
+		}
+		if k.InventoryID != "" {
+			args = append(args, "--inventory-id", k.InventoryID)
+		}
+		// TODO(nkubala)[v2-merge]: we're tracking multiple namespaces on the deployer now.
+		// should this be removed?
+		if k.namespace != "" {
+			args = append(args, "--namespace", k.namespace)
+		} else if k.InventoryNamespace != "" {
+			args = append(args, "--namespace", k.InventoryNamespace)
+		}
+		if k.Force {
+			args = append(args, "--force", "true")
+		}
+		cmd := exec.CommandContext(ctx, "kpt", args...)
+		cmd.Stdout = out
+		cmd.Stderr = out
+		if err := util.RunCmd(ctx, cmd); err != nil {
+			endTrace(instrumentation.TraceEndError(err))
+			return liveInitErr(err, k.applyDir)
+		}
+	} else {
+		if k.InventoryID != "" && k.InventoryID != kfConfig.Inventory.InventoryID {
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile inventory from %v to %v", kfConfig.Inventory.InventoryID, k.InventoryID)
+			kfConfig.Inventory.InventoryID = k.InventoryID
+		}
+		if k.Name != "" && k.Name != kfConfig.Inventory.Name {
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile name from %v to %v", kfConfig.Inventory.Name, k.Name)
+			kfConfig.Inventory.Name = k.Name
+		}
+		// Set the namespace to be a valid kubernetes namespace value. If not specified, the value shall be "default".
+		if k.namespace == "" {
+			k.namespace = defaultNs
+		}
+		if k.InventoryNamespace == "" {
+			k.InventoryNamespace = defaultNs
+		}
+		if k.namespace != kfConfig.Inventory.Namespace {
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.namespace)
+			kfConfig.Inventory.Namespace = k.namespace
+		} else if k.InventoryNamespace != kfConfig.Inventory.Namespace {
+			olog.Entry(context.TODO()).Warnf("Updating Kptfile namespace from %v to %v", kfConfig.Inventory.Namespace, k.InventoryNamespace)
+			kfConfig.Inventory.Namespace = k.InventoryNamespace
+		}
+		configByte, err := yaml.Marshal(kfConfig)
+		if err != nil {
+			return err
+		}
+		if err = ioutil.WriteFile(kptFilePath, configByte, 0644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+	if err := kptInitFunc(ctx, out, k); err != nil {
 		return err
 	}
 
-	if len(manifests) == 0 {
-		endTrace()
-		return nil
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": deployerName,
+	})
+	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_ReadHydratedManifests")
+	manifests, err := k.getManifests(ctx)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not read the hydrated manifest from %v: %w", k.applyDir, err))
 	}
 	endTrace()
 
@@ -282,457 +324,62 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
-	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_getApplyDir")
-	applyDir, err := k.getApplyDir(childCtx)
-	if err != nil {
-		return fmt.Errorf("getting applyDir: %w", err)
-	}
-	endTrace()
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_execKptCommand")
+	args := []string{"live", "apply", k.applyDir}
 
-	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_manifest.Write")
-	if err = sink(ctx, []byte(manifests.String()), applyDir); err != nil {
-		return err
-	}
-	endTrace()
-
-	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_execKptCommand")
-	cmd := exec.CommandContext(childCtx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
+	args = append(args, k.Flags...)
+	args = append(args, k.ApplyFlags...)
+	cmd := exec.CommandContext(childCtx, "kpt", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(ctx, cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return err
+		return liveApplyErr(err, k.applyDir)
 	}
-
 	k.TrackBuildArtifacts(builds)
-	k.statusMonitor.RegisterDeployManifests(manifests)
-	endTrace()
 	k.trackNamespaces(namespaces)
+	endTrace()
 	return nil
 }
 
-// Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.
-// In dev mode, a redeploy will be triggered if one of these files is updated.
+// TODO(yuwenma)[07/23/22]: remove Render func from all deployers and deployerMux.
+func (k *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+	return fmt.Errorf("shall not be called")
+}
+
+// Dependencies is the v1 function required by "deployer" interface. It shall be no-op for v2 deployers.
 func (k *Deployer) Dependencies() ([]string, error) {
-	deps := stringset.New()
-
-	// Add the app configuration manifests. It may already include kpt functions and kustomize
-	// config files.
-	configDeps, err := getResources(k.Dir)
-	if err != nil {
-		return nil, fmt.Errorf("finding dependencies in %s: %w", k.Dir, err)
-	}
-	deps.Insert(configDeps...)
-
-	// Add the kustomize resources which lives directly under k.Dir.
-	kustomizeDeps, err := kustomize.DependenciesForKustomization(k.Dir)
-	if err != nil {
-		return nil, fmt.Errorf("finding kustomization directly under %s: %w", k.Dir, err)
-	}
-	deps.Insert(kustomizeDeps...)
-
-	// Add the kpt function resources when they are outside of the k.Dir directory.
-	if len(k.Fn.FnPath) > 0 {
-		if rel, err := filepath.Rel(k.Dir, k.Fn.FnPath); err != nil {
-			return nil, fmt.Errorf("finding relative path from "+
-				".deploy.kpt.fn.fnPath %v to deploy.kpt.Dir %v: %w", k.Fn.FnPath, k.Dir, err)
-		} else if strings.HasPrefix(rel, "..") {
-			// kpt.FnDir is outside the config .Dir.
-			fnDeps, err := getResources(k.Fn.FnPath)
-			if err != nil {
-				return nil, fmt.Errorf("finding kpt function outside %s: %w", k.Dir, err)
-			}
-			deps.Insert(fnDeps...)
-		}
-	}
-
-	return deps.ToList(), nil
+	return []string{}, nil
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
 func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "kpt",
+		"DeployerType": deployerName,
 	})
-
-	applyDir, err := k.getApplyDir(ctx)
-	if err != nil {
-		return fmt.Errorf("getting applyDir: %w", err)
+	if err := kptInitFunc(ctx, out, k); err != nil {
+		return err
 	}
 
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "destroy"}, k.getGlobalFlags(), nil)...)
+	var args []string
+	if dryRun {
+		args = append(args, "live", "status", k.applyDir)
+	} else {
+		args = append(args, "live", "destroy", k.applyDir)
+	}
+
+	args = append(args, k.Flags...)
+	cmd := exec.CommandContext(ctx, "kpt", args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(ctx, cmd); err != nil {
-		return err
+		return liveDestroyErr(err, k.applyDir)
 	}
 
 	return nil
 }
 
-// Render hydrates manifests using both kustomization and kpt functions.
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, filepath string) error {
-	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "kubectl",
-	})
-
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_sanityCheck")
-
-	if err := sanityCheck(ctx, k.Dir, out); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_renderManifests")
-	manifests, err := k.renderManifests(childCtx, builds)
-	if err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	k.statusMonitor.RegisterDeployManifests(manifests)
-	endTrace()
-
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
-	defer endTrace()
-	return manifest.Write(manifests.String(), filepath, out)
-}
-
-// renderManifests handles a majority of the hydration process for manifests.
-// This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
-// adding image digests, and adding run-id labels.
-func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact) (
-	manifest.ManifestList, error) {
-	flags, err := k.getKptFnRunArgs()
-	if err != nil {
-		return nil, err
-	}
-
-	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
-	}
-
-	var buf []byte
-	// Read the manifests under k.Dir as "source".
-	cmd := exec.CommandContext(
-		ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "source"},
-			nil, nil)...)
-	if buf, err = util.RunCmdOut(ctx, cmd); err != nil {
-		return nil, fmt.Errorf("reading config manifests: %w", err)
-	}
-
-	// Run kpt functions against the manifests read from source.
-	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs("", []string{"fn", "run"}, flags, nil)...)
-	cmd.Stdin = bytes.NewBuffer(buf)
-	if buf, err = util.RunCmdOut(ctx, cmd); err != nil {
-		return nil, fmt.Errorf("running kpt functions: %w", err)
-	}
-
-	// Run kustomize on the output from the kpt functions if a kustomization is found.
-	// Note: kustomize cannot be used as a kpt fn yet and thus we run kustomize in a temp dir
-	// in the kpt pipeline:
-	// kpt source -->  kpt run --> (workaround if kustomization exists) kustomize build --> kpt sink.
-	//
-	// Note: Optimally the user would be able to control the order in which kpt functions and
-	// Kustomize build happens, and even have Kustomize build happen between Kpt fn invocations.
-	// However, since we currently don't expose an API supporting that level of control running
-	// Kustomize build last seems like the best option.
-	// Pros:
-	// - Kustomize will remove all comments which breaks any Kpt fn relying on YAML comments. This
-	//   includes https://github.com/GoogleContainerTools/kpt-functions-catalog/tree/master/functions/go/apply-setters
-	//   which is the upcoming replacement for kpt cfg set and it will likely receive wide usage.
-	//   This is the main reason for Kustomize last approach winning.
-	// - Kustomize mangles the directory structure so any Kpt fn relying on th relative file
-	//   location of a resource as described by the config.kubernetes.io/path annotation will break
-	//   if run after Kustomize.
-	// - This allows Kpt fns to modify and even create Kustomizations.
-	// Cons:
-	// - Kpt fns that expects the output of kustomize build as input might not work as expected,
-	//   especially if the Kustomization references resources outside of the kpt dir.
-	// - Kpt fn run chokes on JSON patch files because the root node is an array. This can be worked
-	//   around by avoiding the file extensions kpt fn reads from for such files (.yaml, .yml and
-	//   .json) or inlining the patch.
-	defer func() {
-		if err = os.RemoveAll(tmpKustomizeDir); err != nil {
-			fmt.Printf("Unable to delete temporary Kusomize directory: %v\n", err)
-		}
-	}()
-	if err = sink(ctx, buf, tmpKustomizeDir); err != nil {
-		return nil, err
-	}
-
-	// Only run kustomize if kustomization.yaml is found in the output from the kpt functions.
-	if k.hasKustomization(tmpKustomizeDir) {
-		cmd = exec.CommandContext(ctx, "kustomize", append([]string{"build"}, tmpKustomizeDir)...)
-		if buf, err = util.RunCmdOut(ctx, cmd); err != nil {
-			return nil, fmt.Errorf("kustomize build: %w", err)
-		}
-	}
-
-	// Store the manipulated manifests to the sink dir.
-	if k.Fn.SinkDir != "" {
-		if err = sink(ctx, buf, k.Fn.SinkDir); err != nil {
-			return nil, err
-		}
-		fmt.Printf("Manipulated resources are stored in your sink directory: %v\n", k.Fn.SinkDir)
-	}
-
-	var manifests manifest.ManifestList
-	if len(buf) > 0 {
-		manifests.Append(buf)
-	}
-	manifests, err = k.excludeKptFn(manifests)
-	if err != nil {
-		return nil, fmt.Errorf("excluding kpt functions from manifests: %w", err)
-	}
-	if k.originalImages == nil {
-		k.originalImages, err = manifests.GetImages(manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
-		if err != nil {
-			return nil, err
-		}
-	}
-	manifests, err = manifests.ReplaceImages(ctx, builds, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
-	if err != nil {
-		return nil, fmt.Errorf("replacing images in manifests: %w", err)
-	}
-
-	if manifests, err = manifest.ApplyTransforms(manifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
-		return nil, err
-	}
-
-	return manifests.SetLabels(k.labels, manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
-}
-
-func sink(ctx context.Context, buf []byte, sinkDir string) error {
-	if err := os.RemoveAll(sinkDir); err != nil {
-		return fmt.Errorf("deleting sink directory %s: %w", sinkDir, err)
-	}
-
-	if err := os.MkdirAll(sinkDir, os.ModePerm); err != nil {
-		return fmt.Errorf("creating sink directory %s: %w", sinkDir, err)
-	}
-
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(sinkDir, []string{"fn", "sink"}, nil, nil)...)
-	cmd.Stdin = bytes.NewBuffer(buf)
-	if _, err := util.RunCmdOut(ctx, cmd); err != nil {
-		return fmt.Errorf("sinking to directory %s: %w", sinkDir, err)
-	}
-	return nil
-}
-
-// excludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
-// This will exclude kpt functions from deployed to the cluster in `kpt live apply`.
-func (k *Deployer) excludeKptFn(originalManifest manifest.ManifestList) (manifest.ManifestList, error) {
-	var newManifest manifest.ManifestList
-	for _, yByte := range originalManifest {
-		// Convert yaml byte config to unstructured.Unstructured
-		jByte, err := k8syaml.YAMLToJSON(yByte)
-		if err != nil {
-			return nil, fmt.Errorf("yaml to json error: %w", err)
-		}
-		var obj unstructured.Unstructured
-		if err := obj.UnmarshalJSON(jByte); err != nil {
-			return nil, fmt.Errorf("unmarshaling config: %w", err)
-		}
-		// skip if the resource is not kpt fn config.
-		if _, ok := obj.GetAnnotations()[kptFnAnnotation]; !ok {
-			newManifest = append(newManifest, yByte)
-			continue
-		}
-		// skip if the kpt fn has local-config annotation specified.
-		if _, ok := obj.GetAnnotations()[kptFnLocalConfig]; ok {
-			newManifest = append(newManifest, yByte)
-			continue
-		}
-
-		// Add "local-config" annotation to kpt fn config.
-		anns := obj.GetAnnotations()
-		anns[kptFnLocalConfig] = "true"
-		obj.SetAnnotations(anns)
-		jByte, err = obj.MarshalJSON()
-		if err != nil {
-			return nil, fmt.Errorf("marshaling to json: %w", err)
-		}
-		newYByte, err := k8syaml.JSONToYAML(jByte)
-		if err != nil {
-			return nil, fmt.Errorf("converting json to yaml: %w", err)
-		}
-		newManifest.Append(newYByte)
-	}
-	return newManifest, nil
-}
-
-// getApplyDir returns the path to applyDir if specified by the user. Otherwise, getApplyDir
-// creates a hidden directory named .kpt-hydrated in place of applyDir.
-func (k *Deployer) getApplyDir(ctx context.Context) (string, error) {
-	if k.Live.Apply.Dir != "" {
-		if _, err := os.Stat(k.Live.Apply.Dir); os.IsNotExist(err) {
-			return "", err
-		}
-		return k.Live.Apply.Dir, nil
-	}
-
-	// 0755 is a permission setting where the owner can read, write, and execute.
-	// Others can read and execute but not modify the directory.
-	if err := os.MkdirAll(kptHydrated, os.ModePerm); err != nil {
-		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
-	}
-
-	if _, err := os.Stat(filepath.Join(kptHydrated, inventoryTemplate)); os.IsNotExist(err) {
-		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, k.getKptLiveInitArgs(), nil)...)
-		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
-			return "", err
-		}
-	}
-
-	return kptHydrated, nil
-}
-
-// kptCommandArgs returns a list of additional arguments for the kpt command.
-func kptCommandArgs(dir string, commands, flags, globalFlags []string) []string {
-	var args []string
-
-	for _, v := range commands {
-		parts := strings.Split(v, " ")
-		args = append(args, parts...)
-	}
-
-	if len(dir) > 0 {
-		args = append(args, dir)
-	}
-
-	for _, v := range flags {
-		parts := strings.Split(v, " ")
-		args = append(args, parts...)
-	}
-
-	for _, v := range globalFlags {
-		parts := strings.Split(v, " ")
-		args = append(args, parts...)
-	}
-
-	return args
-}
-
-// getResources returns a list of all file names in root that end in .yaml or .yml
-func getResources(root string) ([]string, error) {
-	var files []string
-
-	if _, err := os.Stat(root); os.IsNotExist(err) {
-		return nil, err
-	}
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, _ error) error {
-		// Using regex match is not entirely accurate in deciding whether something is a resource or not.
-		// Kpt should provide better functionality for determining whether files are resources.
-		isResource, err := regexp.MatchString(`\.ya?ml$`, filepath.Base(path))
-		if err != nil {
-			return fmt.Errorf("matching %s with regex: %w", filepath.Base(path), err)
-		}
-
-		if !info.IsDir() && isResource {
-			files = append(files, path)
-		}
-
-		return nil
-	})
-
-	return files, err
-}
-
-// getKptFnRunArgs returns a list of arguments that the user specified for the `kpt fn run` command.
-func (k *Deployer) getKptFnRunArgs() ([]string, error) {
-	var flags []string
-
-	if k.Fn.GlobalScope {
-		flags = append(flags, "--global-scope")
-	}
-
-	if len(k.Fn.Mount) > 0 {
-		flags = append(flags, "--mount", strings.Join(k.Fn.Mount, ","))
-	}
-
-	if k.Fn.Network {
-		flags = append(flags, "--network")
-	}
-
-	if len(k.Fn.NetworkName) > 0 {
-		flags = append(flags, "--network-name", k.Fn.NetworkName)
-	}
-
-	count := 0
-	if len(k.Fn.FnPath) > 0 {
-		flags = append(flags, "--fn-path", k.Fn.FnPath)
-		count++
-	}
-
-	if len(k.Fn.Image) > 0 {
-		flags = append(flags, "--image", k.Fn.Image)
-		count++
-	}
-
-	if count > 1 {
-		return nil, errors.New("only one of `fn-path` or `image` may be specified")
-	}
-
-	return flags, nil
-}
-
-// getKptLiveApplyArgs returns a list of arguments that the user specified for the `kpt live apply` command.
-func (k *Deployer) getKptLiveApplyArgs() []string {
-	var flags []string
-
-	if len(k.Live.Options.PollPeriod) > 0 {
-		flags = append(flags, "--poll-period", k.Live.Options.PollPeriod)
-	}
-
-	if len(k.Live.Options.PrunePropagationPolicy) > 0 {
-		flags = append(flags, "--prune-propagation-policy", k.Live.Options.PrunePropagationPolicy)
-	}
-
-	if len(k.Live.Options.PruneTimeout) > 0 {
-		flags = append(flags, "--prune-timeout", k.Live.Options.PruneTimeout)
-	}
-
-	if len(k.Live.Options.ReconcileTimeout) > 0 {
-		flags = append(flags, "--reconcile-timeout", k.Live.Options.ReconcileTimeout)
-	}
-
-	flags = append(flags, k.getGlobalFlags()...)
-	return flags
-}
-
-// getKptLiveInitArgs returns a list of arguments that the user specified for the `kpt live init` command.
-func (k *Deployer) getKptLiveInitArgs() []string {
-	var flags []string
-
-	if len(k.Live.Apply.InventoryID) > 0 {
-		flags = append(flags, "--inventory-id", k.Live.Apply.InventoryID)
-	}
-
-	flags = append(flags, k.getGlobalFlags()...)
-	return flags
-}
-func (k *Deployer) getGlobalFlags() []string {
-	var flags []string
-
-	if k.kubeContext != "" {
-		flags = append(flags, "--context", k.kubeContext)
-	}
-	if k.kubeConfig != "" {
-		flags = append(flags, "--kubeconfig", k.kubeConfig)
-	}
-	if len(k.Live.Apply.InventoryNamespace) > 0 {
-		flags = append(flags, "--namespace", k.Live.Apply.InventoryNamespace)
-	} else if k.namespace != "" {
-		// Note: UI duplication.
-		flags = append(flags, "--namespace", k.namespace)
-	}
-
-	return flags
-}
-
-func hasKustomization(dir string) bool {
-	_, err := kustomize.FindKustomizationConfig(dir)
-	return err == nil
+func (k *Deployer) trackNamespaces(namespaces []string) {
+	fmt.Fprintf(os.Stdout, "tracking namespaces: %+v\n", namespaces)
+	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
 }

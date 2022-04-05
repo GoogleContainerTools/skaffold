@@ -160,6 +160,18 @@ func TestSyncRepo(t *testing.T) {
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
+			description: "existing repo with uncommitted changes and sync on resets",
+			g:           latestV2.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git reset --hard origin/master"},
+			},
+			syncFlag: "always",
+			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
+		},
+		{
 			description: "existing repo with unpushed commits and sync on resets",
 			g:           latestV2.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
 			existing:    true,

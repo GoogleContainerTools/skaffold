@@ -24,6 +24,9 @@ import (
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
+// Noop renderer does nothing for the render phase.
+// This struct is currently only used in conjunction with the Helm deployer.
+// TODO(marlongamez): add Helm renderer which uses helm template and can feed into deployers
 type Noop struct{}
 
 func New(_ *latestV2.RenderConfig, _, _ string, _ map[string]string) (Noop, error) {

@@ -27,9 +27,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	k8sloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
@@ -61,9 +61,9 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "helm deployer with 3.1.0 version",
 				cfg: latestV2.Pipeline{
-					Render: latestV2.RenderConfig{
-						Generate: latestV2.Generate{
-							Helm: &latestV2.Helm{},
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 						},
 					},
 				},
@@ -73,9 +73,9 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "helm deployer with less than 3.0.0 version",
 				cfg: latestV2.Pipeline{
-					Render: latestV2.RenderConfig{
-						Generate: latestV2.Generate{
-							Helm: &latestV2.Helm{},
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 						},
 					},
 				},
@@ -101,7 +101,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "kpt deployer",
 				cfg: latestV2.Pipeline{
 					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptDeploy{}},
 					},
 				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
@@ -112,7 +112,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "apply forces creation of kubectl deployer with kpt config",
 				cfg: latestV2.Pipeline{
 					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptDeploy{}},
 					},
 				},
 				apply: true,
@@ -125,9 +125,9 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
 				cfg: latestV2.Pipeline{
-					Render: latestV2.RenderConfig{
-						Generate: latestV2.Generate{
-							Helm: &latestV2.Helm{},
+					Deploy: latestV2.DeployConfig{
+						DeployType: latestV2.DeployType{
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 						},
 					},
 				},
@@ -142,13 +142,11 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "multiple deployers",
 				cfg: latestV2.Pipeline{
-					Render: latestV2.RenderConfig{
-						Generate: latestV2.Generate{
-							Helm: &latestV2.Helm{},
-						},
-					},
 					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptV2Deploy{}},
+						DeployType: latestV2.DeployType{
+							KptV2Deploy:      &latestV2.KptDeploy{},
+							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
+						},
 					},
 				},
 				helmVersion: `version.BuildInfo{Version:"v3.7.0"}`,

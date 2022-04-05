@@ -582,8 +582,8 @@ type Validator struct {
 	ConfigMap []string `yaml:"configMap,omitempty"`
 }
 
-// KptV2Deploy contains all the configuration needed by the deploy steps.
-type KptV2Deploy struct {
+// KptDeploy contains all the configuration needed by the deploy steps.
+type KptDeploy struct {
 	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold deploys from the default
 	// hydrated path `<WORKDIR>/.kpt-pipeline`.
 	Dir string `yaml:"dir,omitempty"`
@@ -645,7 +645,7 @@ type DeployType struct {
 	LegacyHelmDeploy *LegacyHelmDeploy `yaml:"helm,omitempty"`
 
 	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
-	KptV2Deploy *KptV2Deploy `yaml:"kpt,omitempty"`
+	KptV2Deploy *KptDeploy `yaml:"kpt,omitempty"`
 
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
@@ -728,91 +728,6 @@ type HelmDeployFlags struct {
 
 	// Upgrade are additional flags passed to (`helm upgrade`).
 	Upgrade []string `yaml:"upgrade,omitempty"`
-}
-
-// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
-type KptDeploy struct {
-	// Dir is the path to the config directory (Required).
-	// By default, the Dir contains the application configurations,
-	// [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html)
-	// and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).
-	Dir string `yaml:"dir" yamltags:"required" skaffold:"filepath"`
-
-	// Fn adds additional configurations for `kpt fn`.
-	Fn KptFn `yaml:"fn,omitempty"`
-
-	// Live adds additional configurations for `kpt live`.
-	Live KptLive `yaml:"live,omitempty"`
-
-	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
-}
-
-// KptFn adds additional configurations used when calling `kpt fn`.
-type KptFn struct {
-	// FnPath is the directory to discover the declarative kpt functions.
-	// If not provided, kpt deployer uses `kpt.Dir`.
-	FnPath string `yaml:"fnPath,omitempty" skaffold:"filepath"`
-
-	// Image is a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath
-	// will be ignored.
-	Image string `yaml:"image,omitempty"`
-
-	// NetworkName is the docker network name to run the kpt function containers (default "bridge").
-	NetworkName string `yaml:"networkName,omitempty"`
-
-	// GlobalScope sets the global scope for the kpt functions. see `kpt help fn run`.
-	GlobalScope bool `yaml:"globalScope,omitempty"`
-
-	// Network enables network access for the kpt function containers.
-	Network bool `yaml:"network,omitempty"`
-
-	// Mount is a list of storage options to mount to the fn image.
-	Mount []string `yaml:"mount,omitempty"`
-
-	// SinkDir is the directory to where the manipulated resource output is stored.
-	SinkDir string `yaml:"sinkDir,omitempty" skaffold:"filepath"`
-}
-
-// KptLive adds additional configurations used when calling `kpt live`.
-type KptLive struct {
-	// Apply sets the kpt inventory directory.
-	Apply KptApplyInventory `yaml:"apply,omitempty"`
-
-	// Options adds additional configurations for `kpt live apply` commands.
-	Options KptApplyOptions `yaml:"options,omitempty"`
-}
-
-// KptApplyInventory sets the kpt inventory directory.
-type KptApplyInventory struct {
-	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided,
-	// kpt deployer will create a hidden directory `.kpt-hydrated` to store the manipulated
-	// resource output and the kpt inventory-template.yaml file.
-	Dir string `yaml:"dir,omitempty"`
-
-	// InventoryID *alpha* is the identifier for a group of applied resources.
-	// This value is only needed when the `kpt live` is working on a pre-applied cluster resources.
-	InventoryID string `yaml:"inventoryID,omitempty"`
-
-	// InventoryNamespace *alpha* sets the inventory namespace.
-	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
-}
-
-// KptApplyOptions adds additional configurations used when calling `kpt live apply`.
-type KptApplyOptions struct {
-	// PollPeriod sets for the polling period for resource statuses. Default to 2s.
-	PollPeriod string `yaml:"pollPeriod,omitempty"`
-
-	// PrunePropagationPolicy sets the propagation policy for pruning.
-	// Possible settings are Background, Foreground, Orphan.
-	// Default to "Background".
-	PrunePropagationPolicy string `yaml:"prunePropagationPolicy,omitempty"`
-
-	// PruneTimeout sets the time threshold to wait for all pruned resources to be deleted.
-	PruneTimeout string `yaml:"pruneTimeout,omitempty"`
-
-	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
-	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.

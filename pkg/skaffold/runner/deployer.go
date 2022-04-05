@@ -26,10 +26,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/v2/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -105,26 +105,6 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 	}
 
 	var deployers []deploy.Deployer
-
-	// TODO(nkubala)[v2-merge]: Dirty workaround due to the missing helm strategy in kpt.
-	// This should be moved to renderer.generate instead, and replaced with LegacyHelmDeployer
-	pipelines := runCtx.GetPipelines()
-	for _, p := range pipelines {
-		if p.Render.Generate.Helm != nil {
-			dCtx := &deployerCtx{runCtx, p.Deploy}
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, &latestV2.LegacyHelmDeploy{
-				Flags: p.Render.Generate.Helm.Flags,
-			}, runCtx.Artifacts())
-			if err != nil {
-				return nil, err
-			}
-			if p.Render.Generate.Helm.Releases != nil {
-				h.Releases = append(h.Releases, *p.Render.Generate.Helm.Releases...)
-			}
-			deployers = append(deployers, h)
-		}
-	}
-
 	localDeploy := false
 	remoteDeploy := false
 	for _, d := range deployerCfg {
@@ -147,7 +127,6 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 			deployers = append(deployers, d)
 		}
 
-		// TODO(nkubala)[v2-merge]: add d.LegacyHelmDeploy (or something similar)
 		if d.LegacyHelmDeploy != nil {
 			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts())
 			if err != nil {

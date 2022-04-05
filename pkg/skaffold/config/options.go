@@ -58,56 +58,47 @@ type SkaffoldOptions struct {
 	SkipConfigDefaults    bool
 	Tail                  bool
 	WaitForConnection     bool
-	// Add Skaffold-specific labels including runID, deployer labels, etc.
-	// `CustomLabels` are still applied if this is false. Must only be used in
-	// commands which don't deploy (e.g. `skaffold render`) since the runID
-	// label isn't available.
-	AddSkaffoldLabels  bool
-	ConfigurationFile  string
-	HydrationDir       string
-	InventoryNamespace string
-	InventoryID        string
-	InventoryName      string
-	GlobalConfig       string
-	EventLogFile       string
-	RenderOutput       string
-	User               string
-	CustomTag          string
-	Namespace          string
-	CacheFile          string
-	Trigger            string
-	KubeContext        string
-	KubeConfig         string
-	LastLogFile        string
-	DigestSource       string
-	Command            string
-	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
-	// remove minikubeProfile from here and instead detect it by matching the
-	// kubecontext API Server to minikube profiles
-	MinikubeProfile     string
-	RepoCacheDir        string
-	TransformRulesFile  string
-	CustomLabels        []string
-	TargetImages        []string
-	Profiles            []string
-	InsecureRegistries  []string
-	ConfigurationFilter []string
-	HydratedManifests   []string
-	BuildConcurrency    int
-	WatchPollInterval   int
-
-	DefaultRepo       StringOrUndefined
-	MakePathsAbsolute *bool
-	StatusCheck       BoolOrUndefined
-	PortForward       PortForwardOptions
-	PushImages        BoolOrUndefined
-	Platforms         []string
-	Muted             Muted
-	RPCPort           IntOrUndefined
-	RPCHTTPPort       IntOrUndefined
-	SyncRemoteCache   SyncRemoteCacheOption
-	WaitForDeletions  WaitForDeletions
-	MultiLevelRepo    *bool
+	MakePathsAbsolute     *bool
+	MultiLevelRepo        *bool
+	ConfigurationFile     string
+	HydrationDir          string
+	InventoryNamespace    string
+	InventoryID           string
+	InventoryName         string
+	GlobalConfig          string
+	EventLogFile          string
+	RenderOutput          string
+	User                  string
+	CustomTag             string
+	Namespace             string
+	CacheFile             string
+	Trigger               string
+	KubeContext           string
+	KubeConfig            string
+	LastLogFile           string
+	DigestSource          string
+	Command               string
+	MinikubeProfile       string
+	RepoCacheDir          string
+	TransformRulesFile    string
+	CustomLabels          []string
+	TargetImages          []string
+	Profiles              []string
+	InsecureRegistries    []string
+	ConfigurationFilter   []string
+	HydratedManifests     []string
+	Platforms             []string
+	BuildConcurrency      int
+	WatchPollInterval     int
+	StatusCheck           BoolOrUndefined
+	PushImages            BoolOrUndefined
+	RPCPort               IntOrUndefined
+	RPCHTTPPort           IntOrUndefined
+	Muted                 Muted
+	PortForward           PortForwardOptions
+	DefaultRepo           StringOrUndefined
+	SyncRemoteCache       SyncRemoteCacheOption
+	WaitForDeletions      WaitForDeletions
 }
 
 type RunMode string

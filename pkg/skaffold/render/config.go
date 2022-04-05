@@ -16,7 +16,9 @@ limitations under the License.
 
 package render
 
-import latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+import (
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+)
 
 type Config interface {
 	GetRenderConfig() *latestV2.RenderConfig
