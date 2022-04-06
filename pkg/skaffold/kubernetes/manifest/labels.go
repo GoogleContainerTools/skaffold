@@ -61,6 +61,9 @@ func (rsi *ResourceSelectorLabels) allowByGroupKind(gk apimachinery.GroupKind) b
 func (rsi *ResourceSelectorLabels) allowByNavpath(gk apimachinery.GroupKind, navpath string, k string) (string, bool) {
 	for _, w := range ConfigConnectorResourceSelector {
 		if w.Matches(gk.Group, gk.Kind) {
+			if k != metadataField {
+				return "", false
+			}
 			return "labels", true
 		}
 	}
@@ -85,7 +88,7 @@ func (rsi *ResourceSelectorLabels) allowByNavpath(gk apimachinery.GroupKind, nav
 	if rf, ok := rsi.allowlist[gk]; ok {
 		for _, allowpath := range rf.Labels {
 			if allowpath == ".*" {
-				if k != "metadata" {
+				if k != metadataField {
 					return "", false
 				}
 				return "labels", true

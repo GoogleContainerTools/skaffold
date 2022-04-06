@@ -56,7 +56,8 @@ func buildOptions(a *latestV2.Artifact, runMode config.RunMode, platforms platfo
 		ConcurrentBuilds:     1, // we could plug in Skaffold's max builds here, but it'd be incorrect if users build more than one artifact
 		DisableOptimizations: runMode == config.RunModes.Debug,
 		Labels:               imageLabels,
-		Platform:             platforms.String(),
+		Platforms:            platforms.Array(),
+		SBOM:                 "none", // TODO: Need design for SBOM generation to consider other builders
 		Trimpath:             runMode != config.RunModes.Debug,
 		UserAgent:            version.UserAgentWithClient(),
 		WorkingDirectory:     filepath.Join(a.Workspace, a.KoArtifact.Dir),

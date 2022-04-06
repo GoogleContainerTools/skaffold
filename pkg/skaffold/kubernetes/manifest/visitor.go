@@ -25,6 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
+const metadataField = "metadata"
+
 type ResourceSelector interface {
 	allowByGroupKind(apimachinery.GroupKind) bool
 	allowByNavpath(apimachinery.GroupKind, string, string) (string, bool)
@@ -107,18 +109,23 @@ var TransformAllowlist = map[apimachinery.GroupKind]latestV2.ResourceFilter{
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
-	{Group: "argoproj.io", Kind: "ClusterWorkflowTemplate"}: {
-		GroupKind: "ClusterWorkflowTemplate.argoproj.io",
-		Image:     []string{".*"},
-		Labels:    []string{".*"},
-	},
 	{Group: "argoproj.io", Kind: "Workflow"}: {
 		GroupKind: "Workflow.argoproj.io",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
+	{Group: "argoproj.io", Kind: "CronWorkflow"}: {
+		GroupKind: "CronWorkflow.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
 	{Group: "argoproj.io", Kind: "WorkflowTemplate"}: {
 		GroupKind: "WorkflowTemplate.argoproj.io",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
+	{Group: "argoproj.io", Kind: "ClusterWorkflowTemplate"}: {
+		GroupKind: "ClusterWorkflowTemplate.argoproj.io",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},

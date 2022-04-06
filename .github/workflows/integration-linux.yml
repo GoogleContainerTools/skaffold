@@ -42,7 +42,7 @@ jobs:
         echo "::set-output name=go-build::$(go env GOCACHE)"
         echo "::set-output name=go-mod::$(go env GOMODCACHE)"
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       with:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
