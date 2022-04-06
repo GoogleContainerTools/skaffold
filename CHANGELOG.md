@@ -1,3 +1,54 @@
+# v1.38.0 Release - 04/06/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.38.0`
+
+Fixes:
+* fix: fix bazel-out path for `rules_docker-0.23.0` [#7251](https://github.com/GoogleContainerTools/skaffold/pull/7251)
+* fix: fix skaffold label setter to work properly for cnrm resources [#7243](https://github.com/GoogleContainerTools/skaffold/pull/7243)
+* fix: change GCB backoff check to use error code instead of checking the error [#7213](https://github.com/GoogleContainerTools/skaffold/pull/7213)
+* fix(examples/typescript): use tsc-watch --noClear to keep previous logs [#7227](https://github.com/GoogleContainerTools/skaffold/pull/7227)
+* fix: Unmarshaling nested arrays of objects [#7217](https://github.com/GoogleContainerTools/skaffold/pull/7217)
+* fix: add missing Argo CronWorkflow to transforms [#7205](https://github.com/GoogleContainerTools/skaffold/pull/7205)
+
+Updates and Refactors:
+* chore: remove maven-wrapper.jar and regenerate Maven wrappers [#7220](https://github.com/GoogleContainerTools/skaffold/pull/7220)
+* chore(ko): Upgrade `ko` dependency to v0.11.2 [#7224](https://github.com/GoogleContainerTools/skaffold/pull/7224)
+
+Docs, Test, and Release Updates:
+* ci: pass `IT_PARTITION` variable when running `make integration-in-docker` [#7226](https://github.com/GoogleContainerTools/skaffold/pull/7226)
+* docs: add skaffold.yaml in `docs/content/en/samples` for pipeline-stages [#7077](https://github.com/GoogleContainerTools/skaffold/pull/7077)
+* docs: document command-line restrictions for Go and Python [#7260](https://github.com/GoogleContainerTools/skaffold/pull/7260)
+* chore: update go version in actions that weren't specifying go 1.17 [#7263](https://github.com/GoogleContainerTools/skaffold/pull/7263)
+* chore: update Jib plugin versions to 3.2.1 in examples [#7256](https://github.com/GoogleContainerTools/skaffold/pull/7256)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Brian de Alwis
+- Elena Felder
+- Halvard Skogsrud
+- Kevin Hanselman
+- Marlon Gamez
+- Mohammad Sadegh Salimi
+- Sam Gomena
+- Sasha Morrissey
+- barp
+
 # v1.37.1 Release - 03/30/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.37.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
