@@ -81,7 +81,7 @@ func (e *emptyDeployInit) AddManifestForImage(string, string) {}
 // if any CLI manifests are provided, we always use those as part of a kubectl deploy first
 // if not, then if a kustomization yaml is found, we use that next
 // otherwise, default to a kubectl deploy.
-func NewInitializer(manifests, bases, kustomizations []string, c config.Config) Initializer {
+func NewInitializer(manifests, bases, kustomizations []string, chartPaths []string, c config.Config) Initializer {
 	switch {
 	case c.SkipDeploy:
 		return &emptyDeployInit{}
@@ -89,6 +89,8 @@ func NewInitializer(manifests, bases, kustomizations []string, c config.Config) 
 		return &cliDeployInit{c.CliKubernetesManifests}
 	case len(kustomizations) > 0:
 		return newKustomizeInitializer(c.DefaultKustomization, bases, kustomizations, manifests)
+	case len(chartPaths) > 0:
+		return newHelmInitializer(chartPaths)
 	default:
 		return newKubectlInitializer(manifests)
 	}

@@ -36,6 +36,7 @@ require (
 	github.com/buildpacks/pack v0.23.0
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/containerd/containerd v1.5.9
+	github.com/containerd/stargz-snapshotter v0.0.0-20201027054423-3a04e4c2c116
 	github.com/docker/cli v20.10.12+incompatible
 	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v20.10.13+incompatible
@@ -181,6 +182,7 @@ require (
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/gobuffalo/here v0.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/google/crfs v0.0.0-20191108021818-71d77da419c9 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20210804190019-f964ff605595 // indirect

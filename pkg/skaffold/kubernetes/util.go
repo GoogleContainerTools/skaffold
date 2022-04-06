@@ -54,16 +54,27 @@ func HasKubernetesFileExtension(n string) bool {
 
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
-	_, err := parseKubernetesObjects(file)
-	return err == nil
+	if f, err := os.Open(file); err == nil {
+		_, errP := parseKubernetesObjects(bufio.NewReader(f))
+		return errP == nil
+	}
+	return false
 }
 
 // ParseImagesFromKubernetesYaml parses the kubernetes yamls, and if it finds at least one
 // valid Kubernetes object, it will return the images referenced in them.
-func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
-	k8sObjects, err := parseKubernetesObjects(filepath)
+func ParseImagesFromKubernetesYaml(file string) ([]string, error) {
+	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
+	}
+	return parseImagesFromKubernetesYaml(bufio.NewReader(f))
+}
+
+func parseImagesFromKubernetesYaml(r *bufio.Reader) ([]string, error) {
+	k8sObjects, errP := parseKubernetesObjects(r)
+	if errP != nil {
+		return nil, errP
 	}
 
 	var images []string
@@ -78,14 +89,9 @@ func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 // to determine if a provided yaml file is a valid k8s manifest, as detailed in
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields.
 // If so, it will return the parsed objects.
-func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
-	f, err := os.Open(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("opening config file: %w", err)
-	}
-	defer f.Close()
+func parseKubernetesObjects(r1 *bufio.Reader) ([]yamlObject, error) {
 
-	r := k8syaml.NewYAMLReader(bufio.NewReader(f))
+	r := k8syaml.NewYAMLReader(r1)
 
 	var k8sObjects []yamlObject
 
