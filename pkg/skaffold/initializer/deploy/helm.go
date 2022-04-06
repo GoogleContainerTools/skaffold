@@ -73,6 +73,29 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 	}
 	return helm{
 		charts: charts,
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+)
+
+// helm implements deploymentInitializer for the kustomize deployer.
+type helm struct {
+	chartPaths []string
+	images     []string
+}
+
+// newHelmInitializer returns a helm config generator.
+func newHelmInitializer(charts []string) *helm {
+	var images []string
+	for _, file := range charts {
+		imgs, err := kubernetes.ParseImagesFromKubernetesYaml(file)
+		if err == nil {
+			images = append(images, imgs...)
+		}
+	}
+	return &helm{
+		chartPaths: charts,
+		images:     images,
 	}
 }
 
@@ -105,6 +128,8 @@ func (h helm) Validate() error {
 	return nil
 }
 
+// we don't generate k8s manifests for a kustomize deploy
+func (h *helm) AddManifestForImage(string, string) {}
 // we don't generate manifests for helm
 func (h helm) AddManifestForImage(string, string) {}
 
