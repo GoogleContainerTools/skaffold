@@ -18,8 +18,8 @@ package analyze
 
 import (
 	"context"
-	"os"
 	"path/filepath"
+	"os"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -33,11 +33,12 @@ const (
 type helmAnalyzer struct {
 	directoryAnalyzer
 	chartDirs map[string][]string
+	values    []string
 }
 
-func (h *helmAnalyzer) analyzeFile(ctx context.Context, fp string) error {
-	if isHelmChart(fp) {
-		chDir, _ := filepath.Split(fp)
+func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
+	if deploy.IsHelmChart(filePath) {
+		chDir, _ := filepath.Split(filePath)
 		h.chartDirs[filepath.Clean(chDir)] = []string{}
 		return nil
 	}

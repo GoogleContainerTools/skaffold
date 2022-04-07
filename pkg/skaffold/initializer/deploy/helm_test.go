@@ -57,6 +57,8 @@ func TestDeployConfig(t *testing.T) {
 			h := newHelmInitializer(test.input)
 			d, _ := h.DeployConfig()
 			CheckHelmInitStruct(t, test.expected, d.LegacyHelmDeploy.Releases)
+			overrides, err := parseImagesFromReader(test.contents, "dummy.yaml")
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.overrides, overrides)
 		})
 	}
 }
