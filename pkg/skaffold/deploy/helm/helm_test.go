@@ -515,7 +515,7 @@ func TestHelmDeploy(t *testing.T) {
 		env                []string
 		helm               latest.HelmDeploy
 		namespace          string
-		configure          func(*Deployer)
+		configure          func(*Deployer3)
 		builds             []graph.Artifact
 		force              bool
 		shouldErr          bool
@@ -1015,7 +1015,7 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:          true,
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			configure:          func(deployer *Deployer) { deployer.enableDebug = true },
+			configure:          func(deployer *Deployer3) { deployer.enableDebug = true },
 			expectedNamespaces: []string{""},
 		},
 		{
@@ -1029,7 +1029,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
 			builds:             testBuilds,
-			configure:          func(deployer *Deployer) { deployer.enableDebug = true },
+			configure:          func(deployer *Deployer3) { deployer.enableDebug = true },
 			expectedNamespaces: []string{""},
 		},
 		{

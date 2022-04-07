@@ -140,7 +140,7 @@ func pairParamsToArtifacts(builds []graph.Artifact, params map[string]string) (m
 	return paramToBuildResult, nil
 }
 
-func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
+func (h *Deployer3) generateSkaffoldDebugFilter(buildsFile string) []string {
 	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
 	if len(buildsFile) > 0 {
 		args = append(args, "--build-artifacts", buildsFile)
@@ -153,7 +153,7 @@ func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
 	return args
 }
 
-func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
+func (h *Deployer3) releaseNamespace(r latest.HelmRelease) (string, error) {
 	if h.namespace != "" {
 		return h.namespace, nil
 	} else if r.Namespace != "" {
@@ -199,7 +199,7 @@ func envVarForImage(imageName string, digest string) map[string]string {
 }
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
-func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
+func (h *Deployer3) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
 	args = append([]string{"--kube-context", h.kubeContext}, args...)
 	args = append(args, h.Flags.Global...)
 
