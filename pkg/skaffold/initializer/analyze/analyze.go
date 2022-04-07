@@ -49,6 +49,19 @@ type ProjectAnalysis struct {
 	maxFileSize       int64
 }
 
+type HelmChartInfo struct {
+	chartPaths    map[string][]string
+	buildersFound []build.InitBuilder
+}
+
+func (h *HelmChartInfo) Charts() map[string][]string {
+	return h.chartPaths
+}
+
+func (h *HelmChartInfo) Builders() []build.InitBuilder {
+	return h.buildersFound
+}
+
 func (a *ProjectAnalysis) Builders() []build.InitBuilder {
 	return a.builderAnalyzer.foundBuilders
 }
@@ -65,8 +78,15 @@ func (a *ProjectAnalysis) KustomizeBases() []string {
 	return a.kustomizeAnalyzer.bases
 }
 
-func (a *ProjectAnalysis) ChartPaths() []string {
-	return a.helmAnalyzer.chartPaths
+func (a *ProjectAnalysis) HelmChartInfo() HelmChartInfo {
+	return HelmChartInfo{
+		chartPaths:    a.helmAnalyzer.chartDirs,
+		buildersFound: a.Builders(),
+	}
+}
+
+func (a *ProjectAnalysis) ChartPaths() map[string][]string {
+	return a.helmAnalyzer.chartDirs
 }
 
 func (a *ProjectAnalysis) analyzers() []analyzer {
@@ -84,7 +104,7 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 	return &ProjectAnalysis{
 		kubeAnalyzer:      &kubeAnalyzer{},
 		kustomizeAnalyzer: &kustomizeAnalyzer{},
-		helmAnalyzer:      &helmAnalyzer{},
+		helmAnalyzer:      &helmAnalyzer{chartDirs: map[string][]string{}},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,

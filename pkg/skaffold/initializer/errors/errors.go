@@ -51,3 +51,11 @@ func (e BuilderImageAmbiguitiesErr) ExitCode() int { return 104 }
 func (e BuilderImageAmbiguitiesErr) Error() string {
 	return "unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities"
 }
+
+// NoHelmChartsErr is an error returned by `skaffold init` when no valid charts is found.
+type NoHelmChartsErr struct{}
+
+func (e NoHelmChartsErr) ExitCode() int { return 105 }
+func (e NoHelmChartsErr) Error() string {
+	return "one or more valid helm charts or kubernetes manifests are required to run skaffold"
+}

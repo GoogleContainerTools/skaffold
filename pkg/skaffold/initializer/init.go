@@ -18,7 +18,6 @@ package initializer
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -77,7 +76,7 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 // Initialize uses the information gathered by the analyzer to create a skaffold config and generate kubernetes manifests.
 // The returned map[string][]byte represents a mapping from generated config name to its respective manifest data held in a []byte
 func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*latest.SkaffoldConfig, map[string][]byte, error) {
-	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.ChartPaths(), c)
+	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), c)
 	images := deployInitializer.GetImages()
 
 	buildInitializer := build.NewInitializer(a.Builders(), c)

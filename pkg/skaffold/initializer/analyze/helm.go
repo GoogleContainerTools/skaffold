@@ -18,6 +18,7 @@ package analyze
 
 import (
 	"context"
+	"path/filepath"
 
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 )
@@ -25,12 +26,15 @@ import (
 // helmAnalyzer is a Visitor during the directory analysis that finds helm charts
 type helmAnalyzer struct {
 	directoryAnalyzer
-	chartPaths []string
+	chartDirs map[string][]string
+	values    []string
 }
 
 func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
 	if deploy.IsHelmChart(filePath) {
-		h.chartPaths = append(h.chartPaths, filePath)
+		chDir, _ := filepath.Split(filePath)
+		h.chartDirs[filepath.Clean(chDir)] = []string{}
+		return nil
 	}
 	return nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,55 +17,83 @@ limitations under the License.
 package deploy
 
 import (
+	"path/filepath"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// helm implements deploymentInitializer for the kustomize deployer.
+// helm implements deploymentInitializer for the helm deployer.
 type helm struct {
-	chartPaths []string
-	images     []string
+	charts []chart
+}
+
+type chart struct {
+	name      string
+	path      string
+	valueFile string
+	overrides map[string]string
 }
 
 // newHelmInitializer returns a helm config generator.
-func newHelmInitializer(charts []string) *helm {
-	var images []string
-	for _, file := range charts {
-		imgs, err := kubernetes.ParseImagesFromKubernetesYaml(file)
-		if err == nil {
-			images = append(images, imgs...)
-		}
+func newHelmInitializer(chartTemplatesMap map[string][]string, builders []build.InitBuilder) helm {
+	var charts []chart
+
+	for chDir, _ := range chartTemplatesMap {
+		// find value files
+		vf := findValuesFile(chDir)
+		// generate the artifactsOverride key
+		charts = append(charts, chart{
+			name:      resolveChartName(chDir),
+			path:      chDir,
+			valueFile: vf,
+		})
 	}
-	return &helm{
-		chartPaths: charts,
-		images:     images,
+	updated := make([]chart, len(charts))
+	return helm{
+		charts: updated,
 	}
 }
 
 // DeployConfig implements the Initializer interface and generates
 // a helm configuration
-func (h *helm) DeployConfig() (latestV1.DeployConfig, []latestV1.Profile) {
+func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
+	releases := []latest.HelmRelease{}
+	for _, ch := range h.charts {
+		chDir, _ := filepath.Split(ch.path)
+		releases = append(releases, latest.HelmRelease{
+			Name:        ch.name,
+			ChartPath:   chDir,
+			ValuesFiles: []string{filepath.Join(chDir, "values.yaml")},
+		})
 
-	return latestV1.DeployConfig{
-		DeployType: latestV1.DeployType{},
+	}
+	return latest.DeployConfig{
+		DeployType: latest.DeployType{
+			HelmDeploy: &latest.HelmDeploy{
+				Releases: releases,
+			},
+		},
 	}, nil
-}
-
-// GetImages implements the Initializer interface and lists all the
-// images present in the k8s manifest files.
-func (h *helm) GetImages() []string {
-	return []string{}
 }
 
 // Validate implements the Initializer interface and ensures
 // we have at least one manifest before generating a config
-func (h *helm) Validate() error {
-	if len(h.chartPaths) == 0 {
-		return errors.NoManifestErr{}
+func (h helm) Validate() error {
+	if len(h.charts) == 0 {
+		return errors.NoHelmChartsErr{}
 	}
 	return nil
 }
 
-// we don't generate k8s manifests for a kustomize deploy
-func (h *helm) AddManifestForImage(string, string) {}
+// we don't generate manifests for helm
+func (h helm) AddManifestForImage(string, string) {}
+
+func resolveChartName(chDirPath string) string {
+	_, chDirName := filepath.Split(filepath.Clean(chDirPath))
+	if chDirName == "charts" {
+		return "chart-foo"
+	}
+	return chDirName
+}

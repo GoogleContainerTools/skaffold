@@ -105,8 +105,8 @@ func parseKubernetesObjects(r1 *bufio.Reader) ([]yamlObject, error) {
 		}
 
 		obj := make(yamlObject)
-		if err := yaml.Unmarshal(doc, &obj); err != nil {
-			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
+		if errU := yaml.Unmarshal(doc, &obj); errU != nil {
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", errU)
 		}
 
 		if !hasRequiredK8sManifestFields(obj) {
