@@ -50,7 +50,6 @@ import (
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
@@ -128,17 +127,8 @@ type Config interface {
 	JSONParseConfig() latest.JSONParseConfig
 }
 
-// NewDeployer returns a configured Deployer3.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy) (*Deployer3, error) {
-	hv, err := binVer(ctx)
-	if err != nil {
-		return nil, versionGetErr(err)
-	}
-
-	if hv.LT(helm3Version) {
-		return nil, minVersionErr()
-	}
-
+// NewBase returns a configured Deployer3.
+func NewBase(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy, hv semver.Version) (*Deployer3, error) {
 	originalImages := []graph.Artifact{}
 	for _, release := range h.Releases {
 		for _, v := range release.ArtifactOverrides {
@@ -210,80 +200,6 @@ func (h *Deployer3) RegisterLocalImages(images []graph.Artifact) {
 func (h *Deployer3) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
-}
-
-// Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer3) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
-	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
-		"DeployerType": "helm",
-	})
-	defer endTrace()
-
-	// Check that the cluster is reachable.
-	// This gives a better error message when the cluster can't
-	// be reached.
-	if err := kubernetes.FailIfClusterIsNotReachable(h.kubeContext); err != nil {
-		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
-	}
-
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
-	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	endTrace()
-
-	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.bV)
-
-	var dRes []types.Artifact
-	nsMap := map[string]struct{}{}
-	valuesSet := map[string]bool{}
-
-	// Deploy every release
-	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
-		}
-		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
-		if err != nil {
-			return userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
-		}
-		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV, chartVersion)
-		if err != nil {
-			return userErr(fmt.Sprintf("deploying %q", releaseName), err)
-		}
-
-		// collect namespaces
-		for _, r := range results {
-			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
-				nsMap[trimmed] = struct{}{}
-			}
-		}
-
-		dRes = append(dRes, results...)
-	}
-
-	// Let's make sure that every image tag is set with `--set`.
-	// Otherwise, templates have no way to use the images that were built.
-	// Skip warning for multi-config projects as there can be artifacts without any usage in the current deployer.
-	if !h.isMultiConfig {
-		warnAboutUnusedImages(builds, valuesSet)
-	}
-
-	if err := label.Apply(ctx, h.labels, dRes, h.kubeContext); err != nil {
-		return helmLabelErr(fmt.Errorf("adding labels: %w", err))
-	}
-
-	// Collect namespaces in a string
-	var namespaces []string
-	for ns := range nsMap {
-		namespaces = append(namespaces, ns)
-	}
-
-	h.TrackBuildArtifacts(builds)
-	h.trackNamespaces(namespaces)
-	return nil
 }
 
 // Dependencies returns a list of files that the deployer depends on.
@@ -382,70 +298,6 @@ func (h *Deployer3) Cleanup(ctx context.Context, out io.Writer, dryRun bool) err
 		return deployerr.CleanupErr(fmt.Errorf(strings.Join(errMsgs, "\n")))
 	}
 	return nil
-}
-
-// Render generates the Kubernetes manifests and writes them out
-func (h *Deployer3) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "helm",
-	})
-	renderedManifests := new(bytes.Buffer)
-
-	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
-		}
-
-		args := []string{"template", releaseName, chartSource(r)}
-		if r.Packaged == nil && r.Version != "" {
-			args = append(args, "--version", r.Version)
-		}
-
-		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
-		if err != nil {
-			return err
-		}
-
-		for k, v := range params {
-			var value string
-
-			cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
-
-			value, err = imageSetFromConfig(cfg, k, v.Tag)
-			if err != nil {
-				return err
-			}
-
-			args = append(args, "--set-string", value)
-		}
-
-		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
-		if err != nil {
-			return userErr("construct override args", err)
-		}
-
-		namespace, err := h.releaseNamespace(r)
-		if err != nil {
-			return err
-		}
-		if namespace != "" {
-			args = append(args, "--namespace", namespace)
-		}
-
-		if r.Repo != "" {
-			args = append(args, "--repo")
-			args = append(args, r.Repo)
-		}
-
-		outBuffer := new(bytes.Buffer)
-		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
-			return userErr("std out err", fmt.Errorf(outBuffer.String()))
-		}
-		renderedManifests.Write(outBuffer.Bytes())
-	}
-
-	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
 func (h *Deployer3) HasRunnableHooks() bool {
