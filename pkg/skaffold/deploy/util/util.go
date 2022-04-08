@@ -115,24 +115,24 @@ func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]l
 	// add default values
 	for _, rf := range manifest.TransformAllowlist {
 		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
+		transformableAllowlist[groupKind] = ConvertJSONPathIndex(rf)
 	}
 	for _, rf := range manifest.TransformDenylist {
 		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableDenylist[groupKind] = convertJSONPathIndex(rf)
+		transformableDenylist[groupKind] = ConvertJSONPathIndex(rf)
 	}
 
 	// add user schema values, override defaults
 	for _, rf := range cfg.TransformAllowList() {
 		instrumentation.AddResourceFilter("schema", "allow")
 		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
+		transformableAllowlist[groupKind] = ConvertJSONPathIndex(rf)
 		delete(transformableDenylist, groupKind)
 	}
 	for _, rf := range cfg.TransformDenyList() {
 		instrumentation.AddResourceFilter("schema", "deny")
 		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableDenylist[groupKind] = convertJSONPathIndex(rf)
+		transformableDenylist[groupKind] = ConvertJSONPathIndex(rf)
 		delete(transformableAllowlist, groupKind)
 	}
 
@@ -151,14 +151,14 @@ func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]l
 		for _, rf := range rsc.Allow {
 			instrumentation.AddResourceFilter("cli-flag", "allow")
 			groupKind := schema.ParseGroupKind(rf.GroupKind)
-			transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
+			transformableAllowlist[groupKind] = ConvertJSONPathIndex(rf)
 			delete(transformableDenylist, groupKind)
 		}
 
 		for _, rf := range rsc.Deny {
 			instrumentation.AddResourceFilter("cli-flag", "deny")
 			groupKind := schema.ParseGroupKind(rf.GroupKind)
-			transformableDenylist[groupKind] = convertJSONPathIndex(rf)
+			transformableDenylist[groupKind] = ConvertJSONPathIndex(rf)
 			delete(transformableAllowlist, groupKind)
 		}
 	}
@@ -166,7 +166,7 @@ func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]l
 	return transformableAllowlist, transformableDenylist, nil
 }
 
-func convertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
+func ConvertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
 	nrf := latest.ResourceFilter{}
 	nrf.GroupKind = rf.GroupKind
 
