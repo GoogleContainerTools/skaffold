@@ -92,7 +92,7 @@ func TestRender(t *testing.T) {
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := mockConfig {
+			mockCfg := mockConfig{
 				renderConfig: test.renderConfig,
 				workingDir:   tmpDirObj.Root(),
 			}
@@ -111,8 +111,9 @@ type mockConfig struct {
 	renderConfig *latestV2.RenderConfig
 	workingDir   string
 }
-func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig { return mc.renderConfig }
-func (mc mockConfig) GetWorkingDir() string { return mc.workingDir }
+
+func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig       { return mc.renderConfig }
+func (mc mockConfig) GetWorkingDir() string                         { return mc.workingDir }
 func (mc mockConfig) TransformAllowList() []latestV2.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter { return nil }
-func (mc mockConfig) TransformRulesFile() string { return "" }
+func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter  { return nil }
+func (mc mockConfig) TransformRulesFile() string                    { return "" }

@@ -80,7 +80,6 @@ metadata:
   name: skaffold
 pipeline: {}
 `,
-
 		},
 		{
 			description: "manifests with validation rule.",
@@ -174,7 +173,7 @@ pipeline:
 				Chdir()
 			mockCfg := mockConfig{
 				renderConfig: test.renderConfig,
-				workingDir: tmpDirObj.Root(),
+				workingDir:   tmpDirObj.Root(),
 			}
 			r, err := New(mockCfg, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
@@ -264,8 +263,9 @@ type mockConfig struct {
 	renderConfig *latestV2.RenderConfig
 	workingDir   string
 }
-func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig { return mc.renderConfig }
-func (mc mockConfig) GetWorkingDir() string { return mc.workingDir }
+
+func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig       { return mc.renderConfig }
+func (mc mockConfig) GetWorkingDir() string                         { return mc.workingDir }
 func (mc mockConfig) TransformAllowList() []latestV2.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter { return nil }
-func (mc mockConfig) TransformRulesFile() string { return "" }
+func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter  { return nil }
+func (mc mockConfig) TransformRulesFile() string                    { return "" }

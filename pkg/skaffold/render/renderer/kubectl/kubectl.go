@@ -20,12 +20,13 @@ import (
 	"context"
 	"io"
 
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Kubectl struct {
@@ -44,12 +45,12 @@ func New(cfg render.Config, hydrationDir string, labels map[string]string) (Kube
 		return Kubectl{}, err
 	}
 	return Kubectl{
-		Generator: generator,
+		Generator:    generator,
 		hydrationDir: hydrationDir,
-		labels: labels,
+		labels:       labels,
 
 		transformAllowlist: transformAllowlist,
-		transformDenylist: transformDenylist,
+		transformDenylist:  transformDenylist,
 	}, nil
 }
 

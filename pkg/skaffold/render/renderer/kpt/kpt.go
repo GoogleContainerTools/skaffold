@@ -25,6 +25,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -39,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Kpt struct {
@@ -82,13 +83,13 @@ func New(cfg render.Config, hydrationDir string,
 		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
 	}
 	return &Kpt{
-		Generator: generator,
-		Validator: validator,
-		Transformer: transformer,
-		hydrationDir: hydrationDir,
-		labels: labels,
+		Generator:          generator,
+		Validator:          validator,
+		Transformer:        transformer,
+		hydrationDir:       hydrationDir,
+		labels:             labels,
 		transformAllowlist: transformAllowlist,
-		transformDenylist: transformDenylist,
+		transformDenylist:  transformDenylist,
 	}, nil
 }
 

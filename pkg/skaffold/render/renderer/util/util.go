@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	apim "k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -31,14 +33,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	apim "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
 	DryFileName = "manifests.yaml"
 )
 
-func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, hydrationDir string, labels map[string]string, transformAllowlist, transformDenylist  map[apim.GroupKind]latestV2.ResourceFilter) error {
+func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, hydrationDir string, labels map[string]string, transformAllowlist, transformDenylist map[apim.GroupKind]latestV2.ResourceFilter) error {
 	// Generate manifests.
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateManifest")
 	if err := os.MkdirAll(hydrationDir, os.ModePerm); err != nil {

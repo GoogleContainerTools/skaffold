@@ -610,7 +610,7 @@ var flagRegistry = []Flag{
 	{
 		Name: "hydration-dir",
 		Usage: fmt.Sprintf("the directory to where the (kpt) hydration takes place. "+
-		"Default to a hidden directory %s.", constants.DefaultHydrationDir),
+			"Default to a hidden directory %s.", constants.DefaultHydrationDir),
 		Value:         &opts.HydrationDir,
 		DefValue:      constants.DefaultHydrationDir,
 		FlagAddMethod: "StringVar",

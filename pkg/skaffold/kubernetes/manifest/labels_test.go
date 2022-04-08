@@ -19,9 +19,9 @@ package manifest
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

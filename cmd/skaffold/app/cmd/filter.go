@@ -66,7 +66,6 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 			return fmt.Errorf("loading manifests: %w", err)
 		}
 
-
 		manifestList, err = manifestList.SetLabels(pkgutil.EnvSliceToMap(opts.CustomLabels, "="), manifest.NewResourceSelectorLabels(manifest.TransformAllowlist, manifest.TransformDenylist))
 		if err != nil {
 			return err
