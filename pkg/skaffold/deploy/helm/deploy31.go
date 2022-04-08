@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/blang/semver"
+	
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/blang/semver"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Deployer31 deploys workflows using the helm CLI 3.1.0 or higher
@@ -32,7 +34,7 @@ type Deployer31 struct {
 	*Deployer3
 }
 
-func NewDeployer31(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy, hv semver.Version) (*Deployer31, error) {
+func NewDeployer31(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy, hv semver.Version) (*Deployer31, error) {
 	d3, err := NewBase(ctx, cfg, labeller, h, hv)
 	if err != nil {
 		return nil, err
@@ -44,7 +46,11 @@ func NewDeployer31(ctx context.Context, cfg Config, labeller *label.DefaultLabel
 
 // Deploy should ensure that the build results are deployed to the Kubernetes
 // cluster.
-func (h *Deployer31) Deploy(context.Context, io.Writer, []graph.Artifact) error {
+func (h *Deployer31) Deploy(ctx context.Context, io io.Writer, graph []graph.Artifact) error {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
+		"DeployerType": "helm31",
+	})
+	defer endTrace()
 
 	return fmt.Errorf("not yet implemented")
 }

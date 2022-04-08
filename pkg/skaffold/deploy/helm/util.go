@@ -140,19 +140,6 @@ func pairParamsToArtifacts(builds []graph.Artifact, params map[string]string) (m
 	return paramToBuildResult, nil
 }
 
-func (h *Deployer3) generateSkaffoldDebugFilter(buildsFile string) []string {
-	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
-	if len(buildsFile) > 0 {
-		args = append(args, "--build-artifacts", buildsFile)
-	}
-	args = append(args, h.Flags.Global...)
-
-	if h.kubeConfig != "" {
-		args = append(args, "--kubeconfig", h.kubeConfig)
-	}
-	return args
-}
-
 func (h *Deployer3) releaseNamespace(r latest.HelmRelease) (string, error) {
 	if h.namespace != "" {
 		return h.namespace, nil

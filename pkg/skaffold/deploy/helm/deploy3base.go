@@ -17,7 +17,6 @@ limitations under the License.
 package helm
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -30,19 +29,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
-	backoff "github.com/cenkalti/backoff/v4"
-	shell "github.com/kballard/go-shellquote"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
@@ -54,7 +47,6 @@ import (
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -62,7 +54,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/blang/semver"
+	backoff "github.com/cenkalti/backoff/v4"
 )
 
 var (
@@ -324,123 +317,6 @@ func (h *Deployer3) PostDeployHooks(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-// deployRelease deploys a single release
-func (h *Deployer3) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
-	var err error
-	opts := installOpts{
-		releaseName: releaseName,
-		upgrade:     true,
-		flags:       h.Flags.Upgrade,
-		force:       h.forceDeploy,
-		chartPath:   chartSource(r),
-		helmVersion: helmVersion,
-		repo:        r.Repo,
-		version:     chartVersion,
-	}
-
-	var installEnv []string
-	if h.enableDebug {
-		if h.bV.LT(helm31Version) {
-			return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", h.bV)
-		}
-		var binary string
-		if binary, err = osExecutable(); err != nil {
-			return nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
-		}
-		opts.postRenderer = binary
-
-		var buildsFile string
-		if len(builds) > 0 {
-			var cleanup func()
-			buildsFile, cleanup, err = writeBuildArtifacts(builds)
-			if err != nil {
-				return nil, fmt.Errorf("could not write build-artifacts: %w", err)
-			}
-			defer cleanup()
-		}
-
-		cmdLine := h.generateSkaffoldDebugFilter(buildsFile)
-
-		// need to include current environment, specifically for HOME to lookup ~/.kube/config
-		env := util.EnvSliceToMap(util.OSEnviron(), "=")
-		env["SKAFFOLD_CMDLINE"] = shell.Join(cmdLine...)
-		env["SKAFFOLD_FILENAME"] = h.configFile
-		installEnv = util.EnvMapToSlice(env, "=")
-	}
-
-	opts.namespace, err = h.releaseNamespace(r)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := h.exec(ctx, ioutil.Discard, false, nil, getArgs(releaseName, opts.namespace)...); err != nil {
-		output.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
-
-		opts.upgrade = false
-		opts.flags = h.Flags.Install
-	} else {
-		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
-			olog.Entry(ctx).Infof("Release %s already installed...", releaseName)
-			return []types.Artifact{}, nil
-		} else if r.UpgradeOnChange == nil && r.RemoteChart != "" {
-			olog.Entry(ctx).Infof("Release %s not upgraded as it is remote...", releaseName)
-			return []types.Artifact{}, nil
-		}
-	}
-
-	// Only build local dependencies, but allow a user to skip them.
-	if !r.SkipBuildDependencies && r.ChartPath != "" {
-		olog.Entry(ctx).Info("Building helm dependencies...")
-
-		if err := h.exec(ctx, out, false, nil, "dep", "build", r.ChartPath); err != nil {
-			return nil, userErr("building helm dependencies", err)
-		}
-	}
-
-	// Dump overrides to a YAML file to pass into helm
-	if len(r.Overrides.Values) != 0 {
-		overrides, err := yaml.Marshal(r.Overrides)
-		if err != nil {
-			return nil, userErr("cannot marshal overrides to create overrides values.yaml", err)
-		}
-
-		if err := ioutil.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
-			return nil, userErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
-		}
-
-		defer func() {
-			os.Remove(constants.HelmOverridesFilename)
-		}()
-	}
-
-	if r.Packaged != nil {
-		chartPath, err := h.packageChart(ctx, r)
-		if err != nil {
-			return nil, userErr("cannot package chart", err)
-		}
-
-		opts.chartPath = chartPath
-	}
-
-	args, err := h.installArgs(r, builds, valuesSet, opts)
-	if err != nil {
-		return nil, userErr("release args", err)
-	}
-
-	err = h.exec(ctx, out, r.UseHelmSecrets, installEnv, args...)
-	if err != nil {
-		return nil, userErr("install", err)
-	}
-
-	b, err := h.getReleaseManifest(ctx, releaseName, opts.namespace)
-	if err != nil {
-		return nil, userErr("get release", err)
-	}
-
-	artifacts := parseReleaseManifests(opts.namespace, bufio.NewReader(&b))
-	return artifacts, nil
-}
-
 // getReleaseManifest confirms that a release is visible to helm and returns the release manifest
 func (h *Deployer3) getReleaseManifest(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because sometimes a release may not be immediately visible
@@ -463,6 +339,19 @@ func (h *Deployer3) getReleaseManifest(ctx context.Context, releaseName string, 
 	olog.Entry(ctx).Debug(b.String())
 
 	return b, err
+}
+
+func (h *Deployer3) getInstallOpts(releaseName string, r latest.HelmRelease, helmVersion semver.Version, chartVersion string) installOpts {
+	return installOpts{
+		releaseName: releaseName,
+		upgrade:     true,
+		flags:       h.Flags.Upgrade,
+		force:       h.forceDeploy,
+		chartPath:   chartSource(r),
+		helmVersion: helmVersion,
+		repo:        r.Repo,
+		version:     chartVersion,
+	}
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive

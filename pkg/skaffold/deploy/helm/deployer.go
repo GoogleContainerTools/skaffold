@@ -21,12 +21,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // NewDeployer returns a configured Deployer3 if version is less than 3.1
 // else returns Deployer31 with post-render functionality
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy) (deploy.Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy) (deploy.Deployer, error) {
 	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
