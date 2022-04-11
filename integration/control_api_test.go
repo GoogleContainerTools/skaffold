@@ -35,6 +35,8 @@ const (
 )
 
 func TestControlAPIManualTriggers(t *testing.T) {
+	// TODO: https://github.com/GoogleContainerTools/skaffold/issues/7029
+	t.Skipf("TODO Fix: https://github.com/GoogleContainerTools/skaffold/issues/7029")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")

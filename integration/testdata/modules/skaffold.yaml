@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta24
+apiVersion: skaffold/v3beta2
 kind: Config
 requires:
   - path: app1
