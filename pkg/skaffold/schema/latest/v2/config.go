@@ -644,8 +644,8 @@ type DeployType struct {
 	// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	LegacyHelmDeploy *LegacyHelmDeploy `yaml:"helm,omitempty"`
 
-	// KptV2Deploy *alpha* uses the `kpt` v1 to manage and deploy manifests.
-	KptV2Deploy *KptDeploy `yaml:"kpt,omitempty"`
+	// KptDeploy *alpha* uses the `kpt` to manage and deploy manifests.
+	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
 
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
