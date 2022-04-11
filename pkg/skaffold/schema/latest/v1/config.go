@@ -1073,7 +1073,7 @@ type BuildpackArtifact struct {
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 
 	// Volumes support mounting host volumes into the container.
-	Volumes *[]BuildpackVolume `yaml:"volumes,omitempty"`
+	Volumes []*BuildpackVolume `yaml:"volumes,omitempty"`
 }
 
 // BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by buildpacks.

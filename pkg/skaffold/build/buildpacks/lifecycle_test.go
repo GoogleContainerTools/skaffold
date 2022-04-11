@@ -58,23 +58,23 @@ func TestLifecycleStatusCode(t *testing.T) {
 func TestContainerConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		volumes     []latestV1.BuildpackVolume
+		volumes     []*latestV1.BuildpackVolume
 		shouldErr   bool
 		expected    pack.ContainerConfig
 	}{
 		{
 			description: "single volume with no options",
-			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
+			volumes:     []*latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
 			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar"}},
 		},
 		{
 			description: "single volume with  options",
-			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar", Options: "rw"}},
+			volumes:     []*latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar", Options: "rw"}},
 			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar:rw"}},
 		},
 		{
 			description: "multiple volumes",
-			volumes: []latestV1.BuildpackVolume{
+			volumes: []*latestV1.BuildpackVolume{
 				{Host: "/foo", Target: "/bar", Options: "rw"},
 				{Host: "/bat", Target: "/baz", Options: "ro"},
 			},
@@ -82,12 +82,12 @@ func TestContainerConfig(t *testing.T) {
 		},
 		{
 			description: "missing host is skipped",
-			volumes:     []latestV1.BuildpackVolume{{Host: "", Target: "/bar"}},
+			volumes:     []*latestV1.BuildpackVolume{{Host: "", Target: "/bar"}},
 			shouldErr:   true,
 		},
 		{
 			description: "missing target is skipped",
-			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: ""}},
+			volumes:     []*latestV1.BuildpackVolume{{Host: "/foo", Target: ""}},
 			shouldErr:   true,
 		},
 	}
@@ -95,7 +95,7 @@ func TestContainerConfig(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := latestV1.BuildpackArtifact{
-				Volumes: &test.volumes,
+				Volumes: test.volumes,
 			}
 			result, err := containerConfig(&artifact)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, result)
