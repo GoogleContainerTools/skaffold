@@ -39,9 +39,9 @@ func NewCmdApply() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &opts.InventoryNamespace, Name: "inventory-namespace", Hidden: true, DefValue: "",
-				Usage: " The namespace for the ResourceGroup resource that contains the inventory"},
+				Usage: "The namespace for the ResourceGroup resource that contains the inventory"},
 			{Value: &opts.InventoryID, Name: "inventory-id", Hidden: true, DefValue: "",
-				Usage: "the inventory name, default to `.kpt-pipeline`"},
+				Usage: "The inventory name, default to `.kpt-pipeline`"},
 			{Value: &opts.InventoryName, Name: "inventory-name", Hidden: true, DefValue: "",
 				Usage: "Inventory identifier."},
 		}).
