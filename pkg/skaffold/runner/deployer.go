@@ -74,7 +74,7 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 		nonHelmDeployFound := false
 
 		for _, d := range deployerCfg {
-			if d.DockerDeploy != nil || d.KptV2Deploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
+			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
 				nonHelmDeployFound = true
 			}
 
@@ -143,12 +143,12 @@ func GetDeployer(ctx context.Context, runCtx *v2.RunContext, labeller *label.Def
 			deployers = append(deployers, deployer)
 		}
 
-		if d.KptV2Deploy != nil {
-			if d.KptV2Deploy.Dir == "" {
+		if d.KptDeploy != nil {
+			if d.KptDeploy.Dir == "" {
 				log.Entry(context.TODO()).Infof("manifests are deployed from render path %v\n", hydrationDir)
-				d.KptV2Deploy.Dir = hydrationDir
+				d.KptDeploy.Dir = hydrationDir
 			}
-			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptV2Deploy, runCtx.Opts)
+			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts)
 			if err != nil {
 				return nil, err
 			}

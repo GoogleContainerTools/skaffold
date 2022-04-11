@@ -101,7 +101,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "kpt deployer",
 				cfg: latestV2.Pipeline{
 					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptDeploy{}},
+						DeployType: latestV2.DeployType{KptDeploy: &latestV2.KptDeploy{}},
 					},
 				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
@@ -112,7 +112,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "apply forces creation of kubectl deployer with kpt config",
 				cfg: latestV2.Pipeline{
 					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{KptV2Deploy: &latestV2.KptDeploy{}},
+						DeployType: latestV2.DeployType{KptDeploy: &latestV2.KptDeploy{}},
 					},
 				},
 				apply: true,
@@ -144,7 +144,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				cfg: latestV2.Pipeline{
 					Deploy: latestV2.DeployConfig{
 						DeployType: latestV2.DeployType{
-							KptV2Deploy:      &latestV2.KptDeploy{},
+							KptDeploy:        &latestV2.KptDeploy{},
 							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 						},
 					},
