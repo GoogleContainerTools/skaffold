@@ -43,14 +43,14 @@ func GetLatestVersion() (string, bool) {
 	}
 
 	logrus.Infof("Checking for released status of %s...", current)
-	lastReleased := getLastReleasedConfigVersion()
+	lastReleased := GetLastReleasedVersion()
 	logrus.Infof("Last released version: %s", lastReleased)
 
 	latestIsReleased := lastReleased == current
 	return current, latestIsReleased
 }
 
-func getLastReleasedConfigVersion() string {
+func GetLastReleasedVersion() string {
 	lastTag, err := update.DownloadLatestVersion()
 	if err != nil {
 		logrus.Fatalf("error getting latest version: %s", err)
