@@ -55,7 +55,7 @@ func newNamespaceCollector() *namespaceCollector {
 }
 
 func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
-	if k != "metadata" {
+	if k != metadataField {
 		return true
 	}
 

@@ -196,6 +196,13 @@ func getLinesAndColsOfString(str string) (int, int) {
 
 func buildMapOfSchemaObjPointerToYAMLInfos(sourceFile string, config *latestV1.SkaffoldConfig, yamlInfos map[uintptr]map[string]YAMLInfo,
 	fieldsOverrodeByProfile map[string]YAMLOverrideInfo) (map[uintptr]map[string]YAMLInfo, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Entry(context.TODO()).Errorf(
+				"panic occurred during schema reflection for yaml line number information: %v", err)
+		}
+	}()
+
 	skaffoldConfigText, err := util.ReadConfiguration(sourceFile)
 	if err != nil {
 		return nil, sErrors.ConfigParsingError(err)
@@ -204,16 +211,15 @@ func buildMapOfSchemaObjPointerToYAMLInfos(sourceFile string, config *latestV1.S
 	if err != nil {
 		return nil, err
 	}
-	// TODO(aaron-prindle) perhaps add some defensive logic to recover from panic when using reflection and instead return error?
+
 	return generateObjPointerToYAMLNodeMap(sourceFile, reflect.ValueOf(config), reflect.ValueOf(nil), "", "", []string{},
-		root, root, -1, fieldsOverrodeByProfile, map[interface{}]bool{}, yamlInfos, false)
+		root, root, -1, fieldsOverrodeByProfile, yamlInfos, false)
 }
 
 // generateObjPointerToYAMLNodeMap recursively walks through a structs fields (taking into account profile and patch profile overrides)
 // and collects the corresponding yaml node for each field
 func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV reflect.Value, fieldName, yamlTag string, schemaPath []string,
-	rootRNode *kyaml.RNode, rNode *kyaml.RNode, containerIdx int, fieldPathsOverrodeByProfiles map[string]YAMLOverrideInfo,
-	visited map[interface{}]bool, yamlInfos map[uintptr]map[string]YAMLInfo, isPatchProfileElemOverride bool) (map[uintptr]map[string]YAMLInfo, error) {
+	rootRNode *kyaml.RNode, rNode *kyaml.RNode, containerIdx int, fieldPathsOverrodeByProfiles map[string]YAMLOverrideInfo, yamlInfos map[uintptr]map[string]YAMLInfo, isPatchProfileElemOverride bool) (map[uintptr]map[string]YAMLInfo, error) {
 	// TODO(aaron-prindle) need to verify if generateObjPointerToYAMLNodeMap adds entries for 'map' types, luckily the skaffold schema
 	// only has map[string]string and they are leaf nodes as well which this should work fine for doing the recursion for the time being
 	var err error
@@ -278,13 +284,6 @@ func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV
 
 	// drill down through pointers and interfaces to get a value we can use
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-		if v.Kind() == reflect.Ptr {
-			// Check for recursive data
-			if visited[v.Interface()] {
-				return yamlInfos, nil
-			}
-			visited[v.Interface()] = true
-		}
 		v = v.Elem()
 	}
 
@@ -342,7 +341,7 @@ func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV
 	case reflect.Slice, reflect.Array:
 		for i := 0; i < v.Len(); i++ {
 			generateObjPointerToYAMLNodeMap(sourceFile, v.Index(i), v, fieldName+"["+strconv.Itoa(i)+"]", yamlTag+"["+strconv.Itoa(i)+"]", schemaPath,
-				rootRNode, rNode, i, fieldPathsOverrodeByProfiles, visited, yamlInfos, isPatchProfileElemOverride)
+				rootRNode, rNode, i, fieldPathsOverrodeByProfiles, yamlInfos, isPatchProfileElemOverride)
 		}
 	case reflect.Struct:
 		t := v.Type() // use type to get number and names of fields
@@ -359,7 +358,7 @@ func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV
 				newYamlTag = yamlTagToken[:commaIdx]
 			}
 			generateObjPointerToYAMLNodeMap(sourceFile, v.Field(i), v, field.Name, newYamlTag, schemaPath, rootRNode, rNode, -1,
-				fieldPathsOverrodeByProfiles, visited, yamlInfos, isPatchProfileElemOverride)
+				fieldPathsOverrodeByProfiles, yamlInfos, isPatchProfileElemOverride)
 		}
 	}
 	return yamlInfos, nil

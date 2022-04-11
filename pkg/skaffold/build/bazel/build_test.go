@@ -31,7 +31,9 @@ import (
 func TestBuildBazel(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Mkdir("bin").Chdir()
-		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut("bazel info bazel-bin", "bin"))
+		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
+			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
+			"bin/app.tar"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
 		artifact := &latestV1.Artifact{
@@ -67,28 +69,21 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 	})
 }
 
-func TestBazelBin(t *testing.T) {
+func TestBazelTarPath(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
-			"bazel info bazel-bin --arg1 --arg2",
+			"bazel cquery //:skaffold_example.tar --output starlark --starlark:expr target.files.to_list()[0].path --arg1 --arg2",
 			"/absolute/path/bin\n",
 		))
 
-		bazelBin, err := bazelBin(context.Background(), ".", &latestV1.BazelArtifact{
-			BuildArgs: []string{"--arg1", "--arg2"},
+		bazelBin, err := bazelTarPath(context.Background(), ".", &latestV1.BazelArtifact{
+			BuildArgs:   []string{"--arg1", "--arg2"},
+			BuildTarget: "//:skaffold_example.tar",
 		})
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("/absolute/path/bin", bazelBin)
 	})
-}
-
-func TestBuildTarPath(t *testing.T) {
-	buildTarget := "//:skaffold_example.tar"
-
-	tarPath := buildTarPath(buildTarget)
-
-	testutil.CheckDeepEqual(t, "skaffold_example.tar", tarPath)
 }
 
 func TestBuildImageTag(t *testing.T) {
