@@ -108,11 +108,6 @@ func runContext(ctx context.Context, out io.Writer, opts config.SkaffoldOptions)
 func withFallbackConfig(ctx context.Context, out io.Writer, opts config.SkaffoldOptions, getCfgs func(context.Context, config.SkaffoldOptions) (parser.SkaffoldConfigSet, error)) (parser.SkaffoldConfigSet, error) {
 	configs, err := getCfgs(ctx, opts)
 	if err == nil {
-		// do not set a default deployer in a multi-config application.
-		if len(configs) == 1 {
-			defaults.SetDefaultRenderer(configs[0].SkaffoldConfig)
-			defaults.SetDefaultDeployer(configs[0].SkaffoldConfig)
-		}
 		return configs, nil
 	}
 	var e sErrors.Error

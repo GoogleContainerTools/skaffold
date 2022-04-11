@@ -341,8 +341,8 @@ func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.Ma
 
 	// v1 kubectl deployer is used. No manifest hydration.
 	if len(k.KubectlDeploy.Manifests) > 0 {
-		olog.Entry(ctx).Warnln("`deploy.kubectl.manfiests` (DEPRECATED) are given, skaffold will skip the `manifests` field. " +
-			"If you expect skaffold to render the resources from the `manifests`, please delete the `deploy.kubectl.manfiests` field.")
+		olog.Entry(ctx).Warnln("`deploy.kubectl.manifests` (DEPRECATED) are given, skaffold will skip the `manifests` field. " +
+			"If you expect skaffold to render the resources from the `manifests`, please delete the `deploy.kubectl.manifests` field.")
 		manifests, err = k.Dependencies()
 		if err != nil {
 			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
