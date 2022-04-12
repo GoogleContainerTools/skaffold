@@ -23,15 +23,15 @@ import (
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type ResourceSelectorLabels struct {
-	allowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
-	denylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
+	allowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	denylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func NewResourceSelectorLabels(allowlist map[apimachinery.GroupKind]latestV1.ResourceFilter, denylist map[apimachinery.GroupKind]latestV1.ResourceFilter) *ResourceSelectorLabels {
+func NewResourceSelectorLabels(allowlist map[apimachinery.GroupKind]latest.ResourceFilter, denylist map[apimachinery.GroupKind]latest.ResourceFilter) *ResourceSelectorLabels {
 	return &ResourceSelectorLabels{
 		allowlist: allowlist,
 		denylist:  denylist,

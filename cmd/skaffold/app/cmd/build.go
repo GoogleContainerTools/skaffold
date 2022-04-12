@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -95,10 +95,10 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func targetArtifacts(opts config.SkaffoldOptions, configs []util.VersionedConfig) []*latestV1.Artifact {
-	var targetArtifacts []*latestV1.Artifact
+func targetArtifacts(opts config.SkaffoldOptions, configs []util.VersionedConfig) []*latest.Artifact {
+	var targetArtifacts []*latest.Artifact
 	for _, cfg := range configs {
-		for _, artifact := range cfg.(*latestV1.SkaffoldConfig).Build.Artifacts {
+		for _, artifact := range cfg.(*latest.SkaffoldConfig).Build.Artifacts {
 			if opts.IsTargetImage(artifact) {
 				targetArtifacts = append(targetArtifacts, artifact)
 			}

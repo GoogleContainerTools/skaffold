@@ -26,15 +26,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type ResourceSelectorImages struct {
-	allowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
-	denylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
+	allowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	denylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func NewResourceSelectorImages(allowlist map[apimachinery.GroupKind]latestV1.ResourceFilter, denylist map[apimachinery.GroupKind]latestV1.ResourceFilter) *ResourceSelectorImages {
+func NewResourceSelectorImages(allowlist map[apimachinery.GroupKind]latest.ResourceFilter, denylist map[apimachinery.GroupKind]latest.ResourceFilter) *ResourceSelectorImages {
 	return &ResourceSelectorImages{
 		allowlist: allowlist,
 		denylist:  denylist,

@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -61,12 +61,12 @@ func runDev(ctx context.Context, out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			// Note: The latestV1.SkaffoldConfig is used for both latestV1 schema and latestV2 schema because
-			// the latestV1 and latestV2 use the same Build struct. Ideally they should be separated.
+			// Note: The latest.SkaffoldConfig is used for both latest schema and latestV2 schema because
+			// the latest and latestV2 use the same Build struct. Ideally they should be separated.
 			err := withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-				var artifacts []*latestV1.Artifact
+				var artifacts []*latest.Artifact
 				for _, cfg := range configs {
-					artifacts = append(artifacts, cfg.(*latestV1.SkaffoldConfig).Build.Artifacts...)
+					artifacts = append(artifacts, cfg.(*latest.SkaffoldConfig).Build.Artifacts...)
 				}
 				err := r.Dev(ctx, out, artifacts)
 

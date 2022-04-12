@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -47,7 +47,7 @@ func NewCmdFix() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
-			{Value: &toVersion, Name: "version", DefValue: latestV1.Version, Usage: "Target schema version to upgrade to"},
+			{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
 			{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
 		}).
 		NoArgs(doFix)
@@ -96,11 +96,11 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 
 	// TODO(dgageot): We should be able run validations on any schema version
 	// but that's not the case. They can only run on the latest version for now.
-	if toVersion == latestV1.Version {
+	if toVersion == latest.Version {
 		var cfgs parser.SkaffoldConfigSet
 		for _, cfg := range versionedCfgs {
 			cfgs = append(cfgs, &parser.SkaffoldConfigEntry{
-				SkaffoldConfig: cfg.(*latestV1.SkaffoldConfig),
+				SkaffoldConfig: cfg.(*latest.SkaffoldConfig),
 				SourceFile:     configFile,
 				IsRootConfig:   true})
 		}

@@ -29,7 +29,7 @@ import (
 	"golang.org/x/tools/go/packages"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Build an artifact using ko, and either push it to an image registry, or
@@ -37,7 +37,7 @@ import (
 // Build prints the image name to the out io.Writer and returns the image
 // identifier. The image identifier is the tag or digest for pushed images, or
 // the docker image ID for sideloaded images.
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, ref string, platforms platform.Matcher) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, ref string, platforms platform.Matcher) (string, error) {
 	if b.pushImages && strings.HasPrefix(ref, build.StrictScheme) {
 		return "", fmt.Errorf("default repo must be set when using the 'ko://' prefix and pushing to a registry: %s, see https://skaffold.dev/docs/environment/image-registries/", a.ImageName)
 	}
@@ -63,7 +63,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
 // buildAndPublish the image using the ko builder and publisher.
-func (b *Builder) buildAndPublish(ctx context.Context, a *latestV1.Artifact, koBuilder build.Interface, koPublisher publish.Interface) (name.Reference, error) {
+func (b *Builder) buildAndPublish(ctx context.Context, a *latest.Artifact, koBuilder build.Interface, koPublisher publish.Interface) (name.Reference, error) {
 	importpath, err := getImportPath(a)
 	if err != nil {
 		return nil, fmt.Errorf("could not determine Go import path for ko image %q: %w", a.ImageName, err)
@@ -90,7 +90,7 @@ func (b *Builder) buildAndPublish(ctx context.Context, a *latestV1.Artifact, koB
 //
 // If the image name does _not_ start with `ko://`, determine the Go import
 // path of the image workspace directory.
-func getImportPath(a *latestV1.Artifact) (string, error) {
+func getImportPath(a *latest.Artifact) (string, error) {
 	if strings.HasPrefix(a.ImageName, build.StrictScheme) {
 		return a.ImageName, nil
 	}

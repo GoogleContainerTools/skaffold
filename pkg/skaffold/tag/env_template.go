@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"text/template"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -43,7 +43,7 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 }
 
 // GenerateTag generates a tag from a template referencing environment variables.
-func (t *envTemplateTagger) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
+func (t *envTemplateTagger) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
 	// missingkey=error throws error when map is indexed with an undefined key
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME": image.ImageName,

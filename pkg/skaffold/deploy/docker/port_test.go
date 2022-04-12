@@ -22,7 +22,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -31,11 +31,11 @@ import (
 func TestAllocatePorts(t *testing.T) {
 	tests := []struct {
 		name      string
-		resources map[int]*v1.PortForwardResource // we map local port to resources for ease of testing
+		resources map[int]*latest.PortForwardResource // we map local port to resources for ease of testing
 	}{
 		{
 			name: "one port, one resource",
-			resources: map[int]*v1.PortForwardResource{
+			resources: map[int]*latest.PortForwardResource{
 				9000: {
 					Type: "container",
 					Port: schemautil.IntOrString{
@@ -49,7 +49,7 @@ func TestAllocatePorts(t *testing.T) {
 		},
 		{
 			name: "two ports, two resources",
-			resources: map[int]*v1.PortForwardResource{
+			resources: map[int]*latest.PortForwardResource{
 				1234: {
 					Type: "container",
 					Port: schemautil.IntOrString{
@@ -92,15 +92,15 @@ func TestAllocatePorts(t *testing.T) {
 	}
 }
 
-func collectResources(resourceMap map[int]*v1.PortForwardResource) []*v1.PortForwardResource {
-	var resources []*v1.PortForwardResource
+func collectResources(resourceMap map[int]*latest.PortForwardResource) []*latest.PortForwardResource {
+	var resources []*latest.PortForwardResource
 	for _, r := range resourceMap {
 		resources = append(resources, r)
 	}
 	return resources
 }
 
-func resourceFromContainerPort(resourceMap map[int]*v1.PortForwardResource, containerPort int) *v1.PortForwardResource {
+func resourceFromContainerPort(resourceMap map[int]*latest.PortForwardResource, containerPort int) *latest.PortForwardResource {
 	for _, resource := range resourceMap {
 		if resource.Port.IntVal == containerPort {
 			return resource

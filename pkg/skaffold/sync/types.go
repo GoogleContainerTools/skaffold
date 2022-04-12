@@ -22,14 +22,14 @@ import (
 
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type syncMap map[string][]string
 
 type Item struct {
 	Image    string
-	Artifact *v1.Artifact
+	Artifact *latest.Artifact
 	Copy     map[string][]string
 	Delete   map[string][]string
 }

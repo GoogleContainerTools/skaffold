@@ -70,7 +70,7 @@ to be submitted.
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Open the latest Config at [pkg/skaffold/schema/latest/v1/config.go](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/v1/config.go) and inspect the comment at [L28](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/v1/config.go#L28)
+* Open the latest Config at [pkg/skaffold/schema/latest/config.go](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/config.go) and inspect the comment at [L28](https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/schema/latest/config.go#L28)
 * If the line mentions the config version is not released, proceed making your changes.
   ```
   // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.

@@ -47,7 +47,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -107,7 +107,7 @@ type secretGenerator struct {
 
 // Deployer deploys workflows using kustomize CLI.
 type Deployer struct {
-	*latestV1.KustomizeDeploy
+	*latest.KustomizeDeploy
 
 	accessor      access.Accessor
 	logger        log.Logger
@@ -129,11 +129,11 @@ type Deployer struct {
 
 	namespaces *[]string
 
-	transformableAllowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
-	transformableDenylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
+	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latest.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error

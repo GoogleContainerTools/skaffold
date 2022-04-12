@@ -163,7 +163,7 @@ If `main` is a relative path (and it will be most of the time), it is
 relative to the current
 [`context`](https://skaffold.dev/docs/references/yaml/#build-artifacts-context)
 (a.k.a.
-[`Workspace`](https://github.com/GoogleContainerTools/skaffold/blob/v1.27.0/pkg/skaffold/schema/latest/v1/config.go#L832))
+[`Workspace`](https://github.com/GoogleContainerTools/skaffold/blob/v1.27.0/pkg/skaffold/schema/latest/config.go#L832))
 directory.
 
 For example, to build Skaffold itself, with `package main` in the

@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -205,10 +205,10 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 				if err != nil {
 					t.Fatalf("error creating Dockerfile %s: %v", dfp, err)
 				}
-				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-					Metadata: v1.Metadata{Name: module},
-					Pipeline: v1.Pipeline{Build: v1.BuildConfig{Artifacts: []*v1.Artifact{{Workspace: "",
-						ArtifactType: v1.ArtifactType{DockerArtifact: &v1.DockerArtifact{DockerfilePath: dfp}}}}}},
+				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: module},
+					Pipeline: latest.Pipeline{Build: latest.BuildConfig{Artifacts: []*latest.Artifact{{Workspace: "",
+						ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{DockerfilePath: dfp}}}}}},
 				},
 					SourceFile: fp,
 				})

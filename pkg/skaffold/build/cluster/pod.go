@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
@@ -38,7 +38,7 @@ const (
 	nodeArchitectureLabel    = "kubernetes.io/arch"
 )
 
-func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string, platforms platform.Matcher) (*v1.Pod, error) {
+func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, platforms platform.Matcher) (*v1.Pod, error) {
 	args, err := kanikoArgs(artifact, tag, b.cfg.GetInsecureRegistries())
 	if err != nil {
 		return nil, fmt.Errorf("building args list: %w", err)
@@ -148,7 +148,7 @@ func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string, p
 	return pod, nil
 }
 
-func (b *Builder) env(artifact *latestV1.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
+func (b *Builder) env(artifact *latest.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
 	env := []v1.EnvVar{{
 		// This should be same https://github.com/GoogleContainerTools/kaniko/blob/77cfb912f3483c204bfd09e1ada44fd200b15a78/pkg/executor/push.go#L49
 		Name:  "UPSTREAM_CLIENT_TYPE",
@@ -222,7 +222,7 @@ func addHostPathVolume(pod *v1.Pod, name, mountPath, path string) {
 	})
 }
 
-func resourceRequirements(rr *latestV1.ResourceRequirements) v1.ResourceRequirements {
+func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequirements {
 	req := v1.ResourceRequirements{}
 
 	if rr != nil {
@@ -265,7 +265,7 @@ func resourceRequirements(rr *latestV1.ResourceRequirements) v1.ResourceRequirem
 	return req
 }
 
-func kanikoArgs(artifact *latestV1.KanikoArtifact, tag string, insecureRegistries map[string]bool) ([]string, error) {
+func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries map[string]bool) ([]string, error) {
 	for reg := range insecureRegistries {
 		artifact.InsecureRegistry = append(artifact.InsecureRegistry, reg)
 	}

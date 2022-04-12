@@ -26,15 +26,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func NewSyncRunner(cli *kubectl.CLI, imageName, imageRef string, namespaces []string, formatter logger.Formatter, d v1.SyncHooks, opts SyncEnvOpts) Runner {
+func NewSyncRunner(cli *kubectl.CLI, imageName, imageRef string, namespaces []string, formatter logger.Formatter, d latest.SyncHooks, opts SyncEnvOpts) Runner {
 	return syncRunner{d, cli, imageName, imageRef, namespaces, formatter, opts}
 }
 
-func NewSyncEnvOpts(a *v1.Artifact, image string, addOrModifyFiles []string, deleteFiles []string, namespaces []string, kubeContext string) (SyncEnvOpts, error) {
+func NewSyncEnvOpts(a *latest.Artifact, image string, addOrModifyFiles []string, deleteFiles []string, namespaces []string, kubeContext string) (SyncEnvOpts, error) {
 	workDir, err := filepath.Abs(a.Workspace)
 	if err != nil {
 		return SyncEnvOpts{}, fmt.Errorf("determining build workspace directory for image %v: %w", a.ImageName, err)
@@ -50,7 +50,7 @@ func NewSyncEnvOpts(a *v1.Artifact, image string, addOrModifyFiles []string, del
 }
 
 type syncRunner struct {
-	v1.SyncHooks
+	latest.SyncHooks
 	cli        *kubectl.CLI
 	imageName  string
 	imageRef   string
@@ -73,7 +73,7 @@ func (r syncRunner) getEnv() []string {
 	return append(common, sync...)
 }
 
-func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []v1.SyncHookItem, phase phase) error {
+func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []latest.SyncHookItem, phase phase) error {
 	if len(hooks) > 0 {
 		output.Default.Fprintf(out, "Starting %s hooks for artifact %q...\n", phase, r.imageName)
 	}

@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -98,13 +98,13 @@ func TestIsImageLocal(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					PushImages: config.NewBoolOrUndefined(test.pushImagesFlagVal),
 				},
-				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
-					Build: latestV1.BuildConfig{
-						Artifacts: []*latestV1.Artifact{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{
 							{ImageName: imageName},
 						},
-						BuildType: latestV1.BuildType{
-							LocalBuild: &latestV1.LocalBuild{
+						BuildType: latest.BuildType{
+							LocalBuild: &latest.LocalBuild{
 								Push: test.localBuildConfig,
 							},
 						},

@@ -28,7 +28,7 @@ import (
 	yamlv2 "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func CreateSkaffoldProfile(out io.Writer, namespace string, configFile *ConfigFile) error {
@@ -67,7 +67,7 @@ confirmLoop:
 		return fmt.Errorf("generating profile \"oncluster\": %w", err)
 	}
 
-	bProfile, err := yamlv2.Marshal([]*latestV1.Profile{profile})
+	bProfile, err := yamlv2.Marshal([]*latest.Profile{profile})
 	if err != nil {
 		return fmt.Errorf("marshaling new profile: %w", err)
 	}
@@ -105,16 +105,16 @@ confirmLoop:
 	return nil
 }
 
-func generateProfile(out io.Writer, namespace string, config *latestV1.SkaffoldConfig) (*latestV1.Profile, error) {
+func generateProfile(out io.Writer, namespace string, config *latest.SkaffoldConfig) (*latest.Profile, error) {
 	if len(config.Build.Artifacts) == 0 {
 		return nil, errors.New("no Artifacts to add to profile")
 	}
 
-	profile := &latestV1.Profile{
+	profile := &latest.Profile{
 		Name: "oncluster",
-		Pipeline: latestV1.Pipeline{
+		Pipeline: latest.Pipeline{
 			Build:  config.Pipeline.Build,
-			Deploy: latestV1.DeployConfig{},
+			Deploy: latest.DeployConfig{},
 		},
 	}
 
@@ -125,20 +125,20 @@ func generateProfile(out io.Writer, namespace string, config *latestV1.SkaffoldC
 		if artifact.DockerArtifact != nil {
 			output.Default.Fprintf(out, "Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
 			artifact.DockerArtifact = nil
-			artifact.KanikoArtifact = &latestV1.KanikoArtifact{}
+			artifact.KanikoArtifact = &latest.KanikoArtifact{}
 			addKaniko = true
 		}
 	}
 	// Add kaniko config to build config if needed
 	if addKaniko {
-		profile.Build.Cluster = &latestV1.ClusterDetails{
+		profile.Build.Cluster = &latest.ClusterDetails{
 			PullSecretName: "kaniko-secret",
 		}
 		profile.Build.LocalBuild = nil
 	}
 	if namespace != "" {
 		if profile.Build.Cluster == nil {
-			profile.Build.Cluster = &latestV1.ClusterDetails{}
+			profile.Build.Cluster = &latest.ClusterDetails{}
 		}
 		profile.Build.Cluster.Namespace = namespace
 	}

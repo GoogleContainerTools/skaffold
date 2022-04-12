@@ -26,10 +26,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (b *Builder) buildpackBuildSpec(artifact *latestV1.BuildpackArtifact, tag string, deps []*latestV1.ArtifactDependency) (cloudbuild.Build, error) {
+func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag string, deps []*latest.ArtifactDependency) (cloudbuild.Build, error) {
 	args := []string{"pack", "build", tag, "--builder", fromRequiredArtifacts(artifact.Builder, b.artifactStore, deps)}
 
 	if artifact.ProjectDescriptor != constants.DefaultProjectDescriptor {
@@ -67,7 +67,7 @@ func (b *Builder) buildpackBuildSpec(artifact *latestV1.BuildpackArtifact, tag s
 }
 
 // fromRequiredArtifacts replaces the provided image name with image from the required artifacts if matched.
-func fromRequiredArtifacts(imageName string, r docker.ArtifactResolver, deps []*latestV1.ArtifactDependency) string {
+func fromRequiredArtifacts(imageName string, r docker.ArtifactResolver, deps []*latest.ArtifactDependency) string {
 	for _, d := range deps {
 		if imageName == d.Alias {
 			image, found := r.GetImageTag(d.ImageName)

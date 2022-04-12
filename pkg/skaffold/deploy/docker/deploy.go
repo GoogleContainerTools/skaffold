@@ -40,7 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	pkgsync "github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
@@ -52,18 +52,18 @@ type Deployer struct {
 	monitor  status.Monitor
 	syncer   pkgsync.Syncer
 
-	cfg                *v1.DockerDeploy
+	cfg                *latest.DockerDeploy
 	tracker            *tracker.ContainerTracker
 	portManager        *PortManager // functions as Accessor
 	client             dockerutil.LocalDaemon
 	network            string
 	globalConfig       string
 	insecureRegistries map[string]bool
-	resources          []*v1.PortForwardResource
+	resources          []*latest.PortForwardResource
 	once               sync.Once
 }
 
-func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *v1.DockerDeploy, resources []*v1.PortForwardResource) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *latest.DockerDeploy, resources []*latest.PortForwardResource) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err

@@ -22,7 +22,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -182,8 +182,8 @@ func TestCloneThroughJSON(t *testing.T) {
 			old: map[string]string{
 				"projectId": "unit-test",
 			},
-			new: &latestV1.GoogleCloudBuild{},
-			expected: &latestV1.GoogleCloudBuild{
+			new: &latest.GoogleCloudBuild{},
+			expected: &latest.GoogleCloudBuild{
 				ProjectID: "unit-test",
 			},
 		},
@@ -209,8 +209,8 @@ func TestCloneThroughYAML(t *testing.T) {
 			old: map[string]string{
 				"projectId": "unit-test",
 			},
-			new: &latestV1.GoogleCloudBuild{},
-			expected: &latestV1.GoogleCloudBuild{
+			new: &latest.GoogleCloudBuild{},
+			expected: &latest.GoogleCloudBuild{
 				ProjectID: "unit-test",
 			},
 		},

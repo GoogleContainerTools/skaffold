@@ -48,7 +48,7 @@ _* *.image (changes `image:` value to be the skaffold built image ONLY IF skaffo
 
 The GroupKind's that Skaffold manages (via resource field overwriting) are user configurable via the `resourceSelector:` top level configuration.  The `resourceSelector` configuration allows users to modify and extend which resources and what fields of those resources skaffold modifies.  Currently skaffold only supports `label:` and `.metadata.labels` related modifications.
 (TODO add `resourceSelector` schema overview and allowable inputs)
-`resourceSelector` spec (from `pkg/skaffold/schema/latest/v1/config.go`)
+`resourceSelector` spec (from `pkg/skaffold/schema/latest/config.go`)
 ```
 // ResourceSelector describes user defined filters describing how skaffold should treat objects/fields during rendering.
 ResourceSelector ResourceSelectorConfig `yaml:"resourceSelector,omitempty"`

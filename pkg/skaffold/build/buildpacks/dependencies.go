@@ -20,11 +20,11 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // GetDependencies returns dependencies listed for a buildpack artifact
-func GetDependencies(ctx context.Context, workspace string, a *latestV1.BuildpackArtifact) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, a *latest.BuildpackArtifact) ([]string, error) {
 	// TODO(dgageot): Support project.toml include/exclude.
 	return list.Files(workspace, a.Dependencies.Paths, a.Dependencies.Ignore)
 }

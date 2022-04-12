@@ -71,7 +71,7 @@ Is there any need to work out a deny list?
 
 ## Implementation plan
 
-1. `pkg/skaffold/schema/latest/v1/config.go` - Add config option
+1. `pkg/skaffold/schema/latest/config.go` - Add config option
 `transformableAllowList` to `DeployConfig`.
 2. `pkg/skaffold/kubernetes/manifest/visitor.go` - Refactor allowlist and add
 new parameter `transformableAllowList` to `*ManifestList.Visit()` by appending

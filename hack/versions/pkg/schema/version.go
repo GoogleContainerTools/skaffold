@@ -25,15 +25,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 )
 
 func GetLatestVersion() (string, bool) {
-	current := strings.TrimPrefix(latestV1.Version, "skaffold/")
+	current := strings.TrimPrefix(latest.Version, "skaffold/")
 	logrus.Debugf("Current Skaffold version: %s", current)
 
-	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/v1/config.go")
+	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/config.go")
 	if err != nil {
 		logrus.Fatalf("failed to read latest config: %s", err)
 	}
@@ -58,7 +58,7 @@ func getLastReleasedConfigVersion() string {
 	logrus.Infof("last release tag: %s", lastTag)
 	// we split the config in v1.25.0
 	for _, url := range []string{
-		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/v1/config.go", lastTag),
+		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
 		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
 	} {
 		resp, err := http.Get(url)

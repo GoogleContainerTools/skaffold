@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -34,7 +34,7 @@ func TestListPlain(t *testing.T) {
 		t.CheckNoError(err)
 
 		versions := out.String()
-		t.CheckTrue(strings.HasSuffix(versions, latestV1.Version+"\n"))
+		t.CheckTrue(strings.HasSuffix(versions, latest.Version+"\n"))
 		t.CheckTrue(strings.HasPrefix(versions, `skaffold/v1alpha1
 skaffold/v1alpha2
 skaffold/v1alpha3
@@ -71,7 +71,7 @@ func TestListJson(t *testing.T) {
 
 		versions := out.String()
 		t.CheckTrue(strings.HasPrefix(versions, `{"versions":["skaffold/v1alpha1","skaffold/v1alpha2",`))
-		t.CheckTrue(strings.HasSuffix(versions, fmt.Sprintf(",\"%s\"]}\n", latestV1.Version)))
+		t.CheckTrue(strings.HasSuffix(versions, fmt.Sprintf(",\"%s\"]}\n", latest.Version)))
 	})
 }
 

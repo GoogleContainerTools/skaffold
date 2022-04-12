@@ -33,7 +33,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -69,7 +69,7 @@ func TestGetLogEvents(t *testing.T) {
 
 func TestGetState(t *testing.T) {
 	ev := newHandler()
-	ev.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	ev.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	ev.stateLock.Lock()
 	ev.state.BuildState.Artifacts["img"] = Complete
@@ -84,7 +84,7 @@ func TestDeployInProgress(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 	DeployInProgress()
@@ -95,7 +95,7 @@ func TestDeployFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 	DeployFailed(errors.New("BUG"))
@@ -109,7 +109,7 @@ func TestDeployComplete(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 	DeployComplete()
@@ -123,7 +123,7 @@ func TestTestInProgress(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
 	TestInProgress()
@@ -134,7 +134,7 @@ func TestTestFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
 	TestFailed("img", errors.New("BUG"))
@@ -149,7 +149,7 @@ func TestTestComplete(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
 	TestComplete()
@@ -160,8 +160,8 @@ func TestBuildInProgress(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{Build: latestV1.BuildConfig{
-		Artifacts: []*latestV1.Artifact{{
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{Build: latest.BuildConfig{
+		Artifacts: []*latest.Artifact{{
 			ImageName: "img",
 		}},
 	}}}, "test"))
@@ -175,8 +175,8 @@ func TestBuildFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{Build: latestV1.BuildConfig{
-		Artifacts: []*latestV1.Artifact{{
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{Build: latest.BuildConfig{
+		Artifacts: []*latest.Artifact{{
 			ImageName: "img",
 		}},
 	}}}, "test"))
@@ -193,8 +193,8 @@ func TestBuildComplete(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{Build: latestV1.BuildConfig{
-		Artifacts: []*latestV1.Artifact{{
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{Build: latest.BuildConfig{
+		Artifacts: []*latest.Artifact{{
 			ImageName: "img",
 		}},
 	}}}, "test"))
@@ -208,7 +208,7 @@ func TestPortForwarded(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
 	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
@@ -227,7 +227,7 @@ func TestPortForwarded_handleNil(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 	handler.setState(handler.getState())
 
 	if handler.getState().ForwardedPorts != nil {
@@ -241,7 +241,7 @@ func TestStatusCheckEventStarted(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	StatusCheckEventStarted()
@@ -252,7 +252,7 @@ func TestStatusCheckEventInProgress(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	StatusCheckEventInProgress("[2/5 deployment(s) are still pending]")
@@ -263,7 +263,7 @@ func TestStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	statusCheckEventSucceeded()
@@ -274,7 +274,7 @@ func TestStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	StatusCheckEventEnded(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, errors.New("one or more deployments failed"))
@@ -288,7 +288,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	ResourceStatusCheckEventUpdated("ns:pod/foo", &proto.ActionableErr{
@@ -302,7 +302,7 @@ func TestResourceStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	resourceStatusCheckEventSucceeded("ns:pod/foo")
@@ -313,7 +313,7 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
 	resourceStatusCheckEventFailed("ns:pod/foo", &proto.ActionableErr{
@@ -327,7 +327,7 @@ func TestFileSyncInProgress(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
 	FileSyncInProgress(5, "image")
@@ -338,7 +338,7 @@ func TestFileSyncFailed(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
 	FileSyncFailed(5, "image", errors.New("BUG"))
@@ -349,7 +349,7 @@ func TestFileSyncSucceeded(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
 	FileSyncSucceeded(5, "image")
@@ -360,7 +360,7 @@ func TestDebuggingContainer(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
 	handler = newHandler()
-	handler.state = emptyState(mockCfg([]latestV1.Pipeline{{}}, "test"))
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	found := func() bool {
 		for _, dc := range handler.getState().DebuggingContainers {
@@ -671,17 +671,17 @@ func TestSaveEventsToFile(t *testing.T) {
 }
 
 type config struct {
-	pipes   []latestV1.Pipeline
+	pipes   []latest.Pipeline
 	kubectx string
 }
 
-func (c config) GetKubeContext() string            { return c.kubectx }
-func (c config) AutoBuild() bool                   { return true }
-func (c config) AutoDeploy() bool                  { return true }
-func (c config) AutoSync() bool                    { return true }
-func (c config) GetPipelines() []latestV1.Pipeline { return c.pipes }
+func (c config) GetKubeContext() string          { return c.kubectx }
+func (c config) AutoBuild() bool                 { return true }
+func (c config) AutoDeploy() bool                { return true }
+func (c config) AutoSync() bool                  { return true }
+func (c config) GetPipelines() []latest.Pipeline { return c.pipes }
 
-func mockCfg(pipes []latestV1.Pipeline, kubectx string) config {
+func mockCfg(pipes []latest.Pipeline, kubectx string) config {
 	return config{
 		pipes:   pipes,
 		kubectx: kubectx,

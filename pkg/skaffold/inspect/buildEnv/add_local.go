@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -38,7 +38,7 @@ func AddLocalBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) 
 		// for these cases, don't add the new env definition to any configs imported as dependencies.
 		cfgs = cfgs.SelectRootConfigs()
 		for _, cfg := range cfgs {
-			if cfg.Build.LocalBuild != nil && (*cfg.Build.LocalBuild != latestV1.LocalBuild{}) {
+			if cfg.Build.LocalBuild != nil && (*cfg.Build.LocalBuild != latest.LocalBuild{}) {
 				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Local, cfg.SourceFile, ""))
 				return err
 			}
@@ -57,9 +57,9 @@ func AddLocalBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) 
 			}
 			if index < 0 {
 				index = len(cfg.Profiles)
-				cfg.Profiles = append(cfg.Profiles, latestV1.Profile{Name: opts.Profile})
+				cfg.Profiles = append(cfg.Profiles, latest.Profile{Name: opts.Profile})
 			}
-			if cfg.Profiles[index].Build.LocalBuild != nil && (*cfg.Profiles[index].Build.LocalBuild != latestV1.LocalBuild{}) {
+			if cfg.Profiles[index].Build.LocalBuild != nil && (*cfg.Profiles[index].Build.LocalBuild != latest.LocalBuild{}) {
 				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Local, cfg.SourceFile, opts.Profile))
 				return err
 			}
@@ -71,8 +71,8 @@ func AddLocalBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) 
 	return inspect.MarshalConfigSet(cfgs)
 }
 
-func constructLocalDefinition(existing *latestV1.LocalBuild, opts inspect.BuildEnvOptions) *latestV1.LocalBuild {
-	var b latestV1.LocalBuild
+func constructLocalDefinition(existing *latest.LocalBuild, opts inspect.BuildEnvOptions) *latest.LocalBuild {
+	var b latest.LocalBuild
 	if existing != nil {
 		b = *existing
 	}

@@ -24,31 +24,31 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestBuildSpecFail(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    *latestV1.Artifact
+		artifact    *latest.Artifact
 	}{
 		{
 			description: "bazel",
-			artifact: &latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					BazelArtifact: &latestV1.BazelArtifact{},
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BazelArtifact: &latest.BazelArtifact{},
 				},
 			},
 		},
 		{
 			description: "unknown",
-			artifact:    &latestV1.Artifact{},
+			artifact:    &latest.Artifact{},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder := NewBuilder(&mockBuilderContext{}, &latestV1.GoogleCloudBuild{})
+			builder := NewBuilder(&mockBuilderContext{}, &latest.GoogleCloudBuild{})
 
 			_, err := builder.buildSpec(context.Background(), test.artifact, "tag", platform.Matcher{}, "bucket", "object")
 

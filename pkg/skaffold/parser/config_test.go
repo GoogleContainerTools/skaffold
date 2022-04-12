@@ -31,7 +31,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -60,18 +60,18 @@ profiles:
 `
 )
 
-func createCfg(name string, imageName string, workspace string, requires []latestV1.ConfigDependency) *latestV1.SkaffoldConfig {
-	return &latestV1.SkaffoldConfig{
-		APIVersion:   latestV1.Version,
+func createCfg(name string, imageName string, workspace string, requires []latest.ConfigDependency) *latest.SkaffoldConfig {
+	return &latest.SkaffoldConfig{
+		APIVersion:   latest.Version,
 		Kind:         "Config",
 		Dependencies: requires,
-		Metadata:     latestV1.Metadata{Name: name},
-		Pipeline: latestV1.Pipeline{Build: latestV1.BuildConfig{
-			Artifacts: []*latestV1.Artifact{{ImageName: imageName, ArtifactType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{DockerfilePath: "Dockerfile"}}, Workspace: workspace}}, TagPolicy: latestV1.TagPolicy{
-				GitTagger: &latestV1.GitTagger{}}, BuildType: latestV1.BuildType{
-				LocalBuild: &latestV1.LocalBuild{},
-			}}, Deploy: latestV1.DeployConfig{Logs: latestV1.LogsConfig{Prefix: "container"}}},
+		Metadata:     latest.Metadata{Name: name},
+		Pipeline: latest.Pipeline{Build: latest.BuildConfig{
+			Artifacts: []*latest.Artifact{{ImageName: imageName, ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{DockerfilePath: "Dockerfile"}}, Workspace: workspace}}, TagPolicy: latest.TagPolicy{
+				GitTagger: &latest.GitTagger{}}, BuildType: latest.BuildType{
+				LocalBuild: &latest.LocalBuild{},
+			}}, Deploy: latest.DeployConfig{Logs: latest.LogsConfig{Prefix: "container"}}},
 	}
 }
 
@@ -143,7 +143,7 @@ requires:
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -166,8 +166,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -188,7 +188,7 @@ requires:
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg01", "image01", ".", nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Names: []string{"cfg01"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Names: []string{"cfg01"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
 				}
 			},
 		},
@@ -207,8 +207,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Names: []string{"cfg11"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1"}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Names: []string{"cfg11"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1"}}),
 				}
 			},
 		},
@@ -233,9 +233,9 @@ requires:
 			},
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
-					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), []latestV1.ConfigDependency{{Path: base, Names: []string{"cfg00"}}}),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), []latest.ConfigDependency{{Path: base, Names: []string{"cfg00"}}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -259,8 +259,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "pf0image01", ".", nil),
 				}
 			},
@@ -290,8 +290,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
-					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
+					createCfg("cfg00", "pf0image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
 					createCfg("cfg01", "pf0image01", ".", nil),
 				}
 			},
@@ -318,8 +318,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf1image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf1"}}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0"}}}}),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf1"}}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0"}}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -375,7 +375,7 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 				}
 			},
 		},
@@ -454,9 +454,9 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
-					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1"}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
+					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1"}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -512,7 +512,7 @@ requires:
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg10", "image10", ".", nil),
 					createCfg("cfg21", "image21", ".", nil),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -536,8 +536,8 @@ requires:
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
-					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "image10", ".", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -559,7 +559,7 @@ requires:
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg01", "image01", ".", nil),
 					createCfg("cfg21", "image21", ".", nil),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Names: []string{"cfg01"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Names: []string{"cfg01"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
 				}
 			},
 		},
@@ -579,8 +579,8 @@ requires:
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg11", "image11", ".", nil),
-					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Names: []string{"cfg11"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1"}}),
+					createCfg("cfg10", "image10", ".", []latest.ConfigDependency{{Names: []string{"cfg11"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1"}}),
 				}
 			},
 		},
@@ -606,9 +606,9 @@ requires:
 			},
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
-					createCfg("cfg21", "image21", ".", []latestV1.ConfigDependency{{Path: "../", Names: []string{"cfg00"}}}),
-					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg21", "image21", ".", []latest.ConfigDependency{{Path: "../", Names: []string{"cfg00"}}}),
+					createCfg("cfg10", "image10", ".", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -633,8 +633,8 @@ requires:
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
-					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "image10", ".", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "pf0image01", ".", nil),
 				}
 			},
@@ -665,8 +665,8 @@ requires:
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", ".", nil),
-					createCfg("cfg10", "pf0image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
-					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
+					createCfg("cfg10", "pf0image10", ".", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
+					createCfg("cfg00", "pf0image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
 					createCfg("cfg01", "pf0image01", ".", nil),
 				}
 			},
@@ -694,8 +694,8 @@ requires:
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf1image21", ".", nil),
-					createCfg("cfg10", "pf0image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf1"}}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0"}}}}),
+					createCfg("cfg10", "pf0image10", ".", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf1"}}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0"}}}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -753,7 +753,7 @@ requires:
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
-					createCfg("cfg11", "image11", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg11", "image11", ".", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
 				}
 			},
 		},
@@ -836,9 +836,9 @@ requires:
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", ".", nil),
-					createCfg("cfg10", "image10", ".", []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
-					createCfg("cfg11", "image11", ".", []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", ".", []latestV1.ConfigDependency{{Path: "doc1"}}),
+					createCfg("cfg10", "image10", ".", []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
+					createCfg("cfg11", "image11", ".", []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1"}}),
 					createCfg("cfg01", "image01", ".", nil),
 				}
 			},
@@ -894,7 +894,7 @@ requires:
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}, {Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}, {Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 					createCfg("cfg01", "image01", base, nil),
 				}
 			},
@@ -918,8 +918,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "image01", base, nil),
 				}
 			},
@@ -941,7 +941,7 @@ requires:
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg01", "image01", base, nil),
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Names: []string{"cfg01"}}, {Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", base, []latest.ConfigDependency{{Names: []string{"cfg01"}}, {Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 				}
 			},
 		},
@@ -961,8 +961,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Names: []string{"cfg11"}}}),
-					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1")}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Names: []string{"cfg11"}}}),
+					createCfg("cfg00", "image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1")}}),
 				}
 			},
 		},
@@ -988,9 +988,9 @@ requires:
 			},
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
-					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), []latestV1.ConfigDependency{{Path: base, Names: []string{"cfg00"}}}),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
+					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), []latest.ConfigDependency{{Path: base, Names: []string{"cfg00"}}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "image01", base, nil),
 				}
 			},
@@ -1015,8 +1015,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "pf0image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "pf0image01", base, nil),
 				}
 			},
@@ -1047,8 +1047,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
-					createCfg("cfg00", "pf0image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
+					createCfg("cfg00", "pf0image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0", ActivatedBy: []string{"pf0"}}}}}),
 					createCfg("cfg01", "pf0image01", base, nil),
 				}
 			},
@@ -1076,8 +1076,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf1image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf1"}}}}),
-					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}, ActiveProfiles: []latestV1.ProfileDependency{{Name: "pf0"}}}}),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf1"}}}}),
+					createCfg("cfg00", "image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}, ActiveProfiles: []latest.ProfileDependency{{Name: "pf0"}}}}),
 					createCfg("cfg01", "image01", base, nil),
 				}
 			},
@@ -1135,7 +1135,7 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
 				}
 			},
 		},
@@ -1218,9 +1218,9 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
-					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{GitRepo: &latestV1.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1")}}),
+					createCfg("cfg10", "image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
+					createCfg("cfg11", "image11", filepath.Join(base, "doc1"), []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1")}}),
 					createCfg("cfg01", "image01", base, nil),
 				}
 			},
@@ -1245,8 +1245,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "pf0image01", ".", nil),
 				}
 			},
@@ -1272,8 +1272,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", ".", nil),
-					createCfg("cfg10", "pf0image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "pf0image10", ".", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", ".", []latest.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "pf0image01", ".", nil),
 				}
 			},
@@ -1299,8 +1299,8 @@ requires:
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
 					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
-					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
-					createCfg("cfg00", "pf0image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latest.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", base, []latest.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
 					createCfg("cfg01", "pf0image01", base, nil),
 				}
 			},
@@ -1313,7 +1313,7 @@ requires:
 				var cfgs []string
 				for j, c := range d.configs {
 					id := fmt.Sprintf("%d%d", i, j)
-					s := fmt.Sprintf(template, latestV1.Version, c.name, c.requiresStanza, id, id, id)
+					s := fmt.Sprintf(template, latest.Version, c.name, c.requiresStanza, id, id, id)
 					cfgs = append(cfgs, s)
 				}
 				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
@@ -1324,7 +1324,7 @@ requires:
 				wd, _ := util.RealWorkDir()
 				expected = test.expected(wd)
 			}
-			t.Override(&git.SyncRepo, func(ctx context.Context, g latestV1.GitInfo, _ config.SkaffoldOptions) (string, error) {
+			t.Override(&git.SyncRepo, func(ctx context.Context, g latest.GitInfo, _ config.SkaffoldOptions) (string, error) {
 				return g.Repo, nil
 			})
 			cfgs, err := GetAllConfigs(context.Background(), config.SkaffoldOptions{

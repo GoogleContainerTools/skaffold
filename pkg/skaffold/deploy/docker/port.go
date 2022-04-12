@@ -31,7 +31,7 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -81,7 +81,7 @@ func (pm *PortManager) Stop() {
 	These ports are added to the provided container configuration's port set, and the bindings
 	are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
 */
-func (pm *PortManager) allocatePorts(containerName string, pf []*v1.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
+func (pm *PortManager) allocatePorts(containerName string, pf []*latest.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	m := make(nat.PortMap)

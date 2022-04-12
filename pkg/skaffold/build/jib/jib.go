@@ -34,7 +34,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
@@ -91,16 +91,16 @@ var watchedFiles = map[projectKey]filesLists{}
 
 type projectKey string
 
-func getProjectKey(workspace string, a *latestV1.JibArtifact) projectKey {
+func getProjectKey(workspace string, a *latest.JibArtifact) projectKey {
 	return projectKey(workspace + "+" + a.Project)
 }
 
-func GetBuildDefinitions(workspace string, a *latestV1.JibArtifact) []string {
+func GetBuildDefinitions(workspace string, a *latest.JibArtifact) []string {
 	return watchedFiles[getProjectKey(workspace, a)].BuildDefinitions
 }
 
 // GetDependencies returns a list of files to watch for changes to rebuild
-func GetDependencies(ctx context.Context, workspace string, artifact *latestV1.JibArtifact) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
 	t, err := DeterminePluginType(ctx, workspace, artifact)
 	if err != nil {
 		return nil, unableToDeterminePluginType(workspace, err)
@@ -116,7 +116,7 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latestV1.J
 }
 
 // DeterminePluginType tries to determine the Jib plugin type for the given artifact.
-func DeterminePluginType(ctx context.Context, workspace string, artifact *latestV1.JibArtifact) (PluginType, error) {
+func DeterminePluginType(ctx context.Context, workspace string, artifact *latest.JibArtifact) (PluginType, error) {
 	if !JVMFound(ctx) {
 		return "", errors.New("no working JVM available")
 	}
@@ -142,7 +142,7 @@ func DeterminePluginType(ctx context.Context, workspace string, artifact *latest
 }
 
 // getDependencies returns a list of files to watch for changes to rebuild
-func getDependencies(ctx context.Context, workspace string, cmd exec.Cmd, a *latestV1.JibArtifact) ([]string, error) {
+func getDependencies(ctx context.Context, workspace string, cmd exec.Cmd, a *latest.JibArtifact) ([]string, error) {
 	var dependencyList []string
 	files, ok := watchedFiles[getProjectKey(workspace, a)]
 	if !ok {
@@ -331,7 +331,7 @@ func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) (boo
 }
 
 // baseImageArg formats the base image as a build argument. It also replaces the provided base image with an image from the required artifacts if specified.
-func baseImageArg(a *latestV1.JibArtifact, r ArtifactResolver, deps []*latestV1.ArtifactDependency, pushImages bool) (string, bool) {
+func baseImageArg(a *latest.JibArtifact, r ArtifactResolver, deps []*latest.ArtifactDependency, pushImages bool) (string, bool) {
 	if a.BaseImage == "" {
 		return "", false
 	}

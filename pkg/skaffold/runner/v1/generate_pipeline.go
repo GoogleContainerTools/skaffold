@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -37,7 +37,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	for _, config := range configs {
 		cfgFile := &pipeline.ConfigFile{
 			Path:    r.runCtx.ConfigurationFile(),
-			Config:  config.(*latestV1.SkaffoldConfig),
+			Config:  config.(*latest.SkaffoldConfig),
 			Profile: nil,
 		}
 		baseConfig = append(baseConfig, cfgFile)
@@ -80,7 +80,7 @@ func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
 			return nil, fmt.Errorf("parsing config %q: %w", path, err)
 		}
 		for _, parsedCfg := range parsedCfgs {
-			config := parsedCfg.(*latestV1.SkaffoldConfig)
+			config := parsedCfg.(*latest.SkaffoldConfig)
 
 			if err := defaults.Set(config); err != nil {
 				return nil, fmt.Errorf("setting default values for extra configs: %w", err)

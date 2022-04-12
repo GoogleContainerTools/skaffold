@@ -27,12 +27,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact) build.ArtifactBuilder {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact) build.ArtifactBuilder {
 	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
 	return builder
 }
@@ -61,7 +61,7 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 	return nil
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string, m platform.Matcher) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, m platform.Matcher) (string, error) {
 	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag, m)
 	if err != nil {
 		return "", err
@@ -74,7 +74,7 @@ func (b *Builder) Concurrency() *int {
 	return util.IntPtr(b.ClusterDetails.Concurrency)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	// required artifacts as build-args
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {

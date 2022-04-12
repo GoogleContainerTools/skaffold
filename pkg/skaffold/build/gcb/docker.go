@@ -25,12 +25,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
-func (b *Builder) dockerBuildSpec(a *latestV1.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
+func (b *Builder) dockerBuildSpec(a *latest.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
 	a = adjustCacheFrom(a, tag)
 
 	args, err := b.dockerBuildArgs(a, tag, a.Dependencies, platforms)
@@ -55,7 +55,7 @@ func (b *Builder) dockerBuildSpec(a *latestV1.Artifact, tag string, platforms pl
 }
 
 // cacheFromSteps pulls images used by `--cache-from`.
-func (b *Builder) cacheFromSteps(artifact *latestV1.DockerArtifact, platforms platform.Matcher) []*cloudbuild.BuildStep {
+func (b *Builder) cacheFromSteps(artifact *latest.DockerArtifact, platforms platform.Matcher) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 	argFmt := "docker pull %s || true"
 	if platforms.IsNotEmpty() {
@@ -73,7 +73,7 @@ func (b *Builder) cacheFromSteps(artifact *latestV1.DockerArtifact, platforms pl
 }
 
 // dockerBuildArgs lists the arguments passed to `docker` to build a given image.
-func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*latestV1.ArtifactDependency, platforms platform.Matcher) ([]string, error) {
+func (b *Builder) dockerBuildArgs(a *latest.Artifact, tag string, deps []*latest.ArtifactDependency, platforms platform.Matcher) ([]string, error) {
 	d := a.DockerArtifact
 	// TODO(nkubala): remove when buildkit is supported in GCB (#4773)
 	if len(d.Secrets) > 0 || d.SSH != "" {
@@ -101,7 +101,7 @@ func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*late
 }
 
 // adjustCacheFrom returns  an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
-func adjustCacheFrom(a *latestV1.Artifact, artifactTag string) *latestV1.Artifact {
+func adjustCacheFrom(a *latest.Artifact, artifactTag string) *latest.Artifact {
 	if os.Getenv("SKAFFOLD_DISABLE_GCB_CACHE_ADJUSTMENT") != "" {
 		// allow this behaviour to be disabled
 		return a

@@ -34,13 +34,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	local latestV1.LocalBuild
+	local latest.LocalBuild
 
 	cfg                docker.Config
 	localDocker        docker.LocalDaemon
@@ -80,7 +80,7 @@ type BuilderContext interface {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
+func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latest.LocalBuild) (*Builder, error) {
 	localDocker, err := docker.NewAPIClient(ctx, bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
@@ -140,12 +140,12 @@ func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 
 // artifactBuilder represents a per artifact builder interface
 type artifactBuilder interface {
-	Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error)
+	Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error)
 	SupportedPlatforms() platform.Matcher
 }
 
 // newPerArtifactBuilder returns an instance of `artifactBuilder`
-func newPerArtifactBuilder(b *Builder, a *latestV1.Artifact) (artifactBuilder, error) {
+func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, error) {
 	switch {
 	case a.DockerArtifact != nil:
 		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.cfg, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.artifactStore, b.sourceDependencies), nil

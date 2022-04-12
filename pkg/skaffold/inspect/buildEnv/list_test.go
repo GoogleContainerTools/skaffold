@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -87,17 +87,17 @@ func TestPrintBuildEnvsList(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configSet := parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-					Metadata: v1.Metadata{Name: "cfg1"},
-					Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}},
-					Profiles: []v1.Profile{
-						{Name: "cluster", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{Cluster: &v1.ClusterDetails{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg1"},
+					Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}},
+					Profiles: []latest.Profile{
+						{Name: "cluster", Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{}}}}},
 					}}, SourceFile: "path/to/cfg1"},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{
-					Metadata: v1.Metadata{Name: "cfg2"},
-					Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{}}}},
-					Profiles: []v1.Profile{
-						{Name: "local", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg2"},
+					Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{}}}},
+					Profiles: []latest.Profile{
+						{Name: "local", Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}}},
 					}}, SourceFile: "path/to/cfg2"},
 			}
 			t.Override(&inspect.GetConfigSet, func(ctx context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {

@@ -19,7 +19,7 @@ package config
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -61,7 +61,7 @@ func TestIsTargetImage(t *testing.T) {
 				TargetImages: test.targetImages,
 			}
 
-			match := opts.IsTargetImage(&latestV1.Artifact{
+			match := opts.IsTargetImage(&latest.Artifact{
 				ImageName: "domain/image",
 			})
 

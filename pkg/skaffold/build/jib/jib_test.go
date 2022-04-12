@@ -26,7 +26,7 @@ import (
 	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -107,7 +107,7 @@ func TestGetDependencies(t *testing.T) {
 				test.stdout,
 			))
 
-			results, err := getDependencies(context.Background(), tmpDir.Root(), exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, &latestV1.JibArtifact{Project: util.RandomID()})
+			results, err := getDependencies(context.Background(), tmpDir.Root(), exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, &latest.JibArtifact{Project: util.RandomID()})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDeps, results)
 		})
@@ -126,7 +126,7 @@ func TestGetUpdatedDependencies(t *testing.T) {
 		)
 
 		listCmd := exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}
-		artifact := &latestV1.JibArtifact{Project: util.RandomID()}
+		artifact := &latest.JibArtifact{Project: util.RandomID()}
 
 		// List dependencies
 		_, err := getDependencies(context.Background(), tmpDir.Root(), listCmd, artifact)
@@ -170,7 +170,7 @@ func TestDeterminePluginType(t *testing.T) {
 	tests := []struct {
 		description string
 		files       []string
-		artifact    *latestV1.JibArtifact
+		artifact    *latest.JibArtifact
 		shouldErr   bool
 		PluginType  PluginType
 	}{
@@ -184,8 +184,8 @@ func TestDeterminePluginType(t *testing.T) {
 		{"maven-1", []string{"pom.xml"}, nil, false, JibMaven},
 		{"maven-2", []string{".mvn/maven.config"}, nil, false, JibMaven},
 		{"maven-3", []string{".mvn/extensions.xml"}, nil, false, JibMaven},
-		{"gradle override", []string{"pom.xml"}, &latestV1.JibArtifact{Type: string(JibGradle)}, false, JibGradle},
-		{"maven override", []string{"build.gradle"}, &latestV1.JibArtifact{Type: string(JibMaven)}, false, JibMaven},
+		{"gradle override", []string{"pom.xml"}, &latest.JibArtifact{Type: string(JibGradle)}, false, JibGradle},
+		{"maven override", []string{"build.gradle"}, &latest.JibArtifact{Type: string(JibMaven)}, false, JibMaven},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -200,19 +200,19 @@ func TestDeterminePluginType(t *testing.T) {
 func TestGetProjectKey(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    *latestV1.JibArtifact
+		artifact    *latest.JibArtifact
 		workspace   string
 		expected    projectKey
 	}{
 		{
 			"empty project",
-			&latestV1.JibArtifact{},
+			&latest.JibArtifact{},
 			"dir",
 			projectKey("dir+"),
 		},
 		{
 			"non-empty project",
-			&latestV1.JibArtifact{Project: "project"},
+			&latest.JibArtifact{Project: "project"},
 			"dir",
 			projectKey("dir+project"),
 		},

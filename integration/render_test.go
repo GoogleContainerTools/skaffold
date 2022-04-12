@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -79,16 +79,16 @@ spec:
 			Chdir()
 		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
-			Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
-				Deploy: latestV1.DeployConfig{
-					DeployType: latestV1.DeployType{
-						KubectlDeploy: &latestV1.KubectlDeploy{
+			Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{
 							Manifests: []string{"deployment.yaml"},
 						},
 					},
 				},
 			}}),
-		}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -236,17 +236,17 @@ spec:
 
 			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
-					Deploy: latestV1.DeployConfig{
-						DeployType: latestV1.DeployType{
-							KubectlDeploy: &latestV1.KubectlDeploy{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KubectlDeploy: &latest.KubectlDeploy{
 								Manifests: []string{"deployment.yaml"},
 							},
 						},
 					},
 				}}),
 				Opts: config.SkaffoldOptions{},
-			}, &label.DefaultLabeller{}, &latestV1.KubectlDeploy{
+			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -265,7 +265,7 @@ func TestHelmRender(t *testing.T) {
 	tests := []struct {
 		description  string
 		builds       []graph.Artifact
-		helmReleases []latestV1.HelmRelease
+		helmReleases []latest.HelmRelease
 		expectedOut  string
 	}{
 		{
@@ -276,7 +276,7 @@ func TestHelmRender(t *testing.T) {
 					Tag:       "gke-loadbalancer:test",
 				},
 			},
-			helmReleases: []latestV1.HelmRelease{{
+			helmReleases: []latest.HelmRelease{{
 				Name:      "gke-loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
 				ArtifactOverrides: map[string]string{
@@ -334,7 +334,7 @@ spec:
 					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",
 				},
 			},
-			helmReleases: []latestV1.HelmRelease{{
+			helmReleases: []latest.HelmRelease{{
 				Name:      "skaffold-helm",
 				ChartPath: "testdata/helm/skaffold-helm",
 				ArtifactOverrides: map[string]string{
@@ -423,16 +423,16 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer, err := helm.NewDeployer(context.Background(), &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
-					Deploy: latestV1.DeployConfig{
-						DeployType: latestV1.DeployType{
-							HelmDeploy: &latestV1.HelmDeploy{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: &latest.HelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},
 					},
 				}}),
-			}, &label.DefaultLabeller{}, &latestV1.HelmDeploy{
+			}, &label.DefaultLabeller{}, &latest.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)

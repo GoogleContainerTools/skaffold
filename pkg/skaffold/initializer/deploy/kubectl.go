@@ -19,7 +19,7 @@ package deploy
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // kubectl implements deploymentInitializer for the kubectl deployer.
@@ -46,10 +46,10 @@ func newKubectlInitializer(potentialConfigs []string) *kubectl {
 
 // deployConfig implements the Initializer interface and generates
 // skaffold kubectl deployment config.
-func (k *kubectl) DeployConfig() (latestV1.DeployConfig, []latestV1.Profile) {
-	return latestV1.DeployConfig{
-		DeployType: latestV1.DeployType{
-			KubectlDeploy: &latestV1.KubectlDeploy{
+func (k *kubectl) DeployConfig() (latest.DeployConfig, []latest.Profile) {
+	return latest.DeployConfig{
+		DeployType: latest.DeployType{
+			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: k.configs,
 			},
 		},

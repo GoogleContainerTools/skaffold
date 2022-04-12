@@ -48,7 +48,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -57,7 +57,7 @@ import (
 
 // Deployer deploys workflows using kubectl CLI.
 type Deployer struct {
-	*latestV1.KubectlDeploy
+	*latest.KubectlDeploy
 
 	accessor           access.Accessor
 	imageLoader        loader.ImageLoader
@@ -82,13 +82,13 @@ type Deployer struct {
 
 	namespaces *[]string
 
-	transformableAllowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
-	transformableDenylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
+	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error

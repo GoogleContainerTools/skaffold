@@ -31,7 +31,7 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 	// TODO(aaron-prindle) make sure this is ok?
 	rs := &ResourceSelectorImages{}
 	if _, err := l.Visit(replacer, rs); err != nil {
-		// if _, err := l.Visit(replacer, make(map[schema.GroupKind]latestV1.ResourceFilter), make(map[schema.GroupKind]latestV1.ResourceFilter)); err != nil {
+		// if _, err := l.Visit(replacer, make(map[schema.GroupKind]latest.ResourceFilter), make(map[schema.GroupKind]latest.ResourceFilter)); err != nil {
 		// TODO(aaron-prindle) verify this doesn't need to support allow/deny list, also see if 'nil' is better option for unused inputs
 		return nil, fmt.Errorf("collecting namespaces: %w", err)
 	}

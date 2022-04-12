@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -201,7 +201,7 @@ FROM bar1`,
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latestV1.DockerArtifact{
+			artifact := &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs:      test.buildArgs,
 			}
@@ -221,20 +221,20 @@ func TestCreateBuildArgsFromArtifacts(t *testing.T) {
 	tests := []struct {
 		description string
 		r           ArtifactResolver
-		deps        []*latestV1.ArtifactDependency
+		deps        []*latest.ArtifactDependency
 		args        map[string]*string
 	}{
 		{
 			description: "can resolve artifacts",
 			r:           mockArtifactResolver{m: map[string]string{"img1": "tag1", "img2": "tag2", "img3": "tag3", "img4": "tag4"}},
-			deps:        []*latestV1.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
 			args:        map[string]*string{"alias3": util.StringPtr("tag3"), "alias4": util.StringPtr("tag4")},
 		},
 		{
 			description: "cannot resolve artifacts",
 			r:           mockArtifactResolver{m: make(map[string]string)},
 			args:        map[string]*string{"alias3": nil, "alias4": nil},
-			deps:        []*latestV1.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
 		},
 	}
 	for _, test := range tests {
@@ -265,7 +265,7 @@ func TestBuildArgTemplating(t *testing.T) {
 
 	testutil.Run(t, "test_templating_from_env_variables", func(t *testutil.T) {
 		t.SetEnvs(envs)
-		artifact := &latestV1.DockerArtifact{
+		artifact := &latest.DockerArtifact{
 			DockerfilePath: "Dockerfile",
 			BuildArgs:      args,
 		}

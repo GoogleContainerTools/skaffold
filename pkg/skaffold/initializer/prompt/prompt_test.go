@@ -23,35 +23,35 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestWriteSkaffoldConfig(t *testing.T) {
 	tests := []struct {
 		description    string
-		config         *latestV1.SkaffoldConfig
+		config         *latest.SkaffoldConfig
 		promptResponse bool
 		expectedDone   bool
 		shouldErr      bool
 	}{
 		{
 			description:    "yes response",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: true,
 			expectedDone:   false,
 			shouldErr:      false,
 		},
 		{
 			description:    "no response",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: false,
 			expectedDone:   true,
 			shouldErr:      false,
 		},
 		{
 			description:    "error",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: false,
 			expectedDone:   true,
 			shouldErr:      true,
@@ -126,28 +126,28 @@ func TestChooseBuilders(t *testing.T) {
 func TestPortForwardResource(t *testing.T) {
 	tests := []struct {
 		description    string
-		config         *latestV1.SkaffoldConfig
+		config         *latest.SkaffoldConfig
 		promptResponse string
 		expected       int
 		shouldErr      bool
 	}{
 		{
 			description:    "valid response",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: "8080",
 			expected:       8080,
 			shouldErr:      false,
 		},
 		{
 			description:    "empty response",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: "",
 			expected:       0,
 			shouldErr:      false,
 		},
 		{
 			description:    "error",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: "",
 			expected:       0,
 			shouldErr:      true,
@@ -174,28 +174,28 @@ func TestPortForwardResource(t *testing.T) {
 func TestConfirmInitOptions(t *testing.T) {
 	tests := []struct {
 		description    string
-		config         *latestV1.SkaffoldConfig
+		config         *latest.SkaffoldConfig
 		promptResponse bool
 		expectedDone   bool
 		shouldErr      bool
 	}{
 		{
 			description:    "yes response",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: true,
 			expectedDone:   false,
 			shouldErr:      false,
 		},
 		{
 			description:    "no response",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: false,
 			expectedDone:   true,
 			shouldErr:      false,
 		},
 		{
 			description:    "error",
-			config:         &latestV1.SkaffoldConfig{},
+			config:         &latest.SkaffoldConfig{},
 			promptResponse: false,
 			expectedDone:   true,
 			shouldErr:      true,

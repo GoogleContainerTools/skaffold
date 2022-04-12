@@ -32,14 +32,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // deployerCtx encapsulates a given skaffold run context along with additional deployer constructs.
 type deployerCtx struct {
 	*runcontext.RunContext
-	deploy v1.DeployConfig
+	deploy latest.DeployConfig
 }
 
 func (d *deployerCtx) GetKubeContext() string {
@@ -60,7 +60,7 @@ func (d *deployerCtx) StatusCheck() *bool {
 }
 
 // JsonParseType returns the JsonParseType field from the underlying deployConfig struct
-func (d *deployerCtx) JSONParseConfig() v1.JSONParseConfig {
+func (d *deployerCtx) JSONParseConfig() latest.JSONParseConfig {
 	return d.deploy.Logs.JSONParse
 }
 
@@ -182,7 +182,7 @@ Therefore, in this function we do implicit validation of the provided configurat
 func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
-	var kFlags *v1.KubectlFlags
+	var kFlags *latest.KubectlFlags
 	var logPrefix string
 	var defaultNamespace *string
 	var kubeContext string
@@ -208,7 +208,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 			logPrefix = d.Logs.Prefix
 		}
 		var currentDefaultNamespace *string
-		var currentKubectlFlags v1.KubectlFlags
+		var currentKubectlFlags latest.KubectlFlags
 		if d.KubectlDeploy != nil {
 			currentDefaultNamespace = d.KubectlDeploy.DefaultNamespace
 			currentKubectlFlags = d.KubectlDeploy.Flags
@@ -231,9 +231,9 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		}
 	}
 	if kFlags == nil {
-		kFlags = &v1.KubectlFlags{}
+		kFlags = &latest.KubectlFlags{}
 	}
-	k := &v1.KubectlDeploy{
+	k := &latest.KubectlDeploy{
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
@@ -244,7 +244,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 	return defaultDeployer, nil
 }
 
-func validateKubectlFlags(flags *v1.KubectlFlags, additional v1.KubectlFlags) error {
+func validateKubectlFlags(flags *latest.KubectlFlags, additional latest.KubectlFlags) error {
 	errStr := "conflicting sets of kubectl deploy flags not supported in `skaffold apply` (flag: %s)"
 	if additional.DisableValidation != flags.DisableValidation {
 		return fmt.Errorf(errStr, strconv.FormatBool(additional.DisableValidation))

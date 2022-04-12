@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -38,7 +38,7 @@ var (
 	buildContext = retrieveBuildContext
 )
 
-func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) error {
+func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) error {
 	cmd, err := b.retrieveCmd(ctx, out, a, tag, platforms)
 	if err != nil {
 		return fmt.Errorf("retrieving cmd: %w", err)
@@ -52,7 +52,7 @@ func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latestV1
 	return misc.HandleGracefulTermination(ctx, cmd)
 }
 
-func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (*exec.Cmd, error) {
+func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
 
 	// Expand command
@@ -87,7 +87,7 @@ func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latestV1.Ar
 	return cmd, nil
 }
 
-func (b *Builder) retrieveEnv(a *latestV1.Artifact, tag string, platforms platform.Matcher) ([]string, error) {
+func (b *Builder) retrieveEnv(a *latest.Artifact, tag string, platforms platform.Matcher) ([]string, error) {
 	buildContext, err := buildContext(a.Workspace)
 	if err != nil {
 		return nil, fmt.Errorf("getting absolute path for artifact build context: %w", err)

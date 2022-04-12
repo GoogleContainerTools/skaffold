@@ -25,11 +25,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func GetEnv(a *latestV1.Artifact, mode config.RunMode) (map[string]string, error) {
+func GetEnv(a *latest.Artifact, mode config.RunMode) (map[string]string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
@@ -45,7 +45,7 @@ func GetEnv(a *latestV1.Artifact, mode config.RunMode) (map[string]string, error
 	return env(a, mode, projectDescriptor)
 }
 
-func env(a *latestV1.Artifact, mode config.RunMode, projectDescriptor types.Descriptor) (map[string]string, error) {
+func env(a *latest.Artifact, mode config.RunMode, projectDescriptor types.Descriptor) (map[string]string, error) {
 	envVars, err := misc.EvaluateEnv(a.BuildpackArtifact.Env)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate env variables: %w", err)

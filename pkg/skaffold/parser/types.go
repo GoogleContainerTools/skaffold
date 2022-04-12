@@ -18,7 +18,7 @@ package parser
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // SkaffoldConfigSet encapsulates a slice of skaffold configurations.
@@ -26,7 +26,7 @@ type SkaffoldConfigSet []*SkaffoldConfigEntry
 
 // SkaffoldConfigEntry encapsulates a single skaffold configuration, along with the source filename and its index in that file.
 type SkaffoldConfigEntry struct {
-	*latestV1.SkaffoldConfig
+	*latest.SkaffoldConfig
 	SourceFile   string
 	SourceIndex  int
 	IsRootConfig bool

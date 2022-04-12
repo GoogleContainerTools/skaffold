@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -63,7 +63,7 @@ func TestKpt_Deploy(t *testing.T) {
 	tests := []struct {
 		description      string
 		builds           []graph.Artifact
-		kpt              latestV1.KptDeploy
+		kpt              latest.KptDeploy
 		hasKustomization func(string) bool
 		commands         util.Command
 		expected         []string
@@ -71,7 +71,7 @@ func TestKpt_Deploy(t *testing.T) {
 	}{
 		{
 			description: "no manifest",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -81,7 +81,7 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 		{
 			description: "invalid manifest",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -93,10 +93,10 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 		{
 			description: "invalid user specified applyDir",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Live: latestV1.KptLive{
-					Apply: latestV1.KptApplyInventory{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
 						Dir: "invalid_path",
 					},
 				},
@@ -111,11 +111,11 @@ func TestKpt_Deploy(t *testing.T) {
 
 		{
 			description: "kustomization and specified kpt fn",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latestV1.KptFn{FnPath: "kpt-func.yaml"},
-				Live: latestV1.KptLive{
-					Apply: latestV1.KptApplyInventory{
+				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
 						Dir: "valid_path",
 					},
 				},
@@ -131,7 +131,7 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 		{
 			description: "kpt live apply fails",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -145,13 +145,13 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 		{
 			description: "user specifies reconcile timeout and poll period",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Live: latestV1.KptLive{
-					Apply: latestV1.KptApplyInventory{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
 						Dir: "valid_path",
 					},
-					Options: latestV1.KptApplyOptions{
+					Options: latest.KptApplyOptions{
 						PollPeriod:       "5s",
 						ReconcileTimeout: "2m",
 					},
@@ -166,13 +166,13 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 		{
 			description: "user specifies invalid reconcile timeout and poll period",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Live: latestV1.KptLive{
-					Apply: latestV1.KptApplyInventory{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
 						Dir: "valid_path",
 					},
-					Options: latestV1.KptApplyOptions{
+					Options: latest.KptApplyOptions{
 						PollPeriod:       "foo",
 						ReconcileTimeout: "bar",
 					},
@@ -187,13 +187,13 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 		{
 			description: "user specifies prune propagation policy and prune timeout",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Live: latestV1.KptLive{
-					Apply: latestV1.KptApplyInventory{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
 						Dir: "valid_path",
 					},
-					Options: latestV1.KptApplyOptions{
+					Options: latest.KptApplyOptions{
 						PrunePropagationPolicy: "Orphan",
 						PruneTimeout:           "2m",
 					},
@@ -208,13 +208,13 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 		{
 			description: "user specifies invalid prune propagation policy and prune timeout",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Live: latestV1.KptLive{
-					Apply: latestV1.KptApplyInventory{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
 						Dir: "valid_path",
 					},
-					Options: latestV1.KptApplyOptions{
+					Options: latest.KptApplyOptions{
 						PrunePropagationPolicy: "foo",
 						PruneTimeout:           "bar",
 					},
@@ -258,7 +258,7 @@ func TestKpt_Deploy(t *testing.T) {
 func TestKpt_Dependencies(t *testing.T) {
 	tests := []struct {
 		description    string
-		kpt            latestV1.KptDeploy
+		kpt            latest.KptDeploy
 		createFiles    map[string]string
 		kustomizations map[string]string
 		expected       []string
@@ -266,20 +266,20 @@ func TestKpt_Dependencies(t *testing.T) {
 	}{
 		{
 			description: "bad dir",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: "invalid_path",
 			},
 			shouldErr: true,
 		},
 		{
 			description: "empty dir and unspecified fnPath",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 		},
 		{
 			description: "dir",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			createFiles: map[string]string{
@@ -290,7 +290,7 @@ func TestKpt_Dependencies(t *testing.T) {
 		},
 		{
 			description: "dir with subdirs and file path variants",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			createFiles: map[string]string{
@@ -303,9 +303,9 @@ func TestKpt_Dependencies(t *testing.T) {
 		},
 		{
 			description: "fnpath inside directory",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latestV1.KptFn{FnPath: "."},
+				Fn:  latest.KptFn{FnPath: "."},
 			},
 			createFiles: map[string]string{
 				"./kpt-func.yaml": "",
@@ -314,9 +314,9 @@ func TestKpt_Dependencies(t *testing.T) {
 		},
 		{
 			description: "fnpath outside directory",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: "./config",
-				Fn:  latestV1.KptFn{FnPath: "./kpt-fn"},
+				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
 			},
 			createFiles: map[string]string{
 				"./config/deployment.yaml": "",
@@ -327,9 +327,9 @@ func TestKpt_Dependencies(t *testing.T) {
 
 		{
 			description: "fnpath and dir and kustomization",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latestV1.KptFn{FnPath: "./kpt-fn"},
+				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
 			},
 			createFiles: map[string]string{
 				"./kpt-fn/func.yaml": "",
@@ -340,7 +340,7 @@ func TestKpt_Dependencies(t *testing.T) {
 		},
 		{
 			description: "dependencies that can only be detected as a kustomization",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
@@ -349,7 +349,7 @@ func TestKpt_Dependencies(t *testing.T) {
 		},
 		{
 			description: "kustomization.yml variant",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"kustomization.yml": `configMapGenerator:
@@ -358,7 +358,7 @@ func TestKpt_Dependencies(t *testing.T) {
 		},
 		{
 			description: "Kustomization variant",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"Kustomization": `configMapGenerator:
@@ -367,7 +367,7 @@ func TestKpt_Dependencies(t *testing.T) {
 		},
 		{
 			description: "incorrectly named kustomization",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"customization": `configMapGenerator:
@@ -437,9 +437,9 @@ func TestKpt_Cleanup(t *testing.T) {
 
 			k, err := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
-				Live: latestV1.KptLive{
-					Apply: latestV1.KptApplyInventory{
+			}, &label.DefaultLabeller{}, &latest.KptDeploy{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
 						Dir: test.applyDir,
 					},
 				},
@@ -503,7 +503,7 @@ spec:
 		description      string
 		builds           []graph.Artifact
 		labels           []string
-		kpt              latestV1.KptDeploy
+		kpt              latest.KptDeploy
 		commands         util.Command
 		hasKustomization func(string) bool
 		expected         string
@@ -517,7 +517,7 @@ spec:
 					Tag:       "gcr.io/project/image1:tag1",
 				},
 			},
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -548,9 +548,9 @@ spec:
 				},
 			},
 			labels: []string{"user/label=test"},
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: "test",
-				Fn:  latestV1.KptFn{FnPath: "kpt-func.yaml"},
+				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source test", ``).
@@ -592,9 +592,9 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latestV1.KptFn{Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
+				Fn:  latest.KptFn{Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
@@ -622,7 +622,7 @@ spec:
 				},
 			},
 			labels: []string{"user/label=test"},
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -634,9 +634,9 @@ spec:
 		},
 		{
 			description: "both fnPath and image specified",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn: latestV1.KptFn{
+				Fn: latest.KptFn{
 					FnPath: "kpt-func.yaml",
 					Image:  "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
 			},
@@ -656,7 +656,7 @@ spec:
 					Tag:       "gcr.io/project/image1:tag1",
 				},
 			},
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -677,7 +677,7 @@ spec:
 		},
 		{
 			description: "reading configs from sourceDir fails",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -689,7 +689,7 @@ spec:
 		},
 		{
 			description: "outputting configs to sinkDir fails",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -707,7 +707,7 @@ spec:
 					Tag:       "gcr.io/project/image1:tag1",
 				},
 			},
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -720,7 +720,7 @@ spec:
 		},
 		{
 			description: "kpt fn run fails",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
 			},
 			commands: testutil.
@@ -731,9 +731,9 @@ spec:
 		},
 		{
 			description: "kpt fn run with --global-scope",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn: latestV1.KptFn{
+				Fn: latest.KptFn{
 					Image:       "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
 					GlobalScope: true,
 				},
@@ -747,9 +747,9 @@ spec:
 		},
 		{
 			description: "kpt fn run with --mount arguments",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn: latestV1.KptFn{
+				Fn: latest.KptFn{
 					Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
 					Mount: []string{"type=bind", "src=$(pwd)", "dst=/source"},
 				},
@@ -763,9 +763,9 @@ spec:
 		},
 		{
 			description: "kpt fn run with invalid --mount arguments",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn: latestV1.KptFn{
+				Fn: latest.KptFn{
 					Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
 					Mount: []string{"foo", "", "bar"},
 				},
@@ -779,9 +779,9 @@ spec:
 		},
 		{
 			description: "kpt fn run flag with --network and --network-name arguments",
-			kpt: latestV1.KptDeploy{
+			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn: latestV1.KptFn{
+				Fn: latest.KptFn{
 					Image:       "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
 					Network:     true,
 					NetworkName: "foo",
@@ -822,15 +822,15 @@ spec:
 func TestKpt_GetApplyDir(t *testing.T) {
 	tests := []struct {
 		description string
-		live        latestV1.KptLive
+		live        latest.KptLive
 		expected    string
 		commands    util.Command
 		shouldErr   bool
 	}{
 		{
 			description: "specified an invalid applyDir",
-			live: latestV1.KptLive{
-				Apply: latestV1.KptApplyInventory{
+			live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
 					Dir: "invalid_path",
 				},
 			},
@@ -838,8 +838,8 @@ func TestKpt_GetApplyDir(t *testing.T) {
 		},
 		{
 			description: "specified a valid applyDir",
-			live: latestV1.KptLive{
-				Apply: latestV1.KptApplyInventory{
+			live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
 					Dir: "valid_path",
 				},
 			},
@@ -852,8 +852,8 @@ func TestKpt_GetApplyDir(t *testing.T) {
 		},
 		{
 			description: "unspecified applyDir with specified inventory-id and namespace",
-			live: latestV1.KptLive{
-				Apply: latestV1.KptApplyInventory{
+			live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
 					InventoryID:        "1a23bcde-4f56-7891-a2bc-de34fabcde5f6",
 					InventoryNamespace: "foo",
 				},
@@ -883,7 +883,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 
 			k, err := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
+			}, &label.DefaultLabeller{}, &latest.KptDeploy{
 				Live: test.live,
 			})
 			if err != nil {
@@ -1196,10 +1196,10 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, commands)
 		t.Override(&client.Client, deployutil.MockK8sClient)
-		k, err := NewDeployer(&kptConfig{config: "testConfigPath"}, &label.DefaultLabeller{}, &latestV1.KptDeploy{
+		k, err := NewDeployer(&kptConfig{config: "testConfigPath"}, &label.DefaultLabeller{}, &latest.KptDeploy{
 			Dir: ".",
-			Live: latestV1.KptLive{
-				Apply: latestV1.KptApplyInventory{
+			Live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
 					Dir: "valid_path",
 				},
 			},
@@ -1221,8 +1221,8 @@ type kptConfig struct {
 	config                string
 }
 
-func (c *kptConfig) WorkingDir() string                                    { return c.workingDir }
-func (c *kptConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
-func (c *kptConfig) GetKubeNamespace() string                              { return kubectl.TestNamespace }
-func (c *kptConfig) GetKubeConfig() string                                 { return c.config }
-func (c *kptConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }
+func (c *kptConfig) WorkingDir() string                                  { return c.workingDir }
+func (c *kptConfig) GetKubeContext() string                              { return kubectl.TestKubeContext }
+func (c *kptConfig) GetKubeNamespace() string                            { return kubectl.TestNamespace }
+func (c *kptConfig) GetKubeConfig() string                               { return c.config }
+func (c *kptConfig) PortForwardResources() []*latest.PortForwardResource { return nil }

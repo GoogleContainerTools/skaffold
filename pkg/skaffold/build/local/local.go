@@ -26,12 +26,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact) build.ArtifactBuilder {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact) build.ArtifactBuilder {
 	if b.prune {
 		b.localPruner.asynchronousCleanupOldImages(ctx, []string{a.ImageName})
 	}
@@ -66,7 +66,7 @@ func (b *Builder) PushImages() bool {
 
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag, platforms)
 	if err != nil {
 		return "", err
@@ -94,7 +94,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latestV1.
 	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	if !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,
