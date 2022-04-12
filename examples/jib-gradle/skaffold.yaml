@@ -2,8 +2,8 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-  - image: skaffold-jib-gradle
-    jib: {}
+    - image: skaffold-jib-gradle
+      jib: {}
 
 # optional profile to run the jib build on Google Cloud Build
 profiles:

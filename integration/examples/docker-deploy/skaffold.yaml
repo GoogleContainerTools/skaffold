@@ -1,13 +1,13 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
   local:
     push: false
   artifacts:
-  - image: bert
-    context: bert
-  - image: ernie
-    context: ernie
+    - image: bert
+      context: bert
+    - image: ernie
+      context: ernie
 deploy:
   docker:
     images: [bert, ernie]

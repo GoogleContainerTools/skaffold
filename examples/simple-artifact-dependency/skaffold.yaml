@@ -2,15 +2,14 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-  - image: app
-    context: app
-    requires:
+    - image: app
+      context: app
+      requires:
+        - image: base
+          alias: BASE
     - image: base
-      alias: BASE
-  - image: base
-    context: base
+      context: base
 deploy:
   kubectl:
     manifests:
-    - app/k8s-pod.yaml
-
+      - app/k8s-pod.yaml

@@ -3,8 +3,8 @@ kind: Config
 
 build:
   artifacts:
-  - image: node-example
-    context: backend
+    - image: node-example
+      context: backend
 
 profiles:
   - name: dev
@@ -12,14 +12,14 @@ profiles:
       - command: dev
     build:
       artifacts:
-      - image: node-example
-        context: backend
-        docker:
-          buildArgs:
-            ENV: development
-        sync:
-          manual:
-          # Sync all the javascript files that are in the src folder
-          # with the container src folder
-          - src: 'src/**/*.js'
-            dest: .
+        - image: node-example
+          context: backend
+          docker:
+            buildArgs:
+              ENV: development
+          sync:
+            manual:
+              # Sync all the javascript files that are in the src folder
+              # with the container src folder
+              - src: "src/**/*.js"
+                dest: .

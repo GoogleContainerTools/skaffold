@@ -16,5 +16,5 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-  - image: skaffold-ko
-    ko: {}
+    - image: skaffold-ko
+      ko: {}
