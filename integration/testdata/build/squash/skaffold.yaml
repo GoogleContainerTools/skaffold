@@ -1,7 +1,7 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
   artifacts:
-  - image: squash
-    docker:
-      squash: true
+    - image: squash
+      docker:
+        squash: true

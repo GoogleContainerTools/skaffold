@@ -1,8 +1,8 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
   artifacts:
-  - image: foo
+    - image: foo
   googleCloudBuild:
     projectId: proj1
     diskSizeGb: 12
@@ -13,9 +13,9 @@ build:
     concurrency: 3
     workerPool: pool1
 profiles:
-- name: local
-  build:
-    local:
-      concurrency: 1
-      tryImportMissing: false
-      useDockerCLI: false
+  - name: local
+    build:
+      local:
+        concurrency: 1
+        tryImportMissing: false
+        useDockerCLI: false

@@ -1,15 +1,15 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
   artifacts:
-  - image: foo
+    - image: foo
   cluster:
     concurrency: 1
     pullSecretName: kaniko-secret1
 profiles:
-- name: local
-  build:
-    local:
-      concurrency: 1
-      tryImportMissing: false
-      useDockerCLI: false
+  - name: local
+    build:
+      local:
+        concurrency: 1
+        tryImportMissing: false
+        useDockerCLI: false
