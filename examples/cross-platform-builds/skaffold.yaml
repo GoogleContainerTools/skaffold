@@ -3,7 +3,7 @@ kind: Config
 build:
   platforms: ["linux/amd64"]
   artifacts:
-  - image: skaffold-example
+    - image: skaffold-example
 deploy:
   kubectl:
     manifests:

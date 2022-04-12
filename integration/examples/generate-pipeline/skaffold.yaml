@@ -1,9 +1,9 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
   artifacts:
-  - image: pipeline-example
+    - image: pipeline-example
 deploy:
   kubectl:
     manifests:
-    - k8s-*
+      - k8s-*
