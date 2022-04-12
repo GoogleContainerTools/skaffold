@@ -230,20 +230,19 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 
 func containerConfig(artifact *latestV1.BuildpackArtifact) (pack.ContainerConfig, error) {
 	var vols []string
-	if artifact.Volumes != nil {
-		for _, v := range *artifact.Volumes {
-			if v.Host == "" || v.Target == "" {
-				// in case these slip by the JSON schema
-				return pack.ContainerConfig{}, errors.New("buildpacks volumes must have both host and target")
-			}
-			var spec string
-			if v.Options == "" {
-				spec = fmt.Sprintf("%s:%s", v.Host, v.Target)
-			} else {
-				spec = fmt.Sprintf("%s:%s:%s", v.Host, v.Target, v.Options)
-			}
-			vols = append(vols, spec)
+	for _, v := range artifact.Volumes {
+		if v.Host == "" || v.Target == "" {
+			// in case these slip by the JSON schema
+			return pack.ContainerConfig{}, errors.New("buildpacks volumes must have both host and target")
 		}
+		var spec string
+		if v.Options == "" {
+			spec = fmt.Sprintf("%s:%s", v.Host, v.Target)
+		} else {
+			spec = fmt.Sprintf("%s:%s:%s", v.Host, v.Target, v.Options)
+		}
+		vols = append(vols, spec)
 	}
+
 	return pack.ContainerConfig{Volumes: vols}, nil
 }
