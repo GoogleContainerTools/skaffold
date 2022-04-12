@@ -5,9 +5,9 @@ build:
     # Change `k8s-skaffold` with your PROJECT_ID
     projectId: k8s-skaffold
   artifacts:
-    - image: skaffold-example
-      kaniko:
-        cache: {}
+  - image: skaffold-example
+    kaniko:
+      cache: {}
 deploy:
   kubectl:
     manifests:

@@ -1,14 +1,14 @@
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v2beta28
 kind: Config
 build:
   # only build and deploy "base-service" on main profile
   artifacts:
-    - image: skaffold-base
-      context: base-service
+  - image: skaffold-base
+    context: base-service
 deploy:
   kubectl:
     manifests:
-      - "base-service/*.yaml"
+      - 'base-service/*.yaml'
 
 profiles:
   - name: hello
@@ -20,7 +20,7 @@ profiles:
           context: hello-service
       - op: add
         path: /deploy/kubectl/manifests/1
-        value: "hello-service/*.yaml"
+        value: 'hello-service/*.yaml'
 
   - name: world
     patches:
@@ -31,4 +31,4 @@ profiles:
           context: world-service
       - op: add
         path: /deploy/kubectl/manifests/1
-        value: "world-service/*.yaml"
+        value: 'world-service/*.yaml'

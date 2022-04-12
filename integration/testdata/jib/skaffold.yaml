@@ -1,11 +1,11 @@
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-    - image: skaffold-jib
-      jib:
-        args:
-          - --no-transfer-progress
+  - image: skaffold-jib
+    jib:
+      args:
+      - --no-transfer-progress
 
 profiles:
   # optional profile to run the jib build on Google Cloud Build
@@ -15,6 +15,6 @@ profiles:
   # profile to check that an unsupported Jib version fails the build
   - name: old-jib
     patches:
-      - op: add
-        path: /build/artifacts/0/jib/args
-        value: ["-Djib.maven-plugin-version=1.3.0"]
+    - op: add
+      path: /build/artifacts/0/jib/args
+      value: ['-Djib.maven-plugin-version=1.3.0']

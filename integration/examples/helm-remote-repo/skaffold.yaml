@@ -1,8 +1,8 @@
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v2beta28
 kind: Config
 deploy:
   helm:
     releases:
-      - name: redis-release
-        repo: https://charts.bitnami.com/bitnami
-        remoteChart: redis
+    - name: redis-release
+      repo: https://charts.bitnami.com/bitnami 
+      remoteChart: redis
