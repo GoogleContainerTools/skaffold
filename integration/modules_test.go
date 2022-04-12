@@ -26,6 +26,9 @@ import (
 )
 
 func TestModules_BuildDependency(t *testing.T) {
+	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7035.
+	t.Skipf("Fix https://github.com/GoogleContainerTools/skaffold/issues/7035")
+
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	t.Run("build dependency between artifacts of different modules", func(t *testing.T) {
 		ns, client := SetupNamespace(t)

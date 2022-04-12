@@ -123,6 +123,8 @@ func TestDebug(t *testing.T) {
 }
 
 func TestDockerDebug(t *testing.T) {
+	// TODO: fix https://github.com/GoogleContainerTools/skaffold/issues/7030
+	t.Skipf("Fix as https://github.com/GoogleContainerTools/skaffold/issues/7030")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	t.Run("debug docker deployment", func(t *testing.T) {

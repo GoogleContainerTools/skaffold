@@ -176,6 +176,8 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunTail(t *testing.T) {
+	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7287
+	t.Skipf("fix https://github.com/GoogleContainerTools/skaffold/issues/7287")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	for _, test := range tests {
@@ -196,6 +198,8 @@ func TestRunTail(t *testing.T) {
 }
 
 func TestRunTailDefaultNamespace(t *testing.T) {
+	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7287
+	t.Skipf("fix https://github.com/GoogleContainerTools/skaffold/issues/7287")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	for _, test := range tests {

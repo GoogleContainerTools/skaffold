@@ -82,6 +82,8 @@ func TestDevSync(t *testing.T) {
 }
 
 func TestDevSyncDefaultNamespace(t *testing.T) {
+	// TODO: fix https://github.com/GoogleContainerTools/skaffold/issues/7286
+	t.Skipf("Fix https://github.com/GoogleContainerTools/skaffold/issues/7286")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	for _, test := range syncTests {
