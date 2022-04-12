@@ -1,21 +1,21 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
   artifacts:
-  - image: foo
+    - image: foo
   local:
     concurrency: 1
     tryImportMissing: false
     useDockerCLI: false
 profiles:
-- name: gcb
-  build:
-    googleCloudBuild:
-      projectId: proj1
-      diskSizeGb: 12
-      machineType: vm1
-      timeout: 120s
-      logging: GCS_ONLY
-      logStreamingOption: STREAM_DEFAULT
-      concurrency: 3
-      workerPool: pool1
+  - name: gcb
+    build:
+      googleCloudBuild:
+        projectId: proj1
+        diskSizeGb: 12
+        machineType: vm1
+        timeout: 120s
+        logging: GCS_ONLY
+        logStreamingOption: STREAM_DEFAULT
+        concurrency: 3
+        workerPool: pool1
