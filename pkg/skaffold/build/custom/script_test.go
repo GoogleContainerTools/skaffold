@@ -26,7 +26,7 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -81,7 +81,7 @@ func TestRetrieveEnv(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.buildContext, nil })
 
 			builder := NewArtifactBuilder(nil, nil, test.pushImages, false, test.additionalEnv)
-			actual, err := builder.retrieveEnv(&latestV1.Artifact{}, test.tag, test.platforms)
+			actual, err := builder.retrieveEnv(&latest.Artifact{}, test.tag, test.platforms)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -92,7 +92,7 @@ func TestRetrieveEnv(t *testing.T) {
 func TestRetrieveCmd(t *testing.T) {
 	tests := []struct {
 		description       string
-		artifact          *latestV1.Artifact
+		artifact          *latest.Artifact
 		tag               string
 		env               []string
 		expected          *exec.Cmd
@@ -100,10 +100,10 @@ func TestRetrieveCmd(t *testing.T) {
 	}{
 		{
 			description: "artifact with workspace set",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				Workspace: "workspace",
-				ArtifactType: latestV1.ArtifactType{
-					CustomArtifact: &latestV1.CustomArtifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
 						BuildCommand: "./build.sh",
 					},
 				},
@@ -114,9 +114,9 @@ func TestRetrieveCmd(t *testing.T) {
 		},
 		{
 			description: "buildcommand with multiple args",
-			artifact: &latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					CustomArtifact: &latestV1.CustomArtifact{
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
 						BuildCommand: "./build.sh --flag=$IMAGES --anotherflag",
 					},
 				},
@@ -127,9 +127,9 @@ func TestRetrieveCmd(t *testing.T) {
 		},
 		{
 			description: "buildcommand with go template",
-			artifact: &latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					CustomArtifact: &latestV1.CustomArtifact{
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
 						BuildCommand: "./build.sh --flag={{ .FLAG }}",
 					},
 				},

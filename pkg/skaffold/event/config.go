@@ -16,14 +16,12 @@ limitations under the License.
 
 package event
 
-import (
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-)
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 type Config interface {
 	GetKubeContext() string
 	AutoBuild() bool
 	AutoDeploy() bool
 	AutoSync() bool
-	GetPipelines() []latestV1.Pipeline
+	GetPipelines() []latest.Pipeline
 }

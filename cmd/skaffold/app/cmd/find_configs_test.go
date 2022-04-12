@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -33,22 +33,22 @@ func TestFindConfigs(t *testing.T) {
 	}{
 		{
 			files: map[string]string{
-				"valid.yml":        validYaml(latestV1.Version),
+				"valid.yml":        validYaml(latest.Version),
 				"upgradeable.yaml": validYaml(v1beta7.Version),
 				"invalid.yaml":     invalidYaml(),
 			},
 			expected: map[string]string{
-				"valid.yml":        latestV1.Version,
+				"valid.yml":        latest.Version,
 				"upgradeable.yaml": v1beta7.Version,
 			},
 		},
 		{
 			files: map[string]string{
-				"valid.yaml":   validYaml(latestV1.Version),
+				"valid.yaml":   validYaml(latest.Version),
 				"invalid.yaml": invalidYaml(),
 			},
 			expected: map[string]string{
-				"valid.yaml": latestV1.Version,
+				"valid.yaml": latest.Version,
 			},
 		},
 	}

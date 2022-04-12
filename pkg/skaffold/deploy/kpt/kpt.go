@@ -54,7 +54,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -79,7 +79,7 @@ const (
 
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
-	*latestV1.KptDeploy
+	*latest.KptDeploy
 
 	accessor      access.Accessor
 	logger        log.Logger
@@ -102,8 +102,8 @@ type Deployer struct {
 
 	namespaces *[]string
 
-	transformableAllowlist map[apimachinery.GroupKind]latestV1.ResourceFilter
-	transformableDenylist  map[apimachinery.GroupKind]latestV1.ResourceFilter
+	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
 type Config interface {
@@ -114,7 +114,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV1.KptDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy) (*Deployer, error) {
 	podSelector := kubernetes.NewImageList()
 	kubectl := pkgkubectl.NewCLI(cfg, cfg.GetKubeNamespace())
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())

@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -156,7 +156,7 @@ func TestGetSyncDiff(t *testing.T) {
 
 	tests := []struct {
 		description      string
-		artifact         *latestV1.JibArtifact
+		artifact         *latest.JibArtifact
 		events           filemon.Events
 		buildDefinitions []string
 		nextSyncMap      SyncMap
@@ -165,7 +165,7 @@ func TestGetSyncDiff(t *testing.T) {
 	}{
 		{
 			description:      "build file changed (nil, nil, nil)",
-			artifact:         &latestV1.JibArtifact{},
+			artifact:         &latest.JibArtifact{},
 			events:           filemon.Events{Modified: []string{buildFile}},
 			buildDefinitions: []string{buildFile},
 			expectedCopy:     nil,
@@ -173,7 +173,7 @@ func TestGetSyncDiff(t *testing.T) {
 		},
 		{
 			description:      "something is deleted (nil, nil, nil)",
-			artifact:         &latestV1.JibArtifact{},
+			artifact:         &latest.JibArtifact{},
 			events:           filemon.Events{Deleted: []string{directFile}},
 			buildDefinitions: []string{},
 			expectedCopy:     nil,
@@ -181,7 +181,7 @@ func TestGetSyncDiff(t *testing.T) {
 		},
 		{
 			description:      "only direct sync entries changed",
-			artifact:         &latestV1.JibArtifact{},
+			artifact:         &latest.JibArtifact{},
 			events:           filemon.Events{Modified: []string{directFile}},
 			buildDefinitions: []string{},
 			expectedCopy:     map[string][]string{directFile: directTarget},
@@ -189,7 +189,7 @@ func TestGetSyncDiff(t *testing.T) {
 		},
 		{
 			description:      "only generated sync entries changed",
-			artifact:         &latestV1.JibArtifact{},
+			artifact:         &latest.JibArtifact{},
 			events:           filemon.Events{Modified: []string{generatedFile}},
 			buildDefinitions: []string{},
 			nextSyncMap: SyncMap{
@@ -201,7 +201,7 @@ func TestGetSyncDiff(t *testing.T) {
 		},
 		{
 			description:      "generated and direct sync entries changed",
-			artifact:         &latestV1.JibArtifact{},
+			artifact:         &latest.JibArtifact{},
 			events:           filemon.Events{Modified: []string{directFile, generatedFile}},
 			buildDefinitions: []string{},
 			nextSyncMap: SyncMap{
@@ -213,7 +213,7 @@ func TestGetSyncDiff(t *testing.T) {
 		},
 		{
 			description:      "new file created",
-			artifact:         &latestV1.JibArtifact{},
+			artifact:         &latest.JibArtifact{},
 			events:           filemon.Events{Added: []string{newFile}},
 			buildDefinitions: []string{},
 			nextSyncMap: SyncMap{
@@ -228,7 +228,7 @@ func TestGetSyncDiff(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getSyncMapFunc, func(_ context.Context, _ string, _ *latestV1.JibArtifact) (*SyncMap, error) {
+			t.Override(&getSyncMapFunc, func(_ context.Context, _ string, _ *latest.JibArtifact) (*SyncMap, error) {
 				return &test.nextSyncMap, nil
 			})
 			pk := getProjectKey(workspace, test.artifact)
@@ -253,7 +253,7 @@ func TestGetSyncDiff_directChecksUpdateFileTime(testing *testing.T) {
 
 	ctx := context.Background()
 	workspace := "testworkspace"
-	artifact := &latestV1.JibArtifact{}
+	artifact := &latest.JibArtifact{}
 
 	tmpDir.Touch("direct")
 
@@ -267,7 +267,7 @@ func TestGetSyncDiff_directChecksUpdateFileTime(testing *testing.T) {
 
 	testutil.Run(testing, "Checks on direct files also update file times", func(t *testutil.T) {
 		pk := getProjectKey(workspace, artifact)
-		t.Override(&getSyncMapFunc, func(_ context.Context, _ string, _ *latestV1.JibArtifact) (*SyncMap, error) {
+		t.Override(&getSyncMapFunc, func(_ context.Context, _ string, _ *latest.JibArtifact) (*SyncMap, error) {
 			t.Fatal("getSyncMapFunc should not have been called in this test")
 			return nil, nil
 		})

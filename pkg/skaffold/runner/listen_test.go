@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -55,11 +55,11 @@ func (f *fakeTriggger) Debounce() bool {
 
 type fakeDepsResolver struct{}
 
-func (f *fakeDepsResolver) TransitiveArtifactDependencies(context.Context, *latestV1.Artifact) ([]string, error) {
+func (f *fakeDepsResolver) TransitiveArtifactDependencies(context.Context, *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
 
-func (f *fakeDepsResolver) SingleArtifactDependencies(context.Context, *latestV1.Artifact) ([]string, error) {
+func (f *fakeDepsResolver) SingleArtifactDependencies(context.Context, *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
 

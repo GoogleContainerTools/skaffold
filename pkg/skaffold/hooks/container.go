@@ -30,7 +30,7 @@ import (
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -81,7 +81,7 @@ func namePatternSelector(podName, containerName string) containerSelector {
 
 // containerHook represents a lifecycle hook to be executed inside a running container
 type containerHook struct {
-	cfg        latestV1.ContainerHook
+	cfg        latest.ContainerHook
 	cli        *kubectl.CLI
 	selector   containerSelector
 	namespaces []string

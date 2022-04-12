@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -106,12 +106,12 @@ func GroupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 	return false, schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
 }
 
-func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]latestV1.ResourceFilter, map[schema.GroupKind]latestV1.ResourceFilter, error) {
+func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]latest.ResourceFilter, map[schema.GroupKind]latest.ResourceFilter, error) {
 	// TODO(aaron-prindle) currently this also modifies the flag & config to support a JSON path syntax for input.
 	// this should be done elsewhere eventually
 
-	transformableAllowlist := map[schema.GroupKind]latestV1.ResourceFilter{}
-	transformableDenylist := map[schema.GroupKind]latestV1.ResourceFilter{}
+	transformableAllowlist := map[schema.GroupKind]latest.ResourceFilter{}
+	transformableDenylist := map[schema.GroupKind]latest.ResourceFilter{}
 	// add default values
 	for _, rf := range manifest.TransformAllowlist {
 		groupKind := schema.ParseGroupKind(rf.GroupKind)
@@ -143,7 +143,7 @@ func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]l
 		if err != nil {
 			return nil, nil, err
 		}
-		rsc := latestV1.ResourceSelectorConfig{}
+		rsc := latest.ResourceSelectorConfig{}
 		err = yaml.Unmarshal(transformRulesFromFile, &rsc)
 		if err != nil {
 			return nil, nil, err
@@ -166,8 +166,8 @@ func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]l
 	return transformableAllowlist, transformableDenylist, nil
 }
 
-func convertJSONPathIndex(rf latestV1.ResourceFilter) latestV1.ResourceFilter {
-	nrf := latestV1.ResourceFilter{}
+func convertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
+	nrf := latest.ResourceFilter{}
 	nrf.GroupKind = rf.GroupKind
 
 	if len(rf.Labels) > 0 {

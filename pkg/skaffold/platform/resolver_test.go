@@ -29,7 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -38,7 +38,7 @@ func TestResolver(t *testing.T) {
 		description      string
 		cliPlatforms     []string
 		clusterPlatforms []string
-		pipelines        []latestV1.Pipeline
+		pipelines        []latest.Pipeline
 		runMode          config.RunMode
 		shouldErr        bool
 		expected         map[string]Matcher
@@ -47,9 +47,9 @@ func TestResolver(t *testing.T) {
 			description:      "all platforms specified valid for `build` mode",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/arm64"},
-			pipelines: []latestV1.Pipeline{{Build: latestV1.BuildConfig{
+			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
-				Artifacts: []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
+				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
 			runMode: config.RunModes.Build,
 			expected: map[string]Matcher{
 				"img1": {Platforms: []v1.Platform{
@@ -64,9 +64,9 @@ func TestResolver(t *testing.T) {
 			description:      "cluster platform mismatch for `dev` mode",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/arm64"},
-			pipelines: []latestV1.Pipeline{{Build: latestV1.BuildConfig{
+			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
-				Artifacts: []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
+				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
 			runMode:   config.RunModes.Dev,
 			shouldErr: true,
 		},
@@ -74,9 +74,9 @@ func TestResolver(t *testing.T) {
 			description:      "cluster platform selected for `dev` mode",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/amd64"},
-			pipelines: []latestV1.Pipeline{{Build: latestV1.BuildConfig{
+			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
-				Artifacts: []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
+				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
 			runMode: config.RunModes.Dev,
 			expected: map[string]Matcher{
 				"img1": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}},
@@ -87,9 +87,9 @@ func TestResolver(t *testing.T) {
 			description:      "cluster platform selected for `debug` mode",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/amd64"},
-			pipelines: []latestV1.Pipeline{{Build: latestV1.BuildConfig{
+			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
-				Artifacts: []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
+				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
 			runMode: config.RunModes.Debug,
 			expected: map[string]Matcher{
 				"img1": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}},
@@ -99,9 +99,9 @@ func TestResolver(t *testing.T) {
 		{
 			description:  "artifact platform constraint applied",
 			cliPlatforms: []string{"linux/amd64", "linux/386"},
-			pipelines: []latestV1.Pipeline{{Build: latestV1.BuildConfig{
+			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
-				Artifacts: []*latestV1.Artifact{{ImageName: "img1", Platforms: []string{"darwin/arm64", "linux/386"}}, {ImageName: "img2"}}}}},
+				Artifacts: []*latest.Artifact{{ImageName: "img1", Platforms: []string{"darwin/arm64", "linux/386"}}, {ImageName: "img2"}}}}},
 			expected: map[string]Matcher{
 				"img1": {Platforms: []v1.Platform{{OS: "linux", Architecture: "386"}}},
 				"img2": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "386"}}},
@@ -111,9 +111,9 @@ func TestResolver(t *testing.T) {
 			description:      "artifact platform constraint mismatch",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/amd64"},
-			pipelines: []latestV1.Pipeline{{Build: latestV1.BuildConfig{
+			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
-				Artifacts: []*latestV1.Artifact{{ImageName: "img1", Platforms: []string{"darwin/arm64"}}, {ImageName: "img2"}}}}},
+				Artifacts: []*latest.Artifact{{ImageName: "img1", Platforms: []string{"darwin/arm64"}}, {ImageName: "img2"}}}}},
 			runMode:   config.RunModes.Dev,
 			shouldErr: true,
 		},

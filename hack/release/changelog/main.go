@@ -30,7 +30,7 @@ import (
 	"github.com/blang/semver"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type changelogData struct {
@@ -65,13 +65,13 @@ func getChangelogData(schemaIsReleased func(string) (bool, error)) (changelogDat
 	data.Date = currentTime.Format("01/02/2006")
 
 	// Add extra string if new schema version is being released
-	latest := path.Join("pkg", "skaffold", "schema", "latest", "v1", "config.go")
-	released, err := schemaIsReleased(latest)
+	schema := path.Join("pkg", "skaffold", "schema", "latest", "v1", "config.go")
+	released, err := schemaIsReleased(schema)
 	if err != nil {
 		return changelogData{}, fmt.Errorf("checking if schema is released: %w", err)
 	}
 	if !released {
-		schemaVersion := strings.TrimPrefix(latestV1.Version, "skaffold/")
+		schemaVersion := strings.TrimPrefix(latest.Version, "skaffold/")
 		data.SchemaString = fmt.Sprintf("\nNote: This release comes with a new config version, `%s`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.\n", schemaVersion)
 	}
 

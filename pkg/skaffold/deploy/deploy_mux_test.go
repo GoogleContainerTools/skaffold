@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -160,11 +160,11 @@ func TestDeployerMux_Deploy(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			testEvent.InitializeState([]latestV1.Pipeline{{
-				Deploy: latestV1.DeployConfig{},
-				Build: latestV1.BuildConfig{
-					BuildType: latestV1.BuildType{
-						LocalBuild: &latestV1.LocalBuild{},
+			testEvent.InitializeState([]latest.Pipeline{{
+				Deploy: latest.DeployConfig{},
+				Build: latest.BuildConfig{
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				}}})
 

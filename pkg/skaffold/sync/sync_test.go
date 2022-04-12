@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -44,7 +44,7 @@ func TestNewSyncItem(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		description  string
-		artifact     *latestV1.Artifact
+		artifact     *latest.Artifact
 		dependencies map[string][]string
 		labels       map[string]string
 		evt          filemon.Events
@@ -56,10 +56,10 @@ func TestNewSyncItem(t *testing.T) {
 		// manual sync cases
 		{
 			description: "manual: match copy",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{{Src: "*.html", Dest: "."}},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
 				},
 				Workspace: ".",
 			},
@@ -82,10 +82,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: no tag for image",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "notbuildyet",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{{Src: "*.html", Dest: "."}},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
 				},
 				Workspace: ".",
 			},
@@ -102,10 +102,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: multiple sync patterns",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "*.js", Dest: "."},
 						{Src: "*.html", Dest: "."},
 						{Src: "*.json", Dest: "."},
@@ -137,10 +137,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: recursive glob patterns",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "src/**/*.js", Dest: "src/", Strip: "src/"},
 					},
 				},
@@ -166,10 +166,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: sync all",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "*", Dest: "."},
 					},
 				},
@@ -199,9 +199,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: not copy syncable",
-			artifact: &latestV1.Artifact{
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "*.html", Dest: "."},
 					},
 				},
@@ -219,9 +219,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: not delete syncable",
-			artifact: &latestV1.Artifact{
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "*.html", Dest: "/static"},
 					},
 				},
@@ -239,9 +239,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: err bad pattern",
-			artifact: &latestV1.Artifact{
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "[*.html", Dest: "*"},
 					},
 				},
@@ -255,9 +255,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: no change no sync",
-			artifact: &latestV1.Artifact{
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "*.html", Dest: "*"},
 					},
 				},
@@ -272,10 +272,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: slashes in glob pattern",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "**/**/*.js", Dest: "."},
 					},
 				},
@@ -301,10 +301,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: sync subtrees",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "dir1/**/*.js", Dest: ".", Strip: "dir1/"},
 					},
 				},
@@ -330,10 +330,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: multiple matches",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "dir1/**/*.js", Dest: ".", Strip: "dir1/"},
 						{Src: "dir1/**/**/*.js", Dest: "."},
 					},
@@ -360,10 +360,10 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "manual: stars work with absolute paths",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
-					Manual: []*latestV1.SyncRule{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
 						{Src: "dir1a/**/*.js", Dest: "/tstar", Strip: "dir1a/"},
 						{Src: "dir1b/**/*.js", Dest: "/dstar"},
 					},
@@ -396,9 +396,9 @@ func TestNewSyncItem(t *testing.T) {
 		// auto-sync cases
 		{
 			description: "infer: match copy",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"*.html"},
 				},
 				Workspace: ".",
@@ -422,9 +422,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: not auto-syncable",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"*.html"},
 				},
 				Workspace: ".",
@@ -442,9 +442,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: file not specified for syncing",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"*.js"},
 				},
 				Workspace: ".",
@@ -462,9 +462,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: no tag for image",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "notbuildyet",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"*.html"},
 				},
 				Workspace: ".",
@@ -483,9 +483,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: multiple sync patterns",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"*.js", "*.html", "*.json"},
 				},
 				Workspace: "node",
@@ -511,9 +511,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: recursive glob patterns",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"src/**/*.js"},
 				},
 				Workspace: "node",
@@ -538,9 +538,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: sync all",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"*"},
 				},
 				Workspace: "node",
@@ -566,8 +566,8 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: delete not syncable",
-			artifact: &latestV1.Artifact{
-				Sync: &latestV1.Sync{
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
 					Infer: []string{"*"},
 				},
 				Workspace: ".",
@@ -585,8 +585,8 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: err bad pattern",
-			artifact: &latestV1.Artifact{
-				Sync: &latestV1.Sync{
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
 					Infer: []string{"[*.html"},
 				},
 				Workspace: ".",
@@ -599,8 +599,8 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: no change no sync",
-			artifact: &latestV1.Artifact{
-				Sync: &latestV1.Sync{
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
 					Infer: []string{"*.html"},
 				},
 				Workspace: ".",
@@ -615,9 +615,9 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "infer: slashes in glob pattern",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Infer: []string{"**/**/*.js"},
 				},
 				Workspace: ".",
@@ -644,12 +644,12 @@ func TestNewSyncItem(t *testing.T) {
 		// Buildpacks
 		{
 			description: "auto with buildpacks",
-			artifact: &latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					BuildpackArtifact: &latestV1.BuildpackArtifact{},
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
 				},
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Auto: util.BoolPtr(true),
 				},
 				Workspace: ".",
@@ -684,12 +684,12 @@ func TestNewSyncItem(t *testing.T) {
 		},
 		{
 			description: "unknown change with buildpacks",
-			artifact: &latestV1.Artifact{
-				ArtifactType: latestV1.ArtifactType{
-					BuildpackArtifact: &latestV1.BuildpackArtifact{},
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
 				},
 				ImageName: "test",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Auto: util.BoolPtr(true),
 				},
 				Workspace: ".",
@@ -720,14 +720,14 @@ func TestNewSyncItem(t *testing.T) {
 		// Auto with Jib
 		{
 			description: "auto with jib",
-			artifact: &latestV1.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
 				Workspace: ".",
-				Sync: &latestV1.Sync{
+				Sync: &latest.Sync{
 					Auto: util.BoolPtr(true),
 				},
-				ArtifactType: latestV1.ArtifactType{
-					JibArtifact: &latestV1.JibArtifact{},
+				ArtifactType: latest.ArtifactType{
+					JibArtifact: &latest.JibArtifact{},
 				},
 			},
 			evt: filemon.Events{
@@ -751,11 +751,11 @@ func TestNewSyncItem(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&WorkingDir, func(context.Context, string, docker.Config) (string, error) { return test.workingDir, nil })
-			t.Override(&SyncMap, func(context.Context, *latestV1.Artifact, docker.Config) (map[string][]string, error) {
+			t.Override(&SyncMap, func(context.Context, *latest.Artifact, docker.Config) (map[string][]string, error) {
 				return test.dependencies, nil
 			})
 			t.Override(&Labels, func(context.Context, string, docker.Config) (map[string]string, error) { return test.labels, nil })
-			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latestV1.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
+			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latest.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
 				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
 			})
 
@@ -771,7 +771,7 @@ func TestNewSyncItem(t *testing.T) {
 func TestIntersect(t *testing.T) {
 	tests := []struct {
 		description string
-		syncRules   []*latestV1.SyncRule
+		syncRules   []*latest.SyncRule
 		files       []string
 		context     string
 		workingDir  string
@@ -785,7 +785,7 @@ func TestIntersect(t *testing.T) {
 		{
 			description: "copy nested file to correct destination",
 			files:       []string{filepath.Join("static", "index.html"), filepath.Join("static", "test.html")},
-			syncRules: []*latestV1.SyncRule{
+			syncRules: []*latest.SyncRule{
 				{Src: filepath.Join("static", "*.html"), Dest: "/html", Strip: "static/"},
 			},
 			expected: map[string][]string{
@@ -796,7 +796,7 @@ func TestIntersect(t *testing.T) {
 		{
 			description: "double-star matches depth zero",
 			files:       []string{"index.html"},
-			syncRules: []*latestV1.SyncRule{
+			syncRules: []*latest.SyncRule{
 				{Src: filepath.Join("**", "*.html"), Dest: "/html"},
 			},
 			expected: map[string][]string{
@@ -807,7 +807,7 @@ func TestIntersect(t *testing.T) {
 			description: "file not in . copies to correct destination",
 			files:       []string{filepath.Join("node", "server.js")},
 			context:     "node",
-			syncRules: []*latestV1.SyncRule{
+			syncRules: []*latest.SyncRule{
 				{Src: "*.js", Dest: "/"},
 			},
 			expected: map[string][]string{
@@ -818,7 +818,7 @@ func TestIntersect(t *testing.T) {
 			description: "file change not relative to context throws error",
 			files:       []string{filepath.Join("node", "server.js"), filepath.Join("/", "something", "test.js")},
 			context:     "node",
-			syncRules: []*latestV1.SyncRule{
+			syncRules: []*latest.SyncRule{
 				{Src: "*.js", Dest: "/"},
 			},
 			shouldErr: true,
@@ -970,15 +970,15 @@ func TestPerform(t *testing.T) {
 func TestSyncMap(t *testing.T) {
 	tests := []struct {
 		description  string
-		artifactType latestV1.ArtifactType
+		artifactType latest.ArtifactType
 		files        map[string]string
 		shouldErr    bool
 		expectedMap  map[string][]string
 	}{
 		{
 			description: "docker - supported",
-			artifactType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
 					DockerfilePath: "Dockerfile",
 				},
 			},
@@ -990,8 +990,8 @@ func TestSyncMap(t *testing.T) {
 		},
 		{
 			description: "kaniko - supported",
-			artifactType: latestV1.ArtifactType{
-				KanikoArtifact: &latestV1.KanikoArtifact{
+			artifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{
 					DockerfilePath: "Dockerfile",
 				},
 			},
@@ -1003,10 +1003,10 @@ func TestSyncMap(t *testing.T) {
 		},
 		{
 			description: "custom - supported",
-			artifactType: latestV1.ArtifactType{
-				CustomArtifact: &latestV1.CustomArtifact{
-					Dependencies: &latestV1.CustomDependencies{
-						Dockerfile: &latestV1.DockerfileDependency{
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{
+					Dependencies: &latest.CustomDependencies{
+						Dockerfile: &latest.DockerfileDependency{
 							Path: "Dockerfile",
 						},
 					},
@@ -1020,14 +1020,14 @@ func TestSyncMap(t *testing.T) {
 		},
 		{
 			description: "custom, no dockerfile - not supported",
-			artifactType: latestV1.ArtifactType{
-				CustomArtifact: &latestV1.CustomArtifact{},
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{},
 			},
 			shouldErr: true,
 		},
 		{
 			description:  "not supported",
-			artifactType: latestV1.ArtifactType{},
+			artifactType: latest.ArtifactType{},
 			shouldErr:    true,
 		},
 	}
@@ -1037,7 +1037,7 @@ func TestSyncMap(t *testing.T) {
 			t.Override(&docker.RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().WriteFiles(test.files).Chdir()
 
-			syncMap, err := SyncMap(context.Background(), &latestV1.Artifact{ArtifactType: test.artifactType}, nil)
+			syncMap, err := SyncMap(context.Background(), &latest.Artifact{ArtifactType: test.artifactType}, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedMap, syncMap)
@@ -1055,34 +1055,34 @@ func TestInit(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		description string
-		artifact    *latestV1.Artifact
+		artifact    *latest.Artifact
 		shouldInit  bool
 		initErrors  bool
 	}{
 		{
 			description: "sync off",
-			artifact:    &latestV1.Artifact{},
+			artifact:    &latest.Artifact{},
 			shouldInit:  false,
 		},
 		{
 			description: "sync on, auto off",
-			artifact:    &latestV1.Artifact{Sync: &latestV1.Sync{}},
+			artifact:    &latest.Artifact{Sync: &latest.Sync{}},
 			shouldInit:  false,
 		},
 		{
 			description: "sync on, auto on, non-jib",
-			artifact:    &latestV1.Artifact{Sync: &latestV1.Sync{Auto: util.BoolPtr(true)}},
+			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  false,
 		},
 		{
 			description: "sync on, auto on, jib",
-			artifact:    &latestV1.Artifact{ArtifactType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{}}, Sync: &latestV1.Sync{Auto: util.BoolPtr(true)}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  true,
 			initErrors:  false,
 		},
 		{
 			description: "sync on, auto on, jib, init fails",
-			artifact:    &latestV1.Artifact{ArtifactType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{}}, Sync: &latestV1.Sync{Auto: util.BoolPtr(true)}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  true,
 			initErrors:  true,
 		},
@@ -1090,7 +1090,7 @@ func TestInit(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			isCalled := false
-			t.Override(&jib.InitSync, func(ctx context.Context, workspace string, a *latestV1.JibArtifact) error {
+			t.Override(&jib.InitSync, func(ctx context.Context, workspace string, a *latest.JibArtifact) error {
 				isCalled = true
 				if test.initErrors {
 					return errors.New("intentional test failure")
@@ -1098,7 +1098,7 @@ func TestInit(t *testing.T) {
 				return nil
 			})
 
-			artifacts := []*latestV1.Artifact{test.artifact}
+			artifacts := []*latest.Artifact{test.artifact}
 			err := Init(ctx, artifacts)
 			t.CheckDeepEqual(test.shouldInit, isCalled)
 			t.CheckError(test.initErrors, err)

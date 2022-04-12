@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -31,16 +31,16 @@ import (
 func TestNewBuilderMux(t *testing.T) {
 	tests := []struct {
 		description         string
-		pipelines           []latestV1.Pipeline
-		pipeBuilder         func(latestV1.Pipeline) (PipelineBuilder, error)
+		pipelines           []latest.Pipeline
+		pipeBuilder         func(latest.Pipeline) (PipelineBuilder, error)
 		shouldErr           bool
 		expectedBuilders    []string
 		expectedConcurrency int
 	}{
 		{
 			description: "only local builder",
-			pipelines: []latestV1.Pipeline{
-				{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{Concurrency: util.IntPtr(1)}}}},
+			pipelines: []latest.Pipeline{
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.IntPtr(1)}}}},
 			},
 			pipeBuilder:         newMockPipelineBuilder,
 			expectedBuilders:    []string{"local"},
@@ -48,26 +48,26 @@ func TestNewBuilderMux(t *testing.T) {
 		},
 		{
 			description: "only cluster builder",
-			pipelines: []latestV1.Pipeline{
-				{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{Cluster: &latestV1.ClusterDetails{}}}},
+			pipelines: []latest.Pipeline{
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{}}}},
 			},
 			pipeBuilder:      newMockPipelineBuilder,
 			expectedBuilders: []string{"cluster"},
 		},
 		{
 			description: "only gcb builder",
-			pipelines: []latestV1.Pipeline{
-				{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{GoogleCloudBuild: &latestV1.GoogleCloudBuild{}}}},
+			pipelines: []latest.Pipeline{
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{}}}},
 			},
 			pipeBuilder:      newMockPipelineBuilder,
 			expectedBuilders: []string{"gcb"},
 		},
 		{
 			description: "min non-zero concurrency",
-			pipelines: []latestV1.Pipeline{
-				{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{Concurrency: util.IntPtr(0)}}}},
-				{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{Concurrency: util.IntPtr(3)}}}},
-				{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{Cluster: &latestV1.ClusterDetails{Concurrency: 2}}}},
+			pipelines: []latest.Pipeline{
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.IntPtr(0)}}}},
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.IntPtr(3)}}}},
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{Concurrency: 2}}}},
 			},
 			pipeBuilder:         newMockPipelineBuilder,
 			expectedBuilders:    []string{"local", "local", "cluster"},
@@ -180,12 +180,12 @@ func TestGetConcurrency(t *testing.T) {
 }
 
 type mockConfig struct {
-	pipelines []latestV1.Pipeline
+	pipelines []latest.Pipeline
 	optRepo   string
 }
 
-func (m *mockConfig) GetPipelines() []latestV1.Pipeline { return m.pipelines }
-func (m *mockConfig) GlobalConfig() string              { return "" }
+func (m *mockConfig) GetPipelines() []latest.Pipeline { return m.pipelines }
+func (m *mockConfig) GlobalConfig() string            { return "" }
 func (m *mockConfig) DefaultRepo() *string {
 	if m.optRepo != "" {
 		return &m.optRepo
@@ -202,7 +202,7 @@ type mockPipelineBuilder struct {
 
 func (m *mockPipelineBuilder) PreBuild(ctx context.Context, out io.Writer) error { return nil }
 
-func (m *mockPipelineBuilder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact) ArtifactBuilder {
+func (m *mockPipelineBuilder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact) ArtifactBuilder {
 	return nil
 }
 
@@ -216,7 +216,7 @@ func (m *mockPipelineBuilder) PushImages() bool { return false }
 
 func (m *mockPipelineBuilder) SupportedPlatforms() platform.Matcher { return platform.All }
 
-func newMockPipelineBuilder(p latestV1.Pipeline) (PipelineBuilder, error) {
+func newMockPipelineBuilder(p latest.Pipeline) (PipelineBuilder, error) {
 	switch {
 	case p.Build.BuildType.LocalBuild != nil:
 		return &mockPipelineBuilder{builderType: "local", concurrency: p.Build.LocalBuild.Concurrency}, nil

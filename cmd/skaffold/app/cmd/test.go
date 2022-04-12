@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -41,9 +41,9 @@ func NewCmdTest() *cobra.Command {
 
 func doTest(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-		var artifacts []*latestV1.Artifact
+		var artifacts []*latest.Artifact
 		for _, c := range configs {
-			artifacts = append(artifacts, c.(*latestV1.SkaffoldConfig).Build.Artifacts...)
+			artifacts = append(artifacts, c.(*latest.SkaffoldConfig).Build.Artifacts...)
 		}
 		buildArtifacts, err := getBuildArtifactsAndSetTags(artifacts, r.ApplyDefaultRepo)
 		if err != nil {

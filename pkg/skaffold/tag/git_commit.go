@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -62,7 +62,7 @@ func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error
 }
 
 // GenerateTag generates a tag from the git commit.
-func (t *GitCommit) GenerateTag(ctx context.Context, image latestV1.Artifact) (string, error) {
+func (t *GitCommit) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
 	ref, err := t.runGitFn(ctx, image.Workspace)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)

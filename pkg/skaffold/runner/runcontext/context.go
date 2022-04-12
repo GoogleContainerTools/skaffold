@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -42,22 +42,22 @@ type RunContext struct {
 
 // Pipelines encapsulates multiple config pipelines
 type Pipelines struct {
-	pipelines            []latestV1.Pipeline
-	pipelinesByImageName map[string]latestV1.Pipeline
+	pipelines            []latest.Pipeline
+	pipelinesByImageName map[string]latest.Pipeline
 }
 
 // All returns all config pipelines.
-func (ps Pipelines) All() []latestV1.Pipeline {
+func (ps Pipelines) All() []latest.Pipeline {
 	return ps.pipelines
 }
 
-// Head returns the first `latestV1.Pipeline`.
-func (ps Pipelines) Head() latestV1.Pipeline {
+// Head returns the first `latest.Pipeline`.
+func (ps Pipelines) Head() latest.Pipeline {
 	return ps.pipelines[0] // there always exists atleast one pipeline.
 }
 
-// Select returns the first `latestV1.Pipeline` that matches the given artifact `imageName`.
-func (ps Pipelines) Select(imageName string) (latestV1.Pipeline, bool) {
+// Select returns the first `latest.Pipeline` that matches the given artifact `imageName`.
+func (ps Pipelines) Select(imageName string) (latest.Pipeline, bool) {
 	p, found := ps.pipelinesByImageName[imageName]
 	return p, found
 }
@@ -67,40 +67,40 @@ func (ps Pipelines) IsMultiPipeline() bool {
 	return len(ps.pipelines) > 1
 }
 
-func (ps Pipelines) PortForwardResources() []*latestV1.PortForwardResource {
-	var pf []*latestV1.PortForwardResource
+func (ps Pipelines) PortForwardResources() []*latest.PortForwardResource {
+	var pf []*latest.PortForwardResource
 	for _, p := range ps.pipelines {
 		pf = append(pf, p.PortForward...)
 	}
 	return pf
 }
 
-func (ps Pipelines) Artifacts() []*latestV1.Artifact {
-	var artifacts []*latestV1.Artifact
+func (ps Pipelines) Artifacts() []*latest.Artifact {
+	var artifacts []*latest.Artifact
 	for _, p := range ps.pipelines {
 		artifacts = append(artifacts, p.Build.Artifacts...)
 	}
 	return artifacts
 }
 
-func (ps Pipelines) DeployConfigs() []latestV1.DeployConfig {
-	var cfgs []latestV1.DeployConfig
+func (ps Pipelines) DeployConfigs() []latest.DeployConfig {
+	var cfgs []latest.DeployConfig
 	for _, p := range ps.pipelines {
 		cfgs = append(cfgs, p.Deploy)
 	}
 	return cfgs
 }
 
-func (ps Pipelines) Deployers() []latestV1.DeployConfig {
-	var deployers []latestV1.DeployConfig
+func (ps Pipelines) Deployers() []latest.DeployConfig {
+	var deployers []latest.DeployConfig
 	for _, p := range ps.pipelines {
 		deployers = append(deployers, p.Deploy)
 	}
 	return deployers
 }
 
-func (ps Pipelines) TestCases() []*latestV1.TestCase {
-	var tests []*latestV1.TestCase
+func (ps Pipelines) TestCases() []*latest.TestCase {
+	var tests []*latest.TestCase
 	for _, p := range ps.pipelines {
 		tests = append(tests, p.Test...)
 	}
@@ -108,8 +108,8 @@ func (ps Pipelines) TestCases() []*latestV1.TestCase {
 }
 
 // TransformAllowList returns combined allowlist from pipelines
-func (ps Pipelines) TransformAllowList() []latestV1.ResourceFilter {
-	var allowlist []latestV1.ResourceFilter
+func (ps Pipelines) TransformAllowList() []latest.ResourceFilter {
+	var allowlist []latest.ResourceFilter
 	for _, p := range ps.pipelines {
 		if p.ResourceSelector.Allow != nil {
 			allowlist = append(allowlist, p.ResourceSelector.Allow...)
@@ -119,8 +119,8 @@ func (ps Pipelines) TransformAllowList() []latestV1.ResourceFilter {
 }
 
 // TransformDenyList returns combined denylist from pipelines
-func (ps Pipelines) TransformDenyList() []latestV1.ResourceFilter {
-	var denylist []latestV1.ResourceFilter
+func (ps Pipelines) TransformDenyList() []latest.ResourceFilter {
+	var denylist []latest.ResourceFilter
 	for _, p := range ps.pipelines {
 		if p.ResourceSelector.Deny != nil {
 			denylist = append(denylist, p.ResourceSelector.Deny...)
@@ -139,8 +139,8 @@ func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	}
 	return c
 }
-func NewPipelines(pipelines []latestV1.Pipeline) Pipelines {
-	m := make(map[string]latestV1.Pipeline)
+func NewPipelines(pipelines []latest.Pipeline) Pipelines {
+	m := make(map[string]latest.Pipeline)
 	for _, p := range pipelines {
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = p
@@ -149,21 +149,21 @@ func NewPipelines(pipelines []latestV1.Pipeline) Pipelines {
 	return Pipelines{pipelines: pipelines, pipelinesByImageName: m}
 }
 
-func (rc *RunContext) PipelineForImage(imageName string) (latestV1.Pipeline, bool) {
+func (rc *RunContext) PipelineForImage(imageName string) (latest.Pipeline, bool) {
 	return rc.Pipelines.Select(imageName)
 }
 
-func (rc *RunContext) PortForwardResources() []*latestV1.PortForwardResource {
+func (rc *RunContext) PortForwardResources() []*latest.PortForwardResource {
 	return rc.Pipelines.PortForwardResources()
 }
 
-func (rc *RunContext) Artifacts() []*latestV1.Artifact { return rc.Pipelines.Artifacts() }
+func (rc *RunContext) Artifacts() []*latest.Artifact { return rc.Pipelines.Artifacts() }
 
-func (rc *RunContext) DeployConfigs() []latestV1.DeployConfig { return rc.Pipelines.DeployConfigs() }
+func (rc *RunContext) DeployConfigs() []latest.DeployConfig { return rc.Pipelines.DeployConfigs() }
 
-func (rc *RunContext) Deployers() []latestV1.DeployConfig { return rc.Pipelines.Deployers() }
+func (rc *RunContext) Deployers() []latest.DeployConfig { return rc.Pipelines.Deployers() }
 
-func (rc *RunContext) TestCases() []*latestV1.TestCase { return rc.Pipelines.TestCases() }
+func (rc *RunContext) TestCases() []*latest.TestCase { return rc.Pipelines.TestCases() }
 
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
@@ -177,11 +177,11 @@ func (rc *RunContext) IsTestPhaseActive() bool {
 	return !rc.SkipTests() && len(rc.TestCases()) != 0
 }
 
-func (rc *RunContext) TransformAllowList() []latestV1.ResourceFilter {
+func (rc *RunContext) TransformAllowList() []latest.ResourceFilter {
 	return rc.Pipelines.TransformAllowList()
 }
 
-func (rc *RunContext) TransformDenyList() []latestV1.ResourceFilter {
+func (rc *RunContext) TransformDenyList() []latest.ResourceFilter {
 	return rc.Pipelines.TransformDenyList()
 }
 
@@ -191,9 +191,9 @@ func (rc *RunContext) AddSkaffoldLabels() bool {
 	return rc.Opts.Mode() != config.RunModes.Render
 }
 
-func (rc *RunContext) DefaultPipeline() latestV1.Pipeline            { return rc.Pipelines.Head() }
+func (rc *RunContext) DefaultPipeline() latest.Pipeline              { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
-func (rc *RunContext) GetPipelines() []latestV1.Pipeline             { return rc.Pipelines.All() }
+func (rc *RunContext) GetPipelines() []latest.Pipeline               { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
@@ -243,15 +243,15 @@ func (rc *RunContext) RPCPort() *int                                 { return rc
 func (rc *RunContext) RPCHTTPPort() *int                             { return rc.Opts.RPCHTTPPort.Value() }
 func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
 func (rc *RunContext) TransformRulesFile() string                    { return rc.Opts.TransformRulesFile }
-func (rc *RunContext) JSONParseConfig() latestV1.JSONParseConfig {
+func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
 }
 
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
-	var pipelines []latestV1.Pipeline
+	var pipelines []latest.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
-			pipelines = append(pipelines, cfg.(*latestV1.SkaffoldConfig).Pipeline)
+			pipelines = append(pipelines, cfg.(*latest.SkaffoldConfig).Pipeline)
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()

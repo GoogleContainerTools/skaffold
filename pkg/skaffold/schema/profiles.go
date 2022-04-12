@@ -31,7 +31,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
@@ -41,7 +41,7 @@ import (
 
 // ApplyProfiles modifies the input skaffold configuration by the application
 // of a list of profiles, and returns the list of applied profiles.
-func ApplyProfiles(c *latestV1.SkaffoldConfig, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, map[string]configlocations.YAMLOverrideInfo, error) {
+func ApplyProfiles(c *latest.SkaffoldConfig, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, map[string]configlocations.YAMLOverrideInfo, error) {
 	byName := profilesByName(c.Profiles)
 
 	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts, namedProfiles)
@@ -89,7 +89,7 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 
 // activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
 // The latter matters for error reporting when the effective kube-context changes.
-func activatedProfiles(profiles []latestV1.Profile, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, []string, error) {
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, []string, error) {
 	var activated []string
 	var contextSpecificProfiles []string
 
@@ -198,7 +198,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 	return skutil.RegexEqual(kubeContext, currentKubeConfig.CurrentContext), nil
 }
 
-func applyProfile(config *latestV1.SkaffoldConfig, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, profile latestV1.Profile) error {
+func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[string]configlocations.YAMLOverrideInfo, profile latest.Profile) error {
 	log.Entry(context.TODO()).Infof("applying profile: %s", profile.Name)
 
 	// Apply profile, field by field
@@ -268,7 +268,7 @@ func applyProfile(config *latestV1.SkaffoldConfig, fieldsOverrodeByProfile map[s
 		return err
 	}
 
-	*config = latestV1.SkaffoldConfig{}
+	*config = latest.SkaffoldConfig{}
 	return yaml.Unmarshal(buf, config)
 }
 
@@ -286,8 +286,8 @@ func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
 	return err == nil
 }
 
-func profilesByName(profiles []latestV1.Profile) map[string]latestV1.Profile {
-	byName := make(map[string]latestV1.Profile)
+func profilesByName(profiles []latest.Profile) map[string]latest.Profile {
+	byName := make(map[string]latest.Profile)
 	for _, profile := range profiles {
 		byName[profile.Name] = profile
 	}

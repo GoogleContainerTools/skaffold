@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -41,7 +41,7 @@ const (
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
-func Set(c *latestV1.SkaffoldConfig) error {
+func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
 	setDefaultTagger(c)
 	setDefaultKustomizePath(c)
@@ -106,30 +106,30 @@ func Set(c *latestV1.SkaffoldConfig) error {
 }
 
 // SetDefaultDeployer adds a default kubectl deploy configuration.
-func SetDefaultDeployer(c *latestV1.SkaffoldConfig) {
+func SetDefaultDeployer(c *latest.SkaffoldConfig) {
 	defaultToKubectlDeploy(c)
 	setDefaultKubectlManifests(c)
 }
 
-func defaultToLocalBuild(c *latestV1.SkaffoldConfig) {
-	if c.Build.BuildType != (latestV1.BuildType{}) {
+func defaultToLocalBuild(c *latest.SkaffoldConfig) {
+	if c.Build.BuildType != (latest.BuildType{}) {
 		return
 	}
 
 	log.Entry(context.TODO()).Debug("Defaulting build type to local build")
-	c.Build.BuildType.LocalBuild = &latestV1.LocalBuild{}
+	c.Build.BuildType.LocalBuild = &latest.LocalBuild{}
 }
 
-func defaultToKubectlDeploy(c *latestV1.SkaffoldConfig) {
-	if c.Deploy.DeployType != (latestV1.DeployType{}) {
+func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
+	if c.Deploy.DeployType != (latest.DeployType{}) {
 		return
 	}
 
 	log.Entry(context.TODO()).Debug("Defaulting deploy type to kubectl")
-	c.Deploy.DeployType.KubectlDeploy = &latestV1.KubectlDeploy{}
+	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
-func withCloudBuildConfig(c *latestV1.SkaffoldConfig, operations ...func(*latestV1.GoogleCloudBuild)) {
+func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(*latest.GoogleCloudBuild)) {
 	if gcb := c.Build.GoogleCloudBuild; gcb != nil {
 		for _, operation := range operations {
 			operation(gcb)
@@ -137,35 +137,35 @@ func withCloudBuildConfig(c *latestV1.SkaffoldConfig, operations ...func(*latest
 	}
 }
 
-func setDefaultCloudBuildDockerImage(gcb *latestV1.GoogleCloudBuild) {
+func setDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) {
 	gcb.DockerImage = valueOrDefault(gcb.DockerImage, defaultCloudBuildDockerImage)
 }
 
-func setDefaultCloudBuildMavenImage(gcb *latestV1.GoogleCloudBuild) {
+func setDefaultCloudBuildMavenImage(gcb *latest.GoogleCloudBuild) {
 	gcb.MavenImage = valueOrDefault(gcb.MavenImage, defaultCloudBuildMavenImage)
 }
 
-func setDefaultCloudBuildGradleImage(gcb *latestV1.GoogleCloudBuild) {
+func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
 	gcb.GradleImage = valueOrDefault(gcb.GradleImage, defaultCloudBuildGradleImage)
 }
 
-func setDefaultCloudBuildKanikoImage(gcb *latestV1.GoogleCloudBuild) {
+func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
 	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, defaultCloudBuildKanikoImage)
 }
 
-func setDefaultCloudBuildPackImage(gcb *latestV1.GoogleCloudBuild) {
+func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
 	gcb.PackImage = valueOrDefault(gcb.PackImage, defaultCloudBuildPackImage)
 }
 
-func setDefaultTagger(c *latestV1.SkaffoldConfig) {
-	if c.Build.TagPolicy != (latestV1.TagPolicy{}) {
+func setDefaultTagger(c *latest.SkaffoldConfig) {
+	if c.Build.TagPolicy != (latest.TagPolicy{}) {
 		return
 	}
 
-	c.Build.TagPolicy = latestV1.TagPolicy{GitTagger: &latestV1.GitTagger{}}
+	c.Build.TagPolicy = latest.TagPolicy{GitTagger: &latest.GitTagger{}}
 }
 
-func setDefaultKustomizePath(c *latestV1.SkaffoldConfig) {
+func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
 	kustomize := c.Deploy.KustomizeDeploy
 	if kustomize == nil {
 		return
@@ -175,54 +175,54 @@ func setDefaultKustomizePath(c *latestV1.SkaffoldConfig) {
 	}
 }
 
-func setDefaultKubectlManifests(c *latestV1.SkaffoldConfig) {
+func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
 	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 && len(c.Deploy.KubectlDeploy.RemoteManifests) == 0 {
 		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
 	}
 }
 
-func setDefaultLogsConfig(c *latestV1.SkaffoldConfig) {
+func setDefaultLogsConfig(c *latest.SkaffoldConfig) {
 	if c.Deploy.Logs.Prefix == "" {
 		c.Deploy.Logs.Prefix = "container"
 	}
 }
 
-func defaultToDockerArtifact(a *latestV1.Artifact) {
-	if a.ArtifactType == (latestV1.ArtifactType{}) {
-		a.ArtifactType = latestV1.ArtifactType{
-			DockerArtifact: &latestV1.DockerArtifact{},
+func defaultToDockerArtifact(a *latest.Artifact) {
+	if a.ArtifactType == (latest.ArtifactType{}) {
+		a.ArtifactType = latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{},
 		}
 	}
 }
 
-func setCustomArtifactDefaults(a *latestV1.CustomArtifact) {
+func setCustomArtifactDefaults(a *latest.CustomArtifact) {
 	if a.Dependencies == nil {
-		a.Dependencies = &latestV1.CustomDependencies{
+		a.Dependencies = &latest.CustomDependencies{
 			Paths: []string{"."},
 		}
 	}
 }
 
-func setBuildpackArtifactDefaults(a *latestV1.BuildpackArtifact) {
+func setBuildpackArtifactDefaults(a *latest.BuildpackArtifact) {
 	if a.ProjectDescriptor == "" {
 		a.ProjectDescriptor = constants.DefaultProjectDescriptor
 	}
 	if a.Dependencies == nil {
-		a.Dependencies = &latestV1.BuildpackDependencies{
+		a.Dependencies = &latest.BuildpackDependencies{
 			Paths: []string{"."},
 		}
 	}
 }
 
-func setDockerArtifactDefaults(a *latestV1.DockerArtifact) {
+func setDockerArtifactDefaults(a *latest.DockerArtifact) {
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 }
 
-func setDefaultWorkspace(a *latestV1.Artifact) {
+func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func setDefaultSync(a *latestV1.Artifact) {
+func setDefaultSync(a *latest.Artifact) {
 	if a.Sync != nil {
 		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
 			switch {
@@ -233,11 +233,11 @@ func setDefaultSync(a *latestV1.Artifact) {
 			}
 		}
 	} else if a.BuildpackArtifact != nil {
-		a.Sync = &latestV1.Sync{Auto: util.BoolPtr(true)}
+		a.Sync = &latest.Sync{Auto: util.BoolPtr(true)}
 	}
 }
 
-func withClusterConfig(c *latestV1.SkaffoldConfig, opts ...func(*latestV1.ClusterDetails) error) error {
+func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(*latest.ClusterDetails) error) error {
 	clusterDetails := c.Build.BuildType.Cluster
 	if clusterDetails == nil {
 		return nil
@@ -250,7 +250,7 @@ func withClusterConfig(c *latestV1.SkaffoldConfig, opts ...func(*latestV1.Cluste
 	return nil
 }
 
-func setDefaultClusterNamespace(cluster *latestV1.ClusterDetails) error {
+func setDefaultClusterNamespace(cluster *latest.ClusterDetails) error {
 	if cluster.Namespace == "" {
 		ns, err := currentNamespace()
 		if err != nil {
@@ -261,12 +261,12 @@ func setDefaultClusterNamespace(cluster *latestV1.ClusterDetails) error {
 	return nil
 }
 
-func setDefaultClusterTimeout(cluster *latestV1.ClusterDetails) error {
+func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 	cluster.Timeout = valueOrDefault(cluster.Timeout, kaniko.DefaultTimeout)
 	return nil
 }
 
-func setDefaultClusterPullSecret(cluster *latestV1.ClusterDetails) error {
+func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 	cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, kaniko.DefaultSecretMountPath)
 	if cluster.PullSecretPath != "" {
 		absPath, err := homedir.Expand(cluster.PullSecretPath)
@@ -285,7 +285,7 @@ func setDefaultClusterPullSecret(cluster *latestV1.ClusterDetails) error {
 	return nil
 }
 
-func setDefaultClusterDockerConfigSecret(cluster *latestV1.ClusterDetails) error {
+func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 	if cluster.DockerConfig == nil {
 		return nil
 	}
@@ -311,13 +311,13 @@ func setDefaultClusterDockerConfigSecret(cluster *latestV1.ClusterDetails) error
 	return nil
 }
 
-func defaultToKanikoArtifact(artifact *latestV1.Artifact) {
+func defaultToKanikoArtifact(artifact *latest.Artifact) {
 	if artifact.KanikoArtifact == nil {
-		artifact.KanikoArtifact = &latestV1.KanikoArtifact{}
+		artifact.KanikoArtifact = &latest.KanikoArtifact{}
 	}
 }
 
-func setKanikoArtifactDefaults(a *latestV1.KanikoArtifact) {
+func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.Image = valueOrDefault(a.Image, kaniko.DefaultImage)
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
@@ -346,7 +346,7 @@ func currentNamespace() (string, error) {
 	return "default", nil
 }
 
-func setDefaultLocalPort(pf *latestV1.PortForwardResource) {
+func setDefaultLocalPort(pf *latest.PortForwardResource) {
 	if pf.LocalPort == 0 {
 		if pf.Port.Type == schemautil.Int {
 			pf.LocalPort = pf.Port.IntVal
@@ -354,19 +354,19 @@ func setDefaultLocalPort(pf *latestV1.PortForwardResource) {
 	}
 }
 
-func setDefaultAddress(pf *latestV1.PortForwardResource) {
+func setDefaultAddress(pf *latest.PortForwardResource) {
 	if pf.Address == "" {
 		pf.Address = constants.DefaultPortForwardAddress
 	}
 }
 
-func setDefaultArtifactDependencyAlias(d *latestV1.ArtifactDependency) {
+func setDefaultArtifactDependencyAlias(d *latest.ArtifactDependency) {
 	if d.Alias == "" {
 		d.Alias = d.ImageName
 	}
 }
 
-func setDefaultTestWorkspace(c *latestV1.SkaffoldConfig) {
+func setDefaultTestWorkspace(c *latest.SkaffoldConfig) {
 	for _, tc := range c.Test {
 		if tc == nil {
 			continue

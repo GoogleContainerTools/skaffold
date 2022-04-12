@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -83,7 +83,7 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 	t.CheckNoError(err)
 	var cfgs parser.SkaffoldConfigSet
 	for _, p := range parsed {
-		cfg := &parser.SkaffoldConfigEntry{SkaffoldConfig: p.(*latestV1.SkaffoldConfig)}
+		cfg := &parser.SkaffoldConfigEntry{SkaffoldConfig: p.(*latest.SkaffoldConfig)}
 		err = defaults.Set(cfg.SkaffoldConfig)
 		defaults.SetDefaultDeployer(cfg.SkaffoldConfig)
 		t.CheckNoError(err)
@@ -123,5 +123,5 @@ func addHeader(buf []byte) []byte {
 	if bytes.HasPrefix(buf, []byte("apiVersion:")) {
 		return buf
 	}
-	return []byte(fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latestV1.Version, buf))
+	return []byte(fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, buf))
 }

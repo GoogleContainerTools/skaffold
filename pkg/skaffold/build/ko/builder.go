@@ -28,12 +28,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact, platforms platform.Matcher) (build.Interface, error) {
+func (b *Builder) newKoBuilder(ctx context.Context, a *latest.Artifact, platforms platform.Matcher) (build.Interface, error) {
 	bo, err := buildOptions(a, b.runMode, platforms)
 	if err != nil {
 		return nil, fmt.Errorf("could not construct ko build options: %v", err)
@@ -41,7 +41,7 @@ func (b *Builder) newKoBuilder(ctx context.Context, a *latestV1.Artifact, platfo
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(a *latestV1.Artifact, runMode config.RunMode, platforms platform.Matcher) (*options.BuildOptions, error) {
+func buildOptions(a *latest.Artifact, runMode config.RunMode, platforms platform.Matcher) (*options.BuildOptions, error) {
 	buildconfig, err := buildConfig(a)
 	if err != nil {
 		return nil, fmt.Errorf("could not create ko build config: %v", err)
@@ -68,7 +68,7 @@ func buildOptions(a *latestV1.Artifact, runMode config.RunMode, platforms platfo
 // A map entry is only required if the artifact config specifies fields that need to be part of ko build configs.
 // If none of these are specified, we can provide an empty `BuildConfigs` map.
 // In this case, ko falls back to build configs provided in `.ko.yaml`, or to the default zero config.
-func buildConfig(a *latestV1.Artifact) (map[string]build.Config, error) {
+func buildConfig(a *latest.Artifact) (map[string]build.Config, error) {
 	buildconfigs := map[string]build.Config{}
 	if !koArtifactSpecifiesBuildConfig(*a.KoArtifact) {
 		return buildconfigs, nil
@@ -101,7 +101,7 @@ func buildConfig(a *latestV1.Artifact) (map[string]build.Config, error) {
 	return buildconfigs, nil
 }
 
-func koArtifactSpecifiesBuildConfig(k latestV1.KoArtifact) bool {
+func koArtifactSpecifiesBuildConfig(k latest.KoArtifact) bool {
 	if k.Dir != "" && k.Dir != "." {
 		return true
 	}
@@ -120,7 +120,7 @@ func koArtifactSpecifiesBuildConfig(k latestV1.KoArtifact) bool {
 	return false
 }
 
-func labels(a *latestV1.Artifact) ([]string, error) {
+func labels(a *latest.Artifact) ([]string, error) {
 	rawLabels := map[string]*string{}
 	for k, v := range a.KoArtifact.Labels {
 		rawLabels[k] = util.StringPtr(v)

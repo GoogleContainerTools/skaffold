@@ -31,13 +31,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func depLister(files map[string][]string) DependencyLister {
-	return func(_ context.Context, artifact *latestV1.Artifact) ([]string, error) {
+	return func(_ context.Context, artifact *latest.Artifact) ([]string, error) {
 		list, found := files[artifact.ImageName]
 		if !found {
 			return nil, errors.New("unknown artifact")
@@ -49,19 +49,19 @@ func depLister(files map[string][]string) DependencyLister {
 type mockArtifactStore map[string]string
 
 func (m mockArtifactStore) GetImageTag(imageName string) (string, bool) { return m[imageName], true }
-func (m mockArtifactStore) Record(a *latestV1.Artifact, tag string)     { m[a.ImageName] = tag }
-func (m mockArtifactStore) GetArtifacts([]*latestV1.Artifact) ([]graph.Artifact, error) {
+func (m mockArtifactStore) Record(a *latest.Artifact, tag string)       { m[a.ImageName] = tag }
+func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]graph.Artifact, error) {
 	return nil, nil
 }
 
 type mockBuilder struct {
-	built        []*latestV1.Artifact
+	built        []*latest.Artifact
 	push         bool
 	dockerDaemon docker.LocalDaemon
 	store        build.ArtifactStore
 }
 
-func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact, _ platform.Resolver) ([]graph.Artifact, error) {
+func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, _ platform.Resolver) ([]graph.Artifact, error) {
 	var built []graph.Artifact
 
 	for _, artifact := range artifacts {
@@ -116,9 +116,9 @@ func TestCacheBuildLocal(t *testing.T) {
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
 		}
-		artifacts := []*latestV1.Artifact{
-			{ImageName: "artifact1", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
-			{ImageName: "artifact2", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
 		deps := depLister(map[string][]string{
 			"artifact1": {"dep1", "dep2"},
@@ -139,7 +139,7 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// Create cache
 		cfg := &mockConfig{
-			pipeline:  latestV1.Pipeline{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{TryImportMissing: false}}}},
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
 		store := make(mockArtifactStore)
@@ -203,9 +203,9 @@ func TestCacheBuildRemote(t *testing.T) {
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
 		}
-		artifacts := []*latestV1.Artifact{
-			{ImageName: "artifact1", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
-			{ImageName: "artifact2", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
 		deps := depLister(map[string][]string{
 			"artifact1": {"dep1", "dep2"},
@@ -236,7 +236,7 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// Create cache
 		cfg := &mockConfig{
-			pipeline:  latestV1.Pipeline{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{TryImportMissing: false}}}},
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
 		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
@@ -288,9 +288,9 @@ func TestCacheFindMissing(t *testing.T) {
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
 		}
-		artifacts := []*latestV1.Artifact{
-			{ImageName: "artifact1", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
-			{ImageName: "artifact2", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
 		deps := depLister(map[string][]string{
 			"artifact1": {"dep1", "dep2"},
@@ -321,7 +321,7 @@ func TestCacheFindMissing(t *testing.T) {
 
 		// Create cache
 		cfg := &mockConfig{
-			pipeline:  latestV1.Pipeline{Build: latestV1.BuildConfig{BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{TryImportMissing: true}}}},
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: true}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
 		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
@@ -344,10 +344,10 @@ type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	cacheFile             string
 	mode                  config.RunMode
-	pipeline              latestV1.Pipeline
+	pipeline              latest.Pipeline
 }
 
-func (c *mockConfig) CacheArtifacts() bool                              { return true }
-func (c *mockConfig) CacheFile() string                                 { return c.cacheFile }
-func (c *mockConfig) Mode() config.RunMode                              { return c.mode }
-func (c *mockConfig) PipelineForImage(string) (latestV1.Pipeline, bool) { return c.pipeline, true }
+func (c *mockConfig) CacheArtifacts() bool                            { return true }
+func (c *mockConfig) CacheFile() string                               { return c.cacheFile }
+func (c *mockConfig) Mode() config.RunMode                            { return c.mode }
+func (c *mockConfig) PipelineForImage(string) (latest.Pipeline, bool) { return c.pipeline, true }

@@ -25,10 +25,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (b *Builder) kanikoBuildSpec(a *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) kanikoBuildSpec(a *latest.Artifact, tag string) (cloudbuild.Build, error) {
 	k := a.KanikoArtifact
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	// add required artifacts as build args

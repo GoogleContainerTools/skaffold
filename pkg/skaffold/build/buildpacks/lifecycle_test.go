@@ -24,7 +24,7 @@ import (
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	pack "github.com/buildpacks/pack/pkg/client"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -58,23 +58,23 @@ func TestLifecycleStatusCode(t *testing.T) {
 func TestContainerConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		volumes     []latestV1.BuildpackVolume
+		volumes     []latest.BuildpackVolume
 		shouldErr   bool
 		expected    pack.ContainerConfig
 	}{
 		{
 			description: "single volume with no options",
-			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
+			volumes:     []latest.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
 			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar"}},
 		},
 		{
 			description: "single volume with  options",
-			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar", Options: "rw"}},
+			volumes:     []latest.BuildpackVolume{{Host: "/foo", Target: "/bar", Options: "rw"}},
 			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar:rw"}},
 		},
 		{
 			description: "multiple volumes",
-			volumes: []latestV1.BuildpackVolume{
+			volumes: []latest.BuildpackVolume{
 				{Host: "/foo", Target: "/bar", Options: "rw"},
 				{Host: "/bat", Target: "/baz", Options: "ro"},
 			},
@@ -82,19 +82,19 @@ func TestContainerConfig(t *testing.T) {
 		},
 		{
 			description: "missing host is skipped",
-			volumes:     []latestV1.BuildpackVolume{{Host: "", Target: "/bar"}},
+			volumes:     []latest.BuildpackVolume{{Host: "", Target: "/bar"}},
 			shouldErr:   true,
 		},
 		{
 			description: "missing target is skipped",
-			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: ""}},
+			volumes:     []latest.BuildpackVolume{{Host: "/foo", Target: ""}},
 			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := latestV1.BuildpackArtifact{
+			artifact := latest.BuildpackArtifact{
 				Volumes: &test.volumes,
 			}
 			result, err := containerConfig(&artifact)

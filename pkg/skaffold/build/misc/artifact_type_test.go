@@ -19,7 +19,7 @@ package misc
 import (
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -27,22 +27,22 @@ func TestArtifactType(t *testing.T) {
 	tests := []struct {
 		description string
 		want        string
-		artifact    *latestV1.Artifact
+		artifact    *latest.Artifact
 	}{
-		{"docker", "docker", &latestV1.Artifact{
-			ArtifactType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{},
+		{"docker", "docker", &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{},
 			},
 		}},
-		{"kaniko", "kaniko", &latestV1.Artifact{
-			ArtifactType: latestV1.ArtifactType{
-				KanikoArtifact: &latestV1.KanikoArtifact{},
+		{"kaniko", "kaniko", &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{},
 			},
 		}},
-		{"docker+kaniko", "docker", &latestV1.Artifact{
-			ArtifactType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{},
-				KanikoArtifact: &latestV1.KanikoArtifact{},
+		{"docker+kaniko", "docker", &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{},
+				KanikoArtifact: &latest.KanikoArtifact{},
 			},
 		}},
 	}
@@ -60,16 +60,16 @@ func TestFormatArtifact(t *testing.T) {
 	tests := []struct {
 		description string
 		want        string
-		artifact    *latestV1.Artifact
+		artifact    *latest.Artifact
 	}{
-		{"docker", "docker: {}", &latestV1.Artifact{
-			ArtifactType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{},
+		{"docker", "docker: {}", &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{},
 			},
 		}},
-		{"kaniko", "kaniko: {}", &latestV1.Artifact{
-			ArtifactType: latestV1.ArtifactType{
-				KanikoArtifact: &latestV1.KanikoArtifact{},
+		{"kaniko", "kaniko: {}", &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{},
 			},
 		}},
 	}

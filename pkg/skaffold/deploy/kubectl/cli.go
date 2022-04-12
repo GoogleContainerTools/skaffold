@@ -34,13 +34,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
 	*kubectl.CLI
-	Flags latestV1.KubectlFlags
+	Flags latest.KubectlFlags
 
 	forceDeploy      bool
 	waitForDeletions config.WaitForDeletions
@@ -57,13 +57,13 @@ type Config interface {
 	WaitForDeletions() config.WaitForDeletions
 	Mode() config.RunMode
 	HydratedManifests() []string
-	DefaultPipeline() latestV1.Pipeline
+	DefaultPipeline() latest.Pipeline
 	Tail() bool
-	PipelineForImage(imageName string) (latestV1.Pipeline, bool)
-	JSONParseConfig() latestV1.JSONParseConfig
+	PipelineForImage(imageName string) (latest.Pipeline, bool)
+	JSONParseConfig() latest.JSONParseConfig
 }
 
-func NewCLI(cfg Config, flags latestV1.KubectlFlags, defaultNamespace string) CLI {
+func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNamespace string) CLI {
 	return CLI{
 		CLI:              kubectl.NewCLI(cfg, defaultNamespace),
 		Flags:            flags,

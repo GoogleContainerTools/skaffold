@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -91,13 +91,13 @@ func TestArtifactType(t *testing.T) {
 		description  string
 		workspace    string
 		config       ArtifactConfig
-		expectedType latestV1.ArtifactType
+		expectedType latest.ArtifactType
 	}{
 		{
 			description: "default filename",
 			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
-			expectedType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{
+			expectedType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
 					DockerfilePath: "Dockerfile",
 				},
 			},
@@ -105,8 +105,8 @@ func TestArtifactType(t *testing.T) {
 		{
 			description: "non-default filename",
 			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile1")},
-			expectedType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{
+			expectedType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
 					DockerfilePath: "Dockerfile1",
 				},
 			},
@@ -115,8 +115,8 @@ func TestArtifactType(t *testing.T) {
 			description: "with workspace",
 			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
 			workspace:   "path",
-			expectedType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{
+			expectedType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
 					DockerfilePath: "to/Dockerfile",
 				},
 			},

@@ -26,7 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/rjeczalik/notify"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	fsNotify "github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger/fsnotify"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -71,7 +71,7 @@ func TestNewTrigger(t *testing.T) {
 			cfg := &mockConfig{
 				trigger:           test.trigger,
 				watchPollInterval: test.watchPollInterval,
-				artifacts: []*latestV1.Artifact{
+				artifacts: []*latest.Artifact{
 					{Workspace: "../workspace"},
 					{Workspace: "../workspace"},
 					{Workspace: "../some/other/workspace"},
@@ -208,9 +208,9 @@ func TestStartTrigger(t *testing.T) {
 type mockConfig struct {
 	trigger           string
 	watchPollInterval int
-	artifacts         []*latestV1.Artifact
+	artifacts         []*latest.Artifact
 }
 
-func (c *mockConfig) Trigger() string                 { return c.trigger }
-func (c *mockConfig) WatchPollInterval() int          { return c.watchPollInterval }
-func (c *mockConfig) Artifacts() []*latestV1.Artifact { return c.artifacts }
+func (c *mockConfig) Trigger() string               { return c.trigger }
+func (c *mockConfig) WatchPollInterval() int        { return c.watchPollInterval }
+func (c *mockConfig) Artifacts() []*latest.Artifact { return c.artifacts }

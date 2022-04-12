@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -44,7 +44,7 @@ import (
 func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
-		kustomize                   latestV1.KustomizeDeploy
+		kustomize                   latest.KustomizeDeploy
 		builds                      []graph.Artifact
 		commands                    util.Command
 		shouldErr                   bool
@@ -55,7 +55,7 @@ func TestKustomizeDeploy(t *testing.T) {
 	}{
 		{
 			description: "no manifest",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
@@ -65,7 +65,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
@@ -82,7 +82,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace)",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths:   []string{"."},
 				DefaultNamespace: &kubectl.TestNamespace2,
 			},
@@ -101,7 +101,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace with env template)",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths:   []string{"."},
 				DefaultNamespace: &kubectl.TestNamespace2FromEnvTemplate,
 			},
@@ -123,7 +123,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (kustomizePaths with env template)",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{"/a/b/{{ .MYENV }}"},
 			},
 			commands: testutil.
@@ -143,7 +143,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success with multiple kustomizations",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
@@ -167,7 +167,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "built-in kubectl kustomize",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
@@ -228,14 +228,14 @@ func TestKustomizeCleanup(t *testing.T) {
 
 	tests := []struct {
 		description string
-		kustomize   latestV1.KustomizeDeploy
+		kustomize   latest.KustomizeDeploy
 		commands    util.Command
 		shouldErr   bool
 		dryRun      bool
 	}{
 		{
 			description: "cleanup dry-run",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -245,7 +245,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -254,7 +254,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success with multiple kustomizations",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: tmpDir.Paths("a", "b"),
 			},
 			commands: testutil.
@@ -264,7 +264,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -274,7 +274,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "fail to read manifests",
-			kustomize: latestV1.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -333,7 +333,7 @@ func TestKustomizeHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&KustomizeBinaryCheck, func() bool { return true })
-			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latestV1.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts) hooks.Runner {
+			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latest.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts) hooks.Runner {
 				return test.runner
 			})
 
@@ -341,7 +341,7 @@ func TestKustomizeHooks(t *testing.T) {
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, &label.DefaultLabeller{}, &latestV1.KustomizeDeploy{})
+			}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{})
 			t.RequireNoError(err)
 			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
 			t.CheckError(test.shouldErr, err)
@@ -544,7 +544,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -790,7 +790,7 @@ spec:
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, labeller, &latestV1.KustomizeDeploy{
+			}, labeller, &latest.KustomizeDeploy{
 				KustomizePaths: kustomizationPaths,
 			})
 			t.RequireNoError(err)
@@ -806,24 +806,24 @@ spec:
 func TestHasRunnableHooks(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         latestV1.KustomizeDeploy
+		cfg         latest.KustomizeDeploy
 		expected    bool
 	}{
 		{
 			description: "no hooks defined",
-			cfg:         latestV1.KustomizeDeploy{},
+			cfg:         latest.KustomizeDeploy{},
 		},
 		{
 			description: "has pre-deploy hook defined",
-			cfg: latestV1.KustomizeDeploy{
-				LifecycleHooks: latestV1.DeployHooks{PreHooks: []latestV1.DeployHookItem{{}}},
+			cfg: latest.KustomizeDeploy{
+				LifecycleHooks: latest.DeployHooks{PreHooks: []latest.DeployHookItem{{}}},
 			},
 			expected: true,
 		},
 		{
 			description: "has post-deploy hook defined",
-			cfg: latestV1.KustomizeDeploy{
-				LifecycleHooks: latestV1.DeployHooks{PostHooks: []latestV1.DeployHookItem{{}}},
+			cfg: latest.KustomizeDeploy{
+				LifecycleHooks: latest.DeployHooks{PostHooks: []latest.DeployHookItem{{}}},
 			},
 			expected: true,
 		},
@@ -845,9 +845,9 @@ type kustomizeConfig struct {
 	waitForDeletions      config.WaitForDeletions
 }
 
-func (c *kustomizeConfig) ForceDeploy() bool                                     { return c.force }
-func (c *kustomizeConfig) WaitForDeletions() config.WaitForDeletions             { return c.waitForDeletions }
-func (c *kustomizeConfig) WorkingDir() string                                    { return c.workingDir }
-func (c *kustomizeConfig) GetKubeContext() string                                { return kubectl.TestKubeContext }
-func (c *kustomizeConfig) GetKubeNamespace() string                              { return c.Opts.Namespace }
-func (c *kustomizeConfig) PortForwardResources() []*latestV1.PortForwardResource { return nil }
+func (c *kustomizeConfig) ForceDeploy() bool                                   { return c.force }
+func (c *kustomizeConfig) WaitForDeletions() config.WaitForDeletions           { return c.waitForDeletions }
+func (c *kustomizeConfig) WorkingDir() string                                  { return c.workingDir }
+func (c *kustomizeConfig) GetKubeContext() string                              { return kubectl.TestKubeContext }
+func (c *kustomizeConfig) GetKubeNamespace() string                            { return c.Opts.Namespace }
+func (c *kustomizeConfig) PortForwardResources() []*latest.PortForwardResource { return nil }

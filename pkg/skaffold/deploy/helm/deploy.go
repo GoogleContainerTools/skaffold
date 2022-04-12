@@ -57,7 +57,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -86,7 +86,7 @@ var (
 
 // Deployer deploys workflows using the helm CLI
 type Deployer struct {
-	*latestV1.HelmDeploy
+	*latest.HelmDeploy
 
 	accessor      access.Accessor
 	debugger      debug.Debugger
@@ -125,11 +125,11 @@ type Config interface {
 	kloader.Config
 	portforward.Config
 	IsMultiConfig() bool
-	JSONParseConfig() latestV1.JSONParseConfig
+	JSONParseConfig() latest.JSONParseConfig
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV1.HelmDeploy) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -473,7 +473,7 @@ func (h *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 }
 
 // deployRelease deploys a single release
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latestV1.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
 	var err error
 	opts := installOpts{
 		releaseName: releaseName,
@@ -614,7 +614,7 @@ func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, n
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive
-func (h *Deployer) packageChart(ctx context.Context, r latestV1.HelmRelease) (string, error) {
+func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	// Allow a test to sneak a predictable path in
 	tmpDir := h.pkgTmpDir
 
@@ -660,7 +660,7 @@ func (h *Deployer) packageChart(ctx context.Context, r latestV1.HelmRelease) (st
 	return output[idx:], nil
 }
 
-func chartSource(r latestV1.HelmRelease) string {
+func chartSource(r latest.HelmRelease) string {
 	if r.RemoteChart != "" {
 		return r.RemoteChart
 	}
