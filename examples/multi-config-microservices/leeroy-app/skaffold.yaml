@@ -3,19 +3,19 @@ kind: Config
 metadata:
   name: app-config
 requires:
-- path: ../base
+  - path: ../base
 build:
   artifacts:
-  - image: leeroy-app
-    requires:
-    - image: base
-      alias: BASE
+    - image: leeroy-app
+      requires:
+        - image: base
+          alias: BASE
 deploy:
   kubectl:
     manifests:
-    - kubernetes/*
+      - kubernetes/*
 portForward:
-- resourceType: deployment
-  resourceName: leeroy-app
-  port: http
-  localPort: 9001
+  - resourceType: deployment
+    resourceName: leeroy-app
+    port: http
+    localPort: 9001

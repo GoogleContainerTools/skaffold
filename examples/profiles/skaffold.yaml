@@ -3,12 +3,12 @@ kind: Config
 build:
   # only build and deploy "world-service" on main profile
   artifacts:
-  - image: skaffold-world
-    context: world-service
+    - image: skaffold-world
+      context: world-service
 deploy:
   kubectl:
     manifests:
-      - 'world-service/*.yaml'
+      - "world-service/*.yaml"
 
 profiles:
   - name: minikube-profile
@@ -23,7 +23,7 @@ profiles:
     deploy:
       kubectl:
         manifests:
-          - 'hello-service/*.yaml'
+          - "hello-service/*.yaml"
 
   - name: staging-profile
     build:
@@ -38,4 +38,4 @@ profiles:
       kubeContext: staging
       kubectl:
         manifests:
-          - '**/*.yaml'
+          - "**/*.yaml"

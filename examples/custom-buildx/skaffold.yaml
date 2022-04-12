@@ -3,13 +3,13 @@ kind: Config
 build:
   platforms: ["linux/amd64", "linux/arm64"]
   artifacts:
-  - image: skaffold-examples-buildx
-    custom:
-      buildCommand: sh buildx.sh
-      dependencies:
-        paths:
-        - "**/*.go"
-        - buildx.sh
-        - go.mod
+    - image: skaffold-examples-buildx
+      custom:
+        buildCommand: sh buildx.sh
+        dependencies:
+          paths:
+            - "**/*.go"
+            - buildx.sh
+            - go.mod
   tagPolicy:
     sha256: {}
