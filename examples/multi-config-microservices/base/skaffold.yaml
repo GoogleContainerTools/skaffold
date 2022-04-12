@@ -2,4 +2,4 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-  - image: base
+    - image: base

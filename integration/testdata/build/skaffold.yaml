@@ -1,40 +1,40 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
   local:
     push: false
   artifacts:
     # A simple Docker build
-  - image: simple-build
+    - image: simple-build
 
     # Building from a sub-directory
-  - image: sub-directory
-    context: sub-directory
+    - image: sub-directory
+      context: sub-directory
 
-    # Testing multiline env variables in Dockerfiles
-    # Would have caught #1624
-  - image: multi-env
-    context: multi-env
+      # Testing multiline env variables in Dockerfiles
+      # Would have caught #1624
+    - image: multi-env
+      context: multi-env
 
-    # Testing Dockerfiles with targets
-  - image: targets
-    context: targets
+      # Testing Dockerfiles with targets
+    - image: targets
+      context: targets
 
-    # Providing a target
-    # Would have caught #1605
-  - image: target1
-    context: targets
-    docker:
-      target: target1
+      # Providing a target
+      # Would have caught #1605
+    - image: target1
+      context: targets
+      docker:
+        target: target1
 
-    # Providing another target
-    # Would have caught #1605
-  - image: target2
-    context: targets
-    docker:
-      target: target2
+      # Providing another target
+      # Would have caught #1605
+    - image: target2
+      context: targets
+      docker:
+        target: target2
 
-    # Multi-stage build
-    # Would have caught #2315
-  - image: multi-stage
-    context: multi-stage
+      # Multi-stage build
+      # Would have caught #2315
+    - image: multi-stage
+      context: multi-stage

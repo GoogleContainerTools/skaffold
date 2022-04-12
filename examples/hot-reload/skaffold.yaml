@@ -2,11 +2,11 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-  - image: node-example
-    context: node
+    - image: node-example
+      context: node
 
-  - image: python-reload
-    context: python
+    - image: python-reload
+      context: python
 
 profiles:
   - name: dev
@@ -14,25 +14,25 @@ profiles:
       - command: dev
     build:
       artifacts:
-      - image: node-example
-        context: node
-        docker:
-          buildArgs:
-            ENV: development
-        sync:
-          manual:
-          # Sync all the javascript files that are in the src folder
-          # with the container src folder
-          - src: 'src/**/*.js'
-            dest: .
-      - image: python-reload
-        context: python
-        docker:
-          buildArgs:
-            DEBUG: 1
-        sync:
-          manual:
-          # Sync all the python files that are in the src folder
-          # with the container src folder
-          - src: 'src/**/*.py'
-            dest: .
+        - image: node-example
+          context: node
+          docker:
+            buildArgs:
+              ENV: development
+          sync:
+            manual:
+              # Sync all the javascript files that are in the src folder
+              # with the container src folder
+              - src: "src/**/*.js"
+                dest: .
+        - image: python-reload
+          context: python
+          docker:
+            buildArgs:
+              DEBUG: 1
+          sync:
+            manual:
+              # Sync all the python files that are in the src folder
+              # with the container src folder
+              - src: "src/**/*.py"
+                dest: .

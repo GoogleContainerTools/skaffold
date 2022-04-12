@@ -3,6 +3,6 @@ kind: Config
 deploy:
   helm:
     releases:
-    - name: redis-release
-      repo: https://charts.bitnami.com/bitnami 
-      remoteChart: redis
+      - name: redis-release
+        repo: https://charts.bitnami.com/bitnami
+        remoteChart: redis
