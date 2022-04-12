@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
@@ -7,7 +7,7 @@ build:
 deploy:
   kustomize:
     paths:
-      - ./kustomize
+    - ./kustomize
 
   kubectl:
     manifests:

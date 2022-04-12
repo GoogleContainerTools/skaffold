@@ -2,7 +2,7 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-    - image: skaffold-example
+  - image: skaffold-example
 test:
   - image: skaffold-example
     structureTests:

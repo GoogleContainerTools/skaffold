@@ -4,10 +4,10 @@ build:
   local:
     push: false
   artifacts:
-    - image: bert
-      context: bert
-    - image: ernie
-      context: ernie
+  - image: bert
+    context: bert
+  - image: ernie
+    context: ernie
 deploy:
   docker:
     images: [bert, ernie]

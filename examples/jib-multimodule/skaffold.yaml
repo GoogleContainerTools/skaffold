@@ -2,14 +2,14 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-    - image: skaffold-jib-1
-      jib:
-        # project can be the relative directory
-        project: project1
-    - image: skaffold-jib-2
-      jib:
-        # project can be [groupId]:artifactId
-        project: :skaffold-project-2
+  - image: skaffold-jib-1
+    jib:
+      # project can be the relative directory
+      project: project1
+  - image: skaffold-jib-2
+    jib:
+      # project can be [groupId]:artifactId
+      project: :skaffold-project-2
 
 # optional profile to run the jib build on Google Cloud Build
 profiles:

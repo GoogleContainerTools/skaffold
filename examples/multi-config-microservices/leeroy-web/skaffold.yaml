@@ -3,19 +3,19 @@ kind: Config
 metadata:
   name: web-config
 requires:
-  - path: ../base
+- path: ../base
 build:
   artifacts:
-    - image: leeroy-web
-      requires:
-        - image: base
-          alias: BASE
+  - image: leeroy-web
+    requires:
+    - image: base
+      alias: BASE
 deploy:
   kubectl:
     manifests:
-      - kubernetes/*
+    - kubernetes/*
 portForward:
-  - resourceType: deployment
-    resourceName: leeroy-web
-    port: 8080
-    localPort: 9000
+- resourceType: deployment
+  resourceName: leeroy-web
+  port: 8080
+  localPort: 9000

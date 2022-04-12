@@ -34,5 +34,25 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	// transform: artifact.BuildpackArtifact.*[]BuildpackVolume
+	// into		: artifact.BuildpackArtifact.[]*BuildpackVolume
+	for i, newArtifact := range newBuild.Artifacts {
+		oldArtifact := oldBuild.Artifacts[i]
+		if oldArtifact.BuildpackArtifact == nil || len(*oldArtifact.BuildpackArtifact.Volumes) == 0 {
+			continue
+		}
+		for _, volume := range *oldArtifact.BuildpackArtifact.Volumes {
+			newVolume := &next.BuildpackVolume{
+				Host:    volume.Host,
+				Target:  volume.Target,
+				Options: volume.Options,
+			}
+			newArtifact.BuildpackArtifact.Volumes = append(newArtifact.BuildpackArtifact.Volumes, newVolume)
+		}
+	}
+
 	return nil
 }

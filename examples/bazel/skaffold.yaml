@@ -2,6 +2,6 @@ apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
-    - image: skaffold-bazel
-      bazel:
-        target: //:skaffold_example.tar
+  - image: skaffold-bazel
+    bazel:
+      target: //:skaffold_example.tar
