@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -36,7 +37,6 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -263,7 +263,7 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 // in skaffold main.
 // For all other errors, pass through known errors.
 // TODO: Return nil if error is `context.Cancelled` and remove check in main.
-func alwaysSucceedWhenCancelled(ctx context.Context, runCtx *v2.RunContext, err error) error {
+func alwaysSucceedWhenCancelled(ctx context.Context, runCtx *runcontext.RunContext, err error) error {
 	if err == nil {
 		return err
 	}

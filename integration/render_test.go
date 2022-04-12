@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -78,9 +78,9 @@ spec:
 		tmpDir := t.NewTempDir()
 		tmpDir.Write("deployment.yaml", test.input).Chdir()
 
-		deployer, err := kubectl.NewDeployer(&v2.RunContext{
+		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
-			Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
+			Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{
 				Render: latestV2.RenderConfig{
 					Generate: latestV2.Generate{
 						RawK8s: []string{"deployment.yaml"}},
@@ -232,9 +232,9 @@ spec:
 				Write("deployment.yaml", test.input).
 				Chdir()
 
-			deployer, err := kubectl.NewDeployer(&v2.RunContext{
+			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
+				Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{
 					Render: latestV2.RenderConfig{
 						Generate: latestV2.Generate{
 							RawK8s: []string{"deployment.yaml"}},
@@ -413,8 +413,8 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer, err := helm.NewDeployer(context.Background(), &v2.RunContext{
-				Pipelines: v2.NewPipelines([]latestV2.Pipeline{{
+			deployer, err := helm.NewDeployer(context.Background(), &runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{
 					Deploy: latestV2.DeployConfig{
 						DeployType: latestV2.DeployType{
 							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{

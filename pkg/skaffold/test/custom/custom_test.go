@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -329,6 +329,6 @@ func TestGetEnv(t *testing.T) {
 }
 
 type mockConfig struct {
-	v2.RunContext // Embedded to provide the default values.
-	tests         []*latestV2.TestCase
+	runcontext.RunContext // Embedded to provide the default values.
+	tests                 []*latestV2.TestCase
 }

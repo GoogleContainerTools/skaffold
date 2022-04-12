@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -97,8 +97,8 @@ func TestCheckArtifacts(t *testing.T) {
 }
 
 type mockConfig struct {
-	v2.RunContext // Embedded to provide the default values.
-	artifacts     []*latestV2.Artifact
+	runcontext.RunContext // Embedded to provide the default values.
+	artifacts             []*latestV2.Artifact
 }
 
 func (c *mockConfig) PipelineForImage() latestV2.Pipeline {

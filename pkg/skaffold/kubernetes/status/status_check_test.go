@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -637,7 +637,7 @@ func (m mockValidator) WithValidators([]validator.Validator) diag.Diagnose {
 }
 
 type statusConfig struct {
-	v2.RunContext // Embedded to provide the default values.
+	runcontext.RunContext // Embedded to provide the default values.
 }
 
 func (c *statusConfig) GetKubeContext() string { return TestKubeContext }

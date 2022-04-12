@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 )
 
 var ConfigRetriever = func(ctx context.Context, image string, builds []graph.Artifact, registries map[string]bool) (ImageConfiguration, error) {
@@ -54,7 +54,7 @@ func findArtifact(image string, builds []graph.Artifact) *graph.Artifact {
 // the given build artifact
 func RetrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, insecureRegistries map[string]bool) (ImageConfiguration, error) {
 	// TODO: use the proper RunContext
-	apiClient, err := docker.NewAPIClient(ctx, &v2.RunContext{
+	apiClient, err := docker.NewAPIClient(ctx, &runcontext.RunContext{
 		InsecureRegistries: insecureRegistries,
 	})
 	if err != nil {

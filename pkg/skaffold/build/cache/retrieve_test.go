@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -341,10 +341,10 @@ func TestCacheFindMissing(t *testing.T) {
 }
 
 type mockConfig struct {
-	v2.RunContext // Embedded to provide the default values.
-	cacheFile     string
-	mode          config.RunMode
-	pipeline      latestV2.Pipeline
+	runcontext.RunContext // Embedded to provide the default values.
+	cacheFile             string
+	mode                  config.RunMode
+	pipeline              latestV2.Pipeline
 }
 
 func (c *mockConfig) CacheArtifacts() bool                              { return true }

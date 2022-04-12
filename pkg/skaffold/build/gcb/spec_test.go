@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -58,9 +58,9 @@ func TestBuildSpecFail(t *testing.T) {
 }
 
 type mockBuilderContext struct {
-	v2.RunContext      // Embedded to provide the default values.
-	artifactStore      build.ArtifactStore
-	sourceDepsResolver func() graph.SourceDependenciesCache
+	runcontext.RunContext // Embedded to provide the default values.
+	artifactStore         build.ArtifactStore
+	sourceDepsResolver    func() graph.SourceDependenciesCache
 }
 
 func (c *mockBuilderContext) SourceDependenciesResolver() graph.SourceDependenciesCache {

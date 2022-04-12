@@ -35,7 +35,7 @@ import (
 	ctl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -212,7 +212,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Delay:   0 * time.Second,
 					Max:     10 * time.Second,
 				},
-				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
 				}}}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
@@ -289,7 +289,7 @@ func TestKustomizeCleanup(t *testing.T) {
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
-				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
@@ -339,7 +339,7 @@ func TestKustomizeHooks(t *testing.T) {
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
-				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &latestV2.KustomizeDeploy{})
 			t.RequireNoError(err)
@@ -789,7 +789,7 @@ spec:
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
-				RunContext: v2.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
 			}, labeller, &latestV2.KustomizeDeploy{
 				KustomizePaths: kustomizationPaths,
 			})
@@ -839,10 +839,10 @@ func TestHasRunnableHooks(t *testing.T) {
 }
 
 type kustomizeConfig struct {
-	v2.RunContext    // Embedded to provide the default values.
-	force            bool
-	workingDir       string
-	waitForDeletions config.WaitForDeletions
+	runcontext.RunContext // Embedded to provide the default values.
+	force                 bool
+	workingDir            string
+	waitForDeletions      config.WaitForDeletions
 }
 
 func (c *kustomizeConfig) ForceDeploy() bool                                     { return c.force }

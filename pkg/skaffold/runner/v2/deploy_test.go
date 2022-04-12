@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -70,7 +70,7 @@ func TestDeploy(t *testing.T) {
 
 func TestSkaffoldDeployRenderOnly(t *testing.T) {
 	testutil.Run(t, "does not make kubectl calls", func(t *testutil.T) {
-		runCtx := &v2.RunContext{
+		runCtx := &runcontext.RunContext{
 			Opts: config.SkaffoldOptions{
 				Namespace:  "testNamespace",
 				RenderOnly: true,

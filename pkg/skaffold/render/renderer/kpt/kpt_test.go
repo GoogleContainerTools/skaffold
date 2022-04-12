@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -64,7 +64,7 @@ func TestRender(t *testing.T) {
 	tests := []struct {
 		description     string
 		renderConfig    *latestV2.RenderConfig
-		config          *v2.RunContext
+		config          *runcontext.RunContext
 		originalKptfile string
 		updatedKptfile  string
 	}{

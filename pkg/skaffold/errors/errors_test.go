@@ -24,13 +24,13 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 var (
-	dummyRunCtx = v2.RunContext{}
+	dummyRunCtx = runcontext.RunContext{}
 )
 
 func TestShowAIError(t *testing.T) {
@@ -125,7 +125,7 @@ func TestShowAIError(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			runCtx := v2.RunContext{KubeContext: "test_cluster", Opts: test.opts}
+			runCtx := runcontext.RunContext{KubeContext: "test_cluster", Opts: test.opts}
 			actual := ShowAIError(runCtx, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := ActionableErr(runCtx, test.phase, test.err)

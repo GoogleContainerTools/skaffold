@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -86,12 +86,12 @@ func TestPruneIsNoop(t *testing.T) {
 }
 
 type mockBuilderContext struct {
-	v2.RunContext      // Embedded to provide the default values.
-	kubeContext        string
-	namespace          string
-	insecureRegistries map[string]bool
-	runMode            config.RunMode
-	artifactStore      build.ArtifactStore
+	runcontext.RunContext // Embedded to provide the default values.
+	kubeContext           string
+	namespace             string
+	insecureRegistries    map[string]bool
+	runMode               config.RunMode
+	artifactStore         build.ArtifactStore
 }
 
 func (c *mockBuilderContext) GetKubeContext() string                 { return c.kubeContext }

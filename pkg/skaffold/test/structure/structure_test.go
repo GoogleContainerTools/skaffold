@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -130,9 +130,9 @@ func TestCustomParams(t *testing.T) {
 }
 
 type mockConfig struct {
-	v2.RunContext // Embedded to provide the default values.
-	tests         []*latestV2.TestCase
-	muted         config.Muted
+	runcontext.RunContext // Embedded to provide the default values.
+	tests                 []*latestV2.TestCase
+	muted                 config.Muted
 }
 
 func (c *mockConfig) Muted() config.Muted { return c.muted }

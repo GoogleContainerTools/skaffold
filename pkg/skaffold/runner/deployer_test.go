@@ -37,7 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -90,8 +90,8 @@ func TestGetDeployer(tOuter *testing.T) {
 					},
 				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-						Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+					t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+						Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 					}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 						Flags: latestV2.KubectlFlags{},
 					}, "")).(deploy.Deployer),
@@ -116,8 +116,8 @@ func TestGetDeployer(tOuter *testing.T) {
 					},
 				},
 				apply: true,
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
 				}, "")).(deploy.Deployer),
@@ -133,8 +133,8 @@ func TestGetDeployer(tOuter *testing.T) {
 				},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				apply:       true,
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
 				}, "")).(deploy.Deployer),
@@ -210,8 +210,8 @@ func TestGetDeployer(tOuter *testing.T) {
 						},
 					},
 				},
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
 				}, "")).(deploy.Deployer),
@@ -226,11 +226,11 @@ func TestGetDeployer(tOuter *testing.T) {
 					))
 				}
 
-				deployer, err := GetDeployer(context.Background(), &v2.RunContext{
+				deployer, err := GetDeployer(context.Background(), &runcontext.RunContext{
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{test.cfg}),
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{test.cfg}),
 				}, &label.DefaultLabeller{}, "")
 
 				t.CheckError(test.shouldErr, err)
@@ -280,8 +280,8 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				cfgs: []latestV2.DeployType{{
 					KubectlDeploy: &latestV2.KubectlDeploy{},
 				}},
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
 				}, "")).(*kubectl.Deployer),
@@ -296,8 +296,8 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						},
 					},
 				}},
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{
 						Apply:  []string{"--foo"},
@@ -330,8 +330,8 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				cfgs: []latestV2.DeployType{{
 					LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
 				}},
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
 				}, "")).(*kubectl.Deployer),
@@ -341,8 +341,8 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				cfgs: []latestV2.DeployType{{
 					KustomizeDeploy: &latestV2.KustomizeDeploy{},
 				}},
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines([]latestV2.Pipeline{{}}),
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
 					Flags: latestV2.KubectlFlags{},
 				}, "")).(*kubectl.Deployer),
@@ -359,8 +359,8 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						},
 					})
 				}
-				deployer, err := getDefaultDeployer(&v2.RunContext{
-					Pipelines: v2.NewPipelines(pipelines),
+				deployer, err := getDefaultDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines(pipelines),
 				}, &label.DefaultLabeller{}, "")
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)

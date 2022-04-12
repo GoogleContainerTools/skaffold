@@ -38,7 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -1527,10 +1527,10 @@ func TestHelmHooks(t *testing.T) {
 }
 
 type helmConfig struct {
-	v2.RunContext // Embedded to provide the default values.
-	namespace     string
-	force         bool
-	configFile    string
+	runcontext.RunContext // Embedded to provide the default values.
+	namespace             string
+	force                 bool
+	configFile            string
 }
 
 func (c *helmConfig) ForceDeploy() bool                                     { return c.force }

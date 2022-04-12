@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 )
 
@@ -38,7 +38,7 @@ func (t *TaggerMux) GenerateTag(ctx context.Context, image latestV2.Artifact) (s
 	return tagger.GenerateTag(ctx, image)
 }
 
-func NewTaggerMux(runCtx *v2.RunContext) (Tagger, error) {
+func NewTaggerMux(runCtx *runcontext.RunContext) (Tagger, error) {
 	pipelines := runCtx.GetPipelines()
 	m := make(map[string]Tagger)
 	sl := make([]Tagger, len(pipelines))
@@ -55,7 +55,7 @@ func NewTaggerMux(runCtx *v2.RunContext) (Tagger, error) {
 	return &TaggerMux{taggers: sl, byImageName: m}, nil
 }
 
-func getTagger(runCtx *v2.RunContext, t *latestV2.TagPolicy) (Tagger, error) {
+func getTagger(runCtx *runcontext.RunContext, t *latestV2.TagPolicy) (Tagger, error) {
 	switch {
 	case runCtx.CustomTag() != "":
 		return &CustomTag{
@@ -93,7 +93,7 @@ func getTagger(runCtx *v2.RunContext, t *latestV2.TagPolicy) (Tagger, error) {
 }
 
 // CreateComponents creates a map of taggers for CustomTemplateTagger
-func CreateComponents(runCtx *v2.RunContext, t *latestV2.CustomTemplateTagger) (map[string]Tagger, error) {
+func CreateComponents(runCtx *runcontext.RunContext, t *latestV2.CustomTemplateTagger) (map[string]Tagger, error) {
 	components := map[string]Tagger{}
 
 	for _, taggerComponent := range t.Components {

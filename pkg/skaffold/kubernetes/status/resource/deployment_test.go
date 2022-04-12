@@ -28,7 +28,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -433,7 +433,7 @@ func TestStatusCode(t *testing.T) {
 }
 
 type statusConfig struct {
-	v2.RunContext // Embedded to provide the default values.
+	runcontext.RunContext // Embedded to provide the default values.
 }
 
 func (c *statusConfig) GetKubeContext() string { return "kubecontext" }

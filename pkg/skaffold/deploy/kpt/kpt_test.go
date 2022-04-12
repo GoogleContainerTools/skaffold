@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -185,9 +185,9 @@ func TestDeploy(t *testing.T) {
 }
 
 type kptConfig struct {
-	v2.RunContext // Embedded to provide the default values.
-	workingDir    string
-	config        string
+	runcontext.RunContext // Embedded to provide the default values.
+	workingDir            string
+	config                string
 }
 
 func (c *kptConfig) WorkingDir() string                                    { return c.workingDir }

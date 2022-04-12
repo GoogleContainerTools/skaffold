@@ -42,7 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	kRenderer "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -304,8 +304,8 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 		},
 	}
 	_ = defaults.Set(cfg)
-	runCtx := &v2.RunContext{
-		Pipelines: v2.NewPipelines([]latestV2.Pipeline{cfg.Pipeline}),
+	runCtx := &runcontext.RunContext{
+		Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{cfg.Pipeline}),
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
@@ -537,8 +537,8 @@ func TestNewForConfig(t *testing.T) {
 				"kubectl version --client -ojson", "v1.5.6"))
 			tmpDir := t.NewTempDir()
 			tmpDir.Chdir()
-			runCtx := &v2.RunContext{
-				Pipelines: v2.NewPipelines([]latestV2.Pipeline{tt.pipeline}),
+			runCtx := &runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{tt.pipeline}),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
@@ -643,9 +643,9 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 			}
-			r, _ := NewForConfig(context.Background(), &v2.RunContext{
+			r, _ := NewForConfig(context.Background(), &runcontext.RunContext{
 				Opts:       opts,
-				Pipelines:  v2.NewPipelines([]latestV2.Pipeline{pipeline}),
+				Pipelines:  runcontext.NewPipelines([]latestV2.Pipeline{pipeline}),
 				WorkingDir: tmpDir.Root(),
 			})
 

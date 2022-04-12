@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -322,10 +322,10 @@ func TestConsolidateTransformConfiguration(t *testing.T) {
 }
 
 type mockDeployConfig struct {
-	v2.RunContext      // Embedded to provide the default values.
-	transformAllowList []latestV2.ResourceFilter
-	transformDenyList  []latestV2.ResourceFilter
-	transformRulesFile string
+	runcontext.RunContext // Embedded to provide the default values.
+	transformAllowList    []latestV2.ResourceFilter
+	transformDenyList     []latestV2.ResourceFilter
+	transformRulesFile    string
 }
 
 func (c *mockDeployConfig) ForceDeploy() bool                                     { return false }
