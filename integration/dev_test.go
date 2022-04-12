@@ -251,6 +251,8 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 
 */
 
+// TODO: remove nolint once we've reenabled integration tests
+//nolint:golint,unused
 func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
@@ -414,6 +416,8 @@ func assertResponseFromPort(t *testing.T, address string, port int, expected str
 	}
 }
 
+// TODO: remove nolint once we've reenabled integration tests
+//nolint:golint,unused
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
 	fInfo, err := os.Stat(filepath)
 	if err != nil {

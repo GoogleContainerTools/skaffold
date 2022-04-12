@@ -30,6 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
+// TODO: remove nolint once we've reenabled integration tests
+//nolint:golint,unused
 var syncTests = []struct {
 	description string
 	trigger     string
