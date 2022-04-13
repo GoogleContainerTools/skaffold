@@ -26,7 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -34,7 +34,7 @@ import (
 func TestKanikoArgs(t *testing.T) {
 	tests := []struct {
 		description        string
-		artifact           *latestV2.KanikoArtifact
+		artifact           *latest.KanikoArtifact
 		insecureRegistries map[string]bool
 		tag                string
 		shouldErr          bool
@@ -42,24 +42,24 @@ func TestKanikoArgs(t *testing.T) {
 	}{
 		{
 			description: "simple build",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 			},
 			expectedArgs: []string{},
 		},
 		{
 			description: "cache layers",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache:          &latestV2.KanikoCache{},
+				Cache:          &latest.KanikoCache{},
 			},
 			expectedArgs: []string{kaniko.CacheFlag},
 		},
 		{
 			description: "cache layers to specific repo",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache: &latestV2.KanikoCache{
+				Cache: &latest.KanikoCache{
 					Repo: "repo",
 				},
 			},
@@ -67,9 +67,9 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "cache path",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache: &latestV2.KanikoCache{
+				Cache: &latest.KanikoCache{
 					HostPath: "/cache",
 				},
 			},
@@ -79,7 +79,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "target",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Target:         "target",
 			},
@@ -87,7 +87,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "reproducible",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Reproducible:   true,
 			},
@@ -95,7 +95,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "build args",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"nil_key":   nil,
@@ -110,7 +110,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "invalid build args",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"invalid": util.StringPtr("{{Invalid"),
@@ -120,7 +120,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "insecure registries",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 			},
 			insecureRegistries: map[string]bool{"localhost:4000": true},
@@ -128,7 +128,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "skip tls",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SkipTLS:        true,
 			},
@@ -139,7 +139,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "invalid registry",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SkipTLS:        true,
 			},
@@ -166,7 +166,7 @@ func TestKanikoArgs(t *testing.T) {
 }
 
 func TestKanikoPodSpec(t *testing.T) {
-	artifact := &latestV2.KanikoArtifact{
+	artifact := &latest.KanikoArtifact{
 		Image:          "image",
 		DockerfilePath: "Dockerfile",
 		InitImage:      "init/image",
@@ -194,7 +194,7 @@ func TestKanikoPodSpec(t *testing.T) {
 
 	builder := &Builder{
 		cfg: &mockBuilderContext{},
-		ClusterDetails: &latestV2.ClusterDetails{
+		ClusterDetails: &latest.ClusterDetails{
 			Namespace:           "ns",
 			PullSecretName:      "secret",
 			PullSecretPath:      "kaniko-secret.json",
@@ -203,11 +203,11 @@ func TestKanikoPodSpec(t *testing.T) {
 			HTTPSProxy:          "https://proxy",
 			ServiceAccountName:  "aVerySpecialSA",
 			RunAsUser:           &runAsUser,
-			Resources: &latestV2.ResourceRequirements{
-				Requests: &latestV2.ResourceRequirement{
+			Resources: &latest.ResourceRequirements{
+				Requests: &latest.ResourceRequirement{
 					CPU: "0.1",
 				},
-				Limits: &latestV2.ResourceRequirement{
+				Limits: &latest.ResourceRequirement{
 					CPU: "0.5",
 				},
 			},
@@ -391,24 +391,24 @@ func TestKanikoPodSpec(t *testing.T) {
 func TestResourceRequirements(t *testing.T) {
 	tests := []struct {
 		description string
-		initial     *latestV2.ResourceRequirements
+		initial     *latest.ResourceRequirements
 		expected    v1.ResourceRequirements
 	}{
 		{
 			description: "no resource specified",
-			initial:     &latestV2.ResourceRequirements{},
+			initial:     &latest.ResourceRequirements{},
 			expected:    v1.ResourceRequirements{},
 		},
 		{
 			description: "with resource specified",
-			initial: &latestV2.ResourceRequirements{
-				Requests: &latestV2.ResourceRequirement{
+			initial: &latest.ResourceRequirements{
+				Requests: &latest.ResourceRequirement{
 					CPU:              "0.5",
 					Memory:           "1000",
 					ResourceStorage:  "1000",
 					EphemeralStorage: "1000",
 				},
-				Limits: &latestV2.ResourceRequirement{
+				Limits: &latest.ResourceRequirement{
 					CPU:              "1.0",
 					Memory:           "2000",
 					ResourceStorage:  "1000",

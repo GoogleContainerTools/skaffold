@@ -28,12 +28,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact) build.ArtifactBuilder {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact) build.ArtifactBuilder {
 	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
 	return builder
 }
@@ -62,7 +62,7 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 	return nil
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string, m platform.Matcher) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, m platform.Matcher) (string, error) {
 	// TODO: Implement building multiplatform images for cluster builder
 	if m.IsMultiPlatform() {
 		log.Entry(ctx).Println("skaffold doesn't yet support multi platform builds for the cluster builder")
@@ -80,7 +80,7 @@ func (b *Builder) Concurrency() *int {
 	return util.IntPtr(b.ClusterDetails.Concurrency)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
 	// required artifacts as build-args
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {

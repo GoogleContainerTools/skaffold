@@ -29,12 +29,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds an artifact with Bazel.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string, matcher platform.Matcher) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, matcher platform.Matcher) (string, error) {
 	// TODO: Implement building multi-platform images
 	if matcher.IsMultiPlatform() {
 		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the bazel builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", matcher.String(), artifact.ImageName)
@@ -55,7 +55,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV2.A
 
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
-func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latestV2.BazelArtifact) (string, error) {
+func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
 	if !strings.HasSuffix(a.BuildTarget, ".tar") {
 		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
 	}
@@ -87,7 +87,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	return tarPath, nil
 }
 
-func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latestV2.BazelArtifact, tag string) (string, error) {
+func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
 	imageTar, err := os.Open(tarPath)
 	if err != nil {
 		return "", fmt.Errorf("opening image tarball: %w", err)
@@ -107,7 +107,7 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	return imageID, nil
 }
 
-func bazelTarPath(ctx context.Context, workspace string, a *latestV2.BazelArtifact) (string, error) {
+func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
 	args := []string{
 		"cquery",
 		a.BuildTarget,

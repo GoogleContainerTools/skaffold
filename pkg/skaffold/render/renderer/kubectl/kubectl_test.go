@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -66,21 +66,21 @@ spec:
 func TestRender(t *testing.T) {
 	tests := []struct {
 		description  string
-		renderConfig *latestV2.RenderConfig
+		renderConfig *latest.RenderConfig
 		labels       map[string]string
 		expected     string
 	}{
 		{
 			description: "single manifest with no labels",
-			renderConfig: &latestV2.RenderConfig{
-				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+			renderConfig: &latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			expected: taggedPodYaml,
 		},
 		{
 			description: "single manifest with labels",
-			renderConfig: &latestV2.RenderConfig{
-				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+			renderConfig: &latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			labels:   map[string]string{"run.id": "test"},
 			expected: labeledPodYaml,
@@ -108,12 +108,12 @@ func TestRender(t *testing.T) {
 }
 
 type mockConfig struct {
-	renderConfig *latestV2.RenderConfig
+	renderConfig *latest.RenderConfig
 	workingDir   string
 }
 
-func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig       { return mc.renderConfig }
-func (mc mockConfig) GetWorkingDir() string                         { return mc.workingDir }
-func (mc mockConfig) TransformAllowList() []latestV2.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter  { return nil }
-func (mc mockConfig) TransformRulesFile() string                    { return "" }
+func (mc mockConfig) GetRenderConfig() *latest.RenderConfig       { return mc.renderConfig }
+func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
+func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
+func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
+func (mc mockConfig) TransformRulesFile() string                  { return "" }

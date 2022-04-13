@@ -44,7 +44,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -138,7 +138,7 @@ func (t *TestBench) GetSyncer() sync.Syncer {
 func (t *TestBench) RegisterLocalImages(_ []graph.Artifact) {}
 func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 
-func (t *TestBench) TestDependencies(context.Context, *latestV2.Artifact) ([]string, error) {
+func (t *TestBench) TestDependencies(context.Context, *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
 func (t *TestBench) Dependencies() ([]string, error)                               { return nil, nil }
@@ -150,7 +150,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, _ platform.Resolver, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, _ platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -278,34 +278,34 @@ type triggerState struct {
 	deploy bool
 }
 
-func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latestV2.Artifact, autoTriggers *triggerState) *SkaffoldRunner {
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latest.Artifact, autoTriggers *triggerState) *SkaffoldRunner {
 	tmpDir := t.NewTempDir()
 	tmpDir.Chdir()
 	if autoTriggers == nil {
 		autoTriggers = &triggerState{true, true, true}
 	}
-	var tests []*latestV2.TestCase
+	var tests []*latest.TestCase
 	for _, a := range artifacts {
-		tests = append(tests, &latestV2.TestCase{
+		tests = append(tests, &latest.TestCase{
 			ImageName: a.ImageName,
 		})
 	}
-	cfg := &latestV2.SkaffoldConfig{
-		Pipeline: latestV2.Pipeline{
-			Build: latestV2.BuildConfig{
-				TagPolicy: latestV2.TagPolicy{
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				TagPolicy: latest.TagPolicy{
 					// Use the fastest tagger
-					ShaTagger: &latestV2.ShaTagger{},
+					ShaTagger: &latest.ShaTagger{},
 				},
 				Artifacts: artifacts,
 			},
 			Test:   tests,
-			Deploy: latestV2.DeployConfig{StatusCheckDeadlineSeconds: 60},
+			Deploy: latest.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
 	_ = defaults.Set(cfg)
 	runCtx := &runcontext.RunContext{
-		Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{cfg.Pipeline}),
+		Pipelines: runcontext.NewPipelines([]latest.Pipeline{cfg.Pipeline}),
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
@@ -344,7 +344,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 func TestNewForConfig(t *testing.T) {
 	tests := []struct {
 		description      string
-		pipeline         latestV2.Pipeline
+		pipeline         latest.Pipeline
 		shouldErr        bool
 		cacheArtifacts   bool
 		expectedBuilder  build.BuilderMux
@@ -354,16 +354,16 @@ func TestNewForConfig(t *testing.T) {
 	}{
 		{
 			description: "local builder config",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						LocalBuild: &latestV2.LocalBuild{},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -373,16 +373,16 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "gcb config",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						GoogleCloudBuild: &latestV2.GoogleCloudBuild{},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						GoogleCloudBuild: &latest.GoogleCloudBuild{},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -392,16 +392,16 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "cluster builder config",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						Cluster: &latestV2.ClusterDetails{Timeout: "100s"},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{Timeout: "100s"},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -411,16 +411,16 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "bad tagger config",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{},
-					BuildType: latestV2.BuildType{
-						LocalBuild: &latestV2.LocalBuild{},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -428,7 +428,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description:      "unknown builder and tagger",
-			pipeline:         latestV2.Pipeline{},
+			pipeline:         latest.Pipeline{},
 			shouldErr:        true,
 			expectedTester:   &test.FullTester{},
 			expectedRenderer: &kRenderer.Kubectl{},
@@ -436,16 +436,16 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "no artifacts, cache",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						LocalBuild: &latestV2.LocalBuild{},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -456,19 +456,19 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "raw renderer",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						LocalBuild: &latestV2.LocalBuild{},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Render: latestV2.RenderConfig{
-					Generate: latestV2.Generate{RawK8s: []string{""}},
+				Render: latest.RenderConfig{
+					Generate: latest.Generate{RawK8s: []string{""}},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -481,20 +481,20 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "transformableAllowList",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						LocalBuild: &latestV2.LocalBuild{},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
-				ResourceSelector: latestV2.ResourceSelectorConfig{
-					Allow: []latestV2.ResourceFilter{
+				ResourceSelector: latest.ResourceSelectorConfig{
+					Allow: []latest.ResourceFilter{
 						{
 							GroupKind: "example.com/Application",
 						},
@@ -506,17 +506,17 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "multiple deployers",
-			pipeline: latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						LocalBuild: &latestV2.LocalBuild{},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy:   &latestV2.KubectlDeploy{},
-						KustomizeDeploy: &latestV2.KustomizeDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy:   &latest.KubectlDeploy{},
+						KustomizeDeploy: &latest.KustomizeDeploy{},
 					},
 				},
 			},
@@ -538,7 +538,7 @@ func TestNewForConfig(t *testing.T) {
 			tmpDir := t.NewTempDir()
 			tmpDir.Chdir()
 			runCtx := &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{tt.pipeline}),
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{tt.pipeline}),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
@@ -630,22 +630,22 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				AutoSync:          tt.autoSync,
 				AutoDeploy:        tt.autoDeploy,
 			}
-			pipeline := latestV2.Pipeline{
-				Build: latestV2.BuildConfig{
-					TagPolicy: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}},
-					BuildType: latestV2.BuildType{
-						LocalBuild: &latestV2.LocalBuild{},
+			pipeline := latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: latestV2.DeployConfig{
-					DeployType: latestV2.DeployType{
-						KubectlDeploy: &latestV2.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			}
 			r, _ := NewForConfig(context.Background(), &runcontext.RunContext{
 				Opts:       opts,
-				Pipelines:  runcontext.NewPipelines([]latestV2.Pipeline{pipeline}),
+				Pipelines:  runcontext.NewPipelines([]latest.Pipeline{pipeline}),
 				WorkingDir: tmpDir.Root(),
 			})
 

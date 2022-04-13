@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -159,7 +159,7 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Chdir(test.dir)
 
-			t.Override(&confirmInitOptions, func(_ io.Writer, _ *latestV2.SkaffoldConfig) (bool, error) {
+			t.Override(&confirmInitOptions, func(_ io.Writer, _ *latest.SkaffoldConfig) (bool, error) {
 				return test.doneResponse, nil
 			})
 
@@ -170,7 +170,7 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 				t.CheckErrorContains(test.expectedError, err)
 				t.CheckDeepEqual(exitCode(err), test.expectedExitCode)
 			case test.doneResponse == true:
-				t.CheckErrorAndDeepEqual(false, err, (*latestV2.SkaffoldConfig)(nil), got)
+				t.CheckErrorAndDeepEqual(false, err, (*latest.SkaffoldConfig)(nil), got)
 			default:
 				t.CheckNoError(err)
 				checkGeneratedConfig(t, ".")

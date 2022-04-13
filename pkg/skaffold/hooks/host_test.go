@@ -22,7 +22,7 @@ import (
 	"runtime"
 	"testing"
 
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -36,7 +36,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "linux/darwin host hook on matching host",
 			hook: hostHook{
-				cfg: v2.HostHook{
+				cfg: latest.HostHook{
 					OS:      []string{"linux", "darwin"},
 					Command: []string{"sh", "-c", "echo FOO=$FOO"},
 				},
@@ -47,7 +47,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "windows host hook on non-matching host",
 			hook: hostHook{
-				cfg: v2.HostHook{
+				cfg: latest.HostHook{
 					OS:      []string{"windows"},
 					Command: []string{"cmd.exe", "/C", "echo FOO=%FOO%"},
 				},
@@ -58,7 +58,7 @@ func TestRun(t *testing.T) {
 			description:       "linux/darwin host hook on non-matching host",
 			requiresWindowsOS: true,
 			hook: hostHook{
-				cfg: v2.HostHook{
+				cfg: latest.HostHook{
 					OS:      []string{"linux", "darwin"},
 					Command: []string{"sh", "-c", "echo FOO=$FOO"},
 				},
@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 			description:       "windows host hook on matching host",
 			requiresWindowsOS: true,
 			hook: hostHook{
-				cfg: v2.HostHook{
+				cfg: latest.HostHook{
 					OS:      []string{"windows"},
 					Command: []string{"cmd.exe", "/C", "echo FOO=%FOO%"},
 				},

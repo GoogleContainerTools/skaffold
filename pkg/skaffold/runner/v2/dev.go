@@ -32,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -213,7 +213,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 
 // Dev watches for changes and runs the skaffold build, test and deploy
 // config until interrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latestV2.Artifact) error {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
 	eventV2.InitializeState(r.runCtx)
 	eventV2.TaskInProgress(constants.DevLoop, "")
@@ -386,11 +386,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 }
 
 // graph represents the artifact graph
-type devGraph map[string][]*latestV2.Artifact
+type devGraph map[string][]*latest.Artifact
 
 // getTransposeGraph builds the transpose of the graph represented by the artifacts slice, with edges directed from required artifact to the dependent artifact.
-func getTransposeGraph(artifacts []*latestV2.Artifact) devGraph {
-	g := make(map[string][]*latestV2.Artifact)
+func getTransposeGraph(artifacts []*latest.Artifact) devGraph {
+	g := make(map[string][]*latest.Artifact)
 	for _, a := range artifacts {
 		for _, d := range a.Dependencies {
 			g[d.ImageName] = append(g[d.ImageName], a)

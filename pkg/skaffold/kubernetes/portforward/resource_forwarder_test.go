@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -86,14 +86,14 @@ func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts 
 }
 
 func TestStart(t *testing.T) {
-	svc1 := &latestV2.PortForwardResource{
+	svc1 := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc1",
 		Namespace: "default",
 		Port:      schemautil.FromInt(8080),
 	}
 
-	svc2 := &latestV2.PortForwardResource{
+	svc2 := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc2",
 		Namespace: "default",
@@ -102,13 +102,13 @@ func TestStart(t *testing.T) {
 
 	tests := []struct {
 		description    string
-		resources      []*latestV2.PortForwardResource
+		resources      []*latest.PortForwardResource
 		availablePorts []int
 		expected       map[string]*portForwardEntry
 	}{
 		{
 			description:    "forward two services",
-			resources:      []*latestV2.PortForwardResource{svc1, svc2},
+			resources:      []*latest.PortForwardResource{svc1, svc2},
 			availablePorts: []int{8080, 9000},
 			expected: map[string]*portForwardEntry{
 				"service-svc1-default-8080": {
@@ -124,9 +124,9 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testEvent.InitializeState([]latestV2.Pipeline{{}})
+			testEvent.InitializeState([]latest.Pipeline{{}})
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, map[int]struct{}{}, test.availablePorts))
-			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latestV2.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
@@ -154,33 +154,33 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 		description        string
 		forwardedResources map[string]*portForwardEntry
 		availablePorts     []int
-		resource           latestV2.PortForwardResource
+		resource           latest.PortForwardResource
 		expectedReq        int
 		expected           *portForwardEntry
 	}{
 		{
 			description: "port forward service",
-			resource: latestV2.PortForwardResource{
+			resource: latest.PortForwardResource{
 				Type: "service",
 				Name: "serviceName",
 				Port: schemautil.FromInt(8080),
 			},
 			availablePorts: []int{8080},
 			expectedReq:    8080,
-			expected:       newPortForwardEntry(0, latestV2.PortForwardResource{}, "", "", "", "", 8080, false),
+			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
 		}, {
 			description: "should not request system ports (1-1023)",
-			resource: latestV2.PortForwardResource{
+			resource: latest.PortForwardResource{
 				Type: "service",
 				Name: "serviceName",
 				Port: schemautil.FromInt(80),
 			},
 			availablePorts: []int{8080},
 			expectedReq:    0, // no local port requested as port 80 is a system port
-			expected:       newPortForwardEntry(0, latestV2.PortForwardResource{}, "", "", "", "", 8080, false),
+			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
 		}, {
 			description: "port forward existing deployment",
-			resource: latestV2.PortForwardResource{
+			resource: latest.PortForwardResource{
 				Type:      "deployment",
 				Namespace: "default",
 				Name:      "depName",
@@ -188,7 +188,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			},
 			forwardedResources: map[string]*portForwardEntry{
 				"deployment-depName-default-8080": {
-					resource: latestV2.PortForwardResource{
+					resource: latest.PortForwardResource{
 						Type:      "deployment",
 						Namespace: "default",
 						Name:      "depName",
@@ -198,7 +198,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				},
 			},
 			expectedReq: -1, // retrieveAvailablePort should not be called as there is an assigned localPort
-			expected:    newPortForwardEntry(0, latestV2.PortForwardResource{}, "", "", "", "", 9000, false),
+			expected:    newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 9000, false),
 		},
 	}
 
@@ -225,7 +225,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 }
 
 func TestUserDefinedResources(t *testing.T) {
-	svc := &latestV2.PortForwardResource{
+	svc := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc1",
 		Namespace: "test",
@@ -234,13 +234,13 @@ func TestUserDefinedResources(t *testing.T) {
 
 	tests := []struct {
 		description       string
-		userResources     []*latestV2.PortForwardResource
+		userResources     []*latest.PortForwardResource
 		namespaces        []string
 		expectedResources []string
 	}{
 		{
 			description: "pod should be found",
-			userResources: []*latestV2.PortForwardResource{
+			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test"},
@@ -250,14 +250,14 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			description: "pod not available",
-			userResources: []*latestV2.PortForwardResource{
+			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
 			},
 			namespaces:        []string{"test", "some"},
 			expectedResources: []string{},
 		},
 		{
-			userResources: []*latestV2.PortForwardResource{
+			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
 				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: schemautil.FromInt(9001)},
 			},
@@ -268,7 +268,7 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			description: "pod should be found with namespace with template",
-			userResources: []*latestV2.PortForwardResource{
+			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod", Namespace: "some-with-template-{{ .FOO }}", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test"},
@@ -278,7 +278,7 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			description: "pod should be found with namespace with template",
-			userResources: []*latestV2.PortForwardResource{
+			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod", Namespace: "some-with-template-{{ .FOO }}", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test", "another"},
@@ -288,7 +288,7 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			description: "pod should be found with name with template",
-			userResources: []*latestV2.PortForwardResource{
+			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod-{{ .FOO }}", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test"},
@@ -298,7 +298,7 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			description: "pod should be found with name with template",
-			userResources: []*latestV2.PortForwardResource{
+			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod-{{ .FOO }}", Namespace: "some-ns", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test", "another"},
@@ -310,10 +310,10 @@ func TestUserDefinedResources(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testEvent.InitializeState([]latestV2.Pipeline{{}})
+			testEvent.InitializeState([]latest.Pipeline{{}})
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, map[int]struct{}{}, []int{8080, 9000}))
-			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latestV2.PortForwardResource, error) {
-				return []*latestV2.PortForwardResource{svc}, nil
+			t.Override(&retrieveServices, func(context.Context, string, []string, string) ([]*latest.PortForwardResource, error) {
+				return []*latest.PortForwardResource{svc}, nil
 			})
 
 			fakeForwarder := newTestForwarder()
@@ -355,7 +355,7 @@ func TestRetrieveServices(t *testing.T) {
 		description string
 		namespaces  []string
 		services    []*v1.Service
-		expected    []*latestV2.PortForwardResource
+		expected    []*latest.PortForwardResource
 	}{
 		{
 			description: "multiple services in multiple namespaces",
@@ -381,7 +381,7 @@ func TestRetrieveServices(t *testing.T) {
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8081}}},
 				},
 			},
-			expected: []*latestV2.PortForwardResource{{
+			expected: []*latest.PortForwardResource{{
 				Type:      constants.Service,
 				Name:      "svc1",
 				Namespace: "test",

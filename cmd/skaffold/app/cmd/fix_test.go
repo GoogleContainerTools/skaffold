@@ -22,8 +22,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -130,11 +130,11 @@ deploy:
 		},
 		{
 			description:   "already target version",
-			targetVersion: latestV2.Version,
+			targetVersion: latest.Version,
 			inputYaml: fmt.Sprintf(`apiVersion: %s
 kind: Config
-`, latestV2.Version),
-			output: "config is already version " + latestV2.Version + "\n",
+`, latest.Version),
+			output: "config is already version " + latest.Version + "\n",
 		},
 		{
 			description: "invalid input",
@@ -143,7 +143,7 @@ kind: Config
 		},
 		{
 			description:   "validation fails",
-			targetVersion: latestV2.Version,
+			targetVersion: latest.Version,
 			inputYaml: `apiVersion: skaffold/v3alpha1
 kind: Config
 build:

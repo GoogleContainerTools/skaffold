@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -80,13 +80,13 @@ spec:
 
 		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
-			Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{
-				Render: latestV2.RenderConfig{
-					Generate: latestV2.Generate{
+			Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
+				Render: latest.RenderConfig{
+					Generate: latest.Generate{
 						RawK8s: []string{"deployment.yaml"}},
 				},
 			}}),
-		}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		}, filepath.Join(tmpDir.Root(), test.renderPath))
 		t.RequireNoError(err)
@@ -234,14 +234,14 @@ spec:
 
 			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{
-					Render: latestV2.RenderConfig{
-						Generate: latestV2.Generate{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
+					Render: latest.RenderConfig{
+						Generate: latest.Generate{
 							RawK8s: []string{"deployment.yaml"}},
 					},
 				}}),
 				Opts: config.SkaffoldOptions{},
-			}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
+			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			}, "")
 			t.RequireNoError(err)
@@ -262,7 +262,7 @@ func TestHelmRender(t *testing.T) {
 	tests := []struct {
 		description  string
 		builds       []graph.Artifact
-		helmReleases []latestV2.HelmRelease
+		helmReleases []latest.HelmRelease
 		expectedOut  string
 	}{
 		{
@@ -273,7 +273,7 @@ func TestHelmRender(t *testing.T) {
 					Tag:       "gke-loadbalancer:test",
 				},
 			},
-			helmReleases: []latestV2.HelmRelease{{
+			helmReleases: []latest.HelmRelease{{
 				Name:      "gke-loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
 			}},
@@ -328,7 +328,7 @@ spec:
 					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",
 				},
 			},
-			helmReleases: []latestV2.HelmRelease{{
+			helmReleases: []latest.HelmRelease{{
 				Name:      "skaffold-helm",
 				ChartPath: "testdata/helm/skaffold-helm",
 				SetValues: map[string]string{
@@ -414,16 +414,16 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer, err := helm.NewDeployer(context.Background(), &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latestV2.Pipeline{{
-					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{
-							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},
 					},
 				}}),
-			}, &label.DefaultLabeller{}, &latestV2.LegacyHelmDeploy{
+			}, &label.DefaultLabeller{}, &latest.LegacyHelmDeploy{
 				Releases: test.helmReleases,
 			}, nil)
 			t.RequireNoError(err)

@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // kustomize implements deploymentInitializer for the kustomize deployer.
@@ -54,22 +54,22 @@ func newKustomizeInitializer(defaultKustomization string, bases, kustomizations,
 
 // deployConfig implements the Initializer interface and generates
 // a kustomize deployment config.
-func (k *kustomize) DeployConfig() (latestV2.DeployConfig, []latestV2.Profile) {
-	var kustomizeConfig *latestV2.KustomizeDeploy
-	var profiles []latestV2.Profile
+func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
+	var kustomizeConfig *latest.KustomizeDeploy
+	var profiles []latest.Profile
 
 	// if there's only one kustomize path, either leave it blank (if it's the default path),
 	// or generate a config with that single path and return it
 	if len(k.kustomizations) == 1 {
 		if k.kustomizations[0] == constants.DefaultKustomizePath {
-			kustomizeConfig = &latestV2.KustomizeDeploy{}
+			kustomizeConfig = &latest.KustomizeDeploy{}
 		} else {
-			kustomizeConfig = &latestV2.KustomizeDeploy{
+			kustomizeConfig = &latest.KustomizeDeploy{
 				KustomizePaths: k.kustomizations,
 			}
 		}
-		return latestV2.DeployConfig{
-			DeployType: latestV2.DeployType{
+		return latest.DeployConfig{
+			DeployType: latest.DeployType{
 				KustomizeDeploy: kustomizeConfig,
 			},
 		}, nil
@@ -105,16 +105,16 @@ func (k *kustomize) DeployConfig() (latestV2.DeployConfig, []latestV2.Profile) {
 
 	for _, kustomization := range k.kustomizations {
 		if kustomization == defaultKustomization {
-			kustomizeConfig = &latestV2.KustomizeDeploy{
+			kustomizeConfig = &latest.KustomizeDeploy{
 				KustomizePaths: []string{defaultKustomization},
 			}
 		} else {
-			profiles = append(profiles, latestV2.Profile{
+			profiles = append(profiles, latest.Profile{
 				Name: filepath.Base(kustomization),
-				Pipeline: latestV2.Pipeline{
-					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{
-							KustomizeDeploy: &latestV2.KustomizeDeploy{
+				Pipeline: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KustomizeDeploy: &latest.KustomizeDeploy{
 								KustomizePaths: []string{kustomization},
 							},
 						},
@@ -124,8 +124,8 @@ func (k *kustomize) DeployConfig() (latestV2.DeployConfig, []latestV2.Profile) {
 		}
 	}
 
-	return latestV2.DeployConfig{
-		DeployType: latestV2.DeployType{
+	return latest.DeployConfig{
+		DeployType: latest.DeployType{
 			KustomizeDeploy: kustomizeConfig,
 		},
 	}, profiles

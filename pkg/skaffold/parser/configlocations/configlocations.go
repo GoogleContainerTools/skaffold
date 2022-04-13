@@ -27,7 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -88,7 +88,7 @@ type YAMLOverrideInfo struct {
 }
 
 // Parse parses a skaffold config entry collecting file location information for each schema config object
-func Parse(sourceFile string, config *latestV2.SkaffoldConfig, fieldsOverrodeByProfile map[string]YAMLOverrideInfo) (*YAMLInfos, error) {
+func Parse(sourceFile string, config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[string]YAMLOverrideInfo) (*YAMLInfos, error) {
 	yamlInfos, err := buildMapOfSchemaObjPointerToYAMLInfos(sourceFile, config, map[uintptr]map[string]YAMLInfo{}, fieldsOverrodeByProfile)
 	return &YAMLInfos{
 			yamlInfos:               yamlInfos,
@@ -195,7 +195,7 @@ func getLinesAndColsOfString(str string) (int, int) {
 	return line, col
 }
 
-func buildMapOfSchemaObjPointerToYAMLInfos(sourceFile string, config *latestV2.SkaffoldConfig, yamlInfos map[uintptr]map[string]YAMLInfo,
+func buildMapOfSchemaObjPointerToYAMLInfos(sourceFile string, config *latest.SkaffoldConfig, yamlInfos map[uintptr]map[string]YAMLInfo,
 	fieldsOverrodeByProfile map[string]YAMLOverrideInfo) (map[uintptr]map[string]YAMLInfo, error) {
 	skaffoldConfigText, err := util.ReadConfiguration(sourceFile)
 	if err != nil {

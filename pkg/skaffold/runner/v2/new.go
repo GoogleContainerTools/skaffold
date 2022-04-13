@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -100,7 +100,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	// The Builder must be instantiated AFTER the Deployer, because the Deploy target influences
 	// the Cluster object on the RunContext, which in turn influences whether or not we will push images.
 	var builder build.Builder
-	builder, err = build.NewBuilderMux(runCtx, store, func(p latestV2.Pipeline) (build.PipelineBuilder, error) {
+	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
 		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
@@ -108,7 +108,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
-	depLister := func(ctx context.Context, artifact *latestV2.Artifact) ([]string, error) {
+	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
 

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
@@ -39,7 +39,7 @@ func LogMetaEvent() {
 	)
 }
 
-func initializeMetadata(pipelines []latestV2.Pipeline, kubeContext string, runID string) *proto.Metadata {
+func initializeMetadata(pipelines []latest.Pipeline, kubeContext string, runID string) *proto.Metadata {
 	m := &proto.Metadata{
 		Build:  &proto.BuildMetadata{},
 		Render: &proto.RenderMetadata{},
@@ -76,11 +76,11 @@ func initializeMetadata(pipelines []latestV2.Pipeline, kubeContext string, runID
 			Cluster:   getClusterType(kubeContext),
 		}
 	}
-	// TODO(v2 render): Add the renderMetadata initialization once the pipeline is switched to latestV2.Pipeline
+	// TODO(v2 render): Add the renderMetadata initialization once the pipeline is switched to latest.Pipeline
 	return m
 }
 
-func getArtifacts(b latestV2.BuildConfig) []*proto.BuildMetadata_Artifact {
+func getArtifacts(b latest.BuildConfig) []*proto.BuildMetadata_Artifact {
 	result := []*proto.BuildMetadata_Artifact{}
 	for _, a := range b.Artifacts {
 		artifact := &proto.BuildMetadata_Artifact{
@@ -112,7 +112,7 @@ func getArtifacts(b latestV2.BuildConfig) []*proto.BuildMetadata_Artifact {
 	return result
 }
 
-func getDeploy(d latestV2.DeployConfig) []*proto.DeployMetadata_Deployer {
+func getDeploy(d latest.DeployConfig) []*proto.DeployMetadata_Deployer {
 	var deployers []*proto.DeployMetadata_Deployer
 
 	if d.LegacyHelmDeploy != nil {

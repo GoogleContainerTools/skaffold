@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -34,19 +34,19 @@ func TestCreateComponents(t *testing.T) {
 
 	tests := []struct {
 		description          string
-		customTemplateTagger *latestV2.CustomTemplateTagger
+		customTemplateTagger *latest.CustomTemplateTagger
 		expected             map[string]Tagger
 		shouldErr            bool
 	}{
 		{
 			description: "correct component types",
-			customTemplateTagger: &latestV2.CustomTemplateTagger{
-				Components: []latestV2.TaggerComponent{
-					{Name: "FOO", Component: latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}}},
-					{Name: "FOE", Component: latestV2.TagPolicy{ShaTagger: &latestV2.ShaTagger{}}},
-					{Name: "BAR", Component: latestV2.TagPolicy{EnvTemplateTagger: &latestV2.EnvTemplateTagger{Template: "test"}}},
-					{Name: "BAT", Component: latestV2.TagPolicy{DateTimeTagger: &latestV2.DateTimeTagger{}}},
-					{Name: "BAS", Component: latestV2.TagPolicy{InputDigest: &latestV2.InputDigest{}}},
+			customTemplateTagger: &latest.CustomTemplateTagger{
+				Components: []latest.TaggerComponent{
+					{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
+					{Name: "FOE", Component: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}}},
+					{Name: "BAR", Component: latest.TagPolicy{EnvTemplateTagger: &latest.EnvTemplateTagger{Template: "test"}}},
+					{Name: "BAT", Component: latest.TagPolicy{DateTimeTagger: &latest.DateTimeTagger{}}},
+					{Name: "BAS", Component: latest.TagPolicy{InputDigest: &latest.InputDigest{}}},
 				},
 			},
 			expected: map[string]Tagger{
@@ -59,28 +59,28 @@ func TestCreateComponents(t *testing.T) {
 		},
 		{
 			description: "customTemplate is an invalid component",
-			customTemplateTagger: &latestV2.CustomTemplateTagger{
-				Components: []latestV2.TaggerComponent{
-					{Name: "FOO", Component: latestV2.TagPolicy{CustomTemplateTagger: &latestV2.CustomTemplateTagger{Template: "test"}}},
+			customTemplateTagger: &latest.CustomTemplateTagger{
+				Components: []latest.TaggerComponent{
+					{Name: "FOO", Component: latest.TagPolicy{CustomTemplateTagger: &latest.CustomTemplateTagger{Template: "test"}}},
 				},
 			},
 			shouldErr: true,
 		},
 		{
 			description: "recurring names",
-			customTemplateTagger: &latestV2.CustomTemplateTagger{
-				Components: []latestV2.TaggerComponent{
-					{Name: "FOO", Component: latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}}},
-					{Name: "FOO", Component: latestV2.TagPolicy{GitTagger: &latestV2.GitTagger{}}},
+			customTemplateTagger: &latest.CustomTemplateTagger{
+				Components: []latest.TaggerComponent{
+					{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
+					{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
 				},
 			},
 			shouldErr: true,
 		},
 		{
 			description: "unknown component",
-			customTemplateTagger: &latestV2.CustomTemplateTagger{
-				Components: []latestV2.TaggerComponent{
-					{Name: "FOO", Component: latestV2.TagPolicy{}},
+			customTemplateTagger: &latest.CustomTemplateTagger{
+				Components: []latest.TaggerComponent{
+					{Name: "FOO", Component: latest.TagPolicy{}},
 				},
 			},
 			shouldErr: true,

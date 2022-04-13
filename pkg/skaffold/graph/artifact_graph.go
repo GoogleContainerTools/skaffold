@@ -16,7 +16,7 @@ limitations under the License.
 
 package graph
 
-import latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 // Artifact is the result corresponding to each successful build.
 type Artifact struct {
@@ -25,11 +25,11 @@ type Artifact struct {
 }
 
 // ArtifactGraph is a map of [artifact image : artifact definition]
-type ArtifactGraph map[string]*latestV2.Artifact
+type ArtifactGraph map[string]*latest.Artifact
 
-// ToArtifactGraph creates an instance of `ArtifactGraph` from `[]*latestV2.Artifact`
-func ToArtifactGraph(artifacts []*latestV2.Artifact) ArtifactGraph {
-	m := make(map[string]*latestV2.Artifact)
+// ToArtifactGraph creates an instance of `ArtifactGraph` from `[]*latest.Artifact`
+func ToArtifactGraph(artifacts []*latest.Artifact) ArtifactGraph {
+	m := make(map[string]*latest.Artifact)
 	for _, a := range artifacts {
 		m[a.ImageName] = a
 	}
@@ -37,8 +37,8 @@ func ToArtifactGraph(artifacts []*latestV2.Artifact) ArtifactGraph {
 }
 
 // Dependencies returns the de-referenced slice of required artifacts for a given artifact
-func (g ArtifactGraph) Dependencies(a *latestV2.Artifact) []*latestV2.Artifact {
-	var sl []*latestV2.Artifact
+func (g ArtifactGraph) Dependencies(a *latest.Artifact) []*latest.Artifact {
+	var sl []*latest.Artifact
 	for _, d := range a.Dependencies {
 		sl = append(sl, g[d.ImageName])
 	}

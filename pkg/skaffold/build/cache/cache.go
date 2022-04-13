@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -60,13 +60,13 @@ type cache struct {
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
-type DependencyLister func(ctx context.Context, artifact *latestV2.Artifact) ([]string, error)
+type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
 type Config interface {
 	docker.Config
-	PipelineForImage(imageName string) (latestV2.Pipeline, bool)
-	GetPipelines() []latestV2.Pipeline
-	DefaultPipeline() latestV2.Pipeline
+	PipelineForImage(imageName string) (latest.Pipeline, bool)
+	GetPipelines() []latest.Pipeline
+	DefaultPipeline() latest.Pipeline
 	GetCluster() config.Cluster
 	CacheArtifacts() bool
 	CacheFile() string

@@ -37,7 +37,7 @@ import (
 	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -50,8 +50,8 @@ type Kpt struct {
 	hydrationDir string
 	labels       map[string]string
 
-	transformAllowlist map[apimachinery.GroupKind]latestV2.ResourceFilter
-	transformDenylist  map[apimachinery.GroupKind]latestV2.ResourceFilter
+	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
 func New(cfg render.Config, hydrationDir string,
@@ -69,7 +69,7 @@ func New(cfg render.Config, hydrationDir string,
 			return nil, err
 		}
 	} else {
-		validator, _ = validate.NewValidator([]latestV2.Validator{})
+		validator, _ = validate.NewValidator([]latest.Validator{})
 	}
 
 	var transformer transform.Transformer
@@ -80,7 +80,7 @@ func New(cfg render.Config, hydrationDir string,
 			return nil, err
 		}
 	} else {
-		transformer, _ = transform.NewTransformer([]latestV2.Transformer{})
+		transformer, _ = transform.NewTransformer([]latest.Transformer{})
 	}
 	return &Kpt{
 		Generator:          generator,

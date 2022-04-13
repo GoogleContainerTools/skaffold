@@ -23,7 +23,7 @@ import (
 	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // customTemplateTagger implements Tagger
@@ -46,7 +46,7 @@ func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, er
 }
 
 // GenerateTag generates a tag from a template referencing tagging strategies.
-func (t *customTemplateTagger) GenerateTag(ctx context.Context, image latestV2.Artifact) (string, error) {
+func (t *customTemplateTagger) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
 	customMap, err := t.EvaluateComponents(ctx, image)
 	if err != nil {
 		return "", err
@@ -62,7 +62,7 @@ func (t *customTemplateTagger) GenerateTag(ctx context.Context, image latestV2.A
 }
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
-func (t *customTemplateTagger) EvaluateComponents(ctx context.Context, image latestV2.Artifact) (map[string]string, error) {
+func (t *customTemplateTagger) EvaluateComponents(ctx context.Context, image latest.Artifact) (map[string]string, error) {
 	customMap := map[string]string{}
 
 	gitTagger, _ := NewGitCommit("", "", false)

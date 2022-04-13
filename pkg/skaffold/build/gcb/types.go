@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 const (
@@ -80,7 +80,7 @@ func NewStatusBackoff() *wait.Backoff {
 
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
-	*latestV2.GoogleCloudBuild
+	*latest.GoogleCloudBuild
 
 	cfg                Config
 	skipTests          bool
@@ -103,7 +103,7 @@ type BuilderContext interface {
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(bCtx BuilderContext, buildCfg *latestV2.GoogleCloudBuild) *Builder {
+func NewBuilder(bCtx BuilderContext, buildCfg *latest.GoogleCloudBuild) *Builder {
 	return &Builder{
 		GoogleCloudBuild:   buildCfg,
 		cfg:                bCtx,

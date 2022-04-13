@@ -19,7 +19,7 @@ package build
 import (
 	"path/filepath"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
@@ -60,9 +60,9 @@ func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) i
 	return matchingConfigIndex
 }
 
-// Artifacts takes builder image pairs and workspaces and creates a list of latestV2.Artifacts from the data.
-func Artifacts(artifactInfos []ArtifactInfo) []*latestV2.Artifact {
-	var artifacts []*latestV2.Artifact
+// Artifacts takes builder image pairs and workspaces and creates a list of latest.Artifacts from the data.
+func Artifacts(artifactInfos []ArtifactInfo) []*latest.Artifact {
+	var artifacts []*latest.Artifact
 
 	for _, info := range artifactInfos {
 		// Don't create artifact build config for "None" builder
@@ -73,7 +73,7 @@ func Artifacts(artifactInfos []ArtifactInfo) []*latestV2.Artifact {
 		if workspace == "" {
 			workspace = filepath.Dir(info.Builder.Path())
 		}
-		artifact := &latestV2.Artifact{
+		artifact := &latest.Artifact{
 			ImageName:    info.ImageName,
 			ArtifactType: info.Builder.ArtifactType(workspace),
 		}

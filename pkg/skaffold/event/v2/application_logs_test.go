@@ -19,13 +19,13 @@ package v2
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
 func TestHandleApplicationLogEvent(t *testing.T) {
 	testHandler := newHandler()
-	testHandler.state = emptyState(mockCfg([]latestV2.Pipeline{{}}, "test"))
+	testHandler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 
 	messages := []string{
 		"hi!",

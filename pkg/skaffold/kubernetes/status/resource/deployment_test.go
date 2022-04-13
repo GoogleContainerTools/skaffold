@@ -29,7 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -105,7 +105,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			testEvent.InitializeState([]latestV2.Pipeline{{}})
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			r := NewResource("graph", ResourceTypes.Deployment, "test", 0)
 			r.CheckStatus(context.Background(), &statusConfig{})

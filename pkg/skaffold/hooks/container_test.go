@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -41,7 +41,7 @@ func TestContainerRun(t *testing.T) {
 		description string
 		objects     []runtime.Object
 		cmd         *testutil.FakeCmd
-		hook        v2.ContainerHook
+		hook        latest.ContainerHook
 		kubeContext string
 		selector    containerSelector
 		namespaces  []string
@@ -55,7 +55,7 @@ func TestContainerRun(t *testing.T) {
 				createPodObject("gcr.io/foo/img2:latest", "pod2", "container2", "np2"),
 			},
 			cmd:         testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo hook", "hook success"),
-			hook:        v2.ContainerHook{Command: []string{"foo", "hook"}},
+			hook:        latest.ContainerHook{Command: []string{"foo", "hook"}},
 			kubeContext: "context1",
 			selector:    runningImageSelector("gcr.io/foo/img1:latest"),
 			namespaces:  []string{"np1", "np2"},
@@ -66,7 +66,7 @@ func TestContainerRun(t *testing.T) {
 			objects: []runtime.Object{
 				createPodObject("gcr.io/foo/img2:latest", "pod1", "container1", "np1"),
 			},
-			hook:        v2.ContainerHook{Command: []string{"foo", "hook"}},
+			hook:        latest.ContainerHook{Command: []string{"foo", "hook"}},
 			kubeContext: "context1",
 			selector:    runningImageSelector("gcr.io/foo/img1:latest"),
 			namespaces:  []string{"np1", "np2"},
@@ -76,7 +76,7 @@ func TestContainerRun(t *testing.T) {
 			objects: []runtime.Object{
 				createPodObject("gcr.io/foo/img1:latest", "pod1", "container1", "np3"),
 			},
-			hook:        v2.ContainerHook{Command: []string{"foo", "hook"}},
+			hook:        latest.ContainerHook{Command: []string{"foo", "hook"}},
 			kubeContext: "context1",
 			selector:    runningImageSelector("gcr.io/foo/img1:latest"),
 			namespaces:  []string{"np1", "np2"},
@@ -87,7 +87,7 @@ func TestContainerRun(t *testing.T) {
 				createPodObject("gcr.io/foo/img1:latest", "pod1", "container1", "np1"),
 			},
 			cmd:         testutil.CmdRunErr("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo hook", errors.New("error")),
-			hook:        v2.ContainerHook{Command: []string{"foo", "hook"}},
+			hook:        latest.ContainerHook{Command: []string{"foo", "hook"}},
 			kubeContext: "context1",
 			selector:    runningImageSelector("gcr.io/foo/img1:latest"),
 			namespaces:  []string{"np1", "np2"},

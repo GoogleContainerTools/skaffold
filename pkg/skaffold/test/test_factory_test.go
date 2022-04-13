@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
@@ -44,7 +44,7 @@ func TestNoTestDependencies(t *testing.T) {
 		cfg := &mockConfig{}
 		tester, err := NewTester(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
-		deps, err := tester.TestDependencies(context.Background(), &latestV2.Artifact{ImageName: "foo"})
+		deps, err := tester.TestDependencies(context.Background(), &latest.Artifact{ImageName: "foo"})
 		t.CheckNoError(err)
 		t.CheckEmpty(deps)
 	})
@@ -55,7 +55,7 @@ func TestTestDependencies(t *testing.T) {
 		tmpDir := t.NewTempDir().Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
 		cfg := &mockConfig{
-			tests: []*latestV2.TestCase{
+			tests: []*latest.TestCase{
 				{StructureTests: []string{"./tests/*"}, Workspace: tmpDir.Root(), ImageName: "foo"},
 				{},
 				{StructureTests: []string{"test3.yaml"}, Workspace: tmpDir.Root(), ImageName: "foo"},
@@ -64,7 +64,7 @@ func TestTestDependencies(t *testing.T) {
 
 		tester, err := NewTester(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
-		deps, err := tester.TestDependencies(context.Background(), &latestV2.Artifact{ImageName: "foo"})
+		deps, err := tester.TestDependencies(context.Background(), &latest.Artifact{ImageName: "foo"})
 
 		expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 		t.CheckNoError(err)
@@ -75,7 +75,7 @@ func TestTestDependencies(t *testing.T) {
 func TestWrongPattern(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfg := &mockConfig{
-			tests: []*latestV2.TestCase{{
+			tests: []*latest.TestCase{{
 				ImageName:      "image",
 				StructureTests: []string{"[]"},
 			}},
@@ -84,9 +84,9 @@ func TestWrongPattern(t *testing.T) {
 		tester, err := NewTester(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
-		_, err = tester.TestDependencies(context.Background(), &latestV2.Artifact{ImageName: "image"})
+		_, err = tester.TestDependencies(context.Background(), &latest.Artifact{ImageName: "image"})
 		t.CheckError(true, err)
-		testEvent.InitializeState([]latestV2.Pipeline{{}})
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "image",
@@ -118,7 +118,7 @@ func TestTestSuccess(t *testing.T) {
 			AndRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test3.yaml")))
 
 		cfg := &mockConfig{
-			tests: []*latestV2.TestCase{
+			tests: []*latest.TestCase{
 				{
 					ImageName:      "image",
 					Workspace:      tmpDir.Root(),
@@ -158,7 +158,7 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 		})
 
 		cfg := &mockConfig{
-			tests: []*latestV2.TestCase{{
+			tests: []*latest.TestCase{{
 				ImageName:      "image",
 				StructureTests: []string{"test.yaml"},
 			}},
@@ -186,7 +186,7 @@ func TestTestFailureRemoteImage(t *testing.T) {
 		})
 
 		cfg := &mockConfig{
-			tests: []*latestV2.TestCase{{
+			tests: []*latest.TestCase{{
 				ImageName:      "image",
 				StructureTests: []string{"test.yaml"},
 			}},
@@ -215,7 +215,7 @@ func TestTestFailure(t *testing.T) {
 		))
 
 		cfg := &mockConfig{
-			tests: []*latestV2.TestCase{
+			tests: []*latest.TestCase{
 				{
 					ImageName:      "broken-image",
 					StructureTests: []string{"test.yaml"},
@@ -240,7 +240,7 @@ func TestTestMuted(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
 
 		cfg := &mockConfig{
-			tests: []*latestV2.TestCase{{
+			tests: []*latest.TestCase{{
 				ImageName:      "image",
 				Workspace:      tmpDir.Root(),
 				StructureTests: []string{"test.yaml"},
@@ -270,10 +270,10 @@ func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	tests                 []*latestV2.TestCase
+	tests                 []*latest.TestCase
 	muted                 config.Muted
 }
 
 func (c *mockConfig) Muted() config.Muted { return c.muted }
 
-func (c *mockConfig) TestCases() []*latestV2.TestCase { return c.tests }
+func (c *mockConfig) TestCases() []*latest.TestCase { return c.tests }

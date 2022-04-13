@@ -27,7 +27,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/util"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // For testing
@@ -122,7 +122,7 @@ func portForwardResource(out io.Writer, imageName string) (int, error) {
 
 // ConfirmInitOptions prompts the user to confirm that they are okay with what skaffold will do if they
 // run with the current config
-func ConfirmInitOptions(out io.Writer, config *latestV2.SkaffoldConfig) (bool, error) {
+func ConfirmInitOptions(out io.Writer, config *latest.SkaffoldConfig) (bool, error) {
 	builders := strings.Join(util.ListBuilders(&config.Build), ",")
 	deployers := strings.Join(util.ListDeployers(&config.Deploy), ",")
 

@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type testList struct {
@@ -38,7 +38,7 @@ type structureTestEntry struct {
 
 type customTestEntry struct {
 	TestType string `json:"testType"`
-	latestV2.CustomTest
+	latest.CustomTest
 }
 
 func PrintTestsList(ctx context.Context, out io.Writer, opts inspect.Options) error {

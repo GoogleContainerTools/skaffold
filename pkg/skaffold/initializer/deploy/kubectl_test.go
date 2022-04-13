@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -40,9 +40,9 @@ spec:
 
 	k := newKubectlInitializer([]string{filename})
 
-	expectedConfig := latestV2.DeployConfig{
-		DeployType: latestV2.DeployType{
-			KubectlDeploy: &latestV2.KubectlDeploy{
+	expectedConfig := latest.DeployConfig{
+		DeployType: latest.DeployType{
+			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: []string{filename},
 			},
 		},

@@ -29,7 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -41,7 +41,7 @@ const (
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    latestV2.Artifact
+		artifact    latest.Artifact
 		platforms   platform.Matcher
 		envVarValue string
 		runMode     config.RunMode
@@ -49,9 +49,9 @@ func TestBuildOptions(t *testing.T) {
 	}{
 		{
 			description: "all zero value",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{},
+			artifact: latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
 				},
 			},
 			wantBo: options.BuildOptions{
@@ -63,9 +63,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "all options",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
+			artifact: latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
 						BaseImage: "gcr.io/distroless/base:nonroot",
 						Dir:       "gomoddir",
 						Env: []string{
@@ -120,9 +120,9 @@ func TestBuildOptions(t *testing.T) {
 		},
 		{
 			description: "compatibility with ko envvar expansion syntax for flags and ldflags",
-			artifact: latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
+			artifact: latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
 						Flags: []string{
 							"-v",
 							fmt.Sprintf("-flag-{{.Env.%s}}", testKoBuildOptionsEnvVar),

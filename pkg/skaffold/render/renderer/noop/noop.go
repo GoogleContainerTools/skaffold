@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Noop renderer does nothing for the render phase.
@@ -29,7 +29,7 @@ import (
 // TODO(marlongamez): add Helm renderer which uses helm template and can feed into deployers
 type Noop struct{}
 
-func New(_ *latestV2.RenderConfig, _, _ string, _ map[string]string) (Noop, error) {
+func New(_ *latest.RenderConfig, _, _ string, _ map[string]string) (Noop, error) {
 	return Noop{}, nil
 }
 

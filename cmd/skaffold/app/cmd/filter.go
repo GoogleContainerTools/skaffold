@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -108,7 +108,7 @@ func getInsecureRegistries(opts config.SkaffoldOptions, configs []util.Versioned
 
 	regList = append(regList, opts.InsecureRegistries...)
 	for _, cfg := range configs {
-		regList = append(regList, cfg.(*latestV2.SkaffoldConfig).Build.InsecureRegistries...)
+		regList = append(regList, cfg.(*latest.SkaffoldConfig).Build.InsecureRegistries...)
 	}
 	regList = append(regList, cfgRegistries...)
 	insecureRegistries := make(map[string]bool, len(regList))

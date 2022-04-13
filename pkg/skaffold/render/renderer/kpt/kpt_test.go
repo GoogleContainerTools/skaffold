@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -63,15 +63,15 @@ metadata:
 func TestRender(t *testing.T) {
 	tests := []struct {
 		description     string
-		renderConfig    *latestV2.RenderConfig
+		renderConfig    *latest.RenderConfig
 		config          *runcontext.RunContext
 		originalKptfile string
 		updatedKptfile  string
 	}{
 		{
 			description: "single manifest, no hydration rule",
-			renderConfig: &latestV2.RenderConfig{
-				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
+			renderConfig: &latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			originalKptfile: initKptfile,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
@@ -83,9 +83,9 @@ pipeline: {}
 		},
 		{
 			description: "manifests with validation rule.",
-			renderConfig: &latestV2.RenderConfig{
-				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
+			renderConfig: &latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
+				Validate: &[]latest.Validator{{Name: "kubeval"}},
 			},
 			originalKptfile: initKptfile,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
@@ -99,9 +99,9 @@ pipeline:
 		},
 		{
 			description: "manifests with updated validation rule.",
-			renderConfig: &latestV2.RenderConfig{
-				Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
+			renderConfig: &latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
+				Validate: &[]latest.Validator{{Name: "kubeval"}},
 			},
 			originalKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -122,9 +122,9 @@ pipeline:
 		},
 		{
 			description: "manifests with transformation rule.",
-			renderConfig: &latestV2.RenderConfig{
-				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
+			renderConfig: &latest.RenderConfig{
+				Generate:  latest.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latest.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
 			},
 			originalKptfile: initKptfile,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
@@ -140,9 +140,9 @@ pipeline:
 		},
 		{
 			description: "manifests with updated transformation rule.",
-			renderConfig: &latestV2.RenderConfig{
-				Generate:  latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-				Transform: &[]latestV2.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
+			renderConfig: &latest.RenderConfig{
+				Generate:  latest.Generate{RawK8s: []string{"pod.yaml"}},
+				Transform: &[]latest.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
 			},
 			originalKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -238,9 +238,9 @@ inventory:
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Chdir()
 			mockCfg := mockConfig{
-				renderConfig: &latestV2.RenderConfig{
-					Generate: latestV2.Generate{RawK8s: []string{"pod.yaml"}},
-					Validate: &[]latestV2.Validator{{Name: "kubeval"}},
+				renderConfig: &latest.RenderConfig{
+					Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
+					Validate: &[]latest.Validator{{Name: "kubeval"}},
 				},
 				workingDir: tmpDirObj.Root(),
 			}
@@ -260,12 +260,12 @@ inventory:
 }
 
 type mockConfig struct {
-	renderConfig *latestV2.RenderConfig
+	renderConfig *latest.RenderConfig
 	workingDir   string
 }
 
-func (mc mockConfig) GetRenderConfig() *latestV2.RenderConfig       { return mc.renderConfig }
-func (mc mockConfig) GetWorkingDir() string                         { return mc.workingDir }
-func (mc mockConfig) TransformAllowList() []latestV2.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latestV2.ResourceFilter  { return nil }
-func (mc mockConfig) TransformRulesFile() string                    { return "" }
+func (mc mockConfig) GetRenderConfig() *latest.RenderConfig       { return mc.renderConfig }
+func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
+func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
+func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
+func (mc mockConfig) TransformRulesFile() string                  { return "" }

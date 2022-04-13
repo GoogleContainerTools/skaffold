@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
@@ -36,8 +36,8 @@ import (
 type Config interface {
 	docker.Config
 
-	GetPipelines() []latestV2.Pipeline
-	Artifacts() []*latestV2.Artifact
+	GetPipelines() []latest.Pipeline
+	Artifacts() []*latest.Artifact
 }
 
 func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
@@ -99,7 +99,7 @@ func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 	return nil
 }
 
-func typeOfArtifact(a *latestV2.Artifact) string {
+func typeOfArtifact(a *latest.Artifact) string {
 	switch {
 	case a.DockerArtifact != nil:
 		return "Docker artifact"
@@ -120,7 +120,7 @@ func typeOfArtifact(a *latestV2.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latestV2.Artifact, cfg Config) (string, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg Config) (string, []string, error) {
 	start := time.Now()
 	g := graph.ToArtifactGraph(cfg.Artifacts())
 	sourceDependencies := graph.NewSourceDependenciesCache(cfg, nil, g)
@@ -128,7 +128,7 @@ func timeToListDependencies(ctx context.Context, a *latestV2.Artifact, cfg Confi
 	return timeutil.Humanize(time.Since(start)), paths, err
 }
 
-func timeToConstructSyncMap(ctx context.Context, a *latestV2.Artifact, cfg docker.Config) (string, error) {
+func timeToConstructSyncMap(ctx context.Context, a *latest.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
 	_, err := sync.SyncMap(ctx, a, cfg)
 	return timeutil.Humanize(time.Since(start)), err
@@ -143,7 +143,7 @@ func timeToComputeMTimes(deps []string) (string, error) {
 	return timeutil.Humanize(time.Since(start)), nil
 }
 
-func sizeOfDockerContext(ctx context.Context, a *latestV2.Artifact, cfg docker.Config) (int64, error) {
+func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Config) (int64, error) {
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
 		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, docker.NewBuildConfig(

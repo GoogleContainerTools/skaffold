@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
@@ -43,14 +43,14 @@ func TestNewRunner(t *testing.T) {
 
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
 
-		testCase := &latestV2.TestCase{
+		testCase := &latest.TestCase{
 			ImageName:      "image",
 			Workspace:      tmpDir.Root(),
 			StructureTests: []string{"test.yaml"},
 		}
-		cfg := &mockConfig{tests: []*latestV2.TestCase{testCase}}
+		cfg := &mockConfig{tests: []*latest.TestCase{testCase}}
 
-		testEvent.InitializeState([]latestV2.Pipeline{{}})
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		testRunner, err := New(context.Background(), cfg, testCase, true)
 		t.CheckNoError(err)
@@ -66,12 +66,12 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 			return nil, errors.New("not found")
 		})
 
-		testCase := &latestV2.TestCase{
+		testCase := &latest.TestCase{
 			ImageName:      "image",
 			Workspace:      tmpDir.Root(),
 			StructureTests: []string{"test.yaml"},
 		}
-		cfg := &mockConfig{tests: []*latestV2.TestCase{testCase}}
+		cfg := &mockConfig{tests: []*latest.TestCase{testCase}}
 
 		testRunner, err := New(context.Background(), cfg, testCase, true)
 		t.CheckError(true, err)
@@ -111,15 +111,15 @@ func TestCustomParams(t *testing.T) {
 			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRun(expected))
 
-			testCase := &latestV2.TestCase{
+			testCase := &latest.TestCase{
 				ImageName:         "image",
 				Workspace:         tmpDir.Root(),
 				StructureTests:    []string{"test.yaml"},
 				StructureTestArgs: tc.structureTestArgs,
 			}
-			cfg := &mockConfig{tests: []*latestV2.TestCase{testCase}}
+			cfg := &mockConfig{tests: []*latest.TestCase{testCase}}
 
-			testEvent.InitializeState([]latestV2.Pipeline{{}})
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			testRunner, err := New(context.Background(), cfg, testCase, true)
 			t.CheckNoError(err)
@@ -131,10 +131,10 @@ func TestCustomParams(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	tests                 []*latestV2.TestCase
+	tests                 []*latest.TestCase
 	muted                 config.Muted
 }
 
 func (c *mockConfig) Muted() config.Muted { return c.muted }
 
-func (c *mockConfig) TestCases() []*latestV2.TestCase { return c.tests }
+func (c *mockConfig) TestCases() []*latest.TestCase { return c.tests }

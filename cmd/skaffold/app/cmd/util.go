@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
 )
 
@@ -29,7 +29,7 @@ import (
 // no default repo is specified.
 type DefaultRepoFn func(string) (string, error)
 
-func getBuildArtifactsAndSetTags(artifacts []*latestV2.Artifact, defaulterFn DefaultRepoFn) ([]graph.Artifact, error) {
+func getBuildArtifactsAndSetTags(artifacts []*latest.Artifact, defaulterFn DefaultRepoFn) ([]graph.Artifact, error) {
 	buildArtifacts, err := mergeBuildArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), artifacts)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func applyDefaultRepoToArtifacts(artifacts []graph.Artifact, defaulterFn Default
 	return artifacts, nil
 }
 
-func mergeBuildArtifacts(fromFile, fromCLI []graph.Artifact, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
+func mergeBuildArtifacts(fromFile, fromCLI []graph.Artifact, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	var buildArtifacts []graph.Artifact
 	for _, artifact := range artifacts {
 		buildArtifacts = append(buildArtifacts, graph.Artifact{

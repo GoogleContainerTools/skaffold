@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -38,7 +38,7 @@ type mockRunner struct {
 	runner.Runner
 }
 
-func (r *mockRunner) Build(ctx context.Context, out io.Writer, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
+func (r *mockRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	out.Write([]byte("Build Completed"))
 	return []graph.Artifact{{
 		ImageName: "gcr.io/skaffold/example",
@@ -52,7 +52,7 @@ func (r *mockRunner) Stop() error {
 
 func TestTagFlag(t *testing.T) {
 	mockCreateRunner := func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-		return &mockRunner{}, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
+		return &mockRunner{}, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
 	}
 
 	testutil.Run(t, "override tag with argument", func(t *testutil.T) {
@@ -71,7 +71,7 @@ func TestTagFlag(t *testing.T) {
 
 func TestQuietFlag(t *testing.T) {
 	mockCreateRunner := func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-		return &mockRunner{}, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
+		return &mockRunner{}, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
 	}
 
 	tests := []struct {
@@ -117,7 +117,7 @@ func TestQuietFlag(t *testing.T) {
 
 func TestFileOutputFlag(t *testing.T) {
 	mockCreateRunner := func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-		return &mockRunner{}, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
+		return &mockRunner{}, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
 	}
 
 	tests := []struct {
@@ -183,7 +183,7 @@ func TestRunBuild(t *testing.T) {
 		return nil, nil, nil, errors.New("some error")
 	}
 	mockCreateRunner := func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-		return &mockRunner{}, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
+		return &mockRunner{}, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
 	}
 
 	tests := []struct {

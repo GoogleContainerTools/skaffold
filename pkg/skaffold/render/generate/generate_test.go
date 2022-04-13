@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -115,20 +115,20 @@ pipeline:
 func TestGenerate(t *testing.T) {
 	tests := []struct {
 		description    string
-		generateConfig latestV2.Generate
+		generateConfig latest.Generate
 		expected       manifest.ManifestList
 		commands       util.Command
 	}{
 		{
 			description: "render raw manifests",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				RawK8s: []string{"pod.yaml"},
 			},
 			expected: manifest.ManifestList{[]byte(podYaml)},
 		},
 		{
 			description: "render glob raw manifests",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				RawK8s: []string{"*.yaml"},
 			},
 			expected: manifest.ManifestList{[]byte(podYaml), []byte(podsYaml)},
@@ -136,7 +136,7 @@ func TestGenerate(t *testing.T) {
 		/* disabled
 		{
 			description: "render kustomize manifests",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				Kustomize: []string{"base"},
 			},
 			commands: testutil.CmdRunOut("kustomize build base", kustomizePatchedOutput),
@@ -144,7 +144,7 @@ func TestGenerate(t *testing.T) {
 		},
 		{
 			description: "render kpt manifests",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				Kpt: []string{filepath.Join("fn", "Kptfile")},
 			},
 			// Using "filepath" to join path so as the result can fix when running in either linux or
@@ -181,40 +181,40 @@ func TestGenerate(t *testing.T) {
 func TestManifestDeps(t *testing.T) {
 	tests := []struct {
 		description    string
-		generateConfig latestV2.Generate
+		generateConfig latest.Generate
 		expected       []string
 	}{
 		{
 			description: "rawYaml dir",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				RawK8s: []string{"rawYaml-sample"},
 			},
 			expected: []string{"rawYaml-sample/pod.yaml", "rawYaml-sample/pods2.yaml"},
 		},
 		{
 			description: "rawYaml specific",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				RawK8s: []string{"rawYaml-sample/pod.yaml"},
 			},
 			expected: []string{"rawYaml-sample/pod.yaml"},
 		},
 		{
 			description: "kustomize dir",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				Kustomize: []string{"kustomize-sample"},
 			},
 			expected: []string{"kustomize-sample/kustomization.yaml", "kustomize-sample/patch.yaml"},
 		},
 		{
 			description: "kpt dir",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				Kpt: []string{"kpt-sample"},
 			},
 			expected: []string{"kpt-sample/Kptfile", "kpt-sample/deployment.yaml"},
 		},
 		{
 			description: "multi manifest, mixed dir and file",
-			generateConfig: latestV2.Generate{
+			generateConfig: latest.Generate{
 				RawK8s:    []string{"rawYaml-sample"},
 				Kustomize: []string{"kustomize-sample"},
 				Kpt:       []string{"kpt-sample"},

@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -38,7 +38,7 @@ func (b *Builder) SupportedPlatforms() platform.Matcher {
 	return platform.All
 }
 
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string, matcher platform.Matcher) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, matcher platform.Matcher) (string, error) {
 	a = adjustCacheFrom(a, tag)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "docker",
@@ -84,7 +84,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV2.Artifact
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latestV2.DockerArtifact, opts docker.BuildOptions, matcher platform.Matcher) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, matcher platform.Matcher) (string, error) {
 	if matcher.IsMultiPlatform() {
 		// TODO: implement multi platform build
 		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the docker builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", matcher.String(), name)
@@ -131,7 +131,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	return b.localDocker.ImageID(ctx, opts.Tag)
 }
 
-func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latestV2.DockerArtifact) error {
+func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact) error {
 	if len(a.CacheFrom) == 0 {
 		return nil
 	}
@@ -155,7 +155,7 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 }
 
 // adjustCacheFrom returns an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
-func adjustCacheFrom(a *latestV2.Artifact, artifactTag string) *latestV2.Artifact {
+func adjustCacheFrom(a *latest.Artifact, artifactTag string) *latest.Artifact {
 	if os.Getenv("SKAFFOLD_DISABLE_DOCKER_CACHE_ADJUSTMENT") != "" {
 		// allow this behaviour to be disabled
 		return a

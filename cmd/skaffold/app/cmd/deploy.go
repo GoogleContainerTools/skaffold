@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -50,9 +50,9 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 		if opts.SkipRender {
 			return r.DeployAndLog(ctx, out, []graph.Artifact{})
 		}
-		var artifacts []*latestV2.Artifact
+		var artifacts []*latest.Artifact
 		for _, cfg := range configs {
-			artifacts = append(artifacts, cfg.(*latestV2.SkaffoldConfig).Build.Artifacts...)
+			artifacts = append(artifacts, cfg.(*latest.SkaffoldConfig).Build.Artifacts...)
 		}
 		buildArtifacts, err := getBuildArtifactsAndSetTags(artifacts, r.ApplyDefaultRepo)
 		if err != nil {

@@ -37,7 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
@@ -128,7 +128,7 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 }
 
 // validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
-func validateTaggingPolicy(cfg *parser.SkaffoldConfigEntry, bc latestV2.BuildConfig) (cfgErrs []ErrorWithLocation) {
+func validateTaggingPolicy(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfig) (cfgErrs []ErrorWithLocation) {
 	if bc.LocalBuild != nil {
 		// sha256 just uses `latest` tag, so tryImportMissing will virtually always succeed (#4889)
 		if bc.LocalBuild.TryImportMissing && bc.TagPolicy.ShaTagger != nil {
@@ -145,7 +145,7 @@ func validateTaggingPolicy(cfg *parser.SkaffoldConfigEntry, bc latestV2.BuildCon
 // without tags nor digests.
 func validateImageNames(configs parser.SkaffoldConfigSet) (errs []ErrorWithLocation) {
 	seen := make(map[string]string)
-	arMap := make(map[string]*latestV2.Artifact)
+	arMap := make(map[string]*latest.Artifact)
 
 	for _, c := range configs {
 		for i, a := range c.Build.Artifacts {
@@ -195,7 +195,7 @@ func validateImageNames(configs parser.SkaffoldConfigSet) (errs []ErrorWithLocat
 }
 
 func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (cfgErrs []ErrorWithLocation) {
-	var artifacts []*latestV2.Artifact
+	var artifacts []*latest.Artifact
 	for _, c := range configs {
 		artifacts = append(artifacts, c.Build.Artifacts...)
 	}
@@ -206,8 +206,8 @@ func validateArtifactDependencies(configs parser.SkaffoldConfigSet) (cfgErrs []E
 }
 
 // validateAcyclicDependencies makes sure all artifact dependencies are found and don't have cyclic references
-func validateAcyclicDependencies(cfgs *parser.SkaffoldConfigSet, artifacts []*latestV2.Artifact) (cfgErrs []ErrorWithLocation) {
-	m := make(map[string]*latestV2.Artifact)
+func validateAcyclicDependencies(cfgs *parser.SkaffoldConfigSet, artifacts []*latest.Artifact) (cfgErrs []ErrorWithLocation) {
+	m := make(map[string]*latest.Artifact)
 	for _, artifact := range artifacts {
 		m[artifact.ImageName] = artifact
 	}
@@ -225,7 +225,7 @@ func validateAcyclicDependencies(cfgs *parser.SkaffoldConfigSet, artifacts []*la
 }
 
 // dfs runs a Depth First Search algorithm for cycle detection in a directed graph
-func dfs(artifact *latestV2.Artifact, visited, marked map[string]bool, artifacts map[string]*latestV2.Artifact) error {
+func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts map[string]*latest.Artifact) error {
 	if marked[artifact.ImageName] {
 		return fmt.Errorf("cycle detected in build dependencies involving %q", artifact.ImageName)
 	}
@@ -252,7 +252,7 @@ func dfs(artifact *latestV2.Artifact, visited, marked map[string]bool, artifacts
 
 // validateValidDependencyAliases makes sure that artifact dependency aliases are valid.
 // docker and custom builders require aliases match [a-zA-Z_][a-zA-Z0-9_]* pattern
-func validateValidDependencyAliases(cfgs *parser.SkaffoldConfigSet, artifacts []*latestV2.Artifact) (cfgErrs []ErrorWithLocation) {
+func validateValidDependencyAliases(cfgs *parser.SkaffoldConfigSet, artifacts []*latest.Artifact) (cfgErrs []ErrorWithLocation) {
 	for i, a := range artifacts {
 		if a.DockerArtifact == nil && a.CustomArtifact == nil {
 			continue
@@ -270,7 +270,7 @@ func validateValidDependencyAliases(cfgs *parser.SkaffoldConfigSet, artifacts []
 }
 
 // validateUniqueDependencyAliases makes sure that artifact dependency aliases are unique for each artifact
-func validateUniqueDependencyAliases(cfgs *parser.SkaffoldConfigSet, artifacts []*latestV2.Artifact) (cfgErrs []ErrorWithLocation) {
+func validateUniqueDependencyAliases(cfgs *parser.SkaffoldConfigSet, artifacts []*latest.Artifact) (cfgErrs []ErrorWithLocation) {
 	type State int
 	var (
 		unseen   State = 0
@@ -361,7 +361,7 @@ func validateDockerContainerExpression(image string, id string) error {
 }
 
 // validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, `container:<name|id>`, or `host` if set.
-func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV2.Artifact) (cfgErrs []ErrorWithLocation) {
+func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*latest.Artifact) (cfgErrs []ErrorWithLocation) {
 	for i, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
 			continue
@@ -384,7 +384,7 @@ func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*lat
 }
 
 // Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
-func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*latestV2.Artifact, runCtx docker.Config) []error {
+func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*latest.Artifact, runCtx docker.Config) []error {
 	var errs []error
 	apiClient, err := docker.NewAPIClient(ctx, runCtx)
 	if err != nil {
@@ -455,7 +455,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 }
 
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
-func validateCustomDependencies(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV2.Artifact) (cfgErrs []ErrorWithLocation) {
+func validateCustomDependencies(cfg *parser.SkaffoldConfigEntry, artifacts []*latest.Artifact) (cfgErrs []ErrorWithLocation) {
 	for i, a := range artifacts {
 		if a.CustomArtifact == nil || a.CustomArtifact.Dependencies == nil || a.CustomArtifact.Dependencies.Ignore == nil {
 			continue
@@ -529,7 +529,7 @@ func visitStructs(cfg *parser.SkaffoldConfigEntry, v reflect.Value, visitor func
 }
 
 // validateSyncRules checks that all manual sync rules have a valid strip prefix
-func validateSyncRules(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV2.Artifact) []ErrorWithLocation {
+func validateSyncRules(cfg *parser.SkaffoldConfigEntry, artifacts []*latest.Artifact) []ErrorWithLocation {
 	var cfgErrs []ErrorWithLocation
 	for i, a := range artifacts {
 		if a.Sync != nil {
@@ -549,7 +549,7 @@ func validateSyncRules(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV2.Ar
 
 // validatePortForwardResources checks that all user defined port forward resources
 // have a valid resourceType
-func validatePortForwardResources(cfg *parser.SkaffoldConfigEntry, pfrs []*latestV2.PortForwardResource) []ErrorWithLocation {
+func validatePortForwardResources(cfg *parser.SkaffoldConfigEntry, pfrs []*latest.PortForwardResource) []ErrorWithLocation {
 	var errs []ErrorWithLocation
 	validResourceTypes := map[string]struct{}{
 		"container":             {},
@@ -576,7 +576,7 @@ func validatePortForwardResources(cfg *parser.SkaffoldConfigEntry, pfrs []*lates
 }
 
 // validateJibPluginTypes makes sure that jib type is one of `maven`, or `gradle` if set.
-func validateJibPluginTypes(cfg *parser.SkaffoldConfigEntry, artifacts []*latestV2.Artifact) (cfgErrs []ErrorWithLocation) {
+func validateJibPluginTypes(cfg *parser.SkaffoldConfigEntry, artifacts []*latest.Artifact) (cfgErrs []ErrorWithLocation) {
 	for i, a := range artifacts {
 		if a.JibArtifact == nil || a.JibArtifact.Type == "" {
 			continue
@@ -594,7 +594,7 @@ func validateJibPluginTypes(cfg *parser.SkaffoldConfigEntry, artifacts []*latest
 }
 
 // validateArtifactTypes checks that the artifact types are compatible with the specified builder.
-func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latestV2.BuildConfig) []ErrorWithLocation {
+func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfig) []ErrorWithLocation {
 	cfgErrs := []ErrorWithLocation{}
 	switch {
 	case bc.LocalBuild != nil:
@@ -630,7 +630,7 @@ func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latestV2.BuildCon
 }
 
 // validateLogPrefix checks that logs are configured with a valid prefix.
-func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latestV2.LogsConfig) []ErrorWithLocation {
+func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latest.LogsConfig) []ErrorWithLocation {
 	validPrefixes := []string{"", "auto", "container", "podAndContainer", "none"}
 
 	if !stringslice.Contains(validPrefixes, lc.Prefix) {
@@ -648,7 +648,7 @@ func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latestV2.LogsConfig) 
 // validateCustomTest
 // - makes sure that command is not empty
 // - makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
-func validateCustomTest(cfg *parser.SkaffoldConfigEntry, tcs []*latestV2.TestCase) (cfgErrs []ErrorWithLocation) {
+func validateCustomTest(cfg *parser.SkaffoldConfigEntry, tcs []*latest.TestCase) (cfgErrs []ErrorWithLocation) {
 	for i, tc := range tcs {
 		for j, ct := range tc.CustomTests {
 			if ct.Command == "" {

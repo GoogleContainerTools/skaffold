@@ -40,7 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -51,7 +51,7 @@ var (
 	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(ctx context.Context, a *latestV2.Artifact, e filemon.Events, builds []graph.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
+func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []graph.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
@@ -81,7 +81,7 @@ func NewItem(ctx context.Context, a *latestV2.Artifact, e filemon.Events, builds
 	}
 }
 
-func syncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filemon.Events, syncRules []*latestV2.SyncRule, cfg docker.Config) (*Item, error) {
+func syncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Events, syncRules []*latest.SyncRule, cfg docker.Config) (*Item, error) {
 	containerWd, err := WorkingDir(ctx, tag, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving working dir for %q: %w", tag, err)
@@ -105,7 +105,7 @@ func syncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filemon.E
 	return &Item{Image: tag, Artifact: a, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func inferredSyncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
+func inferredSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	// deleted files are no longer contained in the syncMap, so we need to rebuild
 	if len(e.Deleted) > 0 {
 		return nil, nil
@@ -149,7 +149,7 @@ func inferredSyncItem(ctx context.Context, a *latestV2.Artifact, tag string, e f
 	return &Item{Image: tag, Artifact: a, Copy: toCopy}, nil
 }
 
-func syncMapForArtifact(ctx context.Context, a *latestV2.Artifact, cfg docker.Config) (map[string][]string, error) {
+func syncMapForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config) (map[string][]string, error) {
 	switch {
 	case a.DockerArtifact != nil:
 		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, cfg)
@@ -168,7 +168,7 @@ func syncMapForArtifact(ctx context.Context, a *latestV2.Artifact, cfg docker.Co
 	}
 }
 
-func autoSyncItem(ctx context.Context, a *latestV2.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
+func autoSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	switch {
 	case a.BuildpackArtifact != nil:
 		labels, err := Labels(ctx, tag, cfg)
@@ -209,7 +209,7 @@ func latestTag(image string, builds []graph.Artifact) string {
 	return ""
 }
 
-func intersect(ctx context.Context, contextWd, containerWd string, syncRules []*latestV2.SyncRule, files []string) (syncMap, error) {
+func intersect(ctx context.Context, contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (syncMap, error) {
 	ret := make(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
@@ -232,7 +232,7 @@ func intersect(ctx context.Context, contextWd, containerWd string, syncRules []*
 	return ret, nil
 }
 
-func matchSyncRules(syncRules []*latestV2.SyncRule, relPath, containerWd string) ([]string, error) {
+func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) ([]string, error) {
 	dsts := make([]string, 0, 1)
 	for _, r := range syncRules {
 		matches, err := doublestar.PathMatch(filepath.FromSlash(r.Src), relPath)
@@ -356,7 +356,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 	return nil
 }
 
-func Init(ctx context.Context, artifacts []*latestV2.Artifact) error {
+func Init(ctx context.Context, artifacts []*latest.Artifact) error {
 	for _, a := range artifacts {
 		if a.Sync == nil {
 			continue

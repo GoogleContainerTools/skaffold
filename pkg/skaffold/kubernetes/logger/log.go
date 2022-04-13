@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Logger interface {
@@ -61,9 +61,9 @@ type LogAggregator struct {
 
 type Config interface {
 	Tail() bool
-	PipelineForImage(imageName string) (latestV2.Pipeline, bool)
-	DefaultPipeline() latestV2.Pipeline
-	JSONParseConfig() latestV2.JSONParseConfig
+	PipelineForImage(imageName string) (latest.Pipeline, bool)
+	DefaultPipeline() latest.Pipeline
+	JSONParseConfig() latest.JSONParseConfig
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.

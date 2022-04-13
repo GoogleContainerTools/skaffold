@@ -30,7 +30,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/mitchellh/go-homedir"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -234,18 +234,18 @@ func TestLastLogFile(t *testing.T) {
 }
 
 type config struct {
-	pipes   []latestV2.Pipeline
+	pipes   []latest.Pipeline
 	kubectx string
 }
 
-func (c config) GetKubeContext() string            { return c.kubectx }
-func (c config) AutoBuild() bool                   { return true }
-func (c config) AutoDeploy() bool                  { return true }
-func (c config) AutoSync() bool                    { return true }
-func (c config) GetPipelines() []latestV2.Pipeline { return c.pipes }
-func (c config) GetRunID() string                  { return "run-id" }
+func (c config) GetKubeContext() string          { return c.kubectx }
+func (c config) AutoBuild() bool                 { return true }
+func (c config) AutoDeploy() bool                { return true }
+func (c config) AutoSync() bool                  { return true }
+func (c config) GetPipelines() []latest.Pipeline { return c.pipes }
+func (c config) GetRunID() string                { return "run-id" }
 
-func mockCfg(pipes []latestV2.Pipeline, kubectx string) config {
+func mockCfg(pipes []latest.Pipeline, kubectx string) config {
 	return config{
 		pipes:   pipes,
 		kubectx: kubectx,

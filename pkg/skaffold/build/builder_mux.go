@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
@@ -41,7 +41,7 @@ type BuilderMux struct {
 
 // Config represents an interface for getting all config pipelines.
 type Config interface {
-	GetPipelines() []latestV2.Pipeline
+	GetPipelines() []latest.Pipeline
 	DefaultRepo() *string
 	MultiLevelRepo() *bool
 	GlobalConfig() string
@@ -49,7 +49,7 @@ type Config interface {
 }
 
 // NewBuilderMux returns an implementation of `build.BuilderMux`.
-func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latestV2.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
+func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
 	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
 	var pbs []PipelineBuilder
@@ -68,7 +68,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latestV2.Pipe
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
-func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, resolver platform.Resolver, artifacts []*latestV2.Artifact) ([]graph.Artifact, error) {
+func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, resolver platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	m := make(map[PipelineBuilder]bool)
 	for _, a := range artifacts {
 		m[b.byImageName[a.ImageName]] = true
@@ -80,7 +80,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 	}
 
-	builderF := func(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string, platforms platform.Matcher) (string, error) {
+	builderF := func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
 		p := b.byImageName[artifact.ImageName]
 		pl, err := filterBuildEnvSupportedPlatforms(p.SupportedPlatforms(), platforms)
 		if err != nil {

@@ -17,7 +17,7 @@ limitations under the License.
 package constants
 
 import (
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 const (
@@ -78,8 +78,8 @@ const (
 type Phase string
 
 var (
-	Pod     latestV2.ResourceType = "pod"
-	Service latestV2.ResourceType = "service"
+	Pod     latest.ResourceType = "pod"
+	Service latest.ResourceType = "service"
 
 	DefaultLocalConcurrency = 1
 )

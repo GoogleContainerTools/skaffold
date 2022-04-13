@@ -19,7 +19,7 @@ package util
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -27,14 +27,14 @@ import (
 func TestCollectHelmReleasesNamespaces(t *testing.T) {
 	tests := []struct {
 		description  string
-		helmReleases []latestV2.HelmRelease
+		helmReleases []latest.HelmRelease
 		env          []string
 		expected     []string
 		shouldErr    bool
 	}{
 		{
 			description: "namspaces are collected correctly",
-			helmReleases: []latestV2.HelmRelease{
+			helmReleases: []latest.HelmRelease{
 				{
 					Namespace: "foo",
 				},
@@ -49,7 +49,7 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 		},
 		{
 			description: "namespaces are collected correctly with env expansion",
-			helmReleases: []latestV2.HelmRelease{
+			helmReleases: []latest.HelmRelease{
 				{
 					Namespace: "{{.FOO}}",
 				},
@@ -65,7 +65,7 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 		},
 		{
 			description: "should error when template expansion fails",
-			helmReleases: []latestV2.HelmRelease{
+			helmReleases: []latest.HelmRelease{
 				{
 					Namespace: "{{.DOESNT_EXIST_AND_SHOULD_ERROR_AS_SUCH}}",
 				},
@@ -76,11 +76,11 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
-			ns, err := collectHelmReleasesNamespaces([]latestV2.Pipeline{
+			ns, err := collectHelmReleasesNamespaces([]latest.Pipeline{
 				{
-					Deploy: latestV2.DeployConfig{
-						DeployType: latestV2.DeployType{
-							LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},

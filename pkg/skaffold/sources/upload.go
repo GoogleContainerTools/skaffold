@@ -22,12 +22,12 @@ import (
 
 	cstorage "cloud.google.com/go/storage"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // UploadToGCS uploads the artifact's sources to a GCS bucket.
-func UploadToGCS(ctx context.Context, c *cstorage.Client, a *latestV2.Artifact, bucket, objectName string, dependencies []string) error {
+func UploadToGCS(ctx context.Context, c *cstorage.Client, a *latest.Artifact, bucket, objectName string, dependencies []string) error {
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
 
 	if err := util.CreateTarGz(w, a.Workspace, dependencies); err != nil {

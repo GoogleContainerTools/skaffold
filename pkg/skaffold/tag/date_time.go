@@ -23,7 +23,7 @@ import (
 
 	"4d63.com/tz"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 const tagTime = "2006-01-02_15-04-05.999_MST"
@@ -46,7 +46,7 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 }
 
 // GenerateTag generates a tag using the current timestamp.
-func (t *dateTimeTagger) GenerateTag(ctx context.Context, image latestV2.Artifact) (string, error) {
+func (t *dateTimeTagger) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
 	format := tagTime
 	if len(t.Format) > 0 {
 		format = t.Format

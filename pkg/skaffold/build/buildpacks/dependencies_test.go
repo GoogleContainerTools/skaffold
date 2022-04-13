@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -68,8 +68,8 @@ func TestGetDependencies(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch("foo", "bar", "baz/file")
 
-			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latestV2.BuildpackArtifact{
-				Dependencies: &latestV2.BuildpackDependencies{
+			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BuildpackArtifact{
+				Dependencies: &latest.BuildpackDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},

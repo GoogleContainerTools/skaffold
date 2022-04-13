@@ -20,7 +20,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // NoBuilder allows users to specify they don't want to build
@@ -38,7 +38,7 @@ type InitBuilder interface {
 
 	// ArtifactType returns the type of the artifact to be built.  Paths should be relative to the workspace.
 	// To make skaffold.yaml more portable across OS-es we should always generate /-delimited filepaths.
-	ArtifactType(workspace string) latestV2.ArtifactType
+	ArtifactType(workspace string) latest.ArtifactType
 
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
@@ -60,8 +60,8 @@ func (b NoneBuilder) Describe() string {
 	return ""
 }
 
-func (b NoneBuilder) ArtifactType(string) latestV2.ArtifactType {
-	return latestV2.ArtifactType{}
+func (b NoneBuilder) ArtifactType(string) latest.ArtifactType {
+	return latest.ArtifactType{}
 }
 
 func (b NoneBuilder) ConfiguredImage() string {
@@ -97,7 +97,7 @@ type Initializer interface {
 	// contained in the initializer with the provided images from the deploy initializer
 	ProcessImages([]string) error
 	// BuildConfig returns the processed build config to be written to the skaffold.yaml
-	BuildConfig() (latestV2.BuildConfig, []*latestV2.PortForwardResource)
+	BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource)
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
@@ -111,8 +111,8 @@ func (e *emptyBuildInitializer) ProcessImages([]string) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) BuildConfig() (latestV2.BuildConfig, []*latestV2.PortForwardResource) {
-	return latestV2.BuildConfig{}, nil
+func (e *emptyBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
+	return latest.BuildConfig{}, nil
 }
 
 func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {

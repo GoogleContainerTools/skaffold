@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Formatter interface {
@@ -33,7 +33,7 @@ type Formatter interface {
 	PrintLine(io.Writer, string)
 }
 
-func ParseJSON(config latestV2.JSONParseConfig, line string) string {
+func ParseJSON(config latest.JSONParseConfig, line string) string {
 	if len(config.Fields) == 0 {
 		return line
 	}

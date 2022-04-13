@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -45,7 +45,7 @@ func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options
 		// for these cases, don't add the new env definition to any configs imported as dependencies.
 		cfgs = cfgs.SelectRootConfigs()
 		for _, cfg := range cfgs {
-			if cfg.Build.Cluster != nil && !reflect.DeepEqual(cfg.Build.Cluster, &latestV2.ClusterDetails{}) {
+			if cfg.Build.Cluster != nil && !reflect.DeepEqual(cfg.Build.Cluster, &latest.ClusterDetails{}) {
 				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Cluster, cfg.SourceFile, ""))
 				return err
 			}
@@ -64,9 +64,9 @@ func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options
 			}
 			if index < 0 {
 				index = len(cfg.Profiles)
-				cfg.Profiles = append(cfg.Profiles, latestV2.Profile{Name: opts.Profile})
+				cfg.Profiles = append(cfg.Profiles, latest.Profile{Name: opts.Profile})
 			}
-			if cfg.Profiles[index].Build.Cluster != nil && !reflect.DeepEqual(cfg.Profiles[index].Build.Cluster, &latestV2.ClusterDetails{}) {
+			if cfg.Profiles[index].Build.Cluster != nil && !reflect.DeepEqual(cfg.Profiles[index].Build.Cluster, &latest.ClusterDetails{}) {
 				formatter.WriteErr(inspect.BuildEnvAlreadyExists(inspect.BuildEnvs.Cluster, cfg.SourceFile, opts.Profile))
 				return err
 			}
@@ -80,8 +80,8 @@ func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options
 	return inspect.MarshalConfigSet(cfgs)
 }
 
-func constructClusterDefinition(existing *latestV2.ClusterDetails, opts inspect.BuildEnvOptions) *latestV2.ClusterDetails {
-	var b latestV2.ClusterDetails
+func constructClusterDefinition(existing *latest.ClusterDetails, opts inspect.BuildEnvOptions) *latest.ClusterDetails {
+	var b latest.ClusterDetails
 	if existing != nil {
 		b = *existing
 	}
@@ -99,13 +99,13 @@ func constructClusterDefinition(existing *latestV2.ClusterDetails, opts inspect.
 	}
 	if opts.DockerConfigPath != "" {
 		if b.DockerConfig == nil {
-			b.DockerConfig = &latestV2.DockerConfig{}
+			b.DockerConfig = &latest.DockerConfig{}
 		}
 		b.DockerConfig.Path = opts.DockerConfigPath
 	}
 	if opts.DockerConfigSecretName != "" {
 		if b.DockerConfig == nil {
-			b.DockerConfig = &latestV2.DockerConfig{}
+			b.DockerConfig = &latest.DockerConfig{}
 		}
 		b.DockerConfig.SecretName = opts.DockerConfigSecretName
 	}

@@ -36,7 +36,7 @@ import (
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -64,9 +64,9 @@ func createNewRunner(ctx context.Context, out io.Writer, opts config.SkaffoldOpt
 		return nil, nil, nil, err
 	}
 
-	var v2Configs []*latestV2.SkaffoldConfig
+	var v2Configs []*latest.SkaffoldConfig
 	for _, c := range configs {
-		v2Configs = append(v2Configs, c.(*latestV2.SkaffoldConfig))
+		v2Configs = append(v2Configs, c.(*latest.SkaffoldConfig))
 	}
 	instrumentation.Init(v2Configs, opts.User, runCtx.GetKubeContext())
 	hooks.SetupStaticEnvOptions(runCtx)

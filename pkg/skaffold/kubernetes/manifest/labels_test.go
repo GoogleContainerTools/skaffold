@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -187,7 +187,7 @@ spec:
 	resultManifest, err := manifests.SetLabels(map[string]string{
 		"key0": "value0",
 		"key1": "value1",
-	}, NewResourceSelectorLabels(map[schema.GroupKind]latestV2.ResourceFilter{
+	}, NewResourceSelectorLabels(map[schema.GroupKind]latest.ResourceFilter{
 		{Group: "apiextensions.k8s.io", Kind: "CustomResourceDefinition"}: {
 			GroupKind: "CustomResourceDefinition.apiextensions.k8s.io",
 			Image:     []string{".*"},

@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -38,7 +38,7 @@ func (m mockAccessConfig) Mode() config.RunMode { return "" }
 
 func (m mockAccessConfig) PortForwardOptions() config.PortForwardOptions { return m.opts }
 
-func (m mockAccessConfig) PortForwardResources() []*v2.PortForwardResource { return nil }
+func (m mockAccessConfig) PortForwardResources() []*latest.PortForwardResource { return nil }
 
 func TestGetAccessor(t *testing.T) {
 	tests := []struct {

@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 var (
@@ -48,7 +48,7 @@ func (r Resolver) GetPlatforms(imageName string) Matcher {
 	return r.platformsByImageName[imageName]
 }
 
-func NewResolver(ctx context.Context, pipelines []latestV2.Pipeline, cliPlatformsSelection []string, runMode config.RunMode, kubeContext string) (Resolver, error) {
+func NewResolver(ctx context.Context, pipelines []latest.Pipeline, cliPlatformsSelection []string, runMode config.RunMode, kubeContext string) (Resolver, error) {
 	r := Resolver{}
 	r.platformsByImageName = make(map[string]Matcher)
 

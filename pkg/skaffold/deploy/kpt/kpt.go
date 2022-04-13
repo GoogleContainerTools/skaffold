@@ -46,7 +46,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -64,7 +64,7 @@ var (
 
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
-	*latestV2.KptDeploy
+	*latest.KptDeploy
 	applyDir string
 
 	accessor      access.Accessor
@@ -92,7 +92,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptDeploy, opts config.SkaffoldOptions) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy, opts config.SkaffoldOptions) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -107,7 +107,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latestV2.KptDep
 
 	// TODO(nkubala)[v2-merge]: We probably shouldn't use kubectl at all here?
 	// But if we do, need to expose a `kubectlFlags` field on the kpt schema?
-	kubectl := kubectl.NewCLI(cfg, latestV2.KubectlFlags{}, defaultNamespace)
+	kubectl := kubectl.NewCLI(cfg, latest.KubectlFlags{}, defaultNamespace)
 
 	if opts.InventoryNamespace != "" {
 		d.InventoryNamespace = opts.InventoryNamespace

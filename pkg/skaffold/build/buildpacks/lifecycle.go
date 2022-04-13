@@ -33,7 +33,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // For testing
@@ -46,7 +46,7 @@ var (
 // to pull the images that are already pulled.
 var images pulledImages
 
-func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV2.Artifact, tag string) (string, error) {
+func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
@@ -176,7 +176,7 @@ func envMap(env []string) map[string]string {
 
 // resolveDependencyImages replaces the provided builder and run images with built images from the required artifacts if specified.
 // The return values are builder image, run image, and if remote pull is required.
-func resolveDependencyImages(artifact *latestV2.BuildpackArtifact, r ArtifactResolver, deps []*latestV2.ArtifactDependency, pushImages bool) (string, string, packimg.PullPolicy) {
+func resolveDependencyImages(artifact *latest.BuildpackArtifact, r ArtifactResolver, deps []*latest.ArtifactDependency, pushImages bool) (string, string, packimg.PullPolicy) {
 	builderImage, runImage := artifact.Builder, artifact.RunImage
 	builderImageLocal, runImageLocal := false, false
 
@@ -228,7 +228,7 @@ func resolveDependencyImages(artifact *latestV2.BuildpackArtifact, r ArtifactRes
 	return builderImage, runImage, pullPolicy
 }
 
-func containerConfig(artifact *latestV2.BuildpackArtifact) (pack.ContainerConfig, error) {
+func containerConfig(artifact *latest.BuildpackArtifact) (pack.ContainerConfig, error) {
 	var vols []string
 	if artifact.Volumes != nil {
 		for _, v := range *artifact.Volumes {

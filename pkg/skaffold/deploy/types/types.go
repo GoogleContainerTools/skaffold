@@ -20,13 +20,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Config interface {
 	docker.Config
 
-	GetPipelines() []latestV2.Pipeline
+	GetPipelines() []latest.Pipeline
 	GetNamespace() string
 	GetWorkingDir() string
 	GlobalConfig() string
@@ -34,8 +34,8 @@ type Config interface {
 	DefaultRepo() *string
 	MultiLevelRepo() *bool
 	SkipRender() bool
-	TransformAllowList() []latestV2.ResourceFilter
-	TransformDenyList() []latestV2.ResourceFilter
+	TransformAllowList() []latest.ResourceFilter
+	TransformDenyList() []latest.ResourceFilter
 	TransformRulesFile() string
 }
 

@@ -21,12 +21,12 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Args returns kaniko command arguments
-func Args(artifact *latestV2.KanikoArtifact, tag, context string) ([]string, error) {
+func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error) {
 	args := []string{
 		"--destination", tag,
 		"--dockerfile", artifact.DockerfilePath,

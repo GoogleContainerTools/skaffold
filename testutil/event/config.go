@@ -19,10 +19,10 @@ package event
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func InitializeState(pipes []latestV2.Pipeline) {
+func InitializeState(pipes []latest.Pipeline) {
 	cfg := config{
 		pipes: pipes,
 	}
@@ -31,12 +31,12 @@ func InitializeState(pipes []latestV2.Pipeline) {
 }
 
 type config struct {
-	pipes []latestV2.Pipeline
+	pipes []latest.Pipeline
 }
 
-func (c config) AutoBuild() bool                   { return true }
-func (c config) AutoDeploy() bool                  { return true }
-func (c config) AutoSync() bool                    { return true }
-func (c config) GetPipelines() []latestV2.Pipeline { return c.pipes }
-func (c config) GetKubeContext() string            { return "temp" }
-func (c config) GetRunID() string                  { return "run-id" }
+func (c config) AutoBuild() bool                 { return true }
+func (c config) AutoDeploy() bool                { return true }
+func (c config) AutoSync() bool                  { return true }
+func (c config) GetPipelines() []latest.Pipeline { return c.pipes }
+func (c config) GetKubeContext() string          { return "temp" }
+func (c config) GetRunID() string                { return "run-id" }

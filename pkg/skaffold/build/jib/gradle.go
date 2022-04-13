@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -44,7 +44,7 @@ const MinimumJibGradleVersionForCrossPlatform = "3.2.0"
 // GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
-func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latestV2.JibArtifact, deps []*latestV2.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
 	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, platforms, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
@@ -53,7 +53,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latestV2.JibArtifact, deps []*latestV2.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string, platforms platform.Matcher) (string, error) {
 	args := GenerateGradleBuildArgs("jib", tag, artifact, platforms, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
@@ -78,7 +78,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 
 // getDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
-func getDependenciesGradle(ctx context.Context, workspace string, a *latestV2.JibArtifact) ([]string, error) {
+func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
 	deps, err := getDependencies(ctx, workspace, cmd, a)
 	if err != nil {
@@ -88,18 +88,18 @@ func getDependenciesGradle(ctx context.Context, workspace string, a *latestV2.Ji
 	return deps, nil
 }
 
-func getCommandGradle(ctx context.Context, workspace string, a *latestV2.JibArtifact) exec.Cmd {
+func getCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
 	args := append(gradleArgsFunc(a, "_jibSkaffoldFilesV2", MinimumJibGradleVersion), "-q", "--console=plain")
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
 
-func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latestV2.JibArtifact) *exec.Cmd {
+func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
 	cmd := GradleCommand.CreateCommand(ctx, workspace, gradleBuildArgsFunc("_jibSkaffoldSyncMap", a, true, false, MinimumJibMavenVersionForSync))
 	return &cmd
 }
 
 // GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
-func GenerateGradleBuildArgs(task, imageName string, a *latestV2.JibArtifact, platforms platform.Matcher, skipTests, pushImages bool, deps []*latestV2.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
+func GenerateGradleBuildArgs(task, imageName string, a *latest.JibArtifact, platforms platform.Matcher, skipTests, pushImages bool, deps []*latest.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
 	minVersion := MinimumJibGradleVersion
 	if platforms.IsCrossPlatform() {
 		minVersion = MinimumJibGradleVersionForCrossPlatform
@@ -120,7 +120,7 @@ func GenerateGradleBuildArgs(task, imageName string, a *latestV2.JibArtifact, pl
 }
 
 // Do not use directly, use gradleBuildArgsFunc
-func gradleBuildArgs(task string, a *latestV2.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
+func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
 	// Disable jib's rich progress footer on builds. Show colors on normal builds for clearer information,
 	// but use --console=plain for internal goals to avoid formatting issues
 	var args []string
@@ -139,7 +139,7 @@ func gradleBuildArgs(task string, a *latestV2.JibArtifact, skipTests, showColors
 }
 
 // Do not use directly, use gradleArgsFunc
-func gradleArgs(a *latestV2.JibArtifact, task string, minimumVersion string) []string {
+func gradleArgs(a *latest.JibArtifact, task string, minimumVersion string) []string {
 	args := []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + minimumVersion}
 	if a.Project == "" {
 		return append(args, ":"+task)

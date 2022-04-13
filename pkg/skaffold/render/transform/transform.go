@@ -22,7 +22,7 @@ import (
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -61,7 +61,7 @@ var (
 )
 
 // NewTransformer instantiates a Transformer object.
-func NewTransformer(config []latestV2.Transformer) (Transformer, error) {
+func NewTransformer(config []latest.Transformer) (Transformer, error) {
 	newFuncs, err := validateTransformers(config)
 	if err != nil {
 		return Transformer{}, err
@@ -72,7 +72,7 @@ func NewTransformer(config []latestV2.Transformer) (Transformer, error) {
 type Transformer struct {
 	needRefresh bool
 	kptFn       []kptfile.Function
-	config      []latestV2.Transformer
+	config      []latest.Transformer
 }
 
 // GetDeclarativeValidators transforms and returns the skaffold validators defined in skaffold.yaml
@@ -89,7 +89,7 @@ func (v Transformer) GetDeclarativeTransformers() ([]kptfile.Function, error) {
 	return v.kptFn, nil
 }
 
-func validateTransformers(config []latestV2.Transformer) ([]kptfile.Function, error) {
+func validateTransformers(config []latest.Transformer) ([]kptfile.Function, error) {
 	var newFuncs []kptfile.Function
 	for _, c := range config {
 		newFunc, ok := transformerAllowlist[c.Name]

@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -67,9 +67,9 @@ func TestBuild(t *testing.T) {
 			importPath := "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko" // this package
 			b := stubKoArtifactBuilder(test.imageRef, test.expectedImageIdentifier, test.pushImages, importPath)
 
-			artifact := &latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{},
+			artifact := &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
 				},
 				ImageName: importPath,
 			}
@@ -83,14 +83,14 @@ func TestBuild(t *testing.T) {
 func Test_getImportPath(t *testing.T) {
 	tests := []struct {
 		description        string
-		artifact           *latestV2.Artifact
+		artifact           *latest.Artifact
 		expectedImportPath string
 	}{
 		{
 			description: "main is ignored when image name is ko-prefixed full Go import path",
-			artifact: &latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
 						Main: "./main-should-be-ignored",
 					},
 				},
@@ -100,9 +100,9 @@ func Test_getImportPath(t *testing.T) {
 		},
 		{
 			description: "plain image name",
-			artifact: &latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{},
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
 				},
 				ImageName: "any-image-name-1",
 			},
@@ -110,9 +110,9 @@ func Test_getImportPath(t *testing.T) {
 		},
 		{
 			description: "plain image name with workspace directory",
-			artifact: &latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{},
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
 				},
 				ImageName: "any-image-name-2",
 				Workspace: "./testdata/package-main-in-root",
@@ -121,9 +121,9 @@ func Test_getImportPath(t *testing.T) {
 		},
 		{
 			description: "plain image name with workspace directory and main",
-			artifact: &latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
 						Main: "./baz",
 					},
 				},
@@ -134,9 +134,9 @@ func Test_getImportPath(t *testing.T) {
 		},
 		{
 			description: "plain image name with workspace directory and main and source directory",
-			artifact: &latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
 						Dir:  "package-main-not-in-root",
 						Main: "./baz",
 					},

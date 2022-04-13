@@ -24,16 +24,16 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSourceDependenciesCache(t *testing.T) {
 	testutil.Run(t, "TestTransitiveSourceDependenciesCache", func(t *testutil.T) {
-		g := map[string]*latestV2.Artifact{
-			"img1": {ImageName: "img1", Dependencies: []*latestV2.ArtifactDependency{{ImageName: "img2"}}},
-			"img2": {ImageName: "img2", Dependencies: []*latestV2.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img4"}}},
-			"img3": {ImageName: "img3", Dependencies: []*latestV2.ArtifactDependency{{ImageName: "img4"}}},
+		g := map[string]*latest.Artifact{
+			"img1": {ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}}},
+			"img2": {ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img4"}}},
+			"img3": {ImageName: "img3", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}},
 			"img4": {ImageName: "img4"},
 		}
 		deps := map[string][]string{
@@ -43,7 +43,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			"img4": {"file41", "file42"},
 		}
 		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
-		t.Override(&getDependenciesFunc, func(_ context.Context, a *latestV2.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
+		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
 		})
@@ -68,16 +68,16 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 	)
 	tests := []struct {
 		description            string
-		artifact               *latestV2.Artifact
+		artifact               *latest.Artifact
 		dockerConfig           docker.Config
 		dockerArtifactResolver docker.ArtifactResolver
 		expectedPaths          []string
 	}{
 		{
 			description: "ko default dependencies",
-			artifact: &latestV2.Artifact{
-				ArtifactType: latestV2.ArtifactType{
-					KoArtifact: &latestV2.KoArtifact{},
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
 				},
 				Workspace: tmpDir.Root(),
 			},

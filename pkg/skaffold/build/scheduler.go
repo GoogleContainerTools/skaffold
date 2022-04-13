@@ -33,14 +33,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latestV2.Artifact, tag string, platforms platform.Matcher) (string, error)
+type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, platforms platform.Matcher) (string, error)
 
 type scheduler struct {
-	artifacts       []*latestV2.Artifact
+	artifacts       []*latest.Artifact
 	nodes           []node // size len(artifacts)
 	artifactBuilder ArtifactBuilder
 	logger          logAggregator
@@ -49,7 +49,7 @@ type scheduler struct {
 	reportFailure   bool
 }
 
-func newScheduler(artifacts []*latestV2.Artifact, artifactBuilder ArtifactBuilder, concurrency int, out io.Writer, store ArtifactStore) *scheduler {
+func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int, out io.Writer, store ArtifactStore) *scheduler {
 	s := scheduler{
 		artifacts:       artifacts,
 		nodes:           createNodes(artifacts),
@@ -143,7 +143,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, platforms pla
 }
 
 // InOrder builds a list of artifacts in dependency order.
-func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latestV2.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]graph.Artifact, error) {
+func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]graph.Artifact, error) {
 	// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then all builds can run in parallel.
 	if concurrency == 0 {
 		concurrency = len(artifacts)
@@ -157,7 +157,7 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms p
 	return s.run(ctx, tags, platforms)
 }
 
-func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifact *latestV2.Artifact, build ArtifactBuilder) (string, error) {
+func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifact *latest.Artifact, build ArtifactBuilder) (string, error) {
 	tag, present := tags[artifact.ImageName]
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)

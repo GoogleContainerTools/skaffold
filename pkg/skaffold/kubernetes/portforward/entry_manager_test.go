@@ -25,21 +25,21 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestStop(t *testing.T) {
-	testEvent.InitializeState([]latestV2.Pipeline{{}})
+	testEvent.InitializeState([]latest.Pipeline{{}})
 
-	pfe1 := newPortForwardEntry(0, latestV2.PortForwardResource{
+	pfe1 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,
 		Name:      "resource",
 		Namespace: "default",
 	}, "", "", "", "", 9000, false)
 
-	pfe2 := newPortForwardEntry(0, latestV2.PortForwardResource{
+	pfe2 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,
 		Name:      "resource2",
 		Namespace: "default",

@@ -17,13 +17,13 @@ limitations under the License.
 package render
 
 import (
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Config interface {
-	GetRenderConfig() *latestV2.RenderConfig
+	GetRenderConfig() *latest.RenderConfig
 	GetWorkingDir() string
-	TransformAllowList() []latestV2.ResourceFilter
-	TransformDenyList() []latestV2.ResourceFilter
+	TransformAllowList() []latest.ResourceFilter
+	TransformDenyList() []latest.ResourceFilter
 	TransformRulesFile() string
 }

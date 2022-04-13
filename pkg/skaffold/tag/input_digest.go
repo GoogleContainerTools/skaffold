@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type inputDigestTagger struct {
@@ -46,7 +46,7 @@ func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, er
 	}, nil
 }
 
-func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latestV2.Artifact) (string, error) {
+func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
 	var inputs []string
 	srcFiles, err := t.cache.TransitiveArtifactDependencies(ctx, &image)
 	if err != nil {

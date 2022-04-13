@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -47,7 +47,7 @@ type installOpts struct {
 }
 
 // constructOverrideArgs creates the command line arguments for overrides
-func constructOverrideArgs(r *latestV2.HelmRelease, builds []graph.Artifact, args []string) ([]string, error) {
+func constructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string) ([]string, error) {
 	for _, k := range sortKeys(r.SetValues) {
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
@@ -114,7 +114,7 @@ func getArgs(releaseName string, namespace string) []string {
 }
 
 // installArgs calculates the correct arguments to "helm install"
-func (h *Deployer) installArgs(r latestV2.HelmRelease, builds []graph.Artifact, o installOpts) ([]string, error) {
+func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o installOpts) ([]string, error) {
 	var args []string
 	if o.upgrade {
 		args = append(args, "upgrade", o.releaseName)

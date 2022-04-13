@@ -32,14 +32,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Config interface {
 	kubectl.Config
 
 	Mode() config.RunMode
-	PortForwardResources() []*latestV2.PortForwardResource
+	PortForwardResources() []*latest.PortForwardResource
 	PortForwardOptions() config.PortForwardOptions
 }
 
@@ -62,7 +62,7 @@ type ForwarderManager struct {
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
 func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, namespaces *[]string,
-	options config.PortForwardOptions, userDefined []*latestV2.PortForwardResource) *ForwarderManager {
+	options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
 	if !options.Enabled() {
 		return nil
 	}

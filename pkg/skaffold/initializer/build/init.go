@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -55,13 +55,13 @@ func (d *defaultBuildInitializer) ProcessImages(images []string) error {
 	return nil
 }
 
-func (d *defaultBuildInitializer) BuildConfig() (latestV2.BuildConfig, []*latestV2.PortForwardResource) {
-	pf := []*latestV2.PortForwardResource{}
+func (d *defaultBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
+	pf := []*latest.PortForwardResource{}
 
 	for _, manifestInfo := range d.manifests {
 		// Port value is set to 0 if user decides to not port forward service
 		if manifestInfo.Port != 0 {
-			pf = append(pf, &latestV2.PortForwardResource{
+			pf = append(pf, &latest.PortForwardResource{
 				Type: "service",
 				Name: manifestInfo.Name,
 				Port: util.FromInt(manifestInfo.Port),
@@ -69,7 +69,7 @@ func (d *defaultBuildInitializer) BuildConfig() (latestV2.BuildConfig, []*latest
 		}
 	}
 
-	return latestV2.BuildConfig{
+	return latest.BuildConfig{
 		Artifacts: Artifacts(d.artifactInfos),
 	}, pf
 }

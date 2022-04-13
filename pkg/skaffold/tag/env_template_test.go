@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -101,7 +101,7 @@ func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 			c, err := NewEnvTemplateTagger(test.template)
 			t.CheckNoError(err)
 
-			image := latestV2.Artifact{
+			image := latest.Artifact{
 				ImageName: test.imageName,
 			}
 

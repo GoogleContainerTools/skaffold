@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -43,7 +43,7 @@ import (
 func TestKubectlDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
-		kubectl                     latestV2.KubectlDeploy
+		kubectl                     latest.KubectlDeploy
 		builds                      []graph.Artifact
 		commands                    util.Command
 		shouldErr                   bool
@@ -54,15 +54,15 @@ func TestKubectlDeploy(t *testing.T) {
 	}{
 		{
 			description:      "no manifest",
-			kubectl:          latestV2.KubectlDeploy{},
+			kubectl:          latest.KubectlDeploy{},
 			commands:         testutil.CmdRunOut("kubectl version --client -ojson", KubectlVersion112),
 			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (disable validation)",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
-				Flags: latestV2.KubectlFlags{
+				Flags: latest.KubectlFlags{
 					DisableValidation: true,
 				},
 			},
@@ -79,7 +79,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (forced)",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -96,7 +96,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -112,7 +112,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (kubectl v1.18)",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -128,7 +128,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace)",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests:        []string{"deployment.yaml"},
 				DefaultNamespace: &TestNamespace2,
 			},
@@ -146,7 +146,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace with env template)",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests:        []string{"deployment.yaml"},
 				DefaultNamespace: &TestNamespace2FromEnvTemplate,
 			},
@@ -167,7 +167,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "http manifest",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml", "http://remote.yaml"},
 			},
 			commands: testutil.
@@ -183,7 +183,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy command error",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -200,9 +200,9 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "additional flags",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
-				Flags: latestV2.KubectlFlags{
+				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"--overwrite=true"},
 					Delete: []string{"ignored"},
@@ -259,14 +259,14 @@ func TestKubectlDeploy(t *testing.T) {
 func TestKubectlCleanup(t *testing.T) {
 	tests := []struct {
 		description string
-		kubectl     latestV2.KubectlDeploy
+		kubectl     latest.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
 		dryRun      bool
 	}{
 		{
 			description: "cleanup dry-run",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -277,7 +277,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -287,7 +287,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success (kubectl v1.18)",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -297,7 +297,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -308,9 +308,9 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "additional flags",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
-				Flags: latestV2.KubectlFlags{
+				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
 					Delete: []string{"--grace-period=1"},
@@ -344,12 +344,12 @@ func TestKubectlCleanup(t *testing.T) {
 func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 	tests := []struct {
 		description string
-		kubectl     latestV2.KubectlDeploy
+		kubectl     latest.KubectlDeploy
 		commands    util.Command
 	}{
 		{
 			description: "cleanup success",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				RemoteManifests: []string{"pod/leeroy-web"},
 			},
 			commands: testutil.
@@ -359,7 +359,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				RemoteManifests: []string{"anotherNamespace:pod/leeroy-web"},
 			},
 			commands: testutil.
@@ -412,7 +412,7 @@ func TestKubectlRedeploy(t *testing.T) {
 				Enabled: true,
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second},
-		}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}},
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}},
 			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
@@ -478,7 +478,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second,
 			},
-		}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}},
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}},
 			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
@@ -517,7 +517,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 				Delay:   10 * time.Second,
 				Max:     100 * time.Millisecond,
 			},
-		}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}},
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}},
 			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
@@ -579,7 +579,7 @@ func TestDependencies(t *testing.T) {
 				Touch("00/b.yaml", "00/a.yaml").
 				Chdir()
 
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{Manifests: test.manifests},
+			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: test.manifests},
 				filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
@@ -697,7 +697,7 @@ spec:
 				workingDir:     ".",
 				defaultRepo:    "gcr.io/project",
 				multiLevelRepo: util.BoolPtr(true),
-			}, &label.DefaultLabeller{}, &latestV2.KubectlDeploy{
+			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 				Manifests: []string{tmpDir.Path("deployment.yaml")},
 			}, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
@@ -712,14 +712,14 @@ spec:
 func TestGCSManifests(t *testing.T) {
 	tests := []struct {
 		description string
-		kubectl     latestV2.KubectlDeploy
+		kubectl     latest.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
 		skipRender  bool
 	}{
 		{
 			description: "manifest from GCS",
-			kubectl: latestV2.KubectlDeploy{
+			kubectl: latest.KubectlDeploy{
 				Manifests: []string{"gs://dev/deployment.yaml"},
 			},
 			commands: testutil.
@@ -756,24 +756,24 @@ func TestGCSManifests(t *testing.T) {
 func TestHasRunnableHooks(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         latestV2.KubectlDeploy
+		cfg         latest.KubectlDeploy
 		expected    bool
 	}{
 		{
 			description: "no hooks defined",
-			cfg:         latestV2.KubectlDeploy{},
+			cfg:         latest.KubectlDeploy{},
 		},
 		{
 			description: "has pre-deploy hook defined",
-			cfg: latestV2.KubectlDeploy{
-				LifecycleHooks: latestV2.DeployHooks{PreHooks: []latestV2.DeployHookItem{{}}},
+			cfg: latest.KubectlDeploy{
+				LifecycleHooks: latest.DeployHooks{PreHooks: []latest.DeployHookItem{{}}},
 			},
 			expected: true,
 		},
 		{
 			description: "has post-deploy hook defined",
-			cfg: latestV2.KubectlDeploy{
-				LifecycleHooks: latestV2.DeployHooks{PostHooks: []latestV2.DeployHookItem{{}}},
+			cfg: latest.KubectlDeploy{
+				LifecycleHooks: latest.DeployHooks{PostHooks: []latest.DeployHookItem{{}}},
 			},
 			expected: true,
 		},
@@ -798,12 +798,12 @@ type kubectlConfig struct {
 	waitForDeletions      config.WaitForDeletions
 }
 
-func (c *kubectlConfig) GetKubeContext() string                                { return "kubecontext" }
-func (c *kubectlConfig) GetKubeNamespace() string                              { return c.Opts.Namespace }
-func (c *kubectlConfig) WorkingDir() string                                    { return c.workingDir }
-func (c *kubectlConfig) SkipRender() bool                                      { return c.skipRender }
-func (c *kubectlConfig) ForceDeploy() bool                                     { return c.force }
-func (c *kubectlConfig) DefaultRepo() *string                                  { return &c.defaultRepo }
-func (c *kubectlConfig) MultiLevelRepo() *bool                                 { return c.multiLevelRepo }
-func (c *kubectlConfig) WaitForDeletions() config.WaitForDeletions             { return c.waitForDeletions }
-func (c *kubectlConfig) PortForwardResources() []*latestV2.PortForwardResource { return nil }
+func (c *kubectlConfig) GetKubeContext() string                              { return "kubecontext" }
+func (c *kubectlConfig) GetKubeNamespace() string                            { return c.Opts.Namespace }
+func (c *kubectlConfig) WorkingDir() string                                  { return c.workingDir }
+func (c *kubectlConfig) SkipRender() bool                                    { return c.skipRender }
+func (c *kubectlConfig) ForceDeploy() bool                                   { return c.force }
+func (c *kubectlConfig) DefaultRepo() *string                                { return &c.defaultRepo }
+func (c *kubectlConfig) MultiLevelRepo() *bool                               { return c.multiLevelRepo }
+func (c *kubectlConfig) WaitForDeletions() config.WaitForDeletions           { return c.waitForDeletions }
+func (c *kubectlConfig) PortForwardResources() []*latest.PortForwardResource { return nil }

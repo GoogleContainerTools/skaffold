@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -36,20 +36,20 @@ import (
 func TestKanikoBuildSpec(t *testing.T) {
 	tests := []struct {
 		description  string
-		artifact     *latestV2.KanikoArtifact
+		artifact     *latest.KanikoArtifact
 		expectedArgs []string
 		expectedEnv  []string
 	}{
 		{
 			description: "simple build",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 			},
 			expectedArgs: []string{},
 		},
 		{
 			description: "with BuildArgs",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"arg1": util.StringPtr("value1"),
@@ -63,7 +63,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Env",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Env:            []kv1.EnvVar{{Name: "KEY1", Value: "VALUE1"}, {Name: "KEY2", Value: "VALUE2"}},
 			},
@@ -71,9 +71,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Cache",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache:          &latestV2.KanikoCache{},
+				Cache:          &latest.KanikoCache{},
 			},
 			expectedArgs: []string{
 				kaniko.CacheFlag,
@@ -81,9 +81,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Cache Copy Layers",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache:          &latestV2.KanikoCache{CacheCopyLayers: true},
+				Cache:          &latest.KanikoCache{CacheCopyLayers: true},
 			},
 			expectedArgs: []string{
 				kaniko.CacheFlag,
@@ -92,7 +92,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Cleanup",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Cleanup:        true,
 			},
@@ -102,7 +102,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with DigestFile",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				DigestFile:     "/tmp/digest",
 			},
@@ -112,7 +112,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Force",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Force:          true,
 			},
@@ -122,7 +122,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with ImageFSExtractRetry",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath:      "Dockerfile",
 				ImageFSExtractRetry: "5",
 			},
@@ -132,7 +132,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with ImageNameWithDigestFile",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath:          "Dockerfile",
 				ImageNameWithDigestFile: "/tmp/imageName",
 			},
@@ -142,7 +142,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Insecure",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Insecure:       true,
 			},
@@ -152,7 +152,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with InsecurePull",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				InsecurePull:   true,
 			},
@@ -162,7 +162,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with InsecureRegistry",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				InsecureRegistry: []string{
 					"s1.registry.url:5000",
@@ -176,7 +176,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with LogFormat",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				LogFormat:      "json",
 			},
@@ -186,7 +186,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with LogTimestamp",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				LogTimestamp:   true,
 			},
@@ -196,7 +196,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with NoPush",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				NoPush:         true,
 			},
@@ -206,7 +206,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with OCILayoutPath",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				OCILayoutPath:  "/tmp/builtImage",
 			},
@@ -216,7 +216,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with RegistryCertificate",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				RegistryCertificate: map[string]*string{
 					"s1.registry.url": util.StringPtr("/etc/certs/certificate1.cert"),
@@ -230,7 +230,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with RegistryMirror",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				RegistryMirror: "mirror.gcr.io",
 			},
@@ -240,7 +240,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Reproducible",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Reproducible:   true,
 			},
@@ -250,7 +250,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with SingleSnapshot",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SingleSnapshot: true,
 			},
@@ -260,7 +260,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with SkipTLS",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SkipTLS:        true,
 			},
@@ -271,7 +271,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with SkipTLSVerifyPull",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath:    "Dockerfile",
 				SkipTLSVerifyPull: true,
 			},
@@ -281,7 +281,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with SkipTLSVerifyRegistry",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SkipTLSVerifyRegistry: []string{
 					"s1.registry.url:5000",
@@ -295,7 +295,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with SkipUnusedStages",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath:   "Dockerfile",
 				SkipUnusedStages: true,
 			},
@@ -305,7 +305,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Target",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Target:         "builder",
 			},
@@ -315,7 +315,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with SnapshotMode",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SnapshotMode:   "redo",
 			},
@@ -325,7 +325,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with PushRetry",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				PushRetry:      "9",
 			},
@@ -335,7 +335,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with TarPath",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				TarPath:        "/workspace/tars",
 			},
@@ -345,7 +345,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with UseNewRun",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				UseNewRun:      true,
 			},
@@ -355,7 +355,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Verbosity",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Verbosity:      "trace",
 			},
@@ -365,7 +365,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with WhitelistVarRun",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath:  "Dockerfile",
 				WhitelistVarRun: true,
 			},
@@ -375,7 +375,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with WhitelistVarRun",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath:  "Dockerfile",
 				WhitelistVarRun: true,
 			},
@@ -385,7 +385,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 		{
 			description: "with Labels",
-			artifact: &latestV2.KanikoArtifact{
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Label: map[string]*string{
 					"label1": util.StringPtr("value1"),
@@ -402,7 +402,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		"img2": "img2:tag",
 		"img3": "img3:tag",
 	}
-	builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latestV2.GoogleCloudBuild{
+	builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latest.GoogleCloudBuild{
 		KanikoImage: "gcr.io/kaniko-project/executor",
 		DiskSizeGb:  100,
 		MachineType: "n1-standard-1",
@@ -416,12 +416,12 @@ func TestKanikoBuildSpec(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latestV2.Artifact{
+			artifact := &latest.Artifact{
 				ImageName: "img1",
-				ArtifactType: latestV2.ArtifactType{
+				ArtifactType: latest.ArtifactType{
 					KanikoArtifact: test.artifact,
 				},
-				Dependencies: []*latestV2.ArtifactDependency{
+				Dependencies: []*latest.ArtifactDependency{
 					{ImageName: "img2", Alias: "IMG2"},
 					{ImageName: "img3", Alias: "IMG3"},
 				},
@@ -470,7 +470,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 type mockArtifactStore map[string]string
 
 func (m mockArtifactStore) GetImageTag(imageName string) (string, bool) { return m[imageName], true }
-func (m mockArtifactStore) Record(a *latestV2.Artifact, tag string)     { m[a.ImageName] = tag }
-func (m mockArtifactStore) GetArtifacts([]*latestV2.Artifact) ([]graph.Artifact, error) {
+func (m mockArtifactStore) Record(a *latest.Artifact, tag string)       { m[a.ImageName] = tag }
+func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]graph.Artifact, error) {
 	return nil, nil
 }

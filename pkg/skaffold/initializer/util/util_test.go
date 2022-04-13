@@ -19,14 +19,14 @@ package util
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestListBuilders(t *testing.T) {
 	tests := []struct {
 		description string
-		build       *latestV2.BuildConfig
+		build       *latest.BuildConfig
 		expected    []string
 	}{
 		{
@@ -36,20 +36,20 @@ func TestListBuilders(t *testing.T) {
 		},
 		{
 			description: "multiple same builder config",
-			build: &latestV2.BuildConfig{
-				Artifacts: []*latestV2.Artifact{
-					{ImageName: "img1", ArtifactType: latestV2.ArtifactType{DockerArtifact: &latestV2.DockerArtifact{}}},
-					{ImageName: "img2", ArtifactType: latestV2.ArtifactType{DockerArtifact: &latestV2.DockerArtifact{}}},
+			build: &latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{ImageName: "img1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+					{ImageName: "img2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 				},
 			},
 			expected: []string{"docker"},
 		},
 		{
 			description: "different builders config",
-			build: &latestV2.BuildConfig{
-				Artifacts: []*latestV2.Artifact{
-					{ImageName: "img1", ArtifactType: latestV2.ArtifactType{DockerArtifact: &latestV2.DockerArtifact{}}},
-					{ImageName: "img2", ArtifactType: latestV2.ArtifactType{JibArtifact: &latestV2.JibArtifact{}}},
+			build: &latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{ImageName: "img1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+					{ImageName: "img2", ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}},
 				},
 			},
 			expected: []string{"docker", "jib"},
@@ -66,7 +66,7 @@ func TestListBuilders(t *testing.T) {
 func TestListDeployers(t *testing.T) {
 	tests := []struct {
 		description string
-		deploy      *latestV2.DeployConfig
+		deploy      *latest.DeployConfig
 		expected    []string
 	}{
 		{
@@ -76,19 +76,19 @@ func TestListDeployers(t *testing.T) {
 		},
 		{
 			description: "single deployer config",
-			deploy: &latestV2.DeployConfig{
-				DeployType: latestV2.DeployType{
-					KubectlDeploy: &latestV2.KubectlDeploy{},
+			deploy: &latest.DeployConfig{
+				DeployType: latest.DeployType{
+					KubectlDeploy: &latest.KubectlDeploy{},
 				},
 			},
 			expected: []string{"kubectl"},
 		},
 		{
 			description: "multiple deployers config",
-			deploy: &latestV2.DeployConfig{
-				DeployType: latestV2.DeployType{
-					LegacyHelmDeploy: &latestV2.LegacyHelmDeploy{},
-					KubectlDeploy:    &latestV2.KubectlDeploy{},
+			deploy: &latest.DeployConfig{
+				DeployType: latest.DeployType{
+					LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
+					KubectlDeploy:    &latest.KubectlDeploy{},
 				},
 			},
 			expected: []string{"helm", "kubectl"},

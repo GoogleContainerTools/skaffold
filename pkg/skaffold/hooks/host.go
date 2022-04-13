@@ -26,14 +26,14 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // hostHook represents a lifecycle hook to be executed on the host machine
 type hostHook struct {
-	cfg v2.HostHook
+	cfg latest.HostHook
 	env []string // environment variables to set in the hook process
 }
 

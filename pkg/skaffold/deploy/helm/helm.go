@@ -56,7 +56,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -87,7 +87,7 @@ var writeBuildArtifactsFunc = writeBuildArtifacts
 
 // Deployer deploys workflows using the helm CLI
 type Deployer struct {
-	*latestV2.LegacyHelmDeploy
+	*latest.LegacyHelmDeploy
 
 	accessor      access.Accessor
 	debugger      debug.Debugger
@@ -126,11 +126,11 @@ type Config interface {
 	kloader.Config
 	portforward.Config
 	IsMultiConfig() bool
-	JSONParseConfig() latestV2.JSONParseConfig
+	JSONParseConfig() latest.JSONParseConfig
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latestV2.LegacyHelmDeploy, artifacts []*latestV2.Artifact) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact) (*Deployer, error) {
 	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -461,7 +461,7 @@ func (h *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 }
 
 // deployRelease deploys a single release; returns the deployed manifests, and the artifacts
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latestV2.HelmRelease, builds []graph.Artifact, helmVersion semver.Version, chartVersion string) ([]byte, []types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, helmVersion semver.Version, chartVersion string) ([]byte, []types.Artifact, error) {
 	var err error
 	opts := installOpts{
 		releaseName: releaseName,
@@ -584,7 +584,7 @@ func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, n
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive
-func (h *Deployer) packageChart(ctx context.Context, r latestV2.HelmRelease) (string, error) {
+func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	// Allow a test to sneak a predictable path in
 	tmpDir := h.pkgTmpDir
 
@@ -630,7 +630,7 @@ func (h *Deployer) packageChart(ctx context.Context, r latestV2.HelmRelease) (st
 	return output[idx:], nil
 }
 
-func chartSource(r latestV2.HelmRelease) string {
+func chartSource(r latest.HelmRelease) string {
 	if r.RemoteChart != "" {
 		return r.RemoteChart
 	}

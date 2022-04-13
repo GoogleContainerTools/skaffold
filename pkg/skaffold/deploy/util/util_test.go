@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -221,63 +221,63 @@ func TestConsolidateTransformConfiguration(t *testing.T) {
 	tests := []struct {
 		description           string
 		shouldErr             bool
-		allowSchemaTransforms []latestV2.ResourceFilter
-		denySchemaTransforms  []latestV2.ResourceFilter
-		flagTransforms        latestV2.ResourceSelectorConfig
-		expected              func(map[schema.GroupKind]latestV2.ResourceFilter, map[schema.GroupKind]latestV2.ResourceFilter) (map[schema.GroupKind]latestV2.ResourceFilter, map[schema.GroupKind]latestV2.ResourceFilter)
+		allowSchemaTransforms []latest.ResourceFilter
+		denySchemaTransforms  []latest.ResourceFilter
+		flagTransforms        latest.ResourceSelectorConfig
+		expected              func(map[schema.GroupKind]latest.ResourceFilter, map[schema.GroupKind]latest.ResourceFilter) (map[schema.GroupKind]latest.ResourceFilter, map[schema.GroupKind]latest.ResourceFilter)
 	}{
 		{
 			description: "verify schema transform configuration outprioritizes default hardcoded transform configuration",
-			denySchemaTransforms: []latestV2.ResourceFilter{
+			denySchemaTransforms: []latest.ResourceFilter{
 				{
 					GroupKind: "Deployment.apps",
 				},
 			},
-			expected: func(allow map[schema.GroupKind]latestV2.ResourceFilter, deny map[schema.GroupKind]latestV2.ResourceFilter) (map[schema.GroupKind]latestV2.ResourceFilter, map[schema.GroupKind]latestV2.ResourceFilter) {
+			expected: func(allow map[schema.GroupKind]latest.ResourceFilter, deny map[schema.GroupKind]latest.ResourceFilter) (map[schema.GroupKind]latest.ResourceFilter, map[schema.GroupKind]latest.ResourceFilter) {
 				// Deployment.apps removed from hardcoded allowlist
 				delete(allow, schema.GroupKind{Group: "apps", Kind: "Deployment"})
 				// Deployment.apps added to denylist
-				deny[schema.GroupKind{Group: "apps", Kind: "Deployment"}] = latestV2.ResourceFilter{GroupKind: "Deployment.apps"}
+				deny[schema.GroupKind{Group: "apps", Kind: "Deployment"}] = latest.ResourceFilter{GroupKind: "Deployment.apps"}
 				return allow, deny
 			},
 		},
 		{
 			description: "verify flag transform configuration outprioritizes schema transform configuration",
-			flagTransforms: latestV2.ResourceSelectorConfig{
-				Allow: []latestV2.ResourceFilter{
+			flagTransforms: latest.ResourceSelectorConfig{
+				Allow: []latest.ResourceFilter{
 					{
 						GroupKind: "Test.skaffold.dev",
 					},
 				},
 			},
-			denySchemaTransforms: []latestV2.ResourceFilter{
+			denySchemaTransforms: []latest.ResourceFilter{
 				{
 					GroupKind: "Test.skaffold.dev",
 				},
 			},
-			expected: func(allow map[schema.GroupKind]latestV2.ResourceFilter, deny map[schema.GroupKind]latestV2.ResourceFilter) (map[schema.GroupKind]latestV2.ResourceFilter, map[schema.GroupKind]latestV2.ResourceFilter) {
+			expected: func(allow map[schema.GroupKind]latest.ResourceFilter, deny map[schema.GroupKind]latest.ResourceFilter) (map[schema.GroupKind]latest.ResourceFilter, map[schema.GroupKind]latest.ResourceFilter) {
 				// Test.skaffold.dev added to allowlist as flag config outprioritizes schema config
-				allow[schema.GroupKind{Group: "skaffold.dev", Kind: "Test"}] = latestV2.ResourceFilter{GroupKind: "Test.skaffold.dev"}
+				allow[schema.GroupKind{Group: "skaffold.dev", Kind: "Test"}] = latest.ResourceFilter{GroupKind: "Test.skaffold.dev"}
 				return allow, deny
 			},
 		},
 		{
 			description: "verify denylist outprioritizes allowlist transform configuration (for same config input source)",
-			flagTransforms: latestV2.ResourceSelectorConfig{
-				Allow: []latestV2.ResourceFilter{
+			flagTransforms: latest.ResourceSelectorConfig{
+				Allow: []latest.ResourceFilter{
 					{
 						GroupKind: "Test.skaffold.dev",
 					},
 				},
-				Deny: []latestV2.ResourceFilter{
+				Deny: []latest.ResourceFilter{
 					{
 						GroupKind: "Test.skaffold.dev",
 					},
 				},
 			},
-			expected: func(allow map[schema.GroupKind]latestV2.ResourceFilter, deny map[schema.GroupKind]latestV2.ResourceFilter) (map[schema.GroupKind]latestV2.ResourceFilter, map[schema.GroupKind]latestV2.ResourceFilter) {
+			expected: func(allow map[schema.GroupKind]latest.ResourceFilter, deny map[schema.GroupKind]latest.ResourceFilter) (map[schema.GroupKind]latest.ResourceFilter, map[schema.GroupKind]latest.ResourceFilter) {
 				// Test.skaffold.dev added to denylist as deny config outprioritizes allow config for same priority config source (both flag config)
-				deny[schema.GroupKind{Group: "skaffold.dev", Kind: "Test"}] = latestV2.ResourceFilter{GroupKind: "Test.skaffold.dev"}
+				deny[schema.GroupKind{Group: "skaffold.dev", Kind: "Test"}] = latest.ResourceFilter{GroupKind: "Test.skaffold.dev"}
 				return allow, deny
 			},
 		},
@@ -305,12 +305,12 @@ func TestConsolidateTransformConfiguration(t *testing.T) {
 			allowlist, denylist, err := renderutil.ConsolidateTransformConfiguration(cfg)
 			t.CheckError(test.shouldErr, err)
 
-			copyAllow := map[schema.GroupKind]latestV2.ResourceFilter{}
+			copyAllow := map[schema.GroupKind]latest.ResourceFilter{}
 			for k, v := range manifest.TransformAllowlist {
 				copyAllow[k] = v
 			}
 
-			copyDeny := map[schema.GroupKind]latestV2.ResourceFilter{}
+			copyDeny := map[schema.GroupKind]latest.ResourceFilter{}
 			for k, v := range manifest.TransformDenylist {
 				copyDeny[k] = v
 			}
@@ -323,21 +323,21 @@ func TestConsolidateTransformConfiguration(t *testing.T) {
 
 type mockDeployConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	transformAllowList    []latestV2.ResourceFilter
-	transformDenyList     []latestV2.ResourceFilter
+	transformAllowList    []latest.ResourceFilter
+	transformDenyList     []latest.ResourceFilter
 	transformRulesFile    string
 }
 
-func (c *mockDeployConfig) ForceDeploy() bool                                     { return false }
-func (c *mockDeployConfig) GetKubeConfig() string                                 { return "" }
-func (c *mockDeployConfig) GetKubeContext() string                                { return "" }
-func (c *mockDeployConfig) GetKubeNamespace() string                              { return "" }
-func (c *mockDeployConfig) ConfigurationFile() string                             { return "" }
-func (c *mockDeployConfig) PortForwardResources() []*latestV2.PortForwardResource { return nil }
-func (c *mockDeployConfig) TransformAllowList() []latestV2.ResourceFilter {
+func (c *mockDeployConfig) ForceDeploy() bool                                   { return false }
+func (c *mockDeployConfig) GetKubeConfig() string                               { return "" }
+func (c *mockDeployConfig) GetKubeContext() string                              { return "" }
+func (c *mockDeployConfig) GetKubeNamespace() string                            { return "" }
+func (c *mockDeployConfig) ConfigurationFile() string                           { return "" }
+func (c *mockDeployConfig) PortForwardResources() []*latest.PortForwardResource { return nil }
+func (c *mockDeployConfig) TransformAllowList() []latest.ResourceFilter {
 	return c.transformAllowList
 }
-func (c *mockDeployConfig) TransformDenyList() []latestV2.ResourceFilter {
+func (c *mockDeployConfig) TransformDenyList() []latest.ResourceFilter {
 	return c.transformDenyList
 }
 func (c *mockDeployConfig) TransformRulesFile() string { return c.transformRulesFile }

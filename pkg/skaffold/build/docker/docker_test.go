@@ -32,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -41,7 +41,7 @@ import (
 func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description     string
-		localBuild      latestV2.LocalBuild
+		localBuild      latest.LocalBuild
 		cliFlags        []string
 		cfg             mockConfig
 		extraEnv        []string
@@ -53,39 +53,39 @@ func TestDockerCLIBuild(t *testing.T) {
 	}{
 		{
 			description: "docker build",
-			localBuild:  latestV2.LocalBuild{},
+			localBuild:  latest.LocalBuild{},
 			cfg:         mockConfig{runMode: config.RunModes.Dev},
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
 			description: "extra env",
-			localBuild:  latestV2.LocalBuild{},
+			localBuild:  latest.LocalBuild{},
 			extraEnv:    []string{"OTHER=VALUE"},
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE"},
 		},
 		{
 			description:   "buildkit",
-			localBuild:    latestV2.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			wantDockerCLI: true,
 			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description:   "cliFlags",
 			cliFlags:      []string{"--platform", "linux/amd64"},
-			localBuild:    latestV2.LocalBuild{},
+			localBuild:    latest.LocalBuild{},
 			wantDockerCLI: true,
 			expectedEnv:   []string{"KEY=VALUE"},
 		},
 		{
 			description:   "buildkit and extra env",
-			localBuild:    latestV2.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			wantDockerCLI: true,
 			extraEnv:      []string{"OTHER=VALUE"},
 			expectedEnv:   []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description:   "env var collisions",
-			localBuild:    latestV2.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
 			wantDockerCLI: true,
 			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// DOCKER_BUILDKIT should be overridden
@@ -93,13 +93,13 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description: "docker build internal error",
-			localBuild:  latestV2.LocalBuild{UseDockerCLI: true},
+			localBuild:  latest.LocalBuild{UseDockerCLI: true},
 			err:         errdefs.Cancelled(fmt.Errorf("cancelled")),
 			expectedErr: newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled")), mockConfig{runMode: config.RunModes.Dev}),
 		},
 		{
 			description:     "docker build no space left error with prune for dev",
-			localBuild:      latestV2.LocalBuild{UseDockerCLI: true},
+			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{runMode: config.RunModes.Dev, prune: false},
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("Docker ran out of memory. Please run 'docker system prune' to removed unused docker data or Run skaffold dev with --cleanup=true to clean up images built by skaffold"),
@@ -107,7 +107,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description:     "docker build no space left error with prune for build",
-			localBuild:      latestV2.LocalBuild{UseDockerCLI: true},
+			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{runMode: config.RunModes.Build, prune: false},
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
@@ -115,7 +115,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description:     "docker build no space left error with prune true",
-			localBuild:      latestV2.LocalBuild{UseDockerCLI: true},
+			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{prune: true},
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
@@ -123,7 +123,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description:     "docker build system error",
-			localBuild:      latestV2.LocalBuild{UseDockerCLI: true},
+			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			err:             errdefs.System(fmt.Errorf("something else")),
 			expectedErr:     fmt.Errorf("something else"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR,
@@ -163,10 +163,10 @@ func TestDockerCLIBuild(t *testing.T) {
 
 			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.cfg, test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, mockArtifactResolver{make(map[string]string)}, nil)
 
-			artifact := &latestV2.Artifact{
+			artifact := &latest.Artifact{
 				Workspace: ".",
-				ArtifactType: latestV2.ArtifactType{
-					DockerArtifact: &latestV2.DockerArtifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 						CliFlags:       test.cliFlags,
 					},
@@ -193,16 +193,16 @@ func TestDockerCLIBuild(t *testing.T) {
 func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 	tests := []struct {
 		description       string
-		artifact          *latestV2.Artifact
+		artifact          *latest.Artifact
 		tag               string
 		expectedCacheFrom []string
 	}{
 		{
 			description: "multiple cache-from images",
-			artifact: &latestV2.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/k8s-skaffold/test",
-				ArtifactType: latestV2.ArtifactType{
-					DockerArtifact: &latestV2.DockerArtifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						CacheFrom: []string{"from/image1", "from/image2"},
 					},
 				},
@@ -212,10 +212,10 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 		},
 		{
 			description: "cache-from self uses tagged image",
-			artifact: &latestV2.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/k8s-skaffold/test",
-				ArtifactType: latestV2.ArtifactType{
-					DockerArtifact: &latestV2.DockerArtifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						CacheFrom: []string{"gcr.io/k8s-skaffold/test"},
 					},
 				},

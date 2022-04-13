@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // For testing
@@ -50,9 +50,9 @@ func (c ArtifactConfig) Describe() string {
 }
 
 // ArtifactType returns the type of the artifact to be built.
-func (c ArtifactConfig) ArtifactType(_ string) latestV2.ArtifactType {
-	return latestV2.ArtifactType{
-		BuildpackArtifact: &latestV2.BuildpackArtifact{
+func (c ArtifactConfig) ArtifactType(_ string) latest.ArtifactType {
+	return latest.ArtifactType{
+		BuildpackArtifact: &latest.BuildpackArtifact{
 			Builder: c.Builder,
 		},
 	}

@@ -19,7 +19,7 @@ package buildpacks
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -27,7 +27,7 @@ func TestSyncRules(t *testing.T) {
 	tests := []struct {
 		description   string
 		labels        map[string]string
-		expectedRules []*latestV2.SyncRule
+		expectedRules []*latest.SyncRule
 		shouldErr     bool
 	}{
 		{
@@ -55,7 +55,7 @@ func TestSyncRules(t *testing.T) {
 					}]
 				}`,
 			},
-			expectedRules: []*latestV2.SyncRule{
+			expectedRules: []*latest.SyncRule{
 				{Src: "src-value1", Dest: "dest-value1"},
 				{Src: "src-value2", Dest: "dest-value2"},
 			},

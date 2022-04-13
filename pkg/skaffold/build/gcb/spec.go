@@ -25,10 +25,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (b *Builder) buildSpec(ctx context.Context, artifact *latestV2.Artifact, tag string, platforms platform.Matcher, bucket, object string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpec(ctx context.Context, artifact *latest.Artifact, tag string, platforms platform.Matcher, bucket, object string) (cloudbuild.Build, error) {
 	// Artifact specific build spec
 	buildSpec, err := b.buildSpecForArtifact(ctx, artifact, tag, platforms)
 	if err != nil {
@@ -58,7 +58,7 @@ func (b *Builder) buildSpec(ctx context.Context, artifact *latestV2.Artifact, ta
 	return buildSpec, nil
 }
 
-func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latestV2.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
+func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latest.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
 	switch {
 	case a.KanikoArtifact != nil:
 		return b.kanikoBuildSpec(a, tag)

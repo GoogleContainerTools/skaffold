@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -203,9 +203,9 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				if err != nil {
 					t.Fatalf("error creating deployment.yaml file with name %s: %v", fp, err)
 				}
-				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
-					Metadata: v2.Metadata{Name: module},
-					Pipeline: v2.Pipeline{Deploy: v2.DeployConfig{DeployType: v2.DeployType{KubectlDeploy: &v2.KubectlDeploy{Manifests: []string{
+				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: module},
+					Pipeline: latest.Pipeline{Deploy: latest.DeployConfig{DeployType: latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{
 						mp,
 					}}}}},
 				},

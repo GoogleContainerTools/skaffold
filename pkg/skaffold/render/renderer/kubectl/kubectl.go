@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Kubectl struct {
@@ -34,8 +34,8 @@ type Kubectl struct {
 	hydrationDir string
 	labels       map[string]string
 
-	transformAllowlist map[apimachinery.GroupKind]latestV2.ResourceFilter
-	transformDenylist  map[apimachinery.GroupKind]latestV2.ResourceFilter
+	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
 func New(cfg render.Config, hydrationDir string, labels map[string]string) (Kubectl, error) {

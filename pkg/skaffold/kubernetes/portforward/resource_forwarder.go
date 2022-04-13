@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -38,7 +38,7 @@ type ResourceForwarder struct {
 	output               io.Writer
 	entryManager         *EntryManager
 	label                string
-	userDefinedResources []*latestV2.PortForwardResource
+	userDefinedResources []*latest.PortForwardResource
 	kubeContext          string
 	services             bool
 }
@@ -60,7 +60,7 @@ func NewServicesForwarder(entryManager *EntryManager, kubeContext string, label 
 }
 
 // NewUserDefinedForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewUserDefinedForwarder(entryManager *EntryManager, kubeContext string, userDefinedResources []*latestV2.PortForwardResource) *ResourceForwarder {
+func NewUserDefinedForwarder(entryManager *EntryManager, kubeContext string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager:         entryManager,
 		kubeContext:          kubeContext,
@@ -68,7 +68,7 @@ func NewUserDefinedForwarder(entryManager *EntryManager, kubeContext string, use
 	}
 }
 
-// Start gets a list of services deployed by skaffold as []latestV2.PortForwardResource and
+// Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
 // forwards them.
 func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	p.output = out
@@ -82,7 +82,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces
 			}
 		}
 	} else {
-		var validResources []*latestV2.PortForwardResource
+		var validResources []*latest.PortForwardResource
 		for _, pf := range p.userDefinedResources {
 			if pf.Namespace != "" {
 				if err := applyWithTemplate(pf); err != nil {
@@ -96,7 +96,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces
 		p.userDefinedResources = validResources
 	}
 
-	var serviceResources []*latestV2.PortForwardResource
+	var serviceResources []*latest.PortForwardResource
 	if p.services {
 		found, err := retrieveServices(ctx, p.label, namespaces, p.kubeContext)
 		if err != nil {
@@ -108,7 +108,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, out io.Writer, namespaces
 	return nil
 }
 
-func applyWithTemplate(resource *latestV2.PortForwardResource) error {
+func applyWithTemplate(resource *latest.PortForwardResource) error {
 	if resource.Namespace != "" {
 		namespace, err := util.ExpandEnvTemplateOrFail(resource.Namespace, nil)
 		if err != nil {
@@ -129,11 +129,11 @@ func (p *ResourceForwarder) Stop() {
 }
 
 // Port forward each resource individually in a goroutine
-func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latestV2.PortForwardResource) {
+func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latest.PortForwardResource) {
 	var wg sync.WaitGroup
 	for _, r := range resources {
 		wg.Add(1)
-		go func(r latestV2.PortForwardResource) {
+		go func(r latest.PortForwardResource) {
 			defer wg.Done()
 			p.portForwardResource(ctx, r)
 		}(*r)
@@ -141,14 +141,14 @@ func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources 
 	wg.Wait()
 }
 
-func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latestV2.PortForwardResource) {
+func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latest.PortForwardResource) {
 	// Get port forward entry for this resource
 	entry := p.getCurrentEntry(resource)
 	// Forward the entry
 	p.entryManager.forwardPortForwardEntry(ctx, p.output, entry)
 }
 
-func (p *ResourceForwarder) getCurrentEntry(resource latestV2.PortForwardResource) *portForwardEntry {
+func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource) *portForwardEntry {
 	// determine if we have seen this before
 	entry := newPortForwardEntry(0, resource, "", "", "", "", 0, false)
 
@@ -172,13 +172,13 @@ func (p *ResourceForwarder) getCurrentEntry(resource latestV2.PortForwardResourc
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(ctx context.Context, label string, namespaces []string, kubeContext string) ([]*latestV2.PortForwardResource, error) {
+func retrieveServiceResources(ctx context.Context, label string, namespaces []string, kubeContext string) ([]*latest.PortForwardResource, error) {
 	client, err := kubernetesclient.Client(kubeContext)
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
-	var resources []*latestV2.PortForwardResource
+	var resources []*latest.PortForwardResource
 	for _, ns := range namespaces {
 		services, err := client.CoreV1().Services(ns).List(ctx, metav1.ListOptions{
 			LabelSelector: label,
@@ -188,7 +188,7 @@ func retrieveServiceResources(ctx context.Context, label string, namespaces []st
 		}
 		for _, s := range services.Items {
 			for _, p := range s.Spec.Ports {
-				resources = append(resources, &latestV2.PortForwardResource{
+				resources = append(resources, &latest.PortForwardResource{
 					Type:      constants.Service,
 					Name:      s.Name,
 					Namespace: s.Namespace,

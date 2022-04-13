@@ -30,8 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -165,7 +165,7 @@ var SchemaVersionsV1 = Versions{
 // in the range of v3alpha*.
 var SchemaVersionsV2 = Versions{
 	{v3alpha1.Version, v3alpha1.NewSkaffoldConfig},
-	{latestV2.Version, latestV2.NewSkaffoldConfig},
+	{latest.Version, latest.NewSkaffoldConfig},
 }
 
 type Version struct {
@@ -328,7 +328,7 @@ func getLatestFromCompatibilityCheck(cfgs []util.VersionedConfig) (string, error
 		return latestV1.Version, nil
 	}
 	if len(v2Track) > 0 {
-		return latestV2.Version, nil
+		return latest.Version, nil
 	}
 	return "", fmt.Errorf("unable to find a valid API Schema version")
 }

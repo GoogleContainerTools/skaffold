@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -142,7 +142,7 @@ func TestKptfileInitIfNot(t *testing.T) {
 			}
 			tmpDir.Chdir()
 
-			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latestV2.KptDeploy{Dir: "."},
+			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latest.KptDeploy{Dir: "."},
 				config.SkaffoldOptions{})
 			err := kptfileInitIfNot(context.Background(), ioutil.Discard, k)
 			if !test.shouldErr {
@@ -158,12 +158,12 @@ func TestDeploy(t *testing.T) {
 	tests := []struct {
 		description string
 		builds      []graph.Artifact
-		kpt         latestV2.KptDeploy
+		kpt         latest.KptDeploy
 		commands    util.Command
 	}{
 		{
 			description: "deploy succeeds",
-			kpt:         latestV2.KptDeploy{Dir: "."},
+			kpt:         latest.KptDeploy{Dir: "."},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", manifests).
 				AndRun("kpt live apply ."),
@@ -190,8 +190,8 @@ type kptConfig struct {
 	config                string
 }
 
-func (c *kptConfig) WorkingDir() string                                    { return c.workingDir }
-func (c *kptConfig) GetKubeContext() string                                { return "" }
-func (c *kptConfig) GetKubeNamespace() string                              { return "" }
-func (c *kptConfig) GetKubeConfig() string                                 { return c.config }
-func (c *kptConfig) PortForwardResources() []*latestV2.PortForwardResource { return nil }
+func (c *kptConfig) WorkingDir() string                                  { return c.workingDir }
+func (c *kptConfig) GetKubeContext() string                              { return "" }
+func (c *kptConfig) GetKubeNamespace() string                            { return "" }
+func (c *kptConfig) GetKubeConfig() string                               { return c.config }
+func (c *kptConfig) PortForwardResources() []*latest.PortForwardResource { return nil }

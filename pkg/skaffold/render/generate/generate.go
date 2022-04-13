@@ -33,14 +33,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // NewGenerator instantiates a Generator object.
-func NewGenerator(workingDir string, config latestV2.Generate, hydrationDir string) Generator {
+func NewGenerator(workingDir string, config latest.Generate, hydrationDir string) Generator {
 	return Generator{
 		workingDir:   workingDir,
 		hydrationDir: hydrationDir,
@@ -52,7 +52,7 @@ func NewGenerator(workingDir string, config latestV2.Generate, hydrationDir stri
 type Generator struct {
 	workingDir   string
 	hydrationDir string
-	config       latestV2.Generate
+	config       latest.Generate
 }
 
 func excludeRemote(paths []string) []string {

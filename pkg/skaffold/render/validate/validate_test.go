@@ -18,22 +18,22 @@ package validate
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewValidator(t *testing.T) {
 	tests := []struct {
 		description string
-		config      []latestV2.Validator
+		config      []latest.Validator
 	}{
 		{
 			description: "no validation",
-			config:      []latestV2.Validator{},
+			config:      []latest.Validator{},
 		},
 		{
 			description: "kubeval validator",
-			config: []latestV2.Validator{
+			config: []latest.Validator{
 				{Name: "kubeval"},
 			},
 		},
@@ -48,7 +48,7 @@ func TestNewValidator(t *testing.T) {
 
 func TestNewValidator_Error(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		_, err := NewValidator([]latestV2.Validator{
+		_, err := NewValidator([]latest.Validator{
 			{Name: "bad-validator"},
 		})
 		t.CheckContains(`unsupported validator "bad-validator". please only use the`, err.Error())

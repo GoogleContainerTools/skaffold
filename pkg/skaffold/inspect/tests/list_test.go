@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -75,17 +75,17 @@ func TestPrintTestsList(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configSet := parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
-					Metadata: v2.Metadata{Name: "cfg1"},
-					Pipeline: v2.Pipeline{Test: []*v2.TestCase{{StructureTests: []string{"structure-test-default"}}}},
-					Profiles: []v2.Profile{
-						{Name: "custom-test", Pipeline: v2.Pipeline{Test: []*v2.TestCase{{CustomTests: []v2.CustomTest{{Command: "custom-test-profile"}}}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg1"},
+					Pipeline: latest.Pipeline{Test: []*latest.TestCase{{StructureTests: []string{"structure-test-default"}}}},
+					Profiles: []latest.Profile{
+						{Name: "custom-test", Pipeline: latest.Pipeline{Test: []*latest.TestCase{{CustomTests: []latest.CustomTest{{Command: "custom-test-profile"}}}}}}},
 				}, SourceFile: "path/to/cfg1"},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
-					Metadata: v2.Metadata{Name: "cfg2"},
-					Pipeline: v2.Pipeline{Test: []*v2.TestCase{{CustomTests: []v2.CustomTest{{Command: "custom-test-default"}}}}},
-					Profiles: []v2.Profile{
-						{Name: "structure-test", Pipeline: v2.Pipeline{Test: []*v2.TestCase{{StructureTests: []string{"structure-test-profile"}}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg2"},
+					Pipeline: latest.Pipeline{Test: []*latest.TestCase{{CustomTests: []latest.CustomTest{{Command: "custom-test-default"}}}}},
+					Profiles: []latest.Profile{
+						{Name: "structure-test", Pipeline: latest.Pipeline{Test: []*latest.TestCase{{StructureTests: []string{"structure-test-profile"}}}}}},
 				}, SourceFile: "path/to/cfg2"},
 			}
 			t.Override(&inspect.GetConfigSet, func(_ context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {

@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -38,7 +38,7 @@ type mockDevRunner struct {
 	calls       []string
 }
 
-func (r *mockDevRunner) Dev(context.Context, io.Writer, []*latestV2.Artifact) error {
+func (r *mockDevRunner) Dev(context.Context, io.Writer, []*latest.Artifact) error {
 	r.calls = append(r.calls, "Dev")
 	return r.errDev
 }
@@ -98,7 +98,7 @@ func TestDoDev(t *testing.T) {
 				errDev:      context.Canceled,
 			}
 			t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-				return mockRunner, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
+				return mockRunner, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
 			})
 			t.Override(&opts, config.SkaffoldOptions{
 				Cleanup: true,
@@ -118,7 +118,7 @@ type mockConfigChangeRunner struct {
 	cycles int
 }
 
-func (m *mockConfigChangeRunner) Dev(context.Context, io.Writer, []*latestV2.Artifact) error {
+func (m *mockConfigChangeRunner) Dev(context.Context, io.Writer, []*latest.Artifact) error {
 	m.cycles++
 	if m.cycles == 1 {
 		// pass through the first cycle with a config reload
@@ -148,7 +148,7 @@ func TestDevConfigChange(t *testing.T) {
 		mockRunner := &mockConfigChangeRunner{}
 
 		t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-			return mockRunner, []util.VersionedConfig{&latestV2.SkaffoldConfig{}}, nil, nil
+			return mockRunner, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{
 			Cleanup: true,

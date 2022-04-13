@@ -22,18 +22,18 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-type BuildAndTestFn func(context.Context, io.Writer, tag.ImageTags, []*latestV2.Artifact, platform.Resolver) ([]graph.Artifact, error)
+type BuildAndTestFn func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, platform.Resolver) ([]graph.Artifact, error)
 
 type Cache interface {
-	Build(context.Context, io.Writer, tag.ImageTags, []*latestV2.Artifact, platform.Resolver, BuildAndTestFn) ([]graph.Artifact, error)
+	Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, platform.Resolver, BuildAndTestFn) ([]graph.Artifact, error)
 }
 
 type noCache struct{}
 
-func (n *noCache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV2.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
+func (n *noCache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
 	return buildAndTest(ctx, out, tags, artifacts, platforms)
 }

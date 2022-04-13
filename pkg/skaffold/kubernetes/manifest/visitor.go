@@ -21,7 +21,7 @@ import (
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -33,7 +33,7 @@ type ResourceSelector interface {
 }
 
 // TransformAllowlist is the default allowlist of kinds that can be transformed by Skaffold.
-var TransformAllowlist = map[apimachinery.GroupKind]latestV2.ResourceFilter{
+var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 	{Group: "", Kind: "Pod"}: {
 		GroupKind: "Pod",
 		Image:     []string{".*"},
@@ -162,7 +162,7 @@ var TransformAllowlist = map[apimachinery.GroupKind]latestV2.ResourceFilter{
 }
 
 // TransformDenylist is the default denylist on the set of kinds that can be transformed by Skaffold.
-var TransformDenylist = map[apimachinery.GroupKind]latestV2.ResourceFilter{
+var TransformDenylist = map[apimachinery.GroupKind]latest.ResourceFilter{
 	{Group: "apps", Kind: "StatefulSet"}: {
 		GroupKind: "StatefulSet.apps",
 		Labels:    []string{".spec.volumeClaimTemplates.metadata.labels"},

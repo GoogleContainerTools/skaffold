@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -39,7 +39,7 @@ const (
 	DryFileName = "manifests.yaml"
 )
 
-func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, hydrationDir string, labels map[string]string, transformAllowlist, transformDenylist map[apim.GroupKind]latestV2.ResourceFilter) error {
+func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, hydrationDir string, labels map[string]string, transformAllowlist, transformDenylist map[apim.GroupKind]latest.ResourceFilter) error {
 	// Generate manifests.
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateManifest")
 	if err := os.MkdirAll(hydrationDir, os.ModePerm); err != nil {
@@ -74,12 +74,12 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	return nil
 }
 
-func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]latestV2.ResourceFilter, map[apim.GroupKind]latestV2.ResourceFilter, error) {
+func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]latest.ResourceFilter, map[apim.GroupKind]latest.ResourceFilter, error) {
 	// TODO(aaron-prindle) currently this also modifies the flag & config to support a JSON path syntax for input.
 	// this should be done elsewhere eventually
 
-	transformableAllowlist := map[apim.GroupKind]latestV2.ResourceFilter{}
-	transformableDenylist := map[apim.GroupKind]latestV2.ResourceFilter{}
+	transformableAllowlist := map[apim.GroupKind]latest.ResourceFilter{}
+	transformableDenylist := map[apim.GroupKind]latest.ResourceFilter{}
 	// add default values
 	for _, rf := range manifest.TransformAllowlist {
 		groupKind := apim.ParseGroupKind(rf.GroupKind)
@@ -111,7 +111,7 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 		if err != nil {
 			return nil, nil, err
 		}
-		rsc := latestV2.ResourceSelectorConfig{}
+		rsc := latest.ResourceSelectorConfig{}
 		err = yaml.Unmarshal(transformRulesFromFile, &rsc)
 		if err != nil {
 			return nil, nil, err
@@ -134,8 +134,8 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 	return transformableAllowlist, transformableDenylist, nil
 }
 
-func convertJSONPathIndex(rf latestV2.ResourceFilter) latestV2.ResourceFilter {
-	nrf := latestV2.ResourceFilter{}
+func convertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
+	nrf := latest.ResourceFilter{}
 	nrf.GroupKind = rf.GroupKind
 
 	if len(rf.Labels) > 0 {

@@ -20,7 +20,7 @@ import (
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -33,7 +33,7 @@ var (
 )
 
 // NewValidator instantiates a Validator object.
-func NewValidator(config []latestV2.Validator) (Validator, error) {
+func NewValidator(config []latest.Validator) (Validator, error) {
 	var fns []kptfile.Function
 	for _, c := range config {
 		fn, ok := validatorAllowlist[c.Name]

@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -62,11 +62,11 @@ Refer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for deta
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
 			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, nil, false, mockArtifactResolver{make(map[string]string)}, nil)
 
-			artifact := &latestV2.Artifact{
+			artifact := &latest.Artifact{
 				ImageName: "test-image",
 				Workspace: ".",
-				ArtifactType: latestV2.ArtifactType{
-					DockerArtifact: &latestV2.DockerArtifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: test.dockerfilepath,
 					},
 				},

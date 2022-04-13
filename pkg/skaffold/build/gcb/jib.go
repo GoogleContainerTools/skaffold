@@ -27,11 +27,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latestV2.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
+func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latest.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
 	t, err := jib.DeterminePluginType(ctx, artifact.Workspace, artifact.JibArtifact)
 	if err != nil {
 		return cloudbuild.Build{}, err

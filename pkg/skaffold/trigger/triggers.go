@@ -28,7 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	fsNotify "github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger/fsnotify"
 )
 
@@ -41,7 +41,7 @@ type Trigger interface {
 
 type Config interface {
 	Trigger() string
-	Artifacts() []*latestV2.Artifact
+	Artifacts() []*latest.Artifact
 	WatchPollInterval() int
 }
 

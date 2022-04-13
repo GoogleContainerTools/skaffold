@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -320,24 +320,24 @@ profiles:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configSet := parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
-					Metadata: v2.Metadata{Name: "cfg1_0"},
-					Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}},
-					Profiles: []v2.Profile{
-						{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{Cluster: &v2.ClusterDetails{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg1_0"},
+					Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}},
+					Profiles: []latest.Profile{
+						{Name: "p1", Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{}}}}},
 					}}, SourceFile: pathToCfg1, IsRootConfig: true, SourceIndex: 0},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
-					Metadata:     v2.Metadata{Name: "cfg1_1"},
-					Dependencies: []v2.ConfigDependency{{Path: pathToCfg2}},
-					Pipeline:     v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}},
-					Profiles: []v2.Profile{
-						{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{Cluster: &v2.ClusterDetails{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata:     latest.Metadata{Name: "cfg1_1"},
+					Dependencies: []latest.ConfigDependency{{Path: pathToCfg2}},
+					Pipeline:     latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}},
+					Profiles: []latest.Profile{
+						{Name: "p1", Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{}}}}},
 					}}, SourceFile: pathToCfg1, IsRootConfig: true, SourceIndex: 1},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v2.SkaffoldConfig{
-					Metadata: v2.Metadata{Name: "cfg2"},
-					Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{GoogleCloudBuild: &v2.GoogleCloudBuild{}}}},
-					Profiles: []v2.Profile{
-						{Name: "p1", Pipeline: v2.Pipeline{Build: v2.BuildConfig{BuildType: v2.BuildType{LocalBuild: &v2.LocalBuild{}}}}},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg2"},
+					Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{}}}},
+					Profiles: []latest.Profile{
+						{Name: "p1", Pipeline: latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}}},
 					}}, SourceFile: pathToCfg2, SourceIndex: 0},
 			}
 			t.Override(&inspect.GetConfigSet, func(ctx context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
@@ -358,9 +358,9 @@ profiles:
 			})
 			t.Override(&inspect.ReadFileFunc, func(filename string) ([]byte, error) {
 				if filename == pathToCfg1 {
-					return yaml.MarshalWithSeparator([]*v2.SkaffoldConfig{configSet[0].SkaffoldConfig, configSet[1].SkaffoldConfig})
+					return yaml.MarshalWithSeparator([]*latest.SkaffoldConfig{configSet[0].SkaffoldConfig, configSet[1].SkaffoldConfig})
 				} else if filename == pathToCfg2 {
-					return yaml.MarshalWithSeparator([]*v2.SkaffoldConfig{configSet[2].SkaffoldConfig})
+					return yaml.MarshalWithSeparator([]*latest.SkaffoldConfig{configSet[2].SkaffoldConfig})
 				}
 				t.FailNow()
 				return nil, nil

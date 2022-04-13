@@ -24,16 +24,16 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // BuildRunner creates a new runner for pre-build and post-build lifecycle hooks
-func BuildRunner(d v2.BuildHooks, opts BuildEnvOpts) Runner {
+func BuildRunner(d latest.BuildHooks, opts BuildEnvOpts) Runner {
 	return buildRunner{BuildHooks: d, opts: opts}
 }
 
 // NewBuildEnvOpts returns `BuildEnvOpts` required to create a `Runner` for build lifecycle hooks
-func NewBuildEnvOpts(a *v2.Artifact, image string, pushImage bool) (BuildEnvOpts, error) {
+func NewBuildEnvOpts(a *latest.Artifact, image string, pushImage bool) (BuildEnvOpts, error) {
 	ref, err := docker.ParseReference(image)
 	if err != nil {
 		return BuildEnvOpts{}, fmt.Errorf("parsing image %v: %w", image, err)
@@ -53,7 +53,7 @@ func NewBuildEnvOpts(a *v2.Artifact, image string, pushImage bool) (BuildEnvOpts
 }
 
 type buildRunner struct {
-	v2.BuildHooks
+	latest.BuildHooks
 	opts BuildEnvOpts
 }
 
@@ -71,7 +71,7 @@ func (r buildRunner) getEnv() []string {
 	return append(common, build...)
 }
 
-func (r buildRunner) run(ctx context.Context, out io.Writer, hooks []v2.HostHook, phase phase) error {
+func (r buildRunner) run(ctx context.Context, out io.Writer, hooks []latest.HostHook, phase phase) error {
 	if len(hooks) > 0 {
 		output.Default.Fprintln(out, fmt.Sprintf("Starting %s hooks...", phase))
 	}

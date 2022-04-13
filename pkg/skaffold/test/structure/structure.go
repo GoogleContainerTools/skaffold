@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -40,7 +40,7 @@ type Runner struct {
 }
 
 // New creates a new structure.Runner.
-func New(ctx context.Context, cfg docker.Config, tc *latestV2.TestCase, imageIsLocal bool) (*Runner, error) {
+func New(ctx context.Context, cfg docker.Config, tc *latest.TestCase, imageIsLocal bool) (*Runner, error) {
 	localDaemon, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err

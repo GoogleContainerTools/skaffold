@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -64,17 +64,17 @@ metadata:
 			t.Override(&yamlOnly, test.yamlOnly)
 			t.Override(&getCfgs, func(context.Context, config.SkaffoldOptions) ([]util.VersionedConfig, error) {
 				return []util.VersionedConfig{
-					&latestV2.SkaffoldConfig{
+					&latest.SkaffoldConfig{
 						APIVersion: "testVersion",
 						Kind:       "Config",
-						Metadata: latestV2.Metadata{
+						Metadata: latest.Metadata{
 							Name: "config1",
 						},
 					},
-					&latestV2.SkaffoldConfig{
+					&latest.SkaffoldConfig{
 						APIVersion: "testVersion",
 						Kind:       "Config",
-						Metadata: latestV2.Metadata{
+						Metadata: latest.Metadata{
 							Name: "config2",
 						},
 					},

@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -61,11 +61,11 @@ func TestSizeOfDockerContext(t *testing.T) {
 				Write("Dockerfile", test.DockerfileContents).
 				WriteFiles(test.files)
 
-			dummyArtifact := &latestV2.Artifact{
+			dummyArtifact := &latest.Artifact{
 				Workspace: tmpDir.Root(),
 				ImageName: test.artifactName,
-				ArtifactType: latestV2.ArtifactType{
-					DockerArtifact: &latestV2.DockerArtifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},
@@ -82,10 +82,10 @@ func TestCheckArtifacts(t *testing.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
 
 		err := CheckArtifacts(context.Background(), &mockConfig{
-			artifacts: []*latestV2.Artifact{{
+			artifacts: []*latest.Artifact{{
 				Workspace: tmpDir.Root(),
-				ArtifactType: latestV2.ArtifactType{
-					DockerArtifact: &latestV2.DockerArtifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},
@@ -98,21 +98,21 @@ func TestCheckArtifacts(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	artifacts             []*latestV2.Artifact
+	artifacts             []*latest.Artifact
 }
 
-func (c *mockConfig) PipelineForImage() latestV2.Pipeline {
-	var pipeline latestV2.Pipeline
+func (c *mockConfig) PipelineForImage() latest.Pipeline {
+	var pipeline latest.Pipeline
 	pipeline.Build.Artifacts = c.artifacts
 	return pipeline
 }
 
-func (c *mockConfig) GetPipelines() []latestV2.Pipeline {
-	var pipelines []latestV2.Pipeline
+func (c *mockConfig) GetPipelines() []latest.Pipeline {
+	var pipelines []latest.Pipeline
 	pipelines = append(pipelines, c.PipelineForImage())
 	return pipelines
 }
 
-func (c *mockConfig) Artifacts() []*latestV2.Artifact {
+func (c *mockConfig) Artifacts() []*latest.Artifact {
 	return c.artifacts
 }
