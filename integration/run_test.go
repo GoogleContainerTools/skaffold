@@ -488,3 +488,34 @@ func TestRunTest(t *testing.T) {
 		})
 	}
 }
+
+// TestRunNoOptFlags tests to ensure that flags that don't require a value to be passed work when no value is passed
+func TestRunNoOptFlags(t *testing.T) {
+	test := struct {
+		description string
+		dir         string
+		targetLog   string
+		pods        []string
+		args        []string
+	}{
+		description: "getting-started",
+		dir:         "testdata/getting-started",
+		pods:        []string{"getting-started"},
+		targetLog:   "Hello world!",
+		args: []string{
+			"--port-forward",
+			"--status-check",
+		},
+	}
+
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	t.Run(test.description, func(t *testing.T) {
+		ns, _ := SetupNamespace(t)
+
+		args := append(test.args, "--tail")
+		out := skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunLive(t)
+		defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+
+		WaitForLogs(t, out, test.targetLog)
+	})
+}

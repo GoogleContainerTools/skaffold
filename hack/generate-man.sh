@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+make#!/usr/bin/env bash
 
 # Copyright 2019 The Skaffold Authors
 #

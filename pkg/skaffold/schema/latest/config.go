@@ -540,7 +540,7 @@ type RenderConfig struct {
 	// Generate defines the dry manifests from a variety of sources.
 	Generate `yaml:",inline"`
 
-	// Transform defines a set of transformation operations to run in series
+	// Transform defines a set of transformation operations to run in series.
 	Transform *[]Transformer `yaml:"transform,omitempty"`
 
 	// Validate defines a set of validator operations to run in series.
@@ -552,17 +552,26 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	RawK8s    []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
+	// RawK8s TODO: add description.
+	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
+
+	// Kustomize TODO: add description.
 	Kustomize []string `yaml:"kustomize,omitempty" skaffold:"filepath"`
-	Helm      *Helm    `yaml:"helm,omitempty"`
-	Kpt       []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+
+	// Helm TODO: add description.
+	Helm *Helm `yaml:"helm,omitempty"`
+
+	// Kpt TODO: add description.
+	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
 }
 
+// Helm defines the manifests from helm releases.
 type Helm struct {
 	// Flags are additional option flags that are passed on the command
 	// line to `helm`.
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 
+	// Releases is a list of Helm releases.
 	Releases *[]HelmRelease `yaml:"releases,omitempty"`
 }
 
@@ -603,7 +612,7 @@ type KptDeploy struct {
 	// InventoryNamespace *alpha* sets the inventory namespace.
 	InventoryNamespace string `yaml:"namespace,omitempty"`
 
-	// Forces is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
+	// Force is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
 	Force bool `yaml:"false,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
@@ -667,13 +676,13 @@ type DockerDeploy struct {
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 // You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 type KubectlDeploy struct {
-	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
 	// Manifests lists the Kubernetes yaml or json manifests.
 	// Defaults to `["k8s/*.yaml"]`.
+	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
 	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
-	// This field is only used by v1 kubectl deployer.
 	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	// This field is only used by v1 kubectl deployer.
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
 	// Flags are additional flags passed to `kubectl`.

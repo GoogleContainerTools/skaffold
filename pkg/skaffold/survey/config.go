@@ -22,7 +22,7 @@ import (
 	"time"
 
 	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -52,11 +52,11 @@ var (
 			promptText: "Help improve Skaffold's Helm support by taking our 2-minute anonymous survey",
 			isRelevantFn: func(cfgs []util.VersionedConfig, _ sConfig.RunMode) bool {
 				for _, cfg := range cfgs {
-					v1Cfg, ok := cfg.(*latestV1.SkaffoldConfig)
+					v1Cfg, ok := cfg.(*latest.SkaffoldConfig)
 					if !ok {
 						return false
 					}
-					if h := v1Cfg.Deploy.HelmDeploy; h != nil {
+					if h := v1Cfg.Deploy.LegacyHelmDeploy; h != nil {
 						return true
 					}
 				}

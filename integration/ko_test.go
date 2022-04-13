@@ -61,7 +61,6 @@ func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
 	artifact := &latest.Artifact{
 		ArtifactType: latest.ArtifactType{
 			KoArtifact: &latest.KoArtifact{
-
 				BaseImage: baseImage,
 			},
 		},

@@ -16,9 +16,7 @@ limitations under the License.
 
 package event
 
-import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-)
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 type Config interface {
 	GetKubeContext() string

@@ -211,12 +211,12 @@ func resolveDependencyImages(artifact *latest.BuildpackArtifact, r ArtifactResol
 		// if only one of builder or run image is built locally, we can enable remote image pull only if that image is also pushed to remote.
 		pullPolicy = packimg.PullIfNotPresent
 
-		// if remote image pull is disabled then the image that is not fetched from the required artifacts might not be latestV1.
+		// if remote image pull is disabled then the image that is not fetched from the required artifacts might not be latest.
 		if !pushImages && builderImageLocal {
-			log.Entry(context.TODO()).Warn("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latest.")
 		}
 		if !pushImages && runImageLocal {
-			log.Entry(context.TODO()).Warn("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latestV1.")
+			log.Entry(context.TODO()).Warn("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latest.")
 		}
 	}
 

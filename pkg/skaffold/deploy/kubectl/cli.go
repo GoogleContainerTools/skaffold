@@ -92,7 +92,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
-	log.Entry(ctx).Debug(len(manifests), "manifests to deploy.", len(updated), "are updated or new")
+	log.Entry(ctx).Debugf("%d manifests to deploy. %d are updated or new", len(manifests), len(updated))
 	c.previousApply = manifests
 	if len(updated) == 0 {
 		return nil
@@ -174,7 +174,7 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests man
 			}
 
 			list := `"` + strings.Join(marked, `", "`) + `"`
-			log.Entry(ctx).Debug("Resources are marked for deletion:", list)
+			log.Entry(ctx).Debug("Resources are marked for deletion: ", list)
 			if list != previousList {
 				if len(marked) == 1 {
 					fmt.Fprintf(out, "%s is marked for deletion, waiting for completion\n", list)

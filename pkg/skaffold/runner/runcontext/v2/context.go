@@ -140,7 +140,6 @@ func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	}
 	return c
 }
-
 func NewPipelines(pipelines []latest.Pipeline) Pipelines {
 	m := make(map[string]latest.Pipeline)
 	for _, p := range pipelines {

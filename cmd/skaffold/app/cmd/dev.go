@@ -61,8 +61,8 @@ func runDev(ctx context.Context, out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			// Note: The latestV1.SkaffoldConfig is used for both latestV1 schema and latestV2 schema because
-			// the latestV1 and latestV2 use the same Build struct. Ideally they should be separated.
+			// Note: The latest.SkaffoldConfig is used for both latest schema and latestV2 schema because
+			// the latest and latestV2 use the same Build struct. Ideally they should be separated.
 			err := withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 				var artifacts []*latest.Artifact
 				for _, cfg := range configs {
