@@ -33,10 +33,6 @@ func NewSkaffoldConfig() util.VersionedConfig {
 	return new(SkaffoldConfig)
 }
 
-func (c *SkaffoldConfig) GetVersion() string {
-	return c.APIVersion
-}
-
 // SkaffoldConfig holds the fields parsed from the Skaffold configuration file (skaffold.yaml).
 type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
@@ -130,6 +126,10 @@ type ProfileDependency struct {
 
 	// ActivatedBy describes a list of profiles in the current config that when activated will also activate the named profile in the dependency config. If empty then the named profile is always activated.
 	ActivatedBy []string `yaml:"activatedBy,omitempty"`
+}
+
+func (c *SkaffoldConfig) GetVersion() string {
+	return c.APIVersion
 }
 
 // ResourceType describes the Kubernetes resource types used for port forwarding.
@@ -395,14 +395,11 @@ type KanikoCache struct {
 	// Repo is a remote repository to store cached layers. If none is specified, one will be
 	// inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).
 	Repo string `yaml:"repo,omitempty"`
-
 	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
 	// If set, must exist on each node and prepopulated with kaniko-warmer.
 	HostPath string `yaml:"hostPath,omitempty"`
-
 	// TTL Cache timeout in hours.
 	TTL string `yaml:"ttl,omitempty"`
-
 	// CacheCopyLayers enables caching of copy layers.
 	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
 }
@@ -653,7 +650,7 @@ type DeployType struct {
 	// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	LegacyHelmDeploy *LegacyHelmDeploy `yaml:"helm,omitempty"`
 
-	// KptDeploy *alpha* uses the `kpt` to manage and deploy manifests.
+	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
 
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -1398,13 +1395,6 @@ type KoArtifact struct {
 	// Main is ignored if the `ImageName` starts with `ko://`.
 	// Example: `./cmd/foo`.
 	Main string `yaml:"main,omitempty"`
-
-	// Platforms is the list of platforms to build images for.
-	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
-	// Use `["all"]` to build for all platforms supported by the base image.
-	// If empty, the builder uses the ko default (`["linux/amd64"]`).
-	// Example: `["linux/amd64", "linux/arm64"]`.
-	Platforms []string `yaml:"platforms,omitempty"`
 }
 
 // KoDependencies is used to specify dependencies for an artifact built by ko.
