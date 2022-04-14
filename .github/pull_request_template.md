@@ -1,12 +1,23 @@
 <!-- Thank you for your contribution! -->
 
-## Skaffold Main Branch Code Freeze Notice
+<!-- Include if applicable: -->
+Fixes: #nnn <!-- tracking issues that this PR will close -->
+**Related**: _Relevant tracking issues, for context_
+**Merge before/after**: _Dependent or prerequisite PRs_
 
-Hello, folks. Skaffold team is going through a major code refactor. (Stay tuned to [Skaffold slack channel](https://kubernetes.slack.com/messages/CABQMSZA6/) to hear more)
+**Description**
+<!-- Describe your changes here. The more detail, the easier the review! -->
 
-We request you to hold off submitting any changes at this time. 
+**User facing changes (remove if N/A)**
+<!-- Describe any user facing changes this PR introduces. -->
+<!-- "Before" and "After" sections work great - bonus points for screenshots! -->
+<!-- Be sure all docs have been updated as well! -->
 
-Please come back on Monday 11th April 2022.
+**Follow-up Work (remove if N/A)**
+<!-- Mention any related follow up work to this PR. -->
 
-Looking forward to your contributions and thank you for your understanding.
 
+<!--
+Please be sure your PR includes unit tests - we don't merge code that brings down test coverage! 
+Integration tests are sometimes an appropriate substitute. 
+-->
