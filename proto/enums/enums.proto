@@ -352,6 +352,8 @@ enum StatusCode {
     DEVINIT_REGISTER_CONFIG_DEP = 704;
     // Failed to configure watcher for build dependencies for a base image with v1 manifest.
     DEVINIT_UNSUPPORTED_V1_MANIFEST = 705;
+    // Failed to configure watcher for render dependencies in dev loop
+    DEVINIT_REGISTER_RENDER_DEPS = 706;
 
     // Timeout or User Cancellation Errors
 
@@ -403,7 +405,7 @@ enum StatusCode {
     DEPLOY_HELM_APPLY_LABELS = 1004;
     // Deploy error due to user deploy config for helm deployer
     DEPLOY_HELM_USER_ERR = 1005;
-    // Helm error when no build result is found of value  specified in helm `artifactOverrides`
+    // An image was referenced with no matching build result
     DEPLOY_NO_MATCHING_BUILD = 1006;
     // Unable to get helm client version
     DEPLOY_HELM_VERSION_ERR = 1007;
@@ -441,6 +443,12 @@ enum StatusCode {
     DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR = 1023;
     // The Kptfile cannot be created via `kpt live init`.
     DEPLOY_KPTFILE_INIT_ERR = 1024;
+    // The `kpt fn source` cannot read the given manifests.
+    DEPLOY_KPT_SOURCE_ERR = 1025;
+    // The Kptfile exists but cannot be opened or parsed.
+    DEPLOY_KPTFILE_INVALID_YAML_ERR = 1026;
+    // kpt fails to live apply the manifests to the cluster.
+    DEPLOY_KPT_APPLY_ERR = 1027;
 
     // Test errors
 
@@ -574,7 +582,6 @@ enum SuggestionCode {
     // Build platform error suggestion codes
     BUILD_FIX_UNKNOWN_PLATFORM_FLAG = 117;
 
-
     // Deploy error suggestion codes
 
     // Check cluster connection
@@ -585,12 +592,16 @@ enum SuggestionCode {
     INSTALL_HELM = 203;
     // Upgrade helm tool
     UPGRADE_HELM = 204;
-    // Fix helm `releases.artifactOverrides` config to match with `build.artiofacts`
+    // Fix helm `releases.artifactOverrides` config to match with `build.artifacts` (no longer used in Skaffold v2)
     FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES = 205;
     // Upgrade helm version to v3.2.0 and higher.
     UPGRADE_HELM32 = 206;
     // Set `releases.createNamespace` to false.
     FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE = 207;
+    // check the Kptfile validation.
+    INVALID_KPT_MANIFESTS = 208;
+    // align the inventory info in kpt live apply.
+    ALIGN_KPT_INVENTORY = 209;
 
     // Install kubectl tool
     INSTALL_KUBECTL = 220;

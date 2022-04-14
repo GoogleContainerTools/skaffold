@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -118,7 +119,7 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 // A Kustomization config must be at the root of the directory. Kustomize will
 // error if more than one of these files exists so order doesn't matter.
 func FindKustomizationConfig(dir string) (string, error) {
-	for _, candidate := range KustomizeFilePaths {
+	for _, candidate := range constants.KustomizeFilePaths {
 		if local, _ := pathExistsLocally(candidate, dir); local {
 			return filepath.Join(dir, candidate), nil
 		}

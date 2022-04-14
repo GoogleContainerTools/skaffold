@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -158,14 +158,14 @@ var SchemaVersionsV1 = Versions{
 	{v2beta25.Version, v2beta25.NewSkaffoldConfig},
 	{v2beta26.Version, v2beta26.NewSkaffoldConfig},
 	{v2beta27.Version, v2beta27.NewSkaffoldConfig},
-	{latest.Version, latest.NewSkaffoldConfig},
+	{latestV1.Version, latestV1.NewSkaffoldConfig},
 }
 
 // SchemaVersionsV2 refers to all the supported API Schemas for skaffold v2 executables. The API schema versions are
 // in the range of v3alpha*.
 var SchemaVersionsV2 = Versions{
 	{v3alpha1.Version, v3alpha1.NewSkaffoldConfig},
-	{latestV2.Version, latestV2.NewSkaffoldConfig},
+	{latest.Version, latest.NewSkaffoldConfig},
 }
 
 type Version struct {
@@ -325,10 +325,10 @@ func getLatestFromCompatibilityCheck(cfgs []util.VersionedConfig) (string, error
 		return "", fmt.Errorf("detected incompatible versions:%v are incompatible with %v", v1Track, v2Track)
 	}
 	if len(v1Track) > 0 {
-		return latest.Version, nil
+		return latestV1.Version, nil
 	}
 	if len(v2Track) > 0 {
-		return latestV2.Version, nil
+		return latest.Version, nil
 	}
 	return "", fmt.Errorf("unable to find a valid API Schema version")
 }

@@ -44,7 +44,6 @@ const (
 func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
 	setDefaultTagger(c)
-	setDefaultKustomizePath(c)
 	setDefaultLogsConfig(c)
 
 	for _, a := range c.Build.Artifacts {
@@ -76,6 +75,13 @@ func Set(c *latest.SkaffoldConfig) error {
 		}
 	}
 
+	withLocalBuild(c, func(lb *latest.LocalBuild) {
+		// don't set build concurrency if there are no artifacts in the current config
+		if len(c.Build.Artifacts) > 0 {
+			setDefaultConcurrency(lb)
+		}
+	})
+
 	withCloudBuildConfig(c,
 		setDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
@@ -102,13 +108,40 @@ func Set(c *latest.SkaffoldConfig) error {
 	}
 
 	setDefaultTestWorkspace(c)
+	SetDefaultRenderer(c)
+	SetDefaultDeployer(c)
 	return nil
+}
+
+// SetDefaultRenderer sets the default manifests to rawYaml.
+func SetDefaultRenderer(c *latest.SkaffoldConfig) {
+	if len(c.Render.Generate.Kpt) > 0 {
+		return
+	}
+	if len(c.Render.Generate.RawK8s) > 0 {
+		return
+	}
+	if len(c.Render.Generate.Kustomize) > 0 {
+		return
+	}
+	if c.Render.Generate.Helm != nil {
+		return
+	}
+	if c.Deploy.LegacyHelmDeploy != nil {
+		return
+	}
+	// Set default manifests to "k8s/*.yaml", same as v1.
+	c.Render.Generate.RawK8s = constants.DefaultKubectlManifests
 }
 
 // SetDefaultDeployer adds a default kubectl deploy configuration.
 func SetDefaultDeployer(c *latest.SkaffoldConfig) {
-	defaultToKubectlDeploy(c)
-	setDefaultKubectlManifests(c)
+	if c.Deploy.DeployType != (latest.DeployType{}) {
+		return
+	}
+
+	log.Entry(context.TODO()).Debug("Defaulting deploy type to kubectl")
+	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
 func defaultToLocalBuild(c *latest.SkaffoldConfig) {
@@ -120,13 +153,18 @@ func defaultToLocalBuild(c *latest.SkaffoldConfig) {
 	c.Build.BuildType.LocalBuild = &latest.LocalBuild{}
 }
 
-func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
-	if c.Deploy.DeployType != (latest.DeployType{}) {
-		return
+func withLocalBuild(c *latest.SkaffoldConfig, operations ...func(*latest.LocalBuild)) {
+	if local := c.Build.LocalBuild; local != nil {
+		for _, operation := range operations {
+			operation(local)
+		}
 	}
+}
 
-	log.Entry(context.TODO()).Debug("Defaulting deploy type to kubectl")
-	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
+func setDefaultConcurrency(local *latest.LocalBuild) {
+	if local.Concurrency == nil {
+		local.Concurrency = &constants.DefaultLocalConcurrency
+	}
 }
 
 func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(*latest.GoogleCloudBuild)) {
@@ -163,22 +201,6 @@ func setDefaultTagger(c *latest.SkaffoldConfig) {
 	}
 
 	c.Build.TagPolicy = latest.TagPolicy{GitTagger: &latest.GitTagger{}}
-}
-
-func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
-	kustomize := c.Deploy.KustomizeDeploy
-	if kustomize == nil {
-		return
-	}
-	if len(kustomize.KustomizePaths) == 0 {
-		kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
-	}
-}
-
-func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
-	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 && len(c.Deploy.KubectlDeploy.RemoteManifests) == 0 {
-		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
-	}
 }
 
 func setDefaultLogsConfig(c *latest.SkaffoldConfig) {

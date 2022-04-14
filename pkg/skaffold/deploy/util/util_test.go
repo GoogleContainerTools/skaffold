@@ -17,15 +17,20 @@ limitations under the License.
 package util
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -93,6 +98,32 @@ func TestConsolidateNamespaces(t *testing.T) {
 			t.CheckDeepEqual(test.expected, ns)
 		})
 	}
+}
+
+func TestGetHydrationDir_Default(t *testing.T) {
+	testutil.Run(t, "default to <WORKDIR>/.kpt-pipeline", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		tmpDir.Chdir()
+		actual, err := GetHydrationDir(
+			config.SkaffoldOptions{HydrationDir: constants.DefaultHydrationDir, AssumeYes: true},
+			tmpDir.Root(), false)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(filepath.Join(tmpDir.Root(), ".kpt-pipeline"), actual)
+	})
+}
+
+func TestGetHydrationDir_CustomHydrationDir(t *testing.T) {
+	testutil.Run(t, "--hydration-dir flag is given", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		tmpDir.Chdir()
+		expected := filepath.Join(tmpDir.Root(), "test-hydration")
+		actual, err := GetHydrationDir(
+			config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true}, "", false)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, actual)
+		_, err = os.Stat(actual)
+		t.CheckFalse(os.IsNotExist(err))
+	})
 }
 
 func TestAddTagsToPodSelector(t *testing.T) {
@@ -271,7 +302,7 @@ func TestConsolidateTransformConfiguration(t *testing.T) {
 				transformDenyList:  test.denySchemaTransforms,
 				transformRulesFile: flagTransformYAMLFile,
 			}
-			allowlist, denylist, err := ConsolidateTransformConfiguration(cfg)
+			allowlist, denylist, err := renderutil.ConsolidateTransformConfiguration(cfg)
 			t.CheckError(test.shouldErr, err)
 
 			copyAllow := map[schema.GroupKind]latest.ResourceFilter{}

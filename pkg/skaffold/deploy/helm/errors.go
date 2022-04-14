@@ -27,9 +27,8 @@ import (
 )
 
 const (
-	installLink            = "https://helm.sh/docs/intro/install"
-	toolName               = "Helm"
-	artifactOverrridesLink = "https://skaffold.dev/docs/references/yaml/#deploy-helm-releases-artifactOverrides"
+	installLink = "https://helm.sh/docs/intro/install"
+	toolName    = "Helm"
 )
 
 func versionGetErr(err error) error {
@@ -46,44 +45,22 @@ func versionGetErr(err error) error {
 		})
 }
 
-func minVersionErr() error {
+func minVersionErr(minVer string) error {
 	return sErrors.NewErrorWithStatusCode(
 		&proto.ActionableErr{
-			Message: "skaffold requires Helm version 3.0.0 or greater",
+			Message: fmt.Sprintf("skaffold requires Helm version %s or greater", minVer),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_MIN_VERSION_ERR,
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_UPGRADE_HELM,
-					Action:         fmt.Sprintf("Please upgrade helm to v3.0.0 or higher via %s", installLink),
+					Action:         fmt.Sprintf("Please upgrade helm to %s or higher via %s", minVer, installLink),
 				},
 			},
-		})
-}
-
-func helmLabelErr(err error) error {
-	return sErrors.NewError(err,
-		&proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_HELM_APPLY_LABELS,
 		})
 }
 
 func userErr(prefix string, err error) error {
 	return deployerr.UserError(errors.Wrap(err, prefix), proto.StatusCode_DEPLOY_HELM_USER_ERR)
-}
-
-func noMatchingBuild(image string) error {
-	return sErrors.NewErrorWithStatusCode(
-		&proto.ActionableErr{
-			Message: fmt.Sprintf("No built image found for `releases.artifactOverrides` value %s", image),
-			ErrCode: proto.StatusCode_DEPLOY_NO_MATCHING_BUILD,
-			Suggestions: []*proto.Suggestion{
-				{
-					SuggestionCode: proto.SuggestionCode_FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES,
-					Action:         fmt.Sprintf("\nPlease verify `%s` is present in `build.artifacts`. See %s for more help", image, artifactOverrridesLink),
-				},
-			},
-		})
 }
 
 func createNamespaceErr(version string) error {

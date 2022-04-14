@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta28"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v3alpha2"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -58,6 +58,13 @@ type SkaffoldConfig struct {
 type Metadata struct {
 	// Name is an identifier for the project.
 	Name string `yaml:"name,omitempty"`
+
+	// Labels is a map of labels identifying the project.
+	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Annotations is a map of annotations providing additional
+	// metadata about the project.
+	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
 // Pipeline describes a Skaffold pipeline.
@@ -68,7 +75,10 @@ type Pipeline struct {
 	// Test describes how images are tested.
 	Test []*TestCase `yaml:"test,omitempty"`
 
-	// Deploy describes how images are deployed.
+	// Render describes how the original manifests are hydrated, validated and transformed.
+	Render RenderConfig `yaml:"manifests,omitempty"`
+
+	// Deploy describes how the manifests are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
 	// PortForward describes user defined resources to port-forward.
@@ -521,6 +531,94 @@ type TestCase struct {
 	StructureTestArgs []string `yaml:"structureTestsArgs,omitempty"`
 }
 
+// RenderConfig contains all the configuration needed by the render steps.
+type RenderConfig struct {
+
+	// Generate defines the dry manifests from a variety of sources.
+	Generate `yaml:",inline"`
+
+	// Transform defines a set of transformation operations to run in series.
+	Transform *[]Transformer `yaml:"transform,omitempty"`
+
+	// Validate defines a set of validator operations to run in series.
+	Validate *[]Validator `yaml:"validate,omitempty"`
+
+	// Output is the path to the hydrated directory.
+	Output string `yaml:"output,omitempty"`
+}
+
+// Generate defines the dry manifests from a variety of sources.
+type Generate struct {
+	// RawK8s TODO: add description.
+	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
+
+	// Kustomize TODO: add description.
+	Kustomize []string `yaml:"kustomize,omitempty" skaffold:"filepath"`
+
+	// Helm TODO: add description.
+	Helm *Helm `yaml:"helm,omitempty"`
+
+	// Kpt TODO: add description.
+	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+}
+
+// Helm defines the manifests from helm releases.
+type Helm struct {
+	// Flags are additional option flags that are passed on the command
+	// line to `helm`.
+	Flags HelmDeployFlags `yaml:"flags,omitempty"`
+
+	// Releases is a list of Helm releases.
+	Releases *[]HelmRelease `yaml:"releases,omitempty"`
+}
+
+// Transformer describes the supported kpt transformers.
+type Transformer struct {
+	// Name is the transformer name. Can only accept skaffold whitelisted tools.
+	Name string `yaml:"name" yamltags:"required"`
+	// ConfigMap allows users to provide additional config data to the kpt function.
+	ConfigMap []string `yaml:"configMap,omitempty"`
+}
+
+// Validator describes the supported kpt validators.
+type Validator struct {
+	// Name is the Validator name. Can only accept skaffold whitelisted tools.
+	Name string `yaml:"name" yamltags:"required"`
+	// ConfigMap allows users to provide additional config data to the kpt function.
+	ConfigMap []string `yaml:"configMap,omitempty"`
+}
+
+// KptDeploy contains all the configuration needed by the deploy steps.
+type KptDeploy struct {
+	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold deploys from the default
+	// hydrated path `<WORKDIR>/.kpt-pipeline`.
+	Dir string `yaml:"dir,omitempty"`
+
+	// ApplyFlags are additional flags passed to `kpt live apply`.
+	ApplyFlags []string `yaml:"applyFlags,omitempty"`
+
+	// Flags are kpt global flags.
+	Flags []string `yaml:"flags,omitempty"`
+
+	// Name *alpha* is the inventory object name.
+	Name string `yaml:"name,omitempty"`
+
+	// InventoryID *alpha* is the inventory ID which annotates the resources being lively applied by kpt.
+	InventoryID string `yaml:"inventoryID,omitempty"`
+
+	// InventoryNamespace *alpha* sets the inventory namespace.
+	InventoryNamespace string `yaml:"namespace,omitempty"`
+
+	// Force is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
+	Force bool `yaml:"false,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"-"`
+
+	// DefaultNamespace is the default namespace passed to kpt on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+}
+
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
 	DeployType `yaml:",inline"`
@@ -537,6 +635,9 @@ type DeployConfig struct {
 
 	// Logs configures how container logs are printed as a result of a deployment.
 	Logs LogsConfig `yaml:"logs,omitempty"`
+
+	// TransformableAllowList configures an allowlist for transforming manifests.
+	TransformableAllowList []ResourceFilter `yaml:"-"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -546,8 +647,8 @@ type DeployType struct {
 	// DockerDeploy *alpha* uses the `docker` CLI to create application containers in Docker.
 	DockerDeploy *DockerDeploy `yaml:"docker,omitempty"`
 
-	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
-	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
+	// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
+	LegacyHelmDeploy *LegacyHelmDeploy `yaml:"helm,omitempty"`
 
 	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
@@ -574,9 +675,11 @@ type DockerDeploy struct {
 type KubectlDeploy struct {
 	// Manifests lists the Kubernetes yaml or json manifests.
 	// Defaults to `["k8s/*.yaml"]`.
+	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
 	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
 	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	// This field is only used by v1 kubectl deployer.
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
 	// Flags are additional flags passed to `kubectl`.
@@ -607,8 +710,8 @@ type KubectlFlags struct {
 	DisableValidation bool `yaml:"disableValidation,omitempty"`
 }
 
-// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
-type HelmDeploy struct {
+// LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
+type LegacyHelmDeploy struct {
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 
@@ -633,110 +736,6 @@ type HelmDeployFlags struct {
 	Upgrade []string `yaml:"upgrade,omitempty"`
 }
 
-// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
-type KustomizeDeploy struct {
-	// KustomizePaths is the path to Kustomization files.
-	// Defaults to `["."]`.
-	KustomizePaths []string `yaml:"paths,omitempty" skaffold:"filepath"`
-
-	// Flags are additional flags passed to `kubectl`.
-	Flags KubectlFlags `yaml:"flags,omitempty"`
-
-	// BuildArgs are additional args passed to `kustomize build`.
-	BuildArgs []string `yaml:"buildArgs,omitempty"`
-
-	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
-	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
-
-	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
-}
-
-// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
-type KptDeploy struct {
-	// Dir is the path to the config directory (Required).
-	// By default, the Dir contains the application configurations,
-	// [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html)
-	// and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).
-	Dir string `yaml:"dir" yamltags:"required" skaffold:"filepath"`
-
-	// Fn adds additional configurations for `kpt fn`.
-	Fn KptFn `yaml:"fn,omitempty"`
-
-	// Live adds additional configurations for `kpt live`.
-	Live KptLive `yaml:"live,omitempty"`
-
-	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"-"`
-}
-
-// KptFn adds additional configurations used when calling `kpt fn`.
-type KptFn struct {
-	// FnPath is the directory to discover the declarative kpt functions.
-	// If not provided, kpt deployer uses `kpt.Dir`.
-	FnPath string `yaml:"fnPath,omitempty" skaffold:"filepath"`
-
-	// Image is a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath
-	// will be ignored.
-	Image string `yaml:"image,omitempty"`
-
-	// NetworkName is the docker network name to run the kpt function containers (default "bridge").
-	NetworkName string `yaml:"networkName,omitempty"`
-
-	// GlobalScope sets the global scope for the kpt functions. see `kpt help fn run`.
-	GlobalScope bool `yaml:"globalScope,omitempty"`
-
-	// Network enables network access for the kpt function containers.
-	Network bool `yaml:"network,omitempty"`
-
-	// Mount is a list of storage options to mount to the fn image.
-	Mount []string `yaml:"mount,omitempty"`
-
-	// SinkDir is the directory to where the manipulated resource output is stored.
-	SinkDir string `yaml:"sinkDir,omitempty" skaffold:"filepath"`
-}
-
-// KptLive adds additional configurations used when calling `kpt live`.
-type KptLive struct {
-	// Apply sets the kpt inventory directory.
-	Apply KptApplyInventory `yaml:"apply,omitempty"`
-
-	// Options adds additional configurations for `kpt live apply` commands.
-	Options KptApplyOptions `yaml:"options,omitempty"`
-}
-
-// KptApplyInventory sets the kpt inventory directory.
-type KptApplyInventory struct {
-	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided,
-	// kpt deployer will create a hidden directory `.kpt-hydrated` to store the manipulated
-	// resource output and the kpt inventory-template.yaml file.
-	Dir string `yaml:"dir,omitempty"`
-
-	// InventoryID *alpha* is the identifier for a group of applied resources.
-	// This value is only needed when the `kpt live` is working on a pre-applied cluster resources.
-	InventoryID string `yaml:"inventoryID,omitempty"`
-
-	// InventoryNamespace *alpha* sets the inventory namespace.
-	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
-}
-
-// KptApplyOptions adds additional configurations used when calling `kpt live apply`.
-type KptApplyOptions struct {
-	// PollPeriod sets for the polling period for resource statuses. Default to 2s.
-	PollPeriod string `yaml:"pollPeriod,omitempty"`
-
-	// PrunePropagationPolicy sets the propagation policy for pruning.
-	// Possible settings are Background, Foreground, Orphan.
-	// Default to "Background".
-	PrunePropagationPolicy string `yaml:"prunePropagationPolicy,omitempty"`
-
-	// PruneTimeout sets the time threshold to wait for all pruned resources to be deleted.
-	PruneTimeout string `yaml:"pruneTimeout,omitempty"`
-
-	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
-	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
-}
-
 // HelmRelease describes a helm release to be deployed.
 type HelmRelease struct {
 	// Name is the name of the Helm release.
@@ -751,12 +750,6 @@ type HelmRelease struct {
 
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
-
-	// ArtifactOverrides are key value pairs where the
-	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
-	// image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
-	// The resulting command-line is controlled by `ImageStrategy`.
-	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -815,10 +808,6 @@ type HelmRelease struct {
 
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
-
-	// ImageStrategy controls how an `ArtifactOverrides` entry is
-	// turned into `--set-string` Helm CLI flag or flags.
-	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).
@@ -828,11 +817,6 @@ type HelmPackaged struct {
 
 	// AppVersion sets the `appVersion` on the chart to this version.
 	AppVersion string `yaml:"appVersion,omitempty"`
-}
-
-// HelmImageStrategy adds image configurations to the Helm `values` file.
-type HelmImageStrategy struct {
-	HelmImageConfig `yaml:",inline"`
 }
 
 // HelmImageConfig describes an image configuration.
@@ -1693,4 +1677,25 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 		m["volumeMounts"] = vList
 	}
 	return m, err
+}
+
+// TODO (yuwenma): KustomizeDeploy shall be deprecated.
+
+// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
+type KustomizeDeploy struct {
+	// KustomizePaths is the path to Kustomization files.
+	// Defaults to `["."]`.
+	KustomizePaths []string `yaml:"paths,omitempty" skaffold:"filepath"`
+
+	// Flags are additional flags passed to `kubectl`.
+	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// BuildArgs are additional args passed to `kustomize build`.
+	BuildArgs []string `yaml:"buildArgs,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
+	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }

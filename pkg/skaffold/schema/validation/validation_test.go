@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -58,8 +58,8 @@ var (
 			},
 			Deploy: latest.DeployConfig{
 				DeployType: latest.DeployType{
-					HelmDeploy:    &latest.HelmDeploy{},
-					KubectlDeploy: &latest.KubectlDeploy{},
+					LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
+					KubectlDeploy:    &latest.KubectlDeploy{},
 				},
 			},
 		},
@@ -866,6 +866,7 @@ func TestValidateCustomDependencies(t *testing.T) {
 					},
 				},
 			}
+
 			errs := validateCustomDependencies(&parser.SkaffoldConfigEntry{
 				YAMLInfos: configlocations.NewYAMLInfos(),
 				SkaffoldConfig: &latest.SkaffoldConfig{

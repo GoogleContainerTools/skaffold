@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,33 +17,51 @@ limitations under the License.
 package kpt
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
+	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 const (
-	testPod = `apiVersion: v1
+	kptfilePkgInit = `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+`
+	kptfileLiveInit = `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+inventory:
+  namespace: default
+  inventoryID: 11111
+`
+
+	badkptfileLiveInit = `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+inventory:
+  namespace: default
+  inventoryID: 
+  - bad-type
+`
+	manifests = `apiVersion: v1
 kind: Pod
 metadata:
-   namespace: default
+   namespace: test-kptv2
 spec:
    containers:
    - image: gcr.io/project/image1
@@ -51,1168 +69,119 @@ spec:
 `
 )
 
-// Test that kpt deployer manipulate manifests in the given order and no intermediate data is
-// stored after each step:
-//	Step 1. `kpt fn source` (read in the manifest as stdin),
-//  Step 2. `kpt fn run` (validate, transform or generate the manifests via kpt functions),
-//  Step 3. `kpt fn sink` (to temp dir to run kuustomize build on),
-//  Step 4. `kustomize build` (if the temp dir from step 3 has a Kustomization hydrate the manifest),
-//  Step 5. `kpt fn sink` (store the stdout in a given dir).
-func TestKpt_Deploy(t *testing.T) {
-	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
+func TestKptfileInitIfNot(t *testing.T) {
 	tests := []struct {
-		description      string
-		builds           []graph.Artifact
-		kpt              latest.KptDeploy
-		hasKustomization func(string) bool
-		commands         util.Command
-		expected         []string
-		shouldErr        bool
+		description string
+		commands    util.Command
+		// preExistKptfile creates the file content before `KptfileInitIfNot` run.
+		preExistKptfile string
+		// fakeKptfile overrides the Kptfile content (whether it pre-exists or
+		// created by some `KptfileInitIfNot` processes).
+		fakeKptfile string
+		shouldErr   bool
+		expectedErr string
 	}{
 		{
-			description: "no manifest",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
+			description: "Kptfile not exist",
 			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``),
+				CmdRun("kpt pkg init .").
+				AndRun("kpt live init ."),
+			fakeKptfile: kptfilePkgInit,
+			shouldErr:   false,
 		},
 		{
-			description: "invalid manifest",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
+			description: "Kptfile pkg init failed",
 			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", `foo`).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			shouldErr: true,
+				CmdRunErr("kpt pkg init .", fmt.Errorf("fake err")),
+			shouldErr:   true,
+			expectedErr: "fake err",
 		},
 		{
-			description: "invalid user specified applyDir",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Live: latest.KptLive{
-					Apply: latest.KptApplyInventory{
-						Dir: "invalid_path",
-					},
-				},
-			},
+			description: "Kptfile live init failed",
 			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", testPod).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			shouldErr: true,
-		},
-
-		{
-			description: "kustomization and specified kpt fn",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
-				Live: latest.KptLive{
-					Apply: latest.KptApplyInventory{
-						Dir: "valid_path",
-					},
-				},
-			},
-			hasKustomization: func(dir string) bool { return dir == tmpKustomizeDir },
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run --fn-path kpt-func.yaml", testPod).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), ``).
-				AndRun("kpt live apply valid_path --context kubecontext --namespace testNamespace"),
-			expected: []string{"default"},
+				CmdRun("kpt pkg init .").
+				AndRunErr("kpt live init .", fmt.Errorf("fake err")),
+			fakeKptfile: kptfilePkgInit,
+			shouldErr:   true,
+			expectedErr: "fake err",
 		},
 		{
-			description: "kpt live apply fails",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
+			description: "Kptfile parse err",
 			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", testPod).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt live init .kpt-hydrated --context kubecontext --namespace testNamespace", ``).
-				AndRunOut("kpt fn sink .kpt-hydrated", ``).
-				AndRunErr("kpt live apply .kpt-hydrated --context kubecontext --namespace testNamespace", errors.New("BUG")),
-			shouldErr: true,
+				CmdRun("kpt pkg init .").
+				AndRun("kpt live init ."),
+			fakeKptfile: badkptfileLiveInit,
+			shouldErr:   true,
+			expectedErr: "unable to parse Kptfile",
 		},
 		{
-			description: "user specifies reconcile timeout and poll period",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Live: latest.KptLive{
-					Apply: latest.KptApplyInventory{
-						Dir: "valid_path",
-					},
-					Options: latest.KptApplyOptions{
-						PollPeriod:       "5s",
-						ReconcileTimeout: "2m",
-					},
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", testPod).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink valid_path", ``).
-				AndRun("kpt live apply valid_path --poll-period 5s --reconcile-timeout 2m --context kubecontext --namespace testNamespace"),
+			description:     "Kptfile exist, no Inventory info",
+			commands:        testutil.CmdRun("kpt live init ."),
+			preExistKptfile: kptfilePkgInit,
+			fakeKptfile:     kptfilePkgInit,
+			shouldErr:       false,
 		},
 		{
-			description: "user specifies invalid reconcile timeout and poll period",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Live: latest.KptLive{
-					Apply: latest.KptApplyInventory{
-						Dir: "valid_path",
-					},
-					Options: latest.KptApplyOptions{
-						PollPeriod:       "foo",
-						ReconcileTimeout: "bar",
-					},
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", testPod).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink valid_path", ``).
-				AndRun("kpt live apply valid_path --poll-period foo --reconcile-timeout bar --context kubecontext --namespace testNamespace"),
-		},
-		{
-			description: "user specifies prune propagation policy and prune timeout",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Live: latest.KptLive{
-					Apply: latest.KptApplyInventory{
-						Dir: "valid_path",
-					},
-					Options: latest.KptApplyOptions{
-						PrunePropagationPolicy: "Orphan",
-						PruneTimeout:           "2m",
-					},
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", testPod).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink valid_path", ``).
-				AndRun("kpt live apply valid_path --prune-propagation-policy Orphan --prune-timeout 2m --context kubecontext --namespace testNamespace"),
-		},
-		{
-			description: "user specifies invalid prune propagation policy and prune timeout",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Live: latest.KptLive{
-					Apply: latest.KptApplyInventory{
-						Dir: "valid_path",
-					},
-					Options: latest.KptApplyOptions{
-						PrunePropagationPolicy: "foo",
-						PruneTimeout:           "bar",
-					},
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", testPod).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink valid_path", ``).
-				AndRun("kpt live apply valid_path --prune-propagation-policy foo --prune-timeout bar --context kubecontext --namespace testNamespace"),
+			description:     "Kptfile exist with Inventory info",
+			preExistKptfile: kptfileLiveInit,
+			fakeKptfile:     kptfileLiveInit,
+			shouldErr:       false,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&client.Client, deployutil.MockK8sClient)
-			t.NewTempDir().Chdir()
 
-			var err error
-			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
-			if err != nil {
-				t.Fatalf("unexpected error occurred attempting to create new kpt deployer")
+			tmpDir := t.NewTempDir()
+			t.Override(&openFile, func(f string) (*os.File, error) {
+				tmpDir.Write(f, test.fakeKptfile)
+				return os.OpenFile(filepath.Join(tmpDir.Root(), f), os.O_RDONLY, 0)
+			})
+			if test.preExistKptfile != "" {
+				tmpDir.Write("Kptfile", test.preExistKptfile)
 			}
-			if test.hasKustomization != nil {
-				k.hasKustomization = test.hasKustomization
-			}
+			tmpDir.Chdir()
 
-			if k.Live.Apply.Dir == "valid_path" {
-				// 0755 is a permission setting where the owner can read, write, and execute.
-				// Others can read and execute but not modify the directory.
-				t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
+			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latest.KptDeploy{Dir: "."},
+				config.SkaffoldOptions{})
+			err := kptfileInitIfNot(context.Background(), ioutil.Discard, k)
+			if !test.shouldErr {
+				t.CheckNoError(err)
+			} else {
+				t.CheckErrorContains(test.expectedErr, err)
 			}
+		})
+	}
+}
 
+func TestDeploy(t *testing.T) {
+	tests := []struct {
+		description string
+		builds      []graph.Artifact
+		kpt         latest.KptDeploy
+		commands    util.Command
+	}{
+		{
+			description: "deploy succeeds",
+			kpt:         latest.KptDeploy{Dir: "."},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", manifests).
+				AndRun("kpt live apply ."),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.commands)
+			kptInitFunc = func(context.Context, io.Writer, *Deployer) error { return nil }
+
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{})
+			t.CheckNoError(err)
 			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
-			t.CheckError(test.shouldErr, err)
+			t.CheckNoError(err)
+			fmt.Fprintf(os.Stdout, "deployer namespaces: %+v\n", *k.namespaces)
+			t.CheckDeepEqual(*k.namespaces, []string{"test-kptv2"})
 		})
 	}
-}
-
-func TestKpt_Dependencies(t *testing.T) {
-	tests := []struct {
-		description    string
-		kpt            latest.KptDeploy
-		createFiles    map[string]string
-		kustomizations map[string]string
-		expected       []string
-		shouldErr      bool
-	}{
-		{
-			description: "bad dir",
-			kpt: latest.KptDeploy{
-				Dir: "invalid_path",
-			},
-			shouldErr: true,
-		},
-		{
-			description: "empty dir and unspecified fnPath",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-		},
-		{
-			description: "dir",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			createFiles: map[string]string{
-				"foo.yaml":  "",
-				"README.md": "",
-			},
-			expected: []string{"foo.yaml"},
-		},
-		{
-			description: "dir with subdirs and file path variants",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			createFiles: map[string]string{
-				"food.yml":           "",
-				"foo/bar.yaml":       "",
-				"foo/bat//bad.yml":   "",
-				"foo/bat\\README.md": "",
-			},
-			expected: []string{"foo/bar.yaml", "foo/bat/bad.yml", "food.yml"},
-		},
-		{
-			description: "fnpath inside directory",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn:  latest.KptFn{FnPath: "."},
-			},
-			createFiles: map[string]string{
-				"./kpt-func.yaml": "",
-			},
-			expected: []string{"kpt-func.yaml"},
-		},
-		{
-			description: "fnpath outside directory",
-			kpt: latest.KptDeploy{
-				Dir: "./config",
-				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
-			},
-			createFiles: map[string]string{
-				"./config/deployment.yaml": "",
-				"./kpt-fn/kpt-func.yaml":   "",
-			},
-			expected: []string{"config/deployment.yaml", "kpt-fn/kpt-func.yaml"},
-		},
-
-		{
-			description: "fnpath and dir and kustomization",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
-			},
-			createFiles: map[string]string{
-				"./kpt-fn/func.yaml": "",
-			},
-			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
-   - files: [app1.properties]`},
-			expected: []string{"app1.properties", "kpt-fn/func.yaml", "kustomization.yaml"},
-		},
-		{
-			description: "dependencies that can only be detected as a kustomization",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
-   - files: [app1.properties]`},
-			expected: []string{"app1.properties", "kustomization.yaml"},
-		},
-		{
-			description: "kustomization.yml variant",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			kustomizations: map[string]string{"kustomization.yml": `configMapGenerator:
-   - files: [app1.properties]`},
-			expected: []string{"app1.properties", "kustomization.yml"},
-		},
-		{
-			description: "Kustomization variant",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			kustomizations: map[string]string{"Kustomization": `configMapGenerator:
-   - files: [app1.properties]`},
-			expected: []string{"Kustomization", "app1.properties"},
-		},
-		{
-			description: "incorrectly named kustomization",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			kustomizations: map[string]string{"customization": `configMapGenerator:
-   - files: [app1.properties]`},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().Chdir()
-
-			tmpDir.WriteFiles(test.createFiles)
-			tmpDir.WriteFiles(test.kustomizations)
-
-			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt)
-			if err != nil {
-				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
-			}
-
-			res, err := k.Dependencies()
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), tmpDir.Paths(res...))
-		})
-	}
-}
-
-func TestKpt_Cleanup(t *testing.T) {
-	tests := []struct {
-		description string
-		applyDir    string
-		globalFlags []string
-		commands    util.Command
-		shouldErr   bool
-	}{
-		{
-			description: "invalid user specified applyDir",
-			applyDir:    "invalid_path",
-			shouldErr:   true,
-		},
-		{
-			description: "valid user specified applyDir w/o template resource",
-			applyDir:    "valid_path",
-			commands:    testutil.CmdRunErr("kpt live destroy valid_path --context kubecontext --namespace testNamespace", errors.New("BUG")),
-			shouldErr:   true,
-		},
-		{
-			description: "valid user specified applyDir w/ template resource (emulated)",
-			applyDir:    "valid_path",
-			commands:    testutil.CmdRun("kpt live destroy valid_path --context kubecontext --namespace testNamespace"),
-		},
-		{
-			description: "unspecified applyDir",
-			commands: testutil.
-				CmdRunOut("kpt live init .kpt-hydrated --context kubecontext --namespace testNamespace", "").
-				AndRun("kpt live destroy .kpt-hydrated --context kubecontext --namespace testNamespace"),
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.commands)
-			t.NewTempDir().Chdir()
-
-			if test.applyDir == "valid_path" {
-				// 0755 is a permission setting where the owner can read, write, and execute.
-				// Others can read and execute but not modify the directory.
-				t.CheckNoError(os.Mkdir(test.applyDir, 0755))
-			}
-
-			k, err := NewDeployer(&kptConfig{
-				workingDir: ".",
-			}, &label.DefaultLabeller{}, &latest.KptDeploy{
-				Live: latest.KptLive{
-					Apply: latest.KptApplyInventory{
-						Dir: test.applyDir,
-					},
-				},
-			})
-			if err != nil {
-				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
-			}
-
-			err = k.Cleanup(context.Background(), ioutil.Discard, false)
-
-			t.CheckError(test.shouldErr, err)
-		})
-	}
-}
-
-func TestKpt_Render(t *testing.T) {
-	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
-	// The follow are outputs to `kpt fn run` commands.
-	output1 := `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
-`
-
-	output2 := `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
-  - image: gcr.io/project/image2
-    name: image2
-`
-
-	output3 := `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
----
-apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image2
-    name: image2
-`
-
-	tests := []struct {
-		description      string
-		builds           []graph.Artifact
-		labels           []string
-		kpt              latest.KptDeploy
-		commands         util.Command
-		hasKustomization func(string) bool
-		expected         string
-		shouldErr        bool
-	}{
-		{
-			description: "no fnPath or image specified",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-			},
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", output1).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-`,
-		},
-		{
-			description: "fnPath specified, multiple resources, and labels",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			labels: []string{"user/label=test"},
-			kpt: latest.KptDeploy{
-				Dir: "test",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source test", ``).
-				AndRunOut("kpt fn run --fn-path kpt-func.yaml", output3).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir/test", ``),
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    user/label: test
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
----
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    user/label: test
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "fn image specified, multiple images in resource",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn:  latest.KptFn{Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", output2).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "empty output from pipeline",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-			},
-			labels: []string{"user/label=test"},
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			expected: "\n",
-		},
-		{
-			description: "both fnPath and image specified",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn: latest.KptFn{
-					FnPath: "kpt-func.yaml",
-					Image:  "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn source kpt-func.yaml", ``).
-				AndRunOut("kpt fn run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			shouldErr: true,
-		},
-		{
-			description: "kustomization render",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-			},
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), output1),
-			hasKustomization: func(dir string) bool { return dir == tmpKustomizeDir },
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-`,
-		},
-		{
-			description: "reading configs from sourceDir fails",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			commands: testutil.
-				CmdRunOutErr("kpt fn source .", ``, errors.New("BUG")).
-				AndRunOut("kpt fn run", "invalid pipeline").
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			shouldErr: true,
-		},
-		{
-			description: "outputting configs to sinkDir fails",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", "invalid pipeline").
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOutErr("kpt fn sink .tmp-sink-dir", ``, errors.New("BUG")),
-			shouldErr: true,
-		},
-		{
-			description: "kustomize build fails (invalid kustomization config)",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-			},
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run", output1).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOutErr(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), ``, errors.New("BUG")),
-			hasKustomization: func(dir string) bool { return dir == tmpKustomizeDir },
-			shouldErr:        true,
-		},
-		{
-			description: "kpt fn run fails",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOutErr("kpt fn run", "invalid pipeline", errors.New("BUG")).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			shouldErr: true,
-		},
-		{
-			description: "kpt fn run with --global-scope",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn: latest.KptFn{
-					Image:       "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
-					GlobalScope: true,
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run --global-scope --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			expected: "\n",
-		},
-		{
-			description: "kpt fn run with --mount arguments",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn: latest.KptFn{
-					Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
-					Mount: []string{"type=bind", "src=$(pwd)", "dst=/source"},
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run --mount type=bind,src=$(pwd),dst=/source --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			expected: "\n",
-		},
-		{
-			description: "kpt fn run with invalid --mount arguments",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn: latest.KptFn{
-					Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
-					Mount: []string{"foo", "", "bar"},
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run --mount foo,,bar --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			expected: "\n",
-		},
-		{
-			description: "kpt fn run flag with --network and --network-name arguments",
-			kpt: latest.KptDeploy{
-				Dir: ".",
-				Fn: latest.KptFn{
-					Image:       "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
-					Network:     true,
-					NetworkName: "foo",
-				},
-			},
-			commands: testutil.
-				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn run --network --network-name foo --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
-			expected: "\n",
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.commands)
-			t.NewTempDir().Chdir()
-
-			labeller := label.NewLabeller(false, test.labels, "")
-
-			k, err := NewDeployer(&kptConfig{workingDir: "."}, labeller, &test.kpt)
-			if err != nil {
-				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
-			}
-
-			if test.hasKustomization != nil {
-				k.hasKustomization = test.hasKustomization
-			}
-
-			var b bytes.Buffer
-			err = k.Render(context.Background(), &b, test.builds, true, "")
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, b.String())
-		})
-	}
-}
-
-func TestKpt_GetApplyDir(t *testing.T) {
-	tests := []struct {
-		description string
-		live        latest.KptLive
-		expected    string
-		commands    util.Command
-		shouldErr   bool
-	}{
-		{
-			description: "specified an invalid applyDir",
-			live: latest.KptLive{
-				Apply: latest.KptApplyInventory{
-					Dir: "invalid_path",
-				},
-			},
-			shouldErr: true,
-		},
-		{
-			description: "specified a valid applyDir",
-			live: latest.KptLive{
-				Apply: latest.KptApplyInventory{
-					Dir: "valid_path",
-				},
-			},
-			expected: "valid_path",
-		},
-		{
-			description: "unspecified applyDir",
-			expected:    ".kpt-hydrated",
-			commands:    testutil.CmdRunOut("kpt live init .kpt-hydrated --context kubecontext --namespace testNamespace", ""),
-		},
-		{
-			description: "unspecified applyDir with specified inventory-id and namespace",
-			live: latest.KptLive{
-				Apply: latest.KptApplyInventory{
-					InventoryID:        "1a23bcde-4f56-7891-a2bc-de34fabcde5f6",
-					InventoryNamespace: "foo",
-				},
-			},
-			expected: ".kpt-hydrated",
-			commands: testutil.CmdRunOut("kpt live init .kpt-hydrated --inventory-id 1a23bcde-4f56-7891-a2bc-de34fabcde5f6 --context kubecontext --namespace foo", ""),
-		},
-		{
-			description: "existing template resource in .kpt-hydrated",
-			expected:    ".kpt-hydrated",
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.commands)
-			tmpDir := t.NewTempDir().Chdir()
-
-			if test.live.Apply.Dir == test.expected {
-				// 0755 is a permission setting where the owner can read, write, and execute.
-				// Others can read and execute but not modify the directory.
-				t.CheckNoError(os.Mkdir(test.live.Apply.Dir, 0755))
-			}
-
-			if test.description == "existing template resource in .kpt-hydrated" {
-				tmpDir.Touch(".kpt-hydrated/inventory-template.yaml")
-			}
-
-			k, err := NewDeployer(&kptConfig{
-				workingDir: ".",
-			}, &label.DefaultLabeller{}, &latest.KptDeploy{
-				Live: test.live,
-			})
-			if err != nil {
-				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
-			}
-
-			applyDir, err := k.getApplyDir(context.Background())
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, applyDir)
-		})
-	}
-}
-
-func TestKpt_KptCommandArgs(t *testing.T) {
-	tests := []struct {
-		description string
-		dir         string
-		commands    []string
-		flags       []string
-		globalFlags []string
-		expected    []string
-	}{
-		{
-			description: "empty",
-		},
-		{
-			description: "all inputs have len >0",
-			dir:         "test",
-			commands:    []string{"live", "apply"},
-			flags:       []string{"--fn-path", "kpt-func.yaml"},
-			globalFlags: []string{"-h"},
-			expected:    strings.Split("live apply test --fn-path kpt-func.yaml -h", " "),
-		},
-		{
-			description: "empty dir",
-			commands:    []string{"live", "apply"},
-			flags:       []string{"--fn-path", "kpt-func.yaml"},
-			globalFlags: []string{"-v", "3"},
-			expected:    strings.Split("live apply --fn-path kpt-func.yaml -v 3", " "),
-		},
-		{
-			description: "empty commands",
-			dir:         "test",
-			flags:       []string{"--fn-path", "kpt-func.yaml"},
-			globalFlags: []string{"-h"},
-			expected:    strings.Split("test --fn-path kpt-func.yaml -h", " "),
-		},
-		{
-			description: "empty flags",
-			dir:         "test",
-			commands:    []string{"live", "apply"},
-			globalFlags: []string{"-h"},
-			expected:    strings.Split("live apply test -h", " "),
-		},
-		{
-			description: "empty globalFlags",
-			dir:         "test",
-			commands:    []string{"live", "apply"},
-			flags:       []string{"--fn-path", "kpt-func.yaml"},
-			expected:    strings.Split("live apply test --fn-path kpt-func.yaml", " "),
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			res := kptCommandArgs(test.dir, test.commands, test.flags, test.globalFlags)
-			t.CheckDeepEqual(test.expected, res)
-		})
-	}
-}
-
-// TestKpt_ExcludeKptFn checks the declarative kpt fn has expected annotations added.
-func TestKpt_ExcludeKptFn(t *testing.T) {
-	// A declarative fn.
-	testFn1 := []byte(`apiVersion: v1
-data:
-  annotation_name: k1
-  annotation_value: v1
-kind: ConfigMap
-metadata:
-  annotations:
-    config.kubernetes.io/function: fake`)
-	// A declarative fn which has `local-config` annotation specified.
-	testFn2 := []byte(`apiVersion: v1
-kind: ConfigMap
-metadata:
-  annotations:
-    config.kubernetes.io/function: fake
-    config.kubernetes.io/local-config: "false"
-data:
-  annotation_name: k2
-  annotation_value: v2`)
-	testPod := []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1`)
-	tests := []struct {
-		description string
-		manifests   manifest.ManifestList
-		expected    manifest.ManifestList
-	}{
-		{
-			description: "Add `local-config` annotation to kpt fn",
-			manifests:   manifest.ManifestList{testFn1},
-			expected: manifest.ManifestList{[]byte(`apiVersion: v1
-data:
-  annotation_name: k1
-  annotation_value: v1
-kind: ConfigMap
-metadata:
-  annotations:
-    config.kubernetes.io/function: fake
-    config.kubernetes.io/local-config: "true"`)},
-		},
-		{
-			description: "Skip preset `local-config` annotation",
-			manifests:   manifest.ManifestList{testFn2},
-			expected: manifest.ManifestList{[]byte(`apiVersion: v1
-kind: ConfigMap
-metadata:
-  annotations:
-    config.kubernetes.io/function: fake
-    config.kubernetes.io/local-config: "false"
-data:
-  annotation_name: k2
-  annotation_value: v2`)},
-		},
-		{
-			description: "Valid in kpt fn pipeline.",
-			manifests:   manifest.ManifestList{testFn1, testFn2, testPod},
-			expected: manifest.ManifestList{[]byte(`apiVersion: v1
-data:
-  annotation_name: k1
-  annotation_value: v1
-kind: ConfigMap
-metadata:
-  annotations:
-    config.kubernetes.io/function: fake
-    config.kubernetes.io/local-config: "true"`), []byte(`apiVersion: v1
-kind: ConfigMap
-metadata:
-  annotations:
-    config.kubernetes.io/function: fake
-    config.kubernetes.io/local-config: "false"
-data:
-  annotation_name: k2
-  annotation_value: v2`), []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1`)},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, nil)
-			if err != nil {
-				t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
-			}
-
-			actualManifest, err := k.excludeKptFn(test.manifests)
-			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
-		})
-	}
-}
-
-func TestVersionCheck(t *testing.T) {
-	tests := []struct {
-		description    string
-		commands       util.Command
-		kustomizations map[string]string
-		shouldErr      bool
-		error          error
-		out            string
-	}{
-		{
-			description: "Both kpt and kustomize versions are good",
-			commands: testutil.
-				CmdRunOut("kpt version", `0.38.1`).
-				AndRunOut("kustomize version", `{Version:v3.6.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
-			kustomizations: map[string]string{"Kustomization": `resources:
-				- foo.yaml`},
-			shouldErr: false,
-			error:     nil,
-		},
-		{
-			description: "kpt is not installed",
-			commands:    testutil.CmdRunOutErr("kpt version", "", errors.New("BUG")),
-			shouldErr:   true,
-			error: fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
-				kptDownloadLink),
-		},
-		{
-			description: "kustomize is not used, kpt version is good",
-			commands: testutil.
-				CmdRunOut("kpt version", `0.38.1`),
-			shouldErr: false,
-			error:     nil,
-		},
-		{
-			description: "kustomize is used but not installed",
-			commands: testutil.
-				CmdRunOut("kpt version", `0.38.1`).
-				AndRunOutErr("kustomize version", "", errors.New("BUG")),
-			kustomizations: map[string]string{"Kustomization": `resources:
-					- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
-				kustomizeDownloadLink),
-		},
-		{
-			description: "kpt version is too old (<0.38.1)",
-			commands: testutil.
-				CmdRunOut("kpt version", `0.37.0`),
-			kustomizations: map[string]string{"Kustomization": `resources:
-					- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("you are using kpt \"v0.37.0\"\nPlease install "+
-				"kpt %v <= version < %v\nSee kpt installation: %v",
-				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
-		},
-		{
-			description: "kpt version is too new (>=1.0.0-alpha)",
-			commands: testutil.
-				CmdRunOut("kpt version", `1.0.0-beta.4`),
-			kustomizations: map[string]string{"Kustomization": `resources:
-					- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("you are using kpt \"v1.0.0-beta.4\"\nPlease install "+
-				"kpt %v <= version < %v\nSee kpt installation: %v",
-				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
-		},
-		{
-			description: "kpt version is unknown",
-			commands: testutil.
-				CmdRunOut("kpt version", `unknown`),
-			kustomizations: map[string]string{"Kustomization": `resources:
-					- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("unknown kpt version unknown\nPlease install "+
-				"kpt %v <= version < %v\nSee kpt installation: %v",
-				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
-		},
-		{
-			description: "kustomize versions is too old (< v3.2.3)",
-			commands: testutil.
-				CmdRunOut("kpt version", `0.38.1`).
-				AndRunOut("kustomize version", `{Version:v0.0.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
-			kustomizations: map[string]string{"Kustomization": `resources:
-					- foo.yaml`},
-			shouldErr: false,
-			out: fmt.Sprintf("you are using kustomize version \"v0.0.1\" "+
-				"(recommended >= %v). You can download the official kustomize from %v\n",
-				kustomizeMinVersion, kustomizeDownloadLink),
-		},
-		{
-			description: "kustomize version is unknown",
-			commands: testutil.
-				CmdRunOut("kpt version", `0.38.1`).
-				AndRunOut("kustomize version", `{Version:unknown GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
-			kustomizations: map[string]string{"Kustomization": `resources:
-					- foo.yaml`},
-			shouldErr: false,
-			out: fmt.Sprintf("you are using kustomize version \"unknown\" "+
-				"(recommended >= %v). You can download the official kustomize from %v\n",
-				kustomizeMinVersion, kustomizeDownloadLink),
-		},
-		{
-			description: "kustomize version is non-official",
-			commands: testutil.
-				CmdRunOut("kpt version", `0.38.1`).
-				AndRunOut("kustomize version", `UNKNOWN`),
-			kustomizations: map[string]string{"Kustomization": `resources:
-					- foo.yaml`},
-			shouldErr: false,
-			out: fmt.Sprintf("unable to determine kustomize version from \"UNKNOWN\"\n"+
-				"You can download the official kustomize (recommended >= %v) from %v\n",
-				kustomizeMinVersion, kustomizeDownloadLink),
-		},
-	}
-	for _, test := range tests {
-		var buf bytes.Buffer
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.commands)
-			tmpDir := t.NewTempDir().Chdir()
-			tmpDir.WriteFiles(test.kustomizations)
-			err := versionCheck(context.Background(), "", io.Writer(&buf))
-			t.CheckError(test.shouldErr, err)
-			if test.shouldErr {
-				testutil.CheckDeepEqual(t.T, test.error.Error(), err.Error())
-			}
-		})
-		testutil.CheckDeepEqual(t, test.out, buf.String())
-	}
-}
-
-func TestNonEmptyKubeconfig(t *testing.T) {
-	commands := testutil.CmdRunOut("kpt fn source .", ``).
-		AndRunOut("kpt fn run", testPod).
-		AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
-		AndRunOut("kpt fn sink valid_path", ``).
-		AndRun("kpt live apply valid_path --context kubecontext --kubeconfig testConfigPath --namespace testNamespace")
-
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&util.DefaultExecCommand, commands)
-		t.Override(&client.Client, deployutil.MockK8sClient)
-		k, err := NewDeployer(&kptConfig{config: "testConfigPath"}, &label.DefaultLabeller{}, &latest.KptDeploy{
-			Dir: ".",
-			Live: latest.KptLive{
-				Apply: latest.KptApplyInventory{
-					Dir: "valid_path",
-				},
-			},
-		})
-		if err != nil {
-			t.Fatalf("unexpected error occurred in NewDeployer: %v", err)
-		}
-
-		t.CheckNoError(os.Mkdir(k.Live.Apply.Dir, 0755))
-		defer os.RemoveAll(k.Live.Apply.Dir)
-		err = k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
-		t.CheckNoError(err)
-	})
 }
 
 type kptConfig struct {
@@ -1222,7 +191,7 @@ type kptConfig struct {
 }
 
 func (c *kptConfig) WorkingDir() string                                  { return c.workingDir }
-func (c *kptConfig) GetKubeContext() string                              { return kubectl.TestKubeContext }
-func (c *kptConfig) GetKubeNamespace() string                            { return kubectl.TestNamespace }
+func (c *kptConfig) GetKubeContext() string                              { return "" }
+func (c *kptConfig) GetKubeNamespace() string                            { return "" }
 func (c *kptConfig) GetKubeConfig() string                               { return c.config }
 func (c *kptConfig) PortForwardResources() []*latest.PortForwardResource { return nil }

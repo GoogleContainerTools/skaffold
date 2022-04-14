@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -31,8 +32,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -72,7 +74,20 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	}
 
 	var deployer deploy.Deployer
-	deployer, err = runner.GetDeployer(ctx, runCtx, labeller)
+
+	hydrationDir, err := util.GetHydrationDir(runCtx.Opts, runCtx.WorkingDir, true)
+
+	if err != nil {
+		return nil, fmt.Errorf("getting render output path: %w", err)
+	}
+
+	renderer, err := renderer.New(runCtx, hydrationDir, labeller.Labels(), runCtx.UsingLegacyHelmDeploy())
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, fmt.Errorf("creating renderer: %w", err)
+	}
+
+	deployer, err = runner.GetDeployer(ctx, runCtx, labeller, hydrationDir)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
@@ -117,7 +132,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	builder, tester, deployer = runner.WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
+	builder, tester, renderer, deployer = runner.WithTimings(builder, tester, renderer, deployer, runCtx.CacheArtifacts())
 	if runCtx.Notification() {
 		deployer = runner.WithNotification(deployer)
 	}
@@ -134,6 +149,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	return &SkaffoldRunner{
 		Builder:            *rbuilder,
 		Pruner:             runner.Pruner{Builder: builder},
+		renderer:           renderer,
 		tester:             tester,
 		deployer:           deployer,
 		platforms:          platforms,

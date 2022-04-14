@@ -30,9 +30,8 @@ import (
 )
 
 var (
-	showBuild        bool
-	renderOutputPath string
-	offline          bool
+	showBuild bool
+	offline   bool
 )
 
 // NewCmdRender describes the CLI command to build artifacts render Kubernetes manifests.
@@ -44,7 +43,8 @@ func NewCmdRender() *cobra.Command {
 		WithFlags([]*Flag{
 			{Value: &showBuild, Name: "loud", DefValue: false, Usage: "Show the build logs and output", IsEnum: true},
 			{Value: &offline, Name: "offline", DefValue: false, Usage: `Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.`, IsEnum: true},
-			{Value: &renderOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write rendered manifests to"},
+			// This "--output" flag replaces the --render-output flag, which is deprecated.
+			{Value: &opts.RenderOutput, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write rendered manifests to"},
 		}).
 		NoArgs(doRender)
 }
@@ -74,7 +74,7 @@ func doRender(ctx context.Context, out io.Writer) error {
 			}
 		}
 
-		if err := r.Render(ctx, out, bRes, offline, renderOutputPath); err != nil {
+		if err := r.Render(ctx, out, bRes, offline, opts.RenderOutput); err != nil {
 			return fmt.Errorf("rendering manifests: %w", err)
 		}
 		return nil

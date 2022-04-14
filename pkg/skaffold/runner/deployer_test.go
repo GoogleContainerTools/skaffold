@@ -27,9 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
+	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -38,7 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -49,7 +48,7 @@ func TestGetDeployer(tOuter *testing.T) {
 	testutil.Run(tOuter, "TestGetDeployer", func(t *testutil.T) {
 		tests := []struct {
 			description string
-			cfg         latest.DeployType
+			cfg         latest.Pipeline
 			helmVersion string
 			expected    deploy.Deployer
 			apply       bool
@@ -60,105 +59,132 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected:    deploy.DeployerMux{},
 			},
 			{
-				description: "helm deployer with 3.0.0 version",
-				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
-				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
+				description: "helm deployer with 3.1.0 version",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
+						},
+					},
+				},
+				helmVersion: `version.BuildInfo{Version:"v3.1.0"}`,
 				expected:    deploy.NewDeployerMux([]deploy.Deployer{&helm.Deployer{}}, false),
 			},
 			{
 				description: "helm deployer with less than 3.0.0 version",
-				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
+						},
+					},
+				},
 				helmVersion: "2.0.0",
 				shouldErr:   true,
 			},
 			{
 				description: "kubectl deployer",
-				cfg:         latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{}},
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{}},
+					},
+				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 						Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 					}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 						Flags: latest.KubectlFlags{},
-					})).(deploy.Deployer),
-				}, false),
-			},
-			{
-				description: "kustomize deployer",
-				cfg:         latest.DeployType{KustomizeDeploy: &latest.KustomizeDeploy{}},
-				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					t.RequireNonNilResult(kustomize.NewDeployer(&runcontext.RunContext{
-						Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
-					}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{
-						Flags: latest.KubectlFlags{},
-					})).(deploy.Deployer),
+					}, "")).(deploy.Deployer),
 				}, false),
 			},
 			{
 				description: "kpt deployer",
-				cfg:         latest.DeployType{KptDeploy: &latest.KptDeploy{}},
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{KptDeploy: &latest.KptDeploy{}},
+					},
+				},
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					&kpt.Deployer{},
+					&kptV2.Deployer{},
 				}, false),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with kpt config",
-				cfg:         latest.DeployType{KptDeploy: &latest.KptDeploy{}},
-				apply:       true,
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{KptDeploy: &latest.KptDeploy{}},
+					},
+				},
+				apply: true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				})).(deploy.Deployer),
+				}, "")).(deploy.Deployer),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
-				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
+						},
+					},
+				},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				apply:       true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				})).(deploy.Deployer),
+				}, "")).(deploy.Deployer),
 			},
 			{
 				description: "multiple deployers",
-				cfg: latest.DeployType{
-					HelmDeploy: &latest.HelmDeploy{},
-					KptDeploy:  &latest.KptDeploy{},
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KptDeploy:        &latest.KptDeploy{},
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
+						},
+					},
 				},
-				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
+				helmVersion: `version.BuildInfo{Version:"v3.7.0"}`,
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&helm.Deployer{},
-					&kpt.Deployer{},
+					&kptV2.Deployer{},
 				}, false),
 			},
 			{
 				description: "apply does not allow multiple deployers when a helm namespace is set",
 				apply:       true,
-				cfg: latest.DeployType{
-					HelmDeploy: &latest.HelmDeploy{
-						Releases: []latest.HelmRelease{
-							{
-								Namespace: "foo",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
+								Releases: []latest.HelmRelease{{Namespace: "foo"}},
 							},
+							KubectlDeploy: &latest.KubectlDeploy{},
 						},
 					},
-					KubectlDeploy: &latest.KubectlDeploy{},
 				},
 				shouldErr: true,
 			},
 			{
 				description: "apply does not allow multiple helm releases with different namespaces set",
 				apply:       true,
-				cfg: latest.DeployType{
-					HelmDeploy: &latest.HelmDeploy{
-						Releases: []latest.HelmRelease{
-							{
-								Namespace: "foo",
-							},
-							{
-								Namespace: "bar",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
+								Releases: []latest.HelmRelease{
+									{
+										Namespace: "foo",
+									},
+									{
+										Namespace: "bar",
+									},
+								},
 							},
 						},
 					},
@@ -168,14 +194,18 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "apply does allow multiple helm releases with the same namespace set",
 				apply:       true,
-				cfg: latest.DeployType{
-					HelmDeploy: &latest.HelmDeploy{
-						Releases: []latest.HelmRelease{
-							{
-								Namespace: "foo",
-							},
-							{
-								Namespace: "foo",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
+								Releases: []latest.HelmRelease{
+									{
+										Namespace: "foo",
+									},
+									{
+										Namespace: "foo",
+									},
+								},
 							},
 						},
 					},
@@ -184,7 +214,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				})).(deploy.Deployer),
+				}, "")).(deploy.Deployer),
 			},
 		}
 		for _, test := range tests {
@@ -200,12 +230,8 @@ func TestGetDeployer(tOuter *testing.T) {
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},
-					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
-						Deploy: latest.DeployConfig{
-							DeployType: test.cfg,
-						},
-					}}),
-				}, &label.DefaultLabeller{})
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{test.cfg}),
+				}, &label.DefaultLabeller{}, "")
 
 				t.CheckError(test.shouldErr, err)
 				t.CheckTypeEquality(test.expected, deployer)
@@ -258,7 +284,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kubectl deploy, with flags",
@@ -277,7 +303,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						Apply:  []string{"--foo"},
 						Global: []string{"--bar"},
 					},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 			{
 				name: "two kubectl configs with mismatched flags should fail",
@@ -302,13 +328,13 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 			{
 				name: "one config with helm deploy",
 				cfgs: []latest.DeployType{{
-					HelmDeploy: &latest.HelmDeploy{},
+					LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
 				}},
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kustomize deploy",
@@ -319,7 +345,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				})).(*kubectl.Deployer),
+				}, "")).(*kubectl.Deployer),
 			},
 		}
 
@@ -335,7 +361,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}
 				deployer, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines),
-				}, &label.DefaultLabeller{})
+				}, &label.DefaultLabeller{}, "")
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)
 

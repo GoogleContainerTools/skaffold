@@ -43,8 +43,8 @@ func TestEmptyState(t *testing.T) {
 				},
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
-						KubectlDeploy: &latest.KubectlDeploy{},
-						HelmDeploy:    &latest.HelmDeploy{Releases: []latest.HelmRelease{{Name: "first"}, {Name: "second"}}},
+						KubectlDeploy:    &latest.KubectlDeploy{},
+						LegacyHelmDeploy: &latest.LegacyHelmDeploy{Releases: []latest.HelmRelease{{Name: "first"}, {Name: "second"}}},
 					},
 				},
 			},

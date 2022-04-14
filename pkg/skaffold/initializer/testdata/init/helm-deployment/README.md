@@ -23,15 +23,6 @@ deploy:
     - name: skaffold-helm
       chartPath: charts
       # namespace: skaffold
-      artifactOverrides:
-        image: skaffold-helm
       valuesFiles:
       - values.yaml
-```
-
-This part tells Skaffold to set the `image` parameter of the values file to the built `skaffold-helm` image and tag.
-
-```yaml
-      artifactOverrides:
-        image: skaffold-helm
 ```

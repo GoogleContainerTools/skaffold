@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
@@ -229,7 +230,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomLabels,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "filter"},
 	},
 	{
 		Name:          "toot",
@@ -575,7 +576,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.AssumeYes,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"debug", "dev", "run"},
+		DefinedOn:     []string{"all"},
 		IsEnum:        true,
 	},
 	{
@@ -606,6 +607,15 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy"},
+	},
+	{
+		Name: "hydration-dir",
+		Usage: fmt.Sprintf("The directory to where the (kpt) hydration takes place. "+
+			"Default to a hidden directory %s.", constants.DefaultHydrationDir),
+		Value:         &opts.HydrationDir,
+		DefValue:      constants.DefaultHydrationDir,
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
 	},
 	{
 		Name:          "resource-selector-rules-file",

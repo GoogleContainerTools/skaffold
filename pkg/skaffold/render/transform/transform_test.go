@@ -18,22 +18,23 @@ package transform
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewTransformer(t *testing.T) {
 	tests := []struct {
 		description string
-		config      []latestV2.Transformer
+		config      []latest.Transformer
 	}{
 		{
 			description: "no transform",
-			config:      []latestV2.Transformer{},
+			config:      []latest.Transformer{},
 		},
 		{
 			description: "set-labels",
-			config: []latestV2.Transformer{
+			config: []latest.Transformer{
+				{Name: "set-annotations", ConfigMap: []string{"owner:skaffold-test"}},
 				{Name: "set-labels", ConfigMap: []string{"owner:skaffold-test"}},
 			},
 		},
@@ -48,9 +49,9 @@ func TestNewTransformer(t *testing.T) {
 
 func TestNewValidator_Error(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		_, err := NewTransformer([]latestV2.Transformer{
+		_, err := NewTransformer([]latest.Transformer{
 			{Name: "bad-transformer"},
 		})
-		t.CheckContains(`unsupported transformer "bad-transformer". please only use the`, err.Error())
+		t.CheckErrorContains(`unsupported transformer "bad-transformer". please only use the`, err)
 	})
 }

@@ -40,11 +40,12 @@ func TestSetAbsFilePaths(t *testing.T) {
 							{ImageName: "foo2", Workspace: `C:\a\foo`},
 						},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KptDeploy:     &latest.KptDeploy{Dir: "."},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`foo\*`, `C:\a\foo\*`}},
-							HelmDeploy: &latest.HelmDeploy{Releases: []latest.HelmRelease{
+
+					Render: latest.RenderConfig{
+						Generate: latest.Generate{
+							RawK8s: []string{`foo\*`, `C:\a\foo\*`},
+							Kpt:    []string{"."},
+							Helm: &latest.Helm{Releases: &[]latest.HelmRelease{
 								{ChartPath: `..\charts`, ValuesFiles: []string{"values1.yaml", "values2.yaml"}, SetFiles: map[string]string{"envFile": "values3.yaml", "configFile": "values4.yaml", "anotherFile": `C:\c\values5.yaml`}},
 								{RemoteChart: "foo/bar", ValuesFiles: []string{"values1.yaml", "values2.yaml"}, SetFiles: map[string]string{"envFile": "values3.yaml", "configFile": "values4.yaml", "anotherFile": `C:\c\values5.yaml`}},
 							}},
@@ -61,11 +62,11 @@ func TestSetAbsFilePaths(t *testing.T) {
 							{ImageName: "foo2", Workspace: `C:\a\foo`},
 						},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KptDeploy:     &latest.KptDeploy{Dir: `C:\a\b`},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`C:\a\b\foo\*`, `C:\a\foo\*`}},
-							HelmDeploy: &latest.HelmDeploy{Releases: []latest.HelmRelease{
+					Render: latest.RenderConfig{
+						Generate: latest.Generate{
+							RawK8s: []string{`C:\a\b\foo\*`, `C:\a\foo\*`},
+							Kpt:    []string{`C:\a\b`},
+							Helm: &latest.Helm{Releases: &[]latest.HelmRelease{
 								{ChartPath: `C:\a\charts`, ValuesFiles: []string{`C:\a\b\values1.yaml`, `C:\a\b\values2.yaml`}, SetFiles: map[string]string{"envFile": `C:\a\b\values3.yaml`, "configFile": `C:\a\b\values4.yaml`, "anotherFile": `C:\c\values5.yaml`}},
 								{RemoteChart: "foo/bar", ValuesFiles: []string{`C:\a\b\values1.yaml`, `C:\a\b\values2.yaml`}, SetFiles: map[string]string{"envFile": `C:\a\b\values3.yaml`, "configFile": `C:\a\b\values4.yaml`, "anotherFile": `C:\c\values5.yaml`}},
 							}},

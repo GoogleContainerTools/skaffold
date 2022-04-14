@@ -47,9 +47,8 @@ type installOpts struct {
 }
 
 // constructOverrideArgs creates the command line arguments for overrides
-func constructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string, record func(string)) ([]string, error) {
+func constructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string) ([]string, error) {
 	for _, k := range sortKeys(r.SetValues) {
-		record(r.SetValues[k])
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
 
@@ -60,7 +59,6 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 		}
 		exp = sanitizeFilePath(exp, runtime.GOOS == "windows")
 
-		record(exp)
 		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, exp))
 	}
 
@@ -87,7 +85,6 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 			return nil, err
 		}
 
-		record(v)
 		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
 	}
 
@@ -117,7 +114,7 @@ func getArgs(releaseName string, namespace string) []string {
 }
 
 // installArgs calculates the correct arguments to "helm install"
-func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, o installOpts) ([]string, error) {
+func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o installOpts) ([]string, error) {
 	var args []string
 	if o.upgrade {
 		args = append(args, "upgrade", o.releaseName)
@@ -136,11 +133,6 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, va
 		args = append(args, o.flags...)
 	}
 
-	if o.postRenderer != "" {
-		args = append(args, "--post-renderer")
-		args = append(args, o.postRenderer)
-	}
-
 	// There are 2 strategies:
 	// 1) Deploy chart directly from filesystem path or from repository
 	//    (like stable/kubernetes-dashboard). Version only applies to a
@@ -153,6 +145,11 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, va
 	}
 
 	args = append(args, o.chartPath)
+
+	if o.postRenderer != "" {
+		args = append(args, "--post-renderer")
+		args = append(args, o.postRenderer)
+	}
 
 	if o.namespace != "" {
 		args = append(args, "--namespace", o.namespace)
@@ -170,28 +167,7 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, va
 		args = append(args, "--create-namespace")
 	}
 
-	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range params {
-		var value string
-
-		cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
-
-		value, err = imageSetFromConfig(cfg, k, v.Tag)
-		if err != nil {
-			return nil, err
-		}
-
-		valuesSet[v.Tag] = true
-		args = append(args, "--set-string", value)
-	}
-
-	args, err = constructOverrideArgs(&r, builds, args, func(k string) {
-		valuesSet[k] = true
-	})
+	args, err := constructOverrideArgs(&r, builds, args)
 	if err != nil {
 		return nil, err
 	}

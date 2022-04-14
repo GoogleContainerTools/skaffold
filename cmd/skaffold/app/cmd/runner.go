@@ -33,8 +33,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/v1"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -64,13 +64,13 @@ func createNewRunner(ctx context.Context, out io.Writer, opts config.SkaffoldOpt
 		return nil, nil, nil, err
 	}
 
-	var v1Configs []*latest.SkaffoldConfig
+	var v2Configs []*latest.SkaffoldConfig
 	for _, c := range configs {
-		v1Configs = append(v1Configs, c.(*latest.SkaffoldConfig))
+		v2Configs = append(v2Configs, c.(*latest.SkaffoldConfig))
 	}
-	instrumentation.Init(v1Configs, opts.User, runCtx.GetKubeContext())
+	instrumentation.Init(v2Configs, opts.User, runCtx.GetKubeContext())
 	hooks.SetupStaticEnvOptions(runCtx)
-	runner, err := v1.NewForConfig(ctx, runCtx)
+	runner, err := v2.NewForConfig(ctx, runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
 		return nil, nil, nil, fmt.Errorf("creating runner: %w", err)
@@ -83,7 +83,6 @@ func runContext(ctx context.Context, out io.Writer, opts config.SkaffoldOptions)
 	if err != nil {
 		return nil, nil, err
 	}
-	setDefaultDeployer(cfgSet)
 
 	if err := validation.Process(cfgSet, validation.GetValidationOpts(opts)); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
@@ -138,15 +137,6 @@ func withFallbackConfig(ctx context.Context, out io.Writer, opts config.Skaffold
 	// the configuration.
 	warnIfUpdateIsAvailable()
 	return nil, fmt.Errorf("parsing skaffold config: %w", err)
-}
-
-func setDefaultDeployer(configs parser.SkaffoldConfigSet) {
-	// do not set a default deployer in a multi-config application.
-	if len(configs) > 1 {
-		return
-	}
-	// there always exists at least one config
-	defaults.SetDefaultDeployer(configs[0].SkaffoldConfig)
 }
 
 func warnIfUpdateIsAvailable() {

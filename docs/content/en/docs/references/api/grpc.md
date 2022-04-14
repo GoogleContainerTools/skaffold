@@ -997,6 +997,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 | DEVINIT_UNSUPPORTED_V1_MANIFEST | 705 | Failed to configure watcher for build dependencies for a base image with v1 manifest. |
+| DEVINIT_REGISTER_RENDER_DEPS | 706 | Failed to configure watcher for render dependencies in dev loop |
 | STATUSCHECK_USER_CANCELLED | 800 | User cancelled the skaffold dev run |
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
 | BUILD_CANCELLED | 802 | Build Cancelled |
@@ -1018,7 +1019,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_CLEANUP_ERR | 1003 | Deploy clean up error |
 | DEPLOY_HELM_APPLY_LABELS | 1004 | Unable to apply helm labels. |
 | DEPLOY_HELM_USER_ERR | 1005 | Deploy error due to user deploy config for helm deployer |
-| DEPLOY_NO_MATCHING_BUILD | 1006 | Helm error when no build result is found of value specified in helm `artifactOverrides` |
+| DEPLOY_NO_MATCHING_BUILD | 1006 | An image was referenced with no matching build result |
 | DEPLOY_HELM_VERSION_ERR | 1007 | Unable to get helm client version |
 | DEPLOY_HELM_MIN_VERSION_ERR | 1008 | Helm version not supported. |
 | DEPLOY_KUBECTL_VERSION_ERR | 1109 | Unable to retrieve kubectl version |
@@ -1037,6 +1038,9 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE | 1022 | Helm config `createNamespace` not available |
 | DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR | 1023 | Kubernetes cluster reported an internal system error |
 | DEPLOY_KPTFILE_INIT_ERR | 1024 | The Kptfile cannot be created via `kpt live init`. |
+| DEPLOY_KPT_SOURCE_ERR | 1025 | The `kpt fn source` cannot read the given manifests. |
+| DEPLOY_KPTFILE_INVALID_YAML_ERR | 1026 | The Kptfile exists but cannot be opened or parsed. |
+| DEPLOY_KPT_APPLY_ERR | 1027 | kpt fails to live apply the manifests to the cluster. |
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
@@ -1107,9 +1111,11 @@ Enum for Suggestion codes
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
 | UPGRADE_HELM | 204 | Upgrade helm tool |
-| FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES | 205 | Fix helm `releases.artifactOverrides` config to match with `build.artiofacts` |
+| FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES | 205 | Fix helm `releases.artifactOverrides` config to match with `build.artifacts` (no longer used in Skaffold v2) |
 | UPGRADE_HELM32 | 206 | Upgrade helm version to v3.2.0 and higher. |
 | FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE | 207 | Set `releases.createNamespace` to false. |
+| INVALID_KPT_MANIFESTS | 208 | check the Kptfile validation. |
+| ALIGN_KPT_INVENTORY | 209 | align the inventory info in kpt live apply. |
 | INSTALL_KUBECTL | 220 | Install kubectl tool |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |

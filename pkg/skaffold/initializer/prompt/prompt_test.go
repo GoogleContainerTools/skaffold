@@ -17,6 +17,7 @@ limitations under the License.
 package prompt
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"testing"
@@ -215,6 +216,51 @@ func TestConfirmInitOptions(t *testing.T) {
 
 			done, err := ConfirmInitOptions(ioutil.Discard, test.config)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDone, done)
+		})
+	}
+}
+
+func TestConfirmHydrationDirOverride(t *testing.T) {
+	tests := []struct {
+		description string
+		userInput   string
+		expected    bool
+	}{
+		{
+			description: "yes response 1",
+			userInput:   "y",
+			expected:    true,
+		},
+		{
+			description: "yes response 2",
+			userInput:   "Y",
+			expected:    true,
+		},
+		{
+			description: "yes response 3",
+			userInput:   "yes",
+			expected:    true,
+		},
+		{
+			description: "no response 1",
+			userInput:   "n",
+			expected:    false,
+		},
+		{
+			description: "no response 2",
+			userInput:   "no",
+			expected:    false,
+		},
+		{
+			description: "no response 3",
+			userInput:   "nO",
+			expected:    false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			ok := ConfirmHydrationDirOverride(bytes.NewBufferString(test.userInput))
+			t.CheckDeepEqual(test.expected, ok)
 		})
 	}
 }

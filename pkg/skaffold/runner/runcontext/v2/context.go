@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runcontext
+package v2
 
 import (
 	"context"
@@ -34,6 +34,7 @@ type RunContext struct {
 	Opts               config.SkaffoldOptions
 	Pipelines          Pipelines
 	KubeContext        string
+	Namespaces         []string
 	WorkingDir         string
 	InsecureRegistries map[string]bool
 	Cluster            config.Cluster
@@ -191,8 +192,19 @@ func (rc *RunContext) AddSkaffoldLabels() bool {
 	return rc.Opts.Mode() != config.RunModes.Render
 }
 
+func (rc *RunContext) UsingLegacyHelmDeploy() bool {
+	for _, config := range rc.DeployConfigs() {
+		if config.LegacyHelmDeploy != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (rc *RunContext) DefaultPipeline() latest.Pipeline              { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
+func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }
 func (rc *RunContext) GetPipelines() []latest.Pipeline               { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
@@ -245,6 +257,16 @@ func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc
 func (rc *RunContext) TransformRulesFile() string                    { return rc.Opts.TransformRulesFile }
 func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
+}
+
+// GetRenderConfig returns the top tier RenderConfig.
+// TODO: design how to support multi-module.
+func (rc *RunContext) GetRenderConfig() *latest.RenderConfig {
+	p := rc.GetPipelines()
+	if len(p) > 0 {
+		return &p[0].Render
+	}
+	return &latest.RenderConfig{}
 }
 
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {

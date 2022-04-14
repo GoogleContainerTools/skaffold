@@ -26,8 +26,8 @@ import (
 type Config interface {
 	docker.Config
 
-	GetNamespace() string
 	GetPipelines() []latest.Pipeline
+	GetNamespace() string
 	GetWorkingDir() string
 	GlobalConfig() string
 	ConfigurationFile() string

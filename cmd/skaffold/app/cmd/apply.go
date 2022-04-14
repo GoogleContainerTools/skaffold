@@ -37,6 +37,14 @@ func NewCmdApply() *cobra.Command {
 		WithExample("Hydrate Kubernetes pod manifest first", "render --output rendered-pod.yaml").
 		WithExample("Then create resources on your cluster from that hydrated manifest", "apply rendered-pod.yaml").
 		WithCommonFlags().
+		WithFlags([]*Flag{
+			{Value: &opts.InventoryNamespace, Name: "inventory-namespace", Hidden: true, DefValue: "",
+				Usage: "The namespace for the ResourceGroup resource that contains the inventory"},
+			{Value: &opts.InventoryID, Name: "inventory-id", Hidden: true, DefValue: "",
+				Usage: "The inventory name, default to `.kpt-pipeline`"},
+			{Value: &opts.InventoryName, Name: "inventory-name", Hidden: true, DefValue: "",
+				Usage: "Inventory identifier."},
+		}).
 		WithHouseKeepingMessages().
 		WithArgs(func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {

@@ -34,6 +34,7 @@ import (
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -47,6 +48,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -56,8 +58,6 @@ import (
 )
 
 var (
-	DefaultKustomizePath = "."
-	KustomizeFilePaths   = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
 	basePath             = "base"
 	KustomizeBinaryCheck = kustomizeBinaryExists // For testing
 )
@@ -153,7 +153,7 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latest.
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
-	transformableAllowlist, transformableDenylist, err := deployutil.ConsolidateTransformConfiguration(cfg)
+	transformableAllowlist, transformableDenylist, err := renderutil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +485,7 @@ func IsKustomizationBase(path string) bool {
 
 func IsKustomizationPath(path string) bool {
 	filename := filepath.Base(path)
-	for _, candidate := range KustomizeFilePaths {
+	for _, candidate := range constants.KustomizeFilePaths {
 		if filename == candidate {
 			return true
 		}

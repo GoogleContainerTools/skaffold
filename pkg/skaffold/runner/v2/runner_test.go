@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"context"
@@ -32,15 +32,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
+	kRenderer "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -55,6 +57,7 @@ type Actions struct {
 	Built    []string
 	Synced   []string
 	Tested   []string
+	Rendered []string
 	Deployed []string
 }
 
@@ -62,6 +65,7 @@ type TestBench struct {
 	buildErrors   []error
 	syncErrors    []error
 	testErrors    []error
+	renderErrors  []error
 	deployErrors  []error
 	namespaces    []string
 	userIntents   []func(*runner.Intents)
@@ -83,6 +87,11 @@ func NewTestBench() *TestBench {
 
 func (t *TestBench) WithBuildErrors(buildErrors []error) *TestBench {
 	t.buildErrors = buildErrors
+	return t
+}
+
+func (t *TestBench) WithRenderErrors(renderErrors []error) *TestBench {
+	t.renderErrors = renderErrors
 	return t
 }
 
@@ -203,8 +212,20 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return nil
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) error {
+	if len(t.renderErrors) > 0 {
+		err := t.renderErrors[0]
+		t.renderErrors = t.renderErrors[1:]
+		if err != nil {
+			return err
+		}
+	}
+	t.currentActions.Rendered = findTags(artifacts)
 	return nil
+}
+
+func (t *TestBench) ManifestDeps() ([]string, error) {
+	return nil, nil
 }
 
 func (t *TestBench) Actions() []Actions {
@@ -258,6 +279,8 @@ type triggerState struct {
 }
 
 func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latest.Artifact, autoTriggers *triggerState) *SkaffoldRunner {
+	tmpDir := t.NewTempDir()
+	tmpDir.Chdir()
 	if autoTriggers == nil {
 		autoTriggers = &triggerState{true, true, true}
 	}
@@ -280,8 +303,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			Deploy: latest.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
-	defaults.Set(cfg)
-	defaults.SetDefaultDeployer(cfg)
+	_ = defaults.Set(cfg)
 	runCtx := &runcontext.RunContext{
 		Pipelines: runcontext.NewPipelines([]latest.Pipeline{cfg.Pipeline}),
 		Opts: config.SkaffoldOptions{
@@ -291,6 +313,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			AutoSync:          autoTriggers.sync,
 			AutoDeploy:        autoTriggers.deploy,
 		},
+		WorkingDir: tmpDir.Root(),
 	}
 	runner, err := NewForConfig(context.Background(), runCtx)
 	t.CheckNoError(err)
@@ -301,6 +324,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	runner.deployer = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
+	runner.renderer = testBench
 
 	testBench.devLoop = func(ctx context.Context, out io.Writer, doDev func() error) error {
 		if err := monitor.Run(true); err != nil {
@@ -325,6 +349,7 @@ func TestNewForConfig(t *testing.T) {
 		cacheArtifacts   bool
 		expectedBuilder  build.BuilderMux
 		expectedTester   test.Tester
+		expectedRenderer renderer.Renderer
 		expectedDeployer deploy.Deployer
 	}{
 		{
@@ -343,6 +368,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -361,6 +387,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -379,6 +406,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -403,6 +431,7 @@ func TestNewForConfig(t *testing.T) {
 			pipeline:         latest.Pipeline{},
 			shouldErr:        true,
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &kRenderer.Kubectl{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
@@ -421,6 +450,32 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedTester:   &test.FullTester{},
+			expectedRenderer: &kRenderer.Kubectl{},
+			expectedDeployer: &kubectl.Deployer{},
+			cacheArtifacts:   true,
+		},
+		{
+			description: "raw renderer",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
+					},
+				},
+				Render: latest.RenderConfig{
+					Generate: latest.Generate{RawK8s: []string{""}},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
+					},
+				},
+			},
+			expectedTester: &test.FullTester{},
+			expectedRenderer: &kRenderer.Kubectl{
+				Generator: generate.Generator{},
+			},
 			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
@@ -462,51 +517,52 @@ func TestNewForConfig(t *testing.T) {
 					DeployType: latest.DeployType{
 						KubectlDeploy:   &latest.KubectlDeploy{},
 						KustomizeDeploy: &latest.KustomizeDeploy{},
-						HelmDeploy:      &latest.HelmDeploy{},
 					},
 				},
 			},
 			expectedTester: &test.FullTester{},
 			expectedDeployer: deploy.NewDeployerMux([]deploy.Deployer{
-				&helm.Deployer{},
 				&kubectl.Deployer{},
 				&kustomize.Deployer{},
 			}, false),
 		},
 	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+	for _, tt := range tests {
+		testutil.Run(t, tt.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&cluster.FindMinikubeBinary, func(context.Context) (string, semver.Version, error) {
 				return "", semver.Version{}, errors.New("not found")
 			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
-				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
-				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
-
+				"kubectl version --client -ojson", "v1.5.6"))
+			tmpDir := t.NewTempDir()
+			tmpDir.Chdir()
 			runCtx := &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{test.pipeline}),
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{tt.pipeline}),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
+				WorkingDir: tmpDir.Root(),
 			}
 			// Test transformableAllowList
 			filters := runCtx.TransformAllowList()
-			if test.pipeline.ResourceSelector.Allow != nil {
-				t.CheckDeepEqual(test.pipeline.ResourceSelector.Allow, filters)
+			if tt.pipeline.ResourceSelector.Allow != nil {
+				t.CheckDeepEqual(tt.pipeline.ResourceSelector.Allow, filters)
 			} else {
 				t.CheckEmpty(filters)
 			}
 
 			cfg, err := NewForConfig(context.Background(), runCtx)
-			t.CheckError(test.shouldErr, err)
+			t.CheckError(tt.shouldErr, err)
 			if cfg != nil {
-				b, _t, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
-				if test.shouldErr {
+				b, _t, r, d := runner.WithTimings(&tt.expectedBuilder, tt.expectedTester, tt.expectedRenderer,
+					tt.expectedDeployer, tt.cacheArtifacts)
+				if tt.shouldErr {
 					t.CheckError(true, err)
 				} else {
 					t.CheckNoError(err)
 					t.CheckTypeEquality(b, cfg.Pruner.Builder)
+					t.CheckTypeEquality(r, cfg.renderer)
 					t.CheckTypeEquality(_t, cfg.tester)
 					t.CheckTypeEquality(d, cfg.deployer)
 				}
@@ -563,14 +619,16 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+	for _, tt := range tests {
+		testutil.Run(t, tt.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Chdir()
 			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
-				AutoBuild:         test.autoBuild,
-				AutoSync:          test.autoSync,
-				AutoDeploy:        test.autoDeploy,
+				AutoBuild:         tt.autoBuild,
+				AutoSync:          tt.autoSync,
+				AutoDeploy:        tt.autoDeploy,
 			}
 			pipeline := latest.Pipeline{
 				Build: latest.BuildConfig{
@@ -586,18 +644,19 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				},
 			}
 			r, _ := NewForConfig(context.Background(), &runcontext.RunContext{
-				Opts:      opts,
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{pipeline}),
+				Opts:       opts,
+				Pipelines:  runcontext.NewPipelines([]latest.Pipeline{pipeline}),
+				WorkingDir: tmpDir.Root(),
 			})
 
 			r.intents.ResetBuild()
 			r.intents.ResetSync()
 			r.intents.ResetDeploy()
 
-			build, sync, deploy := r.intents.GetIntentsAttrs()
-			t.CheckDeepEqual(test.expectedBuildIntent, build)
-			t.CheckDeepEqual(test.expectedSyncIntent, sync)
-			t.CheckDeepEqual(test.expectedDeployIntent, deploy)
+			b, s, d := r.intents.GetIntentsAttrs()
+			t.CheckDeepEqual(tt.expectedBuildIntent, b)
+			t.CheckDeepEqual(tt.expectedSyncIntent, s)
+			t.CheckDeepEqual(tt.expectedDeployIntent, d)
 		})
 	}
 }

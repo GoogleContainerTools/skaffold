@@ -29,6 +29,9 @@ import (
 )
 
 func TestFixExclusiveOptions(t *testing.T) {
+	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7033.
+	t.Skipf("Fix https://github.com/GoogleContainerTools/skaffold/issues/7033")
+
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	out := skaffold.Fix().InDir("testdata/fix").RunOrFailOutput(t)
@@ -39,6 +42,9 @@ func TestFixExclusiveOptions(t *testing.T) {
 }
 
 func TestFixStdout(t *testing.T) {
+	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7033.
+	t.Skipf("Fix https://github.com/GoogleContainerTools/skaffold/issues/7033")
+
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	ns, _ := SetupNamespace(t)
 
@@ -47,6 +53,9 @@ func TestFixStdout(t *testing.T) {
 }
 
 func TestFixOutputFile(t *testing.T) {
+	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7033.
+	t.Skipf("Fix https://github.com/GoogleContainerTools/skaffold/issues/7033")
+
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	out := skaffold.Fix("--output", filepath.Join("updated.yaml")).InDir("testdata/fix").RunOrFailOutput(t)

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package render
 
 import (
-	"context"
-	"io"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
-	return r.deployer.Cleanup(ctx, out, dryRun)
+type Config interface {
+	GetRenderConfig() *latest.RenderConfig
+	GetWorkingDir() string
+	TransformAllowList() []latest.ResourceFilter
+	TransformDenyList() []latest.ResourceFilter
+	TransformRulesFile() string
 }

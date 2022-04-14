@@ -56,7 +56,7 @@ var (
 					if !ok {
 						return false
 					}
-					if h := v1Cfg.Deploy.HelmDeploy; h != nil {
+					if h := v1Cfg.Deploy.LegacyHelmDeploy; h != nil {
 						return true
 					}
 				}

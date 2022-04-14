@@ -135,7 +135,7 @@ func generateDeployTasks(namespace string, configFiles []*ConfigFile) ([]*tekton
 
 func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
 	deployConfig := configFile.Config.Deploy
-	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
+	if deployConfig.LegacyHelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
 		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
 	}
 

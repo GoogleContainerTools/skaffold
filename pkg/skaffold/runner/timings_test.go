@@ -68,6 +68,25 @@ func (m *mockTester) Test(context.Context, io.Writer, []graph.Artifact) error {
 	return nil
 }
 
+type mockRenderer struct {
+	test.Tester
+	err bool
+}
+
+func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+	if m.err {
+		return errors.New("Unable to render")
+	}
+	return nil
+}
+
+func (m *mockRenderer) ManifestDeps() ([]string, error) {
+	if m.err {
+		return nil, errors.New("Unable to get manifest dependencies")
+	}
+	return nil, nil
+}
+
 type mockDeployer struct {
 	deploy.Deployer
 	err bool
@@ -112,7 +131,7 @@ func TestTimingsBuild(t *testing.T) {
 			log.AddHook(hook)
 
 			b := &mockBuilder{err: test.shouldErr}
-			builder, _, _ := WithTimings(b, nil, nil, false)
+			builder, _, _, _ := WithTimings(b, nil, nil, nil, false)
 
 			var out bytes.Buffer
 			_, err := builder.Build(context.Background(), &out, nil, platform.Resolver{}, nil)
@@ -149,7 +168,7 @@ func TestTimingsPrune(t *testing.T) {
 			log.AddHook(hook)
 
 			b := &mockBuilder{err: test.shouldErr}
-			builder, _, _ := WithTimings(b, nil, nil, false)
+			builder, _, _, _ := WithTimings(b, nil, nil, nil, false)
 
 			var out bytes.Buffer
 			err := builder.Prune(context.Background(), &out)
@@ -186,10 +205,47 @@ func TestTimingsTest(t *testing.T) {
 			log.AddHook(hook)
 
 			tt := &mockTester{err: test.shouldErr}
-			_, tester, _ := WithTimings(nil, tt, nil, false)
+			_, tester, _, _ := WithTimings(nil, tt, nil, nil, false)
 
 			var out bytes.Buffer
 			err := tester.Test(context.Background(), &out, nil)
+
+			t.CheckError(test.shouldErr, err)
+			t.CheckMatches(test.shouldOutput, out.String())
+			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
+		})
+	}
+}
+
+func TestTimingsRender(t *testing.T) {
+	tests := []struct {
+		description  string
+		shouldOutput string
+		shouldLog    string
+		shouldErr    bool
+	}{
+		{
+			description:  "render success",
+			shouldOutput: "",
+			shouldLog:    "Render completed in .+$",
+			shouldErr:    false,
+		},
+		{
+			description:  "render failure",
+			shouldOutput: "",
+			shouldErr:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			hook := &logrustest.Hook{}
+			log.AddHook(hook)
+
+			r := &mockRenderer{err: test.shouldErr}
+			_, _, render, _ := WithTimings(nil, nil, r, nil, false)
+
+			var out bytes.Buffer
+			err := render.Render(context.Background(), &out, nil, false, "")
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
@@ -223,7 +279,7 @@ func TestTimingsDeploy(t *testing.T) {
 			log.AddHook(hook)
 
 			d := &mockDeployer{err: test.shouldErr}
-			_, _, deployer := WithTimings(nil, nil, d, false)
+			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
 
 			var out bytes.Buffer
 			err := deployer.Deploy(context.Background(), &out, nil)
@@ -260,7 +316,7 @@ func TestTimingsCleanup(t *testing.T) {
 			log.AddHook(hook)
 
 			d := &mockDeployer{err: test.shouldErr}
-			_, _, deployer := WithTimings(nil, nil, d, false)
+			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
 
 			var out bytes.Buffer
 			err := deployer.Cleanup(context.Background(), &out, false)

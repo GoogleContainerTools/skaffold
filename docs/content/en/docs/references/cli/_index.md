@@ -120,6 +120,7 @@ Examples:
   skaffold apply rendered-pod.yaml
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
@@ -144,6 +145,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
@@ -186,6 +188,7 @@ Examples:
   skaffold build -q --dry-run
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
@@ -227,6 +230,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
@@ -405,6 +409,7 @@ Options:
       --detect-minikube=true: Use heuristics to detect a minikube cluster
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
       --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
@@ -462,6 +467,7 @@ Env vars:
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
@@ -508,6 +514,7 @@ Examples:
   skaffold delete --dry-run
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -532,6 +539,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -568,6 +576,7 @@ Examples:
   skaffold deploy --skip-render
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
@@ -575,6 +584,7 @@ Options:
       --detect-minikube=true: Use heuristics to detect a minikube cluster
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
   -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
       --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
@@ -613,6 +623,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
@@ -620,6 +631,7 @@ Env vars:
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_IMAGES` (same as `--images`)
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
@@ -672,6 +684,7 @@ Options:
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
       --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
@@ -729,6 +742,7 @@ Env vars:
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
@@ -777,6 +791,7 @@ Examples:
   skaffold diagnose --yaml-only --profile PROFILE
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
@@ -796,6 +811,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
@@ -827,13 +843,14 @@ Examples:
   skaffold fix --output skaffold.new.yaml
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -o, --output='': File to write the changed config (instead of standard output)
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --sync-remote-cache='missing': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --version='skaffold/v2beta28': Target schema version to upgrade to
+      --version='skaffold/v3alpha2': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -844,6 +861,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
@@ -863,6 +881,7 @@ Options:
       --analyze=false: Print all discoverable Dockerfiles and images in JSON format to stdout
   -a, --artifact=[]: '='-delimited Dockerfile/image pair, or JSON string, to generate build artifact
 (example: --artifact='{"builder":"Docker","payload":{"path":"/web/Dockerfile.web"},"image":"gcr.io/web-project/image"}')
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --compose-file='': Initialize from a docker-compose file
       --default-kustomization='': Default Kustomization overlay path (others will be added as profiles)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -885,6 +904,7 @@ Env vars:
 
 * `SKAFFOLD_ANALYZE` (same as `--analyze`)
 * `SKAFFOLD_ARTIFACT` (same as `--artifact`)
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_COMPOSE_FILE` (same as `--compose-file`)
 * `SKAFFOLD_DEFAULT_KUSTOMIZATION` (same as `--default-kustomization`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -924,11 +944,13 @@ Examples:
   skaffold render --digest-source=remote
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
   -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
@@ -953,11 +975,13 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_IMAGES` (same as `--images`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
@@ -1001,6 +1025,7 @@ Options:
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
       --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
@@ -1053,6 +1078,7 @@ Env vars:
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
@@ -1153,6 +1179,7 @@ Examples:
   skaffold test --build-artifacts=tags.json
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -1176,6 +1203,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)

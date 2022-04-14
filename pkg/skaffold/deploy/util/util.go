@@ -17,25 +17,30 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
-	"strings"
+	"io"
+	"os"
+	"path/filepath"
 
+	"github.com/buildpacks/lifecycle/cmd"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	k8s "k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+)
+
+var (
+	confirmHydrationDirOverride = prompt.ConfirmHydrationDirOverride
 )
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
@@ -62,11 +67,14 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
 	m := map[string]bool{}
 	for _, a := range deployerArtifacts {
+		log.Entry(context.TODO()).Infof("Adding deployer artifact: %s", a.ImageName)
 		m[a.ImageName] = true
 	}
 	for _, artifact := range artifacts {
 		imageName := docker.SanitizeImageName(artifact.ImageName)
+		log.Entry(context.TODO()).Infof("Checking build image name %s", imageName)
 		if _, ok := m[imageName]; ok {
+			log.Entry(context.TODO()).Infof("matched %s, %s", artifact.ImageName, artifact.Tag)
 			podSelector.Add(artifact.Tag)
 		}
 	}
@@ -84,6 +92,45 @@ func ConsolidateNamespaces(original, new []string) []string {
 	namespaces.Insert(append(original, new...)...)
 	namespaces.Delete("") // if we have provided namespaces, remove the empty "default" namespace
 	return namespaces.ToList()
+}
+
+// GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
+func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
+	var hydratedDir string
+	var err error
+
+	if ops.HydrationDir == constants.DefaultHydrationDir {
+		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
+		promptIfNeeded = false
+	} else {
+		hydratedDir = ops.HydrationDir
+	}
+	if hydratedDir, err = filepath.Abs(hydratedDir); err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(hydratedDir); os.IsNotExist(err) {
+		log.Entry(context.TODO()).Infof("hydrated-dir does not exist, creating %v\n", hydratedDir)
+		if err := os.MkdirAll(hydratedDir, os.ModePerm); err != nil {
+			return "", err
+		}
+	} else if !isDirEmpty(hydratedDir) {
+		if promptIfNeeded && !ops.AssumeYes {
+			fmt.Println("you can skip this promp message with flag \"--assume-yes=true\"")
+			if ok := confirmHydrationDirOverride(os.Stdin); !ok {
+				cmd.Exit(nil)
+			}
+		}
+	}
+	log.Entry(context.TODO()).Infof("manifests hydration will take place in %v\n", hydratedDir)
+	return hydratedDir, nil
+}
+
+func isDirEmpty(dir string) bool {
+	f, _ := os.Open(dir)
+	defer f.Close()
+	_, err := f.Readdirnames(1)
+	return err == io.EOF
 }
 
 // GroupVersionResource returns the first `GroupVersionResource` for the given `GroupVersionKind`.
@@ -104,97 +151,4 @@ func GroupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 	}
 
 	return false, schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
-}
-
-func ConsolidateTransformConfiguration(cfg types.Config) (map[schema.GroupKind]latest.ResourceFilter, map[schema.GroupKind]latest.ResourceFilter, error) {
-	// TODO(aaron-prindle) currently this also modifies the flag & config to support a JSON path syntax for input.
-	// this should be done elsewhere eventually
-
-	transformableAllowlist := map[schema.GroupKind]latest.ResourceFilter{}
-	transformableDenylist := map[schema.GroupKind]latest.ResourceFilter{}
-	// add default values
-	for _, rf := range manifest.TransformAllowlist {
-		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
-	}
-	for _, rf := range manifest.TransformDenylist {
-		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableDenylist[groupKind] = convertJSONPathIndex(rf)
-	}
-
-	// add user schema values, override defaults
-	for _, rf := range cfg.TransformAllowList() {
-		instrumentation.AddResourceFilter("schema", "allow")
-		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
-		delete(transformableDenylist, groupKind)
-	}
-	for _, rf := range cfg.TransformDenyList() {
-		instrumentation.AddResourceFilter("schema", "deny")
-		groupKind := schema.ParseGroupKind(rf.GroupKind)
-		transformableDenylist[groupKind] = convertJSONPathIndex(rf)
-		delete(transformableAllowlist, groupKind)
-	}
-
-	// add user flag values, override user schema values and defaults
-	// TODO(aaron-prindle) see if workdir needs to be considered in this read
-	if cfg.TransformRulesFile() != "" {
-		transformRulesFromFile, err := ioutil.ReadFile(cfg.TransformRulesFile())
-		if err != nil {
-			return nil, nil, err
-		}
-		rsc := latest.ResourceSelectorConfig{}
-		err = yaml.Unmarshal(transformRulesFromFile, &rsc)
-		if err != nil {
-			return nil, nil, err
-		}
-		for _, rf := range rsc.Allow {
-			instrumentation.AddResourceFilter("cli-flag", "allow")
-			groupKind := schema.ParseGroupKind(rf.GroupKind)
-			transformableAllowlist[groupKind] = convertJSONPathIndex(rf)
-			delete(transformableDenylist, groupKind)
-		}
-
-		for _, rf := range rsc.Deny {
-			instrumentation.AddResourceFilter("cli-flag", "deny")
-			groupKind := schema.ParseGroupKind(rf.GroupKind)
-			transformableDenylist[groupKind] = convertJSONPathIndex(rf)
-			delete(transformableAllowlist, groupKind)
-		}
-	}
-
-	return transformableAllowlist, transformableDenylist, nil
-}
-
-func convertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
-	nrf := latest.ResourceFilter{}
-	nrf.GroupKind = rf.GroupKind
-
-	if len(rf.Labels) > 0 {
-		nlabels := []string{}
-		for _, str := range rf.Labels {
-			if str == ".*" {
-				nlabels = append(nlabels, str)
-				continue
-			}
-			nstr := strings.ReplaceAll(str, ".*", "")
-			nlabels = append(nlabels, nstr)
-		}
-		nrf.Labels = nlabels
-	}
-
-	if len(rf.Image) > 0 {
-		nimage := []string{}
-		for _, str := range rf.Image {
-			if str == ".*" {
-				nimage = append(nimage, str)
-				continue
-			}
-			nstr := strings.ReplaceAll(str, ".*", "")
-			nimage = append(nimage, nstr)
-		}
-		nrf.Image = nimage
-	}
-
-	return nrf
 }

@@ -31,7 +31,7 @@ jobs:
       # can't use github.event.before as it may represent
       run: |
         git diff --name-only ${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}} \
-             | sed -n -e 's;^examples/\([^/]*\)/.*;examples/\1;p' -e 's;^integration/examples/\([^/]*\)/.*;integration/examples/\1;p' \
+             | sed -n -e 's;^integration/examples/\([^/]*\)/.*;integration/examples/\1;p' \
              | sort -u > /tmp/changed
         CHANGED_EXAMPLES=$(tr '\012' ' ' < /tmp/changed)
         echo "CHANGED_EXAMPLES=$CHANGED_EXAMPLES"

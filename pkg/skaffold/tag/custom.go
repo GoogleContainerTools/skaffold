@@ -28,7 +28,7 @@ type CustomTag struct {
 }
 
 // GenerateTag generates a tag using the custom tag.
-func (t *CustomTag) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
+func (t *CustomTag) GenerateTag(ctx context.Context, _ latest.Artifact) (string, error) {
 	tag := t.Tag
 	if tag == "" {
 		return "", errors.New("custom tag not provided")

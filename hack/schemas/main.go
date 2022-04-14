@@ -134,7 +134,7 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 	folder := apiVersion
 	strict := false
 	if version.APIVersion == schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-1].APIVersion {
-		folder = "latest"
+		folder = "latest/v1"
 		strict = true
 	}
 

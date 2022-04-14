@@ -16,14 +16,45 @@ limitations under the License.
 package v2
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
+// SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
 	runner.Builder
 	runner.Pruner
-	test.Tester
+	tester test.Tester
+
+	renderer renderer.Renderer
+	deployer deploy.Deployer
+	monitor  filemon.Monitor
+	listener runner.Listener
+
+	cache              cache.Cache
+	changeSet          runner.ChangeSet
+	runCtx             *runcontext.RunContext
+	labeller           *label.DefaultLabeller
+	artifactStore      build.ArtifactStore
+	sourceDependencies graph.SourceDependenciesCache
+	platforms          platform.Resolver
+
+	devIteration int
+	isLocalImage func(imageName string) (bool, error)
+	hasDeployed  bool
+	intents      *runner.Intents
 }
 
-func (r *SkaffoldRunner) HasDeployed() bool { return true }
+// HasDeployed returns true if this runner has deployed something.
+func (r *SkaffoldRunner) HasDeployed() bool {
+	return r.hasDeployed
+}

@@ -76,7 +76,7 @@ func initializeMetadata(pipelines []latest.Pipeline, kubeContext string, runID s
 			Cluster:   getClusterType(kubeContext),
 		}
 	}
-	// TODO(v2 render): Add the renderMetadata initialization once the pipeline is switched to latestV2.Pipeline
+	// TODO(v2 render): Add the renderMetadata initialization once the pipeline is switched to latest.Pipeline
 	return m
 }
 
@@ -115,8 +115,8 @@ func getArtifacts(b latest.BuildConfig) []*proto.BuildMetadata_Artifact {
 func getDeploy(d latest.DeployConfig) []*proto.DeployMetadata_Deployer {
 	var deployers []*proto.DeployMetadata_Deployer
 
-	if d.HelmDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_HELM, Count: int32(len(d.HelmDeploy.Releases))})
+	if d.LegacyHelmDeploy != nil {
+		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_HELM, Count: int32(len(d.LegacyHelmDeploy.Releases))})
 	}
 	if d.KubectlDeploy != nil {
 		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUBECTL, Count: 1})

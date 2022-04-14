@@ -16,28 +16,21 @@ limitations under the License.
 
 package parser
 
+// TODO(yuwenma 2021-07-27), multi-module not supported in v2 yet.
+
 import (
 	"context"
-	"errors"
-	"fmt"
-	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
 	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+/*
 const (
 	template = `
 apiVersion: %s
@@ -1348,8 +1341,9 @@ requires:
 		})
 	}
 }
+*/
 
-var testSkaffoldYaml = `apiVersion: skaffold/v2beta26
+var testSkaffoldYaml = `apiVersion: skaffold/v3alpha2
 kind: Config
 build:
   artifacts:

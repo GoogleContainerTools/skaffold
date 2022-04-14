@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/segmentio/textio"
@@ -48,6 +49,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -79,8 +81,8 @@ type Deployer struct {
 	insecureRegistries map[string]bool
 	labeller           *label.DefaultLabeller
 	skipRender         bool
-
-	namespaces *[]string
+	hydrationDir       string
+	namespaces         *[]string
 
 	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -88,7 +90,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, hydrationDir string) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -105,30 +107,34 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
-	transformableAllowlist, transformableDenylist, err := deployutil.ConsolidateTransformConfiguration(cfg)
+	transformableAllowlist, transformableDenylist, err := renderutil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &Deployer{
-		KubectlDeploy:          d,
-		podSelector:            podSelector,
-		namespaces:             &namespaces,
-		accessor:               component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
-		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:            component.NewImageLoader(cfg, kubectl.CLI),
-		logger:                 logger,
-		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:                 component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
-		hookRunner:             hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
-		workingDir:             cfg.GetWorkingDir(),
-		globalConfig:           cfg.GlobalConfig(),
-		defaultRepo:            cfg.DefaultRepo(),
-		multiLevelRepo:         cfg.MultiLevelRepo(),
-		kubectl:                kubectl,
-		insecureRegistries:     cfg.GetInsecureRegistries(),
-		skipRender:             cfg.SkipRender(),
-		labeller:               labeller,
-		hydratedManifests:      cfg.HydratedManifests(),
+		KubectlDeploy:      d,
+		podSelector:        podSelector,
+		namespaces:         &namespaces,
+		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:        component.NewImageLoader(cfg, kubectl.CLI),
+		logger:             logger,
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
+		hookRunner:         hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		workingDir:         cfg.GetWorkingDir(),
+		globalConfig:       cfg.GlobalConfig(),
+		defaultRepo:        cfg.DefaultRepo(),
+		multiLevelRepo:     cfg.MultiLevelRepo(),
+		kubectl:            kubectl,
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		skipRender:         cfg.SkipRender(),
+		labeller:           labeller,
+		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
+		hydratedManifests: cfg.HydratedManifests(),
+		// hydrationDir refers to the path where the hydrated manifests are stored, this is introduced in v2.
+		hydrationDir: hydrationDir,
+
 		transformableAllowlist: transformableAllowlist,
 		transformableDenylist:  transformableDenylist,
 	}, nil
@@ -330,16 +336,29 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 
 // readManifests reads the manifests to deploy/delete.
 func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
-	// Get file manifests
-	manifests, err := k.Dependencies()
+	var manifests []string
+	var err error
+
+	// v1 kubectl deployer is used. No manifest hydration.
+	if len(k.KubectlDeploy.Manifests) > 0 {
+		olog.Entry(ctx).Warnln("`deploy.kubectl.manifests` (DEPRECATED) are given, skaffold will skip the `manifests` field. " +
+			"If you expect skaffold to render the resources from the `manifests`, please delete the `deploy.kubectl.manifests` field.")
+		manifests, err = k.Dependencies()
+		if err != nil {
+			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
+		}
+	} else {
+		// v2 kubectl deployer is used. The manifests are read from the hydrated directory.
+		manifests, err = k.manifestFiles([]string{filepath.Join(k.hydrationDir, "*")})
+		if err != nil {
+			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
+		}
+	}
+
 	// Clean the temporary directory that holds the manifests downloaded from GCS
 	defer os.RemoveAll(k.gcsManifestDir)
 
-	if err != nil {
-		return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
-	}
-
-	// Append URL manifests
+	// Append URL manifests. URL manifests are excluded from `Dependencies`.
 	hasURLManifest := false
 	for _, manifest := range k.KubectlDeploy.Manifests {
 		if util.IsURL(manifest) {
@@ -415,6 +434,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	return manifest.Write(manifests.String(), filepath, out)
 }
 
+// renderManifests transforms the manifests' images with the actual image sha1 built from skaffold build.
 func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		output.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))

@@ -48,6 +48,8 @@ type Runner interface {
 	HasBuilt() bool
 	HasDeployed() bool
 	Prune(context.Context, io.Writer) error
-	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
+
+	// "output" arg is only used in Render v1.
+	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, output string) error
 	Test(context.Context, io.Writer, []graph.Artifact) error
 }

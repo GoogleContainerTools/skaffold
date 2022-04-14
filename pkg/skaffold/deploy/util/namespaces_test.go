@@ -80,7 +80,7 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 				{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
-							HelmDeploy: &latest.HelmDeploy{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},

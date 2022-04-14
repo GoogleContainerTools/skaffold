@@ -43,14 +43,14 @@ func GetLatestVersion() (string, bool) {
 	}
 
 	logrus.Infof("Checking for released status of %s...", current)
-	lastReleased := getLastReleasedConfigVersion()
+	lastReleased := GetLastReleasedVersion()
 	logrus.Infof("Last released version: %s", lastReleased)
 
 	latestIsReleased := lastReleased == current
 	return current, latestIsReleased
 }
 
-func getLastReleasedConfigVersion() string {
+func GetLastReleasedVersion() string {
 	lastTag, err := update.DownloadLatestVersion()
 	if err != nil {
 		logrus.Fatalf("error getting latest version: %s", err)
@@ -58,7 +58,7 @@ func getLastReleasedConfigVersion() string {
 	logrus.Infof("last release tag: %s", lastTag)
 	// we split the config in v1.25.0
 	for _, url := range []string{
-		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
+		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/v1/config.go", lastTag),
 		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
 	} {
 		resp, err := http.Get(url)

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -37,7 +38,7 @@ func TestFix(t *testing.T) {
 	}{
 		{
 			description:   "v1alpha4 to latest",
-			targetVersion: latest.Version,
+			targetVersion: latestV1.Version,
 			inputYaml: `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
@@ -69,11 +70,11 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version),
+`, latestV1.Version),
 		},
 		{
 			description:   "v1alpha1 to latest",
-			targetVersion: latest.Version,
+			targetVersion: latestV1.Version,
 			inputYaml: `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
@@ -97,7 +98,7 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version),
+`, latestV1.Version),
 		},
 		{
 			description:   "v1alpha1 to v1",
@@ -143,7 +144,7 @@ kind: Config
 		{
 			description:   "validation fails",
 			targetVersion: latest.Version,
-			inputYaml: `apiVersion: skaffold/v1alpha1
+			inputYaml: `apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   artifacts:
@@ -197,13 +198,13 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version)
+`, latestV1.Version)
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfgFile := t.TempFile("config", []byte(inputYaml))
 
 		var b bytes.Buffer
-		err := fix(&b, cfgFile, cfgFile, latest.Version)
+		err := fix(&b, cfgFile, cfgFile, latestV1.Version)
 
 		output, _ := ioutil.ReadFile(cfgFile)
 

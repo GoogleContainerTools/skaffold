@@ -26,12 +26,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
+	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
@@ -65,7 +66,7 @@ func (d *deployerCtx) JSONParseConfig() latest.JSONParseConfig {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
-func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
+func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
 	deployerCfg := runCtx.Deployers()
 
 	if runCtx.Opts.Apply {
@@ -77,8 +78,8 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				nonHelmDeployFound = true
 			}
 
-			if d.HelmDeploy != nil {
-				for _, release := range d.HelmDeploy.Releases {
+			if d.LegacyHelmDeploy != nil {
+				for _, release := range d.LegacyHelmDeploy.Releases {
 					if release.Namespace != "" {
 						helmNamespaces[release.Namespace] = true
 					}
@@ -100,14 +101,15 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			}
 		}
 
-		return getDefaultDeployer(runCtx, labeller)
+		return getDefaultDeployer(runCtx, labeller, hydrationDir)
 	}
 
+	var deployers []deploy.Deployer
 	localDeploy := false
 	remoteDeploy := false
-
-	var deployers []deploy.Deployer
 	for _, d := range deployerCfg {
+		dCtx := &deployerCtx{runCtx, d}
+
 		if d.DockerDeploy != nil {
 			localDeploy = true
 			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
@@ -125,25 +127,28 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			deployers = append(deployers, d)
 		}
 
-		dCtx := &deployerCtx{runCtx, d}
-		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.HelmDeploy)
+		if d.LegacyHelmDeploy != nil {
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts())
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, h)
 		}
 
-		if d.KptDeploy != nil {
-			k, err := kpt.NewDeployer(dCtx, labeller, d.KptDeploy)
+		if d.KubectlDeploy != nil {
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)
 			if err != nil {
 				return nil, err
 			}
-			deployers = append(deployers, k)
+			deployers = append(deployers, deployer)
 		}
 
-		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy)
+		if d.KptDeploy != nil {
+			if d.KptDeploy.Dir == "" {
+				log.Entry(context.TODO()).Infof("manifests are deployed from render path %v\n", hydrationDir)
+				d.KptDeploy.Dir = hydrationDir
+			}
+			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts)
 			if err != nil {
 				return nil, err
 			}
@@ -179,7 +184,7 @@ The default deployer will honor a select set of deploy configuration from an exi
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latest.KubectlFlags
@@ -237,7 +242,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
-	defaultDeployer, err := kubectl.NewDeployer(runCtx, labeller, k)
+	defaultDeployer, err := kubectl.NewDeployer(runCtx, labeller, k, hydrationDir)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}

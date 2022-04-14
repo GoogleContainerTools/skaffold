@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
@@ -194,7 +194,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "Kaniko Volume Mount - ConfigMap",
 			config:      []string{kanikoConfigMap},
 			expected: []util.VersionedConfig{config(
@@ -217,7 +217,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "Minimal config",
 			config:      []string{minimalConfig},
 			expected: []util.VersionedConfig{config(
@@ -241,7 +241,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "Simple config",
 			config:      []string{simpleConfig},
 			expected: []util.VersionedConfig{config(
@@ -254,7 +254,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "Complete config",
 			config:      []string{completeConfig},
 			expected: []util.VersionedConfig{config(
@@ -282,7 +282,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version, latest.Version},
+			apiVersion:  []string{latestV1.Version, latestV1.Version},
 			description: "Multiple complete config with same API versions",
 			config:      []string{completeConfig, completeClusterConfig},
 			expected: []util.VersionedConfig{config(
@@ -304,7 +304,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version, v2beta8.Version},
+			apiVersion:  []string{latestV1.Version, v2beta8.Version},
 			description: "Multiple complete config with different API versions",
 			config:      []string{completeConfig, completeClusterConfig},
 			expected: []util.VersionedConfig{config(
@@ -326,7 +326,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "Minimal Cluster config",
 			config:      []string{minimalClusterConfig},
 			expected: []util.VersionedConfig{config(
@@ -339,7 +339,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "Complete Cluster config",
 			config:      []string{completeClusterConfig},
 			expected: []util.VersionedConfig{config(
@@ -353,13 +353,13 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "Bad config",
 			config:      []string{badConfig},
 			shouldErr:   true,
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "two taggers defined",
 			config:      []string{invalidConfig},
 			shouldErr:   true,
@@ -371,13 +371,13 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "invalid statusCheckDeadline",
 			config:      []string{invalidStatusCheckConfig},
 			shouldErr:   true,
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "valid statusCheckDeadline",
 			config:      []string{validStatusCheckConfig},
 			expected: []util.VersionedConfig{config(
@@ -390,7 +390,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			)},
 		},
 		{
-			apiVersion:  []string{latest.Version},
+			apiVersion:  []string{latestV1.Version},
 			description: "custom log prefix",
 			config:      []string{customLogPrefix},
 			expected: []util.VersionedConfig{config(
@@ -411,8 +411,12 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 
 			cfgs, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"))
 			for _, cfg := range cfgs {
+				if _, ok := SchemaVersionsV2.Find(test.apiVersion[0]); !ok {
+					// TODO: the "defaults" package below only accept latestV2 schema.
+					t.SkipNow()
+				}
+
 				err := defaults.Set(cfg.(*latest.SkaffoldConfig))
-				defaults.SetDefaultDeployer(cfg.(*latest.SkaffoldConfig))
 				t.CheckNoError(err)
 			}
 
@@ -557,7 +561,7 @@ func withKubeContext(kubeContext string) func(*latest.SkaffoldConfig) {
 
 func withHelmDeploy() func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy.DeployType.HelmDeploy = &latest.HelmDeploy{}
+		cfg.Deploy.DeployType.LegacyHelmDeploy = &latest.LegacyHelmDeploy{}
 	}
 }
 
@@ -691,7 +695,7 @@ func TestUpgradeToNextVersion(t *testing.T) {
 }
 
 func TestCantUpgradeFromLatestV1Version(t *testing.T) {
-	factory, present := SchemaVersionsV1.Find(latest.Version)
+	factory, present := SchemaVersionsV1.Find(latestV1.Version)
 	testutil.CheckDeepEqual(t, true, present)
 
 	_, err := factory().Upgrade()
@@ -699,7 +703,7 @@ func TestCantUpgradeFromLatestV1Version(t *testing.T) {
 }
 
 func TestCantUpgradeFromLatestV2Version(t *testing.T) {
-	factory, present := SchemaVersionsV2.Find(latestV2.Version)
+	factory, present := SchemaVersionsV2.Find(latest.Version)
 	testutil.CheckDeepEqual(t, true, present)
 
 	_, err := factory().Upgrade()
@@ -709,7 +713,7 @@ func TestCantUpgradeFromLatestV2Version(t *testing.T) {
 func TestParseConfigAndUpgradeToOlderVersion(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().
-			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, minimalConfig)).
+			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latestV1.Version, minimalConfig)).
 			Chdir()
 
 		cfgs, err := ParseConfig("skaffold.yaml")
@@ -735,7 +739,7 @@ func TestGetLatestFromCompatibilityCheck(t *testing.T) {
 				&v2beta1.SkaffoldConfig{APIVersion: v2beta1.Version},
 			},
 			description: "valid compatibility check for all v1 schemas releases",
-			expected:    latest.Version,
+			expected:    latestV1.Version,
 			shouldErr:   false,
 		},
 		{
@@ -744,7 +748,7 @@ func TestGetLatestFromCompatibilityCheck(t *testing.T) {
 				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
 			},
 			description: "valid compatibility check for all v2 schemas releases",
-			expected:    latestV2.Version,
+			expected:    latest.Version,
 			shouldErr:   false,
 		},
 		{
@@ -755,7 +759,7 @@ func TestGetLatestFromCompatibilityCheck(t *testing.T) {
 			description: "invalid compatibility among v1 and v2 versions",
 			shouldErr:   true,
 			err: fmt.Errorf("detected incompatible versions:%v are incompatible with %v",
-				[]string{latest.Version, v1alpha1.Version}, []string{v3alpha1.Version}),
+				[]string{latestV1.Version, v1alpha1.Version}, []string{v3alpha1.Version}),
 		},
 		{
 			apiVersions: []util.VersionedConfig{
@@ -798,7 +802,7 @@ func TestIsCompatibleWith(t *testing.T) {
 				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
 			},
 			description: "v2 schemas are compatible to a v2 schema",
-			toVersion:   latestV2.Version,
+			toVersion:   latest.Version,
 			shouldErr:   false,
 		},
 		{
@@ -807,7 +811,7 @@ func TestIsCompatibleWith(t *testing.T) {
 				&v1beta1.SkaffoldConfig{APIVersion: v1beta1.Version},
 			},
 			description: "v1 schemas cannot upgrade to v2.",
-			toVersion:   latestV2.Version,
+			toVersion:   latest.Version,
 			shouldErr:   true,
 			err: fmt.Errorf("the following versions are incompatible with target version %v. upgrade aborted",
 				[]string{v1alpha1.Version, v1beta1.Version}),
@@ -815,13 +819,13 @@ func TestIsCompatibleWith(t *testing.T) {
 		{
 			apiVersions: []util.VersionedConfig{
 				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
-				&latestV2.SkaffoldConfig{APIVersion: latestV2.Version},
+				&latest.SkaffoldConfig{APIVersion: latest.Version},
 			},
 			description: "v2 schemas are incompatible with v1.",
-			toVersion:   latest.Version,
+			toVersion:   latestV1.Version,
 			shouldErr:   true,
 			err: fmt.Errorf("the following versions are incompatible with target version %v. upgrade aborted",
-				[]string{v3alpha1.Version, latestV2.Version}),
+				[]string{v3alpha1.Version, latest.Version}),
 		},
 	}
 	for _, test := range tests {

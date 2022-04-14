@@ -71,8 +71,8 @@ func GetAllPodNamespaces(configNamespace string, pipelines []latest.Pipeline) ([
 func collectHelmReleasesNamespaces(pipelines []latest.Pipeline) ([]string, error) {
 	var namespaces []string
 	for _, cfg := range pipelines {
-		if cfg.Deploy.HelmDeploy != nil {
-			for _, release := range cfg.Deploy.HelmDeploy.Releases {
+		if cfg.Deploy.LegacyHelmDeploy != nil {
+			for _, release := range cfg.Deploy.LegacyHelmDeploy.Releases {
 				if release.Namespace != "" {
 					templatedNamespace, err := util.ExpandEnvTemplateOrFail(release.Namespace, nil)
 					if err != nil {

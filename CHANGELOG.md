@@ -267,7 +267,6 @@ Docs and Testing:
 
 Huge thanks goes out to all of our contributors for this release:
 
-- Aaron Prindle
 - Andrés Torres
 - Artem Kuznetsov
 - Brian de Alwis
@@ -288,6 +287,59 @@ Huge thanks goes out to all of our contributors for this release:
 - Yuta Nishimori
 - Zbigniew Mandziejewicz
 - smaftoul
+
+# v1.35.2 Release - 01/13/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.2/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.2/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.2/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.35.2/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.35.2`
+
+This is patch release to get in changes from https://github.com/GoogleContainerTools/skaffold/pull/7011, which fixes an issue with skaffold deployments and StatefulSets.
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+
+# v1.35.1 Release - 11/18/2021
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.1/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.35.1/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.35.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.35.1`
+
+This is patch release to fix two issue
+* fix(ko): Do not add `-trimpath` when debugging [#6874](https://github.com/GoogleContainerTools/skaffold/pull/6874)
+* fix: apply cmd should run `kubectl create --dry-run` to get the `ManifestList` 
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Gaurav
+- Halvard Skogsrud
 
 # v1.35.0 Release - 11/16/2021
 **Linux amd64**

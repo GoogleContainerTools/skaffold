@@ -230,7 +230,7 @@ func TestApplyProfiles(t *testing.T) {
 					Pipeline: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							DeployType: latest.DeployType{
-								HelmDeploy: &latest.HelmDeploy{},
+								LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
 							},
 						},
 					},

@@ -38,8 +38,8 @@ type ResourceForwarder struct {
 	output               io.Writer
 	entryManager         *EntryManager
 	label                string
-	kubeContext          string
 	userDefinedResources []*latest.PortForwardResource
+	kubeContext          string
 	services             bool
 }
 

@@ -107,7 +107,7 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig, user, deployCtx strin
 			}
 		}
 		meter.Deployers = append(meter.Deployers, yamltags.GetYamlKeys(config.Deploy.DeployType)...)
-		if h := config.Deploy.HelmDeploy; h != nil {
+		if h := config.Deploy.LegacyHelmDeploy; h != nil {
 			meter.HelmReleasesCount = len(h.Releases)
 		}
 		if k := config.Deploy.KubectlDeploy; k != nil {

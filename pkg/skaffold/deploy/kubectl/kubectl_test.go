@@ -28,12 +28,13 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -225,8 +226,8 @@ func TestKubectlDeploy(t *testing.T) {
 			t.SetEnvs(test.envs)
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&client.Client, deployutil.MockK8sClient)
-			t.NewTempDir().
-				Write("deployment.yaml", DeploymentWebYAML).
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("deployment.yaml", DeploymentWebYAML).
 				Touch("empty.ignored").
 				Chdir()
 
@@ -245,7 +246,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption}},
-			}, &label.DefaultLabeller{}, &test.kubectl)
+			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
 			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
@@ -324,14 +325,13 @@ func TestKubectlCleanup(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.NewTempDir().
-				Write("deployment.yaml", DeploymentWebYAML).
-				Chdir()
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("deployment.yaml", DeploymentWebYAML).Chdir()
 
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl)
+			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
 			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun)
@@ -371,14 +371,13 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, "cleanup remote", func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.NewTempDir().
-				Write("deployment.yaml", DeploymentWebYAML).
-				Chdir()
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("deployment.yaml", DeploymentWebYAML).Chdir()
 
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl)
+			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
 			err = k.Cleanup(context.Background(), ioutil.Discard, false)
@@ -413,7 +412,8 @@ func TestKubectlRedeploy(t *testing.T) {
 				Enabled: true,
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}})
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}},
+			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
 		// Deploy one manifest
@@ -478,7 +478,8 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}},
+			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
@@ -516,7 +517,8 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 				Delay:   10 * time.Second,
 				Max:     100 * time.Millisecond,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}},
+			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
@@ -571,13 +573,14 @@ func TestDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.NewTempDir().
-				Touch("deployment.yaml", "01_name.yaml", "00_service.yaml", "empty.ignored").
+			tmpDir := t.NewTempDir()
+			tmpDir.Touch("deployment.yaml", "01_name.yaml", "00_service.yaml", "empty.ignored").
 				Touch("01/a.yaml", "01/b.yaml").
 				Touch("00/b.yaml", "00/a.yaml").
 				Chdir()
 
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: test.manifests})
+			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: test.manifests},
+				filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
 			dependencies, err := k.Dependencies()
@@ -696,7 +699,7 @@ spec:
 				multiLevelRepo: util.BoolPtr(true),
 			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 				Manifests: []string{tmpDir.Path("deployment.yaml")},
-			})
+			}, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			err = deployer.Render(context.Background(), &b, test.builds, true, "")
@@ -740,7 +743,7 @@ func TestGCSManifests(t *testing.T) {
 				workingDir: ".",
 				skipRender: test.skipRender,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl)
+			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join("", constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
 			err = k.Deploy(context.Background(), ioutil.Discard, nil)
@@ -777,7 +780,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg, "")
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)
