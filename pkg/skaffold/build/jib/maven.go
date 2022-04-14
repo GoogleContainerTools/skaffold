@@ -59,7 +59,7 @@ func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, wo
 		return "", jibToolErr(err)
 	}
 
-	return docker.RemoteDigest(tag, b.cfg)
+	return docker.RemoteDigest(tag, b.cfg, nil)
 }
 
 func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
