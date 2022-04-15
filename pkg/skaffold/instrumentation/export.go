@@ -178,6 +178,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		attribute.String("error", meter.ErrorCode.String()),
 		attribute.String("platform_type", meter.PlatformType),
 		attribute.String("config_count", strconv.Itoa(meter.ConfigCount)),
+		attribute.String("cluster_type", meter.ClusterType),
 	}
 	sharedLabels := []attribute.KeyValue{
 		randLabel,
