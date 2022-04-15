@@ -24,6 +24,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -39,7 +43,16 @@ func TestFilterIsHidden(t *testing.T) {
 }
 
 func TestFilterTransform(t *testing.T) {
-	manifest := `apiVersion: apps/v1
+	tests := []struct {
+		description    string
+		manifestsStr   string
+		buildArtifacts []graph.Artifact
+		labels         []string
+		expected       string
+	}{
+		{
+			description: "manifests with images",
+			manifestsStr: `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: chartName
@@ -51,23 +64,11 @@ spec:
     spec:
       containers:
       - name: chartName
-        image: image1`
-	tests := []struct {
-		description    string
-		manifestsStr   string
-		buildArtifacts []graph.Artifact
-		labels         []string
-		expected       string
-		transform      bool
-	}{
-		{
-			description:  "manifests with images",
-			manifestsStr: manifest,
+        image: image1`,
 			buildArtifacts: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag1"},
 				{ImageName: "image2", Tag: "image2:tag2"}},
-			labels:    []string{"label1=foo", "run.id=random"},
-			transform: true,
+			labels: []string{"label1=foo", "run.id=random"},
 			expected: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -84,26 +85,19 @@ spec:
       - image: image1:tag1
         name: chartName`,
 		},
-		{
-			description:  "no transform",
-			manifestsStr: manifest,
-			buildArtifacts: []graph.Artifact{
-				{ImageName: "image1", Tag: "image1:tag1"},
-				{ImageName: "image2", Tag: "image2:tag2"}},
-			labels:   []string{"label1=foo", "run.id=random"},
-			expected: manifest,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&opts, config.SkaffoldOptions{})
+			t.Override(&opts, config.SkaffoldOptions{
+				CustomLabels: test.labels,
+			})
 			mockRunner := &mockDevRunner{}
 			t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
-				return mockRunner, []util.VersionedConfig{&latestV1.SkaffoldConfig{}}, nil, nil
+				return mockRunner, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
 			})
 			t.SetStdin([]byte(test.manifestsStr))
 			var b bytes.Buffer
-			err := runFilter(context.TODO(), &b, false, test.buildArtifacts, test.labels, test.transform)
+			err := runFilter(context.TODO(), &b, false, test.buildArtifacts)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})

@@ -23,12 +23,14 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	apim "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -66,11 +68,14 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 			return fmt.Errorf("loading manifests: %w", err)
 		}
 
-		manifestList, err = manifestList.SetLabels(pkgutil.EnvSliceToMap(opts.CustomLabels, "="), manifest.NewResourceSelectorLabels(manifest.TransformAllowlist, manifest.TransformDenylist))
+		allow, deny := getTransformList(configs)
+
+		manifestList, err = manifestList.SetLabels(pkgutil.EnvSliceToMap(opts.CustomLabels, "="),
+			manifest.NewResourceSelectorLabels(allow, deny))
 		if err != nil {
 			return err
 		}
-		manifestList, err = manifestList.ReplaceImages(ctx, buildArtifacts, manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
+		manifestList, err = manifestList.ReplaceImages(ctx, buildArtifacts, manifest.NewResourceSelectorImages(allow, deny))
 		if err != nil {
 			return err
 		}
@@ -97,6 +102,36 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 		out.Write([]byte(manifestList.String()))
 		return nil
 	})
+}
+
+func getTransformList(configs []util.VersionedConfig) (map[apim.GroupKind]latest.ResourceFilter, map[apim.GroupKind]latest.ResourceFilter) {
+	// TODO: remove code duplication by adding a new Filter method to the runner.
+	// and reuse renderer/util.ConsolidateTransformConfiguration
+
+	allow := manifest.TransformAllowlist
+	deny := manifest.TransformDenylist
+
+	// add default values
+	for _, rf := range manifest.TransformAllowlist {
+		groupKind := apim.ParseGroupKind(rf.GroupKind)
+		allow[groupKind] = rUtil.ConvertJSONPathIndex(rf)
+	}
+	for _, rf := range manifest.TransformDenylist {
+		groupKind := apim.ParseGroupKind(rf.GroupKind)
+		allow[groupKind] = rUtil.ConvertJSONPathIndex(rf)
+	}
+
+	for _, cfg := range configs {
+		for _, rf := range cfg.(*latest.SkaffoldConfig).ResourceSelector.Allow {
+			groupKind := apim.ParseGroupKind(rf.GroupKind)
+			allow[groupKind] = rUtil.ConvertJSONPathIndex(rf)
+		}
+		for _, rf := range cfg.(*latest.SkaffoldConfig).ResourceSelector.Deny {
+			groupKind := apim.ParseGroupKind(rf.GroupKind)
+			deny[groupKind] = rUtil.ConvertJSONPathIndex(rf)
+		}
+	}
+	return allow, deny
 }
 
 func getInsecureRegistries(opts config.SkaffoldOptions, configs []util.VersionedConfig) (map[string]bool, error) {
