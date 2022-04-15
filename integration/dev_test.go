@@ -311,8 +311,6 @@ func TestDevPortForward(t *testing.T) {
 
 func TestDevPortForwardDefaultNamespace(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	// TODO: fix https://github.com/GoogleContainerTools/skaffold/issues/7032
-	t.Skipf("Fix todo https://github.com/GoogleContainerTools/skaffold/issues/7032")
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
