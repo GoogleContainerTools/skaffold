@@ -17,9 +17,13 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -32,4 +36,76 @@ func TestFilterIsHidden(t *testing.T) {
 
 		t.CheckDeepEqual(true, cmd.Hidden)
 	})
+}
+
+func TestFilterTransform(t *testing.T) {
+	manifest := `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chartName
+  labels:
+    app: chartName
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: chartName
+        image: image1`
+	tests := []struct {
+		description    string
+		manifestsStr   string
+		buildArtifacts []graph.Artifact
+		labels         []string
+		expected       string
+		transform      bool
+	}{
+		{
+			description:  "manifests with images",
+			manifestsStr: manifest,
+			buildArtifacts: []graph.Artifact{
+				{ImageName: "image1", Tag: "image1:tag1"},
+				{ImageName: "image2", Tag: "image2:tag2"}},
+			labels:    []string{"label1=foo", "run.id=random"},
+			transform: true,
+			expected: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: chartName
+    label1: foo
+    run.id: random
+  name: chartName
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - image: image1:tag1
+        name: chartName`,
+		},
+		{
+			description:  "no transform",
+			manifestsStr: manifest,
+			buildArtifacts: []graph.Artifact{
+				{ImageName: "image1", Tag: "image1:tag1"},
+				{ImageName: "image2", Tag: "image2:tag2"}},
+			labels:   []string{"label1=foo", "run.id=random"},
+			expected: manifest,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&opts, config.SkaffoldOptions{})
+			mockRunner := &mockDevRunner{}
+			t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
+				return mockRunner, []util.VersionedConfig{&latestV1.SkaffoldConfig{}}, nil, nil
+			})
+			t.SetStdin([]byte(test.manifestsStr))
+			var b bytes.Buffer
+			err := runFilter(context.TODO(), &b, false, test.buildArtifacts, test.labels, test.transform)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, b.String())
+		})
+	}
 }
