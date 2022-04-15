@@ -37,7 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta14"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3alpha1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -676,7 +675,8 @@ func withLogsPrefix(prefix string) func(*latest.SkaffoldConfig) {
 }
 
 func TestUpgradeToNextVersion(t *testing.T) {
-	for _, versions := range []Versions{SchemaVersionsV1, SchemaVersionsV2} {
+	// TODO(MarlonGamez): reintroduce SchemaVersionsV2 to this test once there is more than one V2 schema
+	for _, versions := range []Versions{SchemaVersionsV1} {
 		for i, schemaVersion := range versions[0 : len(versions)-2] {
 			from := schemaVersion
 			to := versions[i+1]
@@ -745,7 +745,7 @@ func TestGetLatestFromCompatibilityCheck(t *testing.T) {
 		{
 
 			apiVersions: []util.VersionedConfig{
-				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
+				&latest.SkaffoldConfig{APIVersion: latest.Version},
 			},
 			description: "valid compatibility check for all v2 schemas releases",
 			expected:    latest.Version,
@@ -754,12 +754,12 @@ func TestGetLatestFromCompatibilityCheck(t *testing.T) {
 		{
 			apiVersions: []util.VersionedConfig{
 				&v1alpha1.SkaffoldConfig{APIVersion: v1alpha1.Version},
-				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
+				&latest.SkaffoldConfig{APIVersion: latest.Version},
 			},
 			description: "invalid compatibility among v1 and v2 versions",
 			shouldErr:   true,
 			err: fmt.Errorf("detected incompatible versions:%v are incompatible with %v",
-				[]string{latestV1.Version, v1alpha1.Version}, []string{v3alpha1.Version}),
+				[]string{latestV1.Version, v1alpha1.Version}, []string{latest.Version}),
 		},
 		{
 			apiVersions: []util.VersionedConfig{
@@ -799,7 +799,7 @@ func TestIsCompatibleWith(t *testing.T) {
 		},
 		{
 			apiVersions: []util.VersionedConfig{
-				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
+				&latest.SkaffoldConfig{APIVersion: latest.Version},
 			},
 			description: "v2 schemas are compatible to a v2 schema",
 			toVersion:   latest.Version,
@@ -818,14 +818,13 @@ func TestIsCompatibleWith(t *testing.T) {
 		},
 		{
 			apiVersions: []util.VersionedConfig{
-				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
 				&latest.SkaffoldConfig{APIVersion: latest.Version},
 			},
 			description: "v2 schemas are incompatible with v1.",
 			toVersion:   latestV1.Version,
 			shouldErr:   true,
 			err: fmt.Errorf("the following versions are incompatible with target version %v. upgrade aborted",
-				[]string{v3alpha1.Version, latest.Version}),
+				[]string{latest.Version}),
 		},
 	}
 	for _, test := range tests {
