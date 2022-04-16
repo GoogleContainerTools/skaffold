@@ -82,10 +82,9 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	releases := []latest.HelmRelease{}
 	for _, ch := range h.charts {
-		chDir, _ := filepath.Split(ch.path)
 		releases = append(releases, latest.HelmRelease{
 			Name:        ch.name,
-			ChartPath:   chDir,
+			ChartPath:   ch.path,
 			ValuesFiles: ch.valueFiles,
 		})
 
