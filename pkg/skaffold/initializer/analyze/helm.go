@@ -19,6 +19,7 @@ package analyze
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 )
@@ -27,7 +28,6 @@ import (
 type helmAnalyzer struct {
 	directoryAnalyzer
 	chartDirs map[string][]string
-	values    []string
 }
 
 func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
@@ -35,6 +35,12 @@ func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
 		chDir, _ := filepath.Split(filePath)
 		h.chartDirs[filepath.Clean(chDir)] = []string{}
 		return nil
+	}
+	if strings.HasSuffix(filePath, "yaml") || strings.HasSuffix(filePath, "yml") {
+		dir, _ := filepath.Split(filePath)
+		if s, ok := h.chartDirs[filepath.Clean(dir)]; ok {
+			h.chartDirs[filepath.Clean(dir)] = append(s, filePath)
+		}
 	}
 	return nil
 }

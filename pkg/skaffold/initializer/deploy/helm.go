@@ -17,9 +17,9 @@ limitations under the License.
 package deploy
 
 import (
+	"fmt"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -30,29 +30,31 @@ type helm struct {
 }
 
 type chart struct {
-	name      string
-	path      string
-	valueFile string
-	overrides map[string]string
+	name       string
+	path       string
+	valueFiles []string
 }
 
 // newHelmInitializer returns a helm config generator.
-func newHelmInitializer(chartTemplatesMap map[string][]string, builders []build.InitBuilder) helm {
+func newHelmInitializer(chartTemplatesMap map[string][]string) helm {
 	var charts []chart
 
-	for chDir, _ := range chartTemplatesMap {
-		// find value files
-		vf := findValuesFile(chDir)
-		// generate the artifactsOverride key
+	i := 1
+	for chDir, vfs := range chartTemplatesMap {
+		_, chDirName := filepath.Split(filepath.Clean(chDir))
+		if chDirName == "charts" {
+			chDirName = fmt.Sprintf("charts-%d", i)
+			i = i + 1
+		}
 		charts = append(charts, chart{
-			name:      resolveChartName(chDir),
-			path:      chDir,
-			valueFile: vf,
+			name:       chDirName,
+			path:       chDir,
+			valueFiles: vfs,
 		})
+		i++
 	}
-	updated := make([]chart, len(charts))
 	return helm{
-		charts: updated,
+		charts: charts,
 	}
 }
 
@@ -65,7 +67,7 @@ func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 		releases = append(releases, latest.HelmRelease{
 			Name:        ch.name,
 			ChartPath:   chDir,
-			ValuesFiles: []string{filepath.Join(chDir, "values.yaml")},
+			ValuesFiles: ch.valueFiles,
 		})
 
 	}
@@ -90,10 +92,7 @@ func (h helm) Validate() error {
 // we don't generate manifests for helm
 func (h helm) AddManifestForImage(string, string) {}
 
-func resolveChartName(chDirPath string) string {
-	_, chDirName := filepath.Split(filepath.Clean(chDirPath))
-	if chDirName == "charts" {
-		return "chart-foo"
-	}
-	return chDirName
+// GetImages return an empty string for helm.
+func (h helm) GetImages() []string {
+	return []string{}
 }

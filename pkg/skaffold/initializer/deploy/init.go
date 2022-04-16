@@ -91,7 +91,7 @@ func NewInitializer(manifests, bases, kustomizations []string, h analyze.HelmCha
 	case len(kustomizations) > 0:
 		return newKustomizeInitializer(c.DefaultKustomization, bases, kustomizations, manifests)
 	case len(h.Charts()) > 0:
-		return newHelmInitializer(h.Charts(), h.Builders())
+		return newHelmInitializer(h.Charts())
 	default:
 		return newKubectlInitializer(manifests)
 	}
