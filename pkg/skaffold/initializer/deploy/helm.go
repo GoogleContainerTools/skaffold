@@ -49,6 +49,7 @@ type chart struct {
 	chartValues map[string]string
 	path        string
 	valueFiles  []string
+	overrides   map[string]string
 }
 
 // newHelmInitializer returns a helm config generator.
@@ -73,39 +74,6 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 	}
 	return helm{
 		charts: charts,
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-)
-
-// helm implements deploymentInitializer for the helm deployer.
-type helm struct {
-	charts []chart
-}
-
-type chart struct {
-	name      string
-	path      string
-	valueFile string
-	overrides map[string]string
-}
-
-// newHelmInitializer returns a helm config generator.
-func newHelmInitializer(chartTemplatesMap map[string][]string, builders []build.InitBuilder) helm {
-	var charts []chart
-
-	for chDir, _ := range chartTemplatesMap {
-		// find value files
-		vf := findValuesFile(chDir)
-		// generate the artifactsOverride key
-		charts = append(charts, chart{
-			name:      resolveChartName(chDir),
-			path:      chDir,
-			valueFile: vf,
-		})
-	}
-	updated := make([]chart, len(charts))
-	return helm{
-		charts: updated,
 	}
 }
 
@@ -118,13 +86,13 @@ func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 		releases = append(releases, latest.HelmRelease{
 			Name:        ch.name,
 			ChartPath:   chDir,
-			ValuesFiles: []string{filepath.Join(chDir, "values.yaml")},
+			ValuesFiles: ch.valueFiles,
 		})
 
 	}
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
-			HelmDeploy: &latest.HelmDeploy{
+			LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 				Releases: releases,
 			},
 		},
@@ -141,7 +109,8 @@ func (h helm) Validate() error {
 }
 
 // we don't generate manifests for helm
-func (h helm) AddManifestForImage(string, string) {}
+func (h helm) AddManifestForImage(string, string) {
+}
 
 func resolveChartName(chDirPath string) string {
 	_, chDirName := filepath.Split(filepath.Clean(chDirPath))
@@ -150,10 +119,6 @@ func resolveChartName(chDirPath string) string {
 	}
 	return chDirName
 }
-// we don't generate k8s manifests for a kustomize deploy
-func (h *helm) AddManifestForImage(string, string) {}
-// we don't generate manifests for helm
-func (h helm) AddManifestForImage(string, string) {}
 
 // GetImages return an empty string for helm.
 func (h helm) GetImages() []string {

@@ -18,8 +18,8 @@ package analyze
 
 import (
 	"context"
-	"path/filepath"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -37,21 +37,27 @@ type helmAnalyzer struct {
 }
 
 func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
-	if deploy.IsHelmChart(filePath) {
+	if isHelmChart(filePath) {
 		chDir, _ := filepath.Split(filePath)
 		h.chartDirs[filepath.Clean(chDir)] = []string{}
 		return nil
 	}
-	if isValueFile(fp) {
-		dir, _ := filepath.Split(fp)
+	if strings.HasSuffix(filePath, "yaml") || strings.HasSuffix(filePath, "yml") {
+		dir, _ := filepath.Split(filePath)
+		if s, ok := h.chartDirs[filepath.Clean(dir)]; ok {
+			h.chartDirs[filepath.Clean(dir)] = append(s, filePath)
+		}
+	}
+	if isValueFile(filePath) {
+		dir, _ := filepath.Split(filePath)
 		dir = filepath.Clean(dir)
 		if s, ok := h.chartDirs[dir]; ok {
-			h.chartDirs[dir] = append(s, fp)
+			h.chartDirs[dir] = append(s, filePath)
 		} else {
 			if hasChart(dir) {
-				h.chartDirs[dir] = []string{fp}
+				h.chartDirs[dir] = []string{filePath}
 			}
-			log.Entry(context.TODO()).Debugf("ignoring a yaml file %s not part of any chart ", fp)
+			log.Entry(context.TODO()).Debugf("ignoring a yaml file %s not part of any chart ", filePath)
 		}
 	}
 	return nil

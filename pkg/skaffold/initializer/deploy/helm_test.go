@@ -28,6 +28,8 @@ func TestDeployConfig(t *testing.T) {
 		description string
 		input       map[string][]string
 		expected    []latest.HelmRelease
+		helm        helm
+		expected    []latest.HelmRelease
 	}{
 		{
 			description: "charts with one or more values file",
@@ -47,6 +49,24 @@ func TestDeployConfig(t *testing.T) {
 					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
 				},
 			},
+			description: "charts with one or more values file",
+			helm: newHelmInitializer(
+				map[string][]string{
+					"charts/":     {"val.yml", "values.yaml"},
+					"charts-foo/": {"values.yaml"},
+				}),
+			expected: []latest.HelmRelease{
+				{
+					Name:        "charts-1",
+					ChartPath:   "charts/",
+					ValuesFiles: []string{"val.yml", "values.yaml"},
+				},
+				{
+					Name:        "charts-foo",
+					ChartPath:   "charts-foo/",
+					ValuesFiles: []string{"values.yaml"},
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -59,6 +79,8 @@ func TestDeployConfig(t *testing.T) {
 			CheckHelmInitStruct(t, test.expected, d.LegacyHelmDeploy.Releases)
 			overrides, err := parseImagesFromReader(test.contents, "dummy.yaml")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.overrides, overrides)
+			d, _ := test.helm.DeployConfig()
+			t.CheckDeepEqual(test.expected, d.HelmDeploy.Releases)
 		})
 	}
 }
