@@ -61,15 +61,6 @@ func AnalyzeProject(c config.Config) (*analyze.ProjectAnalysis, error) {
 	if err := a.Analyze("."); err != nil {
 		return nil, err
 	}
-
-	// helm projects can't currently be bootstrapped automatically by skaffold, so we fail fast and link to our docs instead.
-	if len(a.ChartPaths()) > 0 {
-		//nolint
-		return nil, errors.New(`Projects set up to deploy with helm must be manually configured.
-
-See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed guide on setting your project up with skaffold.`)
-	}
-
 	return a, nil
 }
 

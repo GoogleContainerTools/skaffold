@@ -50,16 +50,11 @@ type ProjectAnalysis struct {
 }
 
 type HelmChartInfo struct {
-	chartPaths    map[string][]string
-	buildersFound []build.InitBuilder
+	chartPaths map[string][]string
 }
 
 func (h *HelmChartInfo) Charts() map[string][]string {
 	return h.chartPaths
-}
-
-func (h *HelmChartInfo) Builders() []build.InitBuilder {
-	return h.buildersFound
 }
 
 func (a *ProjectAnalysis) Builders() []build.InitBuilder {
@@ -80,8 +75,7 @@ func (a *ProjectAnalysis) KustomizeBases() []string {
 
 func (a *ProjectAnalysis) HelmChartInfo() HelmChartInfo {
 	return HelmChartInfo{
-		chartPaths:    a.helmAnalyzer.chartDirs,
-		buildersFound: a.Builders(),
+		chartPaths: a.helmAnalyzer.chartDirs,
 	}
 }
 

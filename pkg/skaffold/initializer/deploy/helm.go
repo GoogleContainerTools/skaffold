@@ -39,15 +39,17 @@ type chart struct {
 func newHelmInitializer(chartTemplatesMap map[string][]string) helm {
 	var charts []chart
 
-	i := 1
+	chNameMap := map[string]struct{}{}
+	i := 0
 	for chDir, vfs := range chartTemplatesMap {
-		_, chDirName := filepath.Split(filepath.Clean(chDir))
-		if chDirName == "charts" {
-			chDirName = fmt.Sprintf("charts-%d", i)
-			i = i + 1
+		_, chName := filepath.Split(chDir)
+		if _, ok := chNameMap[chName]; ok {
+			chName = fmt.Sprintf("%s-%d", chName, i)
+			i++
 		}
+		chNameMap[chName] = struct{}{}
 		charts = append(charts, chart{
-			name:       chDirName,
+			name:       chName,
 			path:       chDir,
 			valueFiles: vfs,
 		})
@@ -63,10 +65,9 @@ func newHelmInitializer(chartTemplatesMap map[string][]string) helm {
 func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	releases := []latest.HelmRelease{}
 	for _, ch := range h.charts {
-		chDir, _ := filepath.Split(ch.path)
 		releases = append(releases, latest.HelmRelease{
 			Name:        ch.name,
-			ChartPath:   chDir,
+			ChartPath:   ch.path,
 			ValuesFiles: ch.valueFiles,
 		})
 
