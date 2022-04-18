@@ -123,12 +123,10 @@ func TestGetConcurrency(t *testing.T) {
 			pbs: []PipelineBuilder{
 				&mockPipelineBuilder{concurrency: util.IntPtr(2), builderType: "local"},
 				&mockPipelineBuilder{concurrency: util.IntPtr(2), builderType: "local"},
-				// As per docs https://github.com/GoogleContainerTools/skaffold/blob/dbd18994955f5805e80c6354ed0fd424ec4d987b/pkg/skaffold/schema/v2beta26/config.go#L287
-				// nil concurrency defaults to 1
 				&mockPipelineBuilder{concurrency: nil, builderType: "local"},
 			},
 			cliConcurrency:      -1,
-			expectedConcurrency: 1,
+			expectedConcurrency: 2,
 		},
 		{
 			description: "builder concurrency set to 0 and cli concurrency set to 1",
@@ -149,6 +147,18 @@ func TestGetConcurrency(t *testing.T) {
 			},
 			cliConcurrency:      -1,
 			expectedConcurrency: 0,
+		},
+		{
+			description: "concurrency set in a different pipeline than the builder",
+			pbs: []PipelineBuilder{
+				// build all in parallel
+				&mockPipelineBuilder{builderType: "local"},
+				&mockPipelineBuilder{builderType: "local"},
+				&mockPipelineBuilder{builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.IntPtr(3), builderType: "local"},
+			},
+			cliConcurrency:      -1,
+			expectedConcurrency: 3,
 		},
 		{
 			description: "builder concurrency set to default 0 for gcb",
