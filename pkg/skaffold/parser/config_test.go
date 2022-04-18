@@ -1343,7 +1343,7 @@ requires:
 }
 */
 
-var testSkaffoldYaml = `apiVersion: skaffold/v3alpha2
+var testSkaffoldYaml = `apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   artifacts:
