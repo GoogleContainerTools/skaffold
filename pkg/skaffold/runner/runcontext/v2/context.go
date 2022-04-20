@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -222,7 +223,6 @@ func (rc *RunContext) CustomTag() string                             { return rc
 func (rc *RunContext) DefaultRepo() *string                          { return rc.Cluster.DefaultRepo.Value() }
 func (rc *RunContext) MultiLevelRepo() *bool                         { return rc.Opts.MultiLevelRepo }
 func (rc *RunContext) Mode() config.RunMode                          { return rc.Opts.Mode() }
-func (rc *RunContext) DigestSource() string                          { return rc.Opts.DigestSource }
 func (rc *RunContext) DryRun() bool                                  { return rc.Opts.DryRun }
 func (rc *RunContext) ForceDeploy() bool                             { return rc.Opts.Force }
 func (rc *RunContext) GetKubeConfig() string                         { return rc.Opts.KubeConfig }
@@ -267,6 +267,16 @@ func (rc *RunContext) GetRenderConfig() *latest.RenderConfig {
 		return &p[0].Render
 	}
 	return &latest.RenderConfig{}
+}
+
+func (rc *RunContext) DigestSource() string {
+	if rc.Opts.DigestSource != "" {
+		return rc.Opts.DigestSource
+	}
+	if rc.Cluster.Local {
+		return constants.TagDigestSource
+	}
+	return constants.RemoteDigestSource
 }
 
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
