@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -48,10 +49,11 @@ type SkaffoldRunner struct {
 	sourceDependencies graph.SourceDependenciesCache
 	platforms          platform.Resolver
 
-	devIteration int
-	isLocalImage func(imageName string) (bool, error)
-	hasDeployed  bool
-	intents      *runner.Intents
+	devIteration    int
+	isLocalImage    func(imageName string) (bool, error)
+	hasDeployed     bool
+	intents         *runner.Intents
+	renderManifests manifest.ManifestList
 }
 
 // HasDeployed returns true if this runner has deployed something.

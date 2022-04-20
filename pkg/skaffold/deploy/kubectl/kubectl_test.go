@@ -249,7 +249,7 @@ func TestKubectlDeploy(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -420,21 +420,21 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		})
+		}, nil)
 		t.CheckNoError(err)
 	})
 }
@@ -485,7 +485,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		var out bytes.Buffer
 		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		})
+		}, nil)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
@@ -523,7 +523,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		})
+		}, nil)
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})
@@ -746,7 +746,7 @@ func TestGCSManifests(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join("", constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, nil)
+			err = k.Deploy(context.Background(), ioutil.Discard, nil, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})

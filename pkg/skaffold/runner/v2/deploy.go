@@ -28,18 +28,19 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
-func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestList) error {
 	defer r.deployer.GetLogger().Stop()
 
 	// Logs should be retrieved up to just before the deploy
 	r.deployer.GetLogger().SetSince(time.Now())
 	// First deploy
-	if err := r.Deploy(ctx, out, artifacts); err != nil {
+	if err := r.Deploy(ctx, out, artifacts, list); err != nil {
 		return err
 	}
 
@@ -62,7 +63,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	return nil
 }
 
-func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestList) error {
 	defer r.deployer.GetStatusMonitor().Reset()
 
 	out, ctx = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)
@@ -108,7 +109,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	r.deployer.RegisterLocalImages(localAndBuiltImages)
-	err = r.deployer.Deploy(ctx, deployOut, artifacts)
+	err = r.deployer.Deploy(ctx, deployOut, artifacts, list)
 	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
 	postDeployFn()
 	if err != nil {

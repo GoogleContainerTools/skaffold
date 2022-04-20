@@ -948,7 +948,7 @@ func TestHelmDeploy(t *testing.T) {
 			}
 			deployer.pkgTmpDir = tmpDir
 			// Deploy returns nil unless `helm get all <release>` is set up to return actual release info
-			err = deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, *deployer.namespaces)

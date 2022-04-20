@@ -20,8 +20,6 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strings"
 
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
@@ -35,19 +33,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-const (
-	DryFileName = "manifests.yaml"
-)
-
-func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, hydrationDir string, labels map[string]string, transformAllowlist, transformDenylist map[apim.GroupKind]latest.ResourceFilter) error {
+func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, transformAllowlist, transformDenylist map[apim.GroupKind]latest.ResourceFilter) (manifest.ManifestList, error) {
 	// Generate manifests.
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateManifest")
-	if err := os.MkdirAll(hydrationDir, os.ModePerm); err != nil {
-		return err
-	}
 	manifests, err := g.Generate(rCtx, out)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	endTrace()
 
@@ -56,22 +47,14 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
 	manifests, err = manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(transformAllowlist, transformDenylist))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
 	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(transformAllowlist, transformDenylist)); err != nil {
-		return err
+		return nil, err
 	}
 	endTrace()
-
-	// Cache the dry manifests to the hydration directory.
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_cacheDryConfig")
-	dryConfigPath := filepath.Join(hydrationDir, DryFileName)
-	if err := manifest.Write(manifests.String(), dryConfigPath, out); err != nil {
-		return err
-	}
-	endTrace()
-	return nil
+	return manifests, nil
 }
 
 func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]latest.ResourceFilter, map[apim.GroupKind]latest.ResourceFilter, error) {

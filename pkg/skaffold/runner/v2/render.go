@@ -24,18 +24,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 )
 
-func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, renderOutputFile string) error {
+func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, renderOutputFile string) (manifest.ManifestList, error) {
 	if r.runCtx.RenderOnly() {
 		// Fetch the digest and append it to the tag with the format of "tag@digest"
 		if r.runCtx.DigestSource() == runner.RemoteDigestSource {
 			for i, a := range builds {
 				digest, err := docker.RemoteDigest(a.Tag, r.runCtx)
 				if err != nil {
-					return fmt.Errorf("failed to resolve the digest of %s: does the image exist remotely?", a.Tag)
+					return nil, fmt.Errorf("failed to resolve the digest of %s: does the image exist remotely?", a.Tag)
 				}
 				builds[i].Tag = build.TagWithDigest(a.Tag, digest)
 			}
@@ -46,10 +47,11 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []gra
 	}
 
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-	if err := r.renderer.Render(ctx, out, builds, offline, renderOutputFile); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
+	manifestList, errR := r.renderer.Render(ctx, out, builds, offline, renderOutputFile)
+	if errR != nil {
+		endTrace(instrumentation.TraceEndError(errR))
+		return nil, errR
 	}
 	endTrace()
-	return nil
+	return manifestList, nil
 }

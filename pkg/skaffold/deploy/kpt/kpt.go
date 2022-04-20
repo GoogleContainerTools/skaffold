@@ -161,7 +161,7 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 
 // TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
+	deployutil.AddTagsToPodSelector(artifacts, k.podSelector)
 	k.logger.RegisterArtifacts(artifacts)
 }
 
@@ -301,7 +301,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	return nil
 }
 
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
 	if err := kptInitFunc(ctx, out, k); err != nil {
 		return err
 	}

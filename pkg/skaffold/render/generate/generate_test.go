@@ -168,7 +168,7 @@ func TestGenerate(t *testing.T) {
 				Touch("empty.ignored").
 				Chdir()
 
-			g := NewGenerator(".", test.generateConfig, ".kpt-pipeline")
+			g := NewGenerator(".", test.generateConfig)
 			var output bytes.Buffer
 			actual, err := g.Generate(context.Background(), &output)
 			defer os.RemoveAll(".kpt-pipeline")

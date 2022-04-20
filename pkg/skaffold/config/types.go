@@ -163,6 +163,7 @@ func NewIntOrUndefined(v *int) IntOrUndefined {
 }
 
 func (m Muted) MuteBuild() bool       { return m.mute("build") }
+func (m Muted) MuteRender() bool      { return m.mute("render") }
 func (m Muted) MuteTest() bool        { return m.mute("test") }
 func (m Muted) MuteStatusCheck() bool { return m.mute("status-check") }
 func (m Muted) MuteDeploy() bool      { return m.mute("deploy") }

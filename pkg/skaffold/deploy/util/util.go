@@ -63,20 +63,10 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 	return newTag, nil
 }
 
-// Update which images are logged, if the image is present in the provided deployer's artifacts.
-func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
-	m := map[string]bool{}
-	for _, a := range deployerArtifacts {
-		log.Entry(context.TODO()).Infof("Adding deployer artifact: %s", a.ImageName)
-		m[a.ImageName] = true
-	}
+// Update which images are logged.
+func AddTagsToPodSelector(artifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
 	for _, artifact := range artifacts {
-		imageName := docker.SanitizeImageName(artifact.ImageName)
-		log.Entry(context.TODO()).Infof("Checking build image name %s", imageName)
-		if _, ok := m[imageName]; ok {
-			log.Entry(context.TODO()).Infof("matched %s, %s", artifact.ImageName, artifact.Tag)
-			podSelector.Add(artifact.Tag)
-		}
+		podSelector.Add(artifact.Tag)
 	}
 }
 

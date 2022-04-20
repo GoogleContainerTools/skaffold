@@ -206,12 +206,12 @@ func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
 }
 
 func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
+	deployutil.AddTagsToPodSelector(artifacts, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})

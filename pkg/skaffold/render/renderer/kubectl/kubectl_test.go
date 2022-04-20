@@ -18,12 +18,9 @@ package kubectl
 import (
 	"bytes"
 	"context"
-	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -37,8 +34,7 @@ metadata:
 spec:
   containers:
   - image: leeroy-web
-    name: leeroy-web
-`
+    name: leeroy-web`
 	// manifests with image tags and label
 	labeledPodYaml = `apiVersion: v1
 kind: Pod
@@ -49,8 +45,7 @@ metadata:
 spec:
   containers:
   - image: leeroy-web:v1
-    name: leeroy-web
-`
+    name: leeroy-web`
 	// manifests with image tags
 	taggedPodYaml = `apiVersion: v1
 kind: Pod
@@ -59,8 +54,7 @@ metadata:
 spec:
   containers:
   - image: leeroy-web:v1
-    name: leeroy-web
-`
+    name: leeroy-web`
 )
 
 func TestRender(t *testing.T) {
@@ -96,13 +90,13 @@ func TestRender(t *testing.T) {
 				renderConfig: test.renderConfig,
 				workingDir:   tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), test.labels)
+			r, err := New(mockCfg, test.labels)
 			t.CheckNoError(err)
 			var b bytes.Buffer
-			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
+			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true, "")
-			t.CheckNoError(err)
-			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, rUtil.DryFileName), []byte(test.expected))
+			t.CheckNoError(errR)
+			t.CheckDeepEqual(test.expected, manifestList.String())
 		})
 	}
 }

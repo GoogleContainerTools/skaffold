@@ -24,11 +24,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
 // Apply sends Kubernetes manifests to the cluster.
 func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
-	if err := r.applyResources(ctx, out, nil, nil); err != nil {
+	// TODO: fix empty manifest list and instead read manifests from hydrationDir
+	if err := r.applyResources(ctx, out, nil, nil, manifest.ManifestList{}); err != nil {
 		return err
 	}
 
@@ -41,7 +43,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	return sErr
 }
 
-func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, _ []graph.Artifact) error {
+func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, _ []graph.Artifact, list manifest.ManifestList) error {
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err
@@ -50,7 +52,7 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	event.DeployInProgress()
 	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_Deploying")
 	defer endTrace()
-	err = r.deployer.Deploy(ctx, deployOut, artifacts)
+	err = r.deployer.Deploy(ctx, deployOut, artifacts, list)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)

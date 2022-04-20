@@ -23,6 +23,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/blang/semver"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -199,7 +200,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestList) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -212,16 +213,16 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return nil
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) error {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) (manifest.ManifestList, error) {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	t.currentActions.Rendered = findTags(artifacts)
-	return nil
+	return nil, nil
 }
 
 func (t *TestBench) ManifestDeps() ([]string, error) {
