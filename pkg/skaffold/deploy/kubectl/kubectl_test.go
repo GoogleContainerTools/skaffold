@@ -34,15 +34,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	kubectlR "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestKubectlDeploy(t *testing.T) {
+func TestKubectlV1RenderDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
+		generate                    latest.Generate
 		kubectl                     latest.KubectlDeploy
 		builds                      []graph.Artifact
 		commands                    util.Command
@@ -53,23 +55,23 @@ func TestKubectlDeploy(t *testing.T) {
 		envs                        map[string]string
 	}{
 		{
-			description:      "no manifest",
+			description:      "no manifest should error now since there is nothing to deploy",
 			kubectl:          latest.KubectlDeploy{},
-			commands:         testutil.CmdRunOut("kubectl version --client -ojson", KubectlVersion112),
+			shouldErr:        true,
 			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (disable validation)",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					DisableValidation: true,
 				},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml --validate=false", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -79,13 +81,11 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (forced)",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -96,13 +96,11 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -112,13 +110,11 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (kubectl v1.18)",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -128,15 +124,12 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace)",
-			kubectl: latest.KubectlDeploy{
-				Manifests:        []string{"deployment.yaml"},
-				DefaultNamespace: &TestNamespace2,
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace2 create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f -"),
+				CmdRunOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", "").
+				AndRun("kubectl --context kubecontext apply -f -"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -146,14 +139,14 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace with env template)",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests:        []string{"deployment.yaml"},
 				DefaultNamespace: &TestNamespace2FromEnvTemplate,
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace2 create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f -"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -167,13 +160,11 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "http manifest",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml", "http://remote.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml", "http://remote.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml -f http://remote.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -183,13 +174,11 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy command error",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -200,8 +189,10 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "additional flags",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"--overwrite=true"},
@@ -209,9 +200,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -v=0 -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -v=0 -f - --ignore-not-found -ojson", "").
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f -", fmt.Errorf("")),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
@@ -249,7 +238,20 @@ func TestKubectlDeploy(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			mockCfg := &kubectlConfig{
+				RunContext: runcontext.RunContext{
+					WorkingDir: tmpDir.Root(),
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
+						{Render: latest.RenderConfig{Generate: test.generate}}}),
+				},
+			}
+			r, err := kubectlR.New(mockCfg, map[string]string{})
+			t.CheckNoError(err)
+			var b bytes.Buffer
+			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
+				true, "")
+			t.CheckNoError(errR)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, m)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -259,6 +261,7 @@ func TestKubectlDeploy(t *testing.T) {
 func TestKubectlCleanup(t *testing.T) {
 	tests := []struct {
 		description string
+		generate    latest.Generate
 		kubectl     latest.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
@@ -266,50 +269,44 @@ func TestKubectlCleanup(t *testing.T) {
 	}{
 		{
 			description: "cleanup dry-run",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --dry-run --ignore-not-found=true --wait=false -f -"),
+				CmdRun("kubectl --context kubecontext --namespace testNamespace delete --dry-run --ignore-not-found=true --wait=false -f -"),
 			dryRun: true,
 		},
 		{
 			description: "cleanup success",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
+				CmdRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
 			description: "cleanup success (kubectl v1.18)",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
+				CmdRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
 			description: "cleanup error",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -", errors.New("BUG")),
+				CmdRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
 			description: "additional flags",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
@@ -317,9 +314,7 @@ func TestKubectlCleanup(t *testing.T) {
 				},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete -v=0 --grace-period=1 --ignore-not-found=true --wait=false -f -"),
+				CmdRun("kubectl --context kubecontext --namespace testNamespace delete -v=0 --grace-period=1 --ignore-not-found=true --wait=false -f -"),
 		},
 	}
 	for _, test := range tests {
@@ -334,7 +329,21 @@ func TestKubectlCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun)
+			mockCfg := &kubectlConfig{
+				RunContext: runcontext.RunContext{
+					WorkingDir: tmpDir.Root(),
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
+						{Render: latest.RenderConfig{Generate: test.generate}}}),
+				},
+			}
+			r, err := kubectlR.New(mockCfg, map[string]string{})
+			t.CheckNoError(err)
+			var b bytes.Buffer
+			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
+				true, "")
+			t.CheckNoError(errR)
+
+			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun, m)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -380,7 +389,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Cleanup(context.Background(), ioutil.Discard, false)
+			err = k.Cleanup(context.Background(), ioutil.Discard, false, nil)
 
 			t.CheckNoError(err)
 		})
@@ -395,16 +404,10 @@ func TestKubectlRedeploy(t *testing.T) {
 			Write("deployment-app.yaml", DeploymentAppYAML)
 
 		t.Override(&util.DefaultExecCommand, testutil.
-			CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-			AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), DeploymentAppYAML+"\n"+DeploymentWebYAML).
-			AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentAppYAMLv1+"\n---\n"+DeploymentWebYAMLv1, "").
-			AndRunInput("kubectl --context kubecontext apply -f -", DeploymentAppYAMLv1+"\n---\n"+DeploymentWebYAMLv1).
-			AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), DeploymentAppYAML+"\n"+DeploymentWebYAML).
-			AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentAppYAMLv2+"\n---\n"+DeploymentWebYAMLv1, "").
-			AndRunInput("kubectl --context kubecontext apply -f -", DeploymentAppYAMLv2).
-			AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), DeploymentAppYAML+"\n"+DeploymentWebYAML).
-			AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentAppYAMLv2+"\n---\n"+DeploymentWebYAMLv1, ""),
-		)
+			CmdRunOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", "").
+			AndRun("kubectl --context kubecontext apply -f -").
+			AndRunOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", "").
+			AndRun("kubectl --context kubecontext apply -f -"))
 
 		deployer, err := NewDeployer(&kubectlConfig{
 			workingDir: ".",
@@ -416,18 +419,23 @@ func TestKubectlRedeploy(t *testing.T) {
 			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
-		// Deploy one manifest
+		// Deploy both manifests
+		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv1)))
+		m.Append([]byte(DeploymentWebYAMLv1))
+		t.CheckNoError(err)
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, nil)
+		}, m)
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
+		m, err = manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv2)))
+		t.CheckNoError(err)
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, nil)
+		}, m)
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
@@ -435,7 +443,7 @@ func TestKubectlRedeploy(t *testing.T) {
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		}, nil)
-		t.CheckNoError(err)
+		t.CheckErrorContains("nothing to deploy", err)
 	})
 }
 
@@ -445,9 +453,8 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		tmpDir := t.NewTempDir().Write("deployment-web.yaml", DeploymentWebYAML)
 
 		t.Override(&util.DefaultExecCommand, testutil.
-			CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-			AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), DeploymentWebYAML).
-			AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, `{
+			//CmdRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), DeploymentWebYAML).
+			CmdRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, `{
 				"items":[
 					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-web"}},
 					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-app"}},
@@ -483,9 +490,11 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
+		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
+		t.CheckNoError(err)
 		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, nil)
+		}, m)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
@@ -500,9 +509,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 
 		t.Override(&client.Client, deployutil.MockK8sClient)
 		t.Override(&util.DefaultExecCommand, testutil.
-			CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-			AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), DeploymentWebYAML).
-			AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, `{
+			CmdRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, `{
 				"items":[
 					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-web"}},
 					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-app"}}
@@ -521,9 +528,11 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 			filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 		t.RequireNoError(err)
 
+		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
+		t.CheckNoError(err)
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, nil)
+		}, m)
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})
@@ -587,124 +596,6 @@ func TestDependencies(t *testing.T) {
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, dependencies)
-		})
-	}
-}
-
-func TestKubectlRender(t *testing.T) {
-	tests := []struct {
-		description string
-		builds      []graph.Artifact
-		input       string
-		expected    string
-	}{
-		{
-			description: "normal render",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/k8s-skaffold/skaffold",
-					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
-				},
-			},
-			input: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold
-    name: skaffold
-`,
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold
-`,
-		},
-		{
-			description: "two artifacts",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			input: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
-  - image: gcr.io/project/image2
-    name: image2
-`,
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "no artifacts",
-			builds:      nil,
-			input: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: image1:tag1
-    name: image1
-  - image: image2:tag2
-    name: image2
-`,
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().Write("deployment.yaml", test.input)
-			t.Override(&util.DefaultExecCommand, testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
-			deployer, err := NewDeployer(&kubectlConfig{
-				workingDir:     ".",
-				defaultRepo:    "gcr.io/project",
-				multiLevelRepo: util.BoolPtr(true),
-			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
-				Manifests: []string{tmpDir.Path("deployment.yaml")},
-			}, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
-			t.RequireNoError(err)
-			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, true, "")
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, b.String())
 		})
 	}
 }
@@ -807,3 +698,7 @@ func (c *kubectlConfig) DefaultRepo() *string                                { r
 func (c *kubectlConfig) MultiLevelRepo() *bool                               { return c.multiLevelRepo }
 func (c *kubectlConfig) WaitForDeletions() config.WaitForDeletions           { return c.waitForDeletions }
 func (c *kubectlConfig) PortForwardResources() []*latest.PortForwardResource { return nil }
+func (c *kubectlConfig) GetWorkingDir() string                               { return c.workingDir }
+func (c *kubectlConfig) TransformAllowList() []latest.ResourceFilter         { return nil }
+func (c *kubectlConfig) TransformDenyList() []latest.ResourceFilter          { return nil }
+func (c *kubectlConfig) TransformRulesFile() string                          { return "" }

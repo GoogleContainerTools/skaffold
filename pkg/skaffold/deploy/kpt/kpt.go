@@ -353,7 +353,7 @@ func (k *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": deployerName,
 	})

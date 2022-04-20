@@ -107,11 +107,11 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.A
 	return err
 }
 
-func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Cleaning up...")
 
-	err := w.Deployer.Cleanup(ctx, out, dryRun)
+	err := w.Deployer.Cleanup(ctx, out, dryRun, nil)
 	if err != nil {
 		return err
 	}

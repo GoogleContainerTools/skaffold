@@ -41,7 +41,7 @@ type Deployer interface {
 	Dependencies() ([]string, error)
 
 	// Cleanup deletes what was deployed by calling Deploy.
-	Cleanup(context.Context, io.Writer, bool) error
+	Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error
 
 	// GetDebugger returns a Deployer's implementation of a Debugger
 	GetDebugger() debug.Debugger

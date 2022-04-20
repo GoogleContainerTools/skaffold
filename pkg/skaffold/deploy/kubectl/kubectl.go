@@ -221,7 +221,6 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	if len(manifests) == 0 {
 		return fmt.Errorf("nothing to deploy")
 	}
-	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
@@ -504,7 +503,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})

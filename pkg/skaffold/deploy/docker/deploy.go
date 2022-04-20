@@ -287,7 +287,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
 	if dryRun {
 		for _, container := range d.tracker.DeployedContainers() {
 			output.Yellow.Fprintln(out, container.ID)

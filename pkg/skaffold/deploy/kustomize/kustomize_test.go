@@ -293,7 +293,7 @@ func TestKustomizeCleanup(t *testing.T) {
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun)
+			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})

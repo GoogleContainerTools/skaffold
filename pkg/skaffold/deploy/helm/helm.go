@@ -338,7 +338,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "helm",
 	})
