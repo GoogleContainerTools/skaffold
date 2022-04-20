@@ -52,19 +52,19 @@ func TestDeployConfig(t *testing.T) {
 			description: "charts with one or more values file",
 			helm: newHelmInitializer(
 				map[string][]string{
-					"charts/":     {"val.yml", "values.yaml"},
-					"charts-foo/": {"values.yaml"},
+					"charts":     {"charts/val.yml", "charts/values.yaml"},
+					"charts-foo": {"charts-foo/values.yaml"},
 				}),
 			expected: []latest.HelmRelease{
 				{
-					Name:        "charts-1",
-					ChartPath:   "charts/",
-					ValuesFiles: []string{"val.yml", "values.yaml"},
+					Name:        "charts",
+					ChartPath:   "charts",
+					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
 				},
 				{
 					Name:        "charts-foo",
-					ChartPath:   "charts-foo/",
-					ValuesFiles: []string{"values.yaml"},
+					ChartPath:   "charts-foo",
+					ValuesFiles: []string{"charts-foo/values.yaml"},
 				},
 			},
 		},
