@@ -212,17 +212,16 @@ func TestDoInit(t *testing.T) {
 				},
 			},
 		},
-		// TODO: enable this test when helm init work on V2
-		// {
-		//	name: "helm fails",
-		//	dir:  "testdata/init/helm-deployment",
-		//	config: initconfig.Config{
-		//		Opts: config.SkaffoldOptions{
-		//			ConfigurationFile: "skaffold.yaml.out",
-		//			Force:             true,
-		//		},
-		//	},
-		// },
+		{
+			name: "helm fails",
+			dir:  "testdata/init/helm-deployment",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					Force:             true,
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {

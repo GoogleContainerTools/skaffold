@@ -43,6 +43,7 @@ func newHelmInitializer(chartTemplatesMap map[string][]string) helm {
 	i := 0
 	for chDir, vfs := range chartTemplatesMap {
 		_, chName := filepath.Split(chDir)
+		// TODO: add remote charts and chart name
 		if _, ok := chNameMap[chName]; ok {
 			chName = fmt.Sprintf("%s-%d", chName, i)
 			i++
@@ -95,5 +96,5 @@ func (h helm) AddManifestForImage(string, string) {}
 
 // GetImages return an empty string for helm.
 func (h helm) GetImages() []string {
-	return []string{}
+	return nil
 }
