@@ -176,7 +176,7 @@ func TestDeploy(t *testing.T) {
 
 			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{})
 			t.CheckNoError(err)
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 			t.CheckNoError(err)
 			fmt.Fprintf(os.Stdout, "deployer namespaces: %+v\n", *k.namespaces)
 			t.CheckDeepEqual(*k.namespaces, []string{"test-kptv2"})

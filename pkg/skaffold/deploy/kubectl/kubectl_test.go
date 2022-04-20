@@ -40,9 +40,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestKubectlDeploy(t *testing.T) {
+func TestKubectlV1RenderDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
+		generate                    latest.Generate
 		kubectl                     latest.KubectlDeploy
 		builds                      []graph.Artifact
 		commands                    util.Command
@@ -53,15 +54,17 @@ func TestKubectlDeploy(t *testing.T) {
 		envs                        map[string]string
 	}{
 		{
-			description:      "no manifest",
+			description:      "no manifest should error now since there is nothing to deploy",
 			kubectl:          latest.KubectlDeploy{},
-			commands:         testutil.CmdRunOut("kubectl version --client -ojson", KubectlVersion112),
+			shouldErr:        true,
 			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (disable validation)",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					DisableValidation: true,
 				},
@@ -79,8 +82,8 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (forced)",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
@@ -96,8 +99,8 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
@@ -112,8 +115,8 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (kubectl v1.18)",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
@@ -128,9 +131,8 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace)",
-			kubectl: latest.KubectlDeploy{
-				Manifests:        []string{"deployment.yaml"},
-				DefaultNamespace: &TestNamespace2,
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
@@ -146,8 +148,10 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace with env template)",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests:        []string{"deployment.yaml"},
 				DefaultNamespace: &TestNamespace2FromEnvTemplate,
 			},
 			commands: testutil.
@@ -167,8 +171,8 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "http manifest",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml", "http://remote.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml", "http://remote.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
@@ -183,8 +187,8 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy command error",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
@@ -200,8 +204,10 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "additional flags",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"--overwrite=true"},
@@ -249,7 +255,9 @@ func TestKubectlDeploy(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			m, err := r.Render()
+			t.CheckError(test.shouldErr, err)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, m)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -259,6 +267,7 @@ func TestKubectlDeploy(t *testing.T) {
 func TestKubectlCleanup(t *testing.T) {
 	tests := []struct {
 		description string
+		generate    latest.Generate
 		kubectl     latest.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
@@ -266,8 +275,8 @@ func TestKubectlCleanup(t *testing.T) {
 	}{
 		{
 			description: "cleanup dry-run",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
@@ -277,8 +286,8 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
@@ -287,8 +296,8 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success (kubectl v1.18)",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion118).
@@ -297,8 +306,8 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
@@ -308,8 +317,10 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "additional flags",
+			generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"},
+			},
 			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
@@ -420,21 +431,21 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		})
+		}, nil)
 		t.CheckNoError(err)
 	})
 }
@@ -485,7 +496,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		var out bytes.Buffer
 		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		})
+		}, nil)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
@@ -523,7 +534,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		})
+		}, nil)
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})
@@ -591,124 +602,6 @@ func TestDependencies(t *testing.T) {
 	}
 }
 
-func TestKubectlRender(t *testing.T) {
-	tests := []struct {
-		description string
-		builds      []graph.Artifact
-		input       string
-		expected    string
-	}{
-		{
-			description: "normal render",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/k8s-skaffold/skaffold",
-					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
-				},
-			},
-			input: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold
-    name: skaffold
-`,
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold
-`,
-		},
-		{
-			description: "two artifacts",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			input: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
-  - image: gcr.io/project/image2
-    name: image2
-`,
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "no artifacts",
-			builds:      nil,
-			input: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: image1:tag1
-    name: image1
-  - image: image2:tag2
-    name: image2
-`,
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().Write("deployment.yaml", test.input)
-			t.Override(&util.DefaultExecCommand, testutil.
-				CmdRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
-			deployer, err := NewDeployer(&kubectlConfig{
-				workingDir:     ".",
-				defaultRepo:    "gcr.io/project",
-				multiLevelRepo: util.BoolPtr(true),
-			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
-				Manifests: []string{tmpDir.Path("deployment.yaml")},
-			}, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
-			t.RequireNoError(err)
-			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, true, "")
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, b.String())
-		})
-	}
-}
-
 func TestGCSManifests(t *testing.T) {
 	tests := []struct {
 		description string
@@ -746,7 +639,7 @@ func TestGCSManifests(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join("", constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, nil)
+			err = k.Deploy(context.Background(), ioutil.Discard, nil, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})

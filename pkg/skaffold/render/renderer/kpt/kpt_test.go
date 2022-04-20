@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -181,10 +180,10 @@ pipeline:
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
 					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
 			var b bytes.Buffer
-			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
+			_, err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true, "")
 			t.CheckNoError(err)
-			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, rUtil.DryFileName), []byte(labeledPodYaml))
+			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, DryFileName), []byte(labeledPodYaml))
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
 		})
 	}
@@ -250,7 +249,7 @@ inventory:
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
 					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
 			var b bytes.Buffer
-			err = r.Render(context.Background(), &b, []graph.Artifact{},
+			_, err = r.Render(context.Background(), &b, []graph.Artifact{},
 				true, "")
 			t.CheckNoError(err)
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName),

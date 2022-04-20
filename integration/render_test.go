@@ -22,18 +22,16 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"testing"
 
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -78,26 +76,21 @@ spec:
 		tmpDir := t.NewTempDir()
 		tmpDir.Write("deployment.yaml", test.input).Chdir()
 
-		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
-			WorkingDir: ".",
-			Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
-				Render: latest.RenderConfig{
-					Generate: latest.Generate{
-						RawK8s: []string{"deployment.yaml"}},
-				},
-			}}),
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
-			Manifests: []string{"deployment.yaml"},
-		}, filepath.Join(tmpDir.Root(), test.renderPath))
+		mockCfg := mockConfig{
+			renderConfig: &latest.RenderConfig{
+				Generate: latest.Generate{
+					RawK8s: []string{"deployment.yaml"}},
+			},
+			workingDir: tmpDir.Root(),
+		}
+		r, err := kubectl.New(mockCfg, map[string]string{})
 		t.RequireNoError(err)
 		var b bytes.Buffer
-		err = deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
+		l, err := r.Render(context.Background(), &b, test.builds, false, test.renderPath)
 
 		t.CheckNoError(err)
-		dat, err := ioutil.ReadFile(test.renderPath)
-		t.CheckNoError(err)
 
-		t.CheckDeepEqual(test.expectedOut, string(dat))
+		t.CheckDeepEqual(test.expectedOut, l.String())
 	})
 }
 
@@ -228,28 +221,24 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.NewTempDir().
-				Write("deployment.yaml", test.input).
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("deployment.yaml", test.input).
 				Chdir()
 
-			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
-				WorkingDir: ".",
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
-					Render: latest.RenderConfig{
-						Generate: latest.Generate{
-							RawK8s: []string{"deployment.yaml"}},
-					},
-				}}),
-				Opts: config.SkaffoldOptions{},
-			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
-			}, "")
+			mockCfg := mockConfig{
+				renderConfig: &latest.RenderConfig{
+					Generate: latest.Generate{
+						RawK8s: []string{"deployment.yaml"}},
+				},
+				workingDir: tmpDir.Root(),
+			}
+			r, err := kubectl.New(mockCfg, map[string]string{})
 			t.RequireNoError(err)
 			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, false, "")
+			l, err := r.Render(context.Background(), &b, test.builds, false, "")
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, b.String())
+			t.CheckDeepEqual(test.expectedOut, l.String())
 		})
 	}
 }
@@ -772,3 +761,14 @@ spec:
 		})
 	}
 }
+
+type mockConfig struct {
+	renderConfig *latest.RenderConfig
+	workingDir   string
+}
+
+func (mc mockConfig) GetRenderConfig() *latest.RenderConfig       { return mc.renderConfig }
+func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
+func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
+func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
+func (mc mockConfig) TransformRulesFile() string                  { return "" }

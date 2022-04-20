@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -47,9 +46,6 @@ func NewCmdDeploy() *cobra.Command {
 
 func doDeploy(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-		if opts.SkipRender {
-			return r.DeployAndLog(ctx, out, []graph.Artifact{})
-		}
 		var artifacts []*latest.Artifact
 		for _, cfg := range configs {
 			artifacts = append(artifacts, cfg.(*latest.SkaffoldConfig).Build.Artifacts...)
@@ -59,7 +55,11 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 			tips.PrintUseRunVsDeploy(out)
 			return err
 		}
-
-		return r.DeployAndLog(ctx, out, buildArtifacts)
+		// Render
+		manifests, errR := r.Render(ctx, out, buildArtifacts, true, opts.RenderOutput)
+		if errR != nil {
+			return errR
+		}
+		return r.DeployAndLog(ctx, out, buildArtifacts, manifests)
 	})
 }

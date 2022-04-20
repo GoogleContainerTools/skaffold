@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -33,8 +34,8 @@ func New(_ *latest.RenderConfig, _, _ string, _ map[string]string) (Noop, error)
 	return Noop{}, nil
 }
 
-func (r Noop) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _ bool, _ string) error {
-	return nil
+func (r Noop) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _ bool, _ string) (manifest.ManifestList, error) {
+	return manifest.ManifestList{}, nil
 }
 
 func (r Noop) ManifestDeps() ([]string, error) {

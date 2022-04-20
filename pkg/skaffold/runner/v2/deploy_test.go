@@ -62,7 +62,7 @@ func TestDeploy(t *testing.T) {
 			err := r.Deploy(context.Background(), out, []graph.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
-			})
+			}, nil)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -86,7 +86,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 		}
 		var builds []graph.Artifact
 
-		err = r.Deploy(context.Background(), ioutil.Discard, builds)
+		err = r.Deploy(context.Background(), ioutil.Discard, builds, nil)
 
 		t.CheckNoError(err)
 	})

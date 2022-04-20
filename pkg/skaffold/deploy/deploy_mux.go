@@ -17,11 +17,9 @@ limitations under the License.
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"strconv"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -105,7 +103,7 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 	}
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) error {
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l manifest.ManifestList) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
 		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))
@@ -120,7 +118,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 				return err
 			}
 		}
-		if err := deployer.Deploy(ctx, w, as); err != nil {
+		if err := deployer.Deploy(ctx, w, as, l); err != nil {
 			eventV2.DeployFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return err
@@ -172,22 +170,22 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool) erro
 	return nil
 }
 
-func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
-	resources, buf := []string{}, &bytes.Buffer{}
-	for _, deployer := range m.deployers {
-		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-		buf.Reset()
-		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
-			endTrace(instrumentation.TraceEndError(err))
-			return err
-		}
-		resources = append(resources, buf.String())
-		endTrace()
-	}
-
-	allResources := strings.Join(resources, "\n---\n")
-	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
-}
+//func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
+//	resources, buf := []string{}, &bytes.Buffer{}
+//	for _, deployer := range m.deployers {
+//		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
+//		buf.Reset()
+//		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
+//			endTrace(instrumentation.TraceEndError(err))
+//			return err
+//		}
+//		resources = append(resources, buf.String())
+//		endTrace()
+//	}
+//
+//	allResources := strings.Join(resources, "\n---\n")
+//	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
+//}
 
 // TrackBuildArtifacts should *only* be called on individual deployers. This is a noop.
 func (m DeployerMux) TrackBuildArtifacts(_ []graph.Artifact) {}

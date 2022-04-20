@@ -495,7 +495,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Muted.Phases,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "build", "deploy"},
+		DefinedOn:     []string{"dev", "run", "debug", "build", "render", "deploy"},
 		IsEnum:        true,
 	},
 	{

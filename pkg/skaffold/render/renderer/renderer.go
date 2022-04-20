@@ -21,6 +21,8 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
@@ -28,7 +30,7 @@ import (
 )
 
 type Renderer interface {
-	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, output string) error
+	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, output string) (manifest.ManifestList, error)
 	// ManifestDeps returns the user kubernetes manifests to file watcher. In dev mode, a "redeploy" will be triggered
 	// if any of the "Dependencies" manifest is changed.
 	ManifestDeps() ([]string, error)
@@ -41,8 +43,9 @@ func New(cfg render.Config, hydrationDir string, labels map[string]string, using
 		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Kpt == nil {
-		return kubectl.New(cfg, hydrationDir, labels)
+		log.Entry(context.TODO()).Debug("setting up kubectl renderer")
+		return kubectl.New(cfg, labels)
 	}
-
+	log.Entry(context.TODO()).Infof("setting up kpt renderer")
 	return kpt.New(cfg, hydrationDir, labels)
 }
