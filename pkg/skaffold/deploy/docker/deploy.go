@@ -22,7 +22,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
@@ -38,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"

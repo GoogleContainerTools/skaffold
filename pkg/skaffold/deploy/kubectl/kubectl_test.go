@@ -453,7 +453,6 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		tmpDir := t.NewTempDir().Write("deployment-web.yaml", DeploymentWebYAML)
 
 		t.Override(&util.DefaultExecCommand, testutil.
-			//CmdRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), DeploymentWebYAML).
 			CmdRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, `{
 				"items":[
 					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-web"}},
@@ -603,22 +602,19 @@ func TestDependencies(t *testing.T) {
 func TestGCSManifests(t *testing.T) {
 	tests := []struct {
 		description string
-		kubectl     latest.KubectlDeploy
+		generate    latest.Generate
 		commands    util.Command
 		shouldErr   bool
 		skipRender  bool
 	}{
 		{
 			description: "manifest from GCS",
-			kubectl: latest.KubectlDeploy{
-				Manifests: []string{"gs://dev/deployment.yaml"},
+			generate: latest.Generate{
+				RawK8s: []string{"gs://dev/deployment.yaml"},
 			},
 			commands: testutil.
 				CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", "gs://dev/deployment.yaml", manifest.ManifestTmpDir), "log").
-				AndRunOut("kubectl version --client -ojson", KubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+filepath.Join(manifest.ManifestTmpDir, "deployment.yaml"), DeploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
-			skipRender: true,
 		}}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -630,14 +626,27 @@ func TestGCSManifests(t *testing.T) {
 			if err := ioutil.WriteFile(manifest.ManifestTmpDir+"/deployment.yaml", []byte(DeploymentWebYAML), os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
+			mockCfg := &kubectlConfig{
+				RunContext: runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
+						{Render: latest.RenderConfig{Generate: test.generate}}}),
+				},
+			}
+			r, err := kubectlR.New(mockCfg, map[string]string{})
+			t.CheckNoError(err)
+			var b bytes.Buffer
+			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
+				true, "")
+			t.CheckNoError(errR)
+
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				skipRender: test.skipRender,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join("", constants.DefaultHydrationDir))
+			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, filepath.Join("", constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, nil, nil)
+			err = k.Deploy(context.Background(), ioutil.Discard, nil, m)
 
 			t.CheckError(test.shouldErr, err)
 		})

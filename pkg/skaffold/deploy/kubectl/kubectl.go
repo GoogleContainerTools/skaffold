@@ -23,7 +23,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/segmentio/textio"
@@ -330,23 +329,6 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 // readManifests reads the manifests to deploy/delete.
 func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
 	var manifests []string
-	var err error
-
-	// v1 kubectl deployer is used. No manifest hydration.
-	if len(k.KubectlDeploy.Manifests) > 0 {
-		olog.Entry(ctx).Warnln("`deploy.kubectl.manifests` (DEPRECATED) are given, skaffold will skip the `manifests` field. " +
-			"If you expect skaffold to render the resources from the `manifests`, please delete the `deploy.kubectl.manifests` field.")
-		manifests, err = k.Dependencies()
-		if err != nil {
-			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
-		}
-	} else {
-		// v2 kubectl deployer is used. The manifests are read from the hydrated directory.
-		manifests, err = k.manifestFiles([]string{filepath.Join(k.hydrationDir, "*")})
-		if err != nil {
-			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
-		}
-	}
 
 	// Clean the temporary directory that holds the manifests downloaded from GCS
 	defer os.RemoveAll(k.gcsManifestDir)
@@ -507,7 +489,8 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, mani
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
-	manifests, err := k.readManifests(ctx, false)
+	other, err := k.readManifests(ctx, false)
+	manifests = append(manifests, other...)
 	if err != nil {
 		return err
 	}

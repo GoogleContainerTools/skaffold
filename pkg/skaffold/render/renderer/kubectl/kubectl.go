@@ -20,12 +20,12 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"

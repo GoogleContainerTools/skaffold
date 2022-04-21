@@ -23,13 +23,13 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/sirupsen/logrus"
 	logrustest "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"

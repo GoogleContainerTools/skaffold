@@ -25,12 +25,12 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"

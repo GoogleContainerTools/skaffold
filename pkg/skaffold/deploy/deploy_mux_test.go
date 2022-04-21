@@ -230,7 +230,7 @@ func TestDeployerMux_Dependencies(t *testing.T) {
 }
 
 // TODO: Add RendererMux https://github.com/GoogleContainerTools/skaffold/issues/7330
-//func TestDeployerMux_Render(t *testing.T) {
+// func TestDeployerMux_Render(t *testing.T) {
 //	tests := []struct {
 //		name           string
 //		render1        string

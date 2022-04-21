@@ -171,7 +171,7 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, list
 }
 
 // TODO move this to RenderMux https://github.com/GoogleContainerTools/skaffold/issues/7330
-//func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
+// func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
 //	resources, buf := []string{}, &bytes.Buffer{}
 //	for _, deployer := range m.deployers {
 //		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")

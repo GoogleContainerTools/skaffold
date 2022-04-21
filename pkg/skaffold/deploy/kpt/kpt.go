@@ -73,10 +73,9 @@ type Deployer struct {
 	statusMonitor status.Monitor
 	syncer        sync.Syncer
 
-	podSelector    *kubernetes.ImageList
-	labeller       *label.DefaultLabeller
-	originalImages []graph.Artifact // the set of images marked as "local" by the Runner
-	localImages    []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	podSelector *kubernetes.ImageList
+	labeller    *label.DefaultLabeller
+	localImages []graph.Artifact // the set of images parsed from the Deployer's manifest set
 
 	insecureRegistries map[string]bool
 	globalConfig       string
