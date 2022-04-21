@@ -151,6 +151,9 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	// Write generated dry manifests.
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_cacheDryConfig")
 	dryConfigPath := filepath.Join(r.hydrationDir, DryFileName)
+	if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
+		return nil, err
+	}
 	if err := manifest.Write(manifests.String(), dryConfigPath, out); err != nil {
 		return nil, err
 	}
