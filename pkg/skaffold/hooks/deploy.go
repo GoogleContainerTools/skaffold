@@ -50,11 +50,11 @@ func NewDeployEnvOpts(runID string, kubeContext string, namespaces []string) Dep
 
 type deployRunner struct {
 	latest.DeployHooks
-	cli         *kubectl.CLI
-	namespaces  *[]string
-	formatter   logger.Formatter
-	opts        DeployEnvOpts
-	visitedPods *sync.Map // maintain a list of previous iteration pods, so that they can be skipped
+	cli               *kubectl.CLI
+	namespaces        *[]string
+	formatter         logger.Formatter
+	opts              DeployEnvOpts
+	visitedContainers *sync.Map // maintain a list of previous iteration containers, so that they can be skipped
 }
 
 func (r deployRunner) RunPreHooks(ctx context.Context, out io.Writer) error {
@@ -86,7 +86,7 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 			hook := containerHook{
 				cfg:        latest.ContainerHook{Command: h.ContainerHook.Command},
 				cli:        r.cli,
-				selector:   filterPodsSelector(r.visitedPods, phase, namePatternSelector(h.ContainerHook.PodName, h.ContainerHook.ContainerName)),
+				selector:   filterContainersSelector(r.visitedContainers, phase, namePatternSelector(h.ContainerHook.PodName, h.ContainerHook.ContainerName)),
 				namespaces: *r.namespaces,
 				formatter:  r.formatter,
 			}
@@ -101,11 +101,11 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 	return nil
 }
 
-// filterPodsSelector filters the pods that have already been processed from a previous deploy iteration
-func filterPodsSelector(visitedPods *sync.Map, phase phase, selector containerSelector) containerSelector {
+// filterContainersSelector filters the containers that have already been processed from a previous deploy iteration
+func filterContainersSelector(visitedContainers *sync.Map, phase phase, selector containerSelector) containerSelector {
 	return func(p corev1.Pod, c corev1.Container) (bool, error) {
-		key := fmt.Sprintf("%s:%s", phase, p.GetName())
-		if _, found := visitedPods.LoadOrStore(key, struct{}{}); found {
+		key := fmt.Sprintf("%s:%s:%s", phase, p.GetName(), c.Name)
+		if _, found := visitedContainers.LoadOrStore(key, struct{}{}); found {
 			return false, nil
 		}
 		return selector(p, c)
