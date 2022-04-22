@@ -242,7 +242,6 @@ func (g Generator) walkManifests() ([]string, error) {
 
 	// Generate Raw Manifests
 	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
-	sourceManifests, err = util.ExpandPathsGlob(g.workingDir, sourceManifests)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
 		return nil, err

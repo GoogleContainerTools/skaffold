@@ -213,7 +213,7 @@ func TestDoInit(t *testing.T) {
 			},
 		},
 		// TODO: enable this test when helm init work on V2
-		//{
+		// {
 		//	name: "helm fails",
 		//	dir:  "testdata/init/helm-deployment",
 		//	config: initconfig.Config{
@@ -222,7 +222,7 @@ func TestDoInit(t *testing.T) {
 		//			Force:             true,
 		//		},
 		//	},
-		//},
+		// },
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
