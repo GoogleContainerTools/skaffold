@@ -111,6 +111,10 @@ jobs:
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 
+    # set up go test format
+    - name: Set up gotestfmt
+      run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
       run: |
@@ -121,4 +125,4 @@ jobs:
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         skaffold config set --global collect-metrics false
-        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests | gotestfmt
