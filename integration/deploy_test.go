@@ -138,7 +138,6 @@ func TestDeployWithImages(t *testing.T) {
 }
 
 func TestDeployTail(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)

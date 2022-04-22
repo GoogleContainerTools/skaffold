@@ -233,7 +233,6 @@ func (g Generator) walkManifests() ([]string, error) {
 
 	// Generate in-place hydrated kpt Manifests
 	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
-	kptPaths, err = util.ExpandPathsGlob(g.workingDir, kptPaths)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
 		return nil, err

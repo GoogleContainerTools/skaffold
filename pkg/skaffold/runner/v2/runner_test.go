@@ -23,7 +23,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/blang/semver"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -37,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
