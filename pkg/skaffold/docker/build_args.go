@@ -65,7 +65,6 @@ func evalBuildArgs(mode config.RunMode, workspace string, dockerfilePath string,
 	for k, v := range extra {
 		result[k] = v
 	}
-
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)

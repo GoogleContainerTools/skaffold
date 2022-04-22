@@ -1279,6 +1279,9 @@ type KanikoArtifact struct {
 
 	// VolumeMounts are volume mounts passed to kaniko pod.
 	VolumeMounts []v1.VolumeMount `yaml:"volumeMounts,omitempty"`
+
+	// ContextSubPath is to specify a sub path within the context.
+	ContextSubPath string `yaml:"contextSubPath,omitempty" skaffold:"filepath"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
