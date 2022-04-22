@@ -153,6 +153,7 @@ func TestInitWithCLIArtifact(t *testing.T) {
 
 func TestInitWithCLIArtifactAndManifestGeneration(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	t.Skipf("Fix after https://github.com/GoogleContainerTools/skaffold/issues/6722")
 
 	testutil.Run(t, "init with cli artifact and manifests", func(t *testutil.T) {
 		ns, _ := SetupNamespace(t.T)
