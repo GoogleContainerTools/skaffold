@@ -52,6 +52,20 @@ func TestGetDependencies(t *testing.T) {
 			expected:      []string{"BUILD", "dep1", "dep2", "WORKSPACE"},
 		},
 		{
+			description: "with WORKSPACE.bazel",
+			workspace:   ".",
+			target:      "target",
+			files: map[string]string{
+				"WORKSPACE.bazel": "",
+				"BUILD":           "",
+				"dep1":            "",
+				"dep2":            "",
+			},
+			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles(deps('target')) --noimplicit_deps --order_output=no --output=label",
+			output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
+			expected:      []string{"BUILD", "dep1", "dep2", "WORKSPACE.bazel"},
+		},
+		{
 			description: "with parent WORKSPACE",
 			workspace:   "./sub/folder",
 			target:      "target2",

@@ -51,7 +51,7 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 		once.Do(func() { log.Entry(ctx).Warn("Retrieving Bazel dependencies can take a long time the first time") })
 	}()
 
-	topLevelFolder, err := findWorkspace(dir)
+	workspaceDir, workspaceFile, err := findWorkspace(dir)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find the WORKSPACE file: %w", err)
 	}
@@ -81,14 +81,14 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 			continue
 		}
 
-		rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, depToPath(l)))
+		rel, err := filepath.Rel(absDir, filepath.Join(workspaceDir, depToPath(l)))
 		if err != nil {
 			return nil, fmt.Errorf("unable to find absolute path: %w", err)
 		}
 		deps = append(deps, rel)
 	}
 
-	rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, "WORKSPACE"))
+	rel, err := filepath.Rel(absDir, filepath.Join(workspaceDir, workspaceFile))
 	if err != nil {
 		return nil, fmt.Errorf("unable to find absolute path: %w", err)
 	}
@@ -103,20 +103,24 @@ func depToPath(dep string) string {
 	return strings.TrimPrefix(strings.Replace(strings.TrimPrefix(dep, "//"), ":", "/", 1), "/")
 }
 
-func findWorkspace(workingDir string) (string, error) {
+func findWorkspace(workingDir string) (string, string, error) {
 	dir, err := filepath.Abs(workingDir)
 	if err != nil {
-		return "", fmt.Errorf("invalid working dir: %w", err)
+		return "", "", fmt.Errorf("invalid working dir: %w", err)
 	}
 
 	for {
+		if _, err := os.Stat(filepath.Join(dir, "WORKSPACE.bazel")); err == nil {
+			return dir, "WORKSPACE.bazel", nil
+		}
+
 		if _, err := os.Stat(filepath.Join(dir, "WORKSPACE")); err == nil {
-			return dir, nil
+			return dir, "WORKSPACE", nil
 		}
 
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", errors.New("no WORKSPACE file found")
+			return "", "", errors.New("no WORKSPACE file found")
 		}
 		dir = parent
 	}
