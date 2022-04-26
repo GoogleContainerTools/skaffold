@@ -25,6 +25,7 @@ var (
 
 	//go:embed assets/*
 	//Assets embedded file system
+	//nolint https://github.com/golang/lint/issues/503
 	Assets embed.FS
 
 	// AssetsFS for testing

@@ -30,8 +30,11 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
     # See https://github.com/golang/go/issues/30515
     # Also can't be easily installed from a vendor folder because it relies on non-go files
     # from a dependency.
-    echo "Installing go-licenses"
-    go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses@9376cf9847a05cae04f4589fe4898b9bce37e684
+   echo "Installing go-licenses"
+     pushd $(mktemp -d ${TMPDIR:-/tmp}/generate-embedded.XXXXXX)
+     #TODO(marlongamez): unpin this version once we're able to build using go 1.16.x
+     go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses@9376cf9847a05cae04f4589fe4898b9bce37e684
+     popd
 fi
 
 echo "Collecting licenses"
@@ -48,4 +51,4 @@ if [[ -d ${SECRET} ]]; then
    cp -R ${SECRET} "fs/assets/secrets_generated"
 fi
 
-echo "Used for marking generating embedded task complete, don't modify this." > fs/assets/check.txt
+echo "Used for marking generating embedded files task complete, don't modify this." > fs/assets/check.txt
