@@ -18,22 +18,20 @@ package schema
 
 import (
 	"bytes"
-	"net/http"
-	"testing"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
+	efs "github.com/GoogleContainerTools/skaffold/fs"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"testing"
 )
 
 func TestPrint(t *testing.T) {
 	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
-			"/schemas/v1.json": []byte("{SCHEMA}"),
+			"/assets/schemas_generated/v1.json": []byte("{SCHEMA}"),
 		},
 	}
 
 	testutil.Run(t, "found", func(t *testutil.T) {
-		t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
+		efs.AssetsFS = fs
 
 		var out bytes.Buffer
 		err := Print(&out, "skaffold/v1")
@@ -43,7 +41,8 @@ func TestPrint(t *testing.T) {
 	})
 
 	testutil.Run(t, "not found", func(t *testutil.T) {
-		t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
+
+		efs.AssetsFS = fs
 
 		var out bytes.Buffer
 		err := Print(&out, "skaffold/v0")

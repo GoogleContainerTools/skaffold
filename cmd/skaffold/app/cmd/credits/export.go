@@ -19,37 +19,31 @@ package credits
 import (
 	"context"
 	"fmt"
+	fs "github.com/GoogleContainerTools/skaffold/fs"
 	"io"
+	iofs "io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/rakyll/statik/fs"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 )
 
 var Path string
 
 // Export writes all the licenses and credit files to the `Path` folder.
 func Export(ctx context.Context, out io.Writer) error {
-	statikFS, err := statik.FS()
-	if err != nil {
-		return fmt.Errorf("opening embedded filesystem: %w", err)
-	}
 
-	if err := fs.Walk(statikFS, "/skaffold-credits", func(filePath string, fileInfo os.FileInfo, err error) error {
-		newPath := path.Join(Path, strings.Replace(filePath, "skaffold-credits", "", 1))
-		if fileInfo.IsDir() {
+	if err := iofs.WalkDir(fs.AssetsFS, "assets/credits_generated", func(filePath string, dirEntry iofs.DirEntry, err error) error {
+		newPath := path.Join(Path, strings.Replace(filePath, "assets/credits_generated", "", 1))
+		if dirEntry.IsDir() {
 			err := os.Mkdir(newPath, 0755)
 			if err != nil && !os.IsExist(err) {
 				return fmt.Errorf("creating directory %q: %w", newPath, err)
 			}
 		} else {
-			file, err := statikFS.Open(filePath)
+			file, err := fs.AssetsFS.Open(filePath)
 			if err != nil {
 				return fmt.Errorf("opening %q in embedded filesystem: %w", filePath, err)
 			}

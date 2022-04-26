@@ -19,7 +19,7 @@ package testutil
 import (
 	"bytes"
 	"io"
-	"net/http"
+	"io/fs"
 	"os"
 )
 
@@ -28,11 +28,11 @@ type FakeFileSystem struct {
 }
 
 type fakeFile struct {
-	http.File
+	fs.File
 	content io.Reader
 }
 
-func (f *FakeFileSystem) Open(name string) (http.File, error) {
+func (f FakeFileSystem) Open(name string) (fs.File, error) {
 	content, found := f.Files[name]
 	if !found {
 		return nil, os.ErrNotExist
@@ -45,6 +45,15 @@ func (f *FakeFileSystem) Open(name string) (http.File, error) {
 
 func (f *fakeFile) Read(p []byte) (n int, err error) {
 	return f.content.Read(p)
+}
+
+func (f FakeFileSystem) ReadFile(name string) ([]byte, error) {
+	content, found := f.Files[name]
+	if !found {
+		return nil, os.ErrNotExist
+	}
+
+	return content, nil
 }
 
 func (f *fakeFile) Close() error {

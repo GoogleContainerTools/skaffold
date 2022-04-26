@@ -20,11 +20,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 SECRET=${SECRET:-${DIR}/../secrets}
 BIN=${DIR}/bin
-STATIK=${BIN}/statik
 LICENSES=${BIN}/go-licenses
 
-TMP_DIR=$(mktemp -d ${TMPDIR:-/tmp}/generate-statik.XXXXXX)
-trap "rm -rf $TMP_DIR" EXIT
 
 if [ -x "$(command -v go-licenses)" ]; then
     # use go-licenses binary if it's installed on user's path
@@ -34,30 +31,21 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
     # Also can't be easily installed from a vendor folder because it relies on non-go files
     # from a dependency.
     echo "Installing go-licenses"
-    pushd $(mktemp -d ${TMPDIR:-/tmp}/generate-statik.XXXXXX)
-    #TODO(marlongamez): unpin this version once we're able to build using go 1.16.x
     go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses@9376cf9847a05cae04f4589fe4898b9bce37e684
-    popd
 fi
 
 echo "Collecting licenses"
 cd ${DIR}/..
-${LICENSES} save github.com/GoogleContainerTools/skaffold/cmd/skaffold --save_path="${TMP_DIR}/skaffold-credits"
-chmod -R u+w "${TMP_DIR}/skaffold-credits"
+${LICENSES} save github.com/GoogleContainerTools/skaffold/cmd/skaffold --save_path="fs/assets/credits_generated" --force
+chmod -R u+w "fs/assets/credits_generated"
 
 echo "Collecting schemas"
-cp -R docs/content/en/schemas "${TMP_DIR}/schemas"
+cp -R docs/content/en/schemas "fs/assets/schemas_generated"
 
-if ! [[ -f ${STATIK} ]]; then
-    echo 'Installing statik tool'
-    pushd ${DIR}/tools
-    GOBIN=${BIN} GO111MODULE=on go install -tags tools github.com/rakyll/statik
-    popd
-fi
 
 if [[ -d ${SECRET} ]]; then
-   echo "generating statik for secret"
-   cp -R ${SECRET} "${TMP_DIR}/secret"
+   echo "generating embedded files for secret"
+   cp -R ${SECRET} "fs/assets/secrets_generated"
 fi
 
-${STATIK} -f -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd
+echo "Used for marking generating embedded task complete, don't modify this." > fs/assets/check.txt

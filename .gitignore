@@ -16,5 +16,5 @@ docs/node_modules
 docs/themes
 docs/package-lock.json
 pkg/skaffold/output/debug.test
-cmd/skaffold/app/cmd/statik/statik.go
+fs/assets/*_generated
 secrets/keys.json
