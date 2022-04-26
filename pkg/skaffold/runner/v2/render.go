@@ -21,17 +21,17 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, renderOutputFile string) error {
 	if r.runCtx.RenderOnly() {
 		// Fetch the digest and append it to the tag with the format of "tag@digest"
-		if r.runCtx.DigestSource() == runner.RemoteDigestSource {
+		if r.runCtx.DigestSource() == constants.RemoteDigestSource {
 			for i, a := range builds {
 				digest, err := docker.RemoteDigest(a.Tag, r.runCtx)
 				if err != nil {
@@ -40,7 +40,7 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []gra
 				builds[i].Tag = build.TagWithDigest(a.Tag, digest)
 			}
 		}
-		if r.runCtx.DigestSource() == runner.NoneDigestSource {
+		if r.runCtx.DigestSource() == constants.NoneDigestSource {
 			output.Default.Fprintln(out, "--digest-source set to 'none', tags listed in Kubernetes manifests will be used for render")
 		}
 	}

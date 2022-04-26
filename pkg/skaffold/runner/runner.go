@@ -26,12 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const (
-	RemoteDigestSource = "remote"
-	NoneDigestSource   = "none"
-	TagDigestSource    = "tag"
-)
-
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
 

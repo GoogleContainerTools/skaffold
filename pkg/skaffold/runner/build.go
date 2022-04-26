@@ -73,7 +73,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	out, ctx = output.WithEventContext(ctx, out, constants.Build, constants.SubtaskIDNone)
 
 	// Use tags directly from the Kubernetes manifests.
-	if r.runCtx.DigestSource() == NoneDigestSource {
+	if r.runCtx.DigestSource() == constants.NoneDigestSource {
 		return []graph.Artifact{}, nil
 	}
 
@@ -93,10 +93,10 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	case r.runCtx.DryRun():
 		output.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
 		return artifactsWithTags(tags, artifacts), nil
-	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == RemoteDigestSource:
+	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == constants.RemoteDigestSource:
 		output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
 		return artifactsWithTags(tags, artifacts), nil
-	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == TagDigestSource:
+	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == constants.TagDigestSource:
 		output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
 		return artifactsWithTags(tags, artifacts), nil
 	default:

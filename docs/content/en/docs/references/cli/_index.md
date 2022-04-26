@@ -681,7 +681,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
+      --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
@@ -948,7 +948,7 @@ Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
-      --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
+      --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
   -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
@@ -1022,7 +1022,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
+      --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.

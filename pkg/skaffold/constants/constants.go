@@ -147,3 +147,12 @@ var Labels = struct {
 	Builder:          "skaffold.dev/builder",
 	DockerAPIVersion: "skaffold.dev/docker-api-version",
 }
+
+const (
+	// RemoteDigestSource skips builds and resolves the digest of images by tag from the remote registry.
+	RemoteDigestSource = "remote"
+	// TagDigestSource to  uses tags directly from the build.
+	TagDigestSource = "tag"
+	// NoneDigestSourceSet uses tags directly from the Kubernetes manifests.
+	NoneDigestSource = "none"
+)
