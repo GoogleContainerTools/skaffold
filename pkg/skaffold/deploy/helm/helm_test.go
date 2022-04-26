@@ -132,6 +132,13 @@ var testDeployConfigVersionTemplated = latest.LegacyHelmDeploy{
 		Version:   "{{.VERSION}}",
 	}},
 }
+var testDeployConfigRepoTemplated = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		Repo:      "https://{{.CHARTUSER}}:{{.CHARTPASS}}@charts.helm.sh/stable",
+	}},
+}
 
 var testDeployConfigSetFiles = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
@@ -832,6 +839,20 @@ func TestHelmDeploy(t *testing.T) {
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			env:                []string{"VERSION=1.0"},
 			helm:               testDeployConfigVersionTemplated,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "deploy with templated repo",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --repo https://foo:bar@charts.helm.sh/stable --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			env:                []string{"CHARTUSER=foo", "CHARTPASS=bar"},
+			helm:               testDeployConfigRepoTemplated,
 			builds:             testBuilds,
 			expectedNamespaces: []string{""},
 		},
