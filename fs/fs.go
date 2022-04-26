@@ -24,6 +24,7 @@ import (
 var (
 
 	//go:embed assets/*
+	//Assets embedded file system
 	Assets embed.FS
 
 	// AssetsFS for testing
