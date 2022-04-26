@@ -26,7 +26,7 @@ import (
 func TestPrint(t *testing.T) {
 	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
-			"/assets/schemas_generated/v1.json": []byte("{SCHEMA}"),
+			"assets/schemas_generated/v1.json": []byte("{SCHEMA}"),
 		},
 	}
 
