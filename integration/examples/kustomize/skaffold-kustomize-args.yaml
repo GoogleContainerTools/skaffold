@@ -3,4 +3,4 @@ kind: Config
 deploy:
   kustomize:
     buildArgs:
-      - "--load_restrictor none"
+      - "--load-restrictor LoadRestrictionsNone"
