@@ -64,13 +64,10 @@ spec:
 `,
 		expectedOut: `apiVersion: v1
 kind: Pod
-metadata:
-  namespace: default
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold
-`}
+    name: skaffold`}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
@@ -124,12 +121,10 @@ spec:
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold
-`,
+    name: skaffold`,
 		},
 		{
 			description: "two artifacts",
@@ -158,14 +153,12 @@ spec:
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
     name: image1
   - image: gcr.io/project/image2:tag2
-    name: image2
-`,
+    name: image2`,
 		},
 		{
 			description: "two artifacts, combined manifests",
@@ -201,7 +194,6 @@ spec:
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
@@ -211,12 +203,10 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-456
-  namespace: default
 spec:
   containers:
   - image: gcr.io/project/image2:tag2
-    name: image2
-`,
+    name: image2`,
 		},
 	}
 	for _, test := range tests {
