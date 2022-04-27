@@ -26,11 +26,12 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel/exporters/stdout"
+	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
+
 	"github.com/GoogleContainerTools/skaffold/fs"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
 )
 
 var testKey = `{
