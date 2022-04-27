@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -73,11 +74,11 @@ type mockRenderer struct {
 	err bool
 }
 
-func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
+func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) (manifest.ManifestList, error) {
 	if m.err {
-		return errors.New("Unable to render")
+		return nil, errors.New("Unable to render")
 	}
-	return nil
+	return nil, nil
 }
 
 func (m *mockRenderer) ManifestDeps() ([]string, error) {
@@ -92,14 +93,14 @@ type mockDeployer struct {
 	err bool
 }
 
-func (m *mockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) error {
+func (m *mockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
 	if m.err {
 		return errors.New("Unable to deploy")
 	}
 	return nil
 }
 
-func (m *mockDeployer) Cleanup(context.Context, io.Writer, bool) error {
+func (m *mockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
 	if m.err {
 		return errors.New("Unable to cleanup")
 	}
@@ -245,7 +246,7 @@ func TestTimingsRender(t *testing.T) {
 			_, _, render, _ := WithTimings(nil, nil, r, nil, false)
 
 			var out bytes.Buffer
-			err := render.Render(context.Background(), &out, nil, false, "")
+			_, err := render.Render(context.Background(), &out, nil, false, "")
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
@@ -282,7 +283,7 @@ func TestTimingsDeploy(t *testing.T) {
 			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
 
 			var out bytes.Buffer
-			err := deployer.Deploy(context.Background(), &out, nil)
+			err := deployer.Deploy(context.Background(), &out, nil, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
@@ -319,7 +320,7 @@ func TestTimingsCleanup(t *testing.T) {
 			_, _, _, deployer := WithTimings(nil, nil, nil, d, false)
 
 			var out bytes.Buffer
-			err := deployer.Cleanup(context.Background(), &out, false)
+			err := deployer.Cleanup(context.Background(), &out, false, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())

@@ -17,17 +17,15 @@ limitations under the License.
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -88,7 +86,7 @@ func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
 
-func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool) error {
+func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
 	return m.cleanupErr
 }
 
@@ -117,7 +115,7 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) error {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
 	return m.deployErr
 }
 
@@ -173,7 +171,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				NewMockDeployer().WithDeployErr(test.err2),
 			}, false)
 
-			err := deployerMux.Deploy(context.Background(), nil, nil)
+			err := deployerMux.Deploy(context.Background(), nil, nil, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -231,67 +229,68 @@ func TestDeployerMux_Dependencies(t *testing.T) {
 	}
 }
 
-func TestDeployerMux_Render(t *testing.T) {
-	tests := []struct {
-		name           string
-		render1        string
-		render2        string
-		err1           error
-		err2           error
-		expectedRender string
-		shouldErr      bool
-	}{
-		{
-			name:           "concatenates render results with separator",
-			render1:        "manifest-1",
-			render2:        "manifest-2",
-			expectedRender: "manifest-1\n---\nmanifest-2\n",
-		},
-		{
-			name:      "short-circuits when first call fails",
-			render1:   "manifest-1",
-			err1:      fmt.Errorf("failed in first"),
-			render2:   "manifest-2",
-			shouldErr: true,
-		},
-		{
-			name:      "short-circuits when second call fails",
-			render1:   "manifest-1",
-			render2:   "manifest-2",
-			err2:      fmt.Errorf("failed in first"),
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run("output to writer "+test.name, func(t *testing.T) {
-			deployerMux := NewDeployerMux([]Deployer{
-				NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
-				NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
-			}, false)
-
-			buf := &bytes.Buffer{}
-			err := deployerMux.Render(context.Background(), buf, nil, true, "")
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, buf.String())
-		})
-	}
-
-	t.Run("output to file", func(t *testing.T) {
-		// only check the good case here
-		test := tests[0]
-
-		tmpDir := testutil.NewTempDir(t)
-
-		deployerMux := NewDeployerMux([]Deployer{
-			NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
-			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
-		}, false)
-
-		err := deployerMux.Render(context.Background(), nil, nil, true, tmpDir.Path("render"))
-		testutil.CheckError(t, false, err)
-
-		file, _ := os.Open(tmpDir.Path("render"))
-		content, _ := ioutil.ReadAll(file)
-		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, string(content))
-	})
-}
+// TODO: Add RendererMux https://github.com/GoogleContainerTools/skaffold/issues/7330
+// func TestDeployerMux_Render(t *testing.T) {
+//	tests := []struct {
+//		name           string
+//		render1        string
+//		render2        string
+//		err1           error
+//		err2           error
+//		expectedRender string
+//		shouldErr      bool
+//	}{
+//		{
+//			name:           "concatenates render results with separator",
+//			render1:        "manifest-1",
+//			render2:        "manifest-2",
+//			expectedRender: "manifest-1\n---\nmanifest-2\n",
+//		},
+//		{
+//			name:      "short-circuits when first call fails",
+//			render1:   "manifest-1",
+//			err1:      fmt.Errorf("failed in first"),
+//			render2:   "manifest-2",
+//			shouldErr: true,
+//		},
+//		{
+//			name:      "short-circuits when second call fails",
+//			render1:   "manifest-1",
+//			render2:   "manifest-2",
+//			err2:      fmt.Errorf("failed in first"),
+//			shouldErr: true,
+//		},
+//	}
+//
+//	for _, test := range tests {
+//		t.Run("output to writer "+test.name, func(t *testing.T) {
+//			deployerMux := NewDeployerMux([]Deployer{
+//				NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
+//				NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
+//			}, false)
+//
+//			buf := &bytes.Buffer{}
+//			err := deployerMux.Render(context.Background(), buf, nil, true, "")
+//			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, buf.String())
+//		})
+//	}
+//
+//	t.Run("output to file", func(t *testing.T) {
+//		// only check the good case here
+//		test := tests[0]
+//
+//		tmpDir := testutil.NewTempDir(t)
+//
+//		deployerMux := NewDeployerMux([]Deployer{
+//			NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
+//			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
+//		}, false)
+//
+//		err := deployerMux.Render(context.Background(), nil, nil, true, tmpDir.Path("render"))
+//		testutil.CheckError(t, false, err)
+//
+//		file, _ := os.Open(tmpDir.Path("render"))
+//		content, _ := ioutil.ReadAll(file)
+//		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, string(content))
+//	})
+//}

@@ -23,7 +23,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/segmentio/textio"
@@ -165,7 +164,7 @@ func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
 }
 
 func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
+	deployutil.AddTagsToPodSelector(artifacts, k.podSelector)
 	k.logger.RegisterArtifacts(artifacts)
 }
 
@@ -175,12 +174,11 @@ func (k *Deployer) trackNamespaces(namespaces []string) {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifests manifest.ManifestList) error {
 	var (
-		manifests manifest.ManifestList
-		err       error
-		childCtx  context.Context
-		endTrace  func(...trace.SpanOption)
+		err      error
+		childCtx context.Context
+		endTrace func(...trace.SpanOption)
 	)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
@@ -195,8 +193,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	// if any hydrated manifests are passed to `skaffold apply`, only deploy these
 	// also, manually set the labels to ensure the runID is added
-	switch {
-	case len(k.hydratedManifests) > 0:
+	if len(k.hydratedManifests) > 0 {
 		_, endTrace = instrumentation.StartTrace(ctx, "Deploy_readHydratedManifests")
 		manifests, err = k.kubectl.ReadManifests(ctx, k.hydratedManifests)
 		if err != nil {
@@ -205,7 +202,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		}
 		manifests, err = manifests.SetLabels(k.labeller.Labels(), manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 		endTrace()
-	case k.skipRender:
+	} else if k.skipRender {
 		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
 		manifests, err = k.readManifests(childCtx, false)
 		if err != nil {
@@ -214,10 +211,6 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		}
 		manifests, err = manifests.SetLabels(k.labeller.Labels(), manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 		endTrace()
-	default:
-		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_renderManifests")
-		manifests, err = k.renderManifests(childCtx, out, builds, false)
-		endTrace()
 	}
 
 	if err != nil {
@@ -225,9 +218,8 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	if len(manifests) == 0 {
-		return nil
+		return fmt.Errorf("nothing to deploy")
 	}
-	endTrace()
 
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
@@ -337,23 +329,6 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 // readManifests reads the manifests to deploy/delete.
 func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
 	var manifests []string
-	var err error
-
-	// v1 kubectl deployer is used. No manifest hydration.
-	if len(k.KubectlDeploy.Manifests) > 0 {
-		olog.Entry(ctx).Warnln("`deploy.kubectl.manifests` (DEPRECATED) are given, skaffold will skip the `manifests` field. " +
-			"If you expect skaffold to render the resources from the `manifests`, please delete the `deploy.kubectl.manifests` field.")
-		manifests, err = k.Dependencies()
-		if err != nil {
-			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
-		}
-	} else {
-		// v2 kubectl deployer is used. The manifests are read from the hydrated directory.
-		manifests, err = k.manifestFiles([]string{filepath.Join(k.hydrationDir, "*")})
-		if err != nil {
-			return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
-		}
-	}
 
 	// Clean the temporary directory that holds the manifests downloaded from GCS
 	defer os.RemoveAll(k.gcsManifestDir)
@@ -510,11 +485,12 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
-	manifests, err := k.readManifests(ctx, false)
+	other, err := k.readManifests(ctx, false)
+	manifests = append(manifests, other...)
 	if err != nil {
 		return err
 	}

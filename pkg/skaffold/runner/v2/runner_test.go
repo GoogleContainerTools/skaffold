@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
@@ -141,9 +142,11 @@ func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
 func (t *TestBench) TestDependencies(context.Context, *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
-func (t *TestBench) Dependencies() ([]string, error)                               { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error { return nil }
-func (t *TestBench) Prune(ctx context.Context, out io.Writer) error                { return nil }
+func (t *TestBench) Dependencies() ([]string, error) { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
+	return nil
+}
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -199,7 +202,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestList) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -212,16 +215,16 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return nil
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) error {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) (manifest.ManifestList, error) {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	t.currentActions.Rendered = findTags(artifacts)
-	return nil
+	return nil, nil
 }
 
 func (t *TestBench) ManifestDeps() ([]string, error) {

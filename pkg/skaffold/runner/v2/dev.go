@@ -178,7 +178,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
-		if err := r.Render(childCtx, out, r.Builds, false, ""); err != nil {
+		manifests, err := r.Render(childCtx, out, r.Builds, false, "")
+		if err != nil {
 			log.Entry(ctx).Warn("Skipping render due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
@@ -186,7 +187,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			return nil
 		}
 
-		if err := r.Deploy(childCtx, out, r.Builds); err != nil {
+		if err := r.Deploy(childCtx, out, r.Builds, manifests); err != nil {
 			log.Entry(ctx).Warn("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
@@ -346,7 +347,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.deployer.GetLogger().SetSince(time.Now())
 
 	// First render
-	if err := r.Render(ctx, out, r.Builds, true, ""); err != nil {
+	manifests, err := r.Render(ctx, out, r.Builds, true, "")
+	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
 		endTrace()
@@ -354,7 +356,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First deploy
-	if err := r.Deploy(ctx, out, r.Builds); err != nil {
+	if err := r.Deploy(ctx, out, r.Builds, manifests); err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
 		endTrace()

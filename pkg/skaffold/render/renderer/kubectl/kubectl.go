@@ -23,6 +23,9 @@ import (
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
@@ -31,29 +34,34 @@ import (
 
 type Kubectl struct {
 	generate.Generator
-	hydrationDir string
-	labels       map[string]string
+	labels map[string]string
 
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func New(cfg render.Config, hydrationDir string, labels map[string]string) (Kubectl, error) {
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), cfg.GetRenderConfig().Generate, hydrationDir)
+func New(cfg render.Config, labels map[string]string) (Kubectl, error) {
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), cfg.GetRenderConfig().Generate)
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Kubectl{}, err
 	}
 	return Kubectl{
-		Generator:    generator,
-		hydrationDir: hydrationDir,
-		labels:       labels,
+		Generator: generator,
+		labels:    labels,
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
 	}, nil
 }
 
-func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, _ string) error {
-	return util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.hydrationDir, r.labels, r.transformAllowlist, r.transformDenylist)
+func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, _ string) (manifest.ManifestList, error) {
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_KubectlManifests")
+	log.Entry(ctx).Infof("rendering using kubectl")
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"RendererType": "kubectl",
+	})
+	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.transformAllowlist, r.transformDenylist)
+	endTrace()
+	return manifests, err
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -33,18 +34,14 @@ import (
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []graph.Artifact) error
+	Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
 	Dependencies() ([]string, error)
 
 	// Cleanup deletes what was deployed by calling Deploy.
-	Cleanup(context.Context, io.Writer, bool) error
-
-	// Render generates the Kubernetes manifests replacing the build results and
-	// writes them to the given file path
-	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
+	Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error
 
 	// GetDebugger returns a Deployer's implementation of a Debugger
 	GetDebugger() debug.Debugger

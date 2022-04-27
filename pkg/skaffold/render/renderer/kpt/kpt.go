@@ -30,6 +30,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
@@ -54,9 +55,13 @@ type Kpt struct {
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
+const (
+	DryFileName = "manifests.yaml"
+)
+
 func New(cfg render.Config, hydrationDir string,
 	labels map[string]string) (*Kpt, error) {
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), cfg.GetRenderConfig().Generate, hydrationDir)
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), cfg.GetRenderConfig().Generate)
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return nil, err
@@ -93,7 +98,7 @@ func New(cfg render.Config, hydrationDir string,
 	}, nil
 }
 
-func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, output string) error {
+func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, output string) (manifest.ManifestList, error) {
 	kptfilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	kfConfig := &kptfile.KptFile{}
 
@@ -107,11 +112,11 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	if _, err := os.Stat(kptfilePath); os.IsNotExist(err) {
 		if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
 			endTrace(instrumentation.TraceEndError(fmt.Errorf("create hydration dir %v:%w", r.hydrationDir, err)))
-			return err
+			return nil, err
 		}
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
 		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
-			return sErrors.NewError(err,
+			return nil, sErrors.NewError(err,
 				&proto.ActionableErr{
 					Message: fmt.Sprintf("unable to initialize Kptfile in %v", r.hydrationDir),
 					ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
@@ -130,33 +135,43 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(fmt.Errorf("read Kptfile from %v: %w",
 			filepath.Dir(kptfilePath), err)))
-		return err
+		return nil, err
 	}
 	if err := yaml.UnmarshalStrict(kptfileBytes, &kfConfig); err != nil {
-		return errors.ParseKptfileError(err, r.hydrationDir)
+		return nil, errors.ParseKptfileError(err, r.hydrationDir)
 	}
 	if err := os.RemoveAll(r.hydrationDir); err != nil {
-		return errors.DeleteKptfileError(err, r.hydrationDir)
+		return nil, errors.DeleteKptfileError(err, r.hydrationDir)
 	}
 	endTrace()
-	if err = rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.hydrationDir, r.labels, r.transformAllowlist, r.transformDenylist); err != nil {
-		return err
+	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.transformAllowlist, r.transformDenylist)
+	if err != nil {
+		return nil, errH
 	}
-
+	// Write generated dry manifests.
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_cacheDryConfig")
+	dryConfigPath := filepath.Join(r.hydrationDir, DryFileName)
+	if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
+		return nil, err
+	}
+	if err := manifest.Write(manifests.String(), dryConfigPath, out); err != nil {
+		return nil, err
+	}
+	endTrace()
 	if kfConfig.Pipeline == nil {
 		kfConfig.Pipeline = &kptfile.Pipeline{}
 	}
 	kfConfig.Pipeline.Validators = r.GetDeclarativeValidators()
 	kfConfig.Pipeline.Mutators, err = r.GetDeclarativeTransformers()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	configByte, err := yaml.Marshal(kfConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err = ioutil.WriteFile(kptfilePath, configByte, 0644); err != nil {
-		return err
+		return manifests, err
 	}
 	endTrace()
 
@@ -167,13 +182,13 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	if err := util.RunCmd(ctx, cmd); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
-		return err
+		return nil, err
 	}
 
 	if output != "" {
 		r.writeManifestsToFile(ctx, out, output)
 	}
-	return nil
+	return manifests, nil
 }
 
 // writeManifestsToFile converts the structured manifest to a flatten format and store them in the given `output` file.

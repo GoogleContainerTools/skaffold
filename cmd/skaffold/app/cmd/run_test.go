@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -50,6 +51,7 @@ type mockRunRunner struct {
 	runner.Runner
 	testRan            bool
 	deployRan          bool
+	renderRan          bool
 	artifactImageNames []string
 }
 
@@ -71,9 +73,14 @@ func (r *mockRunRunner) Test(context.Context, io.Writer, []graph.Artifact) error
 	return nil
 }
 
-func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifact) error {
+func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
 	r.deployRan = true
 	return nil
+}
+
+func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool, string) (manifest.ManifestList, error) {
+	r.renderRan = true
+	return manifest.ManifestList{}, nil
 }
 
 func TestDoRun(t *testing.T) {

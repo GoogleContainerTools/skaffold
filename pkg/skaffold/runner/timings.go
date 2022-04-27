@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
@@ -82,23 +83,23 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 	return nil
 }
 
-func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) (manifest.ManifestList, error) {
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting render...")
 
-	err := w.Renderer.Render(ctx, out, builds, offline, filepath)
+	manifestsLists, err := w.Renderer.Render(ctx, out, builds, offline, filepath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Entry(context.TODO()).Infoln("Render completed in", timeutil.Humanize(time.Since(start)))
-	return nil
+	return manifestsLists, nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, l manifest.ManifestList) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting deploy...")
 
-	err := w.Deployer.Deploy(ctx, out, builds)
+	err := w.Deployer.Deploy(ctx, out, builds, l)
 	if err != nil {
 		return err
 	}
@@ -106,11 +107,11 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.A
 	return err
 }
 
-func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Cleaning up...")
 
-	err := w.Deployer.Cleanup(ctx, out, dryRun)
+	err := w.Deployer.Cleanup(ctx, out, dryRun, nil)
 	if err != nil {
 		return err
 	}

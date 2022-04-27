@@ -54,7 +54,13 @@ func doRun(ctx context.Context, out io.Writer) error {
 			}
 		}
 
-		err = r.DeployAndLog(ctx, out, bRes)
+		// Render
+		manifestList, err := r.Render(ctx, out, bRes, true, opts.RenderOutput)
+		if err != nil {
+			return err
+		}
+
+		err = r.DeployAndLog(ctx, out, bRes, manifestList)
 		if err != nil {
 			return fmt.Errorf("failed to deploy: %w", err)
 		}

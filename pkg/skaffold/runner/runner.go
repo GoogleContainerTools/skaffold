@@ -22,6 +22,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -36,14 +37,15 @@ type Runner interface {
 	Build(context.Context, io.Writer, []*latest.Artifact) ([]graph.Artifact, error)
 	Cleanup(context.Context, io.Writer, bool) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
-	Deploy(context.Context, io.Writer, []graph.Artifact) error
-	DeployAndLog(context.Context, io.Writer, []graph.Artifact) error
+	// Deploy and DeployAndLog: Do they need the `graph.Artifact` and could use render output.
+	Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error
+	DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error
 	GeneratePipeline(context.Context, io.Writer, []util.VersionedConfig, []string, string) error
 	HasBuilt() bool
 	HasDeployed() bool
 	Prune(context.Context, io.Writer) error
 
 	// "output" arg is only used in Render v1.
-	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, output string) error
+	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, output string) (manifest.ManifestList, error)
 	Test(context.Context, io.Writer, []graph.Artifact) error
 }

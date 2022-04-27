@@ -74,8 +74,8 @@ func doRender(ctx context.Context, out io.Writer) error {
 			}
 		}
 
-		if err := r.Render(ctx, out, bRes, offline, opts.RenderOutput); err != nil {
-			return fmt.Errorf("rendering manifests: %w", err)
+		if _, errR := r.Render(ctx, out, bRes, offline, opts.RenderOutput); errR != nil {
+			return fmt.Errorf("rendering manifests: %w", errR)
 		}
 		return nil
 	})

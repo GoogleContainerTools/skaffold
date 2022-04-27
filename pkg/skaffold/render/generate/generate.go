@@ -40,11 +40,10 @@ import (
 )
 
 // NewGenerator instantiates a Generator object.
-func NewGenerator(workingDir string, config latest.Generate, hydrationDir string) Generator {
+func NewGenerator(workingDir string, config latest.Generate) Generator {
 	return Generator{
-		workingDir:   workingDir,
-		hydrationDir: hydrationDir,
-		config:       config,
+		workingDir: workingDir,
+		config:     config,
 	}
 }
 
@@ -55,20 +54,35 @@ type Generator struct {
 	config       latest.Generate
 }
 
-func excludeRemote(paths []string) []string {
+func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 	var localPaths []string
+	var gcsManifests []string
 	for _, path := range paths {
 		switch {
 		case util.IsURL(path):
-			// TODO(yuwenma): remote URL should be changed to use kpt package management approach, via API Schema
-			//  `render.generate.remotePackages`
 		case strings.HasPrefix(path, "gs://"):
-			// TODO(yuwenma): handle GS packages.
+			gcsManifests = append(gcsManifests, path)
 		default:
 			localPaths = append(localPaths, path)
 		}
 	}
-	return localPaths
+	list, err := util.ExpandPathsGlob(workdir, localPaths)
+	if err != nil {
+		return nil, err
+	}
+	if len(gcsManifests) != 0 {
+		// return tmp dir of the downloaded manifests
+		tmpDir, err := manifest.DownloadFromGCS(gcsManifests)
+		if err != nil {
+			return nil, fmt.Errorf("downloading from GCS: %w", err)
+		}
+		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
+		if err != nil {
+			return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
+		}
+		list = append(list, l...)
+	}
+	return list, nil
 }
 
 // Generate parses the config resources from the paths in .Generate.Manifests. This path can be the path to raw manifest,
@@ -78,8 +92,7 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 
 	// Generate kustomize Manifests
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
-	kustomizePaths := excludeRemote(g.config.Kustomize)
-	kustomizePaths, err := util.ExpandPathsGlob(g.workingDir, kustomizePaths)
+	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
 		return nil, err
@@ -105,9 +118,8 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 	}
 
 	// Generate in-place hydrated kpt Manifests
-	kptPaths := excludeRemote(g.config.Kpt)
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
-	kptPaths, err = util.ExpandPathsGlob(g.workingDir, kptPaths)
+	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
 		return nil, err
@@ -136,14 +148,12 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 	}
 
 	// Generate Raw Manifests
-	sourceManifests := excludeRemote(g.config.RawK8s)
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobRawManifests")
-	sourceManifests, err = util.ExpandPathsGlob(g.workingDir, sourceManifests)
+	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
 		return nil, err
 	}
-	endTrace()
+
 	hydratedManifests := append(sourceManifests, kptManifests...)
 	for _, nkPath := range hydratedManifests {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
@@ -214,8 +224,7 @@ func isKptDir(path string) (string, bool) {
 func (g Generator) walkManifests() ([]string, error) {
 	var dependencyPaths []string
 	// Generate kustomize Manifests
-	kustomizePaths := excludeRemote(g.config.Kustomize)
-	kustomizePaths, err := util.ExpandPathsGlob(g.workingDir, kustomizePaths)
+	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
 		return nil, err
@@ -223,8 +232,7 @@ func (g Generator) walkManifests() ([]string, error) {
 	dependencyPaths = append(dependencyPaths, kustomizePaths...)
 
 	// Generate in-place hydrated kpt Manifests
-	kptPaths := excludeRemote(g.config.Kpt)
-	kptPaths, err = util.ExpandPathsGlob(g.workingDir, kptPaths)
+	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
 		return nil, err
@@ -232,8 +240,7 @@ func (g Generator) walkManifests() ([]string, error) {
 	dependencyPaths = append(dependencyPaths, kptPaths...)
 
 	// Generate Raw Manifests
-	sourceManifests := excludeRemote(g.config.RawK8s)
-	sourceManifests, err = util.ExpandPathsGlob(g.workingDir, sourceManifests)
+	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
 		return nil, err

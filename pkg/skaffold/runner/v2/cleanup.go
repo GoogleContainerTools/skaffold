@@ -21,5 +21,5 @@ import (
 )
 
 func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
-	return r.deployer.Cleanup(ctx, out, dryRun)
+	return r.deployer.Cleanup(ctx, out, dryRun, nil)
 }

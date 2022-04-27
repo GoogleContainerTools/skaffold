@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -112,7 +113,7 @@ func (d *Deployer) TrackContainerFromBuild(artifact graph.Artifact, container tr
 
 // Deploy deploys built artifacts by creating containers in the local docker daemon
 // from each artifact's image.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network)
@@ -286,7 +287,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
 	if dryRun {
 		for _, container := range d.tracker.DeployedContainers() {
 			output.Yellow.Fprintln(out, container.ID)

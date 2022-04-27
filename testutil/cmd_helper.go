@@ -70,8 +70,8 @@ func CmdRun(command string) *FakeCmd {
 	return newFakeCmd().AndRun(command)
 }
 
-func CmdRunInput(command, input string) *FakeCmd {
-	return newFakeCmd().AndRunInput(command, input)
+func CmdRunInputOut(command string, input string, output string) *FakeCmd {
+	return newFakeCmd().AndRunInputOut(command, input, output)
 }
 
 func CmdRunErr(command string, err error) *FakeCmd {

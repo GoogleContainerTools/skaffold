@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -87,7 +88,7 @@ func TestWithLogFile(t *testing.T) {
 			}
 
 			deployOut, postDeployFn, _ := WithLogFile("deploy.log", &mockOut, test.muted)
-			namespaces, err := deployer.Deploy(context.Background(), deployOut, nil)
+			namespaces, err := deployer.Deploy(context.Background(), deployOut, nil, nil)
 			postDeployFn()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, namespaces)
@@ -157,7 +158,7 @@ func TestWithStatusCheckLogFile(t *testing.T) {
 			}
 
 			deployOut, postDeployFn, _ := WithStatusCheckLogFile("status-check.log", &mockOut, test.muted)
-			namespaces, err := deployer.Deploy(context.Background(), deployOut, nil)
+			namespaces, err := deployer.Deploy(context.Background(), deployOut, nil, nil)
 			postDeployFn()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, namespaces)
@@ -177,7 +178,7 @@ type mockDeployer struct {
 	shouldErr bool
 }
 
-func (fd *mockDeployer) Deploy(ctx context.Context, out io.Writer, _ []graph.Artifact) ([]string, error) {
+func (fd *mockDeployer) Deploy(ctx context.Context, out io.Writer, _ []graph.Artifact, _ manifest.ManifestList) ([]string, error) {
 	if fd.shouldErr {
 		fmt.Fprintln(out, " - failed to deploy")
 		return nil, errors.New("failed to deploy")
@@ -193,7 +194,7 @@ type mockStatusMonitor struct {
 	shouldErr bool
 }
 
-func (fd *mockStatusMonitor) Deploy(ctx context.Context, out io.Writer, _ []graph.Artifact) ([]string, error) {
+func (fd *mockStatusMonitor) Deploy(ctx context.Context, out io.Writer, _ []graph.Artifact, _ manifest.ManifestList) ([]string, error) {
 	if fd.shouldErr {
 		fmt.Fprintln(out, " - deployment/leeroy-app failed. could not pull image")
 		return nil, errors.New("- deployment/leeroy-app failed. could not pull image")
