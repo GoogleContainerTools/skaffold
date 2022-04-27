@@ -67,11 +67,11 @@ GO_BUILD_TAGS_windows = release
 GO_BUILD_TAGS_darwin = release
 
 ifneq "$(strip $(LOCAL))" "true"
-	override STATIK_FILES =  cmd/skaffold/app/cmd/statik/statik.go
+	override EMBEDDED_FILES_CHECK = fs/assets/check.txt
 endif
 
 # when build for local development (`LOCAL=true make install` can skip license check)
-$(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT): $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(GOOS))))
 	$(eval tags = $(GO_BUILD_TAGS_$(GOOS)) $(GO_BUILD_TAGS_$(GOOS)_$(GOARCH)))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 \
@@ -91,7 +91,7 @@ install: $(BUILD_DIR)/$(PROJECT)
 .PHONY: cross
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
-$(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-%: $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
 	$(eval os = $(firstword $(subst -, ,$*)))
 	$(eval arch = $(lastword $(subst -, ,$(subst .exe,,$*))))
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(os))))
@@ -183,7 +183,7 @@ release-lts-build:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) hack/bin $(STATIK_FILES)
+	rm -rf $(BUILD_DIR) hack/bin $(EMBEDDED_FILES_CHECK) fs/assets/*_generated/
 
 .PHONY: build_deps
 build_deps:
@@ -313,8 +313,8 @@ flags-dashboard:
 
 # static files
 
-$(STATIK_FILES): go.mod docs/content/en/schemas/*
-	hack/generate-statik.sh
+$(EMBEDDED_FILES_CHECK): go.mod docs/content/en/schemas/*
+	hack/generate-embedded-files.sh
 
 # run comparisonstats - ex: make COMPARISONSTATS_ARGS='usr/local/bin/skaffold /usr/local/bin/skaffold helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats
 .PHONY: comparisonstats

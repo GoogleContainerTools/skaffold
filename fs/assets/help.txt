@@ -1,0 +1,1 @@
+This file is to ensure assets folder is not empty so that we can embed the folder.

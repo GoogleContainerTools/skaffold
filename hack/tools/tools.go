@@ -21,5 +21,4 @@ package main
 
 import (
 	_ "github.com/corneliusweig/release-notes"
-	_ "github.com/rakyll/statik"
 )

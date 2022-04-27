@@ -14,11 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package statik
+package fs
 
-import "github.com/rakyll/statik/fs"
+import (
+	"embed"
+	"io/fs"
+)
 
-// For testing
 var (
-	FS = fs.New
+
+	//go:embed assets/*
+	//Assets embedded file system
+	//nolint https://github.com/golang/lint/issues/503
+	Assets embed.FS
+
+	// AssetsFS for testing
+	AssetsFS fs.ReadFileFS = Assets
 )
