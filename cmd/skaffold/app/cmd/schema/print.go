@@ -22,12 +22,11 @@ import (
 	"path"
 	"strings"
 
-	fs "github.com/GoogleContainerTools/skaffold/fs"
+	"github.com/GoogleContainerTools/skaffold/fs"
 )
 
 // Print prints the json schema for a given version.
 func Print(out io.Writer, version string) error {
-
 	filename := path.Join("assets/schemas_generated", strings.TrimPrefix(version, "skaffold/")+".json")
 
 	content, err := fs.AssetsFS.ReadFile(filename)

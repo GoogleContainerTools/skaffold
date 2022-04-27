@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	efs "github.com/GoogleContainerTools/skaffold/fs"
+	"github.com/GoogleContainerTools/skaffold/fs"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"go.opentelemetry.io/otel/exporters/stdout"
@@ -104,7 +104,7 @@ func TestExportMetrics(t *testing.T) {
 		Duration:                     time.Minute * 4,
 	}
 	metersBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter, debugMeter})
-	fs := testutil.FakeFileSystem{
+	fakeFS := testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"assets/secrets_generated/keys.json": []byte(testKey),
 		},
@@ -164,7 +164,7 @@ func TestExportMetrics(t *testing.T) {
 			filename := "metrics"
 			openTelFilename := "otel_metrics"
 
-			efs.AssetsFS = fs
+			fs.AssetsFS = fakeFS
 			t.Override(&isOnline, test.isOnline)
 
 			if test.isOnline {
@@ -243,7 +243,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			efs.AssetsFS = test.fileSystem
+			fs.AssetsFS = test.fileSystem
 
 			p, err := initCloudMonitoringExporterMetrics()
 
@@ -253,7 +253,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 }
 
 func TestUserMetricReported(t *testing.T) {
-	fs := &testutil.FakeFileSystem{
+	fakeFS := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"/secret/keys.json": []byte(testKey),
 		},
@@ -368,7 +368,7 @@ func TestUserMetricReported(t *testing.T) {
 			filename := "metrics"
 			openTelFilename := "otel_metrics"
 
-			efs.AssetsFS = fs
+			fs.AssetsFS = fakeFS
 			t.Override(&isOnline, true)
 			tmpFile, err := os.OpenFile(tmp.Path(openTelFilename), os.O_RDWR|os.O_CREATE, os.ModePerm)
 			if err != nil {

@@ -19,7 +19,6 @@ package credits
 import (
 	"context"
 	"fmt"
-	fs "github.com/GoogleContainerTools/skaffold/fs"
 	"io"
 	iofs "io/fs"
 	"io/ioutil"
@@ -28,13 +27,14 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/fs"
 )
 
 var Path string
 
 // Export writes all the licenses and credit files to the `Path` folder.
 func Export(ctx context.Context, out io.Writer) error {
-
 	if err := iofs.WalkDir(fs.AssetsFS, "assets/credits_generated", func(filePath string, dirEntry iofs.DirEntry, err error) error {
 		newPath := path.Join(Path, strings.Replace(filePath, "assets/credits_generated", "", 1))
 		if dirEntry.IsDir() {

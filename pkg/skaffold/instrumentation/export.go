@@ -109,7 +109,6 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 }
 
 func initCloudMonitoringExporterMetrics() (*basic.Controller, error) {
-
 	b, err := fs.AssetsFS.ReadFile("assets/secrets_generated/keys.json")
 	if err != nil {
 		// No keys have been set in this version so do not attempt to write metrics
