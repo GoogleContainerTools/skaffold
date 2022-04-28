@@ -105,11 +105,9 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 	}
 	var messages []string
 	for _, err := range errs {
-
 		if err.Error == nil {
 			fmt.Println("err is nil")
 		}
-		//err
 		messages = append(messages, err.Error.Error())
 	}
 	if len(messages) != 0 {
