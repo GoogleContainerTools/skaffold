@@ -111,7 +111,6 @@ func TestExportMetrics(t *testing.T) {
 			"/secret/keys.json": []byte(testKey),
 		},
 	}
-	//
 
 	tests := []struct {
 		name                string
