@@ -197,7 +197,7 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 		output.Yellow.Fprintln(out, sName)
 		return nil
 	}
-	crclient, err := run.NewService(ctx, gcp.ClientOptions(ctx)...)
+	crclient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), d.clientOptions...)...)
 	if err != nil {
 		return sErrors.NewError(fmt.Errorf("Unable to create Cloud Run Client"), &proto.ActionableErr{
 			Message: err.Error(),
