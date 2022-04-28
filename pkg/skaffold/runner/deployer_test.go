@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/cloudrun"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
@@ -107,6 +108,20 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&kptV2.Deployer{},
 				}, false),
+			},
+			{
+				description: "cloud run deployer",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{},
+						},
+					},
+				},
+				expected: deploy.NewDeployerMux(
+					[]deploy.Deployer{
+						t.RequireNonNilResult(cloudrun.NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{})).(deploy.Deployer)},
+					false),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with kpt config",
@@ -215,6 +230,31 @@ func TestGetDeployer(tOuter *testing.T) {
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
 				}, "")).(deploy.Deployer),
+			},
+			{
+				description: "apply works with Cloud Run",
+				apply:       true,
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"},
+						},
+					},
+				},
+				expected: t.RequireNonNilResult(cloudrun.NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
+			},
+			{
+				description: "apply does not allow multiple deployers when Cloud Run is used",
+				apply:       true,
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{},
+							KubectlDeploy:  &latest.KubectlDeploy{},
+						},
+					},
+				},
+				shouldErr: true,
 			},
 		}
 		for _, test := range tests {

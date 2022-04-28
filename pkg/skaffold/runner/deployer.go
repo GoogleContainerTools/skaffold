@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/cloudrun"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
@@ -72,10 +73,15 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	if runCtx.Opts.Apply {
 		helmNamespaces := make(map[string]bool)
 		nonHelmDeployFound := false
+		cloudRunDeployFound := false
 
 		for _, d := range deployerCfg {
+
 			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
 				nonHelmDeployFound = true
+			}
+			if d.CloudRunDeploy != nil {
+				cloudRunDeployFound = true
 			}
 
 			if d.LegacyHelmDeploy != nil {
@@ -86,7 +92,13 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				}
 			}
 		}
-
+		if cloudRunDeployFound {
+			if nonHelmDeployFound || len(helmNamespaces) > 0 {
+				// Cloud Run doesn't support multiple deployers in the config.
+				return nil, errors.New("skaffold apply called with both Cloud Run and Kubernetes deployers. Mixing deployment targets is not allowed")
+			}
+			return getCloudRunDeployer(runCtx, labeller)
+		}
 		if len(helmNamespaces) > 1 || (nonHelmDeployFound && len(helmNamespaces) == 1) {
 			return nil, errors.New("skaffold apply called with conflicting namespaces set via skaffold.yaml. This is likely due to the use of the 'deploy.helm.releases.*.namespace' field which is not supported in apply.  Remove the 'deploy.helm.releases.*.namespace' field(s) and run skaffold apply again")
 		}
@@ -157,6 +169,13 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 
 		if d.KustomizeDeploy != nil {
 			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, deployer)
+		}
+		if d.CloudRunDeploy != nil {
+			deployer, err := cloudrun.NewDeployer(labeller, d.CloudRunDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -270,4 +289,23 @@ func validateKubectlFlags(flags *latest.KubectlFlags, additional latest.KubectlF
 		}
 	}
 	return nil
+}
+
+/* The Cloud Run deployer for apply. Used when Cloud Run is specified. */
+func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (*cloudrun.Deployer, error) {
+	var region string
+	var defaultProject string
+	for _, d := range runCtx.DeployConfigs() {
+		if d.CloudRunDeploy != nil {
+			crDeploy := d.CloudRunDeploy
+			if region != "" && region != crDeploy.Region {
+				return nil, fmt.Errorf("Expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+			}
+			region = crDeploy.Region
+			if defaultProject != "" && defaultProject != crDeploy.DefaultProjectID {
+				return nil, fmt.Errorf("Expected all Cloud Run deploys to use the same default project, found deploys to projects %s and %s", defaultProject, crDeploy.DefaultProjectID)
+			}
+		}
+	}
+	return cloudrun.NewDeployer(labeller, &latest.CloudRunDeploy{Region: region, DefaultProjectID: defaultProject})
 }
