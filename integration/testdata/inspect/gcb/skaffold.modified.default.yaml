@@ -11,7 +11,7 @@ build:
     logging: LEGACY
     logStreamingOption: STREAM_ON
     concurrency: 2
-    workerPool: pool2
+    workerPool: projects/test/locations/asia-east1/workerPools/pool2
 profiles:
 - name: local
   build:
