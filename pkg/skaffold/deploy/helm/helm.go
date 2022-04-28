@@ -32,6 +32,7 @@ import (
 
 	"github.com/blang/semver"
 	backoff "github.com/cenkalti/backoff/v4"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -56,6 +57,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -118,6 +120,9 @@ type Deployer struct {
 	isMultiConfig bool
 	// bV is the helm binary version
 	bV semver.Version
+
+	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
+	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
 type Config interface {
@@ -147,6 +152,10 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
+	transformableAllowlist, transformableDenylist, err := renderutil.ConsolidateTransformConfiguration(cfg)
+	if err != nil {
+		return nil, err
+	}
 	var ogImages []graph.Artifact
 	for _, artifact := range artifacts {
 		ogImages = append(ogImages, graph.Artifact{
@@ -154,26 +163,28 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		})
 	}
 	return &Deployer{
-		LegacyHelmDeploy: h,
-		podSelector:      podSelector,
-		namespaces:       &namespaces,
-		accessor:         component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
-		debugger:         component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:      component.NewImageLoader(cfg, kubectl),
-		logger:           logger,
-		statusMonitor:    component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:           component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		hookRunner:       hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
-		originalImages:   ogImages,
-		kubeContext:      cfg.GetKubeContext(),
-		kubeConfig:       cfg.GetKubeConfig(),
-		namespace:        cfg.GetKubeNamespace(),
-		forceDeploy:      cfg.ForceDeploy(),
-		configFile:       cfg.ConfigurationFile(),
-		labels:           labeller.Labels(),
-		bV:               hv,
-		enableDebug:      cfg.Mode() == config.RunModes.Debug,
-		isMultiConfig:    cfg.IsMultiConfig(),
+		LegacyHelmDeploy:       h,
+		podSelector:            podSelector,
+		namespaces:             &namespaces,
+		accessor:               component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl, podSelector, labeller, &namespaces),
+		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:            component.NewImageLoader(cfg, kubectl),
+		logger:                 logger,
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
+		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		originalImages:         ogImages,
+		kubeContext:            cfg.GetKubeContext(),
+		kubeConfig:             cfg.GetKubeConfig(),
+		namespace:              cfg.GetKubeNamespace(),
+		forceDeploy:            cfg.ForceDeploy(),
+		configFile:             cfg.ConfigurationFile(),
+		labels:                 labeller.Labels(),
+		bV:                     hv,
+		enableDebug:            cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig:          cfg.IsMultiConfig(),
+		transformableAllowlist: transformableAllowlist,
+		transformableDenylist:  transformableDenylist,
 	}, nil
 }
 
@@ -437,8 +448,17 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		}
 		renderedManifests.Write(outBuffer.Bytes())
 	}
+	manifests, err := manifest.Load(bytes.NewReader(renderedManifests.Bytes()))
+	if err != nil {
+		return err
+	}
 
-	return manifest.Write(renderedManifests.String(), filepath, out)
+	modifiedManifests, err := manifests.SetLabels(h.labels, manifest.NewResourceSelectorLabels(h.transformableAllowlist, h.transformableDenylist))
+	if err != nil {
+		return err
+	}
+
+	return manifest.Write(modifiedManifests.String(), filepath, out)
 }
 
 func (h *Deployer) HasRunnableHooks() bool {
