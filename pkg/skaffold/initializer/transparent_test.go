@@ -132,6 +132,15 @@ func TestTransparentInit(t *testing.T) {
 			},
 		},
 		{
+			name: "helm init passes",
+			dir:  "testdata/init/helm-deployment",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
 			name: "user selects 'no'",
 			dir:  "testdata/init/hello",
 			config: initconfig.Config{
