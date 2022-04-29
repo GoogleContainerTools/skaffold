@@ -32,6 +32,11 @@ const (
 	nameKey = "name"
 )
 
+// for testing
+var (
+	readFile = ioutil.ReadFile
+)
+
 // helm implements deploymentInitializer for the helm deployer.
 type helm struct {
 	charts []chart
@@ -109,7 +114,7 @@ func (h helm) GetImages() []string {
 }
 
 func parseChartValues(fp string) (map[string]string, error) {
-	in, err := ioutil.ReadFile(fp)
+	in, err := readFile(fp)
 	if err != nil {
 		return nil, err
 	}

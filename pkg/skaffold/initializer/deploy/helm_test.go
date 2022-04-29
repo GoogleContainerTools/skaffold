@@ -26,16 +26,15 @@ import (
 func TestDeployConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		helm        helm
+		input       map[string][]string
 		expected    []latest.HelmRelease
 	}{
 		{
 			description: "charts with one or more values file",
-			helm: newHelmInitializer(
-				map[string][]string{
-					"charts":     {"charts/val.yml", "charts/values.yaml"},
-					"charts-foo": {"charts-foo/values.yaml"},
-				}),
+			input: map[string][]string{
+				"charts":     {"charts/val.yml", "charts/values.yaml"},
+				"charts-foo": {"charts-foo/values.yaml"},
+			},
 			expected: []latest.HelmRelease{
 				{
 					Name:        "charts-foo",
@@ -52,7 +51,11 @@ func TestDeployConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			d, _ := test.helm.DeployConfig()
+			t.Override(&readFile, func(_ string) ([]byte, error) {
+				return []byte{}, nil
+			})
+			h := newHelmInitializer(test.input)
+			d, _ := h.DeployConfig()
 			CheckHelmInitStruct(t, test.expected, d.LegacyHelmDeploy.Releases)
 		})
 	}
