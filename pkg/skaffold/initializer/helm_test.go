@@ -109,8 +109,8 @@ spec:
 			err := a.Analyze(".")
 			t.CheckError(test.shouldErr, err)
 			d := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), config)
-			deploy, _ := d.DeployConfig()
-			t.CheckDeepEqual(test.expected, deploy.HelmDeploy.Releases)
+			dc, _ := d.DeployConfig()
+			deploy.CheckHelmInitStruct(t, test.expected, dc.LegacyHelmDeploy.Releases)
 		})
 	}
 }

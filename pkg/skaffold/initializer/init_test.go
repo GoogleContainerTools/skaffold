@@ -213,11 +213,11 @@ func TestDoInit(t *testing.T) {
 			},
 		},
 		{
-			name: "helm fails",
+			name: "helm init",
 			dir:  "testdata/init/helm-deployment",
 			config: initconfig.Config{
+				Force: true,
 				Opts: config.SkaffoldOptions{
-					Force:             true,
 					ConfigurationFile: "skaffold.yaml.out",
 				},
 			},

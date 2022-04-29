@@ -1,12 +1,16 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3alpha1
 kind: Config
 metadata:
   name: "helm-deployment"
 build:
   artifacts:
   - image: skaffold-helm
+    docker:
+      dockerfile: Dockerfile
 deploy:
   helm:
     releases:
-    - name: charts
+    - name: skaffold-helm
       chartPath: charts
+      valuesFiles:
+      - charts/values.yaml

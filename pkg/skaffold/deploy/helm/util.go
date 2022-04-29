@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -38,10 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
-
-func IsHelmChart(path string) bool {
-	return filepath.Base(path) == "Chart.yaml"
-}
 
 // copy of cmd/skaffold/app/flags.BuildOutputs
 type buildOutputs struct {

@@ -17,11 +17,18 @@ limitations under the License.
 package deploy
 
 import (
-	"fmt"
+	"io/ioutil"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	nameKey = "name"
 )
 
 // helm implements deploymentInitializer for the helm deployer.
@@ -30,31 +37,34 @@ type helm struct {
 }
 
 type chart struct {
-	name       string
-	path       string
-	valueFiles []string
+	name        string
+	chartValues map[string]string
+	path        string
+	valueFiles  []string
 }
 
 // newHelmInitializer returns a helm config generator.
-func newHelmInitializer(chartTemplatesMap map[string][]string) helm {
+func newHelmInitializer(chartValuesMap map[string][]string) helm {
 	var charts []chart
-
-	chNameMap := map[string]struct{}{}
-	i := 0
-	for chDir, vfs := range chartTemplatesMap {
-		_, chName := filepath.Split(chDir)
-		// TODO: add remote charts and chart name
-		if _, ok := chNameMap[chName]; ok {
-			chName = fmt.Sprintf("%s-%d", chName, i)
-			i++
+	for chDir, vfs := range chartValuesMap {
+		chFile := filepath.Join(chDir, analyze.ChartYaml)
+		parsed, err := parseChartValues(chFile)
+		var name string
+		if v, ok := parsed[nameKey]; ok {
+			name = v
+		} else {
+			name = chDir
 		}
-		chNameMap[chName] = struct{}{}
+
+		if err != nil {
+			logrus.Infof("Skipping chart dir %s, as %s could not be parsed as valid yaml", chDir, chFile)
+		}
 		charts = append(charts, chart{
-			name:       chName,
-			path:       chDir,
-			valueFiles: vfs,
+			chartValues: parsed,
+			name:        name,
+			path:        chDir,
+			valueFiles:  vfs,
 		})
-		i++
 	}
 	return helm{
 		charts: charts,
@@ -75,7 +85,7 @@ func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	}
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
-			HelmDeploy: &latest.HelmDeploy{
+			LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 				Releases: releases,
 			},
 		},
@@ -96,5 +106,21 @@ func (h helm) AddManifestForImage(string, string) {}
 
 // GetImages return an empty string for helm.
 func (h helm) GetImages() []string {
-	return nil
+	artifacts := []string{}
+	for _, ch := range h.charts {
+		artifacts = append(artifacts, ch.name)
+	}
+	return artifacts
+}
+
+func parseChartValues(fp string) (map[string]string, error) {
+	in, err := ioutil.ReadFile(fp)
+	if err != nil {
+		return nil, err
+	}
+	m := map[string]string{}
+	if err := yaml.UnmarshalStrict(in, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
