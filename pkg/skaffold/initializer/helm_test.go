@@ -17,6 +17,7 @@ limitations under the License.
 package initializer
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -60,44 +61,45 @@ spec:
 		{
 			description: "helm charts with values files",
 			filesWithContents: map[string]string{
-				"apache/Chart.yaml":               "",
-				"apache/values.yaml":              "",
-				"apache/another.yml":              "",
-				"apache/templates/deployment.yml": deployment,
+				filepath.Join("apache", "Chart.yaml"):                  "",
+				filepath.Join("apache", "values.yaml"):                 "",
+				filepath.Join("apache", "another.yml"):                 "",
+				filepath.Join("apache", "templates", "deployment.yml"): deployment,
 			},
 			expected: []latest.HelmRelease{
 				{
-					Name:        "apache",
-					ChartPath:   "apache",
-					ValuesFiles: []string{"apache/another.yml", "apache/values.yaml"},
+					Name:      "apache",
+					ChartPath: "apache",
+					ValuesFiles: []string{filepath.Join("apache", "another.yml"),
+						filepath.Join("apache", "values.yaml")},
 				}},
 		},
 		{
 			description: "helm charts with multiple sub charts",
 			filesWithContents: map[string]string{
-				"apache/Chart.yaml":                        "",
-				"apache/values.yaml":                       "",
-				"apache/subchart/Chart.yaml":               "",
-				"apache/templates/deployment.yml":          deployment,
-				"apache/subchart/templates/deployment.yml": deployment,
-				"apache/subchart/val.yaml":                 "",
-				"apache/subchart2/Chart.yaml":              "",
-				"apache/subchart2/values.yaml":             "",
+				filepath.Join("apache", "Chart.yaml"):                              "",
+				filepath.Join("apache", "values.yaml"):                             "",
+				filepath.Join("apache", "subchart", "Chart.yaml"):                  "",
+				filepath.Join("apache", "templates", "deployment.yml"):             deployment,
+				filepath.Join("apache", "subchart", "templates", "deployment.yml"): deployment,
+				filepath.Join("apache", "subchart", "val.yaml"):                    "",
+				filepath.Join("apache", "subchart2", "Chart.yaml"):                 "",
+				filepath.Join("apache", "subchart2", "values.yaml"):                "",
 			},
 			expected: []latest.HelmRelease{
 				{
 					Name:        "apache",
 					ChartPath:   "apache",
-					ValuesFiles: []string{"apache/values.yaml"},
+					ValuesFiles: []string{filepath.Join("apache", "values.yaml")},
 				}, {
 					Name:        "subchart",
-					ChartPath:   "apache/subchart",
-					ValuesFiles: []string{"apache/subchart/val.yaml"},
+					ChartPath:   filepath.Join("apache", "subchart"),
+					ValuesFiles: []string{filepath.Join("apache", "subchart", "val.yaml")},
 				},
 				{
 					Name:        "subchart2",
-					ChartPath:   "apache/subchart2",
-					ValuesFiles: []string{"apache/subchart2/values.yaml"},
+					ChartPath:   filepath.Join("apache", "subchart2"),
+					ValuesFiles: []string{filepath.Join("apache", "subchart2", "values.yaml")},
 				},
 			},
 		},
