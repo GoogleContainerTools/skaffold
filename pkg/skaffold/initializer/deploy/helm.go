@@ -17,13 +17,13 @@ limitations under the License.
 package deploy
 
 import (
+	"context"
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -51,7 +51,7 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 		chFile := filepath.Join(chDir, analyze.ChartYaml)
 		parsed, err := parseChartValues(chFile)
 		if err != nil {
-			logrus.Infof("Skipping chart dir %s, as %s could not be parsed as valid yaml", chDir, chFile)
+			log.Entry(context.TODO()).Infof("Skipping chart dir %s, as %s could not be parsed as valid yaml", chDir, chFile)
 			continue
 		}
 		name := getChartName(parsed, chDir)
