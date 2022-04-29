@@ -19,7 +19,9 @@ package deploy
 import (
 	"context"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
@@ -60,10 +62,12 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 			continue
 		}
 		name := getChartName(parsed, chDir)
+		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
+		replaced := strings.ReplaceAll(chDir, string(os.PathSeparator), "/")
 		charts = append(charts, chart{
 			chartValues: parsed,
 			name:        name,
-			path:        chDir,
+			path:        replaced,
 			valueFiles:  vfs,
 		})
 	}
