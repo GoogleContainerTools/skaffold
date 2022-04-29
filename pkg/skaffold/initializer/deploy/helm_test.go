@@ -57,14 +57,14 @@ func TestDeployConfig(t *testing.T) {
 				}),
 			expected: []latest.HelmRelease{
 				{
-					Name:        "charts",
-					ChartPath:   "charts",
-					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
-				},
-				{
 					Name:        "charts-foo",
 					ChartPath:   "charts-foo",
 					ValuesFiles: []string{"charts-foo/values.yaml"},
+				},
+				{
+					Name:        "charts",
+					ChartPath:   "charts",
+					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
 				},
 			},
 		},
@@ -80,7 +80,7 @@ func TestDeployConfig(t *testing.T) {
 			overrides, err := parseImagesFromReader(test.contents, "dummy.yaml")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.overrides, overrides)
 			d, _ := test.helm.DeployConfig()
-			t.CheckDeepEqual(test.expected, d.HelmDeploy.Releases)
+			CheckHelmInitStruct(t, test.expected, d.LegacyHelmDeploy.Releases)
 		})
 	}
 }

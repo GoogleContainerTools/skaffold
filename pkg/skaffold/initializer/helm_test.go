@@ -110,12 +110,17 @@ spec:
 			t.CheckError(test.shouldErr, err)
 			d := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), config)
 <<<<<<< HEAD
+<<<<<<< HEAD
 			dc, _ := d.DeployConfig()
 			deploy.CheckHelmInitStruct(t, test.expected, dc.LegacyHelmDeploy.Releases)
 =======
 			deploy, _ := d.DeployConfig()
 			t.CheckDeepEqual(test.expected, deploy.HelmDeploy.Releases)
 >>>>>>> fc8b0e92b (support for subcharts.)
+=======
+			dc, _ := d.DeployConfig()
+			deploy.CheckHelmInitStruct(t, test.expected, dc.LegacyHelmDeploy.Releases)
+>>>>>>> 08ec5e720 (fix tests)
 		})
 	}
 }

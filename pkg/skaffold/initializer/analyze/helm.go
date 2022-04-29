@@ -22,7 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 
+<<<<<<< HEAD
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+=======
+	"github.com/sirupsen/logrus"
+>>>>>>> 08ec5e720 (fix tests)
 )
 
 const (
@@ -36,16 +40,28 @@ type helmAnalyzer struct {
 	values    []string
 }
 
+<<<<<<< HEAD
 func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
 	if isHelmChart(filePath) {
 		chDir, _ := filepath.Split(filePath)
+=======
+func (h *helmAnalyzer) analyzeFile(ctx context.Context, fp string) error {
+	if isHelmChart(fp) {
+		chDir, _ := filepath.Split(fp)
+>>>>>>> 08ec5e720 (fix tests)
 		h.chartDirs[filepath.Clean(chDir)] = []string{}
 		return nil
 	}
-	if strings.HasSuffix(filePath, "yaml") || strings.HasSuffix(filePath, "yml") {
-		dir, _ := filepath.Split(filePath)
-		if s, ok := h.chartDirs[filepath.Clean(dir)]; ok {
-			h.chartDirs[filepath.Clean(dir)] = append(s, filePath)
+	if isValueFile(fp) {
+		dir, _ := filepath.Split(fp)
+		dir = filepath.Clean(dir)
+		if s, ok := h.chartDirs[dir]; ok {
+			h.chartDirs[dir] = append(s, fp)
+		} else {
+			if hasChart(dir) {
+				h.chartDirs[dir] = []string{fp}
+			}
+			logrus.Debugf("ignoring a yaml file %s not part of any chart ", fp)
 		}
 	}
 	if isValueFile(filePath) {
