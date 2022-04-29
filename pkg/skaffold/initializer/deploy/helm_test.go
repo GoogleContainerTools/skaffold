@@ -29,7 +29,6 @@ func TestDeployConfig(t *testing.T) {
 		input       map[string][]string
 		expected    []latest.HelmRelease
 		helm        helm
-		expected    []latest.HelmRelease
 	}{
 		{
 			description: "charts with one or more values file",
@@ -48,7 +47,8 @@ func TestDeployConfig(t *testing.T) {
 					ChartPath:   "charts",
 					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
 				},
-			},
+			}},
+		{
 			description: "charts with one or more values file",
 			helm: newHelmInitializer(
 				map[string][]string{
