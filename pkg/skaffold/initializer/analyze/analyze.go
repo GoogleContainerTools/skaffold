@@ -121,8 +121,8 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 // at the end of the analyze function the analysis struct's analyzers should contain the state that we can
 // use to do further computation.
 func (a *ProjectAnalysis) Analyze(dir string) error {
-	for _, pa := range a.analyzers() {
-		pa.enterDir(dir)
+	for _, analyzer := range a.analyzers() {
+		analyzer.enterDir(dir)
 	}
 
 	dirents, err := godirwalk.ReadDirents(dir, nil)
@@ -157,8 +157,8 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 		}
 
 		if a.maxFileSize > 0 {
-			stat, errS := os.Stat(filePath)
-			if errS != nil {
+			stat, err := os.Stat(filePath)
+			if err != nil {
 				// this is highly unexpected but in case there could be a racey situation where
 				// the file gets removed right between ReadDirents and Stat
 				continue
@@ -171,22 +171,22 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 
 		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
 		filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
-		for _, pa := range a.analyzers() {
-			if errA := pa.analyzeFile(context.Background(), filePath); errA != nil {
-				return errA
+		for _, analyzer := range a.analyzers() {
+			if err := analyzer.analyzeFile(context.Background(), filePath); err != nil {
+				return err
 			}
 		}
 	}
 
 	// Recurse into subdirectories
 	for _, subdir := range subdirectories {
-		if errA := a.Analyze(subdir); errA != nil {
-			return errA
+		if err := a.Analyze(subdir); err != nil {
+			return err
 		}
 	}
 
-	for _, pa := range a.analyzers() {
-		pa.exitDir(dir)
+	for _, analyzer := range a.analyzers() {
+		analyzer.exitDir(dir)
 	}
 
 	return nil

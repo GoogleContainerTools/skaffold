@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
@@ -94,21 +96,40 @@ func builderRank(builder InitBuilder) int {
 
 func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 	// Build map from choice string to builder config struct
-	chosen, unusedBuilders, err := ResolveBuilderInteractively(d.builders, d.unresolvedImages)
-	for image, chosenBuilder := range chosen {
-		d.artifactInfos = append(d.artifactInfos, ArtifactInfo{Builder: chosenBuilder, ImageName: image})
+	choices := make([]string, len(d.builders))
+	choiceMap := make(map[string]InitBuilder, len(d.builders))
+	for i, buildConfig := range d.builders {
+		choice := buildConfig.Describe()
+		choices[i] = choice
+		choiceMap[choice] = buildConfig
 	}
-	if err != nil {
-		return err
-	}
-	if len(unusedBuilders) > 0 {
-		choices, choiceMap := buildChoiceMap(unusedBuilders)
-		chosenG, errC := prompt.ChooseBuildersFunc(choices)
-		if errC != nil {
-			return errC
+	sort.Strings(choices)
+
+	// For each choice, use prompt string to pair builder config with k8s image
+	for {
+		if len(d.unresolvedImages) == 0 {
+			break
 		}
 
-		for _, choice := range chosenG {
+		image := d.unresolvedImages[0]
+		choice, err := prompt.BuildConfigFunc(image, append(choices, NoBuilder))
+		if err != nil {
+			return err
+		}
+
+		if choice != NoBuilder {
+			d.artifactInfos = append(d.artifactInfos, ArtifactInfo{Builder: choiceMap[choice], ImageName: image})
+			choices = stringslice.Remove(choices, choice)
+		}
+		d.unresolvedImages = stringslice.Remove(d.unresolvedImages, image)
+	}
+	if len(choices) > 0 {
+		chosen, err := prompt.ChooseBuildersFunc(choices)
+		if err != nil {
+			return err
+		}
+
+		for _, choice := range chosen {
 			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedArtifactInfo(choiceMap[choice]))
 		}
 	}
