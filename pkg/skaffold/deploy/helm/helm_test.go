@@ -1423,7 +1423,7 @@ func TestHelmRender(t *testing.T) {
 
 			if file != "" {
 				dat, _ := ioutil.ReadFile(file)
-				t.CheckDeepEqual(string(dat), test.expected)
+				t.CheckDeepEqual(test.expected, string(dat))
 			}
 		})
 	}
