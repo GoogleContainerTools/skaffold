@@ -557,9 +557,9 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	}
 
 	if r.Packaged != nil {
-		chartPath, errP := h.packageChart(ctx, r)
-		if errP != nil {
-			return nil, nil, userErr("cannot package chart", errP)
+		chartPath, err := h.packageChart(ctx, r)
+		if err != nil {
+			return nil, nil, userErr("cannot package chart", err)
 		}
 
 		opts.chartPath = chartPath

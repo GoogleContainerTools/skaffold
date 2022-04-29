@@ -18,12 +18,9 @@ package build
 
 import (
 	"path/filepath"
-	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 func matchBuildersToImages(builders []InitBuilder, images []string) ([]ArtifactInfo, []InitBuilder, []string) {
@@ -61,50 +58,6 @@ func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) i
 		matchingConfigIndex = i
 	}
 	return matchingConfigIndex
-}
-
-// ResolveBuilderInteractively resolve builder for an image and returns a map of the image to the chosen builder
-// It also returns builders that were not chosen in this process.
-func ResolveBuilderInteractively(builders []InitBuilder, unresolvedImages []string) (map[string]InitBuilder, []InitBuilder, error) {
-	chosen := map[string]InitBuilder{}
-	choices, choiceMap := buildChoiceMap(builders)
-
-	// For each choice, use prompt string to pair builder config with k8s image
-	for {
-		if len(unresolvedImages) == 0 {
-			break
-		}
-
-		image := unresolvedImages[0]
-		choice, err := prompt.BuildConfigFunc(image, append(choices, NoBuilder))
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if choice != NoBuilder {
-			chosen[image] = choiceMap[choice]
-			choices = stringslice.Remove(choices, choice)
-		}
-		unresolvedImages = stringslice.Remove(unresolvedImages, image)
-	}
-	unusedBuilder := []InitBuilder{}
-	for _, k := range choices {
-		unusedBuilder = append(unusedBuilder, choiceMap[k])
-	}
-	return chosen, unusedBuilder, nil
-}
-
-func buildChoiceMap(builders []InitBuilder) ([]string, map[string]InitBuilder) {
-	choices := make([]string, len(builders))
-
-	choiceMap := make(map[string]InitBuilder, len(builders))
-	for i, buildConfig := range builders {
-		choice := buildConfig.Describe()
-		choices[i] = choice
-		choiceMap[choice] = buildConfig
-	}
-	sort.Strings(choices)
-	return choices, choiceMap
 }
 
 // Artifacts takes builder image pairs and workspaces and creates a list of latest.Artifacts from the data.

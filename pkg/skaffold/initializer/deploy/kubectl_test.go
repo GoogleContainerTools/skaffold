@@ -54,6 +54,77 @@ spec:
 	}
 }
 
+func TestParseImagesFromKubernetesYaml(t *testing.T) {
+	tests := []struct {
+		description string
+		contents    string
+		images      []string
+		shouldErr   bool
+	}{
+		{
+			description: "incorrect k8s yaml",
+			contents: `no apiVersion: t
+kind: Pod`,
+			images:    nil,
+			shouldErr: true,
+		},
+		{
+			description: "correct k8s yaml",
+			contents: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - name: getting-started
+    image: gcr.io/k8s-skaffold/skaffold-example`,
+			images:    []string{"gcr.io/k8s-skaffold/skaffold-example"},
+			shouldErr: false,
+		},
+		{
+			description: "correct rolebinding yaml with no image",
+			contents: `apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-admin
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+- name: default
+  kind: ServiceAccount
+  namespace: default`,
+			images:    nil,
+			shouldErr: false,
+		},
+		{
+			description: "crd",
+			contents: `apiVersion: my.crd.io/v1
+kind: CustomType
+metadata:
+  name: test crd
+spec:
+  containers:
+  - name: container
+    image: gcr.io/my/image`,
+			images:    []string{"gcr.io/my/image"},
+			shouldErr: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("deployment.yaml", test.contents)
+
+			images, err := kubernetes.ParseImagesFromKubernetesYaml(tmpDir.Path("deployment.yaml"))
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.images, images)
+		})
+	}
+}
+
 func TestIsKubernetesManifest(t *testing.T) {
 	tests := []struct {
 		description string

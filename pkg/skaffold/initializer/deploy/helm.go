@@ -49,16 +49,11 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 	for chDir, vfs := range chartValuesMap {
 		chFile := filepath.Join(chDir, analyze.ChartYaml)
 		parsed, err := parseChartValues(chFile)
-		var name string
-		if v, ok := parsed[nameKey]; ok {
-			name = v
-		} else {
-			name = chDir
-		}
-
 		if err != nil {
 			logrus.Infof("Skipping chart dir %s, as %s could not be parsed as valid yaml", chDir, chFile)
+			continue
 		}
+		name := getChartName(parsed, chDir)
 		charts = append(charts, chart{
 			chartValues: parsed,
 			name:        name,
@@ -123,4 +118,11 @@ func parseChartValues(fp string) (map[string]string, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func getChartName(parsed map[string]string, chDir string) string {
+	if v, ok := parsed[nameKey]; ok {
+		return v
+	}
+	return filepath.Base(chDir)
 }
