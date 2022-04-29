@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 const (
@@ -50,7 +50,7 @@ func (h *helmAnalyzer) analyzeFile(ctx context.Context, fp string) error {
 			if hasChart(dir) {
 				h.chartDirs[dir] = []string{fp}
 			}
-			logrus.Debugf("ignoring a yaml file %s not part of any chart ", fp)
+			log.Entry(context.TODO()).Debugf("ignoring a yaml file %s not part of any chart ", fp)
 		}
 	}
 	return nil
