@@ -22,15 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-=======
-	"github.com/sirupsen/logrus"
->>>>>>> 08ec5e720 (fix tests)
-=======
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
->>>>>>> 1cec42ad9 (lint)
 )
 
 const (

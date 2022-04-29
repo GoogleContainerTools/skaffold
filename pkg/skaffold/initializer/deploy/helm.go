@@ -19,9 +19,7 @@ package deploy
 import (
 	"context"
 	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
@@ -46,10 +44,16 @@ type helm struct {
 
 type chart struct {
 	name        string
-	chartValues map[string]string
+	chartValues map[string]interface{}
 	path        string
 	valueFiles  []string
+<<<<<<< HEAD
 	overrides   map[string]string
+=======
+	repo        string
+	version     string
+	isRemote    bool
+>>>>>>> 59dcf1271 (feat: wip remote charts)
 }
 
 // newHelmInitializer returns a helm config generator.
@@ -62,15 +66,9 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 			log.Entry(context.TODO()).Infof("Skipping chart dir %s, as %s could not be parsed as valid yaml", chDir, chFile)
 			continue
 		}
-		name := getChartName(parsed, chDir)
-		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
-		replaced := strings.ReplaceAll(chDir, string(os.PathSeparator), "/")
-		charts = append(charts, chart{
-			chartValues: parsed,
-			name:        name,
-			path:        replaced,
-			valueFiles:  vfs,
-		})
+		remotes := getRemoteChart(parsed)
+		charts = append(charts, buildChart(parsed, chDir, vfs))
+		charts = append(charts, remotes...)
 	}
 	return helm{
 		charts: charts,
@@ -82,11 +80,23 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	releases := []latest.HelmRelease{}
 	for _, ch := range h.charts {
-		releases = append(releases, latest.HelmRelease{
-			Name:        ch.name,
-			ChartPath:   ch.path,
-			ValuesFiles: ch.valueFiles,
-		})
+		var r latest.HelmRelease
+		if ch.isRemote {
+			r = latest.HelmRelease{
+				Name:        ch.name,
+				Repo:        ch.repo,
+				Version:     ch.version,
+				RemoteChart: ch.name,
+			}
+		} else {
+			r = latest.HelmRelease{
+				Name:        ch.name,
+				ChartPath:   ch.path,
+				Version:     ch.version,
+				ValuesFiles: ch.valueFiles,
+			}
+		}
+		releases = append(releases, r)
 	}
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
@@ -127,21 +137,60 @@ func (h helm) GetImages() []string {
 	return artifacts
 }
 
-func parseChartValues(fp string) (map[string]string, error) {
+func parseChartValues(fp string) (map[string]interface{}, error) {
 	in, err := readFile(fp)
 	if err != nil {
 		return nil, err
 	}
-	m := map[string]string{}
-	if err := yaml.UnmarshalStrict(in, &m); err != nil {
-		return nil, err
+	m := map[string]interface{}{}
+	if errY := yaml.UnmarshalStrict(in, &m); errY != nil {
+		return nil, errY
 	}
 	return m, nil
 }
 
-func getChartName(parsed map[string]string, chDir string) string {
+func getChartName(parsed map[string]interface{}, chDir string) string {
 	if v, ok := parsed[nameKey]; ok {
-		return v
+		return v.(string)
 	}
 	return filepath.Base(chDir)
+}
+
+func getRemoteChart(parsed map[string]interface{}) []chart {
+	var remotes []chart
+	if deps, ok := parsed["dependencies"]; ok {
+		list := deps.([]map[string]interface{})
+		for _, r := range list {
+			ch := chart{
+				name:     r["name"].(string),
+				isRemote: true,
+				repo:     r["repository"].(string),
+			}
+			if v := getVersion(r); v != "" {
+				ch.version = v
+			}
+			remotes = append(remotes)
+		}
+	}
+	return remotes
+}
+
+func buildChart(parsed map[string]interface{}, chDir string, vfs []string) chart {
+	ch := chart{
+		chartValues: parsed,
+		name:        getChartName(parsed, chDir),
+		path:        chDir,
+		valueFiles:  vfs,
+	}
+	if v := getVersion(parsed); v != "" {
+		ch.version = v
+	}
+	return ch
+}
+
+func getVersion(m map[string]interface{}) string {
+	if v, ok := m["version"]; ok {
+		return v.(string)
+	}
+	return ""
 }
