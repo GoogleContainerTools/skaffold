@@ -1133,6 +1133,61 @@ func TestValidateLogsConfig(t *testing.T) {
 	}
 }
 
+func TestValidateGCBConfig(t *testing.T) {
+	tests := []struct {
+		desc      string
+		bc        latestV1.BuildConfig
+		shouldErr bool
+	}{
+		{
+			desc: "valid worker pool",
+			bc: latestV1.BuildConfig{
+				BuildType: latestV1.BuildType{
+					GoogleCloudBuild: &latestV1.GoogleCloudBuild{
+						WorkerPool: "projects/prj/locations/loc/workerPools/pool",
+					}}},
+		},
+		{
+			desc: "invalid worker pool",
+			bc: latestV1.BuildConfig{
+				BuildType: latestV1.BuildType{
+					GoogleCloudBuild: &latestV1.GoogleCloudBuild{
+						WorkerPool: "projects/prj/locations//loc/workerPools/pool",
+					}}},
+			shouldErr: true,
+		},
+		{
+			desc: "invalid worker pool",
+			bc: latestV1.BuildConfig{
+				BuildType: latestV1.BuildType{
+					GoogleCloudBuild: &latestV1.GoogleCloudBuild{
+						WorkerPool: "projects/prj",
+					}}},
+			shouldErr: true,
+		},
+		{
+			desc: "empty worker pool",
+			bc: latestV1.BuildConfig{
+				BuildType: latestV1.BuildType{
+					GoogleCloudBuild: &latestV1.GoogleCloudBuild{}}},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.desc, func(t *testutil.T) {
+			err := validateGCBConfig(&parser.SkaffoldConfigEntry{
+				YAMLInfos: configlocations.NewYAMLInfos(),
+				SkaffoldConfig: &latestV1.SkaffoldConfig{
+					Pipeline: latestV1.Pipeline{
+						Build: test.bc,
+					},
+				},
+			}, test.bc)
+
+			t.CheckDeepEqual(test.shouldErr, len(err) > 0)
+		})
+	}
+}
+
 func TestValidateAcyclicDependencies(t *testing.T) {
 	tests := []struct {
 		description string

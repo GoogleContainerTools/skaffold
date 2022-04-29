@@ -18,4 +18,4 @@ profiles:
       logging: GCS_ONLY
       logStreamingOption: STREAM_DEFAULT
       concurrency: 3
-      workerPool: pool1
+      workerPool: projects/test/locations/asia-east1/workerPools/pool1
