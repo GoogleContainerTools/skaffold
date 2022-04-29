@@ -20,11 +20,12 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -76,7 +77,6 @@ func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 			ChartPath:   ch.path,
 			ValuesFiles: ch.valueFiles,
 		})
-
 	}
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
