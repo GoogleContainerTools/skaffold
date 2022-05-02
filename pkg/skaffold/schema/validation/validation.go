@@ -85,6 +85,7 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		errs = append(errs, validateTaggingPolicy(config, config.Build)...)
 		errs = append(errs, validateCustomTest(config, config.Test)...)
 		errs = append(errs, validateGCBConfig(config, config.Build)...)
+		errs = append(errs, validateVerifyTests(config, config.Verify)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
 	if validateConfig.CheckDeploySource {
@@ -657,6 +658,24 @@ func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latest.LogsConfig) []
 		}
 	}
 
+	return nil
+}
+
+// validateVerifyTests
+// - makes sure that each test name is unique
+func validateVerifyTests(cfg *parser.SkaffoldConfigEntry, tcs []*latest.VerifyTestCase) (cfgErrs []ErrorWithLocation) {
+	seen := map[string]bool{}
+	for i, tc := range tcs {
+		if _, ok := seen[tc.Name]; ok {
+			return []ErrorWithLocation{
+				{
+					Error:    fmt.Errorf("found duplicate name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name),
+					Location: cfg.YAMLInfos.Locate(&cfg.Verify[i]),
+				},
+			}
+		}
+		seen[tc.Name] = true
+	}
 	return nil
 }
 

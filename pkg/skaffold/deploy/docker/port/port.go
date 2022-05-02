@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package dockerport
 
 import (
 	"context"
@@ -81,7 +81,7 @@ func (pm *PortManager) Stop() {
 	These ports are added to the provided container configuration's port set, and the bindings
 	are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
 */
-func (pm *PortManager) allocatePorts(containerName string, pf []*latest.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
+func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	m := make(nat.PortMap)
@@ -150,7 +150,7 @@ func (pm *PortManager) allocatePorts(containerName string, pf []*latest.PortForw
 	return m, nil
 }
 
-func (pm *PortManager) relinquishPorts(containerName string) {
+func (pm *PortManager) RelinquishPorts(containerName string) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	ports := pm.containerPorts[containerName]

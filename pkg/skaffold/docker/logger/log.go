@@ -18,11 +18,14 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/ahmetb/dlog"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
@@ -33,11 +36,27 @@ import (
 )
 
 type Logger struct {
-	out         io.Writer
-	tracker     *tracker.ContainerTracker
-	colorPicker output.ColorPicker
-	client      docker.LocalDaemon
-	muted       int32
+	out                 io.Writer
+	tracker             *tracker.ContainerTracker
+	colorPicker         output.ColorPicker
+	client              docker.LocalDaemon
+	hadLogsOutput       sync.Map
+	childThreadEmitLogs AtomicBool
+	muted               int32
+}
+
+type AtomicBool struct{ flag int32 }
+
+func (b *AtomicBool) Set(value bool) {
+	var i int32 = 0
+	if value {
+		i = 1
+	}
+	atomic.StoreInt32(&(b.flag), i)
+}
+
+func (b *AtomicBool) Get() bool {
+	return atomic.LoadInt32(&(b.flag)) != 0
 }
 
 func NewLogger(ctx context.Context, tracker *tracker.ContainerTracker, cfg docker.Config) (*Logger, error) {
@@ -45,10 +64,13 @@ func NewLogger(ctx context.Context, tracker *tracker.ContainerTracker, cfg docke
 	if err != nil {
 		return nil, err
 	}
+	childThreadEmitLogs := AtomicBool{}
+	childThreadEmitLogs.Set(true)
 	return &Logger{
-		tracker:     tracker,
-		client:      cli,
-		colorPicker: output.NewColorPicker(),
+		tracker:             tracker,
+		client:              cli,
+		colorPicker:         output.NewColorPicker(),
+		childThreadEmitLogs: childThreadEmitLogs,
 	}, nil
 }
 
@@ -71,18 +93,59 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 			case <-ctx.Done():
 				return
 			case id := <-l.tracker.Notifier():
-				go l.streamLogsFromContainer(ctx, id)
+				l.hadLogsOutput.Store(id, false)
+				fmt.Printf("aprindle-3 - here\n")
+				go l.streamLogsFromContainer(ctx, id, false)
 			}
 		}
 	}()
 	return nil
 }
 
-func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
+const (
+
+	// RetryDelay is the time to wait in between polling the status of the cloud build
+	RetryDelay = 1 * time.Second
+
+	// BackoffFactor is the exponent for exponential backoff during build status polling
+	BackoffFactor = 1.5
+
+	// BackoffSteps is the number of times we increase the backoff time during exponential backoff
+	BackoffSteps = 10
+
+	// RetryTimeout is the max amount of time to retry getting the status of the build before erroring
+	RetryTimeout = 3 * time.Minute
+)
+
+func NewStatusBackoff() *wait.Backoff {
+	return &wait.Backoff{
+		Duration: RetryDelay,
+		Factor:   float64(BackoffFactor),
+		Steps:    BackoffSteps,
+		Cap:      60 * time.Second,
+	}
+}
+
+func (l *Logger) streamLogsFromContainer(ctx context.Context, id string, force bool) {
 	tr, tw := io.Pipe()
 	go func() {
-		err := l.client.ContainerLogs(ctx, tw, id)
-		if err != nil {
+		var err error
+		backoff := NewStatusBackoff()
+		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
+			time.Sleep(backoff.Step())
+
+			if !force {
+				if !l.childThreadEmitLogs.Get() {
+					return true, nil
+				}
+			}
+
+			if err = l.client.ContainerLogs(ctx, tw, id); err != nil {
+				return false, nil
+			}
+			l.hadLogsOutput.Store(id, true)
+			return true, nil
+		}); waitErr != nil {
 			// Don't print errors if the user interrupted the logs
 			// or if the logs were interrupted because of a configuration change
 			// TODO(nkubala)[07/23/21]: if container is lost, emit API event and attempt to reattach
@@ -93,7 +156,6 @@ func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
 		}
 		_ = tw.Close()
 	}()
-
 	dr := dlog.NewReader(tr) // https://ahmet.im/blog/docker-logs-api-binary-format-explained/
 	formatter := NewDockerLogFormatter(l.colorPicker, l.tracker, l.IsMuted, id)
 	if err := logstream.StreamRequest(ctx, l.out, formatter, dr); err != nil {
@@ -105,6 +167,15 @@ func (l *Logger) Stop() {
 	if l == nil {
 		return
 	}
+	l.childThreadEmitLogs.Set(false)
+
+	l.hadLogsOutput.Range(func(key, value interface{}) bool {
+		if !value.(bool) {
+			fmt.Printf("aprindle-4 - here\n")
+			l.streamLogsFromContainer(context.TODO(), key.(string), true)
+		}
+		return true
+	})
 
 	l.tracker.Reset()
 }

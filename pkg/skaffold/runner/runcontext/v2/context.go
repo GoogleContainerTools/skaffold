@@ -255,6 +255,7 @@ func (rc *RunContext) RPCPort() *int                                 { return rc
 func (rc *RunContext) RPCHTTPPort() *int                             { return rc.Opts.RPCHTTPPort.Value() }
 func (rc *RunContext) PushImages() config.BoolOrUndefined            { return rc.Opts.PushImages }
 func (rc *RunContext) TransformRulesFile() string                    { return rc.Opts.TransformRulesFile }
+func (rc *RunContext) VerifyDockerNetwork() string                   { return rc.Opts.VerifyDockerNetwork }
 func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
 }

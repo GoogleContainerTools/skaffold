@@ -40,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/verify"
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -97,6 +98,14 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("getting target platforms: %w", err)
 	}
+
+	var verifier verify.Verifier
+	verifier, err = runner.GetVerifier(ctx, runCtx, labeller)
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, fmt.Errorf("creating verifier: %w", err)
+	}
+
 	// The Builder must be instantiated AFTER the Deployer, because the Deploy target influences
 	// the Cluster object on the RunContext, which in turn influences whether or not we will push images.
 	var builder build.Builder
@@ -162,6 +171,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		runCtx:             runCtx,
 		intents:            intents,
 		isLocalImage:       isLocalImage,
+		verifier:           verifier,
 	}, nil
 }
 
