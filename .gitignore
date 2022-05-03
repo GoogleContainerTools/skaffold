@@ -17,4 +17,5 @@ docs/themes
 docs/package-lock.json
 pkg/skaffold/output/debug.test
 fs/assets/*_generated
+fs/assets/check.txt
 secrets/keys.json
