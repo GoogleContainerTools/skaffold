@@ -122,7 +122,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.DefaultRepo,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "verify"},
 	},
 	{
 		Name:          "cache-artifacts",
@@ -196,7 +196,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply", "verify"},
 	},
 	{
 		Name:          "last-log-file",
@@ -213,7 +213,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify"},
 	},
 	{
 		Name:          "rpc-http-port",
@@ -221,7 +221,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCHTTPPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify"},
 	},
 	{
 		Name:          "label",
@@ -310,7 +310,7 @@ var flagRegistry = []Flag{
 		},
 		NoOptDefVal:   "true", // uses the settings from when --port-forward was boolean
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "run", "deploy", "debug"},
+		DefinedOn:     []string{"dev", "run", "deploy", "debug", "verify"},
 		IsEnum:        true,
 	},
 	{
@@ -319,7 +319,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.StatusCheck,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
+		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply", "verify"},
 		IsEnum:        true,
 		NoOptDefVal:   "true",
 	},
@@ -548,7 +548,7 @@ var flagRegistry = []Flag{
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"deploy", "render", "test"},
+		DefinedOn:     []string{"deploy", "render", "test", "verify"},
 	},
 
 	{
@@ -624,6 +624,15 @@ var flagRegistry = []Flag{
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
+	},
+	{
+		Name:          "docker-network",
+		Shorthand:     "",
+		Usage:         "Run verify tests in the specified docker network",
+		Value:         &opts.VerifyDockerNetwork,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"verify"},
 	},
 }
 

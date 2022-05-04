@@ -34,3 +34,6 @@ linters:
 linters-settings:
   goimports:
     local-prefixes: github.com/GoogleContainerTools/skaffold
+  maligned:
+      # print struct with more effective memory layout or not, false by default
+      suggest-new: true

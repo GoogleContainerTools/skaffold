@@ -1,0 +1,13 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+verify:
+- name: hello-world
+  container:
+    name: hello-world:latest
+    image: hello-world
+- name: alpine
+  container:
+    name: alpine
+    image: alpine:3.15.4
+    command: ["/bin/sh"]
+    args: ["-c", "echo $FOO;exit 1"]

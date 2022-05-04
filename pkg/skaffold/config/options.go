@@ -81,6 +81,7 @@ type SkaffoldOptions struct {
 	MinikubeProfile       string
 	RepoCacheDir          string
 	TransformRulesFile    string
+	VerifyDockerNetwork   string
 	CustomLabels          []string
 	TargetImages          []string
 	Profiles              []string

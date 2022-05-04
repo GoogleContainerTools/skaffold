@@ -106,8 +106,10 @@ jobs:
         sudo install skaffold-from-main-branch /usr/local/bin/
 
     - name: Parse Comment To Yaml Format
+      env:
+        COMMENT_BODY: ${{ github.event.comment.body }}
       run: |
-        tail -n +2 <<< '${{ github.event.comment.body }}' > yaml-input-file.yaml
+        tail -n +2 <<< "$COMMENT_BODY" > yaml-input-file.yaml
 
     - name: Run performance comparison benchmarks
       id: run-performance-comparison-benchmarks

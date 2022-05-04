@@ -77,6 +77,11 @@ func Deploy(args ...string) *RunBuilder {
 	return withDefaults("deploy", args)
 }
 
+// Verify runs `skaffold verify` with the given arguments.
+func Verify(args ...string) *RunBuilder {
+	return withDefaults("verify", args)
+}
+
 // Debug runs `skaffold debug` with the given arguments.
 func Debug(args ...string) *RunBuilder {
 	return withDefaults("debug", args)

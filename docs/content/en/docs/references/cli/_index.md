@@ -79,6 +79,7 @@ Pipeline Building Blocks:
   delete            Delete any resources deployed by Skaffold
   render            Perform all image builds, and output rendered Kubernetes manifests
   apply             Apply hydrated manifests to a cluster
+  verify            Run verification tests against skaffold deployments
 
 Getting Started With a New Project:
   init              Generate configuration for deploying an application
@@ -1217,6 +1218,53 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
+
+### skaffold verify
+
+Run verification tests against skaffold deployments
+
+```
+
+
+Examples:
+  # Deploy with skaffold and then verify deployments
+  skaffold deploy -q | skaffold verify
+
+Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -d, --default-repo='': Default repository value (overrides global config)
+      --docker-network='': Run verify tests in the specified docker network
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
+      --status-check=: Wait for deployed resources to stabilize
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+Usage:
+  skaffold verify [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_DOCKER_NETWORK` (same as `--docker-network`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 
 ### skaffold version
 
