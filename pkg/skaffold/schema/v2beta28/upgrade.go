@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta27
+package v2beta28
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v2beta27 to v2beta28
+// v2beta28 is the last config version for skaffold v1, and future version will
+// follow the naming scheme of v3*
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -34,18 +36,6 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldBuild := &oldPipeline.(*Pipeline).Build
-	newBuild := &newPipeline.(*next.Pipeline).Build
-
-	// move: artifact.ko.Platforms
-	//   to: artifact.Platforms
-	for i, newArtifact := range newBuild.Artifacts {
-		oldArtifact := oldBuild.Artifacts[i]
-		if oldArtifact.KoArtifact == nil || len(oldArtifact.KoArtifact.Platforms) == 0 {
-			continue
-		}
-		newArtifact.Platforms = oldArtifact.KoArtifact.Platforms
-	}
-
-	return nil
+	old := oldPipeline.(*Pipeline)
+	new := newPipeline.(*next.Pipeline)
 }
