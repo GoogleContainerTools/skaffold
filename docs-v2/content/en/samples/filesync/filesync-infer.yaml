@@ -1,0 +1,10 @@
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/node-example
+      context: node
+      sync:
+        infer:
+        - '.filebaserc'
+        - 'static-html/*.html'
+        - '**/*.png'
+        - 'content/en/**/*.md'

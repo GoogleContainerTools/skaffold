@@ -1,0 +1,18 @@
+apiVersion: skaffold/v2beta28
+kind: Config
+build:
+  artifacts:
+    - image: my-image
+      context: my-image
+deploy:
+  kubectl:
+    manifests:
+      - k8-*
+resourceSelector:
+  allow:
+    - groupKind: "StatefulSet.apps"
+      image: [".*"]
+      labels: [".*"]
+  deny:
+    - groupKind: "StatefulSet.apps"
+      labels: [".spec.volumeClaimTemplates.*.metadata.labels"]

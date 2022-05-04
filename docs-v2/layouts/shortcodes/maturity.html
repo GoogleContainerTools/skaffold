@@ -1,0 +1,3 @@
+{{ $data := (index .Site.Data.maturity (.Get 0))}}
+{{  $maturity :=  $data.maturity }}
+<div class="maturity" style="background: var(--maturity-{{$maturity}})">&nbsp;{{ $maturity}}&nbsp;</div>

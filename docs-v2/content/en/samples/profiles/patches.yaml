@@ -1,0 +1,17 @@
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/skaffold-example
+      docker:
+        dockerfile: Dockerfile
+    - image: gcr.io/k8s-skaffold/skaffold2
+    - image: gcr.io/k8s-skaffold/skaffold3
+deploy:
+  kubectl:
+    manifests:
+      - k8s-pod
+profiles:
+  - name: dev
+    patches:
+      - op: replace
+        path: /build/artifacts/0/docker/dockerfile
+        value: Dockerfile_dev
