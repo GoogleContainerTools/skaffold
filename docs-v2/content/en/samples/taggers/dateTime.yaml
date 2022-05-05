@@ -1,0 +1,10 @@
+build:
+  tagPolicy:
+    dateTime:
+      format: "2006-01-02_15-04-05.999_MST"
+      timezone: "Local"
+  artifacts:
+  - image: gcr.io/k8s-skaffold/example
+# The tagPolicy section above is equal to
+# tagPolicy:
+#   dateTime: {}

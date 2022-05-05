@@ -1,0 +1,9 @@
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/example
+    docker:
+      cacheFrom:
+      # Local Docker builder replaces cache references to the artifact image with
+      # the tagged image reference, useful for caching from the previous build.
+      - gcr.io/k8s-skaffold/example
+  local: {}

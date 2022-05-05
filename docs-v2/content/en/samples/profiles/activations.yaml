@@ -1,0 +1,16 @@
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  kubectl:
+    manifests:
+    - k8s-pod
+profiles:
+- name: profile1
+  activation:
+    - env: MAGIC_VAR=42
+- name: profile2
+  activation:
+    - env: MAGIC_VAR=1337
+    - kubeContext: minikube
+      command: dev

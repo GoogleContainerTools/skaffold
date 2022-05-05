@@ -1,0 +1,6 @@
+profiles:
+  - name: quickcheck
+    test:
+      - image: gcr.io/k8s-skaffold/skaffold-example
+        structureTests:
+          - './structure-test/profile_structure_test.yaml'

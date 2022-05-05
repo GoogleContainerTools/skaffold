@@ -1,0 +1,17 @@
+build:
+  artifacts:
+  - image: image1
+    custom:
+      # environment variable $IMG2 will be set to the build of image2
+      buildCommand: |
+        cat <<EOF | docker build --tag=$IMAGE --build-arg $IMG2 -
+        FROM busybox
+        ARG IMG2
+        RUN echo 'Got ARG IMG2=$IMG2'
+        EOF
+    requires:
+    - image: image2
+      alias: IMG2
+  - image: image2
+    custom:
+      buildCommand: echo 'FROM busybox' | docker build --tag=$IMAGE -

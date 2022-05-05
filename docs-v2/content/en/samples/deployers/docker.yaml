@@ -1,0 +1,6 @@
+build:
+  artifacts:
+  - image: my-image
+deploy:
+  docker:
+    images: [my-image]

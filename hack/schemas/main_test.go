@@ -34,7 +34,7 @@ func TestSchemas(t *testing.T) {
 	}
 
 	if !same {
-		t.Fatal("json schema files are not up to date. Please run `make generate-schemas` and commit the changes.")
+		t.Fatal("json schema files are not up to date. Please run `make generate-schemas` and `make generate-schemas-v2`and commit the changes.")
 	}
 }
 

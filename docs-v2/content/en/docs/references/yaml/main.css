@@ -1,0 +1,89 @@
+.comment {
+    color: #008000;
+}
+
+.key {
+    color: #811f3f;
+}
+
+.key.required {
+    font-weight: bold;
+}
+
+.value {
+    color: blue;
+}
+
+.example {
+    color: gray;
+    font-weight: 100;
+}
+
+.key, .value, .comment, .example {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+}
+
+.key, .value, .example {
+    white-space: nowrap;
+}
+  
+table {
+    border-collapse: collapse;
+}
+
+td {
+    border-bottom: 1px solid #EEE;
+    padding: 1px 0 !important;
+    vertical-align: top;
+}
+
+td:first-child {
+    padding: 1px 5px !important;
+}
+
+tr.top td {
+    background-color: #EEE;
+}
+
+tr.top .comment {
+    color: gray;
+}
+
+td:first-child {
+    white-space: nowrap;
+    padding-right: 10px;
+}
+
+tr:hover td {
+    background: #DDD;
+}
+
+code {
+    font-family: unset;
+    font-size: 85%;
+    border: 1px dotted gray;
+    border-radius: 3px;
+    padding: 0 .2em;
+}
+
+em {
+    font-family: unset;
+    font-size: 85%;
+    border: 1px dotted gray;
+    border-radius: 3px;
+    padding: 0 .2em;
+}
+
+a.anchor{
+    position: relative;
+    display: inline;
+    visibility: hidden;
+    top: -70px;
+}
+
+@media (max-width: 768px) {
+    a.anchor {
+        top: -10px;
+    }
+}
