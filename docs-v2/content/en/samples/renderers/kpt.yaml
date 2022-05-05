@@ -1,0 +1,3 @@
+manifests:
+   kpt:
+      - path/to/folder-with-Kptfile
