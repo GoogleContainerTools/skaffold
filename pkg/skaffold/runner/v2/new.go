@@ -88,7 +88,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating renderer: %w", err)
 	}
 
-	deployer, err = runner.GetDeployer(ctx, runCtx, labeller, hydrationDir)
+	deployer, err = runner.GetDeployer(ctx, runCtx, labeller, hydrationDir, runCtx.UsingLegacyHelmDeploy())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)

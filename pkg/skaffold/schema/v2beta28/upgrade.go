@@ -17,10 +17,12 @@ limitations under the License.
 package v2beta28
 
 import (
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"encoding/json"
 
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -36,6 +38,45 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	old := oldPipeline.(*Pipeline)
-	new := newPipeline.(*next.Pipeline)
+	oldPL := oldPipeline.(*Pipeline)
+	newPL := newPipeline.(*next.Pipeline)
+
+	// Copy kubectl deploy config to render config
+	if oldPL.Deploy.KubectlDeploy != nil {
+		newPL.Render.RawK8s = oldPL.Deploy.KubectlDeploy.Manifests
+		newPL.Deploy.KubectlDeploy.Manifests = nil
+	}
+
+	// Copy kustomize deploy config to render config
+	if oldPL.Deploy.KustomizeDeploy != nil {
+		newPL.Render.Kustomize = oldPL.Deploy.KustomizeDeploy.KustomizePaths
+		newPL.Deploy.KustomizeDeploy.KustomizePaths = nil
+	}
+
+	// TODO(marlongamez): what should happen when migrating v2?
+	// Copy Kpt deploy config to render config
+
+	// Copy helm deploy config
+	if oldPL.Deploy.HelmDeploy != nil {
+		oldHelm, err := json.Marshal(*oldPL.Deploy.HelmDeploy)
+		if err != nil {
+			return errors.Wrap(err, "marshalling old helm deploy")
+		}
+		newHelm := next.LegacyHelmDeploy{}
+		if err = json.Unmarshal(oldHelm, &newHelm); err != nil {
+			return errors.Wrap(err, "unmarshalling into new helm deploy")
+		}
+
+		// Copy Releases and Flags into the render config
+		newPL.Render.Helm = &next.Helm{}
+		newPL.Render.Helm.Releases = &newHelm.Releases
+		newPL.Render.Helm.Flags = newHelm.Flags
+
+		// Copy over lifecyle hooks for helm deployer
+		newPL.Deploy.LegacyHelmDeploy = &next.LegacyHelmDeploy{}
+		newPL.Deploy.LegacyHelmDeploy.LifecycleHooks = newHelm.LifecycleHooks
+
+	}
+
+	return nil
 }
