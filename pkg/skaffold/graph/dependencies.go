@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -126,11 +127,11 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 
 	case a.KanikoArtifact != nil:
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
-		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, deps)
+		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), kaniko.GetContext(a.KanikoArtifact, a.Workspace), a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, deps)
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
-		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(a.Workspace, a.ImageName, a.KanikoArtifact.DockerfilePath, args), cfg)
+		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(kaniko.GetContext(a.KanikoArtifact, a.Workspace), a.ImageName, a.KanikoArtifact.DockerfilePath, args), cfg)
 
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)

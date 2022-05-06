@@ -28,6 +28,7 @@ import (
 	"sort"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -191,7 +192,7 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	case artifact.DockerArtifact != nil:
 		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, nil)
 	case artifact.KanikoArtifact != nil:
-		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.KanikoArtifact.DockerfilePath, artifact.KanikoArtifact.BuildArgs, nil)
+		args, err = docker.EvalBuildArgs(mode, kaniko.GetContext(artifact.KanikoArtifact, artifact.Workspace), artifact.KanikoArtifact.DockerfilePath, artifact.KanikoArtifact.BuildArgs, nil)
 	case artifact.BuildpackArtifact != nil:
 		env, err = buildpacks.GetEnv(artifact, mode)
 	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:
