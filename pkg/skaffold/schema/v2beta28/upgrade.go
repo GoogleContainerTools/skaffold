@@ -50,7 +50,8 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 	// Copy kustomize deploy config to render config
 	if oldPL.Deploy.KustomizeDeploy != nil {
 		newPL.Render.Kustomize = oldPL.Deploy.KustomizeDeploy.KustomizePaths
-		newPL.Deploy.KustomizeDeploy.KustomizePaths = nil
+		// nil out kustomize deployer as it shouldn't be a thing anymore
+		newPL.Deploy.KustomizeDeploy = nil
 	}
 
 	// TODO(marlongamez): what should happen when migrating v2?
