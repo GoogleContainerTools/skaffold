@@ -70,7 +70,7 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 
 		// Copy Releases and Flags into the render config
 		newPL.Render.Helm = &next.Helm{}
-		newPL.Render.Helm.Releases = &newHelm.Releases
+		newPL.Render.Helm.Releases = newHelm.Releases
 		newPL.Render.Helm.Flags = newHelm.Flags
 
 		// Copy over lifecyle hooks for helm deployer

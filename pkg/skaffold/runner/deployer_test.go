@@ -231,7 +231,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						Apply: test.apply,
 					},
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{test.cfg}),
-				}, &label.DefaultLabeller{}, "")
+				}, &label.DefaultLabeller{}, "", false)
 
 				t.CheckError(test.shouldErr, err)
 				t.CheckTypeEquality(test.expected, deployer)

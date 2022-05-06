@@ -580,7 +580,7 @@ type Helm struct {
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 
 	// Releases is a list of Helm releases.
-	Releases *[]HelmRelease `yaml:"releases,omitempty"`
+	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 }
 
 // Transformer describes the supported kpt transformers.

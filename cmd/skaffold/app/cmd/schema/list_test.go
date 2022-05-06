@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

@@ -694,22 +694,6 @@ func TestUpgradeToNextVersion(t *testing.T) {
 	}
 }
 
-func TestCantUpgradeFromLatestV1Version(t *testing.T) {
-	factory, present := SchemaVersionsV1.Find(latestV1.Version)
-	testutil.CheckDeepEqual(t, true, present)
-
-	_, err := factory().Upgrade()
-	testutil.CheckError(t, true, err)
-}
-
-func TestCantUpgradeFromLatestV2Version(t *testing.T) {
-	factory, present := SchemaVersionsV2.Find(latest.Version)
-	testutil.CheckDeepEqual(t, true, present)
-
-	_, err := factory().Upgrade()
-	testutil.CheckError(t, true, err)
-}
-
 func TestParseConfigAndUpgradeToOlderVersion(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().
