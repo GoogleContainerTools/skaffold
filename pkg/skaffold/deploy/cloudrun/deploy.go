@@ -29,7 +29,9 @@ import (
 
 // Deployer deploys code to Google Cloud Run.
 type Deployer struct {
-	logger log.Logger
+	logger   log.Logger
+	monitor  *Monitor
+	labeller *label.DefaultLabeller
 
 	DefaultProject string
 	Region         string
@@ -46,6 +48,7 @@ func NewDeployer(labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeplo
 		DefaultProject: crDeploy.DefaultProjectID,
 		Region:         crDeploy.Region,
 		logger:         &log.NoopLogger{},
+		labeller:       labeller,
 	}, nil
 }
 
@@ -107,9 +110,15 @@ func (d *Deployer) RegisterLocalImages([]graph.Artifact) {
 
 // GetStatusMonitor gets the resource that will monitor deployment status.
 func (d *Deployer) GetStatusMonitor() status.Monitor {
-	return &status.NoopMonitor{}
+	return d.getMonitor()
 }
 
+func (d *Deployer) getMonitor() *Monitor {
+	if d.monitor == nil {
+		d.monitor = NewMonitor(d.labeller, d.clientOptions)
+	}
+	return d.monitor
+}
 func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest []byte) error {
 	crclient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), d.clientOptions...)...)
 	if err != nil {
@@ -136,18 +145,19 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		service.Metadata.Labels["run-id"] = runID
 	}
 
-	serviceJSON, err := service.MarshalJSON()
-	output.Blue.Fprintf(out, "Deploying Cloud Run service:\n %v", string(serviceJSON))
+	output.Default.Fprintln(out, "Deploying Cloud Run service:\n\t", service.Metadata.Name)
 	parent := fmt.Sprintf("projects/%s/locations/%s", service.Metadata.Namespace, d.Region)
 
 	sName := fmt.Sprintf("%s/services/%s", parent, service.Metadata.Name)
+_:
+	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: sName, name: service.Metadata.Name})
 	getCall := crclient.Projects.Locations.Services.Get(sName)
 	_, err = getCall.Do()
 
 	if err != nil {
 		gErr, ok := err.(*googleapi.Error)
 		if !ok || gErr.Code != http.StatusNotFound {
-			return sErrors.NewError(fmt.Errorf("Error checking Cloud Run State"), &proto.ActionableErr{
+			return sErrors.NewError(fmt.Errorf("Error checking Cloud Run State: %w", err), &proto.ActionableErr{
 				Message: err.Error(),
 				ErrCode: proto.StatusCode_DEPLOY_CANCELLED,
 			})
