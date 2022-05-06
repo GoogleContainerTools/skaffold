@@ -18,7 +18,6 @@ package initializer
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -62,22 +61,13 @@ func AnalyzeProject(c config.Config) (*analyze.ProjectAnalysis, error) {
 	if err := a.Analyze("."); err != nil {
 		return nil, err
 	}
-
-	// helm projects can't currently be bootstrapped automatically by skaffold, so we fail fast and link to our docs instead.
-	if len(a.ChartPaths()) > 0 {
-		//nolint
-		return nil, errors.New(`Projects set up to deploy with helm must be manually configured.
-
-See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed guide on setting your project up with skaffold.`)
-	}
-
 	return a, nil
 }
 
 // Initialize uses the information gathered by the analyzer to create a skaffold config and generate kubernetes manifests.
 // The returned map[string][]byte represents a mapping from generated config name to its respective manifest data held in a []byte
 func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*latest.SkaffoldConfig, map[string][]byte, error) {
-	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), c)
+	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), c)
 	images := deployInitializer.GetImages()
 
 	buildInitializer := build.NewInitializer(a.Builders(), c)
@@ -94,8 +84,8 @@ func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*la
 		return nil, nil, err
 	}
 
-	if err := deployInitializer.Validate(); err != nil {
-		return nil, nil, err
+	if errV := deployInitializer.Validate(); errV != nil {
+		return nil, nil, errV
 	}
 
 	return generateSkaffoldConfig(buildInitializer, deployInitializer), newManifests, nil

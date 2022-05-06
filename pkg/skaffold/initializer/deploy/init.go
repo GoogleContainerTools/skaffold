@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -81,7 +82,7 @@ func (e *emptyDeployInit) AddManifestForImage(string, string) {}
 // if any CLI manifests are provided, we always use those as part of a kubectl deploy first
 // if not, then if a kustomization yaml is found, we use that next
 // otherwise, default to a kubectl deploy.
-func NewInitializer(manifests, bases, kustomizations []string, c config.Config) Initializer {
+func NewInitializer(manifests, bases, kustomizations []string, h analyze.HelmChartInfo, c config.Config) Initializer {
 	switch {
 	case c.SkipDeploy:
 		return &emptyDeployInit{}
@@ -89,6 +90,8 @@ func NewInitializer(manifests, bases, kustomizations []string, c config.Config) 
 		return &cliDeployInit{c.CliKubernetesManifests}
 	case len(kustomizations) > 0:
 		return newKustomizeInitializer(c.DefaultKustomization, bases, kustomizations, manifests)
+	case len(h.Charts()) > 0:
+		return newHelmInitializer(h.Charts())
 	default:
 		return newKubectlInitializer(manifests)
 	}
