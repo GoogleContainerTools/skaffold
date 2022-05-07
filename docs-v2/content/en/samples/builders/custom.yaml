@@ -1,0 +1,10 @@
+build:
+  artifacts:
+    - image: example
+      custom:
+        buildCommand: ./build.sh
+        dependencies:
+          paths:
+            - .
+          ignore:
+            - README*

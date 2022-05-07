@@ -295,16 +295,33 @@ preview-docs:
 build-docs-preview:
 	./deploy/docs/local-preview.sh hugo --baseURL=https://skaffold.dev
 
+.PHONY: preview-docs-v2
+preview-docs-v2:
+	./deploy/docs-v2/local-preview.sh hugo serve -D --bind=0.0.0.0 --ignoreCache
+
+.PHONY: build-docs-v2-preview
+build-docs-preview-v2:
+	./deploy/docs-v2/local-preview.sh hugo --baseURL=https://skaffold-v2.web.app
+
 # schema generation
 
 .PHONY: generate-schemas
 generate-schemas:
 	go run hack/schemas/main.go
 
+.PHONY: generate-schemas-v2
+generate-schemas-v2:
+	go run hack/schemas/main.go
+
 # telemetry generation
 .PHONY: generate-schemas
 generate-telemetry-json:
 	go run hack/struct-json/main.go -- pkg/skaffold/instrumentation/types.go docs/content/en/docs/resources/telemetry/metrics.json
+
+# telemetry generation
+.PHONY: generate-schemas-v2
+generate-telemetry-json-v2:
+	go run hack/struct-json/main.go -- pkg/skaffold/instrumentation/types.go docs-v2/content/en/docs/resources/telemetry/metrics.json
 
 # dashboards
 .PHONY: generate-flags-dashboard
@@ -313,7 +330,7 @@ flags-dashboard:
 
 # static files
 
-$(EMBEDDED_FILES_CHECK): go.mod docs/content/en/schemas/*
+$(EMBEDDED_FILES_CHECK): go.mod docs/content/en/schemas/* docs-v2/content/en/schemas/*
 	hack/generate-embedded-files.sh
 
 # run comparisonstats - ex: make COMPARISONSTATS_ARGS='usr/local/bin/skaffold /usr/local/bin/skaffold helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats

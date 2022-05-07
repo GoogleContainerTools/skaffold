@@ -1,0 +1,158 @@
++++
+title = "Skaffold"
+linkTitle = "Skaffold"
++++
+
+
+<section class="main-color row td-box td-box--white position-relative td-box--gradient td-box--height-small">
+    <div class="text-color container-fluid main-container skaffold-font">
+        <div class="landing-section hero">
+            <div class="row">
+                <div class="col-sm-1"></div>
+                <div class="col-sm-4" align="left">
+                    <div class="tagline row">
+                        Fast. Repeatable. Simple.
+                    </div>
+                    <div class="title row" id="fadein">
+                        Local Kubernetes Development.
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-sm-8">
+                            <div style="margin:auto; display: flex;">
+                                <a class="splashbutton splashbutton-primary btn" style="margin: auto"
+                                   href="{{< relref "/docs/install#standalone-binary" >}}">
+                                    Get Skaffold for CLI <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mt-1"></div>
+                        <div class="col-sm-8">
+                            <div style="margin:auto; display: flex;">
+                                <a class="splashbutton splashbutton-primary btn" style="margin: auto"
+                                   href="{{< relref "/docs/install#managed-ide" >}}">
+                                    Get Skaffold in your IDE <i class="fas fa-laptop-code"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mt-1"></div>
+                        <div class="col-sm-8">
+                            <div style="margin:auto; display: flex;">
+                                <a class="splashbutton splashbutton-secondary btn" style="margin: auto"
+                                href="{{< relref "/docs/quickstart" >}}">
+								Get Started <i class="fas fa-arrow-alt-circle-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-sm-2"></div>
+                    </div>
+                    <div class="row mt-4 mb-3"></div>
+                    <div class="row mt-2" style="font-size:1.2rem">
+                        Skaffold handles the workflow for building, pushing and deploying your application, allowing you
+                        to focus on what matters most:  <b style="display: contents">writing code</b>.
+                    </div>
+                    <div class="row mt-4 text-center">
+                        <img src="/images/skaffold-logo-white.png" style="height: 5rem; margin: auto"></img>
+                    </div>
+                    <div class="row mt-4" style="font-size:1.2rem">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-8 text-center">
+                            An open source project from Google.
+                        </div>
+                        <div class="col-sm-2"></div>
+                    </div>
+                </div>
+                <div class="col-sm-7">
+                    <div class="row">
+                        <video autoplay="" muted="" loop="">
+                            <source src="/images/splash.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+{{< blocks/values-section >}}
+
+<div class="col-lg-3 mb-5 mb-lg-0 text-center">
+    <div class="mb-4 h1">
+        <i class="fas fa-feather-alt"></i>
+    </div>
+    <h4 class="h3 mb-4">Lightweight</h4>
+    <p class="mb-0 text-left">Skaffold is client-side only. With no on-cluster component, there is no overhead or
+        maintenance burden to your cluster.</p>
+</div>
+
+<div class="col-lg-3 mb-5 mb-lg-0 text-center">
+    <div class="mb-4 h1">
+        <i class="fa fa-globe"></i>
+    </div>
+    <h4 class="h3 mb-4">Works Everywhere</h4>
+    <p class="mb-2 text-left">Skaffold is the easiest way to share your project with the world: 'git clone', then
+        'skaffold run'.</p>
+    <p class="mb-0 text-left">Additionally, you can use profiles, local user config, environment variables, and flags to
+        easily incorporate differences across environments.</p>
+</div>
+
+<div class="col-lg-3 mb-5 mb-lg-0 text-center">
+    <div class="mb-4 h1">
+        <i class="far fa-gem"></i>
+    </div>
+    <h4 class="h3 mb-4">Feature Rich</h4>
+    <p class="mb-0 text-left">Skaffold has many essential features for Kubernetes-native development, including
+        policy-based image tagging, resource port-forwarding and logging, file syncing, and much more.</p>
+</div>
+
+<div class="col-lg-3 mb-5 mb-lg-0 text-center">
+    <div class="mb-4 h1">
+        <i class="fas fa-cogs"></i>
+    </div>
+    <h4 class="h3 mb-4">Optimized Development</h4>
+    <p class="mb-0 text-left">Skaffold's inner loop is tight and highly optimized, giving you instant feedback while
+        developing.</p>
+</div>
+
+{{< /blocks/values-section >}}
+
+{{< blocks/testimonial-section >}}
+
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+    <div class="mb-4 h1">
+        <img src="../images/forgerock.png" style="max-width: 40%"></img>
+    </div>
+    <h4 class="testimonial h3 mb-4">"Our customers love [Kubernetes], but consistently gave us feedback that
+        developing on Kubernetes was cumbersome. Skaffold hit the mark in addressing this problem. Changes to a docker
+        image or a configuration that previously took several minutes to deploy now take seconds. Skaffold's plugin
+        architecture gives us the ability to deploy to Helm or Kustomize, and to use various docker build plugins such
+        as Kaniko. Skaffold replaced our bespoke collection of utilities and scripts with a streamlined tool that is
+        easy to use."</h4>
+    <p class="testimonial-byline mb-0 text-left">Warren Strange, Engineering Director, ForgeRock</p>
+</div>
+
+
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+    <div class="mb-4 h1">
+        <img src="../images/quora.png" style="max-width: 40%"></img>
+    </div>
+    <h4 class="testimonial h3 mb-4">"When we evaluated what workflows we could use with Kubernetes, Skaffold stood out
+        as a tool we'd want for both development and deployment. It gives us a common entry point across applications
+        that we can also reuse for CI/CD. Right now, all of our CI/CD pipelines for Kubernetes applications use Skaffold
+        when building and deploying."</h4>
+    <p class="testimonial-byline mb-0 text-left">Taylor Barrella, Software Engineer, Quora</p>
+</div>
+
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+    <div class="mb-4 h1">
+        <img src="../images/tng.png" style="max-width: 40%"></img>
+    </div>
+    <h4 class="testimonial h3 mb-4">"Skaffold is an amazing tool that simplified development and delivery for us.
+        Skaffold hit our sweet spot by covering two dimensions: First, the entire development cycle from local
+        development, integration testing to delivery. Second, Skaffold enabled us to develop independently of the platform
+        on Linux, OSX, and Windows, with no platform specific logic required."</h4>
+    <p class="testimonial-byline mb-0 text-left">Martin Höfling, Principal Consultant, TNG Technology Consulting
+        GmbH</p>
+</div>
+
+{{< /blocks/testimonial-section >}}

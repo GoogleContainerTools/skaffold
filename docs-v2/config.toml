@@ -1,0 +1,150 @@
+baseURL = "https://skaffold-v2-latest.firebaseapp.com/"
+title = "Skaffold"
+Title = "Skaffold"
+
+enableRobotsTXT = true
+
+# Hugo allows theme composition (and inheritance). The precedence is from left to right.
+theme = ["docsy"]
+
+# Will give values to .Lastmod etc.
+enableGitInfo = true
+
+# Language settings
+contentDir = "content/en"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+# Useful when translating.
+enableMissingTranslationPlaceholders = true
+
+# validate links and fail if not found
+refLinksErrorLevel="ERROR"
+relativeURLs=true
+canonifyURLs=false
+disableKinds = ["taxonomy", "taxonomyTerm"]
+
+# Highlighting config
+pygmentsCodeFences = true
+pygmentsUseClasses = false
+# Use the new Chroma Go highlighter in Hugo.
+pygmentsUseClassic = false
+#pygmentsOptions = "linenos=table"
+# See https://help.farbox.com/pygments.html
+pygmentsStyle = "tango"
+
+ # First one is picked as the Twitter card image if not set on page.
+ #images = ["images/project-illustration.png"]
+
+# Enable Emojis
+enableEmoji = true
+
+[markup.goldmark.renderer]
+unsafe= true
+
+# Configure how URLs look like per section.
+[permalinks]
+blog = "/:section/:year/:month/:day/:slug/"
+
+## Configuration for BlackFriday markdown parser: https://github.com/russross/blackfriday
+[blackfriday]
+plainIDAnchors = true
+
+# due to https://github.com/gohugoio/hugo/issues/2424 this should not be turned on until it is fixed
+hrefTargetBlank = false
+angledQuotes = false
+latexDashes = true
+
+# Image processing configuration.
+[imaging]
+resampleFilter = "CatmullRom"
+quality = 75
+anchor = "smart"
+
+[services]
+[services.googleAnalytics]
+# Uncomment and insert your GA tracking ID to enable.
+id = "UA-120945544-1"
+
+# Language configuration
+
+[languages]
+[languages.en]
+title = "Skaffold"
+description = "Easy and Repeatable Kubernetes Development"
+languageName ="English"
+# Weight used for sorting.
+weight = 1
+
+
+# Everything below this are Site Params
+
+[params]
+copyright = "Skaffold Authors"
+privacy_policy = "https://policies.google.com/privacy"
+github_repo = "https://github.com/GoogleContainerTools/skaffold"
+skaffold_version = "skaffold/v2beta28"
+
+# Google Custom Search Engine ID. Remove or comment out to disable search.
+# gcs_engine_id = "013756393218025596041:3nojel67sum"
+# enabling local search https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
+offlineSearch = true
+
+# User interface configuration
+[params.ui]
+# Enable to show the side bar menu in its compact state.
+sidebar_menu_compact = false
+#  Set to true to disable breadcrumb navigation.
+breadcrumb_disable = false
+
+[params.links]
+# Developer relevant links. These will show up on right side of footer.
+[[params.links.developer]]
+	name = "GitHub"
+	url = "https://github.com/GoogleContainerTools/skaffold"
+	icon = "fab fa-github"
+[[params.links.developer]]
+	name = "Slack"
+        # don't link to the slack channel as the join process is
+        # confusing for newcomers
+	#url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
+	url = "/docs/resources/#community"
+	icon = "fab fa-slack"
+[[params.links.developer]]
+	name = "Mailing List"
+	url = "https://groups.google.com/forum/#!forum/skaffold-users"
+	icon = "fa fa-envelope"
+[[params.links.developer]]
+	name = "Feedback"
+	url = "https://forms.gle/BMTbGQXLWSdn7vEs6"
+	icon = "fas fa-poll"
+
+[menu]
+	[[menu.main]]
+		identifier = "mailing list"
+		pre = "<i class='fa fa-envelope'></i>"
+		url = "https://groups.google.com/forum/#!forum/skaffold-users"
+		icon = "fa fa-envelope"
+		weight = -100
+
+	[[menu.main]]
+		identifier = "github"
+		pre = "<i class='fab fa-github'></i>"
+		url = "https://github.com/GoogleContainerTools/skaffold"
+		icon = "fab fa-github"
+		weight = -300
+
+	[[menu.main]]
+		identifier = "slack"
+		pre = "<i class='fab fa-slack'></i>"
+                url = "/docs/resources/#community"
+		icon = "fab fa-slack"
+		weight = -200
+
+# Add your release versions here
+[[params.versions]]
+  version = "v1.0"
+  url = "https://skaffold.dev"
+
+[[params.versions]]
+  version = "v2.0"
+  url = "https://skaffold-v2-latest.firebaseapp.com/"

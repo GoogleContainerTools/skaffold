@@ -1,0 +1,113 @@
+
+:root {
+    --main-bg-color: #112d4e;
+    --header-footer: #dbe2ef;
+    --values-color: #a8d0e6;
+    --testimonials-color: #f9f7f7;
+    --hover-color: var(--values-color);
+    --hover-foreground: var(--values-foreground);
+    --light-text: white;
+    --dark-text: black;
+    --values-foreground: var(--main-bg-color);
+    --header-footer-foreground: var(--main-bg-color);
+    --maturity-alpha: #ff9c9b;
+    --maturity-beta: #ffd500;
+}
+
+.main-color {
+    background-color: var(--main-bg-color);
+    color: var(--light-text);
+}
+
+body {
+    background-color: var(--testimonials-color);
+}
+
+.skaffold-navbar {
+    background: var(--header-footer);
+    color: var(--header-footer-foreground);
+}
+
+input.td-search-input {
+    color: var(--header-footer-foreground) !important;
+}
+
+input.td-search-input:focus {
+    color: var(--dark-text) !important;
+    background-color: var(--light-text) !important;
+}
+
+input.td-search-input::placeholder {
+    color: var(--header-footer-foreground) !important;
+}
+
+.values-section {
+    background-color: var(--values-color);
+    color: var(--values-foreground);
+
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+.testimonial-section {
+    background-color: var(--testimonials-color);
+
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+.text-color {
+    color: var(--light-text);
+}
+
+.skaffold-footer {
+    background-color: var(--header-footer) !important;
+    color: var(--header-footer-foreground);
+    min-height: unset;
+    padding: 10px 0 10px 0;
+}
+
+
+/**********************/
+/* buttons */
+/**********************/
+
+.splashbutton-primary {
+    background-color: var(--light-text);
+    color: var(--main-bg-color);
+}
+
+.splashbutton-primary:hover {
+    background-color: var(--hover-color);
+    color: var(--hover-foreground);
+}
+
+.splashbutton-secondary {
+    color: var(--light-text);
+    border: 1px solid var(--light-text);
+}
+
+.splashbutton-secondary:visited {
+    color: var(--light-text);
+}
+
+.splashbutton-secondary:hover {
+    background-color: var(--hover-color);
+    color: var(--hover-foreground);
+}
+
+.splash a {
+  color: var(--header-footer-foreground)
+}
+
+.splash a:hover {
+  color: var(--hover-color)
+}
+
+a > code {
+    color: #c97300;
+}

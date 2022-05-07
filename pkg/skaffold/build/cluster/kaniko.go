@@ -54,7 +54,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 	artifact.Env = env
 
-	buildArgs, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), workspace, artifact.DockerfilePath, artifact.BuildArgs, requiredImages, envMapFromVars(artifact.Env))
+	buildArgs, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), kaniko.GetContext(artifact, workspace), artifact.DockerfilePath, artifact.BuildArgs, requiredImages, envMapFromVars(artifact.Env))
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -112,7 +112,7 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
 		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, docker.NewBuildConfig(
-			workspace, artifactName, artifact.DockerfilePath, artifact.BuildArgs), b.cfg)
+			kaniko.GetContext(artifact, workspace), artifactName, artifact.DockerfilePath, artifact.BuildArgs), b.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			errs <- err

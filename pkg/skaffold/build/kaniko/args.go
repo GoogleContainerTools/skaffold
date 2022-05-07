@@ -18,6 +18,7 @@ package kaniko
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/google/go-containerregistry/pkg/name"
 
@@ -29,7 +30,7 @@ import (
 func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error) {
 	args := []string{
 		"--destination", tag,
-		"--dockerfile", artifact.DockerfilePath,
+		"--dockerfile", filepath.ToSlash(filepath.Join(artifact.ContextSubPath, artifact.DockerfilePath)),
 	}
 
 	if context != "" {
