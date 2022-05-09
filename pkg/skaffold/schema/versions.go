@@ -215,10 +215,7 @@ func ParseConfigAndUpgrade(filename string) ([]util.VersionedConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	//toVersion, err := getLatestFromCompatibilityCheck(configs)
-	//if err != nil {
-	//	return nil, err
-	//}
+
 	return UpgradeTo(configs, latest.Version)
 }
 

@@ -19,10 +19,11 @@ package v2beta28
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -76,7 +77,6 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		// Copy over lifecyle hooks for helm deployer
 		newPL.Deploy.LegacyHelmDeploy = &next.LegacyHelmDeploy{}
 		newPL.Deploy.LegacyHelmDeploy.LifecycleHooks = newHelm.LifecycleHooks
-
 	}
 
 	return nil
