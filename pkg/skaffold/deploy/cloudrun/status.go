@@ -75,7 +75,6 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 			resource.pollResourceStatus(ctx, s.statusCheckDeadline, s.pollPeriod, s.clientOptions)
 			c.markComplete()
 			s.printStatusCheckSummary(out, c, resource)
-			return
 		}(resource)
 	}
 	// Retrieve pending resource statuses
@@ -145,13 +144,12 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 			}
 			return
 		case <-ticker.C:
-			r.checkStatus(timeoutContext, crClient)
+			r.checkStatus(crClient)
 			if r.completed {
 				return
 			}
 		}
 	}
-
 }
 
 func (r *runResource) updateStatus(ae *proto.ActionableErr) {
@@ -173,7 +171,7 @@ func (r *runResource) ReportSinceLastUpdated() string {
 	return fmt.Sprintf("%s: %s", r.name, r.ae.Message)
 }
 
-func (r *runResource) checkStatus(ctx context.Context, crClient *run.APIService) {
+func (r *runResource) checkStatus(crClient *run.APIService) {
 	call := crClient.Projects.Locations.Services.Get(r.path)
 	res, err := call.Do()
 	if err != nil {
@@ -199,26 +197,26 @@ func (r *runResource) checkStatus(ctx context.Context, crClient *run.APIService)
 		})
 		return
 	}
-	if ready.Status == "True" {
+	switch ready.Status {
+	case "True":
 		r.completed = true
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 			Message: "Service started",
 		})
-	} else if ready.Status == "False" {
+	case "False":
 		r.completed = true
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNHEALTHY,
 			Message: fmt.Sprintf("Service failed to start: %v", ready.Message),
 		})
-	} else {
+	default:
 		// status is unknown
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
 			Message: fmt.Sprintf("Service starting: %v", ready.Message),
 		})
 	}
-
 }
 
 // printResourceStatus prints resource statuses until all status check are completed or context is cancelled.

@@ -122,14 +122,14 @@ func (d *Deployer) getMonitor() *Monitor {
 func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest []byte) error {
 	crclient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), d.clientOptions...)...)
 	if err != nil {
-		return sErrors.NewError(fmt.Errorf("Unable to create Cloud Run Client"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to create Cloud Run Client"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_GET_CLOUD_RUN_CLIENT_ERR,
 		})
 	}
 	service := &run.Service{}
 	if err = k8syaml.Unmarshal(manifest, service); err != nil {
-		return sErrors.NewError(fmt.Errorf("Unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -149,7 +149,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 	parent := fmt.Sprintf("projects/%s/locations/%s", service.Metadata.Namespace, d.Region)
 
 	sName := fmt.Sprintf("%s/services/%s", parent, service.Metadata.Name)
-_:
+
 	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: sName, name: service.Metadata.Name})
 	getCall := crclient.Projects.Locations.Services.Get(sName)
 	_, err = getCall.Do()
@@ -157,7 +157,7 @@ _:
 	if err != nil {
 		gErr, ok := err.(*googleapi.Error)
 		if !ok || gErr.Code != http.StatusNotFound {
-			return sErrors.NewError(fmt.Errorf("Error checking Cloud Run State: %w", err), &proto.ActionableErr{
+			return sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
 				Message: err.Error(),
 				ErrCode: proto.StatusCode_DEPLOY_CANCELLED,
 			})
@@ -170,7 +170,7 @@ _:
 		_, err = replaceCall.Do()
 	}
 	if err != nil {
-		return sErrors.NewError(fmt.Errorf("Error deploying Cloud Run Service"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
 		})
@@ -181,7 +181,7 @@ _:
 
 func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
 	if len(manifests) != 1 {
-		return sErrors.NewError(fmt.Errorf("Unexpected manifest for Cloud Run"),
+		return sErrors.NewError(fmt.Errorf("unexpected manifest for Cloud Run"),
 			&proto.ActionableErr{
 				Message: "Cloud Run expected a single Service manifest.",
 				ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
@@ -189,7 +189,7 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 	}
 	service := &run.Service{}
 	if err := k8syaml.Unmarshal(manifests[0], service); err != nil {
-		return sErrors.NewError(fmt.Errorf("Unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -209,7 +209,7 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 	}
 	crclient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), d.clientOptions...)...)
 	if err != nil {
-		return sErrors.NewError(fmt.Errorf("Unable to create Cloud Run Client"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to create Cloud Run Client"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_GET_CLOUD_RUN_CLIENT_ERR,
 		})
@@ -217,7 +217,7 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 	delCall := crclient.Projects.Locations.Services.Delete(sName)
 	_, err = delCall.Do()
 	if err != nil {
-		return sErrors.NewError(fmt.Errorf("Unable to delete Cloud Run Service"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run Service"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR,
 		})

@@ -299,11 +299,11 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
 			if region != "" && region != crDeploy.Region {
-				return nil, fmt.Errorf("Expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+				return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
 			}
 			region = crDeploy.Region
 			if defaultProject != "" && defaultProject != crDeploy.DefaultProjectID {
-				return nil, fmt.Errorf("Expected all Cloud Run deploys to use the same default project, found deploys to projects %s and %s", defaultProject, crDeploy.DefaultProjectID)
+				return nil, fmt.Errorf("expected all Cloud Run deploys to use the same default project, found deploys to projects %s and %s", defaultProject, crDeploy.DefaultProjectID)
 			}
 		}
 	}

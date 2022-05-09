@@ -101,7 +101,6 @@ func TestDeploy(tOuter *testing.T) {
 				t.Fatalf("Expected HTTP Error %s but got success", http.StatusText(test.httpErr))
 			}
 		})
-
 	}
 }
 
@@ -181,6 +180,5 @@ func TestCleanup(tOuter *testing.T) {
 				t.Fatalf("Expected HTTP Error %s but got success", http.StatusText(test.httpErr))
 			}
 		})
-
 	}
 }

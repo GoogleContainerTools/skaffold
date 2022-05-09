@@ -132,21 +132,19 @@ func TestPollResourceStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			checkTimes := 0
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if checkTimes >= len(test.responses) {
 					checkTimes = len(test.responses) - 1
 				}
 				resp := test.responses[checkTimes]
-				checkTimes += 1
+				checkTimes++
 				b, err := json.Marshal(resp)
 				if err != nil {
 					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 				w.Write(b)
-
 			}))
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
@@ -234,14 +232,13 @@ func TestMontiorCheck(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			checkTimes := make(map[string]int)
 			for resource := range test.responses {
 				checkTimes[resource] = 0
 			}
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if count, ok := checkTimes[r.URL.Path]; ok {
-					checkTimes[r.URL.Path] += 1
+					checkTimes[r.URL.Path]++
 					// strip version from the path
 					responses := test.responses[r.URL.Path]
 					if count >= len(responses) {
@@ -254,7 +251,6 @@ func TestMontiorCheck(t *testing.T) {
 						return
 					}
 					w.Write(b)
-
 				} else {
 					http.Error(w, "Resource not found "+r.URL.Path, http.StatusNotFound)
 				}
