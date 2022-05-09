@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	version7  = "http://json-schema-org/draft-07/schema#"
+	version7  = "http://json-schema.org/draft-07/schema#"
 	defPrefix = "#/definitions/"
 )
 
