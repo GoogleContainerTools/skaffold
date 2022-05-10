@@ -22,7 +22,7 @@ import (
 var (
 	defaultStatusCheckDeadline = 10 * time.Minute
 	defaultPollPeriod          = 1000 * time.Millisecond
-	defaultReportStatusTime    = 1 * time.Second
+	defaultReportStatusTime    = 5 * time.Second
 )
 
 type Monitor struct {
