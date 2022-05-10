@@ -1,0 +1,3 @@
+manifests:
+   kustomize:
+      - path/to/folder-with-kustomize-dot-yaml

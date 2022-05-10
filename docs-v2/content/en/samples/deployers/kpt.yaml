@@ -1,0 +1,6 @@
+deploy:
+  kpt: {}
+# The deploy section above is equal to
+# deploy:
+#   kpt:
+#     paths: ["."]
