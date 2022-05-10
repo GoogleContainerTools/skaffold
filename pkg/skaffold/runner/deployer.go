@@ -76,10 +76,10 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		cloudRunDeployFound := false
 
 		for _, d := range deployerCfg {
-
 			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
 				nonHelmDeployFound = true
 			}
+
 			if d.CloudRunDeploy != nil {
 				cloudRunDeployFound = true
 			}

@@ -6,6 +6,11 @@ import (
 	"io"
 	"net/http"
 
+	"google.golang.org/api/googleapi"
+	"google.golang.org/api/option"
+	"google.golang.org/api/run/v1"
+	k8syaml "sigs.k8s.io/yaml"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -20,11 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"google.golang.org/api/googleapi"
-	"google.golang.org/api/option"
-	"google.golang.org/api/run/v1"
-
-	k8syaml "sigs.k8s.io/yaml"
 )
 
 // Deployer deploys code to Google Cloud Run.

@@ -8,14 +8,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+	"google.golang.org/api/option"
+	"google.golang.org/api/run/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
-	"golang.org/x/sync/singleflight"
-	"google.golang.org/api/option"
-	"google.golang.org/api/run/v1"
 )
 
 var (
@@ -110,8 +111,12 @@ type runResource struct {
 	path      string
 	name      string
 	completed bool
-	reported  bool
-	ae        *proto.ActionableErr
+	status    Status
+}
+
+type Status struct {
+	ae       *proto.ActionableErr
+	reported bool
 }
 
 func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Duration, pollPeriod time.Duration, clientOptions []option.ClientOption) {
@@ -121,10 +126,10 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 	defer cancel()
 	crClient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), clientOptions...)...)
 	if err != nil {
-		r.ae = &proto.ActionableErr{
+		r.status = Status{ae: &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR,
 			Message: fmt.Sprintf("Unable to connect to Cloud Run: %v", err),
-		}
+		}}
 		return
 	}
 	for {
@@ -153,22 +158,24 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 }
 
 func (r *runResource) updateStatus(ae *proto.ActionableErr) {
-	if r.ae != nil && ae.ErrCode == r.ae.ErrCode && ae.Message == r.ae.Message {
+	curStatus := r.status
+	if curStatus.ae != nil && ae.ErrCode == curStatus.ae.ErrCode && ae.Message == curStatus.ae.Message {
 		return
 	}
-	r.ae = ae
-	r.reported = false
+	r.status = Status{ae: ae}
 }
 
 func (r *runResource) ReportSinceLastUpdated() string {
-	if r.reported {
+
+	curStatus := r.status
+	if curStatus.reported {
 		return ""
 	}
-	r.reported = true
-	if r.ae == nil {
+	curStatus.reported = true
+	if curStatus.ae == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s: %s", r.name, r.ae.Message)
+	return fmt.Sprintf("%s: %s", r.name, curStatus.ae.Message)
 }
 
 func (r *runResource) checkStatus(crClient *run.APIService) {
@@ -245,7 +252,7 @@ func (s *Monitor) printStatus(resources []*runResource, out io.Writer) bool {
 		}
 		allDone = false
 		if status := res.ReportSinceLastUpdated(); status != "" {
-			eventV2.ResourceStatusCheckEventUpdated(res.path, res.ae)
+			eventV2.ResourceStatusCheckEventUpdated(res.path, res.status.ae)
 			fmt.Fprintln(out, status)
 		}
 	}
@@ -253,15 +260,16 @@ func (s *Monitor) printStatus(resources []*runResource, out io.Writer) bool {
 }
 
 func (s *Monitor) printStatusCheckSummary(out io.Writer, c *counter, r *runResource) {
-	if r.ae.ErrCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+	curStatus := r.status
+	if curStatus.ae.ErrCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 		// Don't print the status summary if the user ctrl-C or
 		// another deployment failed
 		return
 	}
-	eventV2.ResourceStatusCheckEventCompleted(r.path, r.ae)
-	if r.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
-		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s failed with error: %s", r.name, r.ae.Message))
+	eventV2.ResourceStatusCheckEventCompleted(r.path, curStatus.ae)
+	if curStatus.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s failed with error: %s", r.name, curStatus.ae.Message))
 	} else {
-		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s finished: %s. %s", r.name, r.ae.Message, c.remaining()))
+		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s finished: %s. %s", r.name, curStatus.ae.Message, c.remaining()))
 	}
 }

@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/api/option"
+	"google.golang.org/api/run/v1"
+	"google.golang.org/protobuf/testing/protocmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
-	"google.golang.org/api/option"
-	"google.golang.org/api/run/v1"
-	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestPrintSummaryStatus(t *testing.T) {
@@ -56,9 +57,9 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			res := &runResource{
-				path: test.path,
-				name: test.name,
-				ae:   test.ae,
+				path:   test.path,
+				name:   test.name,
+				status: Status{ae: test.ae},
 			}
 			s := NewMonitor(labeller, []option.ClientOption{})
 			out := new(bytes.Buffer)
@@ -146,6 +147,7 @@ func TestPollResourceStatus(t *testing.T) {
 				}
 				w.Write(b)
 			}))
+			defer ts.Close()
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			monitor := NewMonitor(labeller, []option.ClientOption{option.WithEndpoint(ts.URL)})
@@ -156,120 +158,91 @@ func TestPollResourceStatus(t *testing.T) {
 			resource := &runResource{path: test.resource.path, name: test.resource.name}
 			ctx := context.Background()
 			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL)})
-			t.CheckDeepEqual(test.expected, resource.ae, protocmp.Transform())
+			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
 }
 
-func TestMontiorCheck(t *testing.T) {
+func TestMontiorPrintStatus(t *testing.T) {
 	labeller := label.NewLabeller(true, nil, "run-id")
 	tests := []struct {
 		description string
-		resources   []ResourceName
-		responses   map[string]([]run.Service)
+		resources   []*runResource
 		expected    string
-		fail        bool
+		done        bool
 	}{
 		{
-			description: "test basic check with one resource ready",
-			resources: []ResourceName{
-				{name: "test-service", path: "projects/tp/locations/tr/services/test-service"},
-			},
-			responses: map[string][]run.Service{
-				"/v1/projects/tp/locations/tr/services/test-service": {
-					{
-						ApiVersion: "serving.knative.dev/v1",
-						Status: &run.ServiceStatus{
-							Conditions: []*run.GoogleCloudRunV1Condition{
-								{
-									Type:    "Ready",
-									Status:  "True",
-									Message: "Revision Ready",
-								},
-							},
+			description: "test basic print with one resource getting ready",
+			resources: []*runResource{
+				{
+					path:      "projects/tp/locations/tr/services/test-service",
+					name:      "test-service",
+					completed: false,
+					status: Status{
+						reported: false,
+						ae: &proto.ActionableErr{
+							ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN,
+							Message: "Waiting for service to start",
 						},
 					},
 				},
 			},
-			expected: "Cloud Run Service test-service finished: Service started. 0/1 deployment(s) still pending\n",
+			expected: "test-service: Waiting for service to start\n",
+			done:     false,
 		},
 		{
-			description: "test basic check with one resource going ready after 1 non-ready",
-			resources: []ResourceName{
-				{name: "test-service", path: "projects/tp/locations/tr/services/test-service"},
-			},
-			responses: map[string][]run.Service{
-				"/v1/projects/tp/locations/tr/services/test-service": {
-					{
-						ApiVersion: "serving.knative.dev/v1",
-						Status: &run.ServiceStatus{
-							Conditions: []*run.GoogleCloudRunV1Condition{
-								{
-									Type:    "Ready",
-									Status:  "Unknown",
-									Message: "Deploying Revision",
-								},
-							},
+			description: "test basic print with one resource ready and reported, one not ready",
+			resources: []*runResource{
+				{
+					path:      "projects/tp/locations/tr/services/test-service1",
+					name:      "test-service1",
+					completed: true,
+					status: Status{
+						reported: true,
+						ae: &proto.ActionableErr{
+							ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+							Message: "Service started",
 						},
 					},
-					{
-						ApiVersion: "serving.knative.dev/v1",
-						Status: &run.ServiceStatus{
-							Conditions: []*run.GoogleCloudRunV1Condition{
-								{
-									Type:    "Ready",
-									Status:  "True",
-									Message: "Revision Ready",
-								},
-							},
+				},
+				{
+					path:      "projects/tp/locations/tr/services/test-service2",
+					name:      "test-service2",
+					completed: false,
+					status: Status{
+						reported: false,
+						ae: &proto.ActionableErr{
+							ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_CREATING,
+							Message: "Service starting: Deploying Revision",
 						},
 					},
 				},
 			},
-			expected: ("test-service: Service starting: Deploying Revision\n" +
-				"Cloud Run Service test-service finished: Service started. 0/1 deployment(s) still pending\n"),
+
+			expected: ("test-service2: Service starting: Deploying Revision\n"),
+		},
+		{
+			description: "test resources completed",
+			resources: []*runResource{
+				{
+					path:      "projects/tp/locations/tr/services/test-service",
+					name:      "test-service",
+					completed: true,
+				},
+			},
+			done: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			checkTimes := make(map[string]int)
-			for resource := range test.responses {
-				checkTimes[resource] = 0
-			}
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if count, ok := checkTimes[r.URL.Path]; ok {
-					checkTimes[r.URL.Path]++
-					// strip version from the path
-					responses := test.responses[r.URL.Path]
-					if count >= len(responses) {
-						count = len(responses) - 1
-					}
-					resp := responses[count]
-					b, err := json.Marshal(resp)
-					if err != nil {
-						http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-					w.Write(b)
-				} else {
-					http.Error(w, "Resource not found "+r.URL.Path, http.StatusNotFound)
-				}
-			}))
+
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			monitor := NewMonitor(labeller, []option.ClientOption{option.WithEndpoint(ts.URL)})
-			// speed up checks for tests
-			monitor.pollPeriod = 1 * time.Second
-			monitor.reportStatusTime = 500 * time.Millisecond
-			monitor.statusCheckDeadline = 5 * time.Second
-			monitor.Resources = append(monitor.Resources, test.resources...)
-			ctx := context.Background()
+			monitor := NewMonitor(labeller, []option.ClientOption{})
 			out := new(bytes.Buffer)
-			err := monitor.Check(ctx, out)
-			if err != nil && !test.fail {
-				t.Fatalf("expected success, got failure %v", err)
-			} else if err == nil && test.fail {
-				t.Fatalf("expected failure, got success. Output:\n%s", out.String())
+			done := monitor.printStatus(test.resources, out)
+			if done != test.done {
+				t.Fatalf("Expected finished state to be %v but got %v. Output:\n%s", test.done, done, out.String())
 			}
 			t.CheckDeepEqual(test.expected, out.String())
 		})

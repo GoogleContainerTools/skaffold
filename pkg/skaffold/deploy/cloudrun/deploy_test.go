@@ -9,12 +9,13 @@ import (
 	"os"
 	"testing"
 
+	"google.golang.org/api/option"
+	"google.golang.org/api/run/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"google.golang.org/api/option"
-	"google.golang.org/api/run/v1"
 )
 
 func TestDeploy(tOuter *testing.T) {
@@ -168,7 +169,7 @@ func TestCleanup(tOuter *testing.T) {
 				}
 				w.Write(b)
 			}))
-
+			defer ts.Close()
 			deployer, _ := NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: test.defaultProject, Region: test.region})
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL))
 			manifest, _ := json.Marshal(test.toDelete)
