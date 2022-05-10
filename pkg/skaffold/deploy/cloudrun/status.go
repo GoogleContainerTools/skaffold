@@ -68,13 +68,22 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 		resources[i] = &runResource{path: resource.path, name: resource.name}
 	}
 	c := newCounter(len(resources))
+	cctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	var wg sync.WaitGroup
+	var exitStatusOnce sync.Once
+	exitStatus := proto.StatusCode_STATUSCHECK_SUCCESS
 	for _, resource := range resources {
 		wg.Add(1)
 		go func(resource *runResource) {
 			defer wg.Done()
-			resource.pollResourceStatus(ctx, s.statusCheckDeadline, s.pollPeriod, s.clientOptions)
+			resource.pollResourceStatus(cctx, s.statusCheckDeadline, s.pollPeriod, s.clientOptions)
 			c.markComplete()
+			res := resource.status
+			if res.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+				exitStatusOnce.Do(func() { exitStatus = res.ae.ErrCode })
+				cancel()
+			}
 			s.printStatusCheckSummary(out, c, resource)
 		}(resource)
 	}
@@ -84,6 +93,13 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	}()
 
 	wg.Wait()
+	return checkResults(c, exitStatus)
+}
+
+func checkResults(c *counter, exitStatus proto.StatusCode) error {
+	if exitStatus != proto.StatusCode_STATUSCHECK_SUCCESS {
+		return fmt.Errorf("Skaffold deployment failed. %d/%d failed to complete", c.pending, c.total)
+	}
 	return nil
 }
 
