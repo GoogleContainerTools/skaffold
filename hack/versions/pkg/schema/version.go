@@ -58,7 +58,8 @@ func GetLastReleasedVersion() string {
 	logrus.Infof("last release tag: %s", lastTag)
 	// we split the config in v1.25.0
 	for _, url := range []string{
-		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/v2beta28/config.go", lastTag),
+		// TODO(marlongamez): update this URL once a release is done for v2
+		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/v1/config.go", lastTag),
 		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
 	} {
 		resp, err := http.Get(url)
