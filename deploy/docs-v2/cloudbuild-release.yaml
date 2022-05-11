@@ -6,22 +6,22 @@ steps:
   args:
   - '-c'
   - |
-    docker pull gcr.io/$PROJECT_ID/docs-controller:latest || exit 0
+    docker pull gcr.io/$PROJECT_ID/docs-controller-v2:latest || exit 0
   # until https://github.com/GoogleCloudPlatform/cloud-builders/issues/253 is fixed
 
-# Build and push latest version of the docs-controller image
+# Build and push latest version of the docs-controller-v2 image
 - name: gcr.io/cloud-builders/docker
   args:
   - 'build'
   - '-t'
-  - 'gcr.io/$PROJECT_ID/docs-controller:latest'
+  - 'gcr.io/$PROJECT_ID/docs-controller-v2:latest'
   - '--cache-from'
-  - 'gcr.io/$PROJECT_ID/docs-controller:latest'
+  - 'gcr.io/$PROJECT_ID/docs-controller-v2:latest'
   - '--target'
   - 'runtime_deps'
   - 'deploy/webhook-v2'
 
-- name: gcr.io/$PROJECT_ID/docs-controller:latest
+- name: gcr.io/$PROJECT_ID/docs-controller-v2:latest
   env:
     - 'HUGO_ENV=production'
   args:
@@ -31,5 +31,5 @@ steps:
     deploy/docs-v2/build.sh https://skaffold-v2.firebaseapp.com && cd docs-v2 && firebase deploy --only hosting:release --project $PROJECT_ID
 
 images: [
-  'gcr.io/$PROJECT_ID/docs-controller:latest'
+  'gcr.io/$PROJECT_ID/docs-controller-v2:latest'
 ]
