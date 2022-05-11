@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	dockertypes "github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -31,8 +32,6 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -195,8 +194,6 @@ func checkSupportContainer(containers []dockertypes.Container, found *bool) {
 }
 
 func TestFilterWithDebugging(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `filter` currently expects to receive a digested yaml
@@ -220,10 +217,7 @@ func TestFilterWithDebugging(t *testing.T) {
 	})
 }
 
-/*
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -239,8 +233,6 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 }
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -275,4 +267,3 @@ func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string)
 		}
 	}
 }
-*/
