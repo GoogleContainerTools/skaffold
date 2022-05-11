@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta27
+package v2beta28
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2beta27
+	yaml := `apiVersion: skaffold/v2beta28
 kind: Config
 build:
   artifacts:
@@ -51,8 +51,8 @@ build:
     sync:
       auto: true
   - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
-    ko:
-      platforms: ['linux/arm64', 'linux/amd64']
+    ko: {}
+    platforms: ['linux/arm64', 'linux/amd64']
   googleCloudBuild:
     projectId: test-project
 test:
@@ -66,6 +66,10 @@ deploy:
   kustomize:
     paths:
     - kustomization-main
+  helm:
+    releases:
+      - name: skaffold-helm
+        chartPath: charts
 portForward:
   - resourceType: deployment
     resourceName: leeroy-app
@@ -107,7 +111,7 @@ profiles:
         - k8s-*
       kustomize: {}
 `
-	expected := `apiVersion: skaffold/v2beta28
+	expected := `apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   artifacts:
@@ -141,13 +145,18 @@ test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
      - ./test/*
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - k8s-*
   kustomize:
-    paths:
     - kustomization-main
+  helm:
+    releases:
+      - name: skaffold-helm
+        chartPath: charts
+deploy:
+  kubectl: {}
+  helm: {}
 portForward:
   - resourceType: deployment
     resourceName: leeroy-app
@@ -168,13 +177,13 @@ profiles:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
          - ./test/*
-    deploy:
-      kubectl:
-        manifests:
-        - k8s-*
+    manifests:
+      rawYaml:
+      - k8s-*
       kustomize:
-        paths:
-        - kustomization-test
+      - kustomization-test
+    deploy:
+      kubectl: {}
   - name: test local
     build:
       artifacts:
@@ -183,11 +192,11 @@ profiles:
           dockerfile: path/to/Dockerfile
       local:
         push: false
+    manifests:
+      rawYaml:
+      - k8s-*
     deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize: {}
+      kubectl: {}
 `
 	verifyUpgrade(t, yaml, expected)
 }

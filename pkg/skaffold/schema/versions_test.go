@@ -29,13 +29,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta14"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -692,22 +692,6 @@ func TestUpgradeToNextVersion(t *testing.T) {
 			})
 		}
 	}
-}
-
-func TestCantUpgradeFromLatestV1Version(t *testing.T) {
-	factory, present := SchemaVersionsV1.Find(latestV1.Version)
-	testutil.CheckDeepEqual(t, true, present)
-
-	_, err := factory().Upgrade()
-	testutil.CheckError(t, true, err)
-}
-
-func TestCantUpgradeFromLatestV2Version(t *testing.T) {
-	factory, present := SchemaVersionsV2.Find(latest.Version)
-	testutil.CheckDeepEqual(t, true, present)
-
-	_, err := factory().Upgrade()
-	testutil.CheckError(t, true, err)
 }
 
 func TestParseConfigAndUpgradeToOlderVersion(t *testing.T) {

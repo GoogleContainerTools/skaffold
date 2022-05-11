@@ -580,7 +580,7 @@ type Helm struct {
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 
 	// Releases is a list of Helm releases.
-	Releases *[]HelmRelease `yaml:"releases,omitempty"`
+	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 }
 
 // Transformer describes the supported kpt transformers.
@@ -724,7 +724,7 @@ type KubectlFlags struct {
 // LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 type LegacyHelmDeploy struct {
 	// Releases is a list of Helm releases.
-	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
+	Releases []HelmRelease `yaml:"releases,omitempty"`
 
 	// Flags are additional option flags that are passed on the command
 	// line to `helm`.

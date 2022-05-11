@@ -66,14 +66,14 @@ func (d *deployerCtx) JSONParseConfig() latest.JSONParseConfig {
 }
 
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
-func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
-	deployerCfg := runCtx.Deployers()
+func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, hydrationDir string, usingLegacyHelmDeploy bool) (deploy.Deployer, error) {
+	pipelines := runCtx.Pipelines
 
 	if runCtx.Opts.Apply {
 		helmNamespaces := make(map[string]bool)
 		nonHelmDeployFound := false
 
-		for _, d := range deployerCfg {
+		for _, d := range pipelines.Deployers() {
 			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
 				nonHelmDeployFound = true
 			}
@@ -107,7 +107,9 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	var deployers []deploy.Deployer
 	localDeploy := false
 	remoteDeploy := false
-	for _, d := range deployerCfg {
+	for _, pl := range pipelines.All() {
+		d := pl.Deploy
+		r := pl.Render
 		dCtx := &deployerCtx{runCtx, d}
 
 		if d.DockerDeploy != nil {
@@ -128,6 +130,12 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.LegacyHelmDeploy != nil {
+			// copy relevant render config to legacy helm deployer
+			if r.Helm != nil {
+				d.LegacyHelmDeploy.Releases = r.Helm.Releases
+				d.LegacyHelmDeploy.Flags = r.Helm.Flags
+			}
+
 			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts())
 			if err != nil {
 				return nil, err
