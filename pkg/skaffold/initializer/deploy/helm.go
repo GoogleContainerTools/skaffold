@@ -47,13 +47,9 @@ type chart struct {
 	chartValues map[string]interface{}
 	path        string
 	valueFiles  []string
-<<<<<<< HEAD
-	overrides   map[string]string
-=======
 	repo        string
 	version     string
 	isRemote    bool
->>>>>>> 59dcf1271 (feat: wip remote charts)
 }
 
 // newHelmInitializer returns a helm config generator.
@@ -118,14 +114,7 @@ func (h helm) Validate() error {
 
 // we don't generate manifests for helm
 func (h helm) AddManifestForImage(string, string) {
-}
 
-func resolveChartName(chDirPath string) string {
-	_, chDirName := filepath.Split(filepath.Clean(chDirPath))
-	if chDirName == "charts" {
-		return "chart-foo"
-	}
-	return chDirName
 }
 
 // GetImages return an empty string for helm.

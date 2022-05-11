@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Chart.Name }}
+    tier: backend
+  ports:
+  - port: 8080
+    targetPort: http-server
