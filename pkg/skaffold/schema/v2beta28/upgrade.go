@@ -48,15 +48,23 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		newPL.Deploy.KubectlDeploy.Manifests = nil
 	}
 
+	// TODO(marlongamez): port over buildArgs config and copy that
 	// Copy kustomize deploy config to render config
 	if oldPL.Deploy.KustomizeDeploy != nil {
 		newPL.Render.Kustomize = oldPL.Deploy.KustomizeDeploy.KustomizePaths
 		// nil out kustomize deployer as it shouldn't be a thing anymore
 		newPL.Deploy.KustomizeDeploy = nil
+
+		if len(oldPL.Deploy.KustomizeDeploy.BuildArgs) != 0 {
+			return errors.New("converting deploy.kustomize.buildArgs isn't currently supported")
+		}
 	}
 
 	// TODO(marlongamez): what should happen when migrating v2?
 	// Copy Kpt deploy config to render config
+	if oldPL.Deploy.KptDeploy != nil {
+		return errors.New("converting deploy.kpt isn't currently supported")
+	}
 
 	// Copy helm deploy config
 	if oldPL.Deploy.HelmDeploy != nil {
