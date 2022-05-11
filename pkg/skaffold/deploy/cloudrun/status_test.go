@@ -1,3 +1,18 @@
+/*
+Copyright 2022 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package cloudrun
 
 import (
@@ -72,7 +87,6 @@ func TestPrintSummaryStatus(t *testing.T) {
 	}
 }
 func TestPollResourceStatus(t *testing.T) {
-	labeller := label.NewLabeller(true, nil, "run-id")
 	tests := []struct {
 		description string
 		resource    ResourceName
@@ -150,14 +164,9 @@ func TestPollResourceStatus(t *testing.T) {
 			defer ts.Close()
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			monitor := NewMonitor(labeller, []option.ClientOption{option.WithEndpoint(ts.URL)})
-			// speed up checks for tests
-			monitor.pollPeriod = 1 * time.Second
-			monitor.reportStatusTime = 500 * time.Millisecond
-			monitor.statusCheckDeadline = 5 * time.Second
 			resource := &runResource{path: test.resource.path, name: test.resource.name}
 			ctx := context.Background()
-			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL)})
+			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
@@ -235,7 +244,6 @@ func TestMontiorPrintStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			monitor := NewMonitor(labeller, []option.ClientOption{})

@@ -1,3 +1,18 @@
+/*
+Copyright 2022 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package cloudrun
 
 import (
@@ -62,7 +77,6 @@ func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
 	return err
 }
 func (s *Monitor) check(ctx context.Context, out io.Writer) error {
-
 	resources := make([]*runResource, len(s.Resources))
 	for i, resource := range s.Resources {
 		resources[i] = &runResource{path: resource.path, name: resource.name}
@@ -77,7 +91,7 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 		wg.Add(1)
 		go func(resource *runResource) {
 			defer wg.Done()
-			resource.pollResourceStatus(cctx, s.statusCheckDeadline, s.pollPeriod, s.clientOptions)
+			resource.pollResourceStatus(cctx, s.statusCheckDeadline, s.pollPeriod, s.clientOptions, true)
 			c.markComplete()
 			res := resource.status
 			if res.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
@@ -98,7 +112,7 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 
 func checkResults(c *counter, exitStatus proto.StatusCode) error {
 	if exitStatus != proto.StatusCode_STATUSCHECK_SUCCESS {
-		return fmt.Errorf("Skaffold deployment failed. %d/%d failed to complete", c.pending, c.total)
+		return fmt.Errorf("skaffold deployment failed. %d/%d failed to complete", c.pending, c.total)
 	}
 	return nil
 }
@@ -135,12 +149,16 @@ type Status struct {
 	reported bool
 }
 
-func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Duration, pollPeriod time.Duration, clientOptions []option.ClientOption) {
+func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Duration, pollPeriod time.Duration, clientOptions []option.ClientOption, useGcpOptions bool) {
 	ticker := time.NewTicker(pollPeriod)
 	defer ticker.Stop()
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollPeriod)
 	defer cancel()
-	crClient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), clientOptions...)...)
+	options := clientOptions
+	if useGcpOptions {
+		options = append(gcp.ClientOptions(ctx), options...)
+	}
+	crClient, err := run.NewService(ctx, options...)
 	if err != nil {
 		r.status = Status{ae: &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR,
@@ -182,7 +200,6 @@ func (r *runResource) updateStatus(ae *proto.ActionableErr) {
 }
 
 func (r *runResource) ReportSinceLastUpdated() string {
-
 	curStatus := r.status
 	if curStatus.reported {
 		return ""

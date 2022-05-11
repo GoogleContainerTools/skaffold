@@ -1,3 +1,18 @@
+/*
+Copyright 2022 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package cloudrun
 
 import (
@@ -40,6 +55,7 @@ type Deployer struct {
 
 	// additional client options for connecting to Cloud Run, used for tests
 	clientOptions []option.ClientOption
+	useGcpOptions bool
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
@@ -49,6 +65,7 @@ func NewDeployer(labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeplo
 		Region:         crDeploy.Region,
 		logger:         &log.NoopLogger{},
 		labeller:       labeller,
+		useGcpOptions:  true,
 	}, nil
 }
 
@@ -120,7 +137,11 @@ func (d *Deployer) getMonitor() *Monitor {
 	return d.monitor
 }
 func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest []byte) error {
-	crclient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), d.clientOptions...)...)
+	cOptions := d.clientOptions
+	if d.useGcpOptions {
+		cOptions = append(gcp.ClientOptions(ctx), cOptions...)
+	}
+	crclient, err := run.NewService(ctx, cOptions...)
 	if err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to create Cloud Run Client"), &proto.ActionableErr{
 			Message: err.Error(),
