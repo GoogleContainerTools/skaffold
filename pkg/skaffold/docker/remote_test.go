@@ -90,7 +90,7 @@ func TestRemoteImage(t *testing.T) {
 
 			img, err := getRemoteImage(test.image, &mockConfig{
 				insecureRegistries: test.insecureRegistries,
-			})
+			}, nil)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -145,7 +145,7 @@ func TestRemoteDigest(t *testing.T) {
 				}, nil
 			})
 
-			digest, err := RemoteDigest(test.image, &mockConfig{})
+			digest, err := RemoteDigest(test.image, &mockConfig{}, nil)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})

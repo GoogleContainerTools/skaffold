@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -218,7 +219,7 @@ func TestCacheBuildRemote(t *testing.T) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config) (string, error) {
+		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config, _ *v1.Platform) (string, error) {
 			switch ref {
 			case "artifact1:tag1":
 				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
@@ -303,7 +304,7 @@ func TestCacheFindMissing(t *testing.T) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config) (string, error) {
+		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config, _ *v1.Platform) (string, error) {
 			switch ref {
 			case "artifact1:tag1":
 				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
