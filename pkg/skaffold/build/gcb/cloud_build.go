@@ -229,7 +229,7 @@ watch:
 		switch cb.Status {
 		case StatusQueued, StatusWorking, StatusUnknown:
 		case StatusSuccess:
-			digest, err = b.getDigest(cb, tag)
+			digest, err = b.getDigest(cb, tag, platform)
 			if err != nil {
 				return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 					ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILT_IMAGE_ERR,
@@ -290,7 +290,7 @@ func getBuildID(op *cloudbuild.Operation) (string, error) {
 	return buildMeta.Build.Id, nil
 }
 
-func (b *Builder) getDigest(cb *cloudbuild.Build, defaultToTag string) (string, error) {
+func (b *Builder) getDigest(cb *cloudbuild.Build, defaultToTag string, platforms platform.Matcher) (string, error) {
 	if cb.Results != nil && len(cb.Results.Images) == 1 {
 		return cb.Results.Images[0].Digest, nil
 	}
@@ -298,7 +298,7 @@ func (b *Builder) getDigest(cb *cloudbuild.Build, defaultToTag string) (string, 
 	// The build steps pushed the image directly like when we use Jib.
 	// Retrieve the digest for that tag.
 	// TODO(dgageot): I don't think GCB can push to an insecure registry.
-	return docker.RemoteDigest(defaultToTag, b.cfg)
+	return docker.RemoteDigest(defaultToTag, b.cfg, util.ConvertToV1Platform(platforms.Platforms[0]))
 }
 
 func (b *Builder) getLogs(ctx context.Context, c *cstorage.Client, offset int64, bucket, objectName string) (io.ReadCloser, error) {
