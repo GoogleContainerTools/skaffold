@@ -284,7 +284,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = RetrieveRemoteConfig(image, l.cfg)
+		cfg, err = RetrieveRemoteConfig(image, l.cfg, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -431,7 +431,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	if digest == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been pushed.
-		digest, err = RemoteDigest(ref, l.cfg)
+		digest, err = RemoteDigest(ref, l.cfg, nil)
 		if err != nil {
 			return "", fmt.Errorf("getting digest: %w", err)
 		}

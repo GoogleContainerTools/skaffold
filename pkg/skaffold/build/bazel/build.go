@@ -48,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	}
 
 	if b.pushImages {
-		return docker.Push(tarPath, tag, b.cfg)
+		return docker.Push(tarPath, tag, b.cfg, nil)
 	}
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
