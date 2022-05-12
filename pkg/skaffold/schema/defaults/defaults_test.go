@@ -434,13 +434,13 @@ func TestSetLogsConfig(t *testing.T) {
 func TestSetDefaultRenderer(t *testing.T) {
 	tests := []struct {
 		description string
-		input       latest.ManifestConfig
-		expected    latest.ManifestConfig
+		input       latest.RenderConfig
+		expected    latest.RenderConfig
 	}{
 		{
 			description: "default to rawYaml",
-			input:       latest.ManifestConfig{},
-			expected: latest.ManifestConfig{
+			input:       latest.RenderConfig{},
+			expected: latest.RenderConfig{
 				Generate: latest.Generate{
 					RawK8s: []string{"k8s/*.yaml"},
 				},
@@ -448,12 +448,12 @@ func TestSetDefaultRenderer(t *testing.T) {
 		},
 		{
 			description: "kustomize manifests",
-			input: latest.ManifestConfig{
+			input: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests"}},
 				},
 			},
-			expected: latest.ManifestConfig{
+			expected: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests"}},
 				},
@@ -461,12 +461,12 @@ func TestSetDefaultRenderer(t *testing.T) {
 		},
 		{
 			description: "kpt manifests",
-			input: latest.ManifestConfig{
+			input: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kpt: []string{"/kmanifests"},
 				},
 			},
-			expected: latest.ManifestConfig{
+			expected: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kpt: []string{"/kmanifests"},
 				},
@@ -474,12 +474,12 @@ func TestSetDefaultRenderer(t *testing.T) {
 		},
 		{
 			description: "helm manifests",
-			input: latest.ManifestConfig{
+			input: latest.RenderConfig{
 				Generate: latest.Generate{
 					Helm: &latest.Helm{Releases: []latest.HelmRelease{{Name: "test"}}},
 				},
 			},
-			expected: latest.ManifestConfig{
+			expected: latest.RenderConfig{
 				Generate: latest.Generate{
 					Helm: &latest.Helm{Releases: []latest.HelmRelease{{Name: "test"}}},
 				},
@@ -487,14 +487,14 @@ func TestSetDefaultRenderer(t *testing.T) {
 		},
 		{
 			description: "multi manifests",
-			input: latest.ManifestConfig{
+			input: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kpt:       []string{"/kmanifests1"},
 					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests2"}},
 					Helm:      &latest.Helm{Releases: []latest.HelmRelease{{Name: "test"}}},
 				},
 			},
-			expected: latest.ManifestConfig{
+			expected: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kpt:       []string{"/kmanifests1"},
 					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests2"}},

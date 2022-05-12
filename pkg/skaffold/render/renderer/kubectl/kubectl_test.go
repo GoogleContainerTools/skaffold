@@ -66,14 +66,14 @@ func TestRender(t *testing.T) {
 	}{
 		{
 			description: "single manifest with no labels",
-			renderConfig: &latest.ManifestConfig{
+			renderConfig: &latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			expected: taggedPodYaml,
 		},
 		{
 			description: "single manifest with labels",
-			renderConfig: &latest.ManifestConfig{
+			renderConfig: &latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			labels:   map[string]string{"run.id": "test"},

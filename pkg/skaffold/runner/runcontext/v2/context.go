@@ -105,7 +105,7 @@ func (ps Pipelines) Deployers() []latest.DeployConfig {
 func (ps Pipelines) Renderers() []latest.RenderConfig {
 	var rcs []latest.RenderConfig
 	for _, p := range ps.pipelines {
-		rcs = append(rcs, p.Render)
+		rcs = append(rcs, p.Manifests)
 	}
 	return rcs
 }
@@ -271,14 +271,14 @@ func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
 }
 
-// GetRenderConfig returns the top tier ManifestConfig.
+// GetRenderConfig returns the top tier RenderConfig.
 // TODO: design how to support multi-module.
-func (rc *RunContext) GetRenderConfig() *latest.ManifestConfig {
+func (rc *RunContext) GetRenderConfig() *latest.RenderConfig {
 	p := rc.GetPipelines()
 	if len(p) > 0 {
 		return &p[0].Manifests
 	}
-	return &latest.ManifestConfig{}
+	return &latest.RenderConfig{}
 }
 
 func (rc *RunContext) DigestSource() string {

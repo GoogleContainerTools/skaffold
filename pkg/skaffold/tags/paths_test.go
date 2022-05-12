@@ -43,7 +43,7 @@ func TestSetAbsFilePaths(t *testing.T) {
 							{ImageName: "foo2", Workspace: "/a/foo"},
 						},
 					},
-					Manifests: latest.ManifestConfig{
+					Manifests: latest.RenderConfig{
 						Generate: latest.Generate{
 							RawK8s: []string{"foo/*", "/a/foo/*"},
 							Kpt:    []string{"."},
@@ -65,7 +65,7 @@ func TestSetAbsFilePaths(t *testing.T) {
 							{ImageName: "foo2", Workspace: "/a/foo"},
 						},
 					},
-					Manifests: latest.ManifestConfig{
+					Manifests: latest.RenderConfig{
 						Generate: latest.Generate{
 							RawK8s: []string{"/a/b/foo/*", "/a/foo/*"},
 							Kpt:    []string{"/a/b"},
