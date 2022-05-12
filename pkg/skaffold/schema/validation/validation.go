@@ -739,16 +739,16 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 		if c.IsRemote {
 			continue
 		}
-		if c.Deploy.KubectlDeploy == nil {
+		if c.Manifests.RawK8s == nil {
 			continue
 		}
-		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
+		if len(c.Manifests.RawK8s) == 1 && c.Manifests.RawK8s[0] == constants.DefaultKubectlManifests[0] {
 			log.Entry(context.TODO()).Debug("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
 			continue
 		}
 
 		// validate that manifest files referenced in config exist
-		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
+		for _, pattern := range c.Manifests.RawK8s {
 			if util.IsURL(pattern) {
 				continue
 			}

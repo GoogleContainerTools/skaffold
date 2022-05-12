@@ -466,7 +466,7 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Render: latest.RenderConfig{
+				Manifests: latest.ManifestConfig{
 					Generate: latest.Generate{RawK8s: []string{""}},
 				},
 				Deploy: latest.DeployConfig{

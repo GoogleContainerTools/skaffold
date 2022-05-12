@@ -56,7 +56,7 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 			return err
 		}
 		// Render
-		manifests, errR := r.Render(ctx, out, buildArtifacts, true)
+		manifests, errR := r.Render(ctx, out, buildArtifacts, true, opts.RenderOutput)
 		if errR != nil {
 			return errR
 		}

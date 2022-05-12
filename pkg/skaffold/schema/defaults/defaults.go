@@ -113,23 +113,23 @@ func Set(c *latest.SkaffoldConfig) error {
 
 // SetDefaultRenderer sets the default manifests to rawYaml.
 func SetDefaultRenderer(c *latest.SkaffoldConfig) {
-	if len(c.Render.Generate.Kpt) > 0 {
+	if len(c.Manifests.Generate.Kpt) > 0 {
 		return
 	}
-	if len(c.Render.Generate.RawK8s) > 0 {
+	if len(c.Manifests.Generate.RawK8s) > 0 {
 		return
 	}
-	if c.Render.Generate.Kustomize != nil {
+	if c.Manifests.Generate.Kustomize != nil {
 		return
 	}
-	if c.Render.Generate.Helm != nil {
+	if c.Manifests.Generate.Helm != nil {
 		return
 	}
 	if c.Deploy.LegacyHelmDeploy != nil {
 		return
 	}
 	// Set default manifests to "k8s/*.yaml", same as v1.
-	c.Render.Generate.RawK8s = constants.DefaultKubectlManifests
+	c.Manifests.Generate.RawK8s = constants.DefaultKubectlManifests
 }
 
 // SetDefaultDeployer adds a default kubectl deploy configuration.

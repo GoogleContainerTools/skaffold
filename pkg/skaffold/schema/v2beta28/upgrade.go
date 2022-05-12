@@ -44,18 +44,19 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 
 	// Copy kubectl deploy config to render config
 	if oldPL.Deploy.KubectlDeploy != nil {
-		newPL.Render.RawK8s = oldPL.Deploy.KubectlDeploy.Manifests
+		newPL.Manifests.RawK8s = oldPL.Deploy.KubectlDeploy.Manifests
 		newPL.Deploy.KubectlDeploy.Manifests = nil
 	}
 
+	// TODO(marlongamez): port over buildArgs config and copy that
 	// Copy kustomize deploy config to render config
 	if oldPL.Deploy.KustomizeDeploy != nil {
-		newPL.Render.Kustomize = &next.Kustomize{
+		newPL.Manifests.Kustomize = &next.Kustomize{
 			Paths:     oldPL.Deploy.KustomizeDeploy.KustomizePaths,
 			BuildArgs: oldPL.Deploy.KustomizeDeploy.BuildArgs,
 		}
-		if len(newPL.Render.Kustomize.Paths) == 0 {
-			newPL.Render.Kustomize.Paths = append(newPL.Render.Kustomize.Paths, ".")
+		if len(newPL.Manifests.Kustomize.Paths) == 0 {
+			newPL.Manifests.Kustomize.Paths = append(newPL.Render.Kustomize.Paths, ".")
 		}
 		// nil out kustomize deployer as it shouldn't be a thing anymore
 		newPL.Deploy.KustomizeDeploy = nil
@@ -83,9 +84,9 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		}
 
 		// Copy Releases and Flags into the render config
-		newPL.Render.Helm = &next.Helm{}
-		newPL.Render.Helm.Releases = newHelm.Releases
-		newPL.Render.Helm.Flags = newHelm.Flags
+		newPL.Manifests.Helm = &next.Helm{}
+		newPL.Manifests.Helm.Releases = newHelm.Releases
+		newPL.Manifests.Helm.Flags = newHelm.Flags
 
 		// Copy over lifecyle hooks for helm deployer
 		newPL.Deploy.LegacyHelmDeploy = &next.LegacyHelmDeploy{}

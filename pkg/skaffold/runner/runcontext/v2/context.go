@@ -271,14 +271,14 @@ func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
 }
 
-// GetRenderConfig returns the top tier RenderConfig.
+// GetRenderConfig returns the top tier ManifestConfig.
 // TODO: design how to support multi-module.
-func (rc *RunContext) GetRenderConfig() *latest.RenderConfig {
+func (rc *RunContext) GetRenderConfig() *latest.ManifestConfig {
 	p := rc.GetPipelines()
 	if len(p) > 0 {
-		return &p[0].Render
+		return &p[0].Manifests
 	}
-	return &latest.RenderConfig{}
+	return &latest.ManifestConfig{}
 }
 
 func (rc *RunContext) DigestSource() string {

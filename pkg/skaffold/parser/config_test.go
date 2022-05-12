@@ -20,9 +20,19 @@ package parser
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/pkg/errors"
 	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -30,7 +40,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-/*
 const (
 	template = `
 apiVersion: %s
@@ -63,8 +72,9 @@ func createCfg(name string, imageName string, workspace string, requires []lates
 			Artifacts: []*latest.Artifact{{ImageName: imageName, ArtifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{DockerfilePath: "Dockerfile"}}, Workspace: workspace}}, TagPolicy: latest.TagPolicy{
 				GitTagger: &latest.GitTagger{}}, BuildType: latest.BuildType{
-				LocalBuild: &latest.LocalBuild{},
-			}}, Deploy: latest.DeployConfig{Logs: latest.LogsConfig{Prefix: "container"}}},
+				LocalBuild: &latest.LocalBuild{Concurrency: util.IntPtr(1)},
+			}},
+			Deploy: latest.DeployConfig{Logs: latest.LogsConfig{Prefix: "container"}, DeployType: latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{}}}},
 	}
 }
 
@@ -1341,7 +1351,6 @@ requires:
 		})
 	}
 }
-*/
 
 var testSkaffoldYaml = `apiVersion: skaffold/v3alpha1
 kind: Config

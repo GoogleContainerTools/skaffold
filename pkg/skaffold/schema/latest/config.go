@@ -75,8 +75,8 @@ type Pipeline struct {
 	// Test describes how images are tested.
 	Test []*TestCase `yaml:"test,omitempty"`
 
-	// Render describes how the original manifests are hydrated, validated and transformed.
-	Render RenderConfig `yaml:"manifests,omitempty"`
+	// Manifests lists the manifests sources and operations performed on then.
+	Manifests RenderConfig `yaml:"manifests,omitempty"`
 
 	// Deploy describes how the manifests are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
@@ -566,17 +566,18 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	// RawK8s TODO: add description.
+	// RawYaml lists the Kubernetes yaml or json manifests.
+	// Defaults to `["k8s/*.yaml"]`.
 	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
 
 	// Kustomize defines the paths to be modified with kustomize, along with extra
 	// flags to be passed to kustomize
 	Kustomize *Kustomize `yaml:"kustomize,omitempty"`
 
-	// Helm TODO: add description.
+	// Helm defines helm charts
 	Helm *Helm `yaml:"helm,omitempty"`
 
-	// Kpt TODO: add description.
+	// Kpt defines Kptfile
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
 }
 
