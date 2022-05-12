@@ -85,6 +85,7 @@ func (ps Pipelines) Artifacts() []*latest.Artifact {
 	return artifacts
 }
 
+// TODO: Clean up code duplication
 func (ps Pipelines) DeployConfigs() []latest.DeployConfig {
 	var cfgs []latest.DeployConfig
 	for _, p := range ps.pipelines {

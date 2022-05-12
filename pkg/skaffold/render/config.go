@@ -21,7 +21,7 @@ import (
 )
 
 type Config interface {
-	GetRenderConfig() *latest.RenderConfig
+	GetPipelines() []latest.Pipeline
 	GetWorkingDir() string
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter
