@@ -1,0 +1,14 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  artifacts:
+    - image: leeroy-app
+      context: .
+manifests:
+  rawYaml:
+    - kubernetes/*
+portForward:
+  - resourceType: deployment
+    resourceName: leeroy-app
+    port: http
+    localPort: 9001
