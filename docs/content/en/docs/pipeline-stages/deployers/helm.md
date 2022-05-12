@@ -85,7 +85,7 @@ deploy:
       - name: my-chart
         chartPath: helm
         artifactOverrides:
-          imageKey: gcr.io/my-project/my-image
+          image: gcr.io/my-project/my-image
         imageStrategy:
           fqn: {}
 ```
@@ -94,7 +94,7 @@ Note that the `fqn` strategy is the default and the `imageStrategy` can be omitt
 
 The `values.yaml` (note that Skaffold overrides this value):
 ```
-imageKey: gcr.io/other-project/other-image:latest
+image: gcr.io/other-project/other-image:latest
 ```
 
 The chart template:
@@ -102,12 +102,12 @@ The chart template:
 spec:
   containers:
     - name: {{ .Chart.Name }}
-      image: "{{.Values.imageKey}}"
+      image: "{{.Values.image}}"
 ```
 
 Skaffold will invoke
 ```
-helm install <chart> <chart-path> --set-string imageKey=gcr.io/my-project/my-image:generatedTag@sha256:digest
+helm install <chart> <chart-path> --set-string image=gcr.io/my-project/my-image:generatedTag@sha256:digest
 ```
 
 #### `helm` strategy: split repository and tag
@@ -125,14 +125,14 @@ deploy:
       - name: my-chart
         chartPath: helm
         artifactOverrides:
-          imageKey: gcr.io/my-project/my-image
+          image: gcr.io/my-project/my-image
         imageStrategy:
           helm: {}
 ```
 
 The `values.yaml` (note that Skaffold overrides these values):
 ```
-imageKey:
+image:
   repository: gcr.io/other-project/other-image
   tag: latest
 ```
@@ -142,12 +142,12 @@ The chart template:
 spec:
   containers:
     - name: {{ .Chart.Name }}
-      image: "{{.Values.imageKey.repository}}:{{.Values.imageKey.tag}}"
+      image: "{{.Values.image.repository}}:{{.Values.image.tag}}"
 ```
 
 Skaffold will invoke
 ```
-helm install <chart> <chart-path> --set-string imageKey.repository=gcr.io/my-project/my-image,imageKey.tag=generatedTag@sha256:digest
+helm install <chart> <chart-path> --set-string image.repository=gcr.io/my-project/my-image,image.tag=generatedTag@sha256:digest
 ```
 
 #### `helm`+`explicitRegistry` strategy: split registry, repository, and tag
@@ -165,7 +165,7 @@ deploy:
       - name: my-chart
         chartPath: helm
         artifactOverrides:
-          imageKey: gcr.io/my-project/my-image
+          image: gcr.io/my-project/my-image
         imageStrategy:
           helm:
             explicitRegistry: true
@@ -173,7 +173,7 @@ deploy:
 
 The `values.yaml` (note that Skaffold overrides these values):
 ```
-imageKey:
+image:
   registry: gcr.io
   repository: other-project/other-image
   tag: latest
@@ -184,12 +184,12 @@ The chart template:
 spec:
   containers:
     - name: {{ .Chart.Name }}
-      image: "{{.Values.imageKey.registry}}/{{.Values.imageKey.repository}}:{{.Values.imageKey.tag}}"
+      image: "{{.Values.image.registry}}/{{.Values.image.repository}}:{{.Values.image.tag}}"
 ```
 
 Skaffold will invoke
 ```
-helm install <chart> <chart-path> --set-string imageKey.registry=gcr.io,imageKey.repository=my-project/my-image,imageKey.tag=generatedTag@sha256:digest
+helm install <chart> <chart-path> --set-string image.registry=gcr.io,image.repository=my-project/my-image,image.tag=generatedTag@sha256:digest
 ```
 
 
