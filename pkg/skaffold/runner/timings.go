@@ -85,13 +85,13 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 
 func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) (manifest.ManifestList, error) {
 	start := time.Now()
-	log.Entry(context.TODO()).Infoln("Starting render...")
+	log.Entry(ctx).Infoln("Starting render...")
 
 	manifestsLists, err := w.Renderer.Render(ctx, out, builds, offline, filepath)
 	if err != nil {
 		return nil, err
 	}
-	log.Entry(context.TODO()).Infoln("Render completed in", timeutil.Humanize(time.Since(start)))
+	log.Entry(ctx).Infoln("Render completed in", timeutil.Humanize(time.Since(start)))
 	return manifestsLists, nil
 }
 
