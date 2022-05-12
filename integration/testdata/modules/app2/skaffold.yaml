@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta25
+apiVersion: skaffold/v3alpha1
 kind: Config
 requires:
   - path: ../app3
@@ -17,7 +17,6 @@ build:
     - image: image3
       alias: IMAGE3
 
-deploy:
-  kubectl:
-    manifests:
-    - 'k8s.yaml'
+manifests:
+  rawYaml:
+  - 'k8s.yaml'
