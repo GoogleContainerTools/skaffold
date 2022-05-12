@@ -54,8 +54,8 @@ func doRun(ctx context.Context, out io.Writer) error {
 			}
 		}
 
-		// Render
-		manifestList, err := r.Render(ctx, out, bRes, true)
+		// Manifests
+		manifestList, err := r.Render(ctx, out, bRes, true, opts.RenderOutput)
 		if err != nil {
 			return err
 		}
