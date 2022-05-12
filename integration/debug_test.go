@@ -23,11 +23,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	dockertypes "github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
