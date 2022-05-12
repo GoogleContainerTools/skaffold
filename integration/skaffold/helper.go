@@ -146,8 +146,6 @@ func withDefaults(command string, args []string) *RunBuilder {
 	if repo == "" {
 		repo = "gcr.io/k8s-skaffold"
 	}
-	// Add SKAFFOLD_INT_TEST
-
 	return &RunBuilder{command: command, args: args, repo: repo}
 }
 
