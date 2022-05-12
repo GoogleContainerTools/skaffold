@@ -276,6 +276,10 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace()
 		return nil
 	}
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
+	if manifests, err = manifest.ApplyTransforms(manifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
+		return nil
+	}
 	endTrace()
 
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")

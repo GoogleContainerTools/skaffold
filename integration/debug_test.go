@@ -32,7 +32,6 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -194,7 +193,6 @@ func checkSupportContainer(containers []dockertypes.Container, found *bool) {
 }
 
 func TestFilterWithDebugging(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `filter` currently expects to receive a digested yaml
 	renderedOutput := skaffold.Render("--digest-source=local").InDir("examples/getting-started").RunOrFailOutput(t)
@@ -218,7 +216,6 @@ func TestFilterWithDebugging(t *testing.T) {
 }
 
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -233,7 +230,6 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 }
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
