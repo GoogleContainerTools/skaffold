@@ -172,7 +172,7 @@ func TestPollResourceStatus(t *testing.T) {
 	}
 }
 
-func TestMontiorPrintStatus(t *testing.T) {
+func TestMonitorPrintStatus(t *testing.T) {
 	labeller := label.NewLabeller(true, nil, "run-id")
 	tests := []struct {
 		description string

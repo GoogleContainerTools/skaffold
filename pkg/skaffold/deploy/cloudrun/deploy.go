@@ -63,9 +63,10 @@ func NewDeployer(labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeplo
 	return &Deployer{
 		DefaultProject: crDeploy.DefaultProjectID,
 		Region:         crDeploy.Region,
-		logger:         &log.NoopLogger{},
-		labeller:       labeller,
-		useGcpOptions:  true,
+		// TODO: implement logger for Cloud Run.
+		logger:        &log.NoopLogger{},
+		labeller:      labeller,
+		useGcpOptions: true,
 	}, nil
 }
 

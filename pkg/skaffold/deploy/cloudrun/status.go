@@ -178,7 +178,7 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 			case context.DeadlineExceeded:
 				r.updateStatus(&proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
-					Message: fmt.Sprintf("Resource failed to become ready in %v", defaultStatusCheckDeadline),
+					Message: fmt.Sprintf("Resource failed to become ready in %v", deadline),
 				})
 			}
 			return
