@@ -53,9 +53,7 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
-		for _, m := range ms {
-			allManifests = append(allManifests, m)
-		}
+		allManifests = append(allManifests, ms...)
 		eventV2.RendererSucceeded(i)
 		endTrace()
 	}
