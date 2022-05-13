@@ -55,7 +55,6 @@ var syncTests = []struct {
 }
 
 func TestDevSync(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	for _, test := range syncTests {
@@ -109,7 +108,6 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 }
 
 func TestDevAutoSync(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	dir := "examples/jib-sync/"
