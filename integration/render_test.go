@@ -71,11 +71,11 @@ spec:
 		tmpDir := t.NewTempDir()
 		tmpDir.Write("deployment.yaml", test.input).Chdir()
 
-		rc := &latest.ManifestConfig{
+		rc := latest.RenderConfig{
 			Generate: latest.Generate{
 				RawK8s: []string{"deployment.yaml"}},
 		}
-		mockCfg := mockConfig{workingDir: tmpDir.Root(),}
+		mockCfg := mockConfig{workingDir: tmpDir.Root()}
 		r, err := kubectl.New(mockCfg, rc, map[string]string{})
 		t.RequireNoError(err)
 		var b bytes.Buffer

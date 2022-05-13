@@ -123,7 +123,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	remoteDeploy := false
 	for _, pl := range pipelines.All() {
 		d := pl.Deploy
-		r := pl.Render
+		r := pl.Manifests
 		dCtx := &deployerCtx{runCtx, d}
 
 		if d.DockerDeploy != nil {

@@ -60,20 +60,20 @@ spec:
 func TestRender(t *testing.T) {
 	tests := []struct {
 		description  string
-		renderConfig *latest.ManifestConfig
+		renderConfig latest.RenderConfig
 		labels       map[string]string
 		expected     string
 	}{
 		{
 			description: "single manifest with no labels",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			expected: taggedPodYaml,
 		},
 		{
 			description: "single manifest with labels",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			labels:   map[string]string{"run.id": "test"},

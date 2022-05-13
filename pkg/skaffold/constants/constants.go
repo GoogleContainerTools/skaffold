@@ -26,7 +26,7 @@ const (
 	Init        = Phase("Init")
 	Build       = Phase("Build")
 	Test        = Phase("Test")
-	Render      = Phase("Manifests")
+	Render      = Phase("Render")
 	Deploy      = Phase("Deploy")
 	Verify      = Phase("Verify")
 	StatusCheck = Phase("StatusCheck")

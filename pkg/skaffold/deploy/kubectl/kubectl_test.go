@@ -241,8 +241,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
-					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Render: rc}}),
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{Manifests: rc}}),
 				},
 			}
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
@@ -333,7 +332,7 @@ func TestKubectlCleanup(t *testing.T) {
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Manifests: latest.ManifestConfig{Generate: test.generate}}}),
+						{Manifests: latest.RenderConfig{Generate: test.generate}}}),
 				},
 			}
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
@@ -626,7 +625,7 @@ func TestGCSManifests(t *testing.T) {
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Manifests: latest.ManifestConfig{Generate: test.generate}}}),
+						{Manifests: latest.RenderConfig{Generate: test.generate}}}),
 				},
 			}
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
