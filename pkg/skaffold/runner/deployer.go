@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
@@ -200,13 +201,21 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 	var defaultNamespace *string
 	var kubeContext string
 	statusCheckTimeout := -1
-
+	var statusCheck *bool
 	for _, d := range deployCfgs {
 		if d.KubeContext != "" {
 			if kubeContext != "" && kubeContext != d.KubeContext {
 				return nil, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
 			}
 			kubeContext = d.KubeContext
+		}
+		if d.StatusCheck != nil {
+			if statusCheck == nil {
+				statusCheck = d.StatusCheck
+			} else if statusCheck != d.StatusCheck {
+				// if we get conflicting values for status check from different skaffold configs, we turn status check off
+				statusCheck = util.BoolPtr(false)
+			}
 		}
 		if d.StatusCheckDeadlineSeconds != 0 && d.StatusCheckDeadlineSeconds != int(status.DefaultStatusCheckDeadline.Seconds()) {
 			if statusCheckTimeout != -1 && statusCheckTimeout != d.StatusCheckDeadlineSeconds {
@@ -250,7 +259,8 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
-	defaultDeployer, err := kubectl.NewDeployer(runCtx, labeller, k, hydrationDir)
+	dCtx := &deployerCtx{runCtx, latest.DeployConfig{StatusCheck: statusCheck, KubeContext: kubeContext, DeployType: latest.DeployType{KubectlDeploy: k}}}
+	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, hydrationDir)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
