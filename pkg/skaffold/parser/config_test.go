@@ -18,9 +18,18 @@ package parser
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -50,49 +59,49 @@ profiles:
 `
 )
 
-//func TestGetAllConfigs(t *testing.T) {
-//	for _, test := range tcs {
-//		testutil.Run(t, test.description, func(t *testutil.T) {
-//			tmpDir := t.NewTempDir()
-//			for i, d := range test.documents {
-//				var cfgs []string
-//				for j, c := range d.configs {
-//					id := fmt.Sprintf("%d%d", i, j)
-//					s := fmt.Sprintf(template, latest.Version, c.name, c.requiresStanza, id, id, id)
-//					cfgs = append(cfgs, s)
-//				}
-//				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
-//			}
-//			tmpDir.Chdir()
-//			var expected []schemaUtil.VersionedConfig
-//			if test.expected != nil {
-//				wd, _ := util.RealWorkDir()
-//				expected = test.expected(wd)
-//			}
-//			t.Override(&git.SyncRepo, func(ctx context.Context, g latest.GitInfo, _ config.SkaffoldOptions) (string, error) {
-//				return g.Repo, nil
-//			})
-//			cfgs, err := GetAllConfigs(context.Background(), config.SkaffoldOptions{
-//				Command:             "dev",
-//				ConfigurationFile:   test.documents[0].path,
-//				ConfigurationFilter: test.configFilter,
-//				Profiles:            test.profiles,
-//				PropagateProfiles:   test.applyProfilesRecursively,
-//				MakePathsAbsolute:   test.makePathsAbsolute,
-//			})
-//			if test.errCode == proto.StatusCode_OK {
-//				t.CheckDeepEqual(expected, cfgs)
-//			} else {
-//				var e sErrors.Error
-//				if errors.As(err, &e) {
-//					t.CheckDeepEqual(test.errCode, e.StatusCode())
-//				} else {
-//					t.Fail()
-//				}
-//			}
-//		})
-//	}
-//}
+func TestGetAllConfigs(t *testing.T) {
+	for _, test := range tcs {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			for i, d := range test.documents {
+				var cfgs []string
+				for j, c := range d.configs {
+					id := fmt.Sprintf("%d%d", i, j)
+					s := fmt.Sprintf(template, latest.Version, c.name, c.requiresStanza, id, id, id)
+					cfgs = append(cfgs, s)
+				}
+				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
+			}
+			tmpDir.Chdir()
+			var expected []schemaUtil.VersionedConfig
+			if test.expected != nil {
+				wd, _ := util.RealWorkDir()
+				expected = test.expected(wd)
+			}
+			t.Override(&git.SyncRepo, func(ctx context.Context, g latest.GitInfo, _ config.SkaffoldOptions) (string, error) {
+				return g.Repo, nil
+			})
+			cfgs, err := GetAllConfigs(context.Background(), config.SkaffoldOptions{
+				Command:             "dev",
+				ConfigurationFile:   test.documents[0].path,
+				ConfigurationFilter: test.configFilter,
+				Profiles:            test.profiles,
+				PropagateProfiles:   test.applyProfilesRecursively,
+				MakePathsAbsolute:   test.makePathsAbsolute,
+			})
+			if test.errCode == proto.StatusCode_OK {
+				t.CheckDeepEqual(expected, cfgs)
+			} else {
+				var e sErrors.Error
+				if errors.As(err, &e) {
+					t.CheckDeepEqual(test.errCode, e.StatusCode())
+				} else {
+					t.Fail()
+				}
+			}
+		})
+	}
+}
 
 var testSkaffoldYaml = `apiVersion: skaffold/v3alpha1
 kind: Config
