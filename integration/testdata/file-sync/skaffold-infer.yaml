@@ -10,5 +10,5 @@ build:
       infer:
       - '**/foo*'
 manifests:
-  rarYaml:
+  rawYaml:
     - pod.yaml
