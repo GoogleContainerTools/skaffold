@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/noop"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Renderer interface {
@@ -37,15 +38,14 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg render.Config, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
-	renderCfg := cfg.GetRenderConfig()
+func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
 	if usingLegacyHelmDeploy {
 		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Kpt == nil {
 		log.Entry(context.TODO()).Debug("setting up kubectl renderer")
-		return kubectl.New(cfg, labels)
+		return kubectl.New(cfg, renderCfg, labels)
 	}
 	log.Entry(context.TODO()).Infof("setting up kpt renderer")
-	return kpt.New(cfg, hydrationDir, labels)
+	return kpt.New(cfg, renderCfg, hydrationDir, labels)
 }

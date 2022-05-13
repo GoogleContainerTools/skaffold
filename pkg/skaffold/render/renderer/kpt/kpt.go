@@ -59,17 +59,16 @@ const (
 	DryFileName = "manifests.yaml"
 )
 
-func New(cfg render.Config, hydrationDir string,
-	labels map[string]string) (*Kpt, error) {
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), cfg.GetRenderConfig().Generate)
+func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string) (*Kpt, error) {
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return nil, err
 	}
 	var validator validate.Validator
-	if cfg.GetRenderConfig().Validate != nil {
+	if rCfg.Validate != nil {
 		var err error
-		validator, err = validate.NewValidator(*cfg.GetRenderConfig().Validate)
+		validator, err = validate.NewValidator(*rCfg.Validate)
 		if err != nil {
 			return nil, err
 		}
@@ -78,9 +77,9 @@ func New(cfg render.Config, hydrationDir string,
 	}
 
 	var transformer transform.Transformer
-	if cfg.GetRenderConfig().Transform != nil {
+	if rCfg.Transform != nil {
 		var err error
-		transformer, err = transform.NewTransformer(*cfg.GetRenderConfig().Transform)
+		transformer, err = transform.NewTransformer(*rCfg.Transform)
 		if err != nil {
 			return nil, err
 		}

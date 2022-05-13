@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -82,7 +81,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("getting render output path: %w", err)
 	}
 
-	renderer, err := renderer.New(runCtx, hydrationDir, labeller.Labels(), runCtx.UsingLegacyHelmDeploy())
+	renderer, err := runner.GetRenderer(ctx, runCtx, hydrationDir, labeller.Labels(), runCtx.UsingLegacyHelmDeploy())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating renderer: %w", err)
