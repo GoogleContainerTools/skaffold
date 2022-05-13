@@ -766,7 +766,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 				msg := fmt.Sprintf("Manifest file %q referenced in skaffold config could not be found", pattern)
 				errMsg := wrapWithContext(c, ErrorWithLocation{
 					Error:    fmt.Errorf(msg),
-					Location: c.YAMLInfos.Locate(&c.Deploy.KubectlDeploy.Manifests),
+					Location: c.YAMLInfos.Locate(&c.Manifests.Generate.RawK8s),
 				})
 				errs = append(errs, ErrorWithLocation{
 					Error: sErrors.NewError(errMsg[0].Error,
