@@ -55,8 +55,6 @@ var syncTests = []struct {
 }
 
 func TestDevSync(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -84,8 +82,6 @@ func TestDevSync(t *testing.T) {
 }
 
 func TestDevSyncDefaultNamespace(t *testing.T) {
-	// TODO: fix https://github.com/GoogleContainerTools/skaffold/issues/7286
-	t.Skipf("Fix https://github.com/GoogleContainerTools/skaffold/issues/7286")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	for _, test := range syncTests {
@@ -113,8 +109,6 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 }
 
 func TestDevAutoSync(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

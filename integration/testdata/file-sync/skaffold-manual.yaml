@@ -10,7 +10,6 @@ build:
       manual:
       - src: '**/foo*'
         dest: /
-deploy:
- kubectl:
-   manifests:
+manifests:
+  rarYaml:
    - pod.yaml

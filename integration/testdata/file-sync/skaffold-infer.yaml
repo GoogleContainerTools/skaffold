@@ -9,7 +9,6 @@ build:
     sync:
       infer:
       - '**/foo*'
-deploy:
- kubectl:
-   manifests:
-   - pod.yaml
+manifests:
+  rarYaml:
+    - pod.yaml
