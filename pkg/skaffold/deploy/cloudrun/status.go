@@ -223,10 +223,15 @@ func (r *runResource) checkStatus(crClient *run.APIService) {
 	}
 	// find the ready condition
 	var ready *run.GoogleCloudRunV1Condition
-	for _, cond := range res.Status.Conditions {
-		if cond.Type == "Ready" {
-			ready = cond
-			break
+
+	// If the status is still showing the old generation, treat it the
+	// same as no status being set.
+	if res.Status.ObservedGeneration == res.Metadata.Generation {
+		for _, cond := range res.Status.Conditions {
+			if cond.Type == "Ready" {
+				ready = cond
+				break
+			}
 		}
 	}
 	if ready == nil {
