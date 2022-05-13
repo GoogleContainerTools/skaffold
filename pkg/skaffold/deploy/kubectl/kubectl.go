@@ -221,6 +221,15 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return fmt.Errorf("nothing to deploy")
 	}
 
+	// Add debug transformations
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
+	if err != nil {
+		return err
+	}
+	if manifests, err = manifest.ApplyTransforms(manifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
+		return err
+	}
+
 	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
 		endTrace(instrumentation.TraceEndError(err))

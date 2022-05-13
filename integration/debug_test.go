@@ -27,13 +27,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDebug(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -123,8 +121,6 @@ func TestDebug(t *testing.T) {
 }
 
 func TestDockerDebug(t *testing.T) {
-	// TODO: fix https://github.com/GoogleContainerTools/skaffold/issues/7030
-	t.Skipf("Fix as https://github.com/GoogleContainerTools/skaffold/issues/7030")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	t.Run("debug docker deployment", func(t *testing.T) {
@@ -197,9 +193,6 @@ func checkSupportContainer(containers []dockertypes.Container, found *bool) {
 }
 
 func TestFilterWithDebugging(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `filter` currently expects to receive a digested yaml
 	renderedOutput := skaffold.Render("--digest-source=local").InDir("examples/getting-started").RunOrFailOutput(t)
@@ -222,11 +215,7 @@ func TestFilterWithDebugging(t *testing.T) {
 	})
 }
 
-/*
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -241,9 +230,6 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 }
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -277,4 +263,3 @@ func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string)
 		}
 	}
 }
-*/

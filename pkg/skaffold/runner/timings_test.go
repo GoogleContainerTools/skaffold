@@ -250,7 +250,7 @@ func TestTimingsRender(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
-			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
+			t.CheckMatches(test.shouldLog, entryAtIndex(hook, 1))
 		})
 	}
 }
@@ -334,6 +334,14 @@ func lastInfoEntry(hook *logrustest.Hook) string {
 		if entry.Level == logrus.InfoLevel {
 			return entry.Message
 		}
+	}
+	return ""
+}
+
+func entryAtIndex(hook *logrustest.Hook, i int) string {
+	e := hook.AllEntries()
+	if len(e) > i {
+		return e[i].Message
 	}
 	return ""
 }

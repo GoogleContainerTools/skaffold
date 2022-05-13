@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -74,9 +75,11 @@ func doRender(ctx context.Context, out io.Writer) error {
 			}
 		}
 
-		if _, errR := r.Render(ctx, out, bRes, offline, opts.RenderOutput); errR != nil {
+		manifests, errR := r.Render(ctx, out, bRes, offline, opts.RenderOutput)
+		if errR != nil {
 			return fmt.Errorf("rendering manifests: %w", errR)
 		}
+		manifest.Write(manifests.String(), opts.RenderOutput, out)
 		return nil
 	})
 }
