@@ -62,14 +62,14 @@ metadata:
 func TestRender(t *testing.T) {
 	tests := []struct {
 		description     string
-		renderConfig    *latest.RenderConfig
+		renderConfig    latest.RenderConfig
 		config          *runcontext.RunContext
 		originalKptfile string
 		updatedKptfile  string
 	}{
 		{
 			description: "single manifest, no hydration rule",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			originalKptfile: initKptfile,
@@ -82,7 +82,7 @@ pipeline: {}
 		},
 		{
 			description: "manifests with validation rule.",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latest.Validator{{Name: "kubeval"}},
 			},
@@ -98,7 +98,7 @@ pipeline:
 		},
 		{
 			description: "manifests with updated validation rule.",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latest.Validator{{Name: "kubeval"}},
 			},
@@ -121,7 +121,7 @@ pipeline:
 		},
 		{
 			description: "manifests with transformation rule.",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate:  latest.Generate{RawK8s: []string{"pod.yaml"}},
 				Transform: &[]latest.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
 			},
@@ -139,7 +139,7 @@ pipeline:
 		},
 		{
 			description: "manifests with updated transformation rule.",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate:  latest.Generate{RawK8s: []string{"pod.yaml"}},
 				Transform: &[]latest.Transformer{{Name: "set-labels", ConfigMap: []string{"owner:tester"}}},
 			},
@@ -171,10 +171,9 @@ pipeline:
 				Touch("empty.ignored").
 				Chdir()
 			mockCfg := mockConfig{
-				renderConfig: test.renderConfig,
-				workingDir:   tmpDirObj.Root(),
+				workingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
+			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -236,14 +235,14 @@ inventory:
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Chdir()
+			renderConfig := latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
+				Validate: &[]latest.Validator{{Name: "kubeval"}},
+			}
 			mockCfg := mockConfig{
-				renderConfig: &latest.RenderConfig{
-					Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
-					Validate: &[]latest.Validator{{Name: "kubeval"}},
-				},
 				workingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
+			r, err := New(mockCfg, renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -259,11 +258,9 @@ inventory:
 }
 
 type mockConfig struct {
-	renderConfig *latest.RenderConfig
-	workingDir   string
+	workingDir string
 }
 
-func (mc mockConfig) GetRenderConfig() *latest.RenderConfig       { return mc.renderConfig }
 func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
 func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
 func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }

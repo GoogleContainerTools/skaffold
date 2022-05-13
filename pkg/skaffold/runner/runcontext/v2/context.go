@@ -85,6 +85,7 @@ func (ps Pipelines) Artifacts() []*latest.Artifact {
 	return artifacts
 }
 
+// TODO: Clean up code duplication
 func (ps Pipelines) DeployConfigs() []latest.DeployConfig {
 	var cfgs []latest.DeployConfig
 	for _, p := range ps.pipelines {
@@ -99,6 +100,14 @@ func (ps Pipelines) Deployers() []latest.DeployConfig {
 		deployers = append(deployers, p.Deploy)
 	}
 	return deployers
+}
+
+func (ps Pipelines) Renderers() []latest.RenderConfig {
+	var rcs []latest.RenderConfig
+	for _, p := range ps.pipelines {
+		rcs = append(rcs, p.Render)
+	}
+	return rcs
 }
 
 func (ps Pipelines) TestCases() []*latest.TestCase {
@@ -164,6 +173,8 @@ func (rc *RunContext) Artifacts() []*latest.Artifact { return rc.Pipelines.Artif
 func (rc *RunContext) DeployConfigs() []latest.DeployConfig { return rc.Pipelines.DeployConfigs() }
 
 func (rc *RunContext) Deployers() []latest.DeployConfig { return rc.Pipelines.Deployers() }
+
+func (rc *RunContext) Renderers() []latest.RenderConfig { return rc.Pipelines.Renderers() }
 
 func (rc *RunContext) TestCases() []*latest.TestCase { return rc.Pipelines.TestCases() }
 
