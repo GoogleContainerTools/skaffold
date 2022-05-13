@@ -100,7 +100,11 @@ func TestPollResourceStatus(t *testing.T) {
 			responses: []run.Service{
 				{
 					ApiVersion: "serving.knative.dev/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 1,
+					},
 					Status: &run.ServiceStatus{
+						ObservedGeneration: 1,
 						Conditions: []*run.GoogleCloudRunV1Condition{
 							{
 								Type:    "Ready",
@@ -119,7 +123,11 @@ func TestPollResourceStatus(t *testing.T) {
 			responses: []run.Service{
 				{
 					ApiVersion: "serving.knative.dev/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 1,
+					},
 					Status: &run.ServiceStatus{
+						ObservedGeneration: 1,
 						Conditions: []*run.GoogleCloudRunV1Condition{
 							{
 								Type:    "Ready",
@@ -131,7 +139,66 @@ func TestPollResourceStatus(t *testing.T) {
 				},
 				{
 					ApiVersion: "serving.knative.dev/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 1,
+					},
 					Status: &run.ServiceStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:    "Ready",
+								Status:  "True",
+								Message: "Revision Ready",
+							},
+						},
+					},
+				},
+			},
+			expected: &proto.ActionableErr{Message: "Service started", ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+		},
+		{
+			description: "test previous deploy failed reports correctly",
+			resource:    ResourceName{name: "test-service", path: "projects/tp/locations/tr/services/test-service"},
+			responses: []run.Service{
+				{
+					ApiVersion: "serving.knative.dev/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 2,
+					},
+					Status: &run.ServiceStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:    "Ready",
+								Status:  "False",
+								Message: "Pre-existing failure",
+							},
+						},
+					},
+				},
+				{
+					ApiVersion: "serving.knative.dev/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 2,
+					},
+					Status: &run.ServiceStatus{
+						ObservedGeneration: 2,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:    "Ready",
+								Status:  "Unknown",
+								Message: "Deploying Revision",
+							},
+						},
+					},
+				},
+				{
+					ApiVersion: "serving.knative.dev/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 2,
+					},
+					Status: &run.ServiceStatus{
+						ObservedGeneration: 2,
 						Conditions: []*run.GoogleCloudRunV1Condition{
 							{
 								Type:    "Ready",

@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"testing"
 
+	"google.golang.org/api/run/v1"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
-	"google.golang.org/api/run/v1"
 )
 
 func TestDeployCloudRun(t *testing.T) {
-
 	MarkIntegrationTest(t, NeedsGcp)
 
 	// Other integration tests run with the --default-repo option.
@@ -40,7 +40,6 @@ func TestDeployCloudRun(t *testing.T) {
 	if err = checkReady(svc); err != nil {
 		t.Fatal(err)
 	}
-
 }
 
 func getRunService(ctx context.Context, project, region, service string) (*run.Service, error) {
