@@ -569,14 +569,26 @@ type Generate struct {
 	// RawK8s TODO: add description.
 	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
 
-	// Kustomize TODO: add description.
-	Kustomize []string `yaml:"kustomize,omitempty" skaffold:"filepath"`
+	// Kustomize defines the paths to be modified with kustomize, along with extra
+	// flags to be passed to kustomize
+	Kustomize *Kustomize `yaml:"kustomize,omitempty"`
 
 	// Helm TODO: add description.
 	Helm *Helm `yaml:"helm,omitempty"`
 
 	// Kpt TODO: add description.
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+}
+
+// Kustomize defines the paths to be modified with kustomize, along with
+// extra flags to be passed to kustomize
+type Kustomize struct {
+	// Paths is the path to Kustomization files.
+	// Defaults to `["."]`.
+	Paths []string `yaml:"paths, omitempty" skaffold:"filepath"`
+
+	// BuildArgs are additional args passed to `kustomize build`.
+	BuildArgs []string `yaml:"buildArgs,omitempty"`
 }
 
 // Helm defines the manifests from helm releases.
