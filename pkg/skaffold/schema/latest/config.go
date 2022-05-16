@@ -390,6 +390,11 @@ type GoogleCloudBuild struct {
 
 	// WorkerPool configures a pool of workers to run the build.
 	WorkerPool string `yaml:"workerPool,omitempty"`
+
+	// Region configures the region to run the build. If WorkerPool is configured, the region will
+	// be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured,
+	// the build will be run in global(non-region).
+	Region string `yaml:"region,omitempty"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
