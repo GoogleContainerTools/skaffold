@@ -579,7 +579,7 @@ type Generate struct {
 type Kustomize struct {
 	// Paths is the path to Kustomization files.
 	// Defaults to `["."]`.
-	Paths []string `yaml:"paths, omitempty" skaffold:"filepath"`
+	Paths []string `yaml:"paths,omitempty" skaffold:"filepath"`
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`

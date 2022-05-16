@@ -149,6 +149,7 @@ manifests:
   rawYaml:
     - k8s-*
   kustomize:
+    paths:
     - kustomization-main
   helm:
     releases:
@@ -181,7 +182,8 @@ profiles:
       rawYaml:
       - k8s-*
       kustomize:
-      - kustomization-test
+        paths:
+        - kustomization-test
     deploy:
       kubectl: {}
   - name: test local
@@ -195,6 +197,9 @@ profiles:
     manifests:
       rawYaml:
       - k8s-*
+      kustomize:
+        paths:
+        - "."
     deploy:
       kubectl: {}
 `
