@@ -216,6 +216,7 @@ func TestFilterWithDebugging(t *testing.T) {
 }
 
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
+	t.Skipf("Disable the test dues to flakyness.")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
