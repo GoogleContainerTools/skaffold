@@ -394,6 +394,7 @@ type GoogleCloudBuild struct {
 	// Region configures the region to run the build. If WorkerPool is configured, the region will
 	// be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured,
 	// the build will be run in global(non-regional).
+	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations)
 	Region string `yaml:"region,omitempty"`
 }
 
