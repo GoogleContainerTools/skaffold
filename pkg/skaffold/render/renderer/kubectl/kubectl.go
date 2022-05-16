@@ -55,7 +55,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string) 
 	}, nil
 }
 
-func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, _ string) (manifest.ManifestList, error) {
+func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestList, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_KubectlManifests")
 	log.Entry(ctx).Infof("rendering using kubectl")
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
