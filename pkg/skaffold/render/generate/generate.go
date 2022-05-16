@@ -91,34 +91,18 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 	var manifests manifest.ManifestList
 
 	// Generate kustomize Manifests
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
-	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
-		return nil, err
-	}
-	endTrace()
-	kustomizePathMap := make(map[string]bool)
-	for _, path := range kustomizePaths {
-		if dir, ok := isKustomizeDir(path); ok {
-			kustomizePathMap[dir] = true
-		}
-	}
-	for kPath := range kustomizePathMap {
-		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
-		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
-		out, err := util.RunCmdOut(ctx, cmd)
+	if g.config.Kustomize != nil && len(g.config.Kustomize.Paths) != 0 {
+		kustomizeManifests, err := g.generateKustomizeManifests(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if len(out) == 0 {
-			continue
+		for _, m := range kustomizeManifests {
+			manifests.Append(m)
 		}
-		manifests.Append(out)
 	}
 
 	// Generate in-place hydrated kpt Manifests
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
 	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
@@ -171,6 +155,38 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 	}
 
 	// TODO(yuwenma): helm resources. `render.generate.helmCharts`
+	return manifests, nil
+}
+
+func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, error) {
+	var manifests [][]byte
+
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
+	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
+		return nil, err
+	}
+	endTrace()
+	kustomizePathMap := make(map[string]bool)
+	for _, path := range kustomizePaths {
+		if dir, ok := isKustomizeDir(path); ok {
+			kustomizePathMap[dir] = true
+		}
+	}
+	for kPath := range kustomizePathMap {
+		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
+		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
+		out, err := util.RunCmdOut(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
+		if len(out) == 0 {
+			continue
+		}
+		manifests = append(manifests, out)
+	}
+
 	return manifests, nil
 }
 
@@ -241,13 +257,16 @@ func isKptDir(path string) (string, bool) {
 // only be called when a rendering action is needed (normally happens after the file watcher registration).
 func (g Generator) walkManifests() ([]string, error) {
 	var dependencyPaths []string
+
 	// Generate kustomize Manifests
-	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
-		return nil, err
+	if g.config.Kustomize != nil {
+		kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
+		if err != nil {
+			event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
+			return nil, err
+		}
+		dependencyPaths = append(dependencyPaths, kustomizePaths...)
 	}
-	dependencyPaths = append(dependencyPaths, kustomizePaths...)
 
 	// Generate in-place hydrated kpt Manifests
 	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
