@@ -245,6 +245,7 @@ func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
 	waitForDebugEvent(t, client, rpcAddr)
 }
 
+//nolint add lint back after https://github.com/GoogleContainerTools/skaffold/issues/7405
 func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string) {
 	client.WaitForPodsReady()
 
