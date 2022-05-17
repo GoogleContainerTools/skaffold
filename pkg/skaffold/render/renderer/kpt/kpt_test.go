@@ -177,7 +177,9 @@ pipeline:
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
-					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
+					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
+					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true)
@@ -246,7 +248,9 @@ inventory:
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
-					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
+					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
+					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{},
 				true)
