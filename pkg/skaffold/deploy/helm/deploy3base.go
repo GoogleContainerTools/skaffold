@@ -84,8 +84,8 @@ var (
 	osExecutable = os.Executable
 )
 
-// Deployer deploys workflows using the helm CLI
-type Deployer struct {
+// Deployer3 deploys workflows using the helm CLI 3.0.0
+type Deployer3 struct {
 	*latest.HelmDeploy
 
 	accessor      access.Accessor
@@ -128,8 +128,8 @@ type Config interface {
 	JSONParseConfig() latest.JSONParseConfig
 }
 
-// NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy) (*Deployer, error) {
+// NewDeployer returns a configured Deployer3.  Returns an error if current version of helm is less than 3.0.0.
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy) (*Deployer3, error) {
 	hv, err := binVer(ctx)
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -155,7 +155,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
 	logger := component.NewLogger(cfg, kubectl, podSelector, &namespaces)
-	return &Deployer{
+	return &Deployer3{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
 		namespaces:     &namespaces,
@@ -179,41 +179,41 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 	}, nil
 }
 
-func (h *Deployer) trackNamespaces(namespaces []string) {
+func (h *Deployer3) trackNamespaces(namespaces []string) {
 	*h.namespaces = deployutil.ConsolidateNamespaces(*h.namespaces, namespaces)
 }
 
-func (h *Deployer) GetAccessor() access.Accessor {
+func (h *Deployer3) GetAccessor() access.Accessor {
 	return h.accessor
 }
 
-func (h *Deployer) GetDebugger() debug.Debugger {
+func (h *Deployer3) GetDebugger() debug.Debugger {
 	return h.debugger
 }
 
-func (h *Deployer) GetLogger() log.Logger {
+func (h *Deployer3) GetLogger() log.Logger {
 	return h.logger
 }
 
-func (h *Deployer) GetStatusMonitor() status.Monitor {
+func (h *Deployer3) GetStatusMonitor() status.Monitor {
 	return h.statusMonitor
 }
 
-func (h *Deployer) GetSyncer() sync.Syncer {
+func (h *Deployer3) GetSyncer() sync.Syncer {
 	return h.syncer
 }
 
-func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
+func (h *Deployer3) RegisterLocalImages(images []graph.Artifact) {
 	h.localImages = images
 }
 
-func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
+func (h *Deployer3) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
+func (h *Deployer3) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
@@ -287,7 +287,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 }
 
 // Dependencies returns a list of files that the deployer depends on.
-func (h *Deployer) Dependencies() ([]string, error) {
+func (h *Deployer3) Dependencies() ([]string, error) {
 	var deps []string
 
 	for _, release := range h.Releases {
@@ -346,7 +346,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
+func (h *Deployer3) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "helm",
 	})
@@ -385,7 +385,7 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+func (h *Deployer3) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "helm",
 	})
@@ -448,11 +448,11 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
-func (h *Deployer) HasRunnableHooks() bool {
+func (h *Deployer3) HasRunnableHooks() bool {
 	return len(h.HelmDeploy.LifecycleHooks.PreHooks) > 0 || len(h.HelmDeploy.LifecycleHooks.PostHooks) > 0
 }
 
-func (h *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
+func (h *Deployer3) PreDeployHooks(ctx context.Context, out io.Writer) error {
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
 	if err := h.hookRunner.RunPreHooks(childCtx, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -462,7 +462,7 @@ func (h *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (h *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
+func (h *Deployer3) PostDeployHooks(ctx context.Context, out io.Writer) error {
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PostHooks")
 	if err := h.hookRunner.RunPostHooks(childCtx, out); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -473,7 +473,7 @@ func (h *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 }
 
 // deployRelease deploys a single release
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
+func (h *Deployer3) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
 	var err error
 	opts := installOpts{
 		releaseName: releaseName,
@@ -590,7 +590,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 }
 
 // getReleaseManifest confirms that a release is visible to helm and returns the release manifest
-func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
+func (h *Deployer3) getReleaseManifest(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because sometimes a release may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
 	opts.MaxElapsedTime = 4 * time.Second
@@ -614,7 +614,7 @@ func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, n
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive
-func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
+func (h *Deployer3) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	// Allow a test to sneak a predictable path in
 	tmpDir := h.pkgTmpDir
 

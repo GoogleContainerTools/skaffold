@@ -117,7 +117,7 @@ func getArgs(releaseName string, namespace string) []string {
 }
 
 // installArgs calculates the correct arguments to "helm install"
-func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, o installOpts) ([]string, error) {
+func (h *Deployer3) installArgs(r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, o installOpts) ([]string, error) {
 	var args []string
 	if o.upgrade {
 		args = append(args, "upgrade", o.releaseName)
