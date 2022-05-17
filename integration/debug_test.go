@@ -231,6 +231,7 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 }
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
+	t.Skipf("Disable the test dues to flakyness. https://github.com/GoogleContainerTools/skaffold/issues/7405")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
