@@ -108,8 +108,6 @@ func Set(c *latest.SkaffoldConfig) error {
 	}
 
 	setDefaultTestWorkspace(c)
-	SetDefaultRenderer(c)
-	SetDefaultDeployer(c)
 	return nil
 }
 

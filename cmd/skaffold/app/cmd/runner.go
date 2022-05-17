@@ -83,6 +83,7 @@ func runContext(ctx context.Context, out io.Writer, opts config.SkaffoldOptions)
 	if err != nil {
 		return nil, nil, err
 	}
+	setDefaultRendererAndDeployer(cfgSet)
 
 	if err := validation.Process(cfgSet, validation.GetValidationOpts(opts)); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
@@ -148,4 +149,14 @@ func warnIfUpdateIsAvailable() {
 	if warning != "" {
 		log.Entry(context.TODO()).Warn(warning)
 	}
+}
+
+func setDefaultRendererAndDeployer(configs parser.SkaffoldConfigSet) {
+	// do not set a default deployer or renderer in a multi-config application.
+	if len(configs) > 1 {
+		return
+	}
+	// there always exists at least one config
+	defaults.SetDefaultRenderer(configs[0].SkaffoldConfig)
+	defaults.SetDefaultDeployer(configs[0].SkaffoldConfig)
 }
