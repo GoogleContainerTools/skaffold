@@ -63,12 +63,12 @@ func TestDebug(t *testing.T) {
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
 		},
-		//{
+		//  {
 		//	description:   "helm",
 		//	dir:           "examples/helm-deployment",
 		//	deployments:   []string{"skaffold-helm"},
 		//	ignoreWorkdir: true, // dockerfile doesn't have a workdir
-		//}, fix in https://github.com/GoogleContainerTools/skaffold/issues/7419
+		// }, fix in https://github.com/GoogleContainerTools/skaffold/issues/7419
 		{
 			description:   "modules",
 			dir:           "examples/multi-config-microservices",
