@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -86,38 +87,41 @@ func TestDeployConfig(t *testing.T) {
 func TestGetImages(t *testing.T) {
 	tests := []struct {
 		description string
-		input       map[string][]string
-		runs        *testutil.FakeCmd
-		shouldLog   []string
+		values      []string
+		templates   []string
+		cmd         string
+		err         error
+		shouldMatch string
 		expected    []string
 	}{
 		{
 			description: "helm templates multiple value files",
-			input: map[string][]string{
-				"backend": {"backend/val.yml", "backend/values.yaml"},
-			},
-			runs:     testutil.CmdRunOut("helm template backend -f backend/val.yml -f backend/values.yaml --dry-run ", backendTemp),
-			expected: []string{"go-guestbook-backend"},
+			templates:   []string{backendTemp},
+			values:      []string{"backend/val.yml", "backend/values.yaml"},
+			cmd:         "helm template backend -f backend/val.yml -f backend/values.yaml",
+			expected:    []string{"go-guestbook-backend"},
 		},
 		{
 			description: "no values files",
-			input:       map[string][]string{"backend": {}},
-			runs:        testutil.CmdRunOut("helm template backend --dry-run ", backendTemp),
+			values:      []string{},
+			cmd:         "helm template backend",
+			templates:   []string{backendTemp},
 			expected:    []string{"go-guestbook-backend"},
 		},
 		{
 			description: "err parsing template",
-			input:       map[string][]string{"backend": {"backend/values.yaml"}},
-			runs:        testutil.CmdRunOut("helm template backend -f backend/values.yaml --dry-run ", "invalid"),
-			shouldLog:   []string{"could not initialize builder for helm chart \"backend\".\nCould not parse \"/usr/local/bin/helm template backend -f backend/values.yaml --dry-run \" output due to error: reading Kubernetes YAML: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid` into kubernetes.yamlObject"},
+			values:      []string{"backend/values.yaml"},
+			cmd:         "helm template backend -f backend/values.yaml",
+			templates:   []string{"invalid"},
+			shouldMatch: "reading Kubernetes YAML: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid` into kubernetes.yamlObject",
 		},
 		{
 			description: "err when running helm template",
-			input:       map[string][]string{"backend": {"backend/values.yaml"}},
-			runs:        testutil.CmdRunOutErr("helm template backend -f backend/values.yaml --dry-run ", "", errors.New("invalid")),
-			shouldLog: []string{`could not initialize builder for helm chart "backend".
-Command "/usr/local/bin/helm template backend -f backend/values.yaml --dry-run " encountered error: invalid`},
-			expected: []string{},
+			values:      []string{"backend/values.yaml"},
+			cmd:         "helm template backend -f backend/values.yaml",
+			err:         errors.New("invalid"),
+			shouldMatch: "encountered error: invalid",
+			expected:    []string{},
 		},
 	}
 	for _, test := range tests {
@@ -125,23 +129,30 @@ Command "/usr/local/bin/helm template backend -f backend/values.yaml --dry-run "
 			t.Override(&readFile, func(_ string) ([]byte, error) {
 				return []byte{}, nil
 			})
-			h := newHelmInitializer(test.input)
+			h := newHelmInitializer(map[string][]string{"backend": test.values})
 			hook := &logrustest.Hook{}
 			log.AddHook(hook)
-			t.Override(&util.DefaultExecCommand, test.runs)
+			tmpDir := t.NewTempDir()
+			for i, contents := range test.templates {
+				tmpDir.Write(fmt.Sprintf("template/template_%d.yaml", i), contents)
+			}
+			cmd := fmt.Sprintf("%s --output-dir %s", test.cmd, tmpDir.Path("template"))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(cmd, test.err))
+			t.Override(&tempDir, func(dir, pattern string) (name string, err error) {
+				return tmpDir.Path("template"), nil
+			})
 			images := h.GetImages()
 			t.CheckElementsMatch(test.expected, images)
-			t.CheckElementsMatch(test.shouldLog, allEntries(hook))
+			t.CheckMatches(test.shouldMatch, lastEntryHook(hook))
 		})
 	}
 }
 
-func allEntries(hook *logrustest.Hook) []string {
-	logs := []string{}
+func lastEntryHook(hook *logrustest.Hook) string {
 	for _, entry := range hook.AllEntries() {
-		logs = append(logs, entry.Message)
+		return entry.Message
 	}
-	return logs
+	return ""
 }
 
 var backendTemp = `---

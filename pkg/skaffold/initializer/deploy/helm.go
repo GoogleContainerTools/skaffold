@@ -39,8 +39,9 @@ const (
 
 // for testing
 var (
-	readFile = ioutil.ReadFile
-	tempDir  = ioutil.TempDir
+	readFile    = ioutil.ReadFile
+	tempDir     = ioutil.TempDir
+	osRemoveAll = os.RemoveAll
 )
 
 // helm implements deploymentInitializer for the helm deployer.
@@ -120,11 +121,11 @@ func (h helm) GetImages() []string {
 	// Run helm template in each top level dir.
 	// Parse templated manifest files and then get image names.
 	artifacts := []string{}
-	td, err := tempDir(os.TempDir(), "skaffold_")
+	td, err := tempDir("", "skaffold_")
 	if err != nil {
 		log.Entry(context.TODO()).Fatalf("cannot create temporary directory. Encountered error: %s", err)
 	}
-	defer os.RemoveAll(td)
+	defer osRemoveAll(td)
 	for _, ch := range h.charts {
 		args := []string{"template", ch.path}
 		for _, v := range ch.valueFiles {
