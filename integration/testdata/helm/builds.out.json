@@ -1,0 +1,1 @@
+{"builds":[{"imageName":"gcr.io/k8s-skaffold/skaffold-helm","tag":"gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenselettersandnumbers"}]}

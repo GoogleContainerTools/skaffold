@@ -28,11 +28,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -231,26 +228,18 @@ spec:
 func TestHelmRender(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// TODO Fix test https://github.com/GoogleContainerTools/skaffold/issues/7285
-	t.Skipf("Fix todo https://github.com/GoogleContainerTools/skaffold/issues/7285")
 
 	tests := []struct {
 		description  string
+		dir          string
+		args         []string
 		builds       []graph.Artifact
 		helmReleases []latest.HelmRelease
 		expectedOut  string
 	}{
 		{
 			description: "Bare bones render",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gke-loadbalancer",
-					Tag:       "gke-loadbalancer:test",
-				},
-			},
-			helmReleases: []latest.HelmRelease{{
-				Name:      "gke-loadbalancer",
-				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
-			}},
+			dir:         "testdata/gke_loadbalancer",
 			expectedOut: `---
 # Source: loadbalancer-helm/templates/k8s.yaml
 apiVersion: v1
@@ -296,19 +285,8 @@ spec:
 		},
 		{
 			description: "A more complex template",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/k8s-skaffold/skaffold-helm",
-					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",
-				},
-			},
-			helmReleases: []latest.HelmRelease{{
-				Name:      "skaffold-helm",
-				ChartPath: "testdata/helm/skaffold-helm",
-				SetValues: map[string]string{
-					"pullPolicy": "Always",
-				},
-			}},
+			dir:         "testdata/helm",
+			args:        []string{"--profile=helm-render"},
 			expectedOut: `---
 # Source: skaffold-helm/templates/service.yaml
 apiVersion: v1
@@ -386,26 +364,10 @@ spec:
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer, err := helm.NewDeployer(context.Background(), &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
-								Releases: test.helmReleases,
-							},
-						},
-					},
-				}}),
-			}, &label.DefaultLabeller{}, &latest.LegacyHelmDeploy{
-				Releases: test.helmReleases,
-			}, nil)
-			t.RequireNoError(err)
-			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, true, "")
+		t.Run(test.description, func(t *testing.T) {
+			out := skaffold.Render(append([]string{"--build-artifacts=builds.out.json"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, b.String())
+			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
 		})
 	}
 }
