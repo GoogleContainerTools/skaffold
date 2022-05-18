@@ -29,6 +29,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
+	backoff "github.com/cenkalti/backoff/v4"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
@@ -55,8 +58,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/blang/semver"
-	backoff "github.com/cenkalti/backoff/v4"
 )
 
 var (

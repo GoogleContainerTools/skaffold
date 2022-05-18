@@ -47,7 +47,7 @@ func NewDeployer31(ctx context.Context, cfg Config, labeller *label.DefaultLabel
 // Deploy should ensure that the build results are deployed to the Kubernetes
 // cluster.
 func (h *Deployer31) Deploy(ctx context.Context, io io.Writer, graph []graph.Artifact) error {
-	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
+	_, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm31",
 	})
 	defer endTrace()
