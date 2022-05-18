@@ -1,5 +1,5 @@
 # Use base golang image from Docker Hub
-FROM golang:1.16 as build
+FROM golang:1.17 as build
 
 WORKDIR /app
 

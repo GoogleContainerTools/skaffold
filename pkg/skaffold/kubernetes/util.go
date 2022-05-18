@@ -54,14 +54,36 @@ func HasKubernetesFileExtension(n string) bool {
 
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
-	_, err := parseKubernetesObjects(file)
+	_, err := ParseImagesFromKubernetesYaml(file)
 	return err == nil
 }
 
 // ParseImagesFromKubernetesYaml parses the kubernetes yamls, and if it finds at least one
 // valid Kubernetes object, it will return the images referenced in them.
 func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
-	k8sObjects, err := parseKubernetesObjects(filepath)
+	f, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("opening config file: %w", err)
+	}
+	defer f.Close()
+
+	k8sObjects, err := parseKubernetesObjects(bufio.NewReader(f))
+	if err != nil {
+		return nil, err
+	}
+
+	var images []string
+	for _, k8sObject := range k8sObjects {
+		images = append(images, parseImagesFromYaml(k8sObject)...)
+	}
+
+	return images, nil
+}
+
+// ParseImagesFromKubernetesYamlBytes parses the kubernetes yamls bytes, and if it finds at least one
+// valid Kubernetes object, it will return the images referenced in them.
+func ParseImagesFromKubernetesYamlBytes(r *bufio.Reader) ([]string, error) {
+	k8sObjects, err := parseKubernetesObjects(r)
 	if err != nil {
 		return nil, err
 	}
@@ -78,14 +100,8 @@ func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 // to determine if a provided yaml file is a valid k8s manifest, as detailed in
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields.
 // If so, it will return the parsed objects.
-func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
-	f, err := os.Open(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("opening config file: %w", err)
-	}
-	defer f.Close()
-
-	r := k8syaml.NewYAMLReader(bufio.NewReader(f))
+func parseKubernetesObjects(rb *bufio.Reader) ([]yamlObject, error) {
+	r := k8syaml.NewYAMLReader(rb)
 
 	var k8sObjects []yamlObject
 

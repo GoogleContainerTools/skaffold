@@ -17,14 +17,19 @@ limitations under the License.
 package deploy
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -113,15 +118,31 @@ func (h helm) Validate() error {
 }
 
 // we don't generate manifests for helm
-func (h helm) AddManifestForImage(string, string) {
-
-}
+func (h helm) AddManifestForImage(string, string) {}
 
 // GetImages return an empty string for helm.
 func (h helm) GetImages() []string {
+	// Run helm template in each dir.
+	// Parse manifests and then get image names.
 	artifacts := []string{}
 	for _, ch := range h.charts {
-		artifacts = append(artifacts, ch.name)
+		args := []string{"template", ch.path}
+		for _, v := range ch.valueFiles {
+			args = append(args, "-f", v)
+		}
+		args = append(args, "--dry-run")
+		cmd := exec.Command("helm", args...)
+		mb, err := util.RunCmdOut(context.TODO(), cmd)
+		if err != nil {
+			log.Entry(context.TODO()).Warnf("could not initialize builder for helm chart %q.\nCommand %q encountered error: %s", ch.name, cmd, err)
+			continue
+		}
+		images, err := kubernetes.ParseImagesFromKubernetesYamlBytes(bufio.NewReader(bytes.NewReader(mb)))
+		if err != nil {
+			log.Entry(context.TODO()).Warnf("could not initialize builder for helm chart %q.\nCould not parse %q output due to error: %s", ch.name, cmd, err)
+		} else {
+			artifacts = append(artifacts, images...)
+		}
 	}
 	return artifacts
 }
