@@ -29,8 +29,9 @@ manifests:
 profiles:
 - name: kustomize
   patches:
-  deploy:
-    kustomize: {}
+  manifests:
+    kustomize:
+      - "."
 # use GCP Buildpacks to build the individual projects
 - name: buildpacks
   build:
