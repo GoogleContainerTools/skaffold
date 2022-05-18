@@ -36,22 +36,22 @@ type helmAnalyzer struct {
 	values    []string
 }
 
-func (h *helmAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
-	if isHelmChart(filePath) {
-		chDir, _ := filepath.Split(filePath)
+func (h *helmAnalyzer) analyzeFile(ctx context.Context, fp string) error {
+	if isHelmChart(fp) {
+		chDir, _ := filepath.Split(fp)
 		h.chartDirs[filepath.Clean(chDir)] = []string{}
 		return nil
 	}
-	if isValueFile(filePath) {
-		dir, _ := filepath.Split(filePath)
+	if isValueFile(fp) {
+		dir, _ := filepath.Split(fp)
 		dir = filepath.Clean(dir)
 		if s, ok := h.chartDirs[dir]; ok {
-			h.chartDirs[dir] = append(s, filePath)
+			h.chartDirs[dir] = append(s, fp)
 		} else {
 			if hasChart(dir) {
-				h.chartDirs[dir] = []string{filePath}
+				h.chartDirs[dir] = []string{fp}
 			}
-			log.Entry(context.TODO()).Debugf("ignoring a yaml file %s not part of any chart ", filePath)
+			log.Entry(context.TODO()).Debugf("ignoring a yaml file %s not part of any chart ", fp)
 		}
 	}
 	return nil

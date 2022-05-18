@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
@@ -78,11 +79,18 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	releases := []latest.HelmRelease{}
 	for _, ch := range h.charts {
+		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
+		rPath := strings.ReplaceAll(ch.path, string(os.PathSeparator), "/")
+		rVfs := make([]string, len(ch.valueFiles))
+		for i, vf := range ch.valueFiles {
+			rVfs[i] = strings.ReplaceAll(vf, string(os.PathSeparator), "/")
+		}
+
 		r := latest.HelmRelease{
 			Name:        ch.name,
-			ChartPath:   ch.path,
+			ChartPath:   rPath,
 			Version:     ch.version,
-			ValuesFiles: ch.valueFiles,
+			ValuesFiles: rVfs,
 		}
 		releases = append(releases, r)
 	}
