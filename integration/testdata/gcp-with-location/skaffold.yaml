@@ -1,0 +1,12 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  googleCloudBuild:
+    projectId: k8s-skaffold
+    region: asia-east1
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example-with-location
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
