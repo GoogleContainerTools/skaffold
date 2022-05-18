@@ -43,6 +43,7 @@ import (
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
@@ -415,4 +416,68 @@ func warnAboutUnusedImages(builds []graph.Artifact, valuesSet map[string]bool) {
 			warnings.Printf("See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration")
 		}
 	}
+}
+
+// Render generates the Kubernetes manifests and writes them out
+func (h *Deployer3) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "helm",
+	})
+	renderedManifests := new(bytes.Buffer)
+
+	for _, r := range h.Releases {
+		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
+		if err != nil {
+			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+		}
+
+		args := []string{"template", releaseName, chartSource(r)}
+		if r.Packaged == nil && r.Version != "" {
+			args = append(args, "--version", r.Version)
+		}
+
+		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
+		if err != nil {
+			return err
+		}
+
+		for k, v := range params {
+			var value string
+
+			cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
+
+			value, err = imageSetFromConfig(cfg, k, v.Tag)
+			if err != nil {
+				return err
+			}
+
+			args = append(args, "--set-string", value)
+		}
+
+		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
+		if err != nil {
+			return userErr("construct override args", err)
+		}
+
+		namespace, err := h.releaseNamespace(r)
+		if err != nil {
+			return err
+		}
+		if namespace != "" {
+			args = append(args, "--namespace", namespace)
+		}
+
+		if r.Repo != "" {
+			args = append(args, "--repo")
+			args = append(args, r.Repo)
+		}
+
+		outBuffer := new(bytes.Buffer)
+		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
+			return userErr("std out err", fmt.Errorf(outBuffer.String()))
+		}
+		renderedManifests.Write(outBuffer.Bytes())
+	}
+
+	return manifest.Write(renderedManifests.String(), filepath, out)
 }

@@ -22,7 +22,7 @@ import (
 	"io"
 
 	"github.com/blang/semver"
-	
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -55,9 +55,15 @@ func (h *Deployer31) Deploy(ctx context.Context, io io.Writer, graph []graph.Art
 	return fmt.Errorf("not yet implemented")
 }
 
-// Render should ensure that the build results are deployed to the Kubernetes
-// cluster.
-func (h *Deployer31) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+func (h *Deployer31) generateSkaffoldDebugFilter(buildsFile string) []string {
+	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
+	if len(buildsFile) > 0 {
+		args = append(args, "--build-artifacts", buildsFile)
+	}
+	args = append(args, h.Flags.Global...)
 
-	return fmt.Errorf("not yet implemented")
+	if h.kubeConfig != "" {
+		args = append(args, "--kubeconfig", h.kubeConfig)
+	}
+	return args
 }

@@ -18,7 +18,6 @@ package helm
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -26,21 +25,18 @@ import (
 	"os"
 	"strings"
 
-	"github.com/blang/semver"
-	shell "github.com/kballard/go-shellquote"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/blang/semver"
 )
 
 // Deployer30 deploys workflows using the helm CLI less than 3.1
@@ -139,32 +135,7 @@ func (h *Deployer30) deployRelease(ctx context.Context, out io.Writer, releaseNa
 
 	var installEnv []string
 	if h.enableDebug {
-		if h.bV.LT(helm31Version) {
-			return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", h.bV)
-		}
-		var binary string
-		if binary, err = osExecutable(); err != nil {
-			return nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
-		}
-		opts.postRenderer = binary
-
-		var buildsFile string
-		if len(builds) > 0 {
-			var cleanup func()
-			buildsFile, cleanup, err = writeBuildArtifacts(builds)
-			if err != nil {
-				return nil, fmt.Errorf("could not write build-artifacts: %w", err)
-			}
-			defer cleanup()
-		}
-
-		cmdLine := h.generateSkaffoldDebugFilter(buildsFile)
-
-		// need to include current environment, specifically for HOME to lookup ~/.kube/config
-		env := util.EnvSliceToMap(util.OSEnviron(), "=")
-		env["SKAFFOLD_CMDLINE"] = shell.Join(cmdLine...)
-		env["SKAFFOLD_FILENAME"] = h.configFile
-		installEnv = util.EnvMapToSlice(env, "=")
+		return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", h.bV)
 	}
 
 	opts.namespace, err = h.releaseNamespace(r)
@@ -238,81 +209,4 @@ func (h *Deployer30) deployRelease(ctx context.Context, out io.Writer, releaseNa
 
 	artifacts := parseReleaseManifests(opts.namespace, bufio.NewReader(&b))
 	return artifacts, nil
-}
-
-// Render generates the Kubernetes manifests and writes them out
-func (h *Deployer30) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "helm",
-	})
-	renderedManifests := new(bytes.Buffer)
-
-	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
-		}
-
-		args := []string{"template", releaseName, chartSource(r)}
-		if r.Packaged == nil && r.Version != "" {
-			args = append(args, "--version", r.Version)
-		}
-
-		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
-		if err != nil {
-			return err
-		}
-
-		for k, v := range params {
-			var value string
-
-			cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
-
-			value, err = imageSetFromConfig(cfg, k, v.Tag)
-			if err != nil {
-				return err
-			}
-
-			args = append(args, "--set-string", value)
-		}
-
-		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
-		if err != nil {
-			return userErr("construct override args", err)
-		}
-
-		namespace, err := h.releaseNamespace(r)
-		if err != nil {
-			return err
-		}
-		if namespace != "" {
-			args = append(args, "--namespace", namespace)
-		}
-
-		if r.Repo != "" {
-			args = append(args, "--repo")
-			args = append(args, r.Repo)
-		}
-
-		outBuffer := new(bytes.Buffer)
-		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
-			return userErr("std out err", fmt.Errorf(outBuffer.String()))
-		}
-		renderedManifests.Write(outBuffer.Bytes())
-	}
-
-	return manifest.Write(renderedManifests.String(), filepath, out)
-}
-
-func (h *Deployer30) generateSkaffoldDebugFilter(buildsFile string) []string {
-	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
-	if len(buildsFile) > 0 {
-		args = append(args, "--build-artifacts", buildsFile)
-	}
-	args = append(args, h.Flags.Global...)
-
-	if h.kubeConfig != "" {
-		args = append(args, "--kubeconfig", h.kubeConfig)
-	}
-	return args
 }
