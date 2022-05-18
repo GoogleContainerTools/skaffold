@@ -96,27 +96,27 @@ func TestGetImages(t *testing.T) {
 			input: map[string][]string{
 				"backend": {"backend/val.yml", "backend/values.yaml"},
 			},
-			runs:     testutil.CmdRunOut("helm template backend -f backend/val.yml -f backend/values.yaml --dry-run", backendTemp),
+			runs:     testutil.CmdRunOut("helm template backend -f backend/val.yml -f backend/values.yaml --dry-run --dependency-update", backendTemp),
 			expected: []string{"go-guestbook-backend"},
 		},
 		{
 			description: "no values files",
 			input:       map[string][]string{"backend": {}},
-			runs:        testutil.CmdRunOut("helm template backend --dry-run", backendTemp),
+			runs:        testutil.CmdRunOut("helm template backend --dry-run --dependency-update", backendTemp),
 			expected:    []string{"go-guestbook-backend"},
 		},
 		{
 			description: "err parsing template",
 			input:       map[string][]string{"backend": {"backend/values.yaml"}},
-			runs:        testutil.CmdRunOut("helm template backend -f backend/values.yaml --dry-run", "invalid"),
-			shouldLog:   []string{"could not initialize builder for helm chart \"backend\".\nCould not parse \"/usr/local/bin/helm template backend -f backend/values.yaml --dry-run\" output due to error: reading Kubernetes YAML: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid` into kubernetes.yamlObject"},
+			runs:        testutil.CmdRunOut("helm template backend -f backend/values.yaml --dry-run --dependency-update", "invalid"),
+			shouldLog:   []string{"could not initialize builder for helm chart \"backend\".\nCould not parse \"/usr/local/bin/helm template backend -f backend/values.yaml --dry-run --dependency-update\" output due to error: reading Kubernetes YAML: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid` into kubernetes.yamlObject"},
 		},
 		{
 			description: "err when running helm template",
 			input:       map[string][]string{"backend": {"backend/values.yaml"}},
-			runs:        testutil.CmdRunOutErr("helm template backend -f backend/values.yaml --dry-run", "", errors.New("invalid")),
+			runs:        testutil.CmdRunOutErr("helm template backend -f backend/values.yaml --dry-run --dependency-update", "", errors.New("invalid")),
 			shouldLog: []string{`could not initialize builder for helm chart "backend".
-Command "/usr/local/bin/helm template backend -f backend/values.yaml --dry-run" encountered error: invalid`},
+Command "/usr/local/bin/helm template backend -f backend/values.yaml --dry-run --dependency-update" encountered error: invalid`},
 			expected: []string{},
 		},
 	}

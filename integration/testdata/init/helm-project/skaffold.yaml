@@ -1,15 +1,11 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
 metadata:
-  name: helm-remote-dependencies
+  name: helm-project
 build:
   artifacts:
   - image: go-guestbook-backend
     context: backend/src
-    docker:
-      dockerfile: Dockerfile
-  - image: go-guestbook-frontend
-    context: frontend/src
     docker:
       dockerfile: Dockerfile
 deploy:
@@ -18,10 +14,6 @@ deploy:
     - name: backend
       chartPath: backend
       valuesFiles:
+      - backend/val.yaml
       - backend/values.yaml
-      version: 0.1.0
-    - name: frontend
-      chartPath: frontend
-      valuesFiles:
-      - frontend/values.yaml
       version: 0.1.0

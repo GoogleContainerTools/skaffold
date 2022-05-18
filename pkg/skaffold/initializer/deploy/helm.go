@@ -17,10 +17,9 @@ limitations under the License.
 package deploy
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -40,6 +39,7 @@ const (
 // for testing
 var (
 	readFile = ioutil.ReadFile
+	tempDir  = ioutil.TempDir
 )
 
 // helm implements deploymentInitializer for the helm deployer.
@@ -54,7 +54,6 @@ type chart struct {
 	valueFiles  []string
 	repo        string
 	version     string
-	isRemote    bool
 }
 
 // newHelmInitializer returns a helm config generator.
@@ -67,9 +66,7 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 			log.Entry(context.TODO()).Infof("Skipping chart dir %s, as %s could not be parsed as valid yaml", chDir, chFile)
 			continue
 		}
-		remotes := getRemoteChart(parsed)
 		charts = append(charts, buildChart(parsed, chDir, vfs))
-		charts = append(charts, remotes...)
 	}
 	return helm{
 		charts: charts,
@@ -81,21 +78,11 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	releases := []latest.HelmRelease{}
 	for _, ch := range h.charts {
-		var r latest.HelmRelease
-		if ch.isRemote {
-			r = latest.HelmRelease{
-				Name:        ch.name,
-				Repo:        ch.repo,
-				Version:     ch.version,
-				RemoteChart: ch.name,
-			}
-		} else {
-			r = latest.HelmRelease{
-				Name:        ch.name,
-				ChartPath:   ch.path,
-				Version:     ch.version,
-				ValuesFiles: ch.valueFiles,
-			}
+		r := latest.HelmRelease{
+			Name:        ch.name,
+			ChartPath:   ch.path,
+			Version:     ch.version,
+			ValuesFiles: ch.valueFiles,
 		}
 		releases = append(releases, r)
 	}
@@ -122,26 +109,39 @@ func (h helm) AddManifestForImage(string, string) {}
 
 // GetImages return an empty string for helm.
 func (h helm) GetImages() []string {
-	// Run helm template in each dir.
-	// Parse manifests and then get image names.
+	// Run helm template in each top level dir.
+	// Parse templated manifest files and then get image names.
 	artifacts := []string{}
+	td, err := tempDir(os.TempDir(), "skaffold_")
+	if err != nil {
+		log.Entry(context.TODO()).Fatalf("cannot create temporary directory. Encountered error: %s", err)
+	}
+	defer os.RemoveAll(td)
 	for _, ch := range h.charts {
 		args := []string{"template", ch.path}
 		for _, v := range ch.valueFiles {
 			args = append(args, "-f", v)
 		}
-		args = append(args, "--dry-run")
-		cmd := exec.Command("helm", args...)
-		mb, err := util.RunCmdOut(context.TODO(), cmd)
+		o, err := tempDir(td, ch.name)
 		if err != nil {
-			log.Entry(context.TODO()).Warnf("could not initialize builder for helm chart %q.\nCommand %q encountered error: %s", ch.name, cmd, err)
+			log.Entry(context.TODO()).Fatalf("cannot create temporary directory. Encountered error: %s", err)
+		}
+		args = append(args, "--output-dir", o)
+		cmd := exec.Command("helm", args...)
+		err = util.RunCmd(context.TODO(), cmd)
+		if err != nil {
+			log.Entry(context.TODO()).Warnf("could not initialize builders for helm chart %q.\nCommand %q encountered error: %s", ch.name, cmd, err)
 			continue
 		}
-		images, err := kubernetes.ParseImagesFromKubernetesYamlBytes(bufio.NewReader(bytes.NewReader(mb)))
-		if err != nil {
-			log.Entry(context.TODO()).Warnf("could not initialize builder for helm chart %q.\nCould not parse %q output due to error: %s", ch.name, cmd, err)
-		} else {
-			artifacts = append(artifacts, images...)
+		// read all templates generated
+		files := getAllFiles(o)
+		for _, file := range files {
+			images, err := kubernetes.ParseImagesFromKubernetesYaml(file)
+			if err != nil {
+				log.Entry(context.TODO()).Warnf("could not initialize builder for helm chart %q.\nCould not parse %q output due to error: %s", ch.name, cmd, err)
+			} else {
+				artifacts = append(artifacts, images...)
+			}
 		}
 	}
 	return artifacts
@@ -166,25 +166,6 @@ func getChartName(parsed map[string]interface{}, chDir string) string {
 	return filepath.Base(chDir)
 }
 
-func getRemoteChart(parsed map[string]interface{}) []chart {
-	var remotes []chart
-	if deps, ok := parsed["dependencies"]; ok {
-		list := deps.([]map[string]interface{})
-		for _, r := range list {
-			ch := chart{
-				name:     r["name"].(string),
-				isRemote: true,
-				repo:     r["repository"].(string),
-			}
-			if v := getVersion(r); v != "" {
-				ch.version = v
-			}
-			remotes = append(remotes)
-		}
-	}
-	return remotes
-}
-
 func buildChart(parsed map[string]interface{}, chDir string, vfs []string) chart {
 	ch := chart{
 		chartValues: parsed,
@@ -203,4 +184,22 @@ func getVersion(m map[string]interface{}) string {
 		return v.(string)
 	}
 	return ""
+}
+
+func getAllFiles(o string) []string {
+	var files []string
+	err := filepath.Walk(o, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		log.Entry(context.TODO()).Fatalf("could not walk directory %q due to error: %s", o, err)
+	}
+	return files
 }
