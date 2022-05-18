@@ -258,6 +258,11 @@ func TestRunGCPOnly(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
+			description: "Google Cloud Build with location",
+			dir:         "testdata/gcb-with-location",
+			pods:        []string{"getting-started"},
+		},
+		{
 			description: "Google Cloud Build with source artifact dependencies",
 			dir:         "examples/microservices",
 			args:        []string{"-p", "gcb"},
