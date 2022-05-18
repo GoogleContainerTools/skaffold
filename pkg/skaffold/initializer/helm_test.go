@@ -68,10 +68,9 @@ spec:
 			},
 			expected: []latest.HelmRelease{
 				{
-					Name:      "apache",
-					ChartPath: "apache",
-					ValuesFiles: []string{filepath.Join("apache", "another.yml"),
-						filepath.Join("apache", "values.yaml")},
+					Name:        "apache",
+					ChartPath:   "apache",
+					ValuesFiles: []string{"apache/another.yml", "apache/values.yaml"},
 				}},
 		},
 		{
@@ -90,16 +89,16 @@ spec:
 				{
 					Name:        "apache",
 					ChartPath:   "apache",
-					ValuesFiles: []string{filepath.Join("apache", "values.yaml")},
+					ValuesFiles: []string{"apache/values.yaml"},
 				}, {
 					Name:        "subchart",
-					ChartPath:   filepath.Join("apache", "subchart"),
-					ValuesFiles: []string{filepath.Join("apache", "subchart", "val.yaml")},
+					ChartPath:   "apache/subchart",
+					ValuesFiles: []string{"apache/subchart/val.yaml"},
 				},
 				{
 					Name:        "subchart2",
-					ChartPath:   filepath.Join("apache", "subchart2"),
-					ValuesFiles: []string{filepath.Join("apache", "subchart2", "values.yaml")},
+					ChartPath:   "apache/subchart2",
+					ValuesFiles: []string{"apache/subchart2/values.yaml"},
 				},
 			},
 		},

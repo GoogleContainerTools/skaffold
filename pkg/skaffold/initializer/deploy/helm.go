@@ -54,7 +54,6 @@ type chart struct {
 	chartValues map[string]interface{}
 	path        string
 	valueFiles  []string
-	repo        string
 	version     string
 }
 

@@ -33,7 +33,6 @@ const (
 type helmAnalyzer struct {
 	directoryAnalyzer
 	chartDirs map[string][]string
-	values    []string
 }
 
 func (h *helmAnalyzer) analyzeFile(ctx context.Context, fp string) error {
