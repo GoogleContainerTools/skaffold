@@ -238,18 +238,19 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
 
+			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Render: latest.RenderConfig{Generate: test.generate}}}),
+						{Render: rc}}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, map[string]string{})
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, m)
 
@@ -328,19 +329,19 @@ func TestKubectlCleanup(t *testing.T) {
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
 			}, &label.DefaultLabeller{}, &test.kubectl, filepath.Join(tmpDir.Root(), constants.DefaultHydrationDir))
 			t.RequireNoError(err)
-
+			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Render: latest.RenderConfig{Generate: test.generate}}}),
+						{Render: rc}}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, map[string]string{})
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 
 			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun, m)
@@ -626,17 +627,18 @@ func TestGCSManifests(t *testing.T) {
 			if err := ioutil.WriteFile(manifest.ManifestTmpDir+"/deployment.yaml", []byte(DeploymentWebYAML), os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
+			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
 						{Render: latest.RenderConfig{Generate: test.generate}}}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, map[string]string{})
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 
 			k, err := NewDeployer(&kubectlConfig{

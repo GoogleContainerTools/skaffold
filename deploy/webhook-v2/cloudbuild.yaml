@@ -1,11 +1,11 @@
 steps:
-# Download the latest version of the docs-controller image
+# Download the latest version of the docs-controller-v2 image
 - name: gcr.io/cloud-builders/docker
   entrypoint: 'bash'
   args:
     - '-c'
     - |
-      docker pull gcr.io/$PROJECT_ID/docs-controller:latest || exit 0
+      docker pull gcr.io/$PROJECT_ID/docs-controller-v2:latest || exit 0
   # until https://github.com/GoogleCloudPlatform/cloud-builders/issues/253 is fixed
 
   # Get cluster credentials

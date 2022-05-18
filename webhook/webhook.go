@@ -42,7 +42,7 @@ func main() {
 	http.HandleFunc("/receive", handleGithubEvent)
 	flag.Parse()
 	// Start the server
-	log.Println("Listening...")
+	log.Printf("Listening%s...\n", constants.DocsVersion)
 	log.Fatal(http.ListenAndServe(port, nil))
 }
 

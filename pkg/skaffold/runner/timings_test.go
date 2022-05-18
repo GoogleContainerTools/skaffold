@@ -74,7 +74,7 @@ type mockRenderer struct {
 	err bool
 }
 
-func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) (manifest.ManifestList, error) {
+func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
 	if m.err {
 		return nil, errors.New("Unable to render")
 	}
@@ -246,11 +246,11 @@ func TestTimingsRender(t *testing.T) {
 			_, _, render, _ := WithTimings(nil, nil, r, nil, false)
 
 			var out bytes.Buffer
-			_, err := render.Render(context.Background(), &out, nil, false, "")
+			_, err := render.Render(context.Background(), &out, nil, false)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
-			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
+			t.CheckMatches(test.shouldLog, entryAtIndex(hook, 1))
 		})
 	}
 }
@@ -334,6 +334,14 @@ func lastInfoEntry(hook *logrustest.Hook) string {
 		if entry.Level == logrus.InfoLevel {
 			return entry.Message
 		}
+	}
+	return ""
+}
+
+func entryAtIndex(hook *logrustest.Hook, i int) string {
+	e := hook.AllEntries()
+	if len(e) > i {
+		return e[i].Message
 	}
 	return ""
 }

@@ -376,7 +376,7 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Service, projectID string, buildSpec cloudbuild.Build) (string, func(opts ...googleapi.CallOption) (*cloudbuild.Build, error), error) {
 	var op *cloudbuild.Operation
 	var err error
-	if b.WorkerPool == "" {
+	if b.WorkerPool == "" && b.Region == "" {
 		op, err = cbclient.Projects.Builds.Create(projectID, &buildSpec).Context(ctx).Do()
 		if err != nil {
 			return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
@@ -393,7 +393,15 @@ func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Ser
 		}
 		return remoteID, cbclient.Projects.Builds.Get(projectID, remoteID).Do, nil
 	}
-	location := strings.Split(b.WorkerPool, "/workerPools/")[0]
+
+	var location string
+
+	if b.Region != "" {
+		location = fmt.Sprintf("projects/%s/locations/%s", projectID, b.Region)
+	}
+	if b.WorkerPool != "" {
+		location = strings.Split(b.WorkerPool, "/workerPools/")[0]
+	}
 	log.Entry(ctx).Debugf("location: %s", location)
 	// location should match the format "projects/{project}/locations/{location}"
 	op, err = cbclient.Projects.Locations.Builds.Create(location, &buildSpec).Context(ctx).Do()

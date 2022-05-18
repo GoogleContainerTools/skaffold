@@ -5,4 +5,4 @@ build:
   - image: skaffold-example
 manifests:
   rawYaml:
-  - k8s-*
+  - k8s-pod.yaml

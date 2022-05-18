@@ -91,7 +91,10 @@ func (d needsRemoteTagging) Hash() string {
 func (d needsRemoteTagging) Tag(ctx context.Context, c *cache, platforms platform.Resolver) error {
 	fqn := d.tag + "@" + d.digest // Tag is not important. We just need the registry and the digest to locate the image.
 	matched := platforms.GetPlatforms(strings.Split(filepath.Base(d.tag), ":")[0])
-	return docker.AddRemoteTag(fqn, d.tag, c.cfg, util.ConvertToV1Platform(matched.Platforms[0]))
+	if len(matched.Platforms) != 0 {
+		return docker.AddRemoteTag(fqn, d.tag, c.cfg, util.ConvertToV1Platform(matched.Platforms[0]))
+	}
+	return docker.AddRemoteTag(fqn, d.tag, c.cfg, nil)
 }
 
 // Found locally. Needs pushing

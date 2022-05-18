@@ -390,6 +390,12 @@ type GoogleCloudBuild struct {
 
 	// WorkerPool configures a pool of workers to run the build.
 	WorkerPool string `yaml:"workerPool,omitempty"`
+
+	// Region configures the region to run the build. If WorkerPool is configured, the region will
+	// be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured,
+	// the build will be run in global(non-regional).
+	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations)
+	Region string `yaml:"region,omitempty"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -682,6 +688,19 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+
+	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API
+	CloudRunDeploy *CloudRunDeploy `yaml:"cloudrun,omitempty"`
+}
+
+// CloudRunDeploy *alpha* deploys the container to Google Cloud Run.
+type CloudRunDeploy struct {
+	// ProjectID of the GCP Project to use for Cloud Run.
+	DefaultProjectID string `yaml:"defaultprojectid,omitempty"`
+
+	// Region in GCP to use for the Cloud Run Deploy.
+	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
+	Region string `yaml:"region,omitempty"`
 }
 
 // DockerDeploy uses the `docker` CLI to create application containers in Docker.
