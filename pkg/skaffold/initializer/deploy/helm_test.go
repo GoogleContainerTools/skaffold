@@ -21,11 +21,12 @@ import (
 	"fmt"
 	"testing"
 
+	logrustest "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	logrustest "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestDeployConfig(t *testing.T) {
