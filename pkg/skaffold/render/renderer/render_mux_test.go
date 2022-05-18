@@ -74,7 +74,7 @@ func TestRenderMux_Render(t *testing.T) {
 				}}})
 			mux := NewRenderMux(tc.renderers)
 			buf := &bytes.Buffer{}
-			actual, err := mux.Render(context.Background(), buf, nil, true, "")
+			actual, err := mux.Render(context.Background(), buf, nil, true)
 			t.CheckErrorAndDeepEqual(tc.shouldErr, err, tc.expected, actual.String())
 			actualDeps, errD := mux.ManifestDeps()
 			t.CheckNoError(errD)
@@ -93,7 +93,7 @@ func (m mock) ManifestDeps() ([]string, error) {
 	return m.deps, nil
 }
 
-func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool, string) (manifest.ManifestList, error) {
+func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
 	if m.shouldErr {
 		return nil, fmt.Errorf("render error")
 	}

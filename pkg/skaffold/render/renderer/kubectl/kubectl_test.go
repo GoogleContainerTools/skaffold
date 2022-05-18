@@ -91,7 +91,7 @@ func TestRender(t *testing.T) {
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 			t.CheckDeepEqual(test.expected, manifestList.String())
 		})

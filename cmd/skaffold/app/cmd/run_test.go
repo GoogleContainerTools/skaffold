@@ -78,7 +78,7 @@ func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifac
 	return nil
 }
 
-func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool, string) (manifest.ManifestList, error) {
+func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
 	r.renderRan = true
 	return manifest.ManifestList{}, nil
 }

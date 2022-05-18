@@ -177,10 +177,12 @@ pipeline:
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
-					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
+					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
+					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(err)
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, DryFileName), []byte(labeledPodYaml))
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
@@ -246,10 +248,12 @@ inventory:
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
-					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))))
+					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
+					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{},
-				true, "")
+				true)
 			t.CheckNoError(err)
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName),
 				[]byte(test.updatedKptfile))

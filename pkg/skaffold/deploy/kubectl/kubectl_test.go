@@ -250,7 +250,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, m)
 
@@ -341,7 +341,7 @@ func TestKubectlCleanup(t *testing.T) {
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 
 			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun, m)
@@ -638,7 +638,7 @@ func TestGCSManifests(t *testing.T) {
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 
 			k, err := NewDeployer(&kubectlConfig{
