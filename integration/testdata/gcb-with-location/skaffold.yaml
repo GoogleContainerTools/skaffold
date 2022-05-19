@@ -6,3 +6,6 @@ build:
   googleCloudBuild:
     projectId: k8s-skaffold
     region: asia-east1
+manifests:
+  rawYaml:
+    - k8s-*
