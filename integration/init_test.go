@@ -18,6 +18,7 @@ package integration
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -29,9 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestInitCompose(t *testing.T) {
-	t.Skipf("Fix after https://github.com/GoogleContainerTools/skaffold/issues/6722")
-
+func TestInit(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -39,36 +38,14 @@ func TestInitCompose(t *testing.T) {
 		dir  string
 		args []string
 	}{
-		{
-			name: "compose",
-			dir:  "testdata/init/compose",
-			args: []string{"--compose-file", "docker-compose.yaml"},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
-			ns, _ := SetupNamespace(t.T)
-
-			initArgs := append([]string{"--force"}, test.args...)
-			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
-
-			checkGeneratedConfig(t, test.dir)
-
-			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
-			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
-			defer skaffold.Delete().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name)
-		})
-	}
-}
-
-func TestInitHelm(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
-	tests := []struct {
-		name string
-		dir  string
-		args []string
-	}{
+		/*
+			// Fix after https://github.com/GoogleContainerTools/skaffold/issues/6722
+				{
+					name: "compose",
+					dir:  "testdata/init/compose",
+					args: []string{"--compose-file", "docker-compose.yaml"},
+				},
+		*/
 		{
 			name: "helm init",
 			dir:  "testdata/init/helm-project",
@@ -81,10 +58,9 @@ func TestInitHelm(t *testing.T) {
 
 			initArgs := append([]string{"--force"}, test.args...)
 			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
-
 			checkGeneratedConfig(t, test.dir)
 
-			// Make sure the skaffold yaml and the kubernetes manifests created by helm are ok
+			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
 			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
 			defer skaffold.Delete().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name)
 		})
@@ -201,9 +177,11 @@ func TestInitWithCLIArtifactAndManifestGeneration(t *testing.T) {
 
 func checkGeneratedConfig(t *testutil.T, dir string) {
 	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
+	fmt.Println(expectedOutput)
 	t.CheckNoError(err)
 
 	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
+	fmt.Println(output)
 	t.CheckNoError(err)
 	t.CheckDeepEqual(string(expectedOutput), string(output))
 }
