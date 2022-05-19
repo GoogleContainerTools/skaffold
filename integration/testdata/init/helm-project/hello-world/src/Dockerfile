@@ -1,6 +1,6 @@
 FROM golang:1.15-alpine as builder
 COPY hello.go .
-RUN go build -o /app hello.go
+RUN go build -o /app main.go
 
 FROM alpine:3
 CMD ["./app"]
