@@ -22,6 +22,9 @@ import (
 	"io/ioutil"
 	"testing"
 
+        "github.com/blang/semver"
+        "github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -34,8 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/blang/semver"
-	"github.com/pkg/errors"
 )
 
 var testBuilds = []graph.Artifact{{

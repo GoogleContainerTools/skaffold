@@ -38,5 +38,6 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 	if hv.LT(helm31Version) {
 		return NewDeployer30(ctx, cfg, labeller, h, hv)
 	}
-	return NewDeployer31(ctx, cfg, labeller, h, hv)
+	// TODO: return NewDeployer31
+	return NewDeployer30(ctx, cfg, labeller, h, hv)
 }
