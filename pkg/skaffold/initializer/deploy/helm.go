@@ -138,7 +138,7 @@ func (h helm) GetImages() []string {
 		cmd := exec.Command("helm", args...)
 		err = util.RunCmd(context.TODO(), cmd)
 		if err != nil {
-			log.Entry(context.TODO()).Fatalf("could not initialize builders for helm chart %q.\nCommand %q encountered error: %s", ch.name, cmd, err)
+			log.Entry(context.TODO()).Warnf("could not initialize builders for helm chart %q.\nCommand %q encountered error: %s", ch.name, cmd, err)
 			continue
 		}
 		// read all templates generated
@@ -146,7 +146,7 @@ func (h helm) GetImages() []string {
 		for _, file := range files {
 			images, err := kubernetes.ParseImagesFromKubernetesYaml(file)
 			if err != nil {
-				log.Entry(context.TODO()).Fatalf("could not initialize builder for helm chart %q.\nCould not parse %q output due to error: %s", ch.name, cmd, err)
+				log.Entry(context.TODO()).Warnf("could not initialize builder for helm chart %q.\nCould not parse %q output due to error: %s", ch.name, cmd, err)
 			} else {
 				artifacts = append(artifacts, images...)
 			}
