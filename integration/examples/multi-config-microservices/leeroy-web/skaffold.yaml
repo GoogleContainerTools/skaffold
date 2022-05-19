@@ -10,10 +10,9 @@ build:
     requires:
     - image: base
       alias: BASE
-deploy:
-  kubectl:
-    manifests:
-    - kubernetes/*
+manifests:
+    rawYaml:
+      - kubernetes/*
 portForward:
 - resourceType: deployment
   resourceName: leeroy-web

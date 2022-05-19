@@ -63,12 +63,12 @@ func TestDebug(t *testing.T) {
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
 		},
-		{
-			description:   "helm",
-			dir:           "examples/helm-deployment",
-			deployments:   []string{"skaffold-helm"},
-			ignoreWorkdir: true, // dockerfile doesn't have a workdir
-		},
+		//  {
+		//	description:   "helm",
+		//	dir:           "examples/helm-deployment",
+		//	deployments:   []string{"skaffold-helm"},
+		//	ignoreWorkdir: true, // dockerfile doesn't have a workdir
+		// }, fix in https://github.com/GoogleContainerTools/skaffold/issues/7419
 		{
 			description:   "modules",
 			dir:           "examples/multi-config-microservices",
@@ -216,6 +216,7 @@ func TestFilterWithDebugging(t *testing.T) {
 }
 
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
+	t.Skipf("Disable the test dues to flakyness. https://github.com/GoogleContainerTools/skaffold/issues/7405")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -230,6 +231,7 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 }
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
+	t.Skipf("Disable the test dues to flakyness. https://github.com/GoogleContainerTools/skaffold/issues/7405")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -243,6 +245,7 @@ func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
 	waitForDebugEvent(t, client, rpcAddr)
 }
 
+//nolint add lint back after https://github.com/GoogleContainerTools/skaffold/issues/7405
 func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string) {
 	client.WaitForPodsReady()
 

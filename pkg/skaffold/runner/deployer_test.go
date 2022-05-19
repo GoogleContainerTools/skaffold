@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/cloudrun"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
@@ -94,7 +95,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 					}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 						Flags: latest.KubectlFlags{},
-					}, "")).(deploy.Deployer),
+					})).(deploy.Deployer),
 				}, false),
 			},
 			{
@@ -109,6 +110,20 @@ func TestGetDeployer(tOuter *testing.T) {
 				}, false),
 			},
 			{
+				description: "cloud run deployer",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{},
+						},
+					},
+				},
+				expected: deploy.NewDeployerMux(
+					[]deploy.Deployer{
+						t.RequireNonNilResult(cloudrun.NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{})).(deploy.Deployer)},
+					false),
+			},
+			{
 				description: "apply forces creation of kubectl deployer with kpt config",
 				cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
@@ -120,7 +135,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "")).(deploy.Deployer),
+				})).(deploy.Deployer),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
@@ -137,7 +152,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "")).(deploy.Deployer),
+				})).(deploy.Deployer),
 			},
 			{
 				description: "multiple deployers",
@@ -214,7 +229,32 @@ func TestGetDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "")).(deploy.Deployer),
+				})).(deploy.Deployer),
+			},
+			{
+				description: "apply works with Cloud Run",
+				apply:       true,
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"},
+						},
+					},
+				},
+				expected: t.RequireNonNilResult(cloudrun.NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
+			},
+			{
+				description: "apply does not allow multiple deployers when Cloud Run is used",
+				apply:       true,
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{},
+							KubectlDeploy:  &latest.KubectlDeploy{},
+						},
+					},
+				},
+				shouldErr: true,
 			},
 		}
 		for _, test := range tests {
@@ -284,7 +324,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "")).(*kubectl.Deployer),
+				})).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kubectl deploy, with flags",
@@ -303,7 +343,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						Apply:  []string{"--foo"},
 						Global: []string{"--bar"},
 					},
-				}, "")).(*kubectl.Deployer),
+				})).(*kubectl.Deployer),
 			},
 			{
 				name: "two kubectl configs with mismatched flags should fail",
@@ -334,7 +374,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "")).(*kubectl.Deployer),
+				})).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kustomize deploy",
@@ -345,7 +385,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "")).(*kubectl.Deployer),
+				})).(*kubectl.Deployer),
 			},
 		}
 
@@ -361,7 +401,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}
 				deployer, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines),
-				}, &label.DefaultLabeller{}, "")
+				}, &label.DefaultLabeller{})
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)
 

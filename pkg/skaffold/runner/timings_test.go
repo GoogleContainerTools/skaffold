@@ -74,7 +74,7 @@ type mockRenderer struct {
 	err bool
 }
 
-func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) (manifest.ManifestList, error) {
+func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
 	if m.err {
 		return nil, errors.New("Unable to render")
 	}
@@ -246,7 +246,7 @@ func TestTimingsRender(t *testing.T) {
 			_, _, render, _ := WithTimings(nil, nil, r, nil, false)
 
 			var out bytes.Buffer
-			_, err := render.Render(context.Background(), &out, nil, false, "")
+			_, err := render.Render(context.Background(), &out, nil, false)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())

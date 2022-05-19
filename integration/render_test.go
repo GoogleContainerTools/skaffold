@@ -40,7 +40,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 	test := struct {
 		description string
 		builds      []graph.Artifact
-		renderPath  string
 		input       string
 		expectedOut string
 	}{
@@ -51,7 +50,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 				Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 			},
 		},
-		renderPath: "./test-output",
 		input: `apiVersion: v1
 kind: Pod
 spec:
@@ -78,7 +76,7 @@ spec:
 		r, err := kubectl.New(mockCfg, rc, map[string]string{})
 		t.RequireNoError(err)
 		var b bytes.Buffer
-		l, err := r.Render(context.Background(), &b, test.builds, false, test.renderPath)
+		l, err := r.Render(context.Background(), &b, test.builds, false)
 
 		t.CheckNoError(err)
 
@@ -217,7 +215,7 @@ spec:
 			r, err := kubectl.New(mockCfg, rc, map[string]string{})
 			t.RequireNoError(err)
 			var b bytes.Buffer
-			l, err := r.Render(context.Background(), &b, test.builds, false, "")
+			l, err := r.Render(context.Background(), &b, test.builds, false)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, l.String())

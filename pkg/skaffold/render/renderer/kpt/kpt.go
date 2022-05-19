@@ -97,7 +97,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 	}, nil
 }
 
-func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, output string) (manifest.ManifestList, error) {
+func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestList, error) {
 	kptfilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	kfConfig := &kptfile.KptFile{}
 
@@ -153,7 +153,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
 		return nil, err
 	}
-	if err := manifest.Write(manifests.String(), dryConfigPath, out); err != nil {
+	if err := manifest.Write(manifests.String(), dryConfigPath, io.Discard); err != nil {
 		return nil, err
 	}
 	endTrace()
@@ -183,15 +183,12 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
 		return nil, err
 	}
-
-	if output != "" {
-		r.writeManifestsToFile(ctx, out, output)
-	}
-	return manifests, nil
+	return r.unwrapManifests(ctx, out)
 }
 
-// writeManifestsToFile converts the structured manifest to a flatten format and store them in the given `output` file.
-func (r *Kpt) writeManifestsToFile(ctx context.Context, out io.Writer, output string) error {
+// unwrapManifests converts the structured manifest to a flatten format
+func (r *Kpt) unwrapManifests(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
+	var m manifest.ManifestList
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_outputManifests")
 	cmd := exec.CommandContext(rCtx, "kpt", "fn", "source", r.hydrationDir, "-o", "unwrap")
 	var buf []byte
@@ -199,7 +196,8 @@ func (r *Kpt) writeManifestsToFile(ctx context.Context, out io.Writer, output st
 	buf, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return err
+		return m, err
 	}
-	return ioutil.WriteFile(output, buf, os.ModePerm)
+	m = append(m, buf)
+	return m, nil
 }

@@ -41,13 +41,13 @@ func NewRenderMux(renderers []Renderer) Renderer {
 	return RenderMux{renderers: renderers}
 }
 
-func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool, outputPath string) (manifest.ManifestList, error) {
+func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestList, error) {
 	allManifests := manifest.ManifestList{}
 	for i, renderer := range r.renderers {
 		eventV2.RendererInProgress(i)
 		w, ctx := output.WithEventContext(ctx, out, constants.Render, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-		ms, err := renderer.Render(ctx, w, artifacts, offline, "" /* never write to files */)
+		ms, err := renderer.Render(ctx, w, artifacts, offline)
 		if err != nil {
 			eventV2.RendererFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))

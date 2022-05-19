@@ -450,12 +450,12 @@ func TestSetDefaultRenderer(t *testing.T) {
 			description: "kustomize manifests",
 			input: latest.RenderConfig{
 				Generate: latest.Generate{
-					Kustomize: []string{"/kmanifests"},
+					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests"}},
 				},
 			},
 			expected: latest.RenderConfig{
 				Generate: latest.Generate{
-					Kustomize: []string{"/kmanifests"},
+					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests"}},
 				},
 			},
 		},
@@ -490,14 +490,14 @@ func TestSetDefaultRenderer(t *testing.T) {
 			input: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kpt:       []string{"/kmanifests1"},
-					Kustomize: []string{"/kmanifests2"},
+					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests2"}},
 					Helm:      &latest.Helm{Releases: []latest.HelmRelease{{Name: "test"}}},
 				},
 			},
 			expected: latest.RenderConfig{
 				Generate: latest.Generate{
 					Kpt:       []string{"/kmanifests1"},
-					Kustomize: []string{"/kmanifests2"},
+					Kustomize: &latest.Kustomize{Paths: []string{"/kmanifests2"}},
 					Helm:      &latest.Helm{Releases: []latest.HelmRelease{{Name: "test"}}},
 				},
 			},

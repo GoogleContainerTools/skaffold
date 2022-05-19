@@ -10,9 +10,8 @@ build:
     requires:
     - image: base
       alias: BASE
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - kubernetes/*
 portForward:
 - resourceType: deployment
