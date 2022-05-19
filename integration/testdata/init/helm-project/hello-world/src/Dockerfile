@@ -1,5 +1,5 @@
 FROM golang:1.15-alpine as builder
-COPY hello.go .
+COPY main.go .
 RUN go build -o /app main.go
 
 FROM alpine:3
