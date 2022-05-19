@@ -18,7 +18,6 @@ package integration
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -57,8 +56,7 @@ func TestInit(t *testing.T) {
 			ns, _ := SetupNamespace(t.T)
 
 			initArgs := append([]string{"--force"}, test.args...)
-			b := skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFailOutput(t.T)
-			fmt.Println(string(b))
+			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
 			checkGeneratedConfig(t, test.dir)
 
 			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
@@ -178,11 +176,9 @@ func TestInitWithCLIArtifactAndManifestGeneration(t *testing.T) {
 
 func checkGeneratedConfig(t *testutil.T, dir string) {
 	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
-	fmt.Println(string(expectedOutput))
 	t.CheckNoError(err)
 
 	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
-	fmt.Println(string(output))
 	t.CheckNoError(err)
 	t.CheckDeepEqual(string(expectedOutput), string(output))
 }
