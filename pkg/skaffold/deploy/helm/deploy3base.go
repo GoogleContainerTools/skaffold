@@ -17,7 +17,6 @@ limitations under the License.
 package helm
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -32,17 +31,14 @@ import (
 
 	"github.com/blang/semver"
 	backoff "github.com/cenkalti/backoff/v4"
-	shell "github.com/kballard/go-shellquote"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
@@ -55,7 +51,6 @@ import (
 	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -63,7 +58,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 var (
@@ -128,17 +122,8 @@ type Config interface {
 	JSONParseConfig() latest.JSONParseConfig
 }
 
-// NewDeployer returns a configured Deployer3.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy) (*Deployer3, error) {
-	hv, err := binVer(ctx)
-	if err != nil {
-		return nil, versionGetErr(err)
-	}
-
-	if hv.LT(helm3Version) {
-		return nil, minVersionErr()
-	}
-
+// NewBase returns a configured Deployer3.
+func NewBase(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.HelmDeploy, hv semver.Version) (*Deployer3, error) {
 	originalImages := []graph.Artifact{}
 	for _, release := range h.Releases {
 		for _, v := range release.ArtifactOverrides {
@@ -210,80 +195,6 @@ func (h *Deployer3) RegisterLocalImages(images []graph.Artifact) {
 func (h *Deployer3) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
 	h.logger.RegisterArtifacts(artifacts)
-}
-
-// Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer3) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
-	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
-		"DeployerType": "helm",
-	})
-	defer endTrace()
-
-	// Check that the cluster is reachable.
-	// This gives a better error message when the cluster can't
-	// be reached.
-	if err := kubernetes.FailIfClusterIsNotReachable(h.kubeContext); err != nil {
-		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
-	}
-
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
-	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	endTrace()
-
-	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.bV)
-
-	var dRes []types.Artifact
-	nsMap := map[string]struct{}{}
-	valuesSet := map[string]bool{}
-
-	// Deploy every release
-	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
-		}
-		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
-		if err != nil {
-			return userErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
-		}
-		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV, chartVersion)
-		if err != nil {
-			return userErr(fmt.Sprintf("deploying %q", releaseName), err)
-		}
-
-		// collect namespaces
-		for _, r := range results {
-			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
-				nsMap[trimmed] = struct{}{}
-			}
-		}
-
-		dRes = append(dRes, results...)
-	}
-
-	// Let's make sure that every image tag is set with `--set`.
-	// Otherwise, templates have no way to use the images that were built.
-	// Skip warning for multi-config projects as there can be artifacts without any usage in the current deployer.
-	if !h.isMultiConfig {
-		warnAboutUnusedImages(builds, valuesSet)
-	}
-
-	if err := label.Apply(ctx, h.labels, dRes, h.kubeContext); err != nil {
-		return helmLabelErr(fmt.Errorf("adding labels: %w", err))
-	}
-
-	// Collect namespaces in a string
-	var namespaces []string
-	for ns := range nsMap {
-		namespaces = append(namespaces, ns)
-	}
-
-	h.TrackBuildArtifacts(builds)
-	h.trackNamespaces(namespaces)
-	return nil
 }
 
 // Dependencies returns a list of files that the deployer depends on.
@@ -384,70 +295,6 @@ func (h *Deployer3) Cleanup(ctx context.Context, out io.Writer, dryRun bool) err
 	return nil
 }
 
-// Render generates the Kubernetes manifests and writes them out
-func (h *Deployer3) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "helm",
-	})
-	renderedManifests := new(bytes.Buffer)
-
-	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
-		}
-
-		args := []string{"template", releaseName, chartSource(r)}
-		if r.Packaged == nil && r.Version != "" {
-			args = append(args, "--version", r.Version)
-		}
-
-		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
-		if err != nil {
-			return err
-		}
-
-		for k, v := range params {
-			var value string
-
-			cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
-
-			value, err = imageSetFromConfig(cfg, k, v.Tag)
-			if err != nil {
-				return err
-			}
-
-			args = append(args, "--set-string", value)
-		}
-
-		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
-		if err != nil {
-			return userErr("construct override args", err)
-		}
-
-		namespace, err := h.releaseNamespace(r)
-		if err != nil {
-			return err
-		}
-		if namespace != "" {
-			args = append(args, "--namespace", namespace)
-		}
-
-		if r.Repo != "" {
-			args = append(args, "--repo")
-			args = append(args, r.Repo)
-		}
-
-		outBuffer := new(bytes.Buffer)
-		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
-			return userErr("std out err", fmt.Errorf(outBuffer.String()))
-		}
-		renderedManifests.Write(outBuffer.Bytes())
-	}
-
-	return manifest.Write(renderedManifests.String(), filepath, out)
-}
-
 func (h *Deployer3) HasRunnableHooks() bool {
 	return len(h.HelmDeploy.LifecycleHooks.PreHooks) > 0 || len(h.HelmDeploy.LifecycleHooks.PostHooks) > 0
 }
@@ -472,123 +319,6 @@ func (h *Deployer3) PostDeployHooks(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-// deployRelease deploys a single release
-func (h *Deployer3) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version, chartVersion string) ([]types.Artifact, error) {
-	var err error
-	opts := installOpts{
-		releaseName: releaseName,
-		upgrade:     true,
-		flags:       h.Flags.Upgrade,
-		force:       h.forceDeploy,
-		chartPath:   chartSource(r),
-		helmVersion: helmVersion,
-		repo:        r.Repo,
-		version:     chartVersion,
-	}
-
-	var installEnv []string
-	if h.enableDebug {
-		if h.bV.LT(helm31Version) {
-			return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", h.bV)
-		}
-		var binary string
-		if binary, err = osExecutable(); err != nil {
-			return nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
-		}
-		opts.postRenderer = binary
-
-		var buildsFile string
-		if len(builds) > 0 {
-			var cleanup func()
-			buildsFile, cleanup, err = writeBuildArtifacts(builds)
-			if err != nil {
-				return nil, fmt.Errorf("could not write build-artifacts: %w", err)
-			}
-			defer cleanup()
-		}
-
-		cmdLine := h.generateSkaffoldDebugFilter(buildsFile)
-
-		// need to include current environment, specifically for HOME to lookup ~/.kube/config
-		env := util.EnvSliceToMap(util.OSEnviron(), "=")
-		env["SKAFFOLD_CMDLINE"] = shell.Join(cmdLine...)
-		env["SKAFFOLD_FILENAME"] = h.configFile
-		installEnv = util.EnvMapToSlice(env, "=")
-	}
-
-	opts.namespace, err = h.releaseNamespace(r)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := h.exec(ctx, ioutil.Discard, false, nil, getArgs(releaseName, opts.namespace)...); err != nil {
-		output.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
-
-		opts.upgrade = false
-		opts.flags = h.Flags.Install
-	} else {
-		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
-			olog.Entry(ctx).Infof("Release %s already installed...", releaseName)
-			return []types.Artifact{}, nil
-		} else if r.UpgradeOnChange == nil && r.RemoteChart != "" {
-			olog.Entry(ctx).Infof("Release %s not upgraded as it is remote...", releaseName)
-			return []types.Artifact{}, nil
-		}
-	}
-
-	// Only build local dependencies, but allow a user to skip them.
-	if !r.SkipBuildDependencies && r.ChartPath != "" {
-		olog.Entry(ctx).Info("Building helm dependencies...")
-
-		if err := h.exec(ctx, out, false, nil, "dep", "build", r.ChartPath); err != nil {
-			return nil, userErr("building helm dependencies", err)
-		}
-	}
-
-	// Dump overrides to a YAML file to pass into helm
-	if len(r.Overrides.Values) != 0 {
-		overrides, err := yaml.Marshal(r.Overrides)
-		if err != nil {
-			return nil, userErr("cannot marshal overrides to create overrides values.yaml", err)
-		}
-
-		if err := ioutil.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
-			return nil, userErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
-		}
-
-		defer func() {
-			os.Remove(constants.HelmOverridesFilename)
-		}()
-	}
-
-	if r.Packaged != nil {
-		chartPath, err := h.packageChart(ctx, r)
-		if err != nil {
-			return nil, userErr("cannot package chart", err)
-		}
-
-		opts.chartPath = chartPath
-	}
-
-	args, err := h.installArgs(r, builds, valuesSet, opts)
-	if err != nil {
-		return nil, userErr("release args", err)
-	}
-
-	err = h.exec(ctx, out, r.UseHelmSecrets, installEnv, args...)
-	if err != nil {
-		return nil, userErr("install", err)
-	}
-
-	b, err := h.getReleaseManifest(ctx, releaseName, opts.namespace)
-	if err != nil {
-		return nil, userErr("get release", err)
-	}
-
-	artifacts := parseReleaseManifests(opts.namespace, bufio.NewReader(&b))
-	return artifacts, nil
-}
-
 // getReleaseManifest confirms that a release is visible to helm and returns the release manifest
 func (h *Deployer3) getReleaseManifest(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because sometimes a release may not be immediately visible
@@ -611,6 +341,19 @@ func (h *Deployer3) getReleaseManifest(ctx context.Context, releaseName string, 
 	olog.Entry(ctx).Debug(b.String())
 
 	return b, err
+}
+
+func (h *Deployer3) getInstallOpts(releaseName string, r latest.HelmRelease, helmVersion semver.Version, chartVersion string) installOpts {
+	return installOpts{
+		releaseName: releaseName,
+		upgrade:     true,
+		flags:       h.Flags.Upgrade,
+		force:       h.forceDeploy,
+		chartPath:   chartSource(r),
+		helmVersion: helmVersion,
+		repo:        r.Repo,
+		version:     chartVersion,
+	}
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive
@@ -674,4 +417,68 @@ func warnAboutUnusedImages(builds []graph.Artifact, valuesSet map[string]bool) {
 			warnings.Printf("See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration")
 		}
 	}
+}
+
+// Render generates the Kubernetes manifests and writes them out
+func (h *Deployer3) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "helm",
+	})
+	renderedManifests := new(bytes.Buffer)
+
+	for _, r := range h.Releases {
+		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
+		if err != nil {
+			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+		}
+
+		args := []string{"template", releaseName, chartSource(r)}
+		if r.Packaged == nil && r.Version != "" {
+			args = append(args, "--version", r.Version)
+		}
+
+		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
+		if err != nil {
+			return err
+		}
+
+		for k, v := range params {
+			var value string
+
+			cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
+
+			value, err = imageSetFromConfig(cfg, k, v.Tag)
+			if err != nil {
+				return err
+			}
+
+			args = append(args, "--set-string", value)
+		}
+
+		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
+		if err != nil {
+			return userErr("construct override args", err)
+		}
+
+		namespace, err := h.releaseNamespace(r)
+		if err != nil {
+			return err
+		}
+		if namespace != "" {
+			args = append(args, "--namespace", namespace)
+		}
+
+		if r.Repo != "" {
+			args = append(args, "--repo")
+			args = append(args, r.Repo)
+		}
+
+		outBuffer := new(bytes.Buffer)
+		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
+			return userErr("std out err", fmt.Errorf(outBuffer.String()))
+		}
+		renderedManifests.Write(outBuffer.Bytes())
+	}
+
+	return manifest.Write(renderedManifests.String(), filepath, out)
 }

@@ -63,7 +63,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "helm deployer with 3.0.0 version",
 				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
-				expected:    deploy.NewDeployerMux([]deploy.Deployer{&helm.Deployer3{}}, false),
+				expected:    deploy.NewDeployerMux([]deploy.Deployer{&helm.Deployer30{}}, false),
 			},
 			{
 				description: "helm deployer with less than 3.0.0 version",
@@ -129,7 +129,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
-					&helm.Deployer3{},
+					&helm.Deployer30{},
 					&kpt.Deployer{},
 				}, false),
 			},

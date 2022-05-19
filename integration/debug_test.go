@@ -63,12 +63,14 @@ func TestDebug(t *testing.T) {
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
 		},
+		/* TODO: bring it back when helm.Deploy31 is implemented
 		{
 			description:   "helm",
 			dir:           "examples/helm-deployment",
 			deployments:   []string{"skaffold-helm"},
 			ignoreWorkdir: true, // dockerfile doesn't have a workdir
 		},
+		*/
 		{
 			description:   "modules",
 			dir:           "examples/multi-config-microservices",
