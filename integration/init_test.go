@@ -57,7 +57,8 @@ func TestInit(t *testing.T) {
 			ns, _ := SetupNamespace(t.T)
 
 			initArgs := append([]string{"--force"}, test.args...)
-			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
+			b := skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFailOutput(t.T)
+			fmt.Println(string(b))
 			checkGeneratedConfig(t, test.dir)
 
 			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
