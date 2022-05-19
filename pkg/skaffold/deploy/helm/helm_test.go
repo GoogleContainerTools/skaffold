@@ -22,8 +22,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-        "github.com/blang/semver"
-        "github.com/pkg/errors"
+	"github.com/blang/semver"
+	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
