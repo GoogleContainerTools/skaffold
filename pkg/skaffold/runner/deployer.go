@@ -115,7 +115,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			}
 		}
 
-		return getDefaultDeployer(runCtx, labeller, hydrationDir)
+		return getDefaultDeployer(runCtx, labeller)
 	}
 
 	var deployers []deploy.Deployer
@@ -158,7 +158,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -213,7 +213,7 @@ The default deployer will honor a select set of deploy configuration from an exi
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latest.KubectlFlags
@@ -280,7 +280,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		DefaultNamespace: defaultNamespace,
 	}
 	dCtx := &deployerCtx{runCtx, latest.DeployConfig{StatusCheck: statusCheck, KubeContext: kubeContext, DeployType: latest.DeployType{KubectlDeploy: k}}}
-	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, hydrationDir)
+	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}

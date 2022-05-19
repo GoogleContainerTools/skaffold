@@ -80,7 +80,6 @@ type Deployer struct {
 	insecureRegistries map[string]bool
 	labeller           *label.DefaultLabeller
 	skipRender         bool
-	hydrationDir       string
 	namespaces         *[]string
 
 	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
@@ -89,7 +88,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, hydrationDir string) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -132,7 +131,6 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
 		hydratedManifests: cfg.HydratedManifests(),
 		// hydrationDir refers to the path where the hydrated manifests are stored, this is introduced in v2.
-		hydrationDir: hydrationDir,
 
 		transformableAllowlist: transformableAllowlist,
 		transformableDenylist:  transformableDenylist,
