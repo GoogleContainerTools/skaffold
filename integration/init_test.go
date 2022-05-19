@@ -177,11 +177,11 @@ func TestInitWithCLIArtifactAndManifestGeneration(t *testing.T) {
 
 func checkGeneratedConfig(t *testutil.T, dir string) {
 	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
-	fmt.Println(expectedOutput)
+	fmt.Println(string(expectedOutput))
 	t.CheckNoError(err)
 
 	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
-	fmt.Println(output)
+	fmt.Println(string(output))
 	t.CheckNoError(err)
 	t.CheckDeepEqual(string(expectedOutput), string(output))
 }
