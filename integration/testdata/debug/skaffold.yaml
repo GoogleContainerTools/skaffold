@@ -29,8 +29,11 @@ manifests:
 profiles:
 - name: kustomize
   patches:
+  - op: remove
+    path: /manifests/rawYaml
   manifests:
     kustomize:
+      paths:
       - "."
 # use GCP Buildpacks to build the individual projects
 - name: buildpacks
@@ -62,6 +65,8 @@ profiles:
     #    builder: "gcr.io/buildpacks/builder:v1"
 - name: docker
   patches:
+  - op: remove
+    path: /manifests/rawYaml
   build:
     artifacts:
     - image: skaffold-debug-nodejs
