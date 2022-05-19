@@ -4,16 +4,16 @@ metadata:
   name: helm-project
 build:
   artifacts:
-  - image: go-guestbook-backend
-    context: backend/src
+  - image: go-hello
+    context: hello-world/src
     docker:
       dockerfile: Dockerfile
 deploy:
   helm:
     releases:
-    - name: backend
-      chartPath: backend
+    - name: hello-world
+      chartPath: hello-world
       valuesFiles:
-      - backend/val.yaml
-      - backend/values.yaml
+      - hello-world/val.yaml
+      - hello-world/values.yaml
       version: 0.1.0

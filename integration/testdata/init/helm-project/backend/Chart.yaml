@@ -1,4 +1,0 @@
-apiVersion: v1
-description: back end for guestbook
-name: backend
-version: 0.1.0
