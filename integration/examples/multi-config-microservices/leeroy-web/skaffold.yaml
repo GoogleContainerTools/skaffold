@@ -11,8 +11,10 @@ build:
     - image: base
       alias: BASE
 manifests:
-    rawYaml:
-      - kubernetes/*
+  rawYaml:
+    - kubernetes/*
+deploy:
+  kubectl: {}
 portForward:
 - resourceType: deployment
   resourceName: leeroy-web

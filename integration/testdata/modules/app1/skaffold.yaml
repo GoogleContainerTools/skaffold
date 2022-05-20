@@ -19,3 +19,6 @@ build:
 manifests:
   rawYaml:
   - 'k8s.yaml'
+
+deploy:
+  kubectl: {}
