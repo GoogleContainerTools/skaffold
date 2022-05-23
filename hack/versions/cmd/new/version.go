@@ -54,9 +54,13 @@ func main() {
 	makeSchemaDir(current)
 
 	// Create a package for current version
-	walk.From(path("latest", "v1")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
+	walk.From(path("latest")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
+		// skip config in v2 package
+		if strings.Contains(file, "v2") {
+			return nil
+		}
 		cp(file, path(current, info.Name()))
-		sed(path(current, info.Name()), "package v1", "package "+current)
+		sed(path(current, info.Name()), "package latest", "package "+current)
 		return nil
 	})
 
@@ -75,9 +79,9 @@ func main() {
 	sed(path(prev, "upgrade_test.go"), "latest", current)
 
 	// Latest uses the new version
-	sed(path("latest", "v1", "config.go"), current, next)
+	sed(path("latest", "config.go"), current, next)
 
-	hackschema.UpdateVersionComment(path("latest", "v1", "config.go"), false)
+	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
 
 	// Update skaffold.yaml in integration tests
 	walk.From("integration").WhenNameMatches("*skaffold*.yaml").MustDo(func(path string, _ walk.Dirent) error {
