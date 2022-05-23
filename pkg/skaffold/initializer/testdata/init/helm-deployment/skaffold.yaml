@@ -12,5 +12,6 @@ deploy:
     releases:
     - name: skaffold-helm
       chartPath: charts
+      version: 0.1.0
       valuesFiles:
       - charts/values.yaml
