@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"os"
 	"strings"
 	"time"
 
@@ -114,7 +113,6 @@ var RunModes = struct {
 	Render   RunMode
 	Delete   RunMode
 	Diagnose RunMode
-	IntTest  RunMode
 }{
 	Build:    "build",
 	Dev:      "dev",
@@ -124,7 +122,6 @@ var RunModes = struct {
 	Render:   "render",
 	Delete:   "delete",
 	Diagnose: "diagnose",
-	IntTest:  "testing",
 }
 
 // Prune returns true iff the user did NOT specify the --no-prune flag,
@@ -134,9 +131,6 @@ func (opts *SkaffoldOptions) Prune() bool {
 }
 
 func (opts *SkaffoldOptions) Mode() RunMode {
-	if _, ok := os.LookupEnv("SKAFFOLD_INT_TEST"); ok {
-		return RunModes.IntTest
-	}
 	return RunMode(opts.Command)
 }
 
