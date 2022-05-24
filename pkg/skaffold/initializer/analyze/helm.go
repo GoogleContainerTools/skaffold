@@ -50,7 +50,7 @@ func (h *helmAnalyzer) analyzeFile(ctx context.Context, fp string) error {
 			if hasChart(dir) {
 				h.chartDirs[dir] = []string{fp}
 			}
-			log.Entry(context.TODO()).Debugf("ignoring a yaml file %s not part of any chart ", fp)
+			log.Entry(context.TODO()).Debugf("not detecting a yaml file %s as value file. Not part of any chart", fp)
 		}
 	}
 	return nil

@@ -29,10 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestInitCompose(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
+func TestInit(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -40,10 +37,18 @@ func TestInitCompose(t *testing.T) {
 		dir  string
 		args []string
 	}{
+		/*
+			// Fix after https://github.com/GoogleContainerTools/skaffold/issues/6722
+				{
+					name: "compose",
+					dir:  "testdata/init/compose",
+					args: []string{"--compose-file", "docker-compose.yaml"},
+				},
+		*/
 		{
-			name: "compose",
-			dir:  "testdata/init/compose",
-			args: []string{"--compose-file", "docker-compose.yaml"},
+			name: "helm init",
+			dir:  "testdata/init/helm-project",
+			args: []string{"--XXenableBuildpacksInit=false"},
 		},
 	}
 	for _, test := range tests {
@@ -52,18 +57,17 @@ func TestInitCompose(t *testing.T) {
 
 			initArgs := append([]string{"--force"}, test.args...)
 			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
-
 			checkGeneratedConfig(t, test.dir)
 
 			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
 			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+			defer skaffold.Delete().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name)
 		})
 	}
 }
 
 func TestInitManifestGeneration(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	t.Skipf("Fix after https://github.com/GoogleContainerTools/skaffold/issues/6722")
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -99,13 +103,13 @@ func TestInitManifestGeneration(t *testing.T) {
 
 			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
 			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+			skaffold.Delete().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
 		})
 	}
 }
 
 func TestInitKustomize(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	t.Skipf("Fix after https://github.com/GoogleContainerTools/skaffold/issues/6722")
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -127,12 +131,12 @@ func TestInitKustomize(t *testing.T) {
 		checkGeneratedConfig(t, dir)
 
 		skaffold.Run().InDir(dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+		skaffold.Delete().InDir(dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
 	})
 }
 
 func TestInitWithCLIArtifact(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	t.Skipf("Fix after https://github.com/GoogleContainerTools/skaffold/issues/6722")
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -148,6 +152,7 @@ func TestInitWithCLIArtifact(t *testing.T) {
 
 		// Make sure the skaffold yaml is ok
 		skaffold.Run().InDir(dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+		skaffold.Delete().InDir(dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
 	})
 }
 
