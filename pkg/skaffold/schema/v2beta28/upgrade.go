@@ -24,6 +24,10 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v2beta28 to v2beta29
+// 1. Additions:
+//    GoogleCloudBuild.Region
+// 2. Removals:
+// 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
