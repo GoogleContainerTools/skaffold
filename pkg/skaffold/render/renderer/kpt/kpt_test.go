@@ -170,7 +170,7 @@ pipeline:
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := mockConfig{workingDir: tmpDirObj.Root(),}
+			mockCfg := mockConfig{workingDir: tmpDirObj.Root()}
 			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,

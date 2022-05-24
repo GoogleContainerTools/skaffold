@@ -56,7 +56,7 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 			BuildArgs: oldPL.Deploy.KustomizeDeploy.BuildArgs,
 		}
 		if len(newPL.Manifests.Kustomize.Paths) == 0 {
-			newPL.Manifests.Kustomize.Paths = append(newPL.Render.Kustomize.Paths, ".")
+			newPL.Manifests.Kustomize.Paths = append(newPL.Manifests.Kustomize.Paths, ".")
 		}
 		// nil out kustomize deployer as it shouldn't be a thing anymore
 		newPL.Deploy.KustomizeDeploy = nil

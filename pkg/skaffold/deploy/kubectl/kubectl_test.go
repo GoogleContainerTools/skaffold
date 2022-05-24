@@ -241,7 +241,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
-					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{Manifests: rc}}),
+					Pipelines:  runcontext.NewPipelines([]latest.Pipeline{{Manifests: rc}}),
 				},
 			}
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
