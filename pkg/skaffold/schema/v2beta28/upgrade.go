@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta27
+package v2beta28
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v2beta27 to v2beta28
+// Config changes from v2beta28 to v2beta29
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -34,18 +34,5 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldBuild := &oldPipeline.(*Pipeline).Build
-	newBuild := &newPipeline.(*next.Pipeline).Build
-
-	// move: artifact.ko.Platforms
-	//   to: artifact.Platforms
-	for i, newArtifact := range newBuild.Artifacts {
-		oldArtifact := oldBuild.Artifacts[i]
-		if oldArtifact.KoArtifact == nil || len(oldArtifact.KoArtifact.Platforms) == 0 {
-			continue
-		}
-		newArtifact.Platforms = oldArtifact.KoArtifact.Platforms
-	}
-
 	return nil
 }

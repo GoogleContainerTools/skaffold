@@ -59,7 +59,7 @@ func getLastReleasedConfigVersion() string {
 	// we split the config in v1.25.0
 	for _, url := range []string{
 		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
-		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
+		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/v1/config.go", lastTag),
 	} {
 		resp, err := http.Get(url)
 		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
