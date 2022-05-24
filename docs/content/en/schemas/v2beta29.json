@@ -1860,6 +1860,11 @@
           "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
           "x-intellij-html-description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project."
         },
+        "region": {
+          "type": "string",
+          "description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See [Cloud Build locations](https://cloud.google.com/build/docs/locations).",
+          "x-intellij-html-description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See <a href=\"https://cloud.google.com/build/docs/locations\">Cloud Build locations</a>."
+        },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build should be allowed to run. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).",
@@ -1884,7 +1889,8 @@
         "gradleImage",
         "packImage",
         "concurrency",
-        "workerPool"
+        "workerPool",
+        "region"
       ],
       "additionalProperties": false,
       "type": "object",
