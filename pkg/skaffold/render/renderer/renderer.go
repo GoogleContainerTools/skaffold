@@ -23,11 +23,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/noop"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -39,7 +39,7 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg *runcontext.RunContext, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
+func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
 	if usingLegacyHelmDeploy {
 		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
 	}

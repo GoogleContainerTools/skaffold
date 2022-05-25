@@ -28,6 +28,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -715,3 +716,7 @@ func (mc mockConfig) GetWorkingDir() string                       { return mc.wo
 func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
 func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
 func (mc mockConfig) TransformRulesFile() string                  { return "" }
+func (mc mockConfig) ConfigurationFile() string                   { return "" }
+func (mc mockConfig) GetKubeConfig() string                       { return "" }
+func (mc mockConfig) GetKubeContext() string                      { return "" }
+func (mc mockConfig) Mode() config.RunMode                        { return "" }

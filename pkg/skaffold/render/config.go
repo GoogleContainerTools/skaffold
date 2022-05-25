@@ -17,12 +17,30 @@ limitations under the License.
 package render
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Config interface {
 	GetWorkingDir() string
+	TransformRulesFile() string
+	ConfigurationFile() string
+	GetKubeContext() string
+	GetKubeConfig() string
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter
-	TransformRulesFile() string
+	Mode() config.RunMode
 }
+
+type MockConfig struct {
+	WorkingDir string
+}
+
+func (mc MockConfig) GetWorkingDir() string                       { return mc.WorkingDir }
+func (mc MockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
+func (mc MockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
+func (mc MockConfig) TransformRulesFile() string                  { return "" }
+func (mc MockConfig) ConfigurationFile() string                   { return "" }
+func (mc MockConfig) GetKubeConfig() string                       { return "" }
+func (mc MockConfig) GetKubeContext() string                      { return "" }
+func (mc MockConfig) Mode() config.RunMode                        { return "" }

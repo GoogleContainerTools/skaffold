@@ -22,28 +22,20 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
-
-type Config interface {
-	render.Config
-	Mode() config.RunMode
-	ConfigurationFile() string
-	GetKubeContext() string
-	GetKubeConfig() string
-}
 
 type Helm struct {
 	generate.Generator
@@ -67,7 +59,7 @@ func (h Helm) KubeConfig() string        { return h.kubeConfig }
 func (h Helm) Labels() map[string]string { return h.labels }
 func (h Helm) GlobalFlags() []string     { return h.config.Flags.Global }
 
-func New(cfg Config, rCfg latest.RenderConfig, labels map[string]string) (Helm, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string) (Helm, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
