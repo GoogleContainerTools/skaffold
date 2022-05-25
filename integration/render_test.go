@@ -25,10 +25,10 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -73,7 +73,7 @@ spec:
 			Generate: latest.Generate{
 				RawK8s: []string{"deployment.yaml"}},
 		}
-		mockCfg := mockConfig{workingDir: tmpDir.Root()}
+		mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
 		r, err := kubectl.New(mockCfg, rc, map[string]string{})
 		t.RequireNoError(err)
 		var b bytes.Buffer
@@ -212,7 +212,7 @@ spec:
 				Generate: latest.Generate{
 					RawK8s: []string{"deployment.yaml"}},
 			}
-			mockCfg := mockConfig{workingDir: tmpDir.Root()}
+			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
 			r, err := kubectl.New(mockCfg, rc, map[string]string{})
 			t.RequireNoError(err)
 			var b bytes.Buffer
@@ -707,16 +707,3 @@ spec:
 		})
 	}
 }
-
-type mockConfig struct {
-	workingDir string
-}
-
-func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
-func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
-func (mc mockConfig) TransformRulesFile() string                  { return "" }
-func (mc mockConfig) ConfigurationFile() string                   { return "" }
-func (mc mockConfig) GetKubeConfig() string                       { return "" }
-func (mc mockConfig) GetKubeContext() string                      { return "" }
-func (mc mockConfig) Mode() config.RunMode                        { return "" }
