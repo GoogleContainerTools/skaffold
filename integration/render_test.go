@@ -237,7 +237,7 @@ func TestHelmRender(t *testing.T) {
 	}{
 		{
 			description: "Bare bones render",
-			dir:         "testdata/gke_loadbalancer",
+			dir:         "testdata/gke_loadbalancer-render",
 			expectedOut: `---
 # Source: loadbalancer-helm/templates/k8s.yaml
 apiVersion: v1
@@ -283,7 +283,7 @@ spec:
 		},
 		{
 			description: "A more complex template",
-			dir:         "testdata/helm",
+			dir:         "testdata/helm-render",
 			args:        []string{"--profile=helm-render"},
 			expectedOut: `---
 # Source: skaffold-helm/templates/service.yaml

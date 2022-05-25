@@ -1,0 +1,12 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  artifacts:
+    - image: gke-loadbalancer
+      context: ./
+manifests:
+  helm:
+    releases:
+    # seed test namespace in the release name.
+    - name: skaffold-helm
+      chartPath: loadbalancer-helm

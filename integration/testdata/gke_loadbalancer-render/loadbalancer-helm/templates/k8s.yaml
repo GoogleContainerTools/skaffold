@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gke-loadbalancer
+  labels:
+    app: gke-loadbalancer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gke-loadbalancer
+  template:
+    metadata:
+      labels:
+        app: gke-loadbalancer
+    spec:
+      containers:
+        - name: gke-container
+          image: {{ .Values.image }}
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gke-loadbalancer
+  labels:
+    app: gke-loadbalancer
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app: "gke-loadbalancer"

@@ -1,0 +1,21 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-helm
+manifests:
+  helm:
+    releases:
+    - name: skaffold-helm
+      chartPath: skaffold-helm
+profiles:
+- name: helm-render
+  manifests:
+    helm:
+      releases:
+      - name: skaffold-helm
+        chartPath: skaffold-helm
+        setValues:
+          pullPolicy: always
