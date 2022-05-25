@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,12 +26,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+var (
+	// error to throw when helm version can't be determined
+	versionErrorString = "failed to determine binary version: %w"
+)
+
 const (
 	installLink = "https://helm.sh/docs/intro/install"
 	toolName    = "Helm"
 )
 
-func versionGetErr(err error) error {
+func VersionGetErr(err error) error {
 	return sErrors.NewError(err,
 		&proto.ActionableErr{
 			Message: deployerr.MissingToolErr(toolName, fmt.Errorf(versionErrorString, err)),
@@ -45,7 +50,7 @@ func versionGetErr(err error) error {
 		})
 }
 
-func minVersionErr(minVer string) error {
+func MinVersionErr(minVer string) error {
 	return sErrors.NewErrorWithStatusCode(
 		&proto.ActionableErr{
 			Message: fmt.Sprintf("skaffold requires Helm version %s or greater", minVer),
@@ -59,11 +64,11 @@ func minVersionErr(minVer string) error {
 		})
 }
 
-func userErr(prefix string, err error) error {
+func UserErr(prefix string, err error) error {
 	return deployerr.UserError(errors.Wrap(err, prefix), proto.StatusCode_DEPLOY_HELM_USER_ERR)
 }
 
-func createNamespaceErr(version string) error {
+func CreateNamespaceErr(version string) error {
 	return sErrors.NewErrorWithStatusCode(
 		&proto.ActionableErr{
 			Message: fmt.Sprintf("Skaffold config options `createNamespace` is not available in the current Helm version %s", version),

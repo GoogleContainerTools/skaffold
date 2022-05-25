@@ -18,7 +18,7 @@ set -e
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 BOILERPLATEDIR=$DIR/boilerplate
 
-files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR})
+files=$(python3 ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR})
 
 if [[ ! -z ${files} ]]; then
 	echo "Boilerplate missing in:"
