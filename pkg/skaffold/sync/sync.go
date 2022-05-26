@@ -351,6 +351,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 	}
 
 	if numSynced == 0 {
+		log.Entry(ctx).Warnf("sync failed for artifact %q", image)
 		return errors.New("didn't sync any files")
 	}
 	return nil
