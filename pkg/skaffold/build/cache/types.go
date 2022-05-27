@@ -30,10 +30,16 @@ type BuildAndTestFn func(context.Context, io.Writer, tag.ImageTags, []*latest.Ar
 
 type Cache interface {
 	Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, platform.Resolver, BuildAndTestFn) ([]graph.Artifact, error)
+	AddArtifacts(ctx context.Context, bRes []graph.Artifact) error
 }
 
 type noCache struct{}
 
 func (n *noCache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
 	return buildAndTest(ctx, out, tags, artifacts, platforms)
+}
+
+func (n *noCache) AddArtifacts(ctx context.Context, bRes []graph.Artifact) error {
+	//noop
+	return nil
 }

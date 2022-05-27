@@ -105,17 +105,6 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating verifier: %w", err)
 	}
 
-	// The Builder must be instantiated AFTER the Deployer, because the Deploy target influences
-	// the Cluster object on the RunContext, which in turn influences whether or not we will push images.
-	var builder build.Builder
-	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
-		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
-	})
-	if err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return nil, fmt.Errorf("creating builder: %w", err)
-	}
-
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
@@ -138,6 +127,16 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("initializing cache: %w", err)
+	}
+	// The Builder must be instantiated AFTER the Deployer, because the Deploy target influences
+	// the Cluster object on the RunContext, which in turn influences whether or not we will push images.
+	var builder build.Builder
+	builder, err = build.NewBuilderMux(runCtx, store, artifactCache, func(p latest.Pipeline) (build.PipelineBuilder, error) {
+		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
+	})
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
 	builder, tester, renderer, deployer = runner.WithTimings(builder, tester, renderer, deployer, runCtx.CacheArtifacts())

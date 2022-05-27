@@ -78,7 +78,7 @@ func TestNewBuilderMux(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			cfg := &mockConfig{pipelines: test.pipelines}
 
-			b, err := NewBuilderMux(cfg, nil, test.pipeBuilder)
+			b, err := NewBuilderMux(cfg, nil, nil, test.pipeBuilder)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				return

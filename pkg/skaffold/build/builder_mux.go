@@ -37,6 +37,11 @@ type BuilderMux struct {
 	byImageName map[string]PipelineBuilder
 	store       ArtifactStore
 	concurrency int
+	cache       Cache
+}
+
+type Cache interface {
+	AddArtifacts(ctx context.Context, bRes []graph.Artifact) error
 }
 
 // Config represents an interface for getting all config pipelines.
@@ -49,7 +54,7 @@ type Config interface {
 }
 
 // NewBuilderMux returns an implementation of `build.BuilderMux`.
-func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
+func NewBuilderMux(cfg Config, store ArtifactStore, cache Cache, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
 	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
 	var pbs []PipelineBuilder
@@ -64,7 +69,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 		}
 	}
 	concurrency := getConcurrency(pbs, cfg.BuildConcurrency())
-	return &BuilderMux{builders: pbs, byImageName: m, store: store, concurrency: concurrency}, nil
+	return &BuilderMux{builders: pbs, byImageName: m, store: store, concurrency: concurrency, cache: cache}, nil
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
@@ -101,6 +106,16 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		if built, err = artifactBuilder(ctx, out, artifact, tag, platforms); err != nil {
 			return "", err
 		}
+
+		if err := b.cache.AddArtifacts(ctx, []graph.Artifact{
+			{
+				ImageName: artifact.ImageName,
+				Tag:       built,
+			},
+		}); err != nil {
+			log.Entry(ctx).Warnf("error adding artifact to cache; caching may not work as expected: %v", err)
+		}
+
 		if err = r.RunPostHooks(ctx, out); err != nil {
 			return "", err
 		}

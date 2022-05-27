@@ -57,7 +57,6 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	case results = <-lookup:
 	}
 
-	hashByName := make(map[string]string)
 	var needToBuild []*latest.Artifact
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
@@ -75,7 +74,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		case needsBuilding:
 			eventV2.CacheCheckMiss(artifact.ImageName)
 			output.Yellow.Fprintln(out, "Not found. Building")
-			hashByName[artifact.ImageName] = result.Hash()
+			c.hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 
@@ -141,20 +140,17 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	log.Entry(ctx).Infoln("Cache check completed in", timeutil.Humanize(time.Since(start)))
 
+	defer func() {
+		if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
+			log.Entry(ctx).Warnf("error saving cache file; caching may not work as expected: %v", err)
+		}
+	}()
+
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild, platforms)
+
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
-	}
-
-	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {
-		log.Entry(ctx).Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
-		return append(bRes, alreadyBuilt...), nil
-	}
-
-	if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
-		log.Entry(ctx).Warnf("error saving cache file; caching may not work as expected: %v", err)
-		return append(bRes, alreadyBuilt...), nil
 	}
 
 	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
@@ -175,7 +171,7 @@ func maintainArtifactOrder(built []graph.Artifact, artifacts []*latest.Artifact)
 	return ordered
 }
 
-func (c *cache) addArtifacts(ctx context.Context, bRes []graph.Artifact, hashByName map[string]string) error {
+func (c *cache) AddArtifacts(ctx context.Context, bRes []graph.Artifact) error {
 	for _, a := range bRes {
 		entry := ImageDetails{}
 		isLocal, err := c.isLocalImage(a.ImageName)
@@ -199,7 +195,7 @@ func (c *cache) addArtifacts(ctx context.Context, bRes []graph.Artifact, hashByN
 			entry.Digest = ref.Digest
 		}
 		c.cacheMutex.Lock()
-		c.artifactCache[hashByName[a.ImageName]] = entry
+		c.artifactCache[c.hashByName[a.ImageName]] = entry
 		c.cacheMutex.Unlock()
 	}
 	return nil
