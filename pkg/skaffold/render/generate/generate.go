@@ -57,9 +57,12 @@ type Generator struct {
 func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 	var localPaths []string
 	var gcsManifests []string
+	var urlManifests []string
+
 	for _, path := range paths {
 		switch {
 		case util.IsURL(path):
+			urlManifests = append(urlManifests, path)
 		case strings.HasPrefix(path, "gs://"):
 			gcsManifests = append(gcsManifests, path)
 		default:
@@ -75,6 +78,18 @@ func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 		tmpDir, err := manifest.DownloadFromGCS(gcsManifests)
 		if err != nil {
 			return nil, fmt.Errorf("downloading from GCS: %w", err)
+		}
+		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
+		if err != nil {
+			return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
+		}
+		list = append(list, l...)
+	}
+	if len(urlManifests) != 0 {
+		// return tmp dir of the downloaded manifests
+		tmpDir, err := manifest.DownloadFromURL(urlManifests)
+		if err != nil {
+			return nil, fmt.Errorf("downloading from URLs: %w", err)
 		}
 		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
 		if err != nil {

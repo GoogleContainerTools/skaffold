@@ -288,10 +288,11 @@ func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 }
 
 func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
-	var nonURLManifests, gcsManifests []string
+	var nonURLManifests, urlManifests, gcsManifests []string
 	for _, manifest := range manifests {
 		switch {
 		case util.IsURL(manifest):
+			urlManifests = append(urlManifests, manifest)
 		case strings.HasPrefix(manifest, "gs://"):
 			gcsManifests = append(gcsManifests, manifest)
 		default:
@@ -314,6 +315,19 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
 		if err != nil {
 			return nil, userErr(fmt.Errorf("expanding kubectl manifest paths: %w", err))
+		}
+		list = append(list, l...)
+	}
+
+	if len(urlManifests) != 0 {
+		// return tmp dir of the downloaded manifests
+		tmpDir, err := manifest.DownloadFromURL(urlManifests)
+		if err != nil {
+			return nil, fmt.Errorf("downloading from URLs: %w", err)
+		}
+		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
+		if err != nil {
+			return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
 		}
 		list = append(list, l...)
 	}
