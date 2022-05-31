@@ -1,4 +1,10 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
+manifests:
+  kustomize:
+    paths:
+      - .
 deploy:
-  kustomize: {}
+  kustomize:
+    paths:
+      - .
