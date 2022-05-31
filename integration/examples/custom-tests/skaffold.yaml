@@ -15,7 +15,6 @@ test:
       - command: echo Hello world!!
         dependencies:
           command: echo [\"main_test.go\"] 
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+manifests:
+  rawYaml:
+    - k8s-*
