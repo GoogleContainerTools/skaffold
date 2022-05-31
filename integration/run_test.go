@@ -195,8 +195,6 @@ func TestRunTail(t *testing.T) {
 }
 
 func TestRunTailDefaultNamespace(t *testing.T) {
-	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7287
-	t.Skipf("fix https://github.com/GoogleContainerTools/skaffold/issues/7287")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	for _, test := range tests {
@@ -334,9 +332,6 @@ func TestRunGCPOnly(t *testing.T) {
 }
 
 func TestRunIdempotent(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -362,9 +357,6 @@ func TestRunIdempotent(t *testing.T) {
 }
 
 func TestRunUnstableChecked(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -378,9 +370,6 @@ func TestRunUnstableChecked(t *testing.T) {
 }
 
 func TestRunUnstableNotChecked(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -389,9 +378,6 @@ func TestRunUnstableNotChecked(t *testing.T) {
 }
 
 func TestRunTailPod(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -406,9 +392,6 @@ func TestRunTailPod(t *testing.T) {
 }
 
 func TestRunTailDeployment(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -423,9 +406,6 @@ func TestRunTailDeployment(t *testing.T) {
 }
 
 func TestRunTest(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
