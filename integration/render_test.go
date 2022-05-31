@@ -226,7 +226,6 @@ spec:
 
 func TestHelmRender(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	// TODO Fix test https://github.com/GoogleContainerTools/skaffold/issues/7285
 
 	tests := []struct {
 		description  string
@@ -239,31 +238,30 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "Bare bones render",
 			dir:         "testdata/gke_loadbalancer-render",
-			expectedOut: `---
-# Source: loadbalancer-helm/templates/k8s.yaml
-apiVersion: v1
+			expectedOut: `apiVersion: v1
 kind: Service
 metadata:
-  name: gke-loadbalancer
   labels:
     app: gke-loadbalancer
+    skaffold.dev/run-id: phony-run-id
+  name: gke-loadbalancer
 spec:
-  type: LoadBalancer
   ports:
-    - port: 80
-      targetPort: 3000
-      protocol: TCP
-      name: http
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 3000
   selector:
-    app: "gke-loadbalancer"
+    app: gke-loadbalancer
+  type: LoadBalancer
 ---
-# Source: loadbalancer-helm/templates/k8s.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gke-loadbalancer
   labels:
     app: gke-loadbalancer
+    skaffold.dev/run-id: phony-run-id
+  name: gke-loadbalancer
 spec:
   replicas: 1
   selector:
@@ -273,51 +271,50 @@ spec:
     metadata:
       labels:
         app: gke-loadbalancer
+        skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-        - name: gke-container
-          image: gke-loadbalancer:test
-          ports:
-            - containerPort: 3000
-
+      - image: gke-loadbalancer:test
+        name: gke-container
+        ports:
+        - containerPort: 3000
 `,
 		},
 		{
 			description: "A more complex template",
 			dir:         "testdata/helm-render",
 			args:        []string{"--profile=helm-render"},
-			expectedOut: `---
-# Source: skaffold-helm/templates/service.yaml
-apiVersion: v1
+			expectedOut: `apiVersion: v1
 kind: Service
 metadata:
-  name: skaffold-helm-skaffold-helm
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
-    release: skaffold-helm
     heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm-skaffold-helm
 spec:
-  type: ClusterIP
   ports:
-    - port: 80
-      targetPort: 80
-      protocol: TCP
-      name: nginx
+  - name: nginx
+    port: 80
+    protocol: TCP
+    targetPort: 80
   selector:
     app: skaffold-helm
     release: skaffold-helm
+  type: ClusterIP
 ---
-# Source: skaffold-helm/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skaffold-helm
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
-    release: skaffold-helm
     heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
 spec:
   replicas: 1
   selector:
@@ -329,42 +326,40 @@ spec:
       labels:
         app: skaffold-helm
         release: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-        - name: skaffold-helm
-          image: gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 80
-          resources:
-            {}
+      - image: gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenselettersandnumbers
+        imagePullPolicy: always
+        name: skaffold-helm
+        ports:
+        - containerPort: 80
+        resources: {}
 ---
-# Source: skaffold-helm/templates/ingress.yaml
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: skaffold-helm-skaffold-helm
+  annotations: null
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
-    release: skaffold-helm
     heritage: Helm
-  annotations:
+    release: skaffold-helm
+  name: skaffold-helm-skaffold-helm
 spec:
   rules:
-    - http:
-        paths:
-          - path: /
-            backend:
-              serviceName: skaffold-helm-skaffold-helm
-              servicePort: 80
-
+  - http:
+      paths:
+      - backend:
+          serviceName: skaffold-helm-skaffold-helm
+          servicePort: 80
+        path: /
 `,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			out := skaffold.Render(append([]string{"--build-artifacts=builds.out.json"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
+			out := skaffold.Render(append([]string{"--build-artifacts=builds.out.json", "--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
 
 			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
 		})
