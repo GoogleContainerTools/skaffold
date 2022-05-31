@@ -412,7 +412,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			for _, cfg := range cfgs {
 				if _, ok := SchemaVersionsV2.Find(test.apiVersion[0]); !ok {
 					// TODO: the "defaults" package below only accept latestV2 schema.
-					t.SkipNow()
+					// t.SkipNow()()
 				}
 
 				err := defaults.Set(cfg.(*latest.SkaffoldConfig))

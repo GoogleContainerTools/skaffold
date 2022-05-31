@@ -31,7 +31,7 @@ import (
 
 func TestPortForward(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
@@ -61,7 +61,7 @@ func TestPortForward(t *testing.T) {
 
 func TestRunPortForward(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
@@ -85,7 +85,7 @@ func TestRunPortForward(t *testing.T) {
 
 func TestRunUserPortForwardResource(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
@@ -109,7 +109,7 @@ func TestRunUserPortForwardResource(t *testing.T) {
 
 func TestRunPortForwardByPortName(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
@@ -136,7 +136,7 @@ func TestRunPortForwardByPortName(t *testing.T) {
 // and tests that the pod eventually comes up at the same port again.
 func TestDevPortForwardDeletePod(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {

@@ -159,7 +159,7 @@ var tests = []struct {
 
 func TestRun(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	for _, test := range tests {
@@ -183,7 +183,7 @@ func TestRunTail(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.targetLog == "" {
-				t.SkipNow()
+				// t.SkipNow()()
 			}
 			ns, _ := SetupNamespace(t)
 
@@ -205,7 +205,7 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.targetLog == "" {
-				t.SkipNow()
+				// t.SkipNow()()
 			}
 
 			args := append(test.args, "--tail")
@@ -218,7 +218,7 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 
 func TestRunRenderOnly(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -338,7 +338,7 @@ func TestRunGCPOnly(t *testing.T) {
 
 func TestRunIdempotent(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -366,7 +366,7 @@ func TestRunIdempotent(t *testing.T) {
 
 func TestRunUnstableChecked(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -382,7 +382,7 @@ func TestRunUnstableChecked(t *testing.T) {
 
 func TestRunUnstableNotChecked(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -393,7 +393,7 @@ func TestRunUnstableNotChecked(t *testing.T) {
 
 func TestRunTailPod(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -410,7 +410,7 @@ func TestRunTailPod(t *testing.T) {
 
 func TestRunTailDeployment(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -427,7 +427,7 @@ func TestRunTailDeployment(t *testing.T) {
 
 func TestRunTest(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

@@ -27,7 +27,7 @@ import (
 
 func TestFilterPassthrough(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `filter` currently expects to receive a digested yaml

@@ -196,7 +196,7 @@ func TestDevAutoSync(t *testing.T) {
 /*
 func TestDevSyncAPITrigger(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -230,7 +230,7 @@ func TestDevSyncAPITrigger(t *testing.T) {
 
 func TestDevAutoSyncAPITrigger(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

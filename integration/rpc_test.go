@@ -59,7 +59,7 @@ func TestEnableRPCFlagDeprecation(t *testing.T) {
 
 func TestEventsRPC(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -153,7 +153,7 @@ func TestEventsRPC(t *testing.T) {
 
 func TestEventLogHTTP(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -246,7 +246,7 @@ func TestEventLogHTTP(t *testing.T) {
 
 func TestGetStateRPC(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -301,7 +301,7 @@ func TestGetStateRPC(t *testing.T) {
 /*
 func TestGetStateHTTP(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

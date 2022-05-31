@@ -41,7 +41,7 @@ import (
 
 func TestDevNotification(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -88,7 +88,7 @@ func TestDevNotification(t *testing.T) {
 
 func TestDevGracefulCancel(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	if runtime.GOOS == "windows" {
 		t.Skip("graceful cancel doesn't work on windows")
@@ -144,7 +144,7 @@ func TestDevGracefulCancel(t *testing.T) {
 /*
 func TestDevAPITriggers(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -197,7 +197,7 @@ func TestDevAPITriggers(t *testing.T) {
 
 func TestDevAPIAutoTriggers(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
@@ -274,7 +274,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 
 func TestDevPortForward(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
@@ -435,7 +435,7 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

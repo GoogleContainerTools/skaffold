@@ -35,7 +35,7 @@ import (
 
 func TestBuildDeploy(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, NeedsGcp)
 
@@ -82,7 +82,7 @@ func TestBuildDeploy(t *testing.T) {
 
 func TestDeploy(t *testing.T) {
 	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	// t.SkipNow()()
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

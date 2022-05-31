@@ -48,7 +48,7 @@ var (
 // Skaffold configuration.
 func TestParseExamples(t *testing.T) {
 	// TODO: add examples for v2
-	t.SkipNow()
+	// t.SkipNow()()
 
 	parseConfigFiles(t, "../../../../examples")
 	parseConfigFiles(t, "../../../../integration/examples")
@@ -59,7 +59,7 @@ func TestParseExamples(t *testing.T) {
 // in the documentation.
 func TestParseSamples(t *testing.T) {
 	// TODO: add sample for v2
-	t.SkipNow()
+	// t.SkipNow()()
 
 	paths, err := walk.From(samplesRoot).WhenIsFile().CollectPaths()
 	if err != nil {
