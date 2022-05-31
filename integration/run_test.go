@@ -158,9 +158,6 @@ var tests = []struct {
 }
 
 func TestRun(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
