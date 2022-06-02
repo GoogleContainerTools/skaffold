@@ -4,7 +4,3 @@ manifests:
   kustomize:
     paths:
       - .
-deploy:
-  kustomize:
-    paths:
-      - .
