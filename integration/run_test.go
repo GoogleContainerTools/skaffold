@@ -217,9 +217,6 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 }
 
 func TestRunRenderOnly(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "write rendered manifest to provided filepath", func(tu *testutil.T) {
