@@ -24,13 +24,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
-type timing struct {
+type Timing struct {
 	name string
 	time float64
 }
 
 // we'll need to regenerate this list time to time
-var timings = []timing{
+var Timings = []Timing{
 	{"TestRun", 183.68},
 	{"TestDebug", 128.16},
 	{"TestDevAPITriggers", 81.05},
@@ -85,7 +85,7 @@ type bin struct {
 	total float64
 }
 
-func (b *bin) Add(t timing) bool {
+func (b *bin) Add(t Timing) bool {
 	if b.total+t.time > maxTime {
 		return false
 	}
@@ -98,7 +98,7 @@ func (b *bin) String() string {
 	return fmt.Sprintf("total: %f, size: %d", b.total, b.size)
 }
 
-func Partitions() (map[string]int, int) {
+func Partitions(timings []Timing) (map[string]int, int) {
 	// binpack with first fit decreasing
 	sort.Slice(timings, func(i, j int) bool {
 		return timings[i].time > timings[j].time
