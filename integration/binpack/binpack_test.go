@@ -28,8 +28,8 @@ func TestPartitions(t *testing.T) {
 	level := log.GetLevel()
 	defer log.SetLevel(level)
 	log.SetLevel(log.TraceLevel)
-	partitions, lastPartition := Partitions()
-	testutil.CheckDeepEqual(t, len(partitions), len(timings))
+	partitions, lastPartition := Partitions(Timings)
+	testutil.CheckDeepEqual(t, len(partitions), len(Timings))
 	var bins []bin
 	for i := 0; i <= lastPartition; i++ {
 		bins = append(bins, bin{})
@@ -40,7 +40,7 @@ func TestPartitions(t *testing.T) {
 			t.Errorf("invalid partition %d > max_partition(%d), for %s", p, lastPartition, testName)
 		}
 	}
-	for _, timing := range timings {
+	for _, timing := range Timings {
 		p := partitions[timing.name]
 		fmt.Printf("P:%d | %s: %f\n", p, timing.name, timing.time)
 		bins[p].total += timing.time

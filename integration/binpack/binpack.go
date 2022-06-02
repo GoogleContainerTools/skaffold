@@ -30,6 +30,8 @@ type Timing struct {
 }
 
 // we'll need to regenerate this list time to time
+
+// Timings contains the timings for tests marked with CanRunWithoutGcp
 var Timings = []Timing{
 	{"TestRun", 183.68},
 	{"TestDebug", 128.16},
