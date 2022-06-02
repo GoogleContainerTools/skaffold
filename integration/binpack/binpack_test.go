@@ -28,7 +28,7 @@ func TestPartitions(t *testing.T) {
 	level := log.GetLevel()
 	defer log.SetLevel(level)
 	log.SetLevel(log.TraceLevel)
-	partitions, lastPartition := Partitions(Timings)
+	partitions, lastPartition := Partitions(Timings, MaxBinTime)
 	testutil.CheckDeepEqual(t, len(partitions), len(Timings))
 	var bins []bin
 	for i := 0; i <= lastPartition; i++ {
@@ -44,8 +44,8 @@ func TestPartitions(t *testing.T) {
 		p := partitions[timing.name]
 		fmt.Printf("P:%d | %s: %f\n", p, timing.name, timing.time)
 		bins[p].total += timing.time
-		if bins[p].total > maxTime {
-			t.Errorf("partition %d is oversubscribed %f > %f", p, bins[p].total, maxTime)
+		if bins[p].total > MaxBinTime {
+			t.Errorf("partition %d is oversubscribed %f > %f", p, bins[p].total, MaxBinTime)
 		}
 	}
 }

@@ -67,11 +67,11 @@ func MarkIntegrationTest(t *testing.T, testType TestType) {
 		t.Skip("skipping non-GCP integration test")
 	}
 
-	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t.Name(), binpack.Timings) {
+	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t.Name(), binpack.Timings, binpack.MaxBinTime) {
 		t.Skip(fmt.Sprintf("skipping non-GCP integration test that doesn't match partition %s", getPartition()))
 	}
 
-	if partition() && testType == NeedsGcp && !matchesPartition(t.Name(), binpack.GCPTimings) {
+	if partition() && testType == NeedsGcp && !matchesPartition(t.Name(), binpack.GCPTimings, binpack.MaxGCPBinTime) {
 		t.Skip(fmt.Sprintf("Skipping GCP integration test that doesn't match partition %s", getPartition()))
 	}
 }
@@ -84,9 +84,9 @@ func getPartition() string {
 	return os.Getenv("IT_PARTITION")
 }
 
-func matchesPartition(testName string, timings []binpack.Timing) bool {
+func matchesPartition(testName string, timings []binpack.Timing, maxBinTime float64) bool {
 	var partition int
-	m, lastPartition := binpack.Partitions(timings)
+	m, lastPartition := binpack.Partitions(timings, maxBinTime)
 	if p, ok := m[testName]; ok {
 		partition = p
 	} else {

@@ -80,15 +80,15 @@ var Timings = []Timing{
 	{"TestConfigListForAll", 0.03},
 }
 
-const maxTime = 300.0
+const MaxBinTime = 300.0
 
 type bin struct {
 	size  int
 	total float64
 }
 
-func (b *bin) Add(t Timing) bool {
-	if b.total+t.time > maxTime {
+func (b *bin) Add(t Timing, maxBinTime float64) bool {
+	if b.total+t.time > maxBinTime {
 		return false
 	}
 	b.total += t.time
@@ -100,7 +100,7 @@ func (b *bin) String() string {
 	return fmt.Sprintf("total: %f, size: %d", b.total, b.size)
 }
 
-func Partitions(timings []Timing) (map[string]int, int) {
+func Partitions(timings []Timing, maxBinTime float64) (map[string]int, int) {
 	// binpack with first fit decreasing
 	sort.Slice(timings, func(i, j int) bool {
 		return timings[i].time > timings[j].time
@@ -112,7 +112,7 @@ func Partitions(timings []Timing) (map[string]int, int) {
 	for _, timing := range timings {
 		fit := false
 		for i := range bins {
-			if bins[i].Add(timing) {
+			if bins[i].Add(timing, maxBinTime) {
 				result[timing.name] = i
 				fit = true
 				break
@@ -121,8 +121,8 @@ func Partitions(timings []Timing) (map[string]int, int) {
 		if !fit {
 			newBin := &bin{}
 			bins = append(bins, newBin)
-			if !newBin.Add(timing) {
-				panic(fmt.Errorf("can't fit %v into max bucket size %f", timing, maxTime))
+			if !newBin.Add(timing, maxBinTime) {
+				panic(fmt.Errorf("can't fit %v into max bucket size %f", timing, maxBinTime))
 			}
 			result[timing.name] = len(bins) - 1
 		}
