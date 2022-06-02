@@ -29,23 +29,30 @@ import (
 )
 
 type stubDeploymentInitializer struct {
-	config   latest.DeployConfig
+	config latest.DeployConfig
+}
+
+func (s stubDeploymentInitializer) DeployConfig() latest.DeployConfig {
+	return s.config
+}
+
+type stubRendererInitializer struct {
+	config   latest.RenderConfig
 	profiles []latest.Profile
 }
 
-func (s stubDeploymentInitializer) DeployConfig() (latest.DeployConfig, []latest.Profile) {
+func (s stubRendererInitializer) RenderConfig() (latest.RenderConfig, []latest.Profile) {
 	return s.config, s.profiles
 }
-
-func (s stubDeploymentInitializer) GetImages() []string {
+func (s stubRendererInitializer) GetImages() []string {
 	panic("implement me")
 }
 
-func (s stubDeploymentInitializer) Validate() error {
+func (s stubRendererInitializer) Validate() error {
 	panic("no thanks")
 }
 
-func (s stubDeploymentInitializer) AddManifestForImage(string, string) {
+func (s stubRendererInitializer) AddManifestForImage(string, string) {
 	panic("don't call me")
 }
 
@@ -76,6 +83,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		name                   string
 		expectedSkaffoldConfig *latest.SkaffoldConfig
 		deployConfig           latest.DeployConfig
+		renderConfig           latest.RenderConfig
 		profiles               []latest.Profile
 		builderConfigInfos     []build.ArtifactInfo
 		getWd                  func() (string, error)
@@ -84,6 +92,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 			name:               "empty",
 			builderConfigInfos: []build.ArtifactInfo{},
 			deployConfig:       latest.DeployConfig{},
+			renderConfig:       latest.RenderConfig{},
 			getWd: func() (s string, err error) {
 				return filepath.Join("rootDir", "testConfig"), nil
 			},
@@ -92,7 +101,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 				Kind:       "Config",
 				Metadata:   latest.Metadata{Name: "testconfig"},
 				Pipeline: latest.Pipeline{
-					Deploy: latest.DeployConfig{},
+					Render: latest.RenderConfig{},
 				},
 			},
 		},
@@ -107,6 +116,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 				},
 			},
 			deployConfig: latest.DeployConfig{},
+			renderConfig: latest.RenderConfig{},
 			getWd: func() (s string, err error) {
 				return string(filepath.Separator), nil
 			},
@@ -126,6 +136,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 							},
 						},
 					},
+					Render: latest.RenderConfig{},
 					Deploy: latest.DeployConfig{},
 				},
 			},
@@ -134,6 +145,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 			name:               "error working dir",
 			builderConfigInfos: []build.ArtifactInfo{},
 			deployConfig:       latest.DeployConfig{},
+			renderConfig:       latest.RenderConfig{},
 			getWd: func() (s string, err error) {
 				return "", errors.New("testError")
 			},
@@ -149,13 +161,16 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			deploymentInitializer := stubDeploymentInitializer{
 				test.deployConfig,
-				test.profiles,
 			}
 			buildInitializer := stubBuildInitializer{
 				test.builderConfigInfos,
 			}
+			rendererInitializer := stubRendererInitializer{
+				test.renderConfig,
+				test.profiles,
+			}
 			t.Override(&getWd, test.getWd)
-			config := generateSkaffoldConfig(buildInitializer, deploymentInitializer)
+			config := generateSkaffoldConfig(buildInitializer, rendererInitializer, deploymentInitializer)
 			t.CheckDeepEqual(config, test.expectedSkaffoldConfig)
 		})
 	}

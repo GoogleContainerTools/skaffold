@@ -7,8 +7,7 @@ build:
     - image: passed-in-artifact
       docker:
         dockerfile: Dockerfile
-deploy:
-  kubectl:
-    manifests:
-      - manifest-placeholder1.yaml
-      - manifest-placeholder2.yaml
+manifests:
+  rawYaml:
+    - manifest-placeholder1.yaml
+    - manifest-placeholder2.yaml

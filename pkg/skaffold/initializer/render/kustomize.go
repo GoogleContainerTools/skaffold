@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package deploy
+package render
 
 import (
 	"context"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -52,25 +51,20 @@ func newKustomizeInitializer(defaultKustomization string, bases, kustomizations,
 	}
 }
 
-// deployConfig implements the Initializer interface and generates
+// RenderConfig implements the Initializer interface and generates
 // a kustomize deployment config.
-func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
-	var kustomizeConfig *latest.KustomizeDeploy
+func (k *kustomize) RenderConfig() (latest.RenderConfig, []latest.Profile) {
+	var kustomizeConfig *latest.Kustomize
 	var profiles []latest.Profile
 
-	// if there's only one kustomize path, either leave it blank (if it's the default path),
-	// or generate a config with that single path and return it
+	// if there's only one kustomize path, generate a config with that single path and return it
 	if len(k.kustomizations) == 1 {
-		if k.kustomizations[0] == constants.DefaultKustomizePath {
-			kustomizeConfig = &latest.KustomizeDeploy{}
-		} else {
-			kustomizeConfig = &latest.KustomizeDeploy{
-				KustomizePaths: k.kustomizations,
-			}
+		kustomizeConfig = &latest.Kustomize{
+			Paths: k.kustomizations,
 		}
-		return latest.DeployConfig{
-			DeployType: latest.DeployType{
-				KustomizeDeploy: kustomizeConfig,
+		return latest.RenderConfig{
+			Generate: latest.Generate{
+				Kustomize: kustomizeConfig,
 			},
 		}, nil
 	}
@@ -105,17 +99,17 @@ func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 
 	for _, kustomization := range k.kustomizations {
 		if kustomization == defaultKustomization {
-			kustomizeConfig = &latest.KustomizeDeploy{
-				KustomizePaths: []string{defaultKustomization},
+			kustomizeConfig = &latest.Kustomize{
+				Paths: []string{defaultKustomization},
 			}
 		} else {
 			profiles = append(profiles, latest.Profile{
 				Name: filepath.Base(kustomization),
 				Pipeline: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePaths: []string{kustomization},
+					Render: latest.RenderConfig{
+						Generate: latest.Generate{
+							Kustomize: &latest.Kustomize{
+								Paths: []string{kustomization},
 							},
 						},
 					},
@@ -124,9 +118,9 @@ func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 		}
 	}
 
-	return latest.DeployConfig{
-		DeployType: latest.DeployType{
-			KustomizeDeploy: kustomizeConfig,
+	return latest.RenderConfig{
+		Generate: latest.Generate{
+			Kustomize: kustomizeConfig,
 		},
 	}, profiles
 }
@@ -146,5 +140,4 @@ func (k *kustomize) Validate() error {
 	return nil
 }
 
-// we don't generate k8s manifests for a kustomize deploy
 func (k *kustomize) AddManifestForImage(string, string) {}

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package deploy
+package render
 
 import (
 	"path/filepath"
@@ -80,10 +80,10 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 			overlays:          []overlay{{"dev", overlayDeployment, overlayKustomization}},
 			expectedConfig: latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePaths: []string{filepath.Join("overlays", "dev")},
+					Render: latest.RenderConfig{
+						Generate: latest.Generate{
+							Kustomize: &latest.Kustomize{
+								Paths: []string{filepath.Join("overlays", "dev")},
 							},
 						},
 					},
@@ -101,10 +101,10 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 			},
 			expectedConfig: latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePaths: []string{filepath.Join("overlays", "foo")},
+					Render: latest.RenderConfig{
+						Generate: latest.Generate{
+							Kustomize: &latest.Kustomize{
+								Paths: []string{filepath.Join("overlays", "foo")},
 							},
 						},
 					},
@@ -113,10 +113,10 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 					{
 						Name: "bar",
 						Pipeline: latest.Pipeline{
-							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
-									KustomizeDeploy: &latest.KustomizeDeploy{
-										KustomizePaths: []string{filepath.Join("overlays", "bar")},
+							Render: latest.RenderConfig{
+								Generate: latest.Generate{
+									Kustomize: &latest.Kustomize{
+										Paths: []string{filepath.Join("overlays", "bar")},
 									},
 								},
 							},
@@ -125,10 +125,10 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 					{
 						Name: "baz",
 						Pipeline: latest.Pipeline{
-							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
-									KustomizeDeploy: &latest.KustomizeDeploy{
-										KustomizePaths: []string{filepath.Join("overlays", "baz")},
+							Render: latest.RenderConfig{
+								Generate: latest.Generate{
+									Kustomize: &latest.Kustomize{
+										Paths: []string{filepath.Join("overlays", "baz")},
 									},
 								},
 							},
@@ -157,8 +157,8 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 
 			k := newKustomizeInitializer("", []string{test.base}, overlays, manifests)
 
-			deployConfig, profiles := k.DeployConfig()
-			testutil.CheckDeepEqual(t, test.expectedConfig.Pipeline.Deploy, deployConfig)
+			renderConfig, profiles := k.RenderConfig()
+			testutil.CheckDeepEqual(t, test.expectedConfig.Pipeline.Render, renderConfig)
 			testutil.CheckDeepEqual(t, test.expectedConfig.Profiles, profiles)
 		})
 	}
