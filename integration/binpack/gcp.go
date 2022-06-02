@@ -32,4 +32,4 @@ var GCPTimings = []Timing{
 	{"TestRunGCPOnly", 10.00},
 }
 
-const MaxGCPBinTime = 25.0
+const MaxGCPBinTime = 28.0
