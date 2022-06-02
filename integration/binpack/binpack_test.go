@@ -28,7 +28,7 @@ func TestPartitions(t *testing.T) {
 	level := log.GetLevel()
 	defer log.SetLevel(level)
 	log.SetLevel(log.TraceLevel)
-	partitions, lastPartition := Partitions(Timings, MaxBinTime)
+	partitions, lastPartition := Partitions(nil, Timings, MaxBinTime)
 	testutil.CheckDeepEqual(t, len(partitions), len(Timings))
 	var bins []bin
 	for i := 0; i <= lastPartition; i++ {
