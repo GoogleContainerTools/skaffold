@@ -86,7 +86,7 @@ func getPartition() string {
 
 func matchesPartition(t *testing.T, testName string, timings []binpack.Timing, maxBinTime float64) bool {
 	var partition int
-	m, lastPartition := binpack.Partitions(t, timings, maxBinTime)
+	m, lastPartition := binpack.Partitions(timings, maxBinTime)
 	if p, ok := m[testName]; ok {
 		partition = p
 	} else {

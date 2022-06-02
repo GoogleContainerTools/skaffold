@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
@@ -101,7 +100,7 @@ func (b *bin) String() string {
 	return fmt.Sprintf("total: %f, size: %d", b.total, b.size)
 }
 
-func Partitions(t *testing.T, timings []Timing, maxBinTime float64) (map[string]int, int) {
+func Partitions(timings []Timing, maxBinTime float64) (map[string]int, int) {
 	// binpack with first fit decreasing
 	sort.Slice(timings, func(i, j int) bool {
 		return timings[i].time > timings[j].time
@@ -126,12 +125,6 @@ func Partitions(t *testing.T, timings []Timing, maxBinTime float64) (map[string]
 				panic(fmt.Errorf("can't fit %v into max bucket size %f", timing, maxBinTime))
 			}
 			result[timing.name] = len(bins) - 1
-		}
-	}
-	if t != nil {
-		t.Log("Partitions: ")
-		for i, b := range bins {
-			t.Logf("P%d %s\n", i, b.String())
 		}
 	}
 
