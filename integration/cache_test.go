@@ -16,11 +16,17 @@ limitations under the License.
 
 package integration
 
-/*
-func TestCacheAPITriggers(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+import (
+	"testing"
+	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
+)
+
+func TestCacheAPITriggers(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -43,4 +49,3 @@ func TestCacheAPITriggers(t *testing.T) {
 func waitForEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
 	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
 }
-*/
