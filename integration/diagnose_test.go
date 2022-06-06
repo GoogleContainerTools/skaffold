@@ -30,6 +30,7 @@ import (
 )
 
 func TestDiagnose(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 	examples, err := folders("examples")
 	failNowIfError(t, err)
 	if len(examples) == 0 {
