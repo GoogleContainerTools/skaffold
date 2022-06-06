@@ -38,6 +38,7 @@ import (
 
 // minikube 1.13.0 renumbered exit codes
 const minikubeDriverConfictExitCode = 51
+const minikubeExGuestUnavailable = 89
 const oldMinikubeBadUsageExitCode = 64
 
 // For testing
@@ -113,7 +114,7 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 		// code 51 (>= 1.13.0) or 64 (< 1.13.0).  Note that exit code 51 was unused prior to 1.13.0
 		// so it is safe to check here without knowing the minikube version.
 		var exitError ExitCoder
-		if errors.As(err, &exitError) && (exitError.ExitCode() == minikubeDriverConfictExitCode || exitError.ExitCode() == oldMinikubeBadUsageExitCode) {
+		if errors.As(err, &exitError) && (exitError.ExitCode() == minikubeDriverConfictExitCode || exitError.ExitCode() == oldMinikubeBadUsageExitCode || exitError.ExitCode() == minikubeExGuestUnavailable) {
 			// Let's ignore the error and fall back to local docker daemon.
 			log.Entry(context.TODO()).Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
 			return newEnvAPIClient()
