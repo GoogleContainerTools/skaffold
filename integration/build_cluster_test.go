@@ -34,9 +34,6 @@ import (
 
 // run on GCP as this test requires a load balancer
 func TestBuildKanikoInsecureRegistry(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
@@ -51,9 +48,6 @@ func TestBuildKanikoInsecureRegistry(t *testing.T) {
 }
 
 func TestBuildKanikoWithExplicitRepo(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, NeedsGcp)
 
 	// Other integration tests run with the --default-repo option.
@@ -63,9 +57,6 @@ func TestBuildKanikoWithExplicitRepo(t *testing.T) {
 
 // see integration/testdata/README.md for details
 func TestBuildInCluster(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, NeedsGcp)
 
 	testutil.Run(t, "", func(t *testutil.T) {
