@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -72,7 +73,11 @@ func runDev(ctx context.Context, out io.Writer) error {
 
 				if r.HasDeployed() {
 					cleanup = func() {
-						if err := r.Cleanup(context.Background(), out, false); err != nil {
+						manifests, err := getManifestsFromHydrationDir(ctx, opts)
+						if err != nil {
+							log.Entry(ctx).Warn(fmt.Errorf("getting manifests from hydration dir: %w", err))
+						}
+						if err := r.Cleanup(context.Background(), out, false, manifests); err != nil {
 							log.Entry(ctx).Warn("deployer cleanup:", err)
 						}
 					}

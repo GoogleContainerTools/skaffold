@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -43,7 +44,11 @@ func NewCmdDelete() *cobra.Command {
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, out, func(r runner.Runner, _ []util.VersionedConfig) error {
-		return r.Cleanup(ctx, out, dryRun)
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
+		manifests, err := getManifestsFromHydrationDir(ctx, opts)
+		if err != nil {
+			return fmt.Errorf("getting manifests from hydration dir: %w", err)
+		}
+		return r.Cleanup(ctx, out, dryRun, manifests)
 	})
 }
