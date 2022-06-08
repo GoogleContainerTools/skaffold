@@ -333,6 +333,16 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "fast-fail-status-check",
+		Usage:         "Configures `status-check` to fail immediately if any error occurs.  Otherwise `status-check` will attempt to check all resources once and only then report errors and possibly exit.  Defaults to 'true'",
+		Value:         &opts.FastFailStatusCheck,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
+		IsEnum:        true,
+		Hidden:        true,
+	},
+	{
 		Name:          "render-only",
 		Usage:         "Print rendered Kubernetes manifests instead of deploying them",
 		Value:         &opts.RenderOnly,
