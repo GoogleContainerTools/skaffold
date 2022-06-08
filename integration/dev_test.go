@@ -336,6 +336,7 @@ func TestDevPortForwardDefaultNamespace(t *testing.T) {
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
+	t.Skip("Skipping until resolved")
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)

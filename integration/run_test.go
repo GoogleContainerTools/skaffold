@@ -249,11 +249,11 @@ func TestRunGCPOnly(t *testing.T) {
 		deployments []string
 		pods        []string
 	}{
-		{
-			description: "Google Cloud Build",
-			dir:         "examples/google-cloud-build",
-			pods:        []string{"getting-started"},
-		},
+		// {
+		//	description: "Google Cloud Build",
+		//	dir:         "examples/google-cloud-build",
+		//	pods:        []string{"getting-started"},
+		// },
 		{
 			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
@@ -270,31 +270,31 @@ func TestRunGCPOnly(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
-		{
-			description: "Google Cloud Build with Kaniko",
-			dir:         "examples/gcb-kaniko",
-			pods:        []string{"getting-started-kaniko"},
-		},
-		{
-			description: "kaniko",
-			dir:         "examples/kaniko",
-			pods:        []string{"getting-started-kaniko"},
-		},
-		{
-			description: "kaniko with target",
-			dir:         "testdata/kaniko-target",
-			pods:        []string{"getting-started-kaniko"},
-		},
+		// {
+		//	description: "Google Cloud Build with Kaniko",
+		//	dir:         "examples/gcb-kaniko",
+		//	pods:        []string{"getting-started-kaniko"},
+		// },
+		// {
+		//	description: "kaniko",
+		//	dir:         "examples/kaniko",
+		//	pods:        []string{"getting-started-kaniko"},
+		// },
+		// {
+		//	description: "kaniko with target",
+		//	dir:         "testdata/kaniko-target",
+		//	pods:        []string{"getting-started-kaniko"},
+		// },
 		{
 			description: "kaniko with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 		},
-		{
-			description: "kaniko microservices",
-			dir:         "testdata/kaniko-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		},
+		// {
+		//	description: "kaniko microservices",
+		//	dir:         "testdata/kaniko-microservices",
+		//	deployments: []string{"leeroy-app", "leeroy-web"},
+		// },
 		{
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
