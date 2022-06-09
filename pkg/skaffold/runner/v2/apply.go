@@ -17,6 +17,7 @@ package v2
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -29,8 +30,13 @@ import (
 
 // Apply sends Kubernetes manifests to the cluster.
 func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
-	// TODO: fix empty manifest list and instead read manifests from hydrationDir
-	if err := r.applyResources(ctx, out, nil, nil, manifest.ManifestList{}); err != nil {
+	var manifests manifest.ManifestList
+	var err error
+	manifests, err = deployutil.GetManifestsFromHydratedManifests(ctx, r.runCtx.HydratedManifests())
+	if err != nil {
+		return fmt.Errorf("getting manifests from hydrated manifests: %w", err)
+	}
+	if err := r.applyResources(ctx, out, nil, nil, manifests); err != nil {
 		return err
 	}
 
