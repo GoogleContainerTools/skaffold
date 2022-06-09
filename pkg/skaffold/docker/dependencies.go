@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 
 	"github.com/docker/docker/builder/dockerignore"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
@@ -61,6 +63,9 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 		if _, err := os.Stat(dockerfile); err == nil || !os.IsNotExist(err) {
 			return filepath.Abs(dockerfile)
 		}
+	}
+	if runtime.GOOS == constants.Windows && (filepath.VolumeName(dockerfile) != "" || filepath.IsAbs(dockerfile)) {
+		return dockerfile, nil
 	}
 	return filepath.Abs(rel)
 }
