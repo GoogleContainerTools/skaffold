@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -58,7 +59,7 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
 }
@@ -139,7 +140,7 @@ func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool) error {
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
 	return nil
 }
 

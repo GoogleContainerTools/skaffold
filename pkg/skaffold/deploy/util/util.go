@@ -85,15 +85,15 @@ func ConsolidateNamespaces(original, new []string) []string {
 }
 
 // GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
-func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
+func GetHydrationDir(opts config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
 	var hydratedDir string
 	var err error
 
-	if ops.HydrationDir == constants.DefaultHydrationDir {
+	if opts.HydrationDir == constants.DefaultHydrationDir {
 		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
 		promptIfNeeded = false
 	} else {
-		hydratedDir = ops.HydrationDir
+		hydratedDir = opts.HydrationDir
 	}
 	if hydratedDir, err = filepath.Abs(hydratedDir); err != nil {
 		return "", err
@@ -105,7 +105,7 @@ func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeed
 			return "", err
 		}
 	} else if !isDirEmpty(hydratedDir) {
-		if promptIfNeeded && !ops.AssumeYes {
+		if promptIfNeeded && !opts.AssumeYes {
 			fmt.Println("you can skip this promp message with flag \"--assume-yes=true\"")
 			if ok := confirmHydrationDirOverride(os.Stdin); !ok {
 				cmd.Exit(nil)
