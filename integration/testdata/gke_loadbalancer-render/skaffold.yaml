@@ -7,6 +7,5 @@ build:
 manifests:
   helm:
     releases:
-    # seed test namespace in the release name.
     - name: skaffold-helm
       chartPath: loadbalancer-helm
