@@ -178,7 +178,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
-		manifests, err := r.Render(childCtx, out, r.Builds, false, "")
+		manifests, err := r.Render(childCtx, out, r.Builds, false)
 		if err != nil {
 			log.Entry(ctx).Warn("Skipping render due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
@@ -347,7 +347,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.deployer.GetLogger().SetSince(time.Now())
 
 	// First render
-	manifests, err := r.Render(ctx, out, r.Builds, true, "")
+	manifests, err := r.Render(ctx, out, r.Builds, true)
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
 		eventV2.TaskFailed(constants.DevLoop, err)

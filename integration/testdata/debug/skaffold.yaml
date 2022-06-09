@@ -17,10 +17,8 @@ build:
     context: go
   #- image: skaffold-debug-netcore
   #  context: netcore
-
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - java/k8s/web.yaml
     - nodejs/k8s/pod.yaml
     - npm/k8s/pod.yaml
@@ -32,9 +30,11 @@ profiles:
 - name: kustomize
   patches:
   - op: remove
-    path: /deploy/kubectl
-  deploy:
-    kustomize: {}
+    path: /manifests/rawYaml
+  manifests:
+    kustomize:
+      paths:
+      - "."
 # use GCP Buildpacks to build the individual projects
 - name: buildpacks
   build:
@@ -66,7 +66,7 @@ profiles:
 - name: docker
   patches:
   - op: remove
-    path: /deploy/kubectl
+    path: /manifests/rawYaml
   build:
     artifacts:
     - image: skaffold-debug-nodejs

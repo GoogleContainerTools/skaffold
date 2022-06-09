@@ -30,11 +30,11 @@ import (
 // TODO(marlongamez): add Helm renderer which uses helm template and can feed into deployers
 type Noop struct{}
 
-func New(_ *latest.RenderConfig, _, _ string, _ map[string]string) (Noop, error) {
+func New(_ latest.RenderConfig, _, _ string, _ map[string]string) (Noop, error) {
 	return Noop{}, nil
 }
 
-func (r Noop) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _ bool, _ string) (manifest.ManifestList, error) {
+func (r Noop) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _ bool) (manifest.ManifestList, error) {
 	return manifest.ManifestList{}, nil
 }
 

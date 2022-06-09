@@ -82,7 +82,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		case needsTagging:
 			eventV2.CacheCheckHit(artifact.ImageName)
 			output.Green.Fprintln(out, "Found. Tagging")
-			if err := result.Tag(ctx, c); err != nil {
+			if err := result.Tag(ctx, c, platforms); err != nil {
 				endTrace(instrumentation.TraceEndError(err))
 				return nil, fmt.Errorf("tagging image: %w", err)
 			}

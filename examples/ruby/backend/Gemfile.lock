@@ -4,7 +4,7 @@ GEM
     nio4r (2.5.8)
     puma (4.3.12)
       nio4r (~> 2.0)
-    rack (2.1.4)
+    rack (2.1.4.1)
     rack-unreloader (1.7.0)
 
 PLATFORMS

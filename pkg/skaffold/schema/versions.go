@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -80,6 +79,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta25"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta26"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta27"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta5"
@@ -215,11 +215,8 @@ func ParseConfigAndUpgrade(filename string) ([]util.VersionedConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	toVersion, err := getLatestFromCompatibilityCheck(configs)
-	if err != nil {
-		return nil, err
-	}
-	return UpgradeTo(configs, toVersion)
+
+	return UpgradeTo(configs, latest.Version)
 }
 
 // configFactoryFromAPIVersion checks that all configs in the input stream have the same API version, and returns a function to create a config with that API version.

@@ -21,7 +21,6 @@ import (
 )
 
 type Config interface {
-	GetRenderConfig() *latest.RenderConfig
 	GetWorkingDir() string
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter

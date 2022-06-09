@@ -16,6 +16,15 @@ limitations under the License.
 
 package constants
 
+import "fmt"
+
+// DocsVersion defines the version of the docs currently ""(for v1) and "-v2"(for v2)
+// This variable is injected at build time based on what version of the controller is being built
+var DocsVersion string
+
+// DocsLabel kicks off the controller when added to a PR
+var DocsLabel = fmt.Sprintf("docs-modifications%s", DocsVersion)
+
 const (
 	// GithubAccessToken is the env variable auth for container-tools-bot is stored in
 	GithubAccessToken = "GITHUB_ACCESS_TOKEN"
@@ -34,9 +43,6 @@ const (
 	ClosedAction = "closed"
 	// when a PR is labeled
 	LabeledAction = "labeled"
-
-	// DocsLabel kicks off the controller when added to a PR
-	DocsLabel = "docs-modifications"
 
 	// Namespace is the namespace deployments and services will be created in
 	Namespace = "default"

@@ -108,7 +108,7 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 }
 
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
-	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
+	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 		// Image exists remotely with the same tag and digest
 		if remoteDigest == entry.Digest {
 			return found{hash: hash}
@@ -117,7 +117,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 
 	// Image exists remotely with a different tag
 	fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
-	if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg); err == nil {
+	if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
 		if remoteDigest == entry.Digest {
 			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest}
 		}
@@ -159,7 +159,7 @@ func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, h
 		entry.ID = imageID
 	}
 
-	if digest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
+	if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 		log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
 		entry.Digest = digest
 	}

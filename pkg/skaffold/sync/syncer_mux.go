@@ -18,9 +18,12 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 type SyncerMux []Syncer
@@ -33,13 +36,21 @@ func (s SyncerMux) Sync(ctx context.Context, out io.Writer, item *Item) error {
 		}
 	}
 
-	// Return an error only if all syncers fail
-	if len(errs) == len(s) {
-		var err error
+	if len(errs) > 0 {
+		err := fmt.Errorf("sync failed for artifact %q", item.Image)
+
 		for _, e := range errs {
 			err = errors.Wrap(err, e.Error())
 		}
-		return err
+
+		// Return an error only if all syncers fail
+		if len(errs) == len(s) {
+			return err
+		}
+
+		// Otherwise log the error as a warning
+		log.Entry(ctx).Warnf(err.Error())
 	}
+
 	return nil
 }

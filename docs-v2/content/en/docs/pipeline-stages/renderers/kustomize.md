@@ -2,10 +2,10 @@
 title: "Kustomize"
 linkTitle: "Kustomize"
 weight: 30
-featureId: deploy
+featureId: render
 ---
 
-## Deploying with kustomize
+## Rendering with kustomize
 
 [`kustomize`](https://github.com/kubernetes-sigs/kustomize) allows Kubernetes
 developers to customize raw, template-free YAML files for multiple purposes.
@@ -13,25 +13,17 @@ Skaffold can work with `kustomize` by calling its command-line interface.
 
 ### Configuration
 
-To use kustomize with Skaffold, add deploy type `kustomize` to the `deploy`
+To use kustomize with Skaffold, add render type `kustomize` to the `manifests`
 section of `skaffold.yaml`.
 
-The `kustomize` type offers the following options:
-
-{{< schema root="KustomizeDeploy" >}}
-
-Each entry in `paths` should point to a folder with a kustomization file.
-
-`flags` section offers the following options:
-
-{{< schema root="KubectlFlags" >}}
+The `kustomize` configuration accepts a list of paths to folders containing a kustomize.yaml file.
 
 ### Example
+The following `manifests` section instructs Skaffold to render
+artifacts using kustomize.  Each entry should point to a folder with a kustomize.yaml file.
 
-The following `deploy` section instructs Skaffold to deploy
-artifacts using kustomize:
 
-{{% readfile file="samples/deployers/kustomize.yaml" %}}
+{{% readfile file="samples/renderers/kustomize.yaml" %}}
 
 {{< alert title="Note" >}}
 kustomize CLI must be installed on your machine. Skaffold will not

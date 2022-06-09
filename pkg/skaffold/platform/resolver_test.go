@@ -67,8 +67,11 @@ func TestResolver(t *testing.T) {
 			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
 				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
-			runMode:   config.RunModes.Dev,
-			shouldErr: true,
+			runMode: config.RunModes.Dev,
+			expected: map[string]Matcher{
+				"img1": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "386"}}},
+				"img2": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "386"}}},
+			},
 		},
 		{
 			description:      "cluster platform selected for `dev` mode",

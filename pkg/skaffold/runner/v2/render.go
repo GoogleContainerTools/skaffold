@@ -29,12 +29,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
-func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, renderOutputFile string) (manifest.ManifestList, error) {
+func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
 	if r.runCtx.RenderOnly() {
 		// Fetch the digest and append it to the tag with the format of "tag@digest"
 		if r.runCtx.DigestSource() == constants.RemoteDigestSource {
 			for i, a := range builds {
-				digest, err := docker.RemoteDigest(a.Tag, r.runCtx)
+				// remote digest to platform dependant build not supported
+				digest, err := docker.RemoteDigest(a.Tag, r.runCtx, nil)
 				if err != nil {
 					return nil, fmt.Errorf("failed to resolve the digest of %s: does the image exist remotely?", a.Tag)
 				}
@@ -47,11 +48,12 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []gra
 	}
 
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-	manifestList, errR := r.renderer.Render(ctx, out, builds, offline, renderOutputFile)
-	if errR != nil {
-		endTrace(instrumentation.TraceEndError(errR))
-		return nil, errR
+	manifestList, err := r.renderer.Render(ctx, out, builds, offline)
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, err
 	}
+
 	endTrace()
 	return manifestList, nil
 }

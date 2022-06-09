@@ -40,7 +40,7 @@ func RetrieveConfigFile(ctx context.Context, tagged string, cfg Config) (*v1.Con
 	}
 	if err != nil {
 		// No local Docker is available
-		cf, err = RetrieveRemoteConfig(tagged, cfg)
+		cf, err = RetrieveRemoteConfig(tagged, cfg, nil)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("retrieving image config: %w", err)

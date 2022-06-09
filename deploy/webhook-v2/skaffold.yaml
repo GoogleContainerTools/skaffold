@@ -2,11 +2,11 @@ apiVersion: skaffold/v1alpha5
 kind: Config
 build:
     artifacts:
-    - image: gcr.io/k8s-skaffold/docs-controller
+    - image: gcr.io/k8s-skaffold/docs-controller-v2
       docker:
         dockerfile: deploy/webhook-v2/Dockerfile
         cacheFrom:
-          - gcr.io/k8s-skaffold/docs-controller
+          - gcr.io/k8s-skaffold/docs-controller-v2
 deploy:
   kubectl:
     manifests:

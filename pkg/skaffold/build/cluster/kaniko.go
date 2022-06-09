@@ -97,7 +97,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 
 	waitForLogs()
 
-	return docker.RemoteDigest(tag, b.cfg)
+	return docker.RemoteDigest(tag, b.cfg, nil)
 }
 
 // first copy over the buildcontext tarball into the init container tmp dir via kubectl cp

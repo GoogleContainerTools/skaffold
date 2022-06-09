@@ -108,8 +108,6 @@ func Set(c *latest.SkaffoldConfig) error {
 	}
 
 	setDefaultTestWorkspace(c)
-	SetDefaultRenderer(c)
-	SetDefaultDeployer(c)
 	return nil
 }
 
@@ -121,7 +119,7 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 	if len(c.Render.Generate.RawK8s) > 0 {
 		return
 	}
-	if len(c.Render.Generate.Kustomize) > 0 {
+	if c.Render.Generate.Kustomize != nil {
 		return
 	}
 	if c.Render.Generate.Helm != nil {

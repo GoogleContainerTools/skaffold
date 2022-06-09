@@ -36,9 +36,9 @@ var (
 	remoteIndex  = remote.Index
 )
 
-func AddRemoteTag(src, target string, cfg Config) error {
+func AddRemoteTag(src, target string, cfg Config, platform *v1.Platform) error {
 	log.Entry(context.TODO()).Debugf("attempting to add tag %s to src %s", target, src)
-	img, err := getRemoteImage(src, cfg)
+	img, err := getRemoteImage(src, cfg, platform)
 	if err != nil {
 		return fmt.Errorf("getting image: %w", err)
 	}
@@ -51,13 +51,13 @@ func AddRemoteTag(src, target string, cfg Config) error {
 	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(primaryKeychain))
 }
 
-func getRemoteDigest(identifier string, cfg Config) (string, error) {
+func getRemoteDigest(identifier string, cfg Config, platform *v1.Platform) (string, error) {
 	idx, err := getRemoteIndex(identifier, cfg)
 	if err == nil {
 		return digest(idx)
 	}
 
-	img, err := getRemoteImage(identifier, cfg)
+	img, err := getRemoteImage(identifier, cfg, platform)
 	if err != nil {
 		return "", fmt.Errorf("getting image: %w", err)
 	}
@@ -66,8 +66,8 @@ func getRemoteDigest(identifier string, cfg Config) (string, error) {
 }
 
 // RetrieveRemoteConfig retrieves the remote config file for an image
-func RetrieveRemoteConfig(identifier string, cfg Config) (*v1.ConfigFile, error) {
-	img, err := getRemoteImage(identifier, cfg)
+func RetrieveRemoteConfig(identifier string, cfg Config, platform *v1.Platform) (*v1.ConfigFile, error) {
+	img, err := getRemoteImage(identifier, cfg, platform)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func RetrieveRemoteConfig(identifier string, cfg Config) (*v1.ConfigFile, error)
 }
 
 // Push pushes the tarball image
-func Push(tarPath, tag string, cfg Config) (string, error) {
+func Push(tarPath, tag string, cfg Config, platform *v1.Platform) (string, error) {
 	t, err := name.NewTag(tag, name.WeakValidation)
 	if err != nil {
 		return "", fmt.Errorf("parsing tag %q: %w", tag, err)
@@ -91,16 +91,22 @@ func Push(tarPath, tag string, cfg Config) (string, error) {
 		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, t, err)
 	}
 
-	return getRemoteDigest(tag, cfg)
+	return getRemoteDigest(tag, cfg, platform)
 }
 
-func getRemoteImage(identifier string, cfg Config) (v1.Image, error) {
+func getRemoteImage(identifier string, cfg Config, platform *v1.Platform) (v1.Image, error) {
 	ref, err := parseReference(identifier, cfg)
 	if err != nil {
 		return nil, err
 	}
+	options := []remote.Option{
+		remote.WithAuthFromKeychain(primaryKeychain),
+	}
+	if platform != nil {
+		options = append(options, remote.WithPlatform(*platform))
+	}
 
-	return remoteImage(ref, remote.WithAuthFromKeychain(primaryKeychain))
+	return remoteImage(ref, options...)
 }
 
 func getRemoteIndex(identifier string, cfg Config) (v1.ImageIndex, error) {

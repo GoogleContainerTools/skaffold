@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	cv1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -149,7 +150,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			t.NewTempDir().Touch("build.gradle").Chdir()
 			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, MinimumJibGradleVersion))
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config, _ *cv1.Platform) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil
 				}

@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

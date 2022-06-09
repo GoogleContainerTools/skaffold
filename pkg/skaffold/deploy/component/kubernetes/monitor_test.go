@@ -38,6 +38,8 @@ func (m mockStatusConfig) GetKubeContext() string { return "" }
 
 func (m mockStatusConfig) StatusCheckDeadlineSeconds() int { return 0 }
 
+func (m mockStatusConfig) FastFailStatusCheck() bool { return true }
+
 func (m mockStatusConfig) Muted() config.Muted { return config.Muted{} }
 
 func TestGetMonitor(t *testing.T) {

@@ -93,7 +93,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 						{
 							Name:       "server",
 							Image:      constants.DeploymentImage,
-							Args:       []string{"deploy/docs/preview.sh", BaseURL(externalIP)},
+							Args:       []string{fmt.Sprintf("deploy/docs%s/preview.sh", constants.DocsVersion), BaseURL(externalIP)},
 							WorkingDir: repoPath,
 							VolumeMounts: []v1.VolumeMount{
 								{

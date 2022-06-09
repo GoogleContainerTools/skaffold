@@ -20,7 +20,7 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: docs-controller
+  name: docs-controller-v2
   labels:
     run: docs
 spec:
@@ -34,8 +34,8 @@ spec:
     spec:
       serviceAccountName: admin-serviceaccount
       containers:
-      - name: docs-controller
-        image: gcr.io/k8s-skaffold/docs-controller:latest
+      - name: docs-controller-v2
+        image: gcr.io/k8s-skaffold/docs-controller-v2:latest
         args: ["/webhook"]
         volumeMounts:
         - name: webhook

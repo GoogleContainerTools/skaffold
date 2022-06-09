@@ -215,7 +215,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return nil
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool, _ string) (manifest.ManifestList, error) {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool) (manifest.ManifestList, error) {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]

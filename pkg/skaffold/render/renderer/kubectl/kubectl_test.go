@@ -60,20 +60,20 @@ spec:
 func TestRender(t *testing.T) {
 	tests := []struct {
 		description  string
-		renderConfig *latest.RenderConfig
+		renderConfig latest.RenderConfig
 		labels       map[string]string
 		expected     string
 	}{
 		{
 			description: "single manifest with no labels",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			expected: taggedPodYaml,
 		},
 		{
 			description: "single manifest with labels",
-			renderConfig: &latest.RenderConfig{
+			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
 			labels:   map[string]string{"run.id": "test"},
@@ -86,15 +86,12 @@ func TestRender(t *testing.T) {
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := mockConfig{
-				renderConfig: test.renderConfig,
-				workingDir:   tmpDirObj.Root(),
-			}
-			r, err := New(mockCfg, test.labels)
+			mockCfg := mockConfig{workingDir: tmpDirObj.Root()}
+			r, err := New(mockCfg, test.renderConfig, test.labels)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true, "")
+				true)
 			t.CheckNoError(errR)
 			t.CheckDeepEqual(test.expected, manifestList.String())
 		})
@@ -102,11 +99,9 @@ func TestRender(t *testing.T) {
 }
 
 type mockConfig struct {
-	renderConfig *latest.RenderConfig
-	workingDir   string
+	workingDir string
 }
 
-func (mc mockConfig) GetRenderConfig() *latest.RenderConfig       { return mc.renderConfig }
 func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
 func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
 func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }

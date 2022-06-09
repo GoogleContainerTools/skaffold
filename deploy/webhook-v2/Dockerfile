@@ -49,7 +49,8 @@ COPY --from=download-kubectl /kubectl /usr/local/bin/
 FROM golang:1.17 as webhook
 WORKDIR /skaffold
 COPY . .
-RUN go build -o /webhook webhook/webhook.go
+# TODO(aaron-prindle) pass ldflags for -v2
+RUN go build -o /webhook -ldflags="-X 'github.com/GoogleContainerTools/skaffold/pkg/webhook/constants.DocsVersion=-v2'" webhook/webhook.go
 
 FROM runtime_deps
 COPY --from=webhook /webhook /webhook

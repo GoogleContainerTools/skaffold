@@ -84,7 +84,7 @@ func NewResolver(ctx context.Context, pipelines []latest.Pipeline, cliPlatformsS
 			} else if p := platforms.Intersect(fromClusterNodes); p.IsNotEmpty() {
 				platforms = p
 			} else {
-				return r, fmt.Errorf("build target platforms %q do not match active kubernetes cluster node platforms %q", platforms, fromClusterNodes)
+				log.Entry(ctx).Warnf("build target platforms %q do not match active kubernetes cluster node platforms %q", platforms, fromClusterNodes)
 			}
 		}
 		instrumentation.AddResolvedBuildTargetPlatforms(platforms.String())

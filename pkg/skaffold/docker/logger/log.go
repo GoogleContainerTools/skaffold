@@ -18,7 +18,6 @@ package logger
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -94,7 +93,6 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 				return
 			case id := <-l.tracker.Notifier():
 				l.hadLogsOutput.Store(id, false)
-				fmt.Printf("aprindle-3 - here\n")
 				go l.streamLogsFromContainer(ctx, id, false)
 			}
 		}
@@ -171,7 +169,6 @@ func (l *Logger) Stop() {
 
 	l.hadLogsOutput.Range(func(key, value interface{}) bool {
 		if !value.(bool) {
-			fmt.Printf("aprindle-4 - here\n")
 			l.streamLogsFromContainer(context.TODO(), key.(string), true)
 		}
 		return true

@@ -13,15 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package v1
+
+package util
 
 import (
-	"errors"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
-// Upgrade upgrades a configuration to the next version.
-func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	return nil, errors.New("there's no version to upgrade from \"latest\"")
+func ConvertToV1Platform(platform specs.Platform) *v1.Platform {
+	return &v1.Platform{Architecture: platform.Architecture, OS: platform.OS, OSVersion: platform.OSVersion, OSFeatures: platform.OSFeatures, Variant: platform.Variant}
 }

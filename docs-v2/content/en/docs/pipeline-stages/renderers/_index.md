@@ -11,18 +11,17 @@ When Skaffold renders your application to Kubernetes, it (usually) goes through 
 
 * the Skaffold renderer _renders_ the final Kubernetes manifests: Skaffold replaces untagged image names in the Kubernetes manifests with the final tagged image names.
 It also might go through the extra intermediate step of expanding templates (for helm) or calculating overlays (for kustomize).
-* the Skaffold renderer _renders_ the final Kubernetes manifests to the cluster
-* the Skaffold renderer performs [status checks]({{< relref "/docs/pipeline-stages/status-check" >}}) and waits for the rendered resources to stabilize.
 
 ### Supported renderers
 
 Skaffold supports the following tools for rendering applications:
 
-* [`kubectl`]({{< relref "./kubectl.md" >}})
+* [`rawYaml`]({{< relref "./rawYaml.md" >}}) - use this if you don't currently use a rendering tool
 * [`helm`]({{< relref "./helm.md" >}})
+* [`kpt`]({{< relref "./kpt.md" >}})
 * [`kustomize`]({{< relref "./kustomize.md" >}})
 
-Skaffold's render configuration is set through the `render` section
+Skaffold's render configuration is set through the `manifests` section
 of the `skaffold.yaml`. See each renderer's page for more information
 on how to configure them for use in Skaffold. It's also possible to use
 a combination of multiple renderers in a single project.

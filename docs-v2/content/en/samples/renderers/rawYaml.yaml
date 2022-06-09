@@ -1,0 +1,3 @@
+manifests:
+   rawYaml:
+      - k8s-*

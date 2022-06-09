@@ -87,9 +87,6 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 	if err != nil {
 		return err
 	}
-	if ok, err := schema.IsCompatibleWith(versionedCfgs, toVersion); !ok {
-		return err
-	}
 	if versionedCfgs, err = schema.UpgradeTo(versionedCfgs, toVersion); err != nil {
 		return err
 	}

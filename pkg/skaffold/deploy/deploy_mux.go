@@ -170,23 +170,5 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, list
 	return nil
 }
 
-// TODO move this to RenderMux https://github.com/GoogleContainerTools/skaffold/issues/7330
-// func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
-//	resources, buf := []string{}, &bytes.Buffer{}
-//	for _, deployer := range m.deployers {
-//		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-//		buf.Reset()
-//		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
-//			endTrace(instrumentation.TraceEndError(err))
-//			return err
-//		}
-//		resources = append(resources, buf.String())
-//		endTrace()
-//	}
-//
-//	allResources := strings.Join(resources, "\n---\n")
-//	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
-//}
-
 // TrackBuildArtifacts should *only* be called on individual deployers. This is a noop.
 func (m DeployerMux) TrackBuildArtifacts(_ []graph.Artifact) {}

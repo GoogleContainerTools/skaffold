@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta25
+apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   tagPolicy:
@@ -12,7 +12,9 @@ build:
         SLEEP: "2"
         FAIL: "0"
 
+manifests:
+  rawYaml:
+  - 'k8s.yaml'
+
 deploy:
-  kubectl:
-    manifests:
-    - 'k8s.yaml'
+  kubectl: {}

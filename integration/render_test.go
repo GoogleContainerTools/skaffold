@@ -43,7 +43,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 	test := struct {
 		description string
 		builds      []graph.Artifact
-		renderPath  string
 		input       string
 		expectedOut string
 	}{
@@ -54,7 +53,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 				Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 			},
 		},
-		renderPath: "./test-output",
 		input: `apiVersion: v1
 kind: Pod
 spec:
@@ -73,17 +71,15 @@ spec:
 		tmpDir := t.NewTempDir()
 		tmpDir.Write("deployment.yaml", test.input).Chdir()
 
-		mockCfg := mockConfig{
-			renderConfig: &latest.RenderConfig{
-				Generate: latest.Generate{
-					RawK8s: []string{"deployment.yaml"}},
-			},
-			workingDir: tmpDir.Root(),
+		rc := latest.RenderConfig{
+			Generate: latest.Generate{
+				RawK8s: []string{"deployment.yaml"}},
 		}
-		r, err := kubectl.New(mockCfg, map[string]string{})
+		mockCfg := mockConfig{workingDir: tmpDir.Root()}
+		r, err := kubectl.New(mockCfg, rc, map[string]string{})
 		t.RequireNoError(err)
 		var b bytes.Buffer
-		l, err := r.Render(context.Background(), &b, test.builds, false, test.renderPath)
+		l, err := r.Render(context.Background(), &b, test.builds, false)
 
 		t.CheckNoError(err)
 
@@ -214,18 +210,15 @@ spec:
 			tmpDir := t.NewTempDir()
 			tmpDir.Write("deployment.yaml", test.input).
 				Chdir()
-
-			mockCfg := mockConfig{
-				renderConfig: &latest.RenderConfig{
-					Generate: latest.Generate{
-						RawK8s: []string{"deployment.yaml"}},
-				},
-				workingDir: tmpDir.Root(),
+			rc := latest.RenderConfig{
+				Generate: latest.Generate{
+					RawK8s: []string{"deployment.yaml"}},
 			}
-			r, err := kubectl.New(mockCfg, map[string]string{})
+			mockCfg := mockConfig{workingDir: tmpDir.Root()}
+			r, err := kubectl.New(mockCfg, rc, map[string]string{})
 			t.RequireNoError(err)
 			var b bytes.Buffer
-			l, err := r.Render(context.Background(), &b, test.builds, false, "")
+			l, err := r.Render(context.Background(), &b, test.builds, false)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, l.String())
@@ -753,11 +746,9 @@ spec:
 }
 
 type mockConfig struct {
-	renderConfig *latest.RenderConfig
-	workingDir   string
+	workingDir string
 }
 
-func (mc mockConfig) GetRenderConfig() *latest.RenderConfig       { return mc.renderConfig }
 func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
 func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
 func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }

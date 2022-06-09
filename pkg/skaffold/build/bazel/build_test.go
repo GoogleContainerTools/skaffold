@@ -52,6 +52,29 @@ func TestBuildBazel(t *testing.T) {
 	})
 }
 
+func TestBazelTarPathFRespectWorkspace(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
+			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
+			"app.tar"))
+		testutil.CreateFakeImageTar("bazel:app", "../app.tar")
+
+		artifact := &latest.Artifact{
+			Workspace: "..",
+			ArtifactType: latest.ArtifactType{
+				BazelArtifact: &latest.BazelArtifact{
+					BuildTarget: "//:app.tar",
+				},
+			},
+		}
+
+		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
+		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag", platform.Matcher{})
+
+		t.CheckNoError(err)
+	})
+}
+
 func TestBuildBazelFailInvalidTarget(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		artifact := &latest.Artifact{

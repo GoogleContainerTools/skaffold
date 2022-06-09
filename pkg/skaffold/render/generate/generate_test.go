@@ -201,7 +201,9 @@ func TestManifestDeps(t *testing.T) {
 		{
 			description: "kustomize dir",
 			generateConfig: latest.Generate{
-				Kustomize: []string{"kustomize-sample"},
+				Kustomize: &latest.Kustomize{
+					Paths: []string{"kustomize-sample"},
+				},
 			},
 			expected: []string{"kustomize-sample/kustomization.yaml", "kustomize-sample/patch.yaml"},
 		},
@@ -215,9 +217,11 @@ func TestManifestDeps(t *testing.T) {
 		{
 			description: "multi manifest, mixed dir and file",
 			generateConfig: latest.Generate{
-				RawK8s:    []string{"rawYaml-sample"},
-				Kustomize: []string{"kustomize-sample"},
-				Kpt:       []string{"kpt-sample"},
+				RawK8s: []string{"rawYaml-sample"},
+				Kustomize: &latest.Kustomize{
+					Paths: []string{"kustomize-sample"},
+				},
+				Kpt: []string{"kpt-sample"},
 			},
 			expected: []string{
 				"kpt-sample/Kptfile",
