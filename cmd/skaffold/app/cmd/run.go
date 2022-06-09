@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -57,7 +58,10 @@ func doRun(ctx context.Context, out io.Writer) error {
 		// Render
 		manifestList, err := r.Render(ctx, out, bRes, true)
 		if err != nil {
-			return err
+			return fmt.Errorf("rendering manifests: %w", err)
+		}
+		if opts.RenderOnly {
+			return manifest.Write(manifestList.String(), opts.RenderOutput, out)
 		}
 
 		err = r.DeployAndLog(ctx, out, bRes, manifestList)

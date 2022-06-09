@@ -1,0 +1,19 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+metadata:
+  name: helm-project
+build:
+  artifacts:
+  - image: go-hello
+    context: hello-world/src
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  helm:
+    releases:
+    - name: hello-world
+      chartPath: hello-world
+      valuesFiles:
+      - hello-world/val.yaml
+      - hello-world/values.yaml
+      version: 0.1.0

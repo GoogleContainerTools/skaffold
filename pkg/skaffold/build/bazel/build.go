@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -84,7 +85,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 		return "", fmt.Errorf("getting bazel tar path: %w", err)
 	}
 
-	return tarPath, nil
+	return filepath.Join(workspace, tarPath), nil
 }
 
 func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {

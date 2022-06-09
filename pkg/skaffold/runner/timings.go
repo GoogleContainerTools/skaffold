@@ -111,7 +111,7 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool, li
 	start := time.Now()
 	output.Default.Fprintln(out, "Cleaning up...")
 
-	err := w.Deployer.Cleanup(ctx, out, dryRun, nil)
+	err := w.Deployer.Cleanup(ctx, out, dryRun, list)
 	if err != nil {
 		return err
 	}

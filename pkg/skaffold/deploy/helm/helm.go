@@ -452,8 +452,11 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	if err != nil {
 		return err
 	}
-
-	return manifest.Write(modifiedManifests.String(), filepath, out)
+	modifiedText := modifiedManifests.String()
+	if filepath == "" {
+		modifiedText += "\n"
+	}
+	return manifest.Write(modifiedText, filepath, out)
 }
 
 func (h *Deployer) HasRunnableHooks() bool {

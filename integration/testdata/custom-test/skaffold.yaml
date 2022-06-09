@@ -9,10 +9,9 @@ test:
       - command: echo "bar" >> test
         dependencies:
           paths:
-          -  'testdep*' 
-deploy:
- kubectl:
-   manifests:
+          -  'testdep*'
+manifests:
+  rawYaml:
    - pod.yaml
 profiles:
   - name: custom

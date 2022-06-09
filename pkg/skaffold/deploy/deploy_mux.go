@@ -162,7 +162,7 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, list
 		if dryRun {
 			output.Yellow.Fprintln(w, "Following resources would be deleted:")
 		}
-		if err := deployer.Cleanup(ctx, w, dryRun, nil); err != nil {
+		if err := deployer.Cleanup(ctx, w, dryRun, list); err != nil {
 			return err
 		}
 		endTrace()
