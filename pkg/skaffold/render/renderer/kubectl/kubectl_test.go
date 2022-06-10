@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -86,7 +87,7 @@ func TestRender(t *testing.T) {
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := mockConfig{workingDir: tmpDirObj.Root()}
+			mockCfg := render.MockConfig{WorkingDir: tmpDirObj.Root()}
 			r, err := New(mockCfg, test.renderConfig, test.labels)
 			t.CheckNoError(err)
 			var b bytes.Buffer
@@ -97,12 +98,3 @@ func TestRender(t *testing.T) {
 		})
 	}
 }
-
-type mockConfig struct {
-	workingDir string
-}
-
-func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
-func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
-func (mc mockConfig) TransformRulesFile() string                  { return "" }

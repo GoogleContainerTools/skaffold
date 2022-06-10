@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/noop"
@@ -41,6 +42,10 @@ type Renderer interface {
 func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
 	if usingLegacyHelmDeploy {
 		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
+	}
+	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Helm != nil {
+		log.Entry(context.TODO()).Debug("setting up helm renderer")
+		return helm.New(cfg, renderCfg, labels)
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Kpt == nil {
 		log.Entry(context.TODO()).Debug("setting up kubectl renderer")

@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ func TestSanitizeFilePath(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			output := sanitizeFilePath(test.input, test.isWindowsOS)
+			output := SanitizeFilePath(test.input, test.isWindowsOS)
 			t.CheckDeepEqual(test.output, output)
 		})
 	}
