@@ -211,7 +211,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 							},
 						},
 					})),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -223,7 +222,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -235,7 +233,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -245,10 +242,11 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			config:      []string{simpleConfig},
 			expected: []util.VersionedConfig{config(
 				withLocalBuild(
+					withLocalBuildConcurrency(&constants.DefaultLocalConcurrency),
 					withGitTagger(),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withKubectlDeploy(),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -262,8 +260,9 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
+				withKubectlDeploy(),
 			)},
 		},
 		{
@@ -276,8 +275,9 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
+				withKubectlDeploy(),
 			)},
 		},
 		{
@@ -290,15 +290,15 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
+				withKubectlDeploy(),
 			), config(
 				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -312,15 +312,15 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
+				withKubectlDeploy(),
 			), config(
 				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -333,7 +333,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withGitTagger(),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -347,7 +346,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -383,7 +381,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withStatusCheckDeadline(10),
 				withLogsPrefix("container"),
 			)},
@@ -396,7 +393,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("none"),
 			)},
 		},
@@ -410,11 +406,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 
 			cfgs, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"))
 			for _, cfg := range cfgs {
-				if _, ok := SchemaVersionsV2.Find(test.apiVersion[0]); !ok {
-					// TODO: the "defaults" package below only accept latestV2 schema.
-					t.SkipNow()
-				}
-
 				err := defaults.Set(cfg.(*latest.SkaffoldConfig))
 				t.CheckNoError(err)
 			}
@@ -447,7 +438,6 @@ func TestMarshalConfig(t *testing.T) {
 							},
 						},
 					})),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			),
 		},
@@ -550,6 +540,12 @@ func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
 	}
 }
 
+func withRawK8s(manifests ...string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Render.RawK8s = manifests
+	}
+}
+
 func withKubeContext(kubeContext string) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy = latest.DeployConfig{
@@ -630,6 +626,10 @@ func withVolume(v v1.Volume) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		cfg.Cluster.Volumes = append(cfg.Cluster.Volumes, v)
 	}
+}
+
+func withLocalBuildConcurrency(concurrency *int) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) { cfg.LocalBuild.Concurrency = concurrency }
 }
 
 func withTagPolicy(tagPolicy latest.TagPolicy) func(*latest.BuildConfig) {
