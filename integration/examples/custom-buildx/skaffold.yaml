@@ -1,15 +1,17 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
 build:
-  platforms: ["linux/amd64", "linux/arm64"]
   artifacts:
   - image: skaffold-examples-buildx
     custom:
       buildCommand: sh buildx.sh
       dependencies:
         paths:
-        - "**/*.go"
+        - '**/*.go'
         - buildx.sh
         - go.mod
   tagPolicy:
     sha256: {}
+  platforms:
+  - linux/amd64
+  - linux/arm64

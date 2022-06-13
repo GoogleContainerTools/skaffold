@@ -3,4 +3,4 @@ kind: Config
 manifests:
   kustomize:
     paths:
-      - .
+    - .

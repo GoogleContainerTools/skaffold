@@ -4,15 +4,17 @@ build:
   artifacts:
   - image: skaffold-example
 test:
-  - image: skaffold-example
-    structureTests:
-      - ./test/*
+- image: skaffold-example
+  structureTests:
+  - ./test/*
 manifests:
   rawYaml:
-    - k8s-*
+  - k8s-*
+deploy:
+  kubectl: {}
 profiles:
-  - name: test
-    test:
-      - image: skaffold-example
-        structureTests:
-          - ./test/profile_structure_test.yaml
+- name: test
+  test:
+  - image: skaffold-example
+    structureTests:
+    - ./test/profile_structure_test.yaml

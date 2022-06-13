@@ -5,7 +5,9 @@ build:
   - image: skaffold-example
   tagPolicy:
     envTemplate:
-      template: "{{.FOO}}"
+      template: '{{.FOO}}'
 manifests:
   rawYaml:
-    - k8s-*
+  - k8s-*
+deploy:
+  kubectl: {}

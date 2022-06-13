@@ -1,16 +1,15 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   artifacts:
   - image: test-file-sync
-    jib:
-      type: gradle
-      args: 
-      - -Psync
-      fromImage: gcr.io/distroless/java:debug
     sync:
       auto: true
-
+    jib:
+      args:
+      - -Psync
+      type: gradle
+      fromImage: gcr.io/distroless/java:debug
 portForward:
 - resourceType: pod
   resourceName: test-file-sync

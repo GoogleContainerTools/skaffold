@@ -4,9 +4,10 @@ build:
   artifacts:
   - image: skaffold-buildpacks
     buildpacks:
-      builder: "gcr.io/buildpacks/builder:v1"
+      builder: gcr.io/buildpacks/builder:v1
       env:
       - GOOGLE_RUNTIME_VERSION=8
+      trustBuilder: true
 profiles:
 - name: gcb
   build:

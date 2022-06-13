@@ -1,20 +1,21 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
 build:
-  local:
-    push: false
   artifacts:
   - image: react-reload-docker
     context: app
     sync:
       manual:
-      - src: 'src/components/*'
+      - src: src/components/*
         dest: .
-      - src: 'src/styles/*'
+      - src: src/styles/*
         dest: .
+  local:
+    push: false
 deploy:
   docker:
-    images: [react-reload-docker]
+    images:
+    - react-reload-docker
 portForward:
 - resourceType: Container
   resourceName: react-reload-docker

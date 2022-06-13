@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   artifacts:
@@ -6,7 +6,7 @@ build:
     context: app
     sync:
       manual:
-      - src: 'src/components/*'
+      - src: src/components/*
         dest: .
-      - src: 'src/styles/*'
+      - src: src/styles/*
         dest: .

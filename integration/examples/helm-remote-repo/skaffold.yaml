@@ -1,8 +1,10 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
-deploy:
+manifests:
   helm:
     releases:
     - name: redis-release
-      repo: https://charts.bitnami.com/bitnami 
       remoteChart: redis
+      repo: https://charts.bitnami.com/bitnami
+deploy:
+  helm: {}

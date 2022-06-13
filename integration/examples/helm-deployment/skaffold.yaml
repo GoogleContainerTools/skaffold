@@ -3,8 +3,10 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-helm
-deploy:
+manifests:
   helm:
     releases:
     - name: skaffold-helm
       chartPath: charts
+deploy:
+  helm: {}

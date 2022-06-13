@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v2beta28
 kind: Config
 metadata:
   name: app-config
@@ -10,11 +10,10 @@ build:
     requires:
     - image: base
       alias: BASE
-manifests:
-  rawYaml:
-    - kubernetes/*
 deploy:
-  kubectl: {}
+  kubectl:
+    manifests:
+    - kubernetes/*
 portForward:
 - resourceType: deployment
   resourceName: leeroy-app

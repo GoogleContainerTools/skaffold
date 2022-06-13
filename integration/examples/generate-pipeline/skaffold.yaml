@@ -3,7 +3,8 @@ kind: Config
 build:
   artifacts:
   - image: pipeline-example
+manifests:
+  rawYaml:
+  - k8s-*
 deploy:
-  kubectl:
-    manifests:
-    - k8s-*
+  kubectl: {}

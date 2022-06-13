@@ -1,25 +1,21 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
-
 build:
   artifacts:
   - image: node-example
     context: backend
-
 profiles:
-  - name: dev
-    activation:
-      - command: dev
-    build:
-      artifacts:
-      - image: node-example
-        context: backend
-        docker:
-          buildArgs:
-            ENV: development
-        sync:
-          manual:
-          # Sync all the javascript files that are in the src folder
-          # with the container src folder
-          - src: 'src/**/*.js'
-            dest: .
+- name: dev
+  activation:
+  - command: dev
+  build:
+    artifacts:
+    - image: node-example
+      context: backend
+      sync:
+        manual:
+        - src: src/**/*.js
+          dest: .
+      docker:
+        buildArgs:
+          ENV: development

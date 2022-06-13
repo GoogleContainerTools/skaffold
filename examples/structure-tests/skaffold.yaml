@@ -1,19 +1,20 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   artifacts:
   - image: skaffold-example
 test:
+- image: skaffold-example
+  structureTests:
+  - ./test/*
+manifests:
+  rawYaml:
+  - k8s-*
+deploy:
+  kubectl: {}
+profiles:
+- name: test
+  test:
   - image: skaffold-example
     structureTests:
-      - ./test/*
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
-profiles:
-  - name: test
-    test:
-      - image: skaffold-example
-        structureTests:
-          - ./test/profile_structure_test.yaml
+    - ./test/profile_structure_test.yaml

@@ -4,9 +4,7 @@ build:
   artifacts:
   - image: skaffold-jib-gradle
     jib: {}
-
-# optional profile to run the jib build on Google Cloud Build
 profiles:
-  - name: gcb
-    build:
-      googleCloudBuild: {}
+- name: gcb
+  build:
+    googleCloudBuild: {}

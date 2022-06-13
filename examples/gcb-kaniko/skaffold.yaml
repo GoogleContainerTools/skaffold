@@ -1,14 +1,14 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3alpha1
 kind: Config
 build:
-  googleCloudBuild:
-    # Change `k8s-skaffold` with your PROJECT_ID
-    projectId: k8s-skaffold
   artifacts:
   - image: skaffold-example
     kaniko:
       cache: {}
+  googleCloudBuild:
+    projectId: k8s-skaffold
+manifests:
+  rawYaml:
+  - k8s-*
 deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+  kubectl: {}

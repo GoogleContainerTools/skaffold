@@ -9,8 +9,8 @@ build:
       alias: BASE
   - image: base
     context: base
+manifests:
+  rawYaml:
+  - app/k8s-pod.yaml
 deploy:
-  kubectl:
-    manifests:
-    - app/k8s-pod.yaml
-
+  kubectl: {}

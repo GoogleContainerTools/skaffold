@@ -8,18 +8,18 @@ build:
     context: app
     docker:
       dockerfile: Dockerfile
-deploy:
+manifests:
   kustomize:
     paths:
     - overlays/dev
 profiles:
 - name: prod
-  deploy:
+  manifests:
     kustomize:
       paths:
       - overlays/prod
 - name: staging
-  deploy:
+  manifests:
     kustomize:
       paths:
       - overlays/staging

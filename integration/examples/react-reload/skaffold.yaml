@@ -6,7 +6,7 @@ build:
     context: app
     sync:
       manual:
-      - src: 'src/components/*'
+      - src: src/components/*
         dest: .
-      - src: 'src/styles/*'
+      - src: src/styles/*
         dest: .
