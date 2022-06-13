@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v1beta13
 kind: Config
 build:
   tagPolicy:
@@ -13,10 +13,9 @@ profiles:
         - image: skaffold-in-cluster-builder
           kaniko:
             cache: {}
-    manifests:
+    deploy:
       kustomize:
-        paths:
-          - build-step
+        path: build-step
   - name: build-target
     build:
       artifacts:
