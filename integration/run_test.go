@@ -179,9 +179,6 @@ func TestRunTail(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if test.targetLog == "" {
-				t.SkipNow()
-			}
 			ns, _ := SetupNamespace(t)
 
 			args := append(test.args, "--tail")
@@ -199,10 +196,6 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if test.targetLog == "" {
-				t.SkipNow()
-			}
-
 			args := append(test.args, "--tail")
 			out := skaffold.Run(args...).InDir(test.dir).WithEnv(test.env).RunLive(t)
 			defer skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
