@@ -84,6 +84,8 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevGracefulCancel(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
 	if runtime.GOOS == "windows" {
 		t.Skip("graceful cancel doesn't work on windows")
 	}
