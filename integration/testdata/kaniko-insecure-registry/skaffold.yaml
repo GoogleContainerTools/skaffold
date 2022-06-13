@@ -16,6 +16,7 @@ profiles:
         - image: devreg
           context: insecure-registry
           docker: {}
-    manifests:
-      rawYaml:
-        - insecure-registry/reg.yaml
+    deploy:
+      kubectl:
+        manifests:
+          - insecure-registry/reg.yaml
