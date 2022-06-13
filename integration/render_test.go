@@ -367,9 +367,6 @@ spec:
 }
 
 func TestRenderWithBuilds(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -415,7 +412,6 @@ spec:
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -644,7 +640,6 @@ spec:
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
