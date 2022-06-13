@@ -17,21 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	dutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
-	sutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // DefaultRepoFn takes an image tag and returns either a new tag with the default repo prefixed, or the original tag if
@@ -111,35 +102,4 @@ func validateArtifactTags(artifacts []graph.Artifact) error {
 		}
 	}
 	return nil
-}
-
-func getManifestsFromHydrationDir(ctx context.Context, opts config.SkaffoldOptions) (manifest.ManifestList, error) {
-	workDir, err := sutil.RealWorkDir()
-	if err != nil {
-		return nil, fmt.Errorf("getting working directory: %w", err)
-	}
-	hydrationDir, err := dutil.GetHydrationDir(config.SkaffoldOptions{HydrationDir: opts.HydrationDir, AssumeYes: opts.AssumeYes},
-		workDir,
-		true)
-	if err != nil {
-		return nil, fmt.Errorf("getting render output path: %w", err)
-	}
-	// TODO(aaron-prindle) verify that using manifests.yaml here will work in all cases
-	hydratedManifestPath := filepath.Join(hydrationDir, "manifests.yaml")
-	if _, err := os.Stat(hydratedManifestPath); errors.Is(err, os.ErrNotExist) {
-		log.Entry(ctx).Warn(fmt.Errorf("unable to find manifests, attempted location %s: %w", hydratedManifestPath, err))
-		return nil, nil
-	}
-
-	f, err := os.Open(hydratedManifestPath)
-	if err != nil {
-		return nil, fmt.Errorf("opening hydrated manifest at %s: %w", hydratedManifestPath, err)
-	}
-	defer f.Close()
-
-	manifests, err := manifest.Load(f)
-	if err != nil {
-		return nil, fmt.Errorf("parsing manifests file into manifest list object: %w", err)
-	}
-	return manifests, nil
 }
