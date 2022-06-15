@@ -244,12 +244,15 @@ func TestResourceCheckEvent_handleNil(t *testing.T) {
 	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
 	handler.setState(handler.getState())
 
-	if handler.state.StatusCheckState.Resources != nil {
+	if handler.getState().StatusCheckState.Resources != nil {
 		t.Error("Resources should be a nil map")
 	}
 	resourceStatusCheckEventSucceeded("pods")
 	// Resources will be reset to map[string]string{} in handleExec
-	wait(t, func() bool { return handler.state.StatusCheckState.Resources != nil })
+	wait(t, func() bool {
+		_, ok := handler.getState().StatusCheckState.Resources["pods"]
+		return ok
+	})
 }
 
 func TestStatusCheckEventStarted(t *testing.T) {
