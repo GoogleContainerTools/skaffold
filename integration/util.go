@@ -121,7 +121,7 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 	}
 
 	ctx := context.Background()
-	log.Entry(ctx).Infoln("Namespace:", ns.Name)
+	t.Logf("Namespace: %s", ns.Name)
 
 	nsClient := &NSKubernetesClient{
 		t:      t,

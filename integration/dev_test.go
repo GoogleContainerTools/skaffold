@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"syscall"
@@ -35,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -321,6 +323,18 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
 
+	cmdVersion := exec.Command("docker", "version")
+	out, _ := util.RunCmdOut(context.Background(), cmdVersion)
+	t.Log(string(out))
+
+	cmdInfo := exec.Command("docker", "info")
+	out, _ = util.RunCmdOut(context.Background(), cmdInfo)
+	t.Log(string(out))
+
+	cmdStats := exec.Command("docker", "stats")
+	out, _ = util.RunCmdOut(context.Background(), cmdStats)
+	t.Log(string(out))
+
 	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
@@ -333,7 +347,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 }
 
 func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) (string, int) {
-	timeout := time.After(2 * time.Minute)
+	timeout := time.After(5 * time.Minute)
 	for {
 		select {
 		case <-timeout:
