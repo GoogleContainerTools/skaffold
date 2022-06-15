@@ -135,7 +135,7 @@ func (r *runProxyForwarder) Start(ctx context.Context, out io.Writer) error {
 			// has not been started yet
 			cctx, cancel := context.WithCancel(ctx)
 			output.Yellow.Fprintf(out, "Forwarding service %s to local port %d\n", resource.name.String(), resource.port)
-			cmd := exec.CommandContext(cctx, "gcloud", "beta", "run", "services", "proxy", "--project", resource.name.Project, "--region", resource.name.Region, "--port", strconv.Itoa(resource.port), resource.name.Service)
+			cmd := exec.CommandContext(cctx, "gcloud", getGcloudProxyArgs(resource.name, resource.port)...)
 			cmd.Stdout = out
 			cmd.Stderr = out
 			resource.cancel = cancel
@@ -157,6 +157,10 @@ func (r *runProxyForwarder) Start(ctx context.Context, out io.Writer) error {
 		}
 	}
 	return nil
+}
+
+func getGcloudProxyArgs(resource RunResourceName, port int) []string {
+	return []string{"beta", "run", "services", "proxy", "--project", resource.Project, "--region", resource.Region, "--port", strconv.Itoa(port), resource.Service}
 }
 
 // Stop terminates port forwarding for all tracked Cloud Run resources.
