@@ -14,18 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package deploy
+package render
 
 import (
 	"context"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -35,7 +38,9 @@ const (
 
 // for testing
 var (
-	readFile = ioutil.ReadFile
+	readFile    = ioutil.ReadFile
+	tempDir     = ioutil.TempDir
+	osRemoveAll = os.RemoveAll
 )
 
 // helm implements deploymentInitializer for the helm deployer.
@@ -68,33 +73,61 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 	}
 }
 
-// DeployConfig implements the Initializer interface and generates
-// a helm configuration
-func (h helm) DeployConfig() latest.DeployConfig {
-	releases := []latest.HelmRelease{}
-	for _, ch := range h.charts {
-		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
-		rPath := strings.ReplaceAll(ch.path, string(os.PathSeparator), "/")
-		rVfs := make([]string, len(ch.valueFiles))
-		for i, vf := range ch.valueFiles {
-			rVfs[i] = strings.ReplaceAll(vf, string(os.PathSeparator), "/")
-		}
+func (h helm) AddManifestForImage(string, string) {}
 
-		r := latest.HelmRelease{
-			Name:        ch.name,
-			ChartPath:   rPath,
-			Version:     ch.version,
-			ValuesFiles: rVfs,
+// RenderConfig implements the Initializer interface and generates
+// skaffold kubectl render config.
+func (h helm) RenderConfig() (latest.RenderConfig, []latest.Profile) {
+	return latest.RenderConfig{}, nil
+}
+
+// Validate implements the Initializer interface and ensures
+// we have at least one manifest before generating a config
+func (h helm) Validate() error {
+	if len(h.charts) == 0 {
+		return errors.NoHelmChartsErr{}
+	}
+	return nil
+}
+
+// GetImages return an empty string for helm.
+func (h helm) GetImages() []string {
+	// Run helm template in each top level dir.
+	// Parse templated manifest files and then get image names.
+	artifacts := []string{}
+	td, err := tempDir("", "skaffold_")
+	if err != nil {
+		log.Entry(context.TODO()).Fatalf("cannot create temporary directory. Encountered error: %s", err)
+	}
+	defer osRemoveAll(td)
+	for _, ch := range h.charts {
+		args := []string{"template", ch.path}
+		for _, v := range ch.valueFiles {
+			args = append(args, "-f", v)
 		}
-		releases = append(releases, r)
+		o, err := tempDir(td, ch.name)
+		if err != nil {
+			log.Entry(context.TODO()).Fatalf("cannot create temporary directory. Encountered error: %s", err)
+		}
+		args = append(args, "--output-dir", o)
+		cmd := exec.Command("helm", args...)
+		err = util.RunCmd(context.TODO(), cmd)
+		if err != nil {
+			log.Entry(context.TODO()).Warnf("could not initialize builders for helm chart %q.\nCommand %q encountered error: %s", ch.name, cmd, err)
+			continue
+		}
+		// read all templates generated
+		files := getAllFiles(o)
+		for _, file := range files {
+			images, err := kubernetes.ParseImagesFromKubernetesYaml(file)
+			if err != nil {
+				log.Entry(context.TODO()).Warnf("could not initialize builder for helm chart %q.\nCould not parse %q output due to error: %s", ch.name, cmd, err)
+			} else {
+				artifacts = append(artifacts, images...)
+			}
+		}
 	}
-	return latest.DeployConfig{
-		DeployType: latest.DeployType{
-			LegacyHelmDeploy: &latest.LegacyHelmDeploy{
-				Releases: releases,
-			},
-		},
-	}
+	return artifacts
 }
 
 func parseChartValues(fp string) (map[string]interface{}, error) {
@@ -134,4 +167,22 @@ func getVersion(m map[string]interface{}) string {
 		return v.(string)
 	}
 	return ""
+}
+
+func getAllFiles(o string) []string {
+	var files []string
+	err := filepath.Walk(o, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		log.Entry(context.TODO()).Fatalf("could not walk directory %q due to error: %s", o, err)
+	}
+	return files
 }
