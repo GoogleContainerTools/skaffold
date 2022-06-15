@@ -120,7 +120,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				},
 				expected: deploy.NewDeployerMux(
 					[]deploy.Deployer{
-						t.RequireNonNilResult(cloudrun.NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{})).(deploy.Deployer)},
+						t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{})).(deploy.Deployer)},
 					false),
 			},
 			{
@@ -241,7 +241,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						},
 					},
 				},
-				expected: t.RequireNonNilResult(cloudrun.NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
+				expected: t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
 			},
 			{
 				description: "apply does not allow multiple deployers when Cloud Run is used",

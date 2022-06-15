@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -106,7 +107,7 @@ func TestDeploy(tOuter *testing.T) {
 				w.Write(b)
 			}))
 
-			deployer, _ := NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: test.defaultProject, Region: test.region})
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: test.defaultProject, Region: test.region})
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifest, _ := json.Marshal(test.toDeploy)
@@ -186,7 +187,7 @@ func TestCleanup(tOuter *testing.T) {
 				w.Write(b)
 			}))
 			defer ts.Close()
-			deployer, _ := NewDeployer(&label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: test.defaultProject, Region: test.region})
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: test.defaultProject, Region: test.region})
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifest, _ := json.Marshal(test.toDelete)

@@ -27,9 +27,9 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -42,16 +42,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+// Config contains config options needed for cloud run
+type Config interface {
+	PortForwardOptions() config.PortForwardOptions
+	Mode() config.RunMode
+}
+
 // Deployer deploys code to Google Cloud Run.
 type Deployer struct {
 	logger   log.Logger
+	accessor *RunAccessor
 	monitor  *Monitor
 	labeller *label.DefaultLabeller
 
 	DefaultProject string
 	Region         string
-
-	Cfg deploy.Config
 
 	// additional client options for connecting to Cloud Run, used for tests
 	clientOptions []option.ClientOption
@@ -59,12 +64,13 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
-func NewDeployer(labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy) (*Deployer, error) {
 	return &Deployer{
 		DefaultProject: crDeploy.DefaultProjectID,
 		Region:         crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
 		logger:        &log.NoopLogger{},
+		accessor:      NewAccessor(cfg, labeller.GetRunID()),
 		labeller:      labeller,
 		useGcpOptions: true,
 	}, nil
@@ -108,7 +114,7 @@ func (d *Deployer) GetLogger() log.Logger {
 
 // GetAccessor gets a no-op accessor for Cloud Run.
 func (d *Deployer) GetAccessor() access.Accessor {
-	return &access.NoopAccessor{}
+	return d.accessor
 }
 
 // GetSyncer gets the file syncer for Cloud Run. Not supported by this deployer.
@@ -166,13 +172,18 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		delete(service.Metadata.Labels, "skaffold.dev/run-id")
 		service.Metadata.Labels["run-id"] = runID
 	}
-
+	resName := RunResourceName{
+		Project: service.Metadata.Namespace,
+		Region:  d.Region,
+		Service: service.Metadata.Name,
+	}
 	output.Default.Fprintln(out, "Deploying Cloud Run service:\n\t", service.Metadata.Name)
 	parent := fmt.Sprintf("projects/%s/locations/%s", service.Metadata.Namespace, d.Region)
 
-	sName := fmt.Sprintf("%s/services/%s", parent, service.Metadata.Name)
+	sName := resName.String()
 
 	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: sName, name: service.Metadata.Name})
+	d.accessor.AddResource(resName)
 	getCall := crclient.Projects.Locations.Services.Get(sName)
 	_, err = getCall.Do()
 
