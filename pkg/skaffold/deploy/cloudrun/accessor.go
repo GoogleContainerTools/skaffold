@@ -28,6 +28,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -39,8 +40,9 @@ var (
 )
 
 type resourceTracker struct {
-	resources      []forwardedResource
-	forwardedPorts *util.PortSet
+	resources          []forwardedResource
+	configuredForwards []*latest.PortForwardResource
+	forwardedPorts     *util.PortSet
 }
 
 type forwardedResource struct {
@@ -70,8 +72,9 @@ type RunAccessor struct {
 // NewAccessor creates a new RunAccessor to port forward Cloud Run services
 func NewAccessor(cfg Config, label string) *RunAccessor {
 	var forwarders []forwarder
-	resources := &resourceTracker{forwardedPorts: &util.PortSet{}}
+	resources := &resourceTracker{forwardedPorts: &util.PortSet{}, configuredForwards: cfg.PortForwardResources()}
 	options := cfg.PortForwardOptions()
+
 	if options.ForwardServices(cfg.Mode()) {
 		forwarders = append(forwarders, &runProxyForwarder{resources: resources})
 	}
@@ -81,7 +84,13 @@ func NewAccessor(cfg Config, label string) *RunAccessor {
 
 // AddResource tracks an additional resource to port forward
 func (r *RunAccessor) AddResource(resource RunResourceName) {
-	r.resources.resources = append(r.resources.resources, forwardedResource{name: resource, started: false})
+	port := 0
+	for _, forward := range r.resources.configuredForwards {
+		if forward.Type == "service" && forward.Name == resource.Service {
+			port = forward.LocalPort
+		}
+	}
+	r.resources.resources = append(r.resources.resources, forwardedResource{name: resource, started: false, port: port})
 }
 
 // Start begins port forwarding for the tracked Cloud Run services.

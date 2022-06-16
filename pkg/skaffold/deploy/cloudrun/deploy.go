@@ -44,6 +44,7 @@ import (
 
 // Config contains config options needed for cloud run
 type Config interface {
+	PortForwardResources() []*latest.PortForwardResource
 	PortForwardOptions() config.PortForwardOptions
 	Mode() config.RunMode
 }

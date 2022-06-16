@@ -23,11 +23,13 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 type testAccessConfig struct {
-	options config.PortForwardOptions
+	options  config.PortForwardOptions
+	forwards []*latest.PortForwardResource
 }
 
 func (t *testAccessConfig) PortForwardOptions() config.PortForwardOptions {
@@ -35,6 +37,9 @@ func (t *testAccessConfig) PortForwardOptions() config.PortForwardOptions {
 }
 func (t *testAccessConfig) Mode() config.RunMode {
 	return config.RunModes.Run
+}
+func (t *testAccessConfig) PortForwardResources() []*latest.PortForwardResource {
+	return t.forwards
 }
 func newTestConfig(forwardModes string) *testAccessConfig {
 	options := config.PortForwardOptions{}
@@ -64,6 +69,109 @@ func TestNewAccessor(t *testing.T) {
 			accessor := NewAccessor(cfg, "")
 			if len(accessor.forwarders) != test.numForwarders {
 				t.Fatalf("expected %d forwarders, but got %v", test.numForwarders, accessor.forwarders)
+			}
+		})
+	}
+}
+func TestResourcesAddedConfigurePorts(t *testing.T) {
+	tests := []struct {
+		name           string
+		resources      []RunResourceName
+		forwardConfigs []*latest.PortForwardResource
+		outputs        []forwardedResource
+	}{
+		{
+			name: "no forwards has no ports set",
+			resources: []RunResourceName{
+				{
+					Project: "test-proj",
+					Region:  "test-region",
+					Service: "test-service",
+				},
+			},
+			outputs: []forwardedResource{
+				{
+					name: RunResourceName{
+						Project: "test-proj",
+						Region:  "test-region",
+						Service: "test-service",
+					},
+					port: 0,
+				},
+			},
+		},
+		{
+			name: "forward has port set",
+			resources: []RunResourceName{
+				{
+					Project: "test-proj",
+					Region:  "test-region",
+					Service: "test-service",
+				},
+			},
+			forwardConfigs: []*latest.PortForwardResource{
+				{
+					Type:      "service",
+					Name:      "test-service",
+					LocalPort: 9000,
+				},
+			},
+			outputs: []forwardedResource{
+				{
+					name: RunResourceName{
+						Project: "test-proj",
+						Region:  "test-region",
+						Service: "test-service",
+					},
+					port: 9000,
+				},
+			},
+		},
+		{
+			name: "name mismatch has no port set",
+			resources: []RunResourceName{
+				{
+					Project: "test-proj",
+					Region:  "test-region",
+					Service: "test-service",
+				},
+			},
+			forwardConfigs: []*latest.PortForwardResource{
+				{
+					Type:      "service",
+					Name:      "test-service2",
+					LocalPort: 9000,
+				},
+			},
+			outputs: []forwardedResource{
+				{
+					name: RunResourceName{
+						Project: "test-proj",
+						Region:  "test-region",
+						Service: "test-service",
+					},
+					port: 0,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := newTestConfig("")
+			cfg.forwards = test.forwardConfigs
+			accessor := NewAccessor(cfg, "")
+			for _, resource := range test.resources {
+				accessor.AddResource(resource)
+			}
+			if len(test.outputs) != len(accessor.resources.resources) {
+				t.Fatalf("Mismatch in expected outputs. Expected %v, got %v", test.outputs, accessor.resources.resources)
+			}
+			for i, output := range test.outputs {
+				got := accessor.resources.resources[i]
+				if output.name != got.name || output.port != got.port {
+					t.Fatalf("did not get expected port set. Expected %v, got %v", output, got)
+				}
 			}
 		})
 	}
