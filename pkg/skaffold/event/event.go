@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -309,29 +310,47 @@ func DeployComplete() {
 }
 
 // BuildInProgress notifies that a build has been started.
-func BuildInProgress(imageName string) {
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: InProgress})
+func BuildInProgress(imageName, platforms string) {
+	handler.handleBuildEvent(&proto.BuildEvent{
+		Artifact:        imageName,
+		TargetPlatforms: platforms,
+		HostPlatform:    platform.Host.String(),
+		Status:          InProgress,
+	})
 }
 
 // BuildCanceled notifies that a build has been canceled.
-func BuildCanceled(imageName string) {
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Canceled})
+func BuildCanceled(imageName, platforms string) {
+	handler.handleBuildEvent(&proto.BuildEvent{
+		Artifact:        imageName,
+		TargetPlatforms: platforms,
+		HostPlatform:    platform.Host.String(),
+		Status:          Canceled,
+	})
 }
 
 // BuildFailed notifies that a build has failed.
-func BuildFailed(imageName string, err error) {
+func BuildFailed(imageName, platforms string, err error) {
 	aiErr := sErrors.ActionableErr(handler.cfg, constants.Build, err)
 	handler.handleBuildEvent(&proto.BuildEvent{
-		Artifact:      imageName,
-		Status:        Failed,
-		Err:           err.Error(),
-		ErrCode:       aiErr.ErrCode,
-		ActionableErr: aiErr})
+		Artifact:        imageName,
+		TargetPlatforms: platforms,
+		HostPlatform:    platform.Host.String(),
+		Status:          Failed,
+		Err:             err.Error(),
+		ErrCode:         aiErr.ErrCode,
+		ActionableErr:   aiErr,
+	})
 }
 
 // BuildComplete notifies that a build has completed.
-func BuildComplete(imageName string) {
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
+func BuildComplete(imageName, platforms string) {
+	handler.handleBuildEvent(&proto.BuildEvent{
+		Artifact:        imageName,
+		TargetPlatforms: platforms,
+		HostPlatform:    platform.Host.String(),
+		Status:          Complete,
+	})
 }
 
 // TestInProgress notifies that a test has been started.

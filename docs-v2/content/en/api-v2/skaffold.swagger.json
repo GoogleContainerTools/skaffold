@@ -748,6 +748,12 @@
         },
         "actionableErr": {
           "$ref": "#/definitions/v2ActionableErr"
+        },
+        "hostPlatform": {
+          "type": "string"
+        },
+        "targetPlatforms": {
+          "type": "string"
         }
       },
       "description": "`BuildSubtaskvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."

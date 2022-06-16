@@ -186,6 +186,8 @@ If the build fails, an error will be attached to the event.
 | step | [string](#string) |  | which step of the build for the artifact oneof: Cache, Build, Push |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | actionableErr | [ActionableErr](#proto.v2.ActionableErr) |  | actionable error message |
+| hostPlatform | [string](#string) |  | platform of the host machine. For example `linux/amd64` |
+| targetPlatforms | [string](#string) |  | comma-delimited list of build target platforms. For example `linux/amd64,linux/arm64` |
 
 
 

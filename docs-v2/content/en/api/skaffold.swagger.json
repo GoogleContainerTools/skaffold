@@ -550,6 +550,18 @@
             "type": "string"
           },
           {
+            "name": "event.buildEvent.hostPlatform",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.targetPlatforms",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "event.deployEvent.status",
             "in": "query",
             "required": false,
@@ -3508,6 +3520,12 @@
         },
         "actionableErr": {
           "$ref": "#/definitions/protoActionableErr"
+        },
+        "hostPlatform": {
+          "type": "string"
+        },
+        "targetPlatforms": {
+          "type": "string"
         }
       },
       "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."

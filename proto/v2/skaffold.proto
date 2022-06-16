@@ -232,6 +232,8 @@ message BuildSubtaskEvent {
     string step = 4; // which step of the build for the artifact oneof: Cache, Build, Push
     string status = 5; // artifact build status oneof: InProgress, Completed, Failed
     ActionableErr actionableErr = 6; // actionable error message
+    string hostPlatform = 7; // platform of the host machine. For example `linux/amd64`
+    string targetPlatforms = 8; // comma-delimited list of build target platforms. For example `linux/amd64,linux/arm64`
 }
 
 // `TestSubtaskEvent` represents the status of a test, and is emitted by Skaffold
