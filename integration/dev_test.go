@@ -323,16 +323,16 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
 
+	cmdPrune := exec.Command("docker", "system", "prune", "--force")
+	out, _ := util.RunCmdOut(context.Background(), cmdPrune)
+	t.Log(string(out))
+
 	cmdVersion := exec.Command("docker", "version")
-	out, _ := util.RunCmdOut(context.Background(), cmdVersion)
+	out, _ = util.RunCmdOut(context.Background(), cmdVersion)
 	t.Log(string(out))
 
 	cmdInfo := exec.Command("docker", "info")
 	out, _ = util.RunCmdOut(context.Background(), cmdInfo)
-	t.Log(string(out))
-
-	cmdStats := exec.Command("docker", "stats")
-	out, _ = util.RunCmdOut(context.Background(), cmdStats)
 	t.Log(string(out))
 
 	ns, _ := SetupNamespace(t)
