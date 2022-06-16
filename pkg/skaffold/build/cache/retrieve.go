@@ -61,7 +61,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var needToBuild []*latest.Artifact
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
-		eventV2.CacheCheckInProgress(artifact.ImageName)
+		eventV2.CacheCheckInProgress(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 		out, ctx := output.WithEventContext(ctx, out, constants.Build, artifact.ImageName)
 		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
@@ -73,14 +73,14 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			return nil, result.err
 
 		case needsBuilding:
-			eventV2.CacheCheckMiss(artifact.ImageName)
+			eventV2.CacheCheckMiss(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			output.Yellow.Fprintln(out, "Not found. Building")
 			hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 
 		case needsTagging:
-			eventV2.CacheCheckHit(artifact.ImageName)
+			eventV2.CacheCheckHit(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			output.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c, platforms); err != nil {
 				endTrace(instrumentation.TraceEndError(err))
@@ -88,7 +88,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			}
 
 		case needsPushing:
-			eventV2.CacheCheckHit(artifact.ImageName)
+			eventV2.CacheCheckHit(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			output.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
 				endTrace(instrumentation.TraceEndError(err))
@@ -97,7 +97,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			}
 
 		default:
-			eventV2.CacheCheckHit(artifact.ImageName)
+			eventV2.CacheCheckHit(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			isLocal, err := c.isLocalImage(artifact.ImageName)
 			if err != nil {
 				endTrace(instrumentation.TraceEndError(err))

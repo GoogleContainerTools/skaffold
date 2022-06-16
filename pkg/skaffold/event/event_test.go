@@ -167,7 +167,7 @@ func TestBuildInProgress(t *testing.T) {
 	}}}, "test"))
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
-	BuildInProgress("img")
+	BuildInProgress("img", "")
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == InProgress })
 }
 
@@ -182,7 +182,7 @@ func TestBuildFailed(t *testing.T) {
 	}}}, "test"))
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
-	BuildFailed("img", errors.New("BUG"))
+	BuildFailed("img", "", errors.New("BUG"))
 	wait(t, func() bool {
 		bState := handler.getState().BuildState
 		return bState.Artifacts["img"] == Failed
@@ -200,7 +200,7 @@ func TestBuildComplete(t *testing.T) {
 	}}}, "test"))
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
-	BuildComplete("img")
+	BuildComplete("img", "")
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == Complete })
 }
 
