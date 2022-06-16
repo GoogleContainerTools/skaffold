@@ -654,6 +654,9 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		rse := e.ResourceStatusCheckEvent
 		rseName := rse.Resource
 		ev.stateLock.Lock()
+		if ev.state.StatusCheckState.Resources == nil {
+			ev.state.StatusCheckState.Resources = map[string]string{}
+		}
 		ev.state.StatusCheckState.Resources[rseName] = rse.Status
 		ev.stateLock.Unlock()
 		switch rse.Status {

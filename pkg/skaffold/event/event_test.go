@@ -237,6 +237,24 @@ func TestPortForwarded_handleNil(t *testing.T) {
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
 }
 
+func TestResourceCheckEvent_handleNil(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+	handler.setState(handler.getState())
+
+	if handler.getState().StatusCheckState.Resources != nil {
+		t.Error("Resources should be a nil map")
+	}
+	resourceStatusCheckEventSucceeded("pods")
+	// Resources will be reset to map[string]string{} in handleExec
+	wait(t, func() bool {
+		_, ok := handler.getState().StatusCheckState.Resources["pods"]
+		return ok
+	})
+}
+
 func TestStatusCheckEventStarted(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
