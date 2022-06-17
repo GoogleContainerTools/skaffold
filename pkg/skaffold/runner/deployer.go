@@ -185,7 +185,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
-			deployer, err := cloudrun.NewDeployer(labeller, d.CloudRunDeploy)
+			deployer, err := cloudrun.NewDeployer(dCtx, labeller, d.CloudRunDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -326,5 +326,5 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 			}
 		}
 	}
-	return cloudrun.NewDeployer(labeller, &latest.CloudRunDeploy{Region: region, DefaultProjectID: defaultProject})
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, DefaultProjectID: defaultProject})
 }
