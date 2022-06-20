@@ -935,7 +935,7 @@ The following options can be passed to any command:
 
 ### skaffold render
 
-Perform all image builds, and output rendered Kubernetes manifests
+Generate rendered Kubernetes manifests
 
 ```
 
