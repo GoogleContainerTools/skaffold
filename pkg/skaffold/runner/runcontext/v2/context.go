@@ -291,11 +291,22 @@ func (rc *RunContext) DigestSource() string {
 	return constants.RemoteDigestSource
 }
 
+func setPipelineConfigName(pipeline *latest.Pipeline, configName string) {
+	pipeline.ConfigName = configName
+
+	if len(pipeline.ConfigName) == 0 {
+		configNameUuid, _ := uuid.NewUUID()
+		pipeline.ConfigName = configNameUuid.String()
+	}
+}
+
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	var pipelines []latest.Pipeline
 	for _, cfg := range configs {
 		if cfg != nil {
-			pipelines = append(pipelines, cfg.(*latest.SkaffoldConfig).Pipeline)
+			pipeline := cfg.(*latest.SkaffoldConfig).Pipeline
+			setPipelineConfigName(&pipeline, cfg.(*latest.SkaffoldConfig).Metadata.Name)
+			pipelines = append(pipelines, pipeline)
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()

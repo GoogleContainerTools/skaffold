@@ -83,7 +83,7 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 	return nil
 }
 
-func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
+func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	start := time.Now()
 	log.Entry(ctx).Infoln("Starting render...")
 
@@ -95,7 +95,7 @@ func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.A
 	return manifestsLists, nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, l manifest.ManifestList) error {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, l manifest.ManifestListByConfig) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting deploy...")
 

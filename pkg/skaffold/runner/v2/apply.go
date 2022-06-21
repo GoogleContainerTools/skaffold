@@ -33,10 +33,14 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	var manifests manifest.ManifestList
 	var err error
 	manifests, err = deployutil.GetManifestsFromHydratedManifests(ctx, r.runCtx.HydratedManifests())
+	manifestsByConfig := manifest.ManifestListByConfig{
+		"": manifests,
+	}
+
 	if err != nil {
 		return fmt.Errorf("getting manifests from hydrated manifests: %w", err)
 	}
-	if err := r.applyResources(ctx, out, nil, nil, manifests); err != nil {
+	if err := r.applyResources(ctx, out, nil, nil, manifestsByConfig); err != nil {
 		return err
 	}
 
@@ -49,7 +53,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	return sErr
 }
 
-func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, _ []graph.Artifact, list manifest.ManifestList) error {
+func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, _ []graph.Artifact, list manifest.ManifestListByConfig) error {
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err

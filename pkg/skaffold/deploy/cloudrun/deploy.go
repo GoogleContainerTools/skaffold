@@ -51,10 +51,11 @@ type Config interface {
 
 // Deployer deploys code to Google Cloud Run.
 type Deployer struct {
-	logger   log.Logger
-	accessor *RunAccessor
-	monitor  *Monitor
-	labeller *label.DefaultLabeller
+	configName string
+	logger     log.Logger
+	accessor   *RunAccessor
+	monitor    *Monitor
+	labeller   *label.DefaultLabeller
 
 	Project string
 	Region  string
@@ -65,10 +66,11 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string) (*Deployer, error) {
 	return &Deployer{
-		Project: crDeploy.ProjectID,
-		Region:  crDeploy.Region,
+		configName: configName,
+		Project:    crDeploy.ProjectID,
+		Region:     crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
 		logger:        &log.NoopLogger{},
 		accessor:      NewAccessor(cfg, labeller.GetRunID()),
@@ -78,7 +80,9 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 }
 
 // Deploy creates a Cloud Run service using the provided manifest.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestList) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifestsByConfig manifest.ManifestListByConfig) error {
+	manifests := manifestsByConfig[d.configName]
+
 	for _, manifest := range manifests {
 		if err := d.deployToCloudRun(ctx, out, manifest); err != nil {
 			return err

@@ -49,6 +49,8 @@ import (
 )
 
 type Deployer struct {
+	configName string
+
 	debugger *debugger.DebugManager
 	logger   log.Logger
 	monitor  status.Monitor
@@ -65,7 +67,7 @@ type Deployer struct {
 	once               sync.Once
 }
 
-func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *latest.DockerDeploy, resources []*latest.PortForwardResource) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *latest.DockerDeploy, resources []*latest.PortForwardResource, configName string) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -87,6 +89,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 	}
 
 	return &Deployer{
+		configName:         configName,
 		cfg:                d,
 		client:             client,
 		network:            fmt.Sprintf("skaffold-network-%s", labeller.GetRunID()),
@@ -114,7 +117,7 @@ func (d *Deployer) TrackContainerFromBuild(artifact graph.Artifact, container tr
 
 // Deploy deploys built artifacts by creating containers in the local docker daemon
 // from each artifact's image.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network)

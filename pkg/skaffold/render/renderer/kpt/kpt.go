@@ -44,6 +44,8 @@ import (
 )
 
 type Kpt struct {
+	configName string
+
 	generate.Generator
 	validate.Validator
 	transform.Transformer
@@ -58,7 +60,7 @@ const (
 	DryFileName = "manifests.yaml"
 )
 
-func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string) (*Kpt, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string) (*Kpt, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
@@ -86,6 +88,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 		transformer, _ = transform.NewTransformer([]latest.Transformer{})
 	}
 	return &Kpt{
+		configName:         configName,
 		Generator:          generator,
 		Validator:          validator,
 		Transformer:        transformer,
@@ -96,7 +99,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 	}, nil
 }
 
-func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestList, error) {
+func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestListByConfig, error) {
 	kptfilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	kfConfig := &kptfile.KptFile{}
 
@@ -169,7 +172,9 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		return nil, err
 	}
 	if err = os.WriteFile(kptfilePath, configByte, 0644); err != nil {
-		return manifests, err
+		return manifest.ManifestListByConfig{
+			r.configName: manifests,
+		}, err
 	}
 	endTrace()
 
@@ -186,7 +191,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 }
 
 // unwrapManifests converts the structured manifest to a flatten format
-func (r *Kpt) unwrapManifests(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
+func (r *Kpt) unwrapManifests(ctx context.Context, out io.Writer) (manifest.ManifestListByConfig, error) {
 	var m manifest.ManifestList
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_outputManifests")
 	cmd := exec.CommandContext(rCtx, "kpt", "fn", "source", r.hydrationDir, "-o", "unwrap")
@@ -195,8 +200,12 @@ func (r *Kpt) unwrapManifests(ctx context.Context, out io.Writer) (manifest.Mani
 	buf, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return m, err
+		return manifest.ManifestListByConfig{
+			r.configName: m,
+		}, err
 	}
 	m = append(m, buf)
-	return m, nil
+	return manifest.ManifestListByConfig{
+		r.configName: m,
+	}, nil
 }

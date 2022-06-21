@@ -76,6 +76,8 @@ var (
 
 // Deployer deploys workflows using the helm CLI
 type Deployer struct {
+	configName string
+
 	*latest.LegacyHelmDeploy
 
 	accessor      access.Accessor
@@ -129,7 +131,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
 	hv, err := helm.BinVer(ctx)
 	if err != nil {
 		return nil, helm.VersionGetErr(err)
@@ -157,6 +159,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		})
 	}
 	return &Deployer{
+		configName:             configName,
 		LegacyHelmDeploy:       h,
 		podSelector:            podSelector,
 		namespaces:             &namespaces,
@@ -216,7 +219,7 @@ func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})

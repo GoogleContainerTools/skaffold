@@ -30,6 +30,18 @@ import (
 //nolint:golint
 type ManifestList [][]byte
 
+type ManifestListByConfig map[string]ManifestList
+
+func (ml ManifestListByConfig) String() string {
+	var manifests []string
+
+	for _, ml := range ml {
+		manifests = append(manifests, ml.String())
+	}
+
+	return strings.Join(manifests, "\n---\n")
+}
+
 // Load uses the Kubernetes `apimachinery` to split YAML content into a set of YAML documents.
 func Load(in io.Reader) (ManifestList, error) {
 	r := k8syaml.NewYAMLReader(bufio.NewReader(in))

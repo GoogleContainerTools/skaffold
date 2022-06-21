@@ -56,6 +56,8 @@ import (
 
 // Deployer deploys workflows using kubectl CLI.
 type Deployer struct {
+	configName string
+
 	*latest.KubectlDeploy
 
 	accessor           access.Accessor
@@ -85,7 +87,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, configName string) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -107,6 +109,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 		return nil, err
 	}
 	return &Deployer{
+		configName:         configName,
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
 		namespaces:         &namespaces,
@@ -168,7 +171,8 @@ func (k *Deployer) trackNamespaces(namespaces []string) {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifests manifest.ManifestList) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifestsByConfig manifest.ManifestListByConfig) error {
+	manifests := manifestsByConfig[k.configName]
 	var (
 		err      error
 		childCtx context.Context

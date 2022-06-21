@@ -41,19 +41,23 @@ func NewRenderMux(renderers []Renderer) Renderer {
 	return RenderMux{renderers: renderers}
 }
 
-func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestList, error) {
-	allManifests := manifest.ManifestList{}
+func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
+	allManifests := manifest.ManifestListByConfig{}
 	for i, renderer := range r.renderers {
 		eventV2.RendererInProgress(i)
 		w, ctx := output.WithEventContext(ctx, out, constants.Render, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-		ms, err := renderer.Render(ctx, w, artifacts, offline)
+		manifestsByConfig, err := renderer.Render(ctx, w, artifacts, offline)
 		if err != nil {
 			eventV2.RendererFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
-		allManifests = append(allManifests, ms...)
+
+		for configName, manifests := range manifestsByConfig {
+			allManifests[configName] = manifests
+		}
+
 		eventV2.RendererSucceeded(i)
 		endTrace()
 	}
