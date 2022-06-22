@@ -158,20 +158,6 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			},
 		},
 		{
-			description: "http manifest",
-			generate: latest.Generate{
-				RawK8s: []string{"deployment.yaml", "http://remote.yaml"},
-			},
-			commands: testutil.
-				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
-			builds: []graph.Artifact{{
-				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:v1",
-			}},
-			waitForDeletions: true,
-		},
-		{
 			description: "deploy command error",
 			generate: latest.Generate{
 				RawK8s: []string{"deployment.yaml"},
@@ -609,7 +595,7 @@ func TestGCSManifests(t *testing.T) {
 				RawK8s: []string{"gs://dev/deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", "gs://dev/deployment.yaml", manifest.ManifestTmpDir), "log").
+				CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", "gs://dev/deployment.yaml", filepath.Join(manifest.ManifestTmpDir, manifest.ManifestsFromGCS)), "log").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 		}}
 	for _, test := range tests {
