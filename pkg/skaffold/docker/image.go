@@ -213,7 +213,7 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 	return nil
 }
 
-// Run creates a container from a given image reference, and returns then container ID.
+// Run creates a container from a given image reference, and returns a wait channel and the container ID.
 func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error) {
 	if opts.ContainerConfig == nil {
 		return nil, nil, "", fmt.Errorf("cannot call Run with empty container config")

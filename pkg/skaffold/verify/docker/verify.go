@@ -22,6 +22,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -248,7 +249,7 @@ func (v *Verifier) containerConfigFromImage(ctx context.Context, taggedImage str
 
 func (v *Verifier) getContainerName(ctx context.Context, name string) string {
 	// this is done to fix the for naming convention of non-skaffold built images which verify supports
-	name = strings.Split(name, ":")[0]
+	name = path.Base(strings.Split(name, ":")[0])
 	currentName := name
 
 	counter := 1
