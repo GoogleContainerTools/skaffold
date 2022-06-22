@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -67,8 +68,9 @@ func AnalyzeProject(c config.Config) (*analyze.ProjectAnalysis, error) {
 // Initialize uses the information gathered by the analyzer to create a skaffold config and generate kubernetes manifests.
 // The returned map[string][]byte represents a mapping from generated config name to its respective manifest data held in a []byte
 func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*latest.SkaffoldConfig, map[string][]byte, error) {
-	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), c)
-	images := deployInitializer.GetImages()
+	renderInitializer := render.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), c)
+	deployInitializer := deploy.NewInitializer(a.HelmChartInfo(), c)
+	images := renderInitializer.GetImages()
 
 	buildInitializer := build.NewInitializer(a.Builders(), c)
 	if err := buildInitializer.ProcessImages(images); err != nil {
@@ -79,19 +81,19 @@ func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*la
 		return nil, nil, buildInitializer.PrintAnalysis(out)
 	}
 
-	newManifests, err := generateManifests(out, c, buildInitializer, deployInitializer)
+	newManifests, err := generateManifests(out, c, buildInitializer, renderInitializer)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if errV := deployInitializer.Validate(); errV != nil {
+	if errV := renderInitializer.Validate(); errV != nil {
 		return nil, nil, errV
 	}
 
-	return generateSkaffoldConfig(buildInitializer, deployInitializer), newManifests, nil
+	return generateSkaffoldConfig(buildInitializer, renderInitializer, deployInitializer), newManifests, nil
 }
 
-func generateManifests(out io.Writer, c config.Config, bInitializer build.Initializer, dInitializer deploy.Initializer) (map[string][]byte, error) {
+func generateManifests(out io.Writer, c config.Config, bInitializer build.Initializer, rInitializer render.Initializer) (map[string][]byte, error) {
 	var generatedManifests map[string][]byte
 
 	generatedManifestPairs, err := bInitializer.GenerateManifests(out, c.Force, c.EnableManifestGeneration)
@@ -100,7 +102,7 @@ func generateManifests(out io.Writer, c config.Config, bInitializer build.Initia
 	}
 	generatedManifests = make(map[string][]byte, len(generatedManifestPairs))
 	for pair, manifest := range generatedManifestPairs {
-		dInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
+		rInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
 		generatedManifests[pair.ManifestPath] = manifest
 	}
 

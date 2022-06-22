@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package deploy
+package render
 
 import (
 	"testing"
@@ -40,15 +40,13 @@ spec:
 
 	k := newKubectlInitializer([]string{filename})
 
-	expectedConfig := latest.DeployConfig{
-		DeployType: latest.DeployType{
-			KubectlDeploy: &latest.KubectlDeploy{
-				Manifests: []string{filename},
-			},
+	expectedConfig := latest.RenderConfig{
+		Generate: latest.Generate{
+			RawK8s: []string{filename},
 		},
 	}
-	deployConfig, profiles := k.DeployConfig()
-	testutil.CheckDeepEqual(t, expectedConfig, deployConfig)
+	renderConfig, profiles := k.RenderConfig()
+	testutil.CheckDeepEqual(t, expectedConfig, renderConfig)
 	if profiles != nil {
 		t.Errorf("generated profiles should be nil, but got: %+v\n", profiles)
 	}

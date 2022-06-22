@@ -154,7 +154,6 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 		manifests.Append(manifestFileContent)
 	}
 
-	// TODO(yuwenma): helm resources. `render.generate.helmCharts`
 	return manifests, nil
 }
 

@@ -167,7 +167,7 @@ func TestBuildInProgress(t *testing.T) {
 	}}}, "test"))
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
-	BuildInProgress("img")
+	BuildInProgress("img", "")
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == InProgress })
 }
 
@@ -182,7 +182,7 @@ func TestBuildFailed(t *testing.T) {
 	}}}, "test"))
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
-	BuildFailed("img", errors.New("BUG"))
+	BuildFailed("img", "", errors.New("BUG"))
 	wait(t, func() bool {
 		bState := handler.getState().BuildState
 		return bState.Artifacts["img"] == Failed
@@ -200,7 +200,7 @@ func TestBuildComplete(t *testing.T) {
 	}}}, "test"))
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
-	BuildComplete("img")
+	BuildComplete("img", "")
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == Complete })
 }
 
@@ -235,6 +235,24 @@ func TestPortForwarded_handleNil(t *testing.T) {
 	}
 	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
+}
+
+func TestResourceCheckEvent_handleNil(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+	handler.setState(handler.getState())
+
+	if handler.getState().StatusCheckState.Resources != nil {
+		t.Error("Resources should be a nil map")
+	}
+	resourceStatusCheckEventSucceeded("pods")
+	// Resources will be reset to map[string]string{} in handleExec
+	wait(t, func() bool {
+		_, ok := handler.getState().StatusCheckState.Resources["pods"]
+		return ok
+	})
 }
 
 func TestStatusCheckEventStarted(t *testing.T) {

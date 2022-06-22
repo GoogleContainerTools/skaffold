@@ -77,7 +77,7 @@ Pipeline Building Blocks:
   test              Run tests against your built application images
   deploy            Deploy pre-built artifacts
   delete            Delete any resources deployed by Skaffold
-  render            Perform all image builds, and output rendered Kubernetes manifests
+  render            Generate rendered Kubernetes manifests
   apply             Apply hydrated manifests to a cluster
   verify            Run verification tests against skaffold deployments
 
@@ -935,7 +935,7 @@ The following options can be passed to any command:
 
 ### skaffold render
 
-Perform all image builds, and output rendered Kubernetes manifests
+Generate rendered Kubernetes manifests
 
 ```
 

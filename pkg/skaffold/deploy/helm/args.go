@@ -17,19 +17,12 @@ limitations under the License.
 package helm
 
 import (
-	"context"
-	"fmt"
-	"runtime"
-	"strconv"
-
 	"github.com/blang/semver"
-	"github.com/mitchellh/go-homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // installOpts are options to be passed to "helm install"
@@ -44,73 +37,6 @@ type installOpts struct {
 	postRenderer string
 	repo         string
 	version      string
-}
-
-// constructOverrideArgs creates the command line arguments for overrides
-func constructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string) ([]string, error) {
-	for _, k := range sortKeys(r.SetValues) {
-		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
-	}
-
-	for _, k := range sortKeys(r.SetFiles) {
-		exp, err := homedir.Expand(r.SetFiles[k])
-		if err != nil {
-			return nil, fmt.Errorf("unable to expand %q: %w", r.SetFiles[k], err)
-		}
-		exp = sanitizeFilePath(exp, runtime.GOOS == "windows")
-
-		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, exp))
-	}
-
-	envMap := map[string]string{}
-	for idx, b := range builds {
-		suffix := ""
-		if idx > 0 {
-			suffix = strconv.Itoa(idx + 1)
-		}
-
-		for k, v := range envVarForImage(b.ImageName, b.Tag) {
-			envMap[k+suffix] = v
-		}
-	}
-	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
-
-	for _, k := range sortKeys(r.SetValueTemplates) {
-		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
-		if err != nil {
-			return nil, err
-		}
-		expandedKey, err := util.ExpandEnvTemplate(k, envMap)
-		if err != nil {
-			return nil, err
-		}
-
-		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
-	}
-
-	for _, v := range r.ValuesFiles {
-		exp, err := homedir.Expand(v)
-		if err != nil {
-			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
-		}
-
-		exp, err = util.ExpandEnvTemplate(exp, envMap)
-		if err != nil {
-			return nil, err
-		}
-
-		args = append(args, "-f", exp)
-	}
-	return args, nil
-}
-
-// getArgs calculates the correct arguments to "helm get"
-func getArgs(releaseName string, namespace string) []string {
-	args := []string{"get", "all"}
-	if namespace != "" {
-		args = append(args, "--namespace", namespace)
-	}
-	return append(args, releaseName)
 }
 
 // installArgs calculates the correct arguments to "helm install"
@@ -162,12 +88,12 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o 
 
 	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
 		if o.helmVersion.LT(helm32Version) {
-			return nil, createNamespaceErr(h.bV.String())
+			return nil, helm.CreateNamespaceErr(h.bV.String())
 		}
 		args = append(args, "--create-namespace")
 	}
 
-	args, err := constructOverrideArgs(&r, builds, args)
+	args, err := helm.ConstructOverrideArgs(&r, builds, args)
 	if err != nil {
 		return nil, err
 	}
@@ -181,54 +107,4 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o 
 	}
 
 	return args, nil
-}
-
-// sanitizeFilePath is used to sanitize filepaths that are provided to the `setFiles` flag
-// helm `setFiles` doesn't work with the unescaped filepath separator (\) for Windows or if there are unescaped tabs and spaces in the directory names.
-// So we escape all odd count occurrences of `\` for Windows, and wrap the entire string in quotes if it has spaces.
-// This is very specific to the way helm handles its flags.
-// See https://github.com/helm/helm/blob/d55c53df4e394fb62b0514a09c57bce235dd7877/pkg/cli/values/options.
-// Otherwise the windows `syscall` package implements its own sanitizing for command args that's used by `exec.Cmd`.
-// See https://github.com/golang/go/blob/6951da56b0ae2cd4250fc1b0350d090aed633ac1/src/syscall/exec_windows.go#L27
-func sanitizeFilePath(s string, isWindowsOS bool) string {
-	if len(s) == 0 {
-		return `""`
-	}
-	needsQuotes := false
-	for i := 0; i < len(s); i++ {
-		if s[i] == ' ' || s[i] == '\t' {
-			needsQuotes = true
-			break
-		}
-	}
-
-	if !isWindowsOS {
-		if needsQuotes {
-			return fmt.Sprintf(`"%s"`, s)
-		}
-		return s
-	}
-
-	var b []byte
-	slashes := 0
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '\\':
-			slashes++
-		default:
-			// ensure a single slash is escaped
-			if slashes == 1 {
-				b = append(b, '\\')
-			}
-			slashes = 0
-		}
-		b = append(b, s[i])
-	}
-	if slashes == 1 {
-		b = append(b, '\\')
-	}
-	if needsQuotes {
-		return fmt.Sprintf(`"%s"`, string(b))
-	}
-	return string(b)
 }

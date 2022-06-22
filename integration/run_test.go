@@ -158,9 +158,6 @@ var tests = []struct {
 }
 
 func TestRun(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -198,8 +195,6 @@ func TestRunTail(t *testing.T) {
 }
 
 func TestRunTailDefaultNamespace(t *testing.T) {
-	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7287
-	t.Skipf("fix https://github.com/GoogleContainerTools/skaffold/issues/7287")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	for _, test := range tests {
@@ -217,9 +212,6 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 }
 
 func TestRunRenderOnly(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "write rendered manifest to provided filepath", func(tu *testutil.T) {
@@ -257,11 +249,11 @@ func TestRunGCPOnly(t *testing.T) {
 		deployments []string
 		pods        []string
 	}{
-		{
-			description: "Google Cloud Build",
-			dir:         "examples/google-cloud-build",
-			pods:        []string{"getting-started"},
-		},
+		// {
+		//	description: "Google Cloud Build",
+		//	dir:         "examples/google-cloud-build",
+		//	pods:        []string{"getting-started"},
+		// },
 		{
 			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
@@ -278,31 +270,31 @@ func TestRunGCPOnly(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
-		{
-			description: "Google Cloud Build with Kaniko",
-			dir:         "examples/gcb-kaniko",
-			pods:        []string{"getting-started-kaniko"},
-		},
-		{
-			description: "kaniko",
-			dir:         "examples/kaniko",
-			pods:        []string{"getting-started-kaniko"},
-		},
-		{
-			description: "kaniko with target",
-			dir:         "testdata/kaniko-target",
-			pods:        []string{"getting-started-kaniko"},
-		},
+		// {
+		//	description: "Google Cloud Build with Kaniko",
+		//	dir:         "examples/gcb-kaniko",
+		//	pods:        []string{"getting-started-kaniko"},
+		// },
+		// {
+		//	description: "kaniko",
+		//	dir:         "examples/kaniko",
+		//	pods:        []string{"getting-started-kaniko"},
+		// },
+		// {
+		//	description: "kaniko with target",
+		//	dir:         "testdata/kaniko-target",
+		//	pods:        []string{"getting-started-kaniko"},
+		// },
 		{
 			description: "kaniko with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 		},
-		{
-			description: "kaniko microservices",
-			dir:         "testdata/kaniko-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		},
+		// {
+		//	description: "kaniko microservices",
+		//	dir:         "testdata/kaniko-microservices",
+		//	deployments: []string{"leeroy-app", "leeroy-web"},
+		// },
 		{
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
@@ -337,9 +329,6 @@ func TestRunGCPOnly(t *testing.T) {
 }
 
 func TestRunIdempotent(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -365,9 +354,6 @@ func TestRunIdempotent(t *testing.T) {
 }
 
 func TestRunUnstableChecked(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -381,9 +367,6 @@ func TestRunUnstableChecked(t *testing.T) {
 }
 
 func TestRunUnstableNotChecked(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -392,9 +375,6 @@ func TestRunUnstableNotChecked(t *testing.T) {
 }
 
 func TestRunTailPod(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -409,9 +389,6 @@ func TestRunTailPod(t *testing.T) {
 }
 
 func TestRunTailDeployment(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
@@ -426,9 +403,6 @@ func TestRunTailDeployment(t *testing.T) {
 }
 
 func TestRunTest(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {

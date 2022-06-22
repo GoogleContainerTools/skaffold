@@ -18,8 +18,10 @@ package v2
 import (
 	"context"
 	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
-	return r.deployer.Cleanup(ctx, out, dryRun, nil)
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
+	return r.deployer.Cleanup(ctx, out, dryRun, list)
 }

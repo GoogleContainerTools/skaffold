@@ -40,9 +40,6 @@ import (
 )
 
 func TestDevNotification(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -87,8 +84,7 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevGracefulCancel(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	if runtime.GOOS == "windows" {
 		t.Skip("graceful cancel doesn't work on windows")
@@ -141,11 +137,7 @@ func TestDevGracefulCancel(t *testing.T) {
 	}
 }
 
-/*
 func TestDevAPITriggers(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
@@ -196,9 +188,6 @@ func TestDevAPITriggers(t *testing.T) {
 }
 
 func TestDevAPIAutoTriggers(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
@@ -249,10 +238,6 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	verifyDeployment(t, entries, client, dep)
 }
 
-*/
-
-// TODO: remove nolint once we've reenabled integration tests
-//nolint:golint,unused
 func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
@@ -270,12 +255,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 	failNowIfError(t, err)
 }
 
-/*
-
 func TestDevPortForward(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
 		dir string
@@ -284,30 +264,31 @@ func TestDevPortForward(t *testing.T) {
 		{dir: "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-		// Run skaffold build first to fail quickly on a build failure
-		skaffold.Build().InDir(test.dir).RunOrFail(t)
+		func() {
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir(test.dir).RunOrFail(t)
 
-		ns, _ := SetupNamespace(t)
+			ns, _ := SetupNamespace(t)
 
-		rpcAddr := randomPort()
-		skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+			rpcAddr := randomPort()
+			skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
-		_, entries := apiEvents(t, rpcAddr)
+			_, entries := apiEvents(t, rpcAddr)
 
-		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
 
-		original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
-		failNowIfError(t, fErr)
-		defer func() {
-			if original != nil {
-				ioutil.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
-			}
+			original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
+			failNowIfError(t, fErr)
+			defer func() {
+				if original != nil {
+					ioutil.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
+				}
+			}()
+
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
 		}()
-
-		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
 	}
 }
-*/
 
 func TestDevPortForwardDefaultNamespace(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
@@ -336,6 +317,7 @@ func TestDevPortForwardDefaultNamespace(t *testing.T) {
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
+	t.Skip("Skipping until resolved")
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
@@ -352,7 +334,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 }
 
 func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) (string, int) {
-	timeout := time.After(1 * time.Minute)
+	timeout := time.After(2 * time.Minute)
 	for {
 		select {
 		case <-timeout:
@@ -414,8 +396,6 @@ func assertResponseFromPort(t *testing.T, address string, port int, expected str
 	}
 }
 
-// TODO: remove nolint once we've reenabled integration tests
-//nolint:golint,unused
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
 	fInfo, err := os.Stat(filepath)
 	if err != nil {
@@ -434,9 +414,6 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 }
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {

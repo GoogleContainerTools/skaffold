@@ -19,10 +19,12 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
 
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -72,7 +74,11 @@ func runDev(ctx context.Context, out io.Writer) error {
 
 				if r.HasDeployed() {
 					cleanup = func() {
-						if err := r.Cleanup(context.Background(), out, false); err != nil {
+						manifests, err := deployutil.GetManifestsFromHydrationDir(ctx, opts)
+						if err != nil {
+							log.Entry(ctx).Warn(fmt.Errorf("getting manifests from hydration dir: %w", err))
+						}
+						if err := r.Cleanup(context.Background(), out, false, manifests); err != nil {
 							log.Entry(ctx).Warn("deployer cleanup:", err)
 						}
 					}

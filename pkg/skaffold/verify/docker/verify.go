@@ -151,7 +151,6 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 			builds = append(builds, nb)
 		}
 		s.Go(func() error {
-			fmt.Printf("aprindle-1 - here\n")
 			return v.createAndRunContainer(ctx, out, nb, *testCase)
 		})
 	}
@@ -210,7 +209,6 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 	}
 	v.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: id})
 
-	fmt.Printf("aprindle-2 - here\n")
 	var containerErr error
 	select {
 	case err := <-errCh:

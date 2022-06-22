@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -29,47 +30,49 @@ const (
 	Build = "Build"
 )
 
-func CacheCheckInProgress(artifact string) {
-	buildSubtaskEvent(artifact, Cache, InProgress, nil)
+func CacheCheckInProgress(artifact, platforms string) {
+	buildSubtaskEvent(artifact, platforms, Cache, InProgress, nil)
 }
 
-func CacheCheckMiss(artifact string) {
-	buildSubtaskEvent(artifact, Cache, Failed, nil)
+func CacheCheckMiss(artifact, platforms string) {
+	buildSubtaskEvent(artifact, platforms, Cache, Failed, nil)
 }
 
-func CacheCheckHit(artifact string) {
-	buildSubtaskEvent(artifact, Cache, Succeeded, nil)
+func CacheCheckHit(artifact, platforms string) {
+	buildSubtaskEvent(artifact, platforms, Cache, Succeeded, nil)
 }
 
-func BuildInProgress(artifact string) {
-	buildSubtaskEvent(artifact, Build, InProgress, nil)
+func BuildInProgress(artifact, platforms string) {
+	buildSubtaskEvent(artifact, platforms, Build, InProgress, nil)
 }
 
-func BuildFailed(artifact string, err error) {
-	buildSubtaskEvent(artifact, Build, Failed, err)
+func BuildFailed(artifact, platforms string, err error) {
+	buildSubtaskEvent(artifact, platforms, Build, Failed, err)
 }
 
-func BuildSucceeded(artifact string) {
-	buildSubtaskEvent(artifact, Build, Succeeded, nil)
+func BuildSucceeded(artifact, platforms string) {
+	buildSubtaskEvent(artifact, platforms, Build, Succeeded, nil)
 }
 
-func BuildCanceled(artifact string, err error) {
-	buildSubtaskEvent(artifact, Build, Canceled, err)
+func BuildCanceled(artifact, platforms string, err error) {
+	buildSubtaskEvent(artifact, platforms, Build, Canceled, err)
 }
 
-func buildSubtaskEvent(artifact, step, status string, err error) {
+func buildSubtaskEvent(artifact, platforms, step, status string, err error) {
 	var aErr *proto.ActionableErr
 	if err != nil {
 		aErr = sErrors.ActionableErrV2(handler.cfg, constants.Build, err)
 		handler.sendErrorMessage(constants.Build, artifact, err)
 	}
 	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
-		Id:            artifact,
-		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
-		Artifact:      artifact,
-		Step:          step,
-		Status:        status,
-		ActionableErr: aErr,
+		Id:              artifact,
+		TaskId:          fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
+		Artifact:        artifact,
+		TargetPlatforms: platforms,
+		HostPlatform:    platform.Host.String(),
+		Step:            step,
+		Status:          status,
+		ActionableErr:   aErr,
 	})
 }
 
