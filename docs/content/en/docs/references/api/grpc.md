@@ -82,6 +82,8 @@ If the build fails, an error will be attached to the event.
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
 | errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
+| hostPlatform | [string](#string) |  | architecture of the host machine. For example `linux/amd64` |
+| targetPlatforms | [string](#string) |  | comma-delimited list of build target architectures. For example `linux/amd64,linux/arm64` |
 
 
 
