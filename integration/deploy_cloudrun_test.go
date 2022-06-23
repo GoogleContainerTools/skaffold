@@ -28,7 +28,6 @@ import (
 
 func TestDeployCloudRun(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
-	t.Skip("Skipping until resolved")
 
 	// Other integration tests run with the --default-repo option.
 	// This one explicitly specifies the full image name.

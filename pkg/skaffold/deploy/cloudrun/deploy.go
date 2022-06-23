@@ -204,7 +204,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		_, err = replaceCall.Do()
 	}
 	if err != nil {
-		return sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service: %s", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
 		})
