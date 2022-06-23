@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,8 +56,8 @@ type Deployer struct {
 	monitor  *Monitor
 	labeller *label.DefaultLabeller
 
-	DefaultProject string
-	Region         string
+	Project string
+	Region  string
 
 	// additional client options for connecting to Cloud Run, used for tests
 	clientOptions []option.ClientOption
@@ -67,8 +67,8 @@ type Deployer struct {
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy) (*Deployer, error) {
 	return &Deployer{
-		DefaultProject: crDeploy.DefaultProjectID,
-		Region:         crDeploy.Region,
+		Project: crDeploy.ProjectID,
+		Region:  crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
 		logger:        &log.NoopLogger{},
 		accessor:      NewAccessor(cfg, labeller.GetRunID()),
@@ -163,8 +163,13 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
 	}
-	if service.Metadata.Namespace == "" {
-		service.Metadata.Namespace = d.DefaultProject
+	if d.Project != "" {
+		service.Metadata.Namespace = d.Project
+	} else if service.Metadata.Namespace == "" {
+		return sErrors.NewError(fmt.Errorf("unable to detect project for Cloud Run"), &proto.ActionableErr{
+			Message: "No Google Cloud project found in Cloud Run Manifest or Skaffold Config",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
 	}
 
 	// we need to strip "skaffold.dev" from the run-id label because gcp labels don't support domains
@@ -193,7 +198,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		if !ok || gErr.Code != http.StatusNotFound {
 			return sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
 				Message: err.Error(),
-				ErrCode: proto.StatusCode_DEPLOY_CANCELLED,
+				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
 			})
 		}
 		// This is a new service, we need to create it
@@ -230,10 +235,17 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 	}
 
 	var projectID string
-	if service.Metadata.Namespace != "" {
+	switch {
+	case d.Project != "":
+		projectID = d.Project
+	case service.Metadata.Namespace != "":
 		projectID = service.Metadata.Namespace
-	} else {
-		projectID = d.DefaultProject
+	default:
+		// no project specified, we don't know what to delete.
+		return sErrors.NewError(fmt.Errorf("unable to determine Google Cloud Project"), &proto.ActionableErr{
+			Message: "No Google Cloud Project found in Cloud Run manifest or Skaffold Manifest.",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
 	}
 	parent := fmt.Sprintf("projects/%s/locations/%s", projectID, d.Region)
 	sName := fmt.Sprintf("%s/services/%s", parent, service.Metadata.Name)

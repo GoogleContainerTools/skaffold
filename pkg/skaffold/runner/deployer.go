@@ -204,12 +204,13 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 The "default deployer" is used in `skaffold apply`, which uses a `kubectl` deployer to actuate resources
 on a cluster regardless of provided deployer configuration in the skaffold.yaml.
 The default deployer will honor a select set of deploy configuration from an existing skaffold.yaml:
-	- deploy.StatusCheckDeadlineSeconds
-	- deploy.Logs.Prefix
-	- deploy.Kubectl.Flags
-	- deploy.Kubectl.DefaultNamespace
-	- deploy.Kustomize.Flags
-	- deploy.Kustomize.DefaultNamespace
+  - deploy.StatusCheckDeadlineSeconds
+  - deploy.Logs.Prefix
+  - deploy.Kubectl.Flags
+  - deploy.Kubectl.DefaultNamespace
+  - deploy.Kustomize.Flags
+  - deploy.Kustomize.DefaultNamespace
+
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
@@ -321,10 +322,10 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 				return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
 			}
 			region = crDeploy.Region
-			if defaultProject != "" && defaultProject != crDeploy.DefaultProjectID {
-				return nil, fmt.Errorf("expected all Cloud Run deploys to use the same default project, found deploys to projects %s and %s", defaultProject, crDeploy.DefaultProjectID)
+			if defaultProject != "" && defaultProject != crDeploy.ProjectID {
+				return nil, fmt.Errorf("expected all Cloud Run deploys to use the same project, found deploys to projects %s and %s", defaultProject, crDeploy.ProjectID)
 			}
 		}
 	}
-	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, DefaultProjectID: defaultProject})
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject})
 }
