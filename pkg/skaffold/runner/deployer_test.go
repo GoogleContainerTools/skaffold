@@ -237,11 +237,11 @@ func TestGetDeployer(tOuter *testing.T) {
 				cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
-							CloudRunDeploy: &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"},
+							CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "TestProject", Region: "us-central1"},
 						},
 					},
 				},
-				expected: t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{DefaultProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
+				expected: t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
 			},
 			{
 				description: "apply does not allow multiple deployers when Cloud Run is used",
