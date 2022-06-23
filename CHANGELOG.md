@@ -1,3 +1,49 @@
+# v1.39.0 Release - 06/23/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.39.0`
+
+Note: This release comes with a new config version, `v2beta29`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+
+New Features and Additions:
+* feat: add `hostPlatform` and `targetPlatforms` to `v1` and `v2` skaffold events.  [#7559](https://github.com/GoogleContainerTools/skaffold/pull/7559)
+* feat: Add privateWorkerPool and location configuration for gcb [#7440](https://github.com/GoogleContainerTools/skaffold/pull/7440)
+
+* Fixes:
+* fix: add panic fix and recovery logic to reflection for yaml line number info [#7577](https://github.com/GoogleContainerTools/skaffold/pull/7577)
+* fix: add default value for status-check flag when no value is specified [7278](https://github.com/GoogleContainerTools/skaffold/pull/7278)
+* fix: fix kubectl result formatting for debug logs [#7293](https://github.com/GoogleContainerTools/skaffold/pull/7293)
+* fix: change error to warning for build platform [#7402](https://github.com/GoogleContainerTools/skaffold/pull/7402)
+
+Docs, Test, and Release Updates:
+* doc: remove image build from the render command decription [#7569](https://github.com/GoogleContainerTools/skaffold/pull/7569)
+
+Huge thanks goes out to all of our contributors for this release:
+- Aaron Prindle
+- Brian de Alwis
+- Gaurav
+- Marlon Gamez
+- Renzo Rojas
+- Tejal Desai
+- ericzzzzzzz
+- neilnaveen
+
 # v1.38.0 Release - 04/06/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
