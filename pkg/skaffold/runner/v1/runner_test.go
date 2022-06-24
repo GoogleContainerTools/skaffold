@@ -468,7 +468,7 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedTester: &test.FullTester{},
 			expectedDeployer: deploy.NewDeployerMux([]deploy.Deployer{
-				&helm.Deployer3{},
+				&helm.Deployer{},
 				&kubectl.Deployer{},
 				&kustomize.Deployer{},
 			}, false),
