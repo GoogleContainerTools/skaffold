@@ -55,7 +55,9 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 		}
 
 		for configName, manifests := range manifestsByConfig {
-			allManifests[configName] = manifests
+			if len(manifests) > 0 {
+				allManifests[configName] = manifests
+			}
 		}
 
 		eventV2.RendererSucceeded(i)
