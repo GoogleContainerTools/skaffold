@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta14"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta29"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
