@@ -97,12 +97,6 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, mani
 	return d.deleteRunService(ctx, out, dryRun, manifests)
 }
 
-// Render writes out the k8s configs, we may want to support this with service configs in the future
-// but it's not being implemented now
-func (d *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
-	return nil
-}
-
 // GetDebugger Get the Debugger for Cloud Run. Not supported by this deployer.
 func (d *Deployer) GetDebugger() debug.Debugger {
 	return &debug.NoopDebugger{}
