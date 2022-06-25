@@ -42,5 +42,5 @@ go run hack/versions/cmd/mark_latest_released/main.go
 echo
 echo "Huge thanks goes out to all of our contributors for this release:"
 echo
-git log "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
+git log v1 "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
 echo
