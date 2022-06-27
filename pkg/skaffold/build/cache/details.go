@@ -24,7 +24,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type cacheDetails interface {
@@ -91,7 +90,7 @@ func (d needsRemoteTagging) Hash() string {
 func (d needsRemoteTagging) Tag(ctx context.Context, c *cache, platforms platform.Resolver) error {
 	fqn := d.tag + "@" + d.digest // Tag is not important. We just need the registry and the digest to locate the image.
 	matched := platforms.GetPlatforms(strings.Split(filepath.Base(d.tag), ":")[0])
-	return docker.AddRemoteTag(fqn, d.tag, c.cfg, util.ConvertToV1Platform(matched.Platforms[0]))
+	return docker.AddRemoteTag(fqn, d.tag, c.cfg, matched.Platforms)
 }
 
 // Found locally. Needs pushing

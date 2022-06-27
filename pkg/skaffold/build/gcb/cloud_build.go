@@ -298,7 +298,7 @@ func (b *Builder) getDigest(cb *cloudbuild.Build, defaultToTag string, platforms
 	// The build steps pushed the image directly like when we use Jib.
 	// Retrieve the digest for that tag.
 	// TODO(dgageot): I don't think GCB can push to an insecure registry.
-	return docker.RemoteDigest(defaultToTag, b.cfg, util.ConvertToV1Platform(platforms.Platforms[0]))
+	return docker.RemoteDigest(defaultToTag, b.cfg, platforms.Platforms)
 }
 
 func (b *Builder) getLogs(ctx context.Context, c *cstorage.Client, offset int64, bucket, objectName string) (io.ReadCloser, error) {
