@@ -20,12 +20,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-type ContainerError struct {
-}
+type ContainerError struct{}
 
-var (
-	NilSuggestion = proto.Suggestion{SuggestionCode: proto.SuggestionCode_NIL}
-)
+var NilSuggestion = proto.Suggestion{SuggestionCode: proto.SuggestionCode_NIL}
 
 func (r ContainerError) Make(errCode proto.StatusCode) *proto.Suggestion {
 	switch errCode {
