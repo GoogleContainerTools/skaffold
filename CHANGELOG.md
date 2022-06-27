@@ -1,4 +1,4 @@
-# v1.39.1 Release - 06/24/2022
+# v1.39.1 Release - 06/28/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
 
@@ -21,6 +21,7 @@ Note: This release is patch to v1.39.1 which fixes issue helm debug issue for cl
 
 Fixes:
 * Revert Helm 3.0 and Helm 3.1 Deployer changes [#7582](https://github.com/GoogleContainerTools/skaffold/issues/7582)
+* fix: index out of range error [#7593](https://github.com/GoogleContainerTools/skaffold/pull/7593)
 
 # v1.39.0 Release - 06/23/2022
 **Linux amd64**
