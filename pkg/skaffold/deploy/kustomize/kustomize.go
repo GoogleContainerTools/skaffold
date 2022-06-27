@@ -400,24 +400,6 @@ func (k *Deployer) Dependencies() ([]string, error) {
 	return deps.ToList(), nil
 }
 
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "kustomize",
-	})
-
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_renderManifests")
-	manifests, err := k.renderManifests(childCtx, out, builds)
-	if err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	k.statusMonitor.RegisterDeployManifests(manifests)
-
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
-	defer endTrace()
-	return manifest.Write(manifests.String(), filepath, out)
-}
-
 // Values of `patchesStrategicMerge` can be either:
 // + a file path, referenced as a plain string
 // + an inline patch referenced as a string literal
