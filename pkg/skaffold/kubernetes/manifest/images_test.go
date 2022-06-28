@@ -20,8 +20,12 @@ import (
 	"context"
 	"testing"
 
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -200,6 +204,470 @@ spec:
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
+	})
+}
+
+func TestReplaceImagesOnConfigConnectorResources(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  location: EU
+  image: this-should-not-change
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: gcr.io/k8s-skaffold/image-name:TAG
+spec:
+  location: EU
+  image: this-should-not-change
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
+	})
+}
+
+func TestReplaceImagesOnConfigConnectorResourcesUsingNonDefaultField(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: image-name
+  image: this-should-not-change
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: gcr.io/k8s-skaffold/image-name:TAG
+  image: this-should-not-change
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		newTransformAllowlist := make(map[apimachinery.GroupKind]latest.ResourceFilter)
+		for k, v := range TransformAllowlist {
+			newTransformAllowlist[k] = v
+		}
+		newTransformAllowlist[apimachinery.GroupKind{Group: "storage.cnrm.cloud.google.com", Kind: "StorageBucket"}] =
+			latest.ResourceFilter{GroupKind: "StorageBucket.storage.cnrm.cloud.google.com", Image: []string{".spec.template.spec.restartPolicy"}}
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(newTransformAllowlist, TransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
+	})
+}
+
+func TestReplaceImagesOnConfigConnectorResourcesUsingWildcardAndNonDefaultField(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: image-name
+  image: this-should-not-change
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: gcr.io/k8s-skaffold/image-name:TAG
+spec:
+  template:
+    spec:
+      restartPolicy: gcr.io/k8s-skaffold/image-name:TAG
+  image: this-should-not-change
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		newTransformAllowlist := make(map[apimachinery.GroupKind]latest.ResourceFilter)
+		for k, v := range TransformAllowlist {
+			newTransformAllowlist[k] = v
+		}
+		newTransformAllowlist[apimachinery.GroupKind{Group: "storage.cnrm.cloud.google.com", Kind: "StorageBucket"}] =
+			latest.ResourceFilter{GroupKind: "StorageBucket.storage.cnrm.cloud.google.com", Image: []string{".*", ".spec.template.spec.restartPolicy"}}
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(newTransformAllowlist, TransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
+	})
+}
+
+func TestReplaceImagesOnConfigConnectorDeniedResources(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  location: EU
+  image: image-name
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  location: EU
+  image: gcr.io/k8s-skaffold/image-name:TAG
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		newTransformDenylist := make(map[apimachinery.GroupKind]latest.ResourceFilter)
+		for k, v := range TransformDenylist {
+			newTransformDenylist[k] = v
+		}
+		newTransformDenylist[apimachinery.GroupKind{Group: "storage.cnrm.cloud.google.com", Kind: "StorageBucket"}] =
+			latest.ResourceFilter{GroupKind: "StorageBucket.storage.cnrm.cloud.google.com", Image: []string{".metadata.labels.image"}}
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, newTransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
+	})
+}
+
+func TestReplaceImagesOnConfigConnectorAllDeniedResources(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  location: EU
+  image: image-name
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  location: EU
+  image: image-name
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		newTransformDenylist := make(map[apimachinery.GroupKind]latest.ResourceFilter)
+		for k, v := range TransformDenylist {
+			newTransformDenylist[k] = v
+		}
+		newTransformDenylist[apimachinery.GroupKind{Group: "storage.cnrm.cloud.google.com", Kind: "StorageBucket"}] =
+			latest.ResourceFilter{GroupKind: "StorageBucket.storage.cnrm.cloud.google.com", Image: []string{".*"}}
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, newTransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
+	})
+}
+
+func TestReplaceImagesOnPredefinedAllowedResourcesUsingNonDefaultField(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: image-name
+  image: this-should-not-change
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: gcr.io/k8s-skaffold/image-name:TAG
+  image: this-should-not-change
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		newTransformAllowlist := make(map[apimachinery.GroupKind]latest.ResourceFilter)
+		for k, v := range TransformAllowlist {
+			newTransformAllowlist[k] = v
+		}
+		newTransformAllowlist[apimachinery.GroupKind{Group: "batch", Kind: "Job"}] =
+			latest.ResourceFilter{GroupKind: "Job.batch", Image: []string{".spec.template.spec.restartPolicy"}}
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(newTransformAllowlist, TransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
+	})
+}
+
+func TestReplaceImagesOnPredefinedAllowedResources(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: image-name
+  image: this-should-not-change
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: gcr.io/k8s-skaffold/image-name:TAG
+spec:
+  template:
+    spec:
+      restartPolicy: image-name
+  image: this-should-not-change
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
+	})
+}
+
+func TestReplaceImagesOnPredefinedDeniedResources(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: image-name
+  image: image-name
+`)}
+
+	builds := []graph.Artifact{{
+		ImageName: "image-name",
+		Tag:       "gcr.io/k8s-skaffold/image-name:TAG",
+	}}
+
+	expected := ManifestList{[]byte(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: image-name
+  labels:
+    app.kubernetes.io/name: image-name
+    this.should.not.change: image-name
+    image: image-name
+spec:
+  template:
+    spec:
+      restartPolicy: image-name
+  image: gcr.io/k8s-skaffold/image-name:TAG
+`)}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		fakeWarner := &warnings.Collect{}
+		t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+		newTransformDenylist := make(map[apimachinery.GroupKind]latest.ResourceFilter)
+		for k, v := range TransformDenylist {
+			newTransformDenylist[k] = v
+		}
+		newTransformDenylist[apimachinery.GroupKind{Group: "batch", Kind: "Job"}] =
+			latest.ResourceFilter{GroupKind: "Job.batch", Image: []string{".metadata.labels.image"}}
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, newTransformDenylist))
+
+		t.CheckNoError(err)
+
+		expectedYaml := make(map[string]interface{})
+		yaml.Unmarshal(expected[0], &expectedYaml)
+		resultYaml := make(map[string]interface{})
+		yaml.Unmarshal(resultManifest[0], &resultYaml)
+
+		t.CheckMapsMatch(expectedYaml, resultYaml)
 	})
 }
 
