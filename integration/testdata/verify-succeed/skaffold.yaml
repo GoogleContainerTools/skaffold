@@ -3,7 +3,7 @@ kind: Config
 verify:
 - name: hello-world
   container:
-    name: hello-world:latest
+    name: docker.io/hello-world:latest
     image: hello-world
 - name: alpine
   container:
