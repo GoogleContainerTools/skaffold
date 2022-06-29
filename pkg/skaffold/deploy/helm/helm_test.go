@@ -1225,8 +1225,6 @@ func TestHelmRender(t *testing.T) {
 		commands    util.Command
 		helm        latest.LegacyHelmDeploy
 		env         []string
-		outputFile  string
-		expected    string
 		builds      []graph.Artifact
 		namespace   string
 	}{
@@ -1236,21 +1234,6 @@ func TestHelmRender(t *testing.T) {
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render to a file",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRunWithOutput("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig",
-					"Dummy Output"),
-			helm:       testDeployConfig,
-			outputFile: "dummy.yaml",
-			expected:   "Dummy Output\n",
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1369,12 +1352,6 @@ func TestHelmRender(t *testing.T) {
 	labels := labeller.Labels()
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// todo refactor testing render output into file in https://github.com/GoogleContainerTools/skaffold/issues/7567
-			// file := ""
-			// if test.outputFile != "" {
-			//	file = t.NewTempDir().Path(test.outputFile)
-			// }
-
 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&util.DefaultExecCommand, test.commands)
