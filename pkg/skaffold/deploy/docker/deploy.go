@@ -313,10 +313,6 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list
 	return errors.Wrap(err, "cleaning up skaffold created network")
 }
 
-func (d *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
-	return errors.New("render not implemented for docker deployer")
-}
-
 func (d *Deployer) GetAccessor() access.Accessor {
 	return d.portManager
 }

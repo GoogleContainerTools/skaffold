@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -395,100 +394,6 @@ func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte,
 	}
 
 	return manifest.Bytes(), nil
-}
-
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
-		"DeployerType": "kubectl",
-	})
-
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_renderManifests")
-	manifests, err := k.renderManifests(childCtx, out, builds, offline)
-	if err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	k.statusMonitor.RegisterDeployManifests(manifests)
-	endTrace()
-
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
-	defer endTrace()
-	return manifest.Write(manifests.String(), filepath, out)
-}
-
-// renderManifests transforms the manifests' images with the actual image sha1 built from skaffold build.
-func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
-	if err := k.kubectl.CheckVersion(ctx); err != nil {
-		output.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
-		output.Default.Fprintln(out, err)
-	}
-
-	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
-	if err != nil {
-		return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
-	}
-	var localManifests, remoteManifests manifest.ManifestList
-	localManifests, err = k.readManifests(ctx, offline)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return nil, err
-		}
-
-		remoteManifests = append(remoteManifests, manifest)
-	}
-
-	originalManifests := append(localManifests, remoteManifests...)
-
-	if len(k.originalImages) == 0 {
-		// TODO(aaron-prindle) maybe use different resoureselector?
-		k.originalImages, err = originalManifests.GetImages(manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
-		// k.originalImages, err = originalManifests.GetImages(k.transformableAllowlist, k.transformableDenylist)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if len(originalManifests) == 0 {
-		return nil, nil
-	}
-
-	if len(builds) == 0 {
-		for _, artifact := range k.originalImages {
-			tag, err := deployutil.ApplyDefaultRepo(k.globalConfig, k.defaultRepo, artifact.Tag)
-			if err != nil {
-				return nil, err
-			}
-			builds = append(builds, graph.Artifact{
-				ImageName: artifact.ImageName,
-				Tag:       tag,
-			})
-		}
-	}
-	if len(remoteManifests) > 0 {
-		remoteManifests, err = remoteManifests.ReplaceRemoteManifestImages(ctx, builds, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
-		if err != nil {
-			return nil, err
-		}
-	}
-	if len(localManifests) > 0 {
-		localManifests, err = localManifests.ReplaceImages(ctx, builds, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	modifiedManifests := append(localManifests, remoteManifests...)
-
-	if modifiedManifests, err = manifest.ApplyTransforms(modifiedManifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
-		return nil, err
-	}
-
-	return modifiedManifests.SetLabels(k.labeller.Labels(), manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

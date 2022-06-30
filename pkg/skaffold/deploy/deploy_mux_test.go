@@ -42,8 +42,6 @@ type MockDeployer struct {
 	dependencies    []string
 	dependenciesErr error
 	cleanupErr      error
-	renderResult    string
-	renderErr       error
 }
 
 func (m *MockDeployer) HasRunnableHooks() bool {
@@ -110,27 +108,12 @@ func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
-	m.renderErr = err
-	return m
-}
-
 func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
 	return m.deployErr
 }
 
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []graph.Artifact, _ bool, _ string) error {
-	w.Write([]byte(m.renderResult))
-	return m.renderErr
-}
-
 func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
 	m.dependencies = dependencies
-	return m
-}
-
-func (m *MockDeployer) WithRenderResult(renderResult string) *MockDeployer {
-	m.renderResult = renderResult
 	return m
 }
 
