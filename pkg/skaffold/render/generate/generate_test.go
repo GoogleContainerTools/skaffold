@@ -18,6 +18,9 @@ package generate
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -176,6 +179,25 @@ func TestGenerate(t *testing.T) {
 			t.CheckDeepEqual(actual.String(), test.expected.String())
 		})
 	}
+}
+
+func TestGenerateFromURLManifest(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, podYaml)
+	}))
+
+	defer ts.Close()
+	defer os.RemoveAll(manifest.ManifestTmpDir)
+	g := NewGenerator(".", latest.Generate{
+		RawK8s: []string{ts.URL},
+	})
+	var output bytes.Buffer
+	actual, err := g.Generate(context.Background(), &output)
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.CheckNoError(err)
+		manifestList := manifest.ManifestList{[]byte(podYaml)}
+		t.CheckDeepEqual(actual.String(), manifestList.String())
+	})
 }
 
 func TestManifestDeps(t *testing.T) {
