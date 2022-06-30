@@ -121,14 +121,14 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	var deployers []deploy.Deployer
 	localDeploy := false
 	remoteDeploy := false
-	for _, pl := range pipelines.All() {
+	for configName, pl := range pipelines.AllByConfigNames() {
 		d := pl.Deploy
 		r := pl.Render
 		dCtx := &deployerCtx{runCtx, d}
 
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources(), pl.ConfigName)
+			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -150,7 +150,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				d.LegacyHelmDeploy.Flags = r.Helm.Flags
 			}
 
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), pl.ConfigName)
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +158,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, pl.ConfigName)
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, configName)
 			if err != nil {
 				return nil, err
 			}
@@ -170,7 +170,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				log.Entry(context.TODO()).Infof("manifests are deployed from render path %v\n", hydrationDir)
 				d.KptDeploy.Dir = hydrationDir
 			}
-			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts, pl.ConfigName)
+			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts, configName)
 			if err != nil {
 				return nil, err
 			}
@@ -178,14 +178,14 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy, pl.ConfigName)
+			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy, configName)
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
-			deployer, err := cloudrun.NewDeployer(dCtx, labeller, d.CloudRunDeploy, pl.ConfigName)
+			deployer, err := cloudrun.NewDeployer(dCtx, labeller, d.CloudRunDeploy, configName)
 			if err != nil {
 				return nil, err
 			}

@@ -69,8 +69,6 @@ type Metadata struct {
 
 // Pipeline describes a Skaffold pipeline.
 type Pipeline struct {
-	ConfigName string
-
 	// Build describes how images are built.
 	Build BuildConfig `yaml:"build,omitempty"`
 
