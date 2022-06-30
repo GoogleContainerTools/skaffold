@@ -421,6 +421,8 @@ type ClusterDetails struct {
 	// HTTPSProxy for kaniko pod.
 	HTTPSProxy string `yaml:"HTTPS_PROXY,omitempty"`
 
+	ImagePullSecrets []v1.LocalObjectReference `yaml:"imagePullSecrets,omitempty"`
+
 	// PullSecretPath is the path to the Google Cloud service account secret key file.
 	PullSecretPath string `yaml:"pullSecretPath,omitempty"`
 

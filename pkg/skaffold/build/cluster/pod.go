@@ -74,7 +74,8 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, pla
 				VolumeMounts:    []v1.VolumeMount{vm},
 				Resources:       resourceRequirements(b.ClusterDetails.Resources),
 			}},
-			RestartPolicy: v1.RestartPolicyNever,
+			ImagePullSecrets: b.ImagePullSecrets,
+			RestartPolicy:    v1.RestartPolicyNever,
 			Volumes: []v1.Volume{{
 				Name: vm.Name,
 				VolumeSource: v1.VolumeSource{
