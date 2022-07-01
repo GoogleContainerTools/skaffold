@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -30,7 +29,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	backoff "github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v4"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -442,7 +441,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		return nil, nil, err
 	}
 
-	if err := helm.Exec(ctx, h, ioutil.Discard, false, nil, helm.GetArgs(releaseName, opts.namespace)...); err != nil {
+	if err := helm.Exec(ctx, h, io.Discard, false, nil, helm.GetArgs(releaseName, opts.namespace)...); err != nil {
 		output.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 
 		opts.upgrade = false
@@ -473,7 +472,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 			return nil, nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
 		}
 
-		if err := ioutil.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
 			return nil, nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
 		}
 
@@ -540,7 +539,7 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	tmpDir := h.pkgTmpDir
 
 	if tmpDir == "" {
-		t, err := ioutil.TempDir("", "skaffold-helm")
+		t, err := os.MkdirTemp("", "skaffold-helm")
 		if err != nil {
 			return "", fmt.Errorf("tempdir: %w", err)
 		}

@@ -19,7 +19,7 @@ package structure
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/blang/semver"
@@ -54,7 +54,7 @@ func TestNewRunner(t *testing.T) {
 
 		testRunner, err := New(context.Background(), cfg, testCase, true)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+		err = testRunner.Test(context.Background(), io.Discard, "image:tag")
 		t.CheckNoError(err)
 	})
 }
@@ -123,7 +123,7 @@ func TestCustomParams(t *testing.T) {
 
 			testRunner, err := New(context.Background(), cfg, testCase, true)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+			err = testRunner.Test(context.Background(), io.Discard, "image:tag")
 			t.CheckNoError(err)
 		})
 	}

@@ -20,8 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -105,7 +105,7 @@ func ResolveConfigFile(configFile string) (string, error) {
 // ReadConfigFileNoCache reads the given config yaml file and unmarshals the contents.
 // Only visible for testing, use ReadConfigFile instead.
 func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
-	contents, err := ioutil.ReadFile(configFile)
+	contents, err := os.ReadFile(configFile)
 	if err != nil {
 		log.Entry(context.TODO()).Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
 		return nil, fmt.Errorf("reading global config: %w", err)
@@ -514,7 +514,7 @@ func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(configFileOrDefault, contents, 0644); err != nil {
+	if err := os.WriteFile(configFileOrDefault, contents, 0644); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 	return nil

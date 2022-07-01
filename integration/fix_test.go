@@ -17,12 +17,11 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -62,7 +61,7 @@ func TestFixOutputFile(t *testing.T) {
 	testutil.CheckContains(t, "written to updated.yaml", string(out))
 	defer os.Remove(filepath.Join("testdata", "fix", "updated.yaml"))
 
-	f, err := ioutil.ReadFile(filepath.Join("testdata", "fix", "updated.yaml"))
+	f, err := os.ReadFile(filepath.Join("testdata", "fix", "updated.yaml"))
 	testutil.CheckError(t, false, err)
 
 	parsed := make(map[string]interface{})

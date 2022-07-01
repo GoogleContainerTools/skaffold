@@ -18,7 +18,6 @@ package deploy
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +34,7 @@ const (
 
 // for testing
 var (
-	readFile = ioutil.ReadFile
+	readFile = os.ReadFile
 )
 
 // helm implements deploymentInitializer for the helm deployer.

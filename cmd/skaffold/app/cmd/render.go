@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/spf13/cobra"
 
@@ -53,7 +52,7 @@ func NewCmdRender() *cobra.Command {
 func doRender(ctx context.Context, out io.Writer) error {
 	// TODO(nkubala): remove this from opts in favor of a param to Build()
 	opts.RenderOnly = true
-	buildOut := ioutil.Discard
+	buildOut := io.Discard
 	if showBuild {
 		buildOut = out
 	}

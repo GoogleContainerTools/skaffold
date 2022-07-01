@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -44,7 +43,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/option"
 
-	fs "github.com/GoogleContainerTools/skaffold/fs"
+	"github.com/GoogleContainerTools/skaffold/fs"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/user"
@@ -73,7 +72,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		return err
 	}
 
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	fileExists := err == nil
 	if err != nil && !os.IsNotExist(err) {
 		return err
@@ -86,7 +85,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	meters = append(meters, meter)
 	if !isOnline {
 		b, _ = json.Marshal(meters)
-		return ioutil.WriteFile(filename, b, 0666)
+		return os.WriteFile(filename, b, 0666)
 	}
 
 	start := time.Now()
@@ -98,7 +97,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		log.Entry(ctx).Debugf("error uploading metrics: %s", err)
 		log.Entry(ctx).Debugf("writing to file %s instead", filename)
 		b, _ = json.Marshal(meters)
-		return ioutil.WriteFile(filename, b, 0666)
+		return os.WriteFile(filename, b, 0666)
 	}
 	log.Entry(ctx).Debugf("metrics uploading complete in %s", time.Since(start).String())
 

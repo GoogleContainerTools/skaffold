@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"sync"
 	"testing"
 	"time"
@@ -134,7 +133,7 @@ func TestStart(t *testing.T) {
 			entryManager := NewEntryManager(fakeForwarder)
 
 			rf := NewServicesForwarder(entryManager, "", "")
-			if err := rf.Start(context.Background(), ioutil.Discard, []string{"test"}); err != nil {
+			if err := rf.Start(context.Background(), io.Discard, []string{"test"}); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 
@@ -324,7 +323,7 @@ func TestUserDefinedResources(t *testing.T) {
 			}
 
 			rf := NewUserDefinedForwarder(entryManager, "", test.userResources)
-			if err := rf.Start(context.Background(), ioutil.Discard, test.namespaces); err != nil {
+			if err := rf.Start(context.Background(), io.Discard, test.namespaces); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 

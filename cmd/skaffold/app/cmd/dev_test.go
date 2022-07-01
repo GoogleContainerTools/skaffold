@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -106,7 +105,7 @@ func TestDoDev(t *testing.T) {
 				NoPrune: false,
 			})
 
-			err := doDev(context.Background(), ioutil.Discard)
+			err := doDev(context.Background(), io.Discard)
 
 			t.CheckDeepEqual(test.expectedCalls, mockRunner.calls)
 			t.CheckTrue(err == context.Canceled)
@@ -156,7 +155,7 @@ func TestDevConfigChange(t *testing.T) {
 			NoPrune: false,
 		})
 
-		err := doDev(context.Background(), ioutil.Discard)
+		err := doDev(context.Background(), io.Discard)
 
 		// ensure that we received the context.Canceled error (and not ErrorConfigurationChanged)
 		// also ensure that the we run through dev cycles (since we reloaded on the first),

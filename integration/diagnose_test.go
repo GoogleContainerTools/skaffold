@@ -19,7 +19,6 @@ package integration
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,13 +52,13 @@ func TestDiagnose(t *testing.T) {
 func folders(root string) ([]string, error) {
 	var folders []string
 
-	files, err := ioutil.ReadDir(root)
+	files, err := os.ReadDir(root)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, f := range files {
-		if f.Mode().IsDir() {
+		if f.IsDir() {
 			folders = append(folders, f.Name())
 		}
 	}
@@ -95,13 +94,13 @@ func TestMultiConfigDiagnose(t *testing.T) {
 			args := []string{}
 			if test.cpSkaffold {
 				tmpDir := t.NewTempDir()
-				configContents, err := ioutil.ReadFile(filepath.Join(test.dir, "skaffold.yaml"))
+				configContents, err := os.ReadFile(filepath.Join(test.dir, "skaffold.yaml"))
 				t.CheckNoError(err)
 				tmpDir.Write("skaffold.yaml", string(configContents))
 				args = append(args, fmt.Sprintf("-f=%s", tmpDir.Path("skaffold.yaml")))
 			}
 			out := skaffold.Diagnose(append(args, "--yaml-only")...).InDir(test.dir).RunOrFailOutput(t.T)
-			templ, err := ioutil.ReadFile(filepath.Join(test.dir, "diagnose.tmpl"))
+			templ, err := os.ReadFile(filepath.Join(test.dir, "diagnose.tmpl"))
 			t.CheckNoError(err)
 			outTemplate := template.Must(template.New("tmpl").Parse(string(templ)))
 			cwd, err := filepath.Abs(test.dir)

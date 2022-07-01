@@ -18,7 +18,7 @@ package kustomize
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -39,7 +39,7 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 		return deps, nil
 	}
 
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

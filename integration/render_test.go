@@ -19,13 +19,12 @@ package integration
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -682,7 +681,7 @@ spec:
 				skaffold.Render(args...).RunOrFail(t.T)
 			}
 
-			fileContent, err := ioutil.ReadFile("rendered.yaml")
+			fileContent, err := os.ReadFile("rendered.yaml")
 			t.RequireNoError(err)
 
 			// Tests are written in a way that actual output is valid YAML

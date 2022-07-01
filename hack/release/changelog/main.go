@@ -19,7 +19,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -88,7 +87,7 @@ func updateChangelog(filepath, templatePath string, data changelogData) error {
 	if err = tmpl.Execute(&buf, data); err != nil {
 		return fmt.Errorf("executing changelog template: %w", err)
 	}
-	b, err := ioutil.ReadFile(filepath)
+	b, err := os.ReadFile(filepath)
 	if err != nil {
 		return fmt.Errorf("reading changelog file: %w", err)
 	}
@@ -96,7 +95,7 @@ func updateChangelog(filepath, templatePath string, data changelogData) error {
 	if err != nil {
 		return fmt.Errorf("writing to changelog buffer: %w", err)
 	}
-	if err = ioutil.WriteFile(filepath, buf.Bytes(), 0644); err != nil {
+	if err = os.WriteFile(filepath, buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("writing to changelog file: %w", err)
 	}
 

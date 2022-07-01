@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	iofs "io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -48,12 +47,12 @@ func Export(ctx context.Context, out io.Writer) error {
 				return fmt.Errorf("opening %q in embedded filesystem: %w", filePath, err)
 			}
 
-			buf, err := ioutil.ReadAll(file)
+			buf, err := io.ReadAll(file)
 			if err != nil {
 				return fmt.Errorf("reading %q in embedded filesystem: %w", filePath, err)
 			}
 
-			if err := ioutil.WriteFile(newPath, buf, 0664); err != nil {
+			if err := os.WriteFile(newPath, buf, 0664); err != nil {
 				return fmt.Errorf("writing %q to %q: %w", filePath, newPath, err)
 			}
 		}

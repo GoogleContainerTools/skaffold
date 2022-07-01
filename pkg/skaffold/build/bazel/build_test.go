@@ -18,7 +18,7 @@ package bazel
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -46,7 +46,7 @@ func TestBuildBazel(t *testing.T) {
 		}
 
 		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
-		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag", platform.Matcher{})
+		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckNoError(err)
 	})
@@ -69,7 +69,7 @@ func TestBazelTarPathFRespectWorkspace(t *testing.T) {
 		}
 
 		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
-		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag", platform.Matcher{})
+		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckNoError(err)
 	})
@@ -86,7 +86,7 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 		}
 
 		builder := NewArtifactBuilder(nil, &mockConfig{}, false)
-		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag", platform.Matcher{})
+		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckErrorContains("the bazel build target should end with .tar", err)
 	})

@@ -19,7 +19,7 @@ package util
 import (
 	"context"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
@@ -90,7 +90,7 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 	// add user flag values, override user schema values and defaults
 	// TODO(aaron-prindle) see if workdir needs to be considered in this read
 	if cfg.TransformRulesFile() != "" {
-		transformRulesFromFile, err := ioutil.ReadFile(cfg.TransformRulesFile())
+		transformRulesFromFile, err := os.ReadFile(cfg.TransformRulesFile())
 		if err != nil {
 			return nil, nil, err
 		}

@@ -19,7 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -173,7 +173,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag", platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", platform.Matcher{})
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
@@ -243,7 +243,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, mockCmd)
 
 			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.BoolPtr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
-			_, err := builder.Build(context.Background(), ioutil.Discard, &a, test.tag, platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, &a, test.tag, platform.Matcher{})
 			t.CheckNoError(err)
 		})
 	}

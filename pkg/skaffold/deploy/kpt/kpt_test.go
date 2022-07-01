@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -144,7 +143,7 @@ func TestKptfileInitIfNot(t *testing.T) {
 
 			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latest.KptDeploy{Dir: "."},
 				config.SkaffoldOptions{})
-			err := kptfileInitIfNot(context.Background(), ioutil.Discard, k)
+			err := kptfileInitIfNot(context.Background(), io.Discard, k)
 			if !test.shouldErr {
 				t.CheckNoError(err)
 			} else {
@@ -176,7 +175,7 @@ func TestDeploy(t *testing.T) {
 
 			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{})
 			t.CheckNoError(err)
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err = k.Deploy(context.Background(), io.Discard, test.builds, nil)
 			t.CheckNoError(err)
 			fmt.Fprintf(os.Stdout, "deployer namespaces: %+v\n", *k.namespaces)
 			t.CheckDeepEqual(*k.namespaces, []string{"test-kptv2"})

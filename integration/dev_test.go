@@ -19,7 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -281,7 +281,7 @@ func TestDevPortForward(t *testing.T) {
 			failNowIfError(t, fErr)
 			defer func() {
 				if original != nil {
-					ioutil.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
+					os.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
 				}
 			}()
 
@@ -308,7 +308,7 @@ func TestDevPortForwardDefaultNamespace(t *testing.T) {
 	failNowIfError(t, fErr)
 	defer func() {
 		if original != nil {
-			ioutil.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
+			os.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
 		}
 	}()
 
@@ -383,7 +383,7 @@ func assertResponseFromPort(t *testing.T, address string, port int, expected str
 				continue
 			}
 			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Logf("[retriable error] reading response: %v", err)
 				continue
@@ -401,14 +401,14 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 	if err != nil {
 		return nil, 0, err
 	}
-	original, err := ioutil.ReadFile(filepath)
+	original, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	newContents := strings.ReplaceAll(string(original), target, replacement)
 
-	err = ioutil.WriteFile(filepath, []byte(newContents), 0)
+	err = os.WriteFile(filepath, []byte(newContents), 0)
 
 	return original, fInfo.Mode(), err
 }

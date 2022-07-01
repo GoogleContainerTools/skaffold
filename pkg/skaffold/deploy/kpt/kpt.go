@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -293,7 +292,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		if err != nil {
 			return err
 		}
-		if err = ioutil.WriteFile(kptFilePath, configByte, 0644); err != nil {
+		if err = os.WriteFile(kptFilePath, configByte, 0644); err != nil {
 			return err
 		}
 	}

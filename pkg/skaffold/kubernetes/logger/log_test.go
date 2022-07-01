@@ -18,7 +18,7 @@ package logger
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"testing"
 	"time"
 
@@ -97,7 +97,7 @@ func TestLogAggregatorZeroValue(t *testing.T) {
 	var m *LogAggregator
 
 	// Should not raise a nil dereference
-	m.Start(context.Background(), ioutil.Discard)
+	m.Start(context.Background(), io.Discard)
 	m.Mute()
 	m.Unmute()
 	m.Stop()

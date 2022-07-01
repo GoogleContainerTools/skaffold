@@ -21,14 +21,13 @@ package tag
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
@@ -417,7 +416,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 		{
 			description: "non git repo",
 			createGitRepo: func(dir string) {
-				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
+				os.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
 			shouldErr: true,
 		},
@@ -496,7 +495,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			description: "non git repo",
 			createGitRepo: func(dir string) {
-				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
+				os.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
 			shouldErr: true,
 		},
@@ -703,7 +702,7 @@ func (g *gitRepo) mkdir(folder string) *gitRepo {
 }
 
 func (g *gitRepo) write(file string, content string) *gitRepo {
-	err := ioutil.WriteFile(filepath.Join(g.dir, file), []byte(content), os.ModePerm)
+	err := os.WriteFile(filepath.Join(g.dir, file), []byte(content), os.ModePerm)
 	failNowIfError(g.t, err)
 	return g
 }

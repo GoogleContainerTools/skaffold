@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -65,7 +64,7 @@ func TestIsStdOut(t *testing.T) {
 		{
 			description: "invalid colorableWriter passed",
 			out: skaffoldWriter{
-				MainWriter: NewColorWriter(ioutil.Discard),
+				MainWriter: NewColorWriter(io.Discard),
 			},
 			expected: false,
 		},
@@ -98,11 +97,11 @@ func TestGetUnderlyingWriter(t *testing.T) {
 			expected: os.Stdout,
 		},
 		{
-			description: "return ioutil.Discard from skaffoldWriter",
+			description: "return io.Discard from skaffoldWriter",
 			out: skaffoldWriter{
-				MainWriter: NewColorWriter(ioutil.Discard),
+				MainWriter: NewColorWriter(io.Discard),
 			},
-			expected: ioutil.Discard,
+			expected: io.Discard,
 		},
 		{
 			description: "os.Stdout returned from colorableWriter",
@@ -134,20 +133,20 @@ func TestWithEventContext(t *testing.T) {
 		{
 			name: "skaffoldWriter update info",
 			writer: skaffoldWriter{
-				MainWriter:  ioutil.Discard,
+				MainWriter:  io.Discard,
 				EventWriter: eventV2.NewLogger(constants.Build, "1"),
 			},
 			phase:     constants.Test,
 			subtaskID: "2",
 			expected: skaffoldWriter{
-				MainWriter:  ioutil.Discard,
+				MainWriter:  io.Discard,
 				EventWriter: eventV2.NewLogger(constants.Test, "2"),
 			},
 		},
 		{
 			name:     "non skaffoldWriter returns same",
-			writer:   ioutil.Discard,
-			expected: ioutil.Discard,
+			writer:   io.Discard,
+			expected: io.Discard,
 		},
 	}
 
@@ -170,7 +169,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 			writer: func(out io.Writer) io.Writer {
 				return skaffoldWriter{
 					MainWriter:  colorableWriter{out},
-					EventWriter: ioutil.Discard,
+					EventWriter: io.Discard,
 					timestamps:  true,
 				}
 			},
@@ -181,7 +180,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 			writer: func(out io.Writer) io.Writer {
 				return skaffoldWriter{
 					MainWriter:  colorableWriter{out},
-					EventWriter: ioutil.Discard,
+					EventWriter: io.Discard,
 				}
 			},
 			expectedLen: len("\u001B[32mtesting!\u001B[0m"),
@@ -191,7 +190,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 			writer: func(out io.Writer) io.Writer {
 				return skaffoldWriter{
 					MainWriter:  out,
-					EventWriter: ioutil.Discard,
+					EventWriter: io.Discard,
 					timestamps:  true,
 				}
 			},
@@ -202,7 +201,7 @@ func TestWriteWithTimeStamps(t *testing.T) {
 			writer: func(out io.Writer) io.Writer {
 				return skaffoldWriter{
 					MainWriter:  out,
-					EventWriter: ioutil.Discard,
+					EventWriter: io.Discard,
 				}
 			},
 			expectedLen: len("testing!"),

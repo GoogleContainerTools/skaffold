@@ -19,7 +19,7 @@ package schema
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -53,18 +53,18 @@ func RunSchemaCheckOnChangedFiles() error {
 		}
 	}
 
-	root, err := ioutil.TempDir("", "skaffold")
+	root, err := os.MkdirTemp("", "skaffold")
 	if err != nil {
 		return err
 	}
 	var filesInError []string
 	for _, configFile := range changedConfigFiles {
-		content, err := ioutil.ReadFile(configFile)
+		content, err := os.ReadFile(configFile)
 		if err != nil {
 			return fmt.Errorf("reading %q: %w", configFile, err)
 		}
 		changedFile := path.Join(root, "changed.go")
-		if err = ioutil.WriteFile(changedFile, content, 0666); err != nil {
+		if err = os.WriteFile(changedFile, content, 0666); err != nil {
 			return fmt.Errorf("writing changed version of %q: %w", configFile, err)
 		}
 
@@ -77,7 +77,7 @@ func RunSchemaCheckOnChangedFiles() error {
 			return err
 		}
 		baseFile := path.Join(root, "base.go")
-		if err = ioutil.WriteFile(baseFile, content, 0666); err != nil {
+		if err = os.WriteFile(baseFile, content, 0666); err != nil {
 			return fmt.Errorf("writing %s version of %q: %w", baseRef, configFile, err)
 		}
 

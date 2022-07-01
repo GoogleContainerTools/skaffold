@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -232,7 +231,7 @@ func TestRunRenderOnly(t *testing.T) {
 
 		skaffold.Run(test.args...).InDir(test.dir).RunOrFail(t)
 
-		dat, err := ioutil.ReadFile(renderPath)
+		dat, err := os.ReadFile(renderPath)
 		tu.CheckNoError(err)
 
 		tu.CheckMatches("name: getting-started", string(dat))
@@ -457,7 +456,7 @@ func TestRunTest(t *testing.T) {
 					}
 					return true, nil
 				}
-				out, e := ioutil.ReadFile(test.testFile)
+				out, e := os.ReadFile(test.testFile)
 				failNowIfError(t, e)
 				return string(out) == test.expectedText, nil
 			})

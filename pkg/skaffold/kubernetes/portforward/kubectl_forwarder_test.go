@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"runtime"
 	"sort"
 	"strings"
@@ -472,7 +472,7 @@ func TestStartAndForward(t *testing.T) {
 		testutil.Run(t, test.description, func(_ *testutil.T) {
 			k := &KubectlForwarder{}
 			if test.startFirst {
-				k.Start(ioutil.Discard)
+				k.Start(io.Discard)
 				testutil.CheckDeepEqual(t, k.started, int32(1))
 			} else {
 				err := k.Forward(context.Background(), nil)
@@ -484,7 +484,7 @@ func TestStartAndForward(t *testing.T) {
 
 func TestForwardReturnsNilOnContextCancelled(t *testing.T) {
 	k := NewKubectlForwarder(&kubectl.CLI{})
-	k.Start(ioutil.Discard)
+	k.Start(io.Discard)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{}, 1)
 	go func() {

@@ -19,7 +19,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -162,7 +161,7 @@ func template(file string) string {
 }
 
 func read(path string) []byte {
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		panic("unable to read " + path)
 	}
@@ -170,7 +169,7 @@ func read(path string) []byte {
 }
 
 func write(path string, buf []byte) {
-	if err := ioutil.WriteFile(path, buf, os.ModePerm); err != nil {
+	if err := os.WriteFile(path, buf, os.ModePerm); err != nil {
 		panic("unable to write " + path)
 	}
 }

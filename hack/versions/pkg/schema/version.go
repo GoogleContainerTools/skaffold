@@ -18,8 +18,9 @@ package schema
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -33,7 +34,7 @@ func GetLatestVersion() (string, bool) {
 	current := strings.TrimPrefix(latest.Version, "skaffold/")
 	logrus.Debugf("Current Skaffold version: %s", current)
 
-	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/config.go")
+	config, err := os.ReadFile("pkg/skaffold/schema/latest/config.go")
 	if err != nil {
 		logrus.Fatalf("failed to read latest config: %s", err)
 	}
@@ -65,7 +66,7 @@ func GetLastReleasedVersion() string {
 		resp, err := http.Get(url)
 		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			defer resp.Body.Close()
-			config, err := ioutil.ReadAll(resp.Body)
+			config, err := io.ReadAll(resp.Body)
 			if err != nil {
 				logrus.Fatalf("failed to fetch config for %s, err: %s", lastTag, err)
 			}
@@ -80,7 +81,7 @@ func GetLastReleasedVersion() string {
 
 // IsReleased takes a filepath to a skaffold config in pkg/skaffold/schema and returns true if it's released and false if otherwise.
 func IsReleased(filepath string) (bool, error) {
-	b, err := ioutil.ReadFile(filepath)
+	b, err := os.ReadFile(filepath)
 	if err != nil {
 		return false, err
 	}

@@ -18,7 +18,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -101,25 +100,25 @@ func TestBuildInCluster(t *testing.T) {
 }
 
 func replaceNamespace(t *testutil.T, fileName string, ns *v1.Namespace) {
-	origSkaffoldYaml, err := ioutil.ReadFile(fileName)
+	origSkaffoldYaml, err := os.ReadFile(fileName)
 	if err != nil {
 		t.Fatalf("failed reading %s: %s", fileName, err)
 	}
 
 	namespacedYaml := strings.ReplaceAll(string(origSkaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
 
-	if err := ioutil.WriteFile(fileName, []byte(namespacedYaml), 0666); err != nil {
+	if err := os.WriteFile(fileName, []byte(namespacedYaml), 0666); err != nil {
 		t.Fatalf("failed to write %s: %s", fileName, err)
 	}
 }
 
 func copyFile(t *testutil.T, src, dst string) {
-	content, err := ioutil.ReadFile(src)
+	content, err := os.ReadFile(src)
 	if err != nil {
 		t.Fatalf("can't read source file: %s: %s", src, err)
 	}
 
-	if err := ioutil.WriteFile(dst, content, 0666); err != nil {
+	if err := os.WriteFile(dst, content, 0666); err != nil {
 		t.Fatalf("failed to copy file %s to %s: %s", src, dst, err)
 	}
 }
@@ -134,7 +133,7 @@ func copyDir(t *testutil.T, src string, dst string) {
 		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
 	}
 
-	files, err := ioutil.ReadDir(src)
+	files, err := os.ReadDir(src)
 	if err != nil {
 		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
 	}

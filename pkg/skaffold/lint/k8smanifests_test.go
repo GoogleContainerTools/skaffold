@@ -19,7 +19,7 @@ package lint
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -124,12 +124,12 @@ func TestGetK8sManifestsLintResults(t *testing.T) {
 				module := fmt.Sprintf("cfg%d", i)
 				skaffoldyamlText := test.moduleAndSkaffoldYamls[module]
 				fp := filepath.Join(tmpdir, fmt.Sprintf("%s.yaml", module))
-				err := ioutil.WriteFile(fp, []byte(skaffoldyamlText), 0644)
+				err := os.WriteFile(fp, []byte(skaffoldyamlText), 0644)
 				if err != nil {
 					t.Fatalf("error creating skaffold.yaml file with name %s: %v", fp, err)
 				}
 				mp := filepath.Join(tmpdir, "deployment.yaml")
-				err = ioutil.WriteFile(mp, []byte(test.k8sManifestText), 0644)
+				err = os.WriteFile(mp, []byte(test.k8sManifestText), 0644)
 				if err != nil {
 					t.Fatalf("error creating deployment.yaml %s: %v", mp, err)
 				}

@@ -19,7 +19,7 @@ package validation
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -72,7 +72,7 @@ func TestParseSamples(t *testing.T) {
 
 		testutil.Run(t, name, func(t *testutil.T) {
 			t.Logf("Checking %s...", path)
-			buf, err := ioutil.ReadFile(path)
+			buf, err := os.ReadFile(path)
 			t.CheckNoError(err)
 
 			checkSkaffoldConfig(t, addHeader(buf))
@@ -113,7 +113,7 @@ func parseConfigFiles(t *testing.T, root string) {
 		testutil.Run(t, name, func(t *testutil.T) {
 			var data []string
 			for _, path := range paths {
-				buf, err := ioutil.ReadFile(path)
+				buf, err := os.ReadFile(path)
 				t.CheckNoError(err)
 				data = append(data, string(buf))
 			}

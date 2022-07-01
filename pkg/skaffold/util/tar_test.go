@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"runtime"
 	"testing"
 	"time"
@@ -53,7 +52,7 @@ func TestCreateTar(t *testing.T) {
 			}
 			t.CheckNoError(err)
 
-			content, err := ioutil.ReadAll(tr)
+			content, err := io.ReadAll(tr)
 			t.CheckNoError(err)
 
 			tarFiles[hdr.Name] = string(content)
@@ -88,7 +87,7 @@ func TestCreateTarWithParents(t *testing.T) {
 			t.CheckDeepEqual(10, hdr.Uid)
 			t.CheckDeepEqual(100, hdr.Gid)
 
-			content, err := ioutil.ReadAll(tr)
+			content, err := io.ReadAll(tr)
 			t.CheckNoError(err)
 
 			tarFiles[hdr.Name] = string(content)
@@ -128,7 +127,7 @@ func TestCreateTarGz(t *testing.T) {
 			}
 			t.CheckNoError(err)
 
-			content, err := ioutil.ReadAll(tr)
+			content, err := io.ReadAll(tr)
 			t.CheckNoError(err)
 
 			tarFiles[hdr.Name] = string(content)
@@ -161,7 +160,7 @@ func TestCreateTarSubDirectory(t *testing.T) {
 			}
 			t.CheckNoError(err)
 
-			content, err := ioutil.ReadAll(tr)
+			content, err := io.ReadAll(tr)
 			t.CheckNoError(err)
 
 			tarFiles["sub/"+hdr.Name] = string(content)
@@ -224,7 +223,7 @@ func TestCreateTarWithAbsolutePaths(t *testing.T) {
 			}
 			t.CheckNoError(err)
 
-			content, err := ioutil.ReadAll(tr)
+			content, err := io.ReadAll(tr)
 			t.CheckNoError(err)
 
 			tarFiles[hdr.Name] = string(content)

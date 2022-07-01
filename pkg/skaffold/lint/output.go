@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 	"text/template"
 
@@ -67,7 +67,7 @@ func genColPointerLine(colIdx int) string {
 }
 
 func generatePlainTextOutput(res *Result) (string, error) {
-	text, err := ioutil.ReadFile(res.AbsFilePath)
+	text, err := os.ReadFile(res.AbsFilePath)
 	if err != nil {
 		return "", err
 	}
