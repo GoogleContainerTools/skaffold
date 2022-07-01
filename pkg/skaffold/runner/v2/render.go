@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -27,9 +28,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/util"
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
+	renderOut, postRenderFn, err := util.WithLogFile(time.Now().Format(util.TimeFormat)+".log", out, r.runCtx.Muted())
+	if err != nil {
+		return nil, err
+	}
+	defer postRenderFn()
+
 	if r.runCtx.RenderOnly() {
 		// Fetch the digest and append it to the tag with the format of "tag@digest"
 		if r.runCtx.DigestSource() == constants.RemoteDigestSource {
@@ -48,7 +56,7 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []gra
 	}
 
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-	manifestList, err := r.renderer.Render(ctx, out, builds, offline)
+	manifestList, err := r.renderer.Render(ctx, renderOut, builds, offline)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
