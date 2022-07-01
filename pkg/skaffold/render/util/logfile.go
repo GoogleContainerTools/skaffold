@@ -43,7 +43,7 @@ func WithLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func()
 	}
 
 	output.Default.Fprintln(out, "Starting render...")
-	fmt.Fprintln(out, "- writing log to", file.Name())
+	output.Default.Fprintln(out, "- writing log to", file.Name())
 
 	// After the render finishes, close the log file.
 	return file, func() {
