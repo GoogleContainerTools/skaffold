@@ -3,10 +3,11 @@ package recommender
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestContainerErrorMake(t *testing.T) {
