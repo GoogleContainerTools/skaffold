@@ -987,6 +987,11 @@ type Profile struct {
 	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
 	Activation []Activation `yaml:"activation,omitempty"`
 
+	// RequiresAllActivations is the activation strategy of the profile.
+	// When true, the profile is auto-activated only when all of its activations are triggered.
+	// When false, the profile is auto-activated when any one of its activations is triggered.
+	RequiresAllActivations bool `yaml:"requiresAllActivations,omitempty"`
+
 	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.
 	Patches []JSONPatch `yaml:"patches,omitempty"`

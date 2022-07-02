@@ -627,6 +627,53 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated"},
 		},
 		{
+			description: "AND between activations",
+			envs:        map[string]string{"KEY": "VALUE"},
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+				Command:               "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "activated", RequiresAllActivations: true, Activation: []latest.Activation{{
+						Command: "dev",
+					}, {
+						Env: "KEY=VALUE",
+					}, {
+						KubeContext: "prod-context",
+					}},
+				},
+				{
+					Name: "command-mismatched", RequiresAllActivations: true, Activation: []latest.Activation{{
+						Command: "run",
+					}, {
+						Env: "KEY=VALUE",
+					}, {
+						KubeContext: "prod-context",
+					}},
+				},
+				{
+					Name: "env-mismatched", RequiresAllActivations: true, Activation: []latest.Activation{{
+						Command: "dev",
+					}, {
+						Env: "KEY=VALUE_2",
+					}, {
+						KubeContext: "prod-context",
+					}},
+				},
+				{
+					Name: "kubecontext-mismatched", RequiresAllActivations: true, Activation: []latest.Activation{{
+						Command: "dev",
+					}, {
+						Env: "KEY=VALUE",
+					}, {
+						KubeContext: "staging",
+					}},
+				},
+			},
+			expected: []string{"activated"},
+		},
+		{
 			description: "Activation for undefined environment variable and empty value",
 			envs:        map[string]string{"ABC": ""},
 			opts: cfg.SkaffoldOptions{
