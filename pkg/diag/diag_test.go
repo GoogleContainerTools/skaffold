@@ -45,7 +45,7 @@ func (m *mockValidator) Validate(_ context.Context, ns string, opts metav1.ListO
 }
 
 func (e *mockErrValidator) Validate(_ context.Context, ns string, opts metav1.ListOptions) ([]validator.Resource, error) {
-	return nil, fmt.Errorf("someErr")
+	return nil, fmt.Errorf("error")
 }
 
 func TestRun(t *testing.T) {
@@ -99,11 +99,11 @@ func TestRun(t *testing.T) {
 
 func TestRunErr(t *testing.T) {
 	tests := []struct {
-		description string
-		shouldErr   bool
-		labels      map[string]string
-		ns          []string
-		expectedErr error
+		description    string
+		shouldErr      bool
+		labels         map[string]string
+		ns             []string
+		expectedErrMsg string
 	}{
 		{
 			description: "handles error",
@@ -111,8 +111,8 @@ func TestRunErr(t *testing.T) {
 			labels: map[string]string{
 				"skaffold": "session",
 			},
-			ns:          []string{"foo"},
-			expectedErr: fmt.Errorf("following errors occurred someErr\n"),
+			ns:             []string{"foo"},
+			expectedErrMsg: "following errors occurred error\n",
 		},
 	}
 
@@ -122,7 +122,7 @@ func TestRunErr(t *testing.T) {
 			m := &mockErrValidator{}
 			d = d.WithValidators([]validator.Validator{m})
 			_, err := d.Run(context.Background())
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedErr.Error(), err.Error())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedErrMsg, err.Error())
 		})
 	}
 }
