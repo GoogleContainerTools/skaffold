@@ -25,7 +25,7 @@ func TestContainerErrorMake(t *testing.T) {
 			},
 		},
 		{
-			description: "makes err suggestion unhealhty status check (357)",
+			description: "makes err suggestion unhealthy status check (357)",
 			errCode:     proto.StatusCode_STATUSCHECK_UNHEALTHY,
 			expected: &proto.Suggestion{
 				SuggestionCode: proto.SuggestionCode_CHECK_READINESS_PROBE,
@@ -49,8 +49,12 @@ func TestContainerErrorMake(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			r := ContainerError{}
-			t.CheckDeepEqual(test.expected, r.Make(test.errCode), cmp.AllowUnexported(proto.Suggestion{}), protocmp.Transform())
+			t.CheckDeepEqual(
+				test.expected,
+				ContainerError{}.Make(test.errCode),
+				cmp.AllowUnexported(proto.Suggestion{}),
+				protocmp.Transform(),
+			)
 		})
 	}
 }
