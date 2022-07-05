@@ -91,6 +91,10 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.
 	return nil
 }
 
+func (d *Deployer) ConfigName() string {
+	return d.configName
+}
+
 // Dependencies list the files that would trigger a redeploy
 func (d *Deployer) Dependencies() ([]string, error) {
 	return []string{}, nil

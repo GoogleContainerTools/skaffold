@@ -185,6 +185,10 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 	}, nil
 }
 
+func (h *Deployer) ConfigName() string {
+	return h.configName
+}
+
 func (h *Deployer) trackNamespaces(namespaces []string) {
 	*h.namespaces = deployutil.ConsolidateNamespaces(*h.namespaces, namespaces)
 }

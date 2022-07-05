@@ -34,7 +34,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	var err error
 	manifests, err = deployutil.GetManifestsFromHydratedManifests(ctx, r.runCtx.HydratedManifests())
 	manifestsByConfig := manifest.ManifestListByConfig{
-		"": manifests,
+		r.deployer.ConfigName(): manifests,
 	}
 
 	if err != nil {

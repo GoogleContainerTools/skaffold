@@ -38,6 +38,7 @@ import (
 )
 
 type Helm struct {
+	configName string
 	generate.Generator
 	config *latest.Helm
 
@@ -59,15 +60,16 @@ func (h Helm) KubeConfig() string        { return h.kubeConfig }
 func (h Helm) Labels() map[string]string { return h.labels }
 func (h Helm) GlobalFlags() []string     { return h.config.Flags.Global }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string) (Helm, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string) (Helm, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Helm{}, err
 	}
 	return Helm{
-		Generator: generator,
-		config:    rCfg.Helm,
+		configName: configName,
+		Generator:  generator,
+		config:     rCfg.Helm,
 
 		enableDebug: cfg.Mode() == config.RunModes.Debug,
 		configFile:  cfg.ConfigurationFile(),
@@ -80,7 +82,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string) 
 	}, nil
 }
 
-func (h Helm) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestList, error) {
+func (h Helm) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestListByConfig, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_HelmManifests")
 	log.Entry(ctx).Infof("rendering using helm")
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
@@ -89,7 +91,10 @@ func (h Helm) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 
 	manifests, err := h.generateHelmManifests(ctx, builds)
 	endTrace()
-	return manifests, err
+
+	return manifest.ManifestListByConfig{
+		h.configName: manifests,
+	}, err
 }
 
 func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact) (manifest.ManifestList, error) {

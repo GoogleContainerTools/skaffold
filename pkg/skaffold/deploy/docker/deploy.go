@@ -137,6 +137,10 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	return nil
 }
 
+func (d *Deployer) ConfigName() string {
+	return d.configName
+}
+
 // deploy creates a container in the local docker daemon from a build artifact's image.
 func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Artifact) error {
 	if !stringslice.Contains(d.cfg.Images, artifact.ImageName) {

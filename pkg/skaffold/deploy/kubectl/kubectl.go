@@ -136,6 +136,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 	}, nil
 }
 
+func (k *Deployer) ConfigName() string {
+	return k.configName
+}
+
 func (k *Deployer) GetAccessor() access.Accessor {
 	return k.accessor
 }

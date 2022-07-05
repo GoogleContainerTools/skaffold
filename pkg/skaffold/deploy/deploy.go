@@ -63,4 +63,6 @@ type Deployer interface {
 
 	// GetStatusMonitor returns a Deployer's implementation of a StatusMonitor
 	GetStatusMonitor() status.Monitor
+
+	ConfigName() string
 }

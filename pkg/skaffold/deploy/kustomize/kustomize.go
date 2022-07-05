@@ -181,6 +181,10 @@ func NewDeployer(cfg kubectl.Config, labeller *label.DefaultLabeller, d *latest.
 	}, nil
 }
 
+func (k *Deployer) ConfigName() string {
+	return k.configName
+}
+
 func (k *Deployer) trackNamespaces(namespaces []string) {
 	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
 }

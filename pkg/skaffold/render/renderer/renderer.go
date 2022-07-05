@@ -45,7 +45,7 @@ func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, 
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Helm != nil {
 		log.Entry(context.TODO()).Debug("setting up helm renderer")
-		return helm.New(cfg, renderCfg, labels)
+		return helm.New(cfg, renderCfg, labels, configName)
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Kpt == nil {
 		log.Entry(context.TODO()).Debug("setting up kubectl renderer")

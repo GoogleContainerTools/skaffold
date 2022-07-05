@@ -130,3 +130,7 @@ func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
 	log.Entry(ctx).Infoln("Image prune completed in", timeutil.Humanize(time.Since(start)))
 	return nil
 }
+
+func (w withTimings) ConfigName() string {
+	return w.Deployer.ConfigName()
+}
