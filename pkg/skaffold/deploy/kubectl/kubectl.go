@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -367,7 +366,7 @@ func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.Ma
 func createManifestList(manifests []string) (manifest.ManifestList, error) {
 	var manifestList manifest.ManifestList
 	for _, manifestFilePath := range manifests {
-		manifestFileContent, err := ioutil.ReadFile(manifestFilePath)
+		manifestFileContent, err := os.ReadFile(manifestFilePath)
 		if err != nil {
 			return nil, readManifestErr(fmt.Errorf("reading manifest file %v: %w", manifestFilePath, err))
 		}

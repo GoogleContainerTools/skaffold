@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -130,7 +129,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	}
 	endTrace()
 	_, endTrace = instrumentation.StartTrace(ctx, "Render_readKptfile")
-	kptfileBytes, err := ioutil.ReadFile(kptfilePath)
+	kptfileBytes, err := os.ReadFile(kptfilePath)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(fmt.Errorf("read Kptfile from %v: %w",
 			filepath.Dir(kptfilePath), err)))
@@ -169,7 +168,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	if err != nil {
 		return nil, err
 	}
-	if err = ioutil.WriteFile(kptfilePath, configByte, 0644); err != nil {
+	if err = os.WriteFile(kptfilePath, configByte, 0644); err != nil {
 		return manifests, err
 	}
 	endTrace()

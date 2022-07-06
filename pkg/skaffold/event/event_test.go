@@ -19,7 +19,6 @@ package event
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -625,7 +624,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 }
 
 func TestSaveEventsToFile(t *testing.T) {
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatalf("getting temp file: %v", err)
 	}
@@ -649,7 +648,7 @@ func TestSaveEventsToFile(t *testing.T) {
 	}
 
 	// ensure that the events in the file match the event log
-	contents, err := ioutil.ReadFile(f.Name())
+	contents, err := os.ReadFile(f.Name())
 	if err != nil {
 		t.Fatalf("reading tmp file: %v", err)
 	}

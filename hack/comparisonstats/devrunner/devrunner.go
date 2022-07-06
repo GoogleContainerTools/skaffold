@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -102,13 +101,13 @@ func Dev(ctx context.Context, app types.Application, skaffoldBinaryPath string, 
 	}
 	time.Sleep(5 * time.Second)
 	return &DevInfo{CmdArgs: cmd.Args}, wait.Poll(time.Second, 2*time.Minute, func() (bool, error) {
-		contents, err := ioutil.ReadFile(eventsFileAbsPath)
+		contents, err := os.ReadFile(eventsFileAbsPath)
 		return err == nil && len(contents) > 0, nil
 	})
 }
 
 func copyAppToTmpDir(app *types.Application) error {
-	dir, err := ioutil.TempDir("", "")
+	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return fmt.Errorf("temp dir: %w", err)
 	}

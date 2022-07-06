@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 }
 
 func hello(w http.ResponseWriter, _ *http.Request) {
-	data, err := ioutil.ReadFile("/hello.txt")
+	data, err := os.ReadFile("/hello.txt")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

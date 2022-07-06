@@ -18,7 +18,7 @@ package portforward
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"reflect"
 	"testing"
 	"time"
@@ -414,7 +414,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			entryManager.entryForwarder = test.forwarder
 
 			p := NewWatchingPodForwarder(entryManager, "", kubernetes.NewImageList(), allPorts)
-			p.Start(context.Background(), ioutil.Discard, nil)
+			p.Start(context.Background(), io.Discard, nil)
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
@@ -494,7 +494,7 @@ func TestStartPodForwarder(t *testing.T) {
 			entryManager := NewEntryManager(fakeForwarder)
 
 			p := NewWatchingPodForwarder(entryManager, "", imageList, allPorts)
-			p.Start(context.Background(), ioutil.Discard, nil)
+			p.Start(context.Background(), io.Discard, nil)
 
 			// wait for the pod resource to be forwarded
 			err := wait.PollImmediate(10*time.Millisecond, 100*time.Millisecond, func() (bool, error) {

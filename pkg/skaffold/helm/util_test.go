@@ -17,7 +17,7 @@ limitations under the License.
 package helm
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -50,7 +50,7 @@ func TestWriteBuildArtifacts(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			file, cleanup, err := WriteBuildArtifacts(test.builds)
 			t.CheckError(false, err)
-			if content, err := ioutil.ReadFile(file); err != nil {
+			if content, err := os.ReadFile(file); err != nil {
 				t.Errorf("error reading file %q: %v", file, err)
 			} else {
 				t.CheckDeepEqual(test.result, string(content))

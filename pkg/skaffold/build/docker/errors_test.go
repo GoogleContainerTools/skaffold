@@ -18,7 +18,7 @@ package docker
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 	"testing"
 
@@ -72,7 +72,7 @@ Refer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for deta
 				},
 			}
 
-			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag", platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", platform.Matcher{})
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				t.CheckErrorContains("", err)

@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -113,7 +113,7 @@ func validate(ctx context.Context, path string, enableGradleAnalysis bool) []Art
 	}
 
 	// Search for indication of Jib in build file before proceeding
-	if content, err := ioutil.ReadFile(path); err != nil || !strings.Contains(string(content), searchString) {
+	if content, err := os.ReadFile(path); err != nil || !strings.Contains(string(content), searchString) {
 		return nil
 	}
 

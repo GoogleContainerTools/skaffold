@@ -18,7 +18,7 @@ package config
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -382,7 +382,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			}
 
 			// set specified value
-			err := Set(context.Background(), ioutil.Discard, []string{test.key, test.value})
+			err := Set(context.Background(), io.Discard, []string{test.key, test.value})
 			actualConfig, cfgErr := config.ReadConfigFile(cfg)
 			t.CheckNoError(cfgErr)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedSetCfg, actualConfig)
@@ -393,7 +393,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			}
 
 			// unset the value
-			err = Unset(context.Background(), ioutil.Discard, []string{test.key})
+			err = Unset(context.Background(), io.Discard, []string{test.key})
 			newConfig, cfgErr := config.ReadConfigFile(cfg)
 			t.CheckNoError(cfgErr)
 

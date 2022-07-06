@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 	"time"
@@ -215,7 +214,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Namespace: skaffoldNamespaceOption,
 				}}}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err = k.Deploy(context.Background(), io.Discard, test.builds, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -292,7 +291,7 @@ func TestKustomizeCleanup(t *testing.T) {
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &test.kustomize)
 			t.RequireNoError(err)
-			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun, nil)
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -342,9 +341,9 @@ func TestKustomizeHooks(t *testing.T) {
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{})
 			t.RequireNoError(err)
-			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PreDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
-			err = k.PostDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PostDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

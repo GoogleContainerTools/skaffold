@@ -17,8 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"golang.org/x/tools/go/analysis/singlechecker"
 	"tools/linters"
+
+	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
 func main() {

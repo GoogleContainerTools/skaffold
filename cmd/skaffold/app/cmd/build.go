@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -65,7 +65,7 @@ func NewCmdBuild() *cobra.Command {
 func doBuild(ctx context.Context, out io.Writer) error {
 	buildOut := out
 	if quietFlag {
-		buildOut = ioutil.Discard
+		buildOut = io.Discard
 	}
 
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
@@ -85,7 +85,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 			}
 
 			if buildOutputFlag != "" {
-				if err := ioutil.WriteFile(buildOutputFlag, buildOutput.Bytes(), 0644); err != nil {
+				if err := os.WriteFile(buildOutputFlag, buildOutput.Bytes(), 0644); err != nil {
 					return fmt.Errorf("writing build output to file: %w", err)
 				}
 			}

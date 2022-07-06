@@ -19,7 +19,7 @@ package testutil
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"os/exec"
 	"strings"
 	"testing"
@@ -235,7 +235,7 @@ func (c *FakeCmd) assertInput(cmd *exec.Cmd, r *run, command string) error {
 		return nil
 	}
 
-	buf, err := ioutil.ReadAll(cmd.Stdin)
+	buf, err := io.ReadAll(cmd.Stdin)
 	if err != nil {
 		return err
 	}

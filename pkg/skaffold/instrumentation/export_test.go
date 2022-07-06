@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -187,7 +186,7 @@ func TestExportMetrics(t *testing.T) {
 			}
 
 			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
-			b, err := ioutil.ReadFile(tmp.Path(filename))
+			b, err := os.ReadFile(tmp.Path(filename))
 
 			if !test.isOnline {
 				_ = json.Unmarshal(b, &actual)
@@ -198,7 +197,7 @@ func TestExportMetrics(t *testing.T) {
 				t.CheckDeepEqual(expected, actual)
 			} else {
 				t.CheckDeepEqual(true, os.IsNotExist(err))
-				b, err := ioutil.ReadFile(tmp.Path(openTelFilename))
+				b, err := os.ReadFile(tmp.Path(openTelFilename))
 				t.CheckError(false, err)
 				checkOutput(t, append(savedMetrics, test.meter), b)
 			}
@@ -385,7 +384,7 @@ func TestUserMetricReported(t *testing.T) {
 
 			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
 
-			b, err := ioutil.ReadFile(tmp.Path(openTelFilename))
+			b, err := os.ReadFile(tmp.Path(openTelFilename))
 			t.CheckNoError(err)
 			checkUser(t, test.expectedUser, b)
 		})

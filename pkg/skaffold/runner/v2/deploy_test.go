@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -86,7 +86,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 		}
 		var builds []graph.Artifact
 
-		err = r.Deploy(context.Background(), ioutil.Discard, builds, nil)
+		err = r.Deploy(context.Background(), io.Discard, builds, nil)
 
 		t.CheckNoError(err)
 	})

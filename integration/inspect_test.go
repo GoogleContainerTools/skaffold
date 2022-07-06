@@ -18,7 +18,7 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -96,7 +96,7 @@ func TestInspectBuildEnv(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
-			configContents, err := ioutil.ReadFile(filepath.Join("testdata/inspect", test.inputConfigFile))
+			configContents, err := os.ReadFile(filepath.Join("testdata/inspect", test.inputConfigFile))
 			t.CheckNoError(err)
 			tmpDir.Write("skaffold.yaml", string(configContents))
 			args := append(test.args, fmt.Sprintf("-f=%s", tmpDir.Path("skaffold.yaml")))
@@ -105,9 +105,9 @@ func TestInspectBuildEnv(t *testing.T) {
 				t.CheckDeepEqual(test.expectedOut, string(out))
 			}
 			if test.expectedConfigFile != "" {
-				expectedConfig, err := ioutil.ReadFile(filepath.Join("testdata/inspect", test.expectedConfigFile))
+				expectedConfig, err := os.ReadFile(filepath.Join("testdata/inspect", test.expectedConfigFile))
 				t.CheckNoError(err)
-				actualConfig, err := ioutil.ReadFile(tmpDir.Path("skaffold.yaml"))
+				actualConfig, err := os.ReadFile(tmpDir.Path("skaffold.yaml"))
 				t.CheckNoError(err)
 				t.CheckDeepEqual(expectedConfig, actualConfig)
 			}

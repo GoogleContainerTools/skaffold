@@ -23,7 +23,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -31,7 +30,7 @@ import (
 	"strings"
 	"sync"
 
-	blackfriday "github.com/russross/blackfriday/v2"
+	"github.com/russross/blackfriday/v2"
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -152,7 +151,7 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 	var current []byte
 	if _, err := os.Stat(output); err == nil {
 		var err error
-		current, err = ioutil.ReadFile(output)
+		current, err = os.ReadFile(output)
 		if err != nil {
 			return false, fmt.Errorf("unable to read existing schema for version %q: %w", version.APIVersion, err)
 		}
@@ -163,7 +162,7 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 	current = bytes.ReplaceAll(current, []byte("\r\n"), []byte("\n"))
 
 	if !dryRun {
-		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+		if err := os.WriteFile(output, buf, os.ModePerm); err != nil {
 			return false, fmt.Errorf("unable to write schema %q: %w", output, err)
 		}
 	}

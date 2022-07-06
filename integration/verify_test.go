@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -45,7 +44,7 @@ func TestVerifyPassingTestsWithEnvVar(t *testing.T) {
 	testutil.CheckContains(t, "foo-var", logs)
 
 	// verify logs are in the event output as well
-	b, err := ioutil.ReadFile(logFile + ".v2")
+	b, err := os.ReadFile(logFile + ".v2")
 	if err != nil {
 		t.Fatalf("error reading %s", logFile+".v2")
 	}
@@ -73,7 +72,7 @@ func TestVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	testutil.CheckContains(t, "foo-var", logs)
 
 	// verify logs are in the event output as well
-	b, err := ioutil.ReadFile(logFile + ".v2")
+	b, err := os.ReadFile(logFile + ".v2")
 	if err != nil {
 		t.Fatalf("error reading %s", logFile+".v2")
 	}

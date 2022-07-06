@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
@@ -128,13 +128,13 @@ func WriteData(out io.Writer, c config.Config, newConfig *latest.SkaffoldConfig,
 	}
 
 	for path, manifest := range newManifests {
-		if err = ioutil.WriteFile(path, manifest, 0644); err != nil {
+		if err = os.WriteFile(path, manifest, 0644); err != nil {
 			return fmt.Errorf("writing k8s manifest to file: %w", err)
 		}
 		fmt.Fprintf(out, "Generated manifest %s was written\n", path)
 	}
 
-	if err = ioutil.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
+	if err = os.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
 		return fmt.Errorf("writing config to file: %w", err)
 	}
 

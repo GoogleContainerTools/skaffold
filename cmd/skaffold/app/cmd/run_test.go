@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -120,7 +119,7 @@ func TestDoRun(t *testing.T) {
 				SkipTests:    test.skipTests,
 			})
 
-			err := doRun(context.Background(), ioutil.Discard)
+			err := doRun(context.Background(), io.Discard)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.skipTests, !mockRunner.testRan)
 			t.CheckDeepEqual([]string{"second-test", "test"}, mockRunner.artifactImageNames)

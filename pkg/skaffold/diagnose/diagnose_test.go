@@ -18,7 +18,7 @@ package diagnose
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -90,7 +90,7 @@ func TestCheckArtifacts(t *testing.T) {
 					},
 				},
 			}},
-		}, ioutil.Discard)
+		}, io.Discard)
 
 		t.CheckNoError(err)
 	})

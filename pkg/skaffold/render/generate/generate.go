@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -156,7 +155,7 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 				continue
 			}
 		}
-		manifestFileContent, err := ioutil.ReadFile(nkPath)
+		manifestFileContent, err := os.ReadFile(nkPath)
 		if err != nil {
 			return nil, err
 		}

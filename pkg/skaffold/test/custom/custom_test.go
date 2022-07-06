@@ -19,7 +19,7 @@ package custom
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -71,7 +71,7 @@ func TestNewCustomTestRunner(t *testing.T) {
 
 		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+		err = testRunner.Test(context.Background(), io.Discard, "image:tag")
 
 		t.CheckNoError(err)
 	})
@@ -133,7 +133,7 @@ func TestCustomCommandError(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, test.custom)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+			err = testRunner.Test(context.Background(), io.Discard, "image:tag")
 
 			// TODO(modali): Update the logic to check for error code instead of error string.
 			t.CheckError(test.shouldErr, err)

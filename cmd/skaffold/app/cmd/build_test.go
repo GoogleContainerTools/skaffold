@@ -21,7 +21,7 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -171,7 +171,7 @@ func TestFileOutputFlag(t *testing.T) {
 			t.CheckDeepEqual(string(test.expectedOutput), output.String())
 
 			// Check that file contents are correct
-			fileContent, err := ioutil.ReadFile(test.filename)
+			fileContent, err := os.ReadFile(test.filename)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(string(test.expectedFileContent), string(fileContent))
 		})
@@ -206,7 +206,7 @@ func TestRunBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&createRunner, test.mock)
 
-			err := doBuild(context.Background(), ioutil.Discard)
+			err := doBuild(context.Background(), io.Discard)
 
 			t.CheckError(test.shouldErr, err)
 		})

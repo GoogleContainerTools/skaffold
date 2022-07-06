@@ -18,7 +18,6 @@ package render
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,8 +37,8 @@ const (
 
 // for testing
 var (
-	readFile    = ioutil.ReadFile
-	tempDir     = ioutil.TempDir
+	readFile    = os.ReadFile
+	tempDir     = os.MkdirTemp
 	osRemoveAll = os.RemoveAll
 )
 

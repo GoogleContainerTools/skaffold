@@ -21,7 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -237,7 +237,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true)
 			t.CheckNoError(errR)
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, m)
+			err = k.Deploy(context.Background(), io.Discard, test.builds, m)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -329,7 +329,7 @@ func TestKubectlCleanup(t *testing.T) {
 				true)
 			t.CheckNoError(errR)
 
-			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun, m)
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -375,7 +375,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl)
 			t.RequireNoError(err)
 
-			err = k.Cleanup(context.Background(), ioutil.Discard, false, nil)
+			err = k.Cleanup(context.Background(), io.Discard, false, nil)
 
 			t.CheckNoError(err)
 		})
@@ -408,7 +408,7 @@ func TestKubectlRedeploy(t *testing.T) {
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv1)))
 		m.Append([]byte(DeploymentWebYAMLv1))
 		t.CheckNoError(err)
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
 		}, m)
@@ -417,14 +417,14 @@ func TestKubectlRedeploy(t *testing.T) {
 		// Deploy one manifest since only one image is updated
 		m, err = manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv2)))
 		t.CheckNoError(err)
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		}, m)
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		}, nil)
@@ -512,7 +512,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
 		t.CheckNoError(err)
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
+		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		}, m)
 
@@ -605,7 +605,7 @@ func TestGCSManifests(t *testing.T) {
 			if err := os.MkdirAll(manifest.ManifestTmpDir, os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
-			if err := ioutil.WriteFile(manifest.ManifestTmpDir+"/deployment.yaml", []byte(DeploymentWebYAML), os.ModePerm); err != nil {
+			if err := os.WriteFile(manifest.ManifestTmpDir+"/deployment.yaml", []byte(DeploymentWebYAML), os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
 			rc := latest.RenderConfig{Generate: test.generate}
@@ -629,7 +629,7 @@ func TestGCSManifests(t *testing.T) {
 			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{})
 			t.RequireNoError(err)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, nil, m)
+			err = k.Deploy(context.Background(), io.Discard, nil, m)
 
 			t.CheckError(test.shouldErr, err)
 		})

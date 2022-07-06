@@ -18,7 +18,7 @@ package logger
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"testing"
 )
 
@@ -26,7 +26,7 @@ func TestDockerLoggerZeroValue(t *testing.T) {
 	var m *Logger
 
 	// Should not raise a nil dereference
-	m.Start(context.Background(), ioutil.Discard)
+	m.Start(context.Background(), io.Discard)
 	m.Mute()
 	m.Unmute()
 	m.Stop()

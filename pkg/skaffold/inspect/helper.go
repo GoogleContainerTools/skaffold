@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 
 	yamlv3 "gopkg.in/yaml.v3"
 
@@ -33,7 +33,7 @@ import (
 var (
 	ReadFileFunc  = util.ReadConfiguration
 	WriteFileFunc = func(filename string, data []byte) error {
-		return ioutil.WriteFile(filename, data, 0644)
+		return os.WriteFile(filename, data, 0644)
 	}
 )
 

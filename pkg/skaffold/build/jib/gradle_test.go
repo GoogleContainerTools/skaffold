@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -88,7 +88,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 			localDocker := fakeLocalDaemon(api)
 
 			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false, nil)
-			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
+			result, err := builder.Build(context.Background(), io.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
 				},
@@ -159,7 +159,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
 			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false, nil)
-			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
+			result, err := builder.Build(context.Background(), io.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
 				},

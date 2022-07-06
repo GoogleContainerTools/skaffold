@@ -19,7 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
@@ -340,7 +340,7 @@ func retrieveHTTPState(t *testing.T, httpAddr string) *proto.State {
 	}
 	defer httpResponse.Body.Close()
 
-	b, err := ioutil.ReadAll(httpResponse.Body)
+	b, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
 		t.Errorf("error reading body from http response: %s", err.Error())
 	}
@@ -393,7 +393,7 @@ func checkBuildAndDeployComplete(state *proto.State) bool {
 	return state.DeployState.Status == event.Complete
 }
 
-func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry) { //nolint
+func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry) { // nolint
 	client := setupRPCClient(t, rpcAddr)
 
 	stream, err := readEventAPIStream(client, t, readRetries)

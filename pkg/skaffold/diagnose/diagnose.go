@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -155,5 +154,5 @@ func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Con
 		buildCtxWriter.Close()
 	}()
 
-	return io.Copy(ioutil.Discard, buildCtx)
+	return io.Copy(io.Discard, buildCtx)
 }

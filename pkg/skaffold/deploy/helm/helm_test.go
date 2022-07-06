@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -376,7 +376,7 @@ func TestNewDeployer(t *testing.T) {
 }
 
 func TestHelmDeploy(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
+	tmpDir, err := os.MkdirTemp("", "TestHelmDeploy")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
@@ -945,7 +945,7 @@ func TestHelmDeploy(t *testing.T) {
 			}
 			deployer.pkgTmpDir = tmpDir
 			// Deploy returns nil unless `helm get all <release>` is set up to return actual release info
-			err = deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err = deployer.Deploy(context.Background(), io.Discard, test.builds, nil)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, *deployer.namespaces)
@@ -1027,7 +1027,7 @@ func TestHelmCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.helm, nil)
 			t.RequireNoError(err)
 
-			deployer.Cleanup(context.Background(), ioutil.Discard, test.dryRun, nil)
+			deployer.Cleanup(context.Background(), io.Discard, test.dryRun, nil)
 
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
@@ -1361,7 +1361,7 @@ func TestHelmRender(t *testing.T) {
 				Generate: latest.Generate{Helm: &latest.Helm{Flags: test.helm.Flags, Releases: test.helm.Releases}},
 			}, labels)
 			t.RequireNoError(err)
-			_, err = helmRenderer.Render(context.Background(), ioutil.Discard, test.builds, true)
+			_, err = helmRenderer.Render(context.Background(), io.Discard, test.builds, true)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -1406,9 +1406,9 @@ func TestHelmHooks(t *testing.T) {
 
 			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
 			t.RequireNoError(err)
-			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PreDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
-			err = k.PostDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PostDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

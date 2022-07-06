@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -110,7 +110,7 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}
 	if outFile != "" {
-		if err := ioutil.WriteFile(outFile, newCfg, 0644); err != nil {
+		if err := os.WriteFile(outFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
 		output.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, outFile)

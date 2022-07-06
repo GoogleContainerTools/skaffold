@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -86,7 +85,7 @@ var (
 // ReadCopyCmdsFromDockerfile parses a given dockerfile for COPY commands accounting for build args, env vars, globs, etc
 // and returns an array of FromTos specifying the files that will be copied 'from' local dirs 'to' container dirs in the COPY statements
 func ReadCopyCmdsFromDockerfile(ctx context.Context, onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]FromTo, error) {
-	r, err := ioutil.ReadFile(absDockerfilePath)
+	r, err := os.ReadFile(absDockerfilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,7 @@ func ReadCopyCmdsFromDockerfile(ctx context.Context, onlyLastImage bool, absDock
 }
 
 func ExtractOnlyCopyCommands(absDockerfilePath string) ([]FromTo, error) {
-	r, err := ioutil.ReadFile(absDockerfilePath)
+	r, err := os.ReadFile(absDockerfilePath)
 	if err != nil {
 		return nil, err
 	}

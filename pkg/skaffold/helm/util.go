@@ -19,7 +19,6 @@ package helm
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -38,7 +37,7 @@ func writeBuildArtifacts(builds []graph.Artifact) (string, func(), error) {
 		return "", nil, fmt.Errorf("cannot marshal build artifacts: %w", err)
 	}
 
-	f, err := ioutil.TempFile("", "builds*.yaml")
+	f, err := os.CreateTemp("", "builds*.yaml")
 	if err != nil {
 		return "", nil, fmt.Errorf("cannot create temp file: %w", err)
 	}

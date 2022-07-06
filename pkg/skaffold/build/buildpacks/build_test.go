@@ -19,7 +19,6 @@ package buildpacks
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	pack "github.com/buildpacks/pack/pkg/client"
@@ -279,7 +278,7 @@ value = "VALUE2"
 			localDocker := fakeLocalDaemon(test.api)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode, test.resolver)
-			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, test.artifact, test.tag, platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {
@@ -420,7 +419,7 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			localDocker := fakeLocalDaemon(test.api)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode, test.resolver)
-			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, test.artifact, test.tag, platform.Matcher{})
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {

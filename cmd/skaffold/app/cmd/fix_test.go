@@ -19,7 +19,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -206,7 +206,7 @@ deploy:
 		var b bytes.Buffer
 		err := fix(&b, cfgFile, cfgFile, latestV1.Version)
 
-		output, _ := ioutil.ReadFile(cfgFile)
+		output, _ := os.ReadFile(cfgFile)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expectedOutput, string(output))
