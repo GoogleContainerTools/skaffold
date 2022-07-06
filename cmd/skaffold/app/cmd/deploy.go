@@ -35,11 +35,7 @@ func NewCmdDeploy() *cobra.Command {
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Deploy those tags", "deploy --build-artifacts=tags.json").
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
-		WithExample("Deploy without first rendering the manifests", "deploy --skip-render").
 		WithCommonFlags().
-		WithFlags([]*Flag{
-			{Value: &opts.SkipRender, Name: "skip-render", DefValue: false, Usage: "Don't render the manifests, just deploy them", IsEnum: true},
-		}).
 		WithHouseKeepingMessages().
 		NoArgs(doDeploy)
 }

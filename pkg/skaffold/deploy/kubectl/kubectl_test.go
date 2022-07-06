@@ -587,7 +587,6 @@ func TestGCSManifests(t *testing.T) {
 		generate    latest.Generate
 		commands    util.Command
 		shouldErr   bool
-		skipRender  bool
 	}{
 		{
 			description: "manifest from GCS",
@@ -624,7 +623,6 @@ func TestGCSManifests(t *testing.T) {
 
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
-				skipRender: test.skipRender,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
 			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{})
 			t.RequireNoError(err)
@@ -676,7 +674,6 @@ type kubectlConfig struct {
 	workingDir            string
 	defaultRepo           string
 	multiLevelRepo        *bool
-	skipRender            bool
 	force                 bool
 	waitForDeletions      config.WaitForDeletions
 }
@@ -684,7 +681,6 @@ type kubectlConfig struct {
 func (c *kubectlConfig) GetKubeContext() string                              { return "kubecontext" }
 func (c *kubectlConfig) GetKubeNamespace() string                            { return c.Opts.Namespace }
 func (c *kubectlConfig) WorkingDir() string                                  { return c.workingDir }
-func (c *kubectlConfig) SkipRender() bool                                    { return c.skipRender }
 func (c *kubectlConfig) ForceDeploy() bool                                   { return c.force }
 func (c *kubectlConfig) DefaultRepo() *string                                { return &c.defaultRepo }
 func (c *kubectlConfig) MultiLevelRepo() *bool                               { return c.multiLevelRepo }

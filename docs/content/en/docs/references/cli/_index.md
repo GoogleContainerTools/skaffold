@@ -573,9 +573,6 @@ Examples:
   # Build the artifacts and then deploy them
   skaffold build -q | skaffold deploy --build-artifacts -
 
-  # Deploy without first rendering the manifests
-  skaffold deploy --skip-render
-
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
@@ -604,7 +601,6 @@ Options:
       --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --skip-render=false: Don't render the manifests, just deploy them
       --status-check=: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
@@ -651,7 +647,6 @@ Env vars:
 * `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
-* `SKAFFOLD_SKIP_RENDER` (same as `--skip-render`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)

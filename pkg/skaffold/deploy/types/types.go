@@ -33,7 +33,6 @@ type Config interface {
 	ConfigurationFile() string
 	DefaultRepo() *string
 	MultiLevelRepo() *bool
-	SkipRender() bool
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter
 	TransformRulesFile() string
