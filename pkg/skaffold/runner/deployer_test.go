@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
@@ -48,12 +50,13 @@ import (
 func TestGetDeployer(tOuter *testing.T) {
 	testutil.Run(tOuter, "TestGetDeployer", func(t *testutil.T) {
 		tests := []struct {
-			description string
-			cfg         latest.Pipeline
-			helmVersion string
-			expected    deploy.Deployer
-			apply       bool
-			shouldErr   bool
+			description       string
+			cfg               latest.Pipeline
+			helmVersion       string
+			expected          deploy.Deployer
+			apply             bool
+			shouldErr         bool
+			deepCheckDeployer bool
 		}{
 			{
 				description: "no deployer",
@@ -241,7 +244,8 @@ func TestGetDeployer(tOuter *testing.T) {
 						},
 					},
 				},
-				expected: t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
+				expected:          t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: "TestProject", Region: "us-central1"})).(deploy.Deployer),
+				deepCheckDeployer: true,
 			},
 			{
 				description: "apply does not allow multiple deployers when Cloud Run is used",
@@ -282,7 +286,13 @@ func TestGetDeployer(tOuter *testing.T) {
 					t.CheckDeepEqual(len(expected), len(deployers))
 					for i, v := range expected {
 						t.CheckTypeEquality(v, deployers[i])
+						if test.deepCheckDeployer {
+							t.CheckDeepEqual(v, deployers[i], cmpopts.IgnoreUnexported(cloudrun.Deployer{}, helm.Deployer{}, kubectl.Deployer{}, kptV2.Deployer{}))
+						}
 					}
+				} else if test.deepCheckDeployer {
+					// it's not a mux so if we want to deep check, do so directly.
+					t.CheckDeepEqual(test.expected, deployer, cmpopts.IgnoreUnexported(cloudrun.Deployer{}, helm.Deployer{}, kubectl.Deployer{}, kptV2.Deployer{}))
 				}
 			})
 		}

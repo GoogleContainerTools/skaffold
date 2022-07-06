@@ -325,6 +325,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 			if defaultProject != "" && defaultProject != crDeploy.ProjectID {
 				return nil, fmt.Errorf("expected all Cloud Run deploys to use the same project, found deploys to projects %s and %s", defaultProject, crDeploy.ProjectID)
 			}
+			defaultProject = crDeploy.ProjectID
 		}
 	}
 	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject})
