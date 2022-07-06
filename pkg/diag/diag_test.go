@@ -18,6 +18,7 @@ package diag
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -33,10 +34,18 @@ type mockValidator struct {
 	listOptions metav1.ListOptions
 }
 
+type mockErrValidator struct {
+	*mockValidator
+}
+
 func (m *mockValidator) Validate(_ context.Context, ns string, opts metav1.ListOptions) ([]validator.Resource, error) {
 	m.ns = append(m.ns, ns)
 	m.listOptions = opts
 	return nil, nil
+}
+
+func (e *mockErrValidator) Validate(_ context.Context, ns string, opts metav1.ListOptions) ([]validator.Resource, error) {
+	return nil, fmt.Errorf("error")
 }
 
 func TestRun(t *testing.T) {
@@ -84,6 +93,36 @@ func TestRun(t *testing.T) {
 			d = d.WithValidators([]validator.Validator{m})
 			d.Run(context.Background())
 			t.CheckDeepEqual(test.expected, m, cmp.AllowUnexported(mockValidator{}), protocmp.Transform())
+		})
+	}
+}
+
+func TestRunErr(t *testing.T) {
+	tests := []struct {
+		description    string
+		shouldErr      bool
+		labels         map[string]string
+		ns             []string
+		expectedErrMsg string
+	}{
+		{
+			description: "handles error",
+			shouldErr:   true,
+			labels: map[string]string{
+				"skaffold": "session",
+			},
+			ns:             []string{"foo"},
+			expectedErrMsg: "following errors occurred error\n",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			d := New(test.ns)
+			m := &mockErrValidator{}
+			d = d.WithValidators([]validator.Validator{m})
+			_, err := d.Run(context.Background())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedErrMsg, err.Error())
 		})
 	}
 }
