@@ -77,7 +77,6 @@ type Deployer struct {
 	kubectl            CLI
 	insecureRegistries map[string]bool
 	labeller           *label.DefaultLabeller
-	skipRender         bool
 	namespaces         *[]string
 
 	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
@@ -124,7 +123,6 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 		multiLevelRepo:     cfg.MultiLevelRepo(),
 		kubectl:            kubectl,
 		insecureRegistries: cfg.GetInsecureRegistries(),
-		skipRender:         cfg.SkipRender(),
 		labeller:           labeller,
 		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
 		hydratedManifests: cfg.HydratedManifests(),
@@ -192,15 +190,6 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	if len(k.hydratedManifests) > 0 {
 		_, endTrace = instrumentation.StartTrace(ctx, "Deploy_readHydratedManifests")
 		manifests, err = k.kubectl.ReadManifests(ctx, k.hydratedManifests)
-		if err != nil {
-			endTrace(instrumentation.TraceEndError(err))
-			return err
-		}
-		manifests, err = manifests.SetLabels(k.labeller.Labels(), manifest.NewResourceSelectorLabels(k.transformableAllowlist, k.transformableDenylist))
-		endTrace()
-	} else if k.skipRender {
-		childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_readManifests")
-		manifests, err = k.readManifests(childCtx, false)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return err

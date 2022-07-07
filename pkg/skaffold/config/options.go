@@ -55,7 +55,6 @@ type SkaffoldOptions struct {
 	PropagateProfiles     bool
 	RenderOnly            bool
 	SkipTests             bool
-	SkipRender            bool
 	SkipConfigDefaults    bool
 	Tail                  bool
 	WaitForConnection     bool
