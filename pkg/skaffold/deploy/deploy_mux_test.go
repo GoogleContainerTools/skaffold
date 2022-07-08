@@ -34,9 +34,12 @@ import (
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
-func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
+func NewMockDeployer() *MockDeployer {
+	return &MockDeployer{labels: make(map[string]string), configName: "default"}
+}
 
 type MockDeployer struct {
+	configName      string
 	labels          map[string]string
 	deployErr       error
 	dependencies    []string
@@ -108,13 +111,17 @@ func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error {
 	return m.deployErr
 }
 
 func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
 	m.dependencies = dependencies
 	return m
+}
+
+func (m *MockDeployer) ConfigName() string {
+	return m.configName
 }
 
 func TestDeployerMux_Deploy(t *testing.T) {

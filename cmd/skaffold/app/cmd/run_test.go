@@ -72,14 +72,14 @@ func (r *mockRunRunner) Test(context.Context, io.Writer, []graph.Artifact) error
 	return nil
 }
 
-func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
+func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error {
 	r.deployRan = true
 	return nil
 }
 
-func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
+func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestListByConfig, error) {
 	r.renderRan = true
-	return manifest.ManifestList{}, nil
+	return manifest.ManifestListByConfig{}, nil
 }
 
 func TestDoRun(t *testing.T) {

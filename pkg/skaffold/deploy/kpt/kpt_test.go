@@ -142,7 +142,7 @@ func TestKptfileInitIfNot(t *testing.T) {
 			tmpDir.Chdir()
 
 			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latest.KptDeploy{Dir: "."},
-				config.SkaffoldOptions{})
+				config.SkaffoldOptions{}, "default")
 			err := kptfileInitIfNot(context.Background(), io.Discard, k)
 			if !test.shouldErr {
 				t.CheckNoError(err)
@@ -173,7 +173,7 @@ func TestDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			kptInitFunc = func(context.Context, io.Writer, *Deployer) error { return nil }
 
-			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{})
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{}, "default")
 			t.CheckNoError(err)
 			err = k.Deploy(context.Background(), io.Discard, test.builds, nil)
 			t.CheckNoError(err)

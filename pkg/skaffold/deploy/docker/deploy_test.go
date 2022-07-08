@@ -130,7 +130,8 @@ func TestDebugBindings(t *testing.T) {
 				}
 				return configs, nil, nil
 			})
-			d, _ := NewDeployer(context.TODO(), mockConfig{}, &label.DefaultLabeller{}, nil, nil)
+
+			d, _ := NewDeployer(context.TODO(), mockConfig{}, &label.DefaultLabeller{}, nil, nil, "default")
 
 			for _, a := range test.artifacts {
 				config := container.Config{
