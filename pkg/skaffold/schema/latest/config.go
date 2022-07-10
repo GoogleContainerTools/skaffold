@@ -1073,7 +1073,7 @@ type ArtifactDependency struct {
 // It can be used to build images out of project's sources without any additional configuration.
 type BuildpackArtifact struct {
 	// Builder is the builder image used.
-	Builder string `yaml:"builder" yamltags:"required"`
+	Builder string `yaml:"builder,omitempty"`
 
 	// RunImage overrides the stack's default run image.
 	RunImage string `yaml:"runImage,omitempty"`
