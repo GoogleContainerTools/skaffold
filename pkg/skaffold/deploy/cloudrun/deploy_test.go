@@ -24,8 +24,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
 	"google.golang.org/api/run/v1"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -137,6 +139,115 @@ func TestDeploy(tOuter *testing.T) {
 				if sErr.StatusCode() != test.errCode {
 					t.Fatalf("Expected status code %v but got %v", test.errCode, sErr.StatusCode())
 				}
+			}
+		})
+	}
+}
+
+func TestDeployRewrites(tOuter *testing.T) {
+	tests := []struct {
+		description    string
+		toDeploy       *run.Service
+		defaultProject string
+		region         string
+		expected       *run.Service
+	}{
+		{
+			description: "override run-id in service and template",
+			toDeploy: &run.Service{
+				Metadata: &run.ObjectMeta{
+					Labels: map[string]string{
+						"skaffold.dev/run-id": "abc123",
+					},
+					Name: "test-service",
+				},
+				Spec: &run.ServiceSpec{
+					Template: &run.RevisionTemplate{
+						Metadata: &run.ObjectMeta{
+							Labels: map[string]string{
+								"skaffold.dev/run-id": "abc123",
+							},
+						},
+					},
+				},
+			},
+			defaultProject: "test-project",
+			region:         "us-central1",
+			expected: &run.Service{
+				Metadata: &run.ObjectMeta{
+					Labels: map[string]string{
+						"run-id": "abc123",
+					},
+					Name:      "test-service",
+					Namespace: "test-project",
+				},
+				Spec: &run.ServiceSpec{
+					Template: &run.RevisionTemplate{
+						Metadata: &run.ObjectMeta{
+							Labels: map[string]string{
+								"run-id": "abc123",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "test deploy with overridden project",
+			toDeploy: &run.Service{
+				Metadata: &run.ObjectMeta{
+					Name:      "test-service",
+					Namespace: "my-project",
+				},
+			},
+			defaultProject: "test-project",
+			region:         "us-central1",
+			expected: &run.Service{
+				Metadata: &run.ObjectMeta{
+					Name:      "test-service",
+					Namespace: "test-project",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(tOuter, test.description, func(t *testutil.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "GET" {
+					http.Error(w, "want to return empty default", http.StatusNotFound)
+					return
+				}
+				var service run.Service
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					http.Error(w, "Unable to read body: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err = json.Unmarshal(body, &service); err != nil {
+					http.Error(w, "Unable to parse service: "+err.Error(), http.StatusBadRequest)
+					return
+				}
+				if test.expected != nil {
+					if diff := cmp.Diff(*test.expected, service, protocmp.Transform()); diff != "" {
+						http.Error(w, "Expected equal but got diff "+diff, http.StatusBadRequest)
+						return
+					}
+				}
+				b, err := json.Marshal(service)
+				if err != nil {
+					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(b)
+			}))
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region})
+			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
+			deployer.useGcpOptions = false
+			manifest, _ := json.Marshal(test.toDeploy)
+			manifests := [][]byte{manifest}
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifests)
+			if err != nil {
+				t.Fatalf("Expected success but got err: %v", err)
 			}
 		})
 	}

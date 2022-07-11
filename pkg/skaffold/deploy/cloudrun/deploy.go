@@ -172,11 +172,14 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		delete(service.Metadata.Labels, "skaffold.dev/run-id")
 		service.Metadata.Labels["run-id"] = runID
 	}
-	runID, foundID = service.Spec.Template.Metadata.Labels["skaffold.dev/run-id"]
-	if foundID {
-		delete(service.Spec.Template.Metadata.Labels, "skaffold.dev/run-id")
-		service.Spec.Template.Metadata.Labels["run-id"] = runID
+	if service.Spec != nil && service.Spec.Template != nil && service.Spec.Template.Metadata != nil {
+		runID, foundID = service.Spec.Template.Metadata.Labels["skaffold.dev/run-id"]
+		if foundID {
+			delete(service.Spec.Template.Metadata.Labels, "skaffold.dev/run-id")
+			service.Spec.Template.Metadata.Labels["run-id"] = runID
+		}
 	}
+
 	resName := RunResourceName{
 		Project: service.Metadata.Namespace,
 		Region:  d.Region,
