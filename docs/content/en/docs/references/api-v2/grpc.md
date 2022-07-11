@@ -23,7 +23,7 @@ We also generate the [reference doc for the HTTP layer]({{<relref "/docs/referen
 
 ## v2/skaffold.proto
 
-You can find the source for v2/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/v2/skaffold.proto).
+You can find the source for v2/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v2/skaffold.proto).
 
 
 
@@ -1207,6 +1207,8 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
 | INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR | 1303 | Trying to modify build environment that doesn't exist |
 | INSPECT_PROFILE_NOT_FOUND_ERR | 1304 | Trying to modify a profile that doesn't exist |
+| PORT_FORWARD_RUN_GCLOUD_NOT_FOUND | 1601 |  |
+| PORT_FORWARD_RUN_PROXY_START_ERROR | 1602 |  |
 
 
 
