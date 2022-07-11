@@ -41,8 +41,8 @@ func TestRenderMux_Render(t *testing.T) {
 		{
 			name: "concatenates render results with separator",
 			renderers: []Renderer{
-				mock{manifests: "manifest-1", deps: []string{"file1.txt", "file2.txt"}},
-				mock{manifests: "manifest-2", deps: []string{"file2.txt", "file3.txt"}}},
+				mock{configName: "config1", manifests: "manifest-1", deps: []string{"file1.txt", "file2.txt"}},
+				mock{configName: "config2", manifests: "manifest-2", deps: []string{"file2.txt", "file3.txt"}}},
 			expected:     "manifest-1\n---\nmanifest-2",
 			expectedDeps: []string{"file1.txt", "file2.txt", "file3.txt"},
 		},
@@ -84,18 +84,23 @@ func TestRenderMux_Render(t *testing.T) {
 }
 
 type mock struct {
-	manifests string
-	deps      []string
-	shouldErr bool
+	configName string
+	manifests  string
+	deps       []string
+	shouldErr  bool
 }
 
 func (m mock) ManifestDeps() ([]string, error) {
 	return m.deps, nil
 }
 
-func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
+func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestListByConfig, error) {
 	if m.shouldErr {
 		return nil, fmt.Errorf("render error")
 	}
-	return manifest.Load(bytes.NewReader([]byte(m.manifests)))
+	manifests, err := manifest.Load(bytes.NewReader([]byte(m.manifests)))
+
+	return manifest.ManifestListByConfig{
+		m.configName: manifests,
+	}, err
 }

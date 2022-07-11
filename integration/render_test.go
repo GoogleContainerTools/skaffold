@@ -212,7 +212,7 @@ spec:
 					RawK8s: []string{"deployment.yaml"}},
 			}
 			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-			r, err := kubectl.New(mockCfg, rc, map[string]string{})
+			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default")
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			l, err := r.Render(context.Background(), &b, test.builds, false)

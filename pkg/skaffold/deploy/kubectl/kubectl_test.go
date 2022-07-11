@@ -626,14 +626,18 @@ func TestGCSManifests(t *testing.T) {
 			if err := os.WriteFile(manifest.ManifestTmpDir+"/deployment.yaml", []byte(DeploymentWebYAML), os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
+			configName := "default"
 			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Render: latest.RenderConfig{Generate: test.generate}}}),
+					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
+						configName: {
+							Render: latest.RenderConfig{Generate: test.generate},
+						},
+					}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -643,7 +647,7 @@ func TestGCSManifests(t *testing.T) {
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{})
+			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, configName)
 			t.RequireNoError(err)
 
 			err = k.Deploy(context.Background(), io.Discard, nil, m)
@@ -680,7 +684,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg, "default")
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)

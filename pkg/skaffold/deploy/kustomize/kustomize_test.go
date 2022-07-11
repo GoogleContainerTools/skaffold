@@ -212,7 +212,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, &label.DefaultLabeller{}, &test.kustomize)
+				}}}, &label.DefaultLabeller{}, &test.kustomize, "default")
 			t.RequireNoError(err)
 			err = k.Deploy(context.Background(), io.Discard, test.builds, nil)
 
@@ -289,7 +289,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kustomize)
+			}, &label.DefaultLabeller{}, &test.kustomize, "default")
 			t.RequireNoError(err)
 			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, nil)
 
@@ -339,7 +339,7 @@ func TestKustomizeHooks(t *testing.T) {
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{})
+			}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{}, "default")
 			t.RequireNoError(err)
 			err = k.PreDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
@@ -542,7 +542,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{KustomizePaths: kustomizePaths}, "default")
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -644,7 +644,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &test.cfg, "default")
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)
