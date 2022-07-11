@@ -232,6 +232,10 @@ func setBuildpackArtifactDefaults(a *latest.BuildpackArtifact) {
 			Paths: []string{"."},
 		}
 	}
+	if a.Builder == "" && len(a.Buildpacks) == 0 {
+		a.Builder = constants.DefaultBuildpacksBuilderImage
+		a.TrustBuilder = true
+	}
 }
 
 func setDockerArtifactDefaults(a *latest.DockerArtifact) {

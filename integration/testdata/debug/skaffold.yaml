@@ -41,16 +41,13 @@ profiles:
     artifacts:
     - image: skaffold-debug-java
       context: java
-      buildpacks:
-        builder: "gcr.io/buildpacks/builder:v1"
+      buildpacks: {}
     - image: skaffold-debug-npm
       context: npm
-      buildpacks:
-        builder: "gcr.io/buildpacks/builder:v1"
+      buildpacks: {}
     - image: skaffold-debug-nodejs
       context: nodejs
-      buildpacks:
-        builder: "gcr.io/buildpacks/builder:v1"
+      buildpacks: {}
     #- image: skaffold-debug-python3
     #  context: python3
     #  buildpacks:
@@ -58,7 +55,8 @@ profiles:
     - image: skaffold-debug-go
       context: go
       buildpacks:
-        builder: "gcr.io/buildpacks/builder:v1"
+        env:
+        - GOOGLE_RUNTIME_VERSION=1.16 # temporarily pin due to issue#6450
     #- image: skaffold-debug-netcore
     #  context: netcore
     #  buildpacks:
