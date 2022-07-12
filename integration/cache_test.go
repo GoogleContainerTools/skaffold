@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestCacheAPITriggers(t *testing.T) {
@@ -43,6 +44,21 @@ func TestCacheAPITriggers(t *testing.T) {
 
 	waitForEvent(t, entries, func(e *proto.LogEntry) bool {
 		return e.GetEvent().GetBuildEvent().GetArtifact() == "skaffold-example"
+	})
+}
+
+func TestCacheHits(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	testutil.Run(t, "TestCacheHits", func(t *testutil.T) {
+		// Run skaffold build first to fail quickly on a build failure
+		skaffold.Build().InDir("examples/getting-started").RunOrFail(t.T)
+
+		ns, _ := SetupNamespace(t.T)
+		rpcAddr := randomPort()
+
+		// Rebuild with a different tag so that we get a cache hit.
+		out := skaffold.Build("--tag", ns.Name, "--rpc-port", rpcAddr).InDir("examples/getting-started").RunOrFailOutput(t.T)
+		t.CheckContains("skaffold-example: Found. Tagging", string(out))
 	})
 }
 
