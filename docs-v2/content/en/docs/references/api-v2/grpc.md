@@ -23,7 +23,7 @@ We also generate the [reference doc for the HTTP layer]({{<relref "/docs/referen
 
 ## v2/skaffold.proto
 
-You can find the source for v2/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/v2/skaffold.proto).
+You can find the source for v2/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v2/skaffold.proto).
 
 
 
