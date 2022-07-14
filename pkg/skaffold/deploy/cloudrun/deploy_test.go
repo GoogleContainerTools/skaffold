@@ -129,10 +129,9 @@ func TestDeploy(tOuter *testing.T) {
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := json.Marshal(test.toDeploy)
-			manifestsByConfig := manifest.ManifestListByConfig{
-				configName: manifest.ManifestList{manifestList},
-			}
-			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifestsByConfig)
+			manifestsByConfig := manifest.NewManifestListByConfig()
+			manifestsByConfig.Add(configName, manifest.ManifestList{manifestList})
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, &manifestsByConfig)
 			if test.errCode == proto.StatusCode_OK && err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			} else if test.errCode != proto.StatusCode_OK {
@@ -244,12 +243,14 @@ func TestDeployRewrites(tOuter *testing.T) {
 				}
 				w.Write(b)
 			}))
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region})
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, "")
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
-			manifest, _ := json.Marshal(test.toDeploy)
-			manifests := [][]byte{manifest}
-			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifests)
+			m, _ := json.Marshal(test.toDeploy)
+			manifests := [][]byte{m}
+			manifestByConfig := manifest.NewManifestListByConfig()
+			manifestByConfig.Add("", manifests)
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, &manifestByConfig)
 			if err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			}

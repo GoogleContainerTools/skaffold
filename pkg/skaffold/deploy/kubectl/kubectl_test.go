@@ -209,7 +209,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			if !test.skipSkaffoldNamespaceOption {
 				skaffoldNamespaceOption = TestNamespace
 			}
-			configName := "default"
+			const configName = "default"
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				force:      test.forceDeploy,
@@ -228,7 +228,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
 					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
-						configName: latest.Pipeline{
+						configName: {
 							Render: rc,
 						},
 					}),
@@ -323,7 +323,7 @@ func TestKubectlCleanup(t *testing.T) {
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
 					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
-						configName: latest.Pipeline{
+						configName: {
 							Render: rc,
 						},
 					}),
@@ -337,7 +337,7 @@ func TestKubectlCleanup(t *testing.T) {
 				true)
 			t.CheckNoError(errR)
 
-			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m["default"])
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m.GetForConfig("default"))
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -418,31 +418,36 @@ func TestKubectlRedeploy(t *testing.T) {
 		m.Append([]byte(DeploymentWebYAMLv1))
 
 		t.CheckNoError(err)
+
+		manifestListByConfig := manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
+		fmt.Printf("HERE1.......")
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, map[string]manifest.ManifestList{
-			configName: m,
-		})
+		}, &manifestListByConfig)
 		t.CheckNoError(err)
-
+		fmt.Printf("HERE2.......")
 		// Deploy one manifest since only one image is updated
 		m, err = manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv2)))
 		t.CheckNoError(err)
+		fmt.Printf("HERE3.......")
+		manifestListByConfig = manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, map[string]manifest.ManifestList{
-			configName: m,
-		})
+		}, &manifestListByConfig)
 		t.CheckNoError(err)
-
+		fmt.Printf("HERE4.......")
 		// Deploy zero manifest since no image is updated
+		emptyManifestList := manifest.NewManifestListByConfig()
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, nil)
+		}, &emptyManifestList)
 		t.CheckErrorContains("nothing to deploy", err)
+		fmt.Printf("HERE5.......")
 	})
 }
 
@@ -489,11 +494,13 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		var out bytes.Buffer
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
 		t.CheckNoError(err)
+
+		manifestListByConfig := manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
+
 		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, map[string]manifest.ManifestList{
-			configName: m,
-		})
+		}, &manifestListByConfig)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
@@ -529,11 +536,13 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
 		t.CheckNoError(err)
+
+		manifestListByConfig := manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
+
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, map[string]manifest.ManifestList{
-			configName: m,
-		})
+		}, &manifestListByConfig)
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})

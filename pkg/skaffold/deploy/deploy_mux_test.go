@@ -111,7 +111,7 @@ func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error {
 	return m.deployErr
 }
 

@@ -42,7 +42,7 @@ type withNotification struct {
 	deploy.Deployer
 }
 
-func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, l manifest.ManifestListByConfig) error {
+func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, l *manifest.ManifestListByConfig) error {
 	err := w.Deployer.Deploy(ctx, out, builds, l)
 	if err != nil {
 		fmt.Fprint(out, terminalBell)

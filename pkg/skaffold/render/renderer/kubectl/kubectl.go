@@ -58,7 +58,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 	}, nil
 }
 
-func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestListByConfig, error) {
+func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (*manifest.ManifestListByConfig, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_KubectlManifests")
 	log.Entry(ctx).Infof("rendering using kubectl")
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
@@ -66,8 +66,7 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 	})
 	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.transformAllowlist, r.transformDenylist)
 	endTrace()
-
-	return manifest.ManifestListByConfig{
-		r.configName: manifests,
-	}, err
+	manifestListByConfig := manifest.NewManifestListByConfig()
+	manifestListByConfig.Add(r.configName, manifests)
+	return &manifestListByConfig, err
 }

@@ -33,9 +33,8 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	var manifests manifest.ManifestList
 	var err error
 	manifests, err = deployutil.GetManifestsFromHydratedManifests(ctx, r.runCtx.HydratedManifests())
-	manifestsByConfig := manifest.ManifestListByConfig{
-		r.deployer.ConfigName(): manifests,
-	}
+	manifestsByConfig := manifest.NewManifestListByConfig()
+	manifestsByConfig.Add(r.deployer.ConfigName(), manifests)
 
 	if err != nil {
 		return fmt.Errorf("getting manifests from hydrated manifests: %w", err)
@@ -62,7 +61,7 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	event.DeployInProgress()
 	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_Deploying")
 	defer endTrace()
-	err = r.deployer.Deploy(ctx, deployOut, artifacts, list)
+	err = r.deployer.Deploy(ctx, deployOut, artifacts, &list)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)

@@ -202,7 +202,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestListByConfig) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests *manifest.ManifestListByConfig) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -219,7 +219,7 @@ func (t *TestBench) ConfigName() string {
 	return ""
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool) (manifest.ManifestListByConfig, error) {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool) (*manifest.ManifestListByConfig, error) {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]

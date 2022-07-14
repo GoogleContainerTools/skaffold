@@ -306,7 +306,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	return nil
 }
 
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ *manifest.ManifestListByConfig) error {
 	if err := kptInitFunc(ctx, out, k); err != nil {
 		return err
 	}

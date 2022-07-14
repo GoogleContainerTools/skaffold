@@ -82,7 +82,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 	}, nil
 }
 
-func (h Helm) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestListByConfig, error) {
+func (h Helm) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (*manifest.ManifestListByConfig, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_HelmManifests")
 	log.Entry(ctx).Infof("rendering using helm")
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
@@ -91,10 +91,9 @@ func (h Helm) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 
 	manifests, err := h.generateHelmManifests(ctx, builds)
 	endTrace()
-
-	return manifest.ManifestListByConfig{
-		h.configName: manifests,
-	}, err
+	manifestListByConfig := manifest.NewManifestListByConfig()
+	manifestListByConfig.Add(h.configName, manifests)
+	return &manifestListByConfig, err
 }
 
 func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact) (manifest.ManifestList, error) {

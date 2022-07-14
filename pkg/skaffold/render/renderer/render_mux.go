@@ -41,8 +41,8 @@ func NewRenderMux(renderers []Renderer) Renderer {
 	return RenderMux{renderers: renderers}
 }
 
-func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
-	allManifests := manifest.ManifestListByConfig{}
+func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
+	allManifests := manifest.NewManifestListByConfig()
 	for i, renderer := range r.renderers {
 		eventV2.RendererInProgress(i)
 		w, ctx := output.WithEventContext(ctx, out, constants.Render, strconv.Itoa(i))
@@ -54,16 +54,18 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 			return nil, err
 		}
 
-		for configName, manifests := range manifestsByConfig {
+		for _, configName := range manifestsByConfig.ConfigNames() {
+			manifests := manifestsByConfig.GetForConfig(configName)
+
 			if len(manifests) > 0 {
-				allManifests[configName] = manifests
+				allManifests.Add(configName, manifests)
 			}
 		}
 
 		eventV2.RendererSucceeded(i)
 		endTrace()
 	}
-	return allManifests, nil
+	return &allManifests, nil
 }
 
 func (r RenderMux) ManifestDeps() ([]string, error) {

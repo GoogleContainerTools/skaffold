@@ -38,14 +38,14 @@ type Runner interface {
 	Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	// Deploy and DeployAndLog: Do they need the `graph.Artifact` and could use render output.
-	Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error
-	DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error
+	Deploy(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error
+	DeployAndLog(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error
 	GeneratePipeline(context.Context, io.Writer, []util.VersionedConfig, []string, string) error
 	HasBuilt() bool
 	HasDeployed() bool
 	Prune(context.Context, io.Writer) error
 
-	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error)
+	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error)
 	Test(context.Context, io.Writer, []graph.Artifact) error
 	Verify(context.Context, io.Writer, []graph.Artifact) error
 	VerifyAndLog(context.Context, io.Writer, []graph.Artifact) error

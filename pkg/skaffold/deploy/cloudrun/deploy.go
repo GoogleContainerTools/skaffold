@@ -80,8 +80,8 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 }
 
 // Deploy creates a Cloud Run service using the provided manifest.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifestsByConfig manifest.ManifestListByConfig) error {
-	manifests := manifestsByConfig[d.configName]
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifestsByConfig *manifest.ManifestListByConfig) error {
+	manifests := manifestsByConfig.GetForConfig(d.configName)
 
 	for _, manifest := range manifests {
 		if err := d.deployToCloudRun(ctx, out, manifest); err != nil {

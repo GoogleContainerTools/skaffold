@@ -32,7 +32,7 @@ import (
 )
 
 type Renderer interface {
-	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error)
+	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error)
 	// ManifestDeps returns the user kubernetes manifests to file watcher. In dev mode, a "redeploy" will be triggered
 	// if any of the "Dependencies" manifest is changed.
 	ManifestDeps() ([]string, error)
