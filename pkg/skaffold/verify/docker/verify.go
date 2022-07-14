@@ -30,6 +30,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/fatih/semgroup"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -126,17 +127,20 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 	s := semgroup.NewGroup(context.Background(), maxWorkers)
 
 	for _, tc := range v.cfg {
-		var nb graph.Artifact
+		var na graph.Artifact
 		foundArtifact := false
 		testCase := tc
 		for _, b := range allbuilds {
 			if tc.Container.Image == b.ImageName {
 				foundArtifact = true
-				nb = graph.Artifact{
+				na = graph.Artifact{
 					ImageName: tc.Container.Image,
 					Tag:       b.Tag,
 				}
-				builds = append(builds, nb)
+				builds = append(builds, graph.Artifact{
+					ImageName: tc.Container.Image,
+					Tag:       tc.Name,
+				})
 				break
 			}
 		}
@@ -145,14 +149,17 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 			if err != nil {
 				return err
 			}
-			nb = graph.Artifact{
+			na = graph.Artifact{
 				ImageName: tc.Container.Image,
 				Tag:       tc.Container.Image,
 			}
-			builds = append(builds, nb)
+			builds = append(builds, graph.Artifact{
+				ImageName: tc.Container.Image,
+				Tag:       tc.Name,
+			})
 		}
 		s.Go(func() error {
-			return v.createAndRunContainer(ctx, out, nb, *testCase)
+			return v.createAndRunContainer(ctx, out, na, *testCase)
 		})
 	}
 	v.TrackBuildArtifacts(builds)
@@ -208,7 +215,10 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		eventV2.VerifyFailed(tc.Name, err)
 		return errors.Wrap(err, "creating container in local docker")
 	}
-	v.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: id})
+	v.TrackContainerFromBuild(graph.Artifact{
+		ImageName: opts.VerifyTestName,
+		Tag:       opts.VerifyTestName,
+	}, tracker.Container{Name: containerName, ID: id})
 
 	var containerErr error
 	select {
@@ -252,13 +262,11 @@ func (v *Verifier) getContainerName(ctx context.Context, name string) string {
 	name = path.Base(strings.Split(name, ":")[0])
 	currentName := name
 
-	counter := 1
 	for {
 		if !v.client.ContainerExists(ctx, currentName) {
 			break
 		}
-		currentName = fmt.Sprintf("%s-%d", name, counter)
-		counter++
+		currentName = fmt.Sprintf("%s-%s", name, uuid.New().String()[0:8])
 	}
 
 	if currentName != name {

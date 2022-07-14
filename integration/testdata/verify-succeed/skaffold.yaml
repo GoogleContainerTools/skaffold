@@ -1,13 +1,23 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
 verify:
-- name: hello-world
+- name: hello-world-1
   container:
-    name: docker.io/hello-world:latest
-    image: hello-world
-- name: alpine
+    name: hello-world-1
+    image: docker.io/hello-world:latest
+- name: hello-world-2
   container:
-    name: alpine
+    name: hello-world-2
+    image: docker.io/hello-world:latest
+- name: alpine-1
+  container:
+    name: alpine-1
+    image: alpine:3.15.4
+    command: ["/bin/sh"]
+    args: ["-c", "echo $FOO; sleep 10; echo bye"]
+- name: alpine-2
+  container:
+    name: alpine-2
     image: alpine:3.15.4
     command: ["/bin/sh"]
     args: ["-c", "echo $FOO; sleep 10; echo bye"]
