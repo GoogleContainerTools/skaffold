@@ -1096,6 +1096,10 @@ type BuildpackArtifact struct {
 	// TrustBuilder indicates that the builder should be trusted.
 	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
 
+	// Removes old cache volume associated with the specific image
+	// and supplies a clean cache volume for build
+	ClearCache bool `yaml:"clearCache,omitempty"`
+
 	// ProjectDescriptor is the path to the project descriptor file.
 	// Defaults to `project.toml` if it exists.
 	ProjectDescriptor string `yaml:"projectDescriptor,omitempty"`
