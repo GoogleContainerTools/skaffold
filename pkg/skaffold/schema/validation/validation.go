@@ -663,18 +663,29 @@ func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latest.LogsConfig) []
 
 // validateVerifyTests
 // - makes sure that each test name is unique
+// - makes sure that each container name is unique
 func validateVerifyTests(cfg *parser.SkaffoldConfigEntry, tcs []*latest.VerifyTestCase) (cfgErrs []ErrorWithLocation) {
-	seen := map[string]bool{}
+	seenTestName := map[string]bool{}
+	seenContainerName := map[string]bool{}
 	for i, tc := range tcs {
-		if _, ok := seen[tc.Name]; ok {
+		if _, ok := seenTestName[tc.Name]; ok {
 			return []ErrorWithLocation{
 				{
-					Error:    fmt.Errorf("found duplicate name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name),
+					Error:    fmt.Errorf("found duplicate test name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name),
 					Location: cfg.YAMLInfos.Locate(&cfg.Verify[i]),
 				},
 			}
 		}
-		seen[tc.Name] = true
+		if _, ok := seenContainerName[tc.Container.Name]; ok {
+			return []ErrorWithLocation{
+				{
+					Error:    fmt.Errorf("found duplicate container name '%s' in 'verify' test cases. 'verify' container names must be unique", tc.Container.Name),
+					Location: cfg.YAMLInfos.Locate(&cfg.Verify[i]),
+				},
+			}
+		}
+		seenTestName[tc.Name] = true
+		seenContainerName[tc.Container.Name] = true
 	}
 	return nil
 }
