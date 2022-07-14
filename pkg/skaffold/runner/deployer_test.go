@@ -440,7 +440,6 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 
 		for _, test := range tests {
 			testutil.Run(tOuter, test.name, func(t *testutil.T) {
-				//pipelines := []latest.Pipeline{}
 				pipelines := map[string]latest.Pipeline{}
 				for configName, cfg := range test.cfgs {
 					pipeline := latest.Pipeline{
@@ -448,7 +447,6 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 							DeployType: cfg,
 						},
 					}
-					//pipelines = append(pipelines, pipeline)
 					pipelines[configName] = pipeline
 				}
 				deployer, err := getDefaultDeployer(&runcontext.RunContext{

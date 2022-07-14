@@ -300,12 +300,12 @@ func (rc *RunContext) DigestSource() string {
 	return constants.RemoteDigestSource
 }
 
-func getConfigName(pipeline *latest.Pipeline, configName string) string {
+func getConfigName(configName string) string {
 	pipelineConfigName := configName
 
 	if len(pipelineConfigName) == 0 {
-		configNameUuid, _ := uuid.NewUUID()
-		pipelineConfigName = configNameUuid.String()
+		configNameUUID, _ := uuid.NewUUID()
+		pipelineConfigName = configNameUUID.String()
 	}
 
 	return pipelineConfigName
@@ -316,7 +316,7 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 	for _, cfg := range configs {
 		if cfg != nil {
 			pipeline := cfg.(*latest.SkaffoldConfig).Pipeline
-			cfgName := getConfigName(&pipeline, cfg.(*latest.SkaffoldConfig).Metadata.Name)
+			cfgName := getConfigName(cfg.(*latest.SkaffoldConfig).Metadata.Name)
 			pipelines[cfgName] = pipeline
 		}
 	}

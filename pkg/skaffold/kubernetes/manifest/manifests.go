@@ -33,7 +33,7 @@ type ManifestList [][]byte
 type ManifestListByConfig struct {
 	manifests map[string]ManifestList
 
-	//configNames is use to preserve the order of the configs added to the map, and be able to go through them in the added order.
+	// configNames is use to preserve the order of the configs added to the map, and be able to go through them in the added order.
 	configNames []string
 }
 

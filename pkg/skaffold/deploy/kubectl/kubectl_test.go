@@ -312,7 +312,7 @@ func TestKubectlCleanup(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir()
 			tmpDir.Write("deployment.yaml", DeploymentWebYAML).Chdir()
-			configName := "default"
+			const configName = "default"
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
@@ -330,14 +330,14 @@ func TestKubectlCleanup(t *testing.T) {
 				},
 			}
 
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, "default")
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true)
 			t.CheckNoError(errR)
 
-			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m.GetForConfig("default"))
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m.GetForConfig(configName))
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -421,17 +421,16 @@ func TestKubectlRedeploy(t *testing.T) {
 
 		manifestListByConfig := manifest.NewManifestListByConfig()
 		manifestListByConfig.Add(configName, m)
-		fmt.Printf("HERE1.......")
+
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
 		}, &manifestListByConfig)
 		t.CheckNoError(err)
-		fmt.Printf("HERE2.......")
+
 		// Deploy one manifest since only one image is updated
 		m, err = manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv2)))
 		t.CheckNoError(err)
-		fmt.Printf("HERE3.......")
 		manifestListByConfig = manifest.NewManifestListByConfig()
 		manifestListByConfig.Add(configName, m)
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
@@ -439,7 +438,7 @@ func TestKubectlRedeploy(t *testing.T) {
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		}, &manifestListByConfig)
 		t.CheckNoError(err)
-		fmt.Printf("HERE4.......")
+
 		// Deploy zero manifest since no image is updated
 		emptyManifestList := manifest.NewManifestListByConfig()
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
@@ -447,7 +446,6 @@ func TestKubectlRedeploy(t *testing.T) {
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		}, &emptyManifestList)
 		t.CheckErrorContains("nothing to deploy", err)
-		fmt.Printf("HERE5.......")
 	})
 }
 
