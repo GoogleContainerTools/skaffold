@@ -76,6 +76,9 @@ func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latest.Artifact, 
 		}
 		return b.buildpackBuildSpec(a.BuildpackArtifact, tag, a.Dependencies)
 
+	case a.KoArtifact != nil:
+		return b.koBuildSpec(ctx, a, tag, platforms)
+
 	default:
 		return cloudbuild.Build{}, fmt.Errorf("unexpected type %q for gcb artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}

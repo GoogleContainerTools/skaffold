@@ -612,7 +612,7 @@ func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfi
 	case bc.GoogleCloudBuild != nil:
 		for i, a := range bc.Artifacts {
 			at := misc.ArtifactType(a)
-			if at != misc.Kaniko && at != misc.Docker && at != misc.Jib && at != misc.Buildpack {
+			if at != misc.Kaniko && at != misc.Docker && at != misc.Jib && at != misc.Buildpack && at != misc.Ko {
 				cfgErrs = append(cfgErrs, ErrorWithLocation{
 					Error:    fmt.Errorf("found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)),
 					Location: cfg.YAMLInfos.Locate(&cfg.Build.Artifacts[i].ArtifactType),

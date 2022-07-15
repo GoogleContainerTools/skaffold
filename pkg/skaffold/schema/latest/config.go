@@ -384,6 +384,12 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/k8s-skaffold/pack`.
 	PackImage string `yaml:"packImage,omitempty"`
 
+	// KoImage is the image that runs a ko build.
+	// The image must contain Skaffold, Go, and a shell (runnable as `sh`) that supports here documents.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/k8s-skaffold/skaffold`.
+	KoImage string `yaml:"koImage,omitempty"`
+
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`

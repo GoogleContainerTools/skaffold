@@ -38,6 +38,7 @@ const (
 	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 	defaultCloudBuildKanikoImage = kaniko.DefaultImage
 	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
+	defaultCloudBuildKoImage     = "gcr.io/k8s-skaffold/skaffold"
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
@@ -88,6 +89,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultCloudBuildGradleImage,
 		setDefaultCloudBuildKanikoImage,
 		setDefaultCloudBuildPackImage,
+		setDefaultCloudBuildKoImage,
 	)
 
 	if err := withClusterConfig(c,
@@ -191,6 +193,10 @@ func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
 
 func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
 	gcb.PackImage = valueOrDefault(gcb.PackImage, defaultCloudBuildPackImage)
+}
+
+func setDefaultCloudBuildKoImage(gcb *latest.GoogleCloudBuild) {
+	gcb.KoImage = valueOrDefault(gcb.KoImage, defaultCloudBuildKoImage)
 }
 
 func setDefaultTagger(c *latest.SkaffoldConfig) {

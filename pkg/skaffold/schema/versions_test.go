@@ -499,6 +499,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			GradleImage: "gcr.io/cloud-builders/gradle",
 			KanikoImage: kaniko.DefaultImage,
 			PackImage:   "gcr.io/k8s-skaffold/pack",
+			KoImage:     "gcr.io/k8s-skaffold/skaffold",
 		}}}
 		for _, op := range ops {
 			op(&b)

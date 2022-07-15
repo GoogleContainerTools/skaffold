@@ -411,9 +411,10 @@ To learn more about how Skaffold debugs Go applications, read the
 
 File `sync` is not supported while the ko builder feature is in Alpha.
 
-### Remote builders
+### Remote builds
 
-Only `local` builds are supported while the ko builder feature is in Alpha.
+The `ko` builder supports remote builds on Google Cloud Build. See the
+[example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/ko).
 
 ### Using the `custom` builder
 
