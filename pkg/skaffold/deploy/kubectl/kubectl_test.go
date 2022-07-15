@@ -235,7 +235,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 				},
 			}
 
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, "default")
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -403,7 +403,7 @@ func TestKubectlRedeploy(t *testing.T) {
 			AndRunOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", "").
 			AndRun("kubectl --context kubecontext apply -f -"))
 
-		configName := "default"
+		const configName = "default"
 		deployer, err := NewDeployer(&kubectlConfig{
 			workingDir: ".",
 			waitForDeletions: config.WaitForDeletions{
@@ -478,7 +478,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 			AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 			AndRunInput("kubectl --context kubecontext apply -f -", DeploymentWebYAMLv1),
 		)
-		configName := "default"
+		const configName = "default"
 		deployer, err := NewDeployer(&kubectlConfig{
 			workingDir: tmpDir.Root(),
 			waitForDeletions: config.WaitForDeletions{
@@ -521,7 +521,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 			}`),
 		)
 
-		configName := "default"
+		const configName = "default"
 		deployer, err := NewDeployer(&kubectlConfig{
 			workingDir: tmpDir.Root(),
 			waitForDeletions: config.WaitForDeletions{
@@ -633,7 +633,7 @@ func TestGCSManifests(t *testing.T) {
 			if err := os.WriteFile(manifest.ManifestTmpDir+"/deployment.yaml", []byte(DeploymentWebYAML), os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
-			configName := "default"
+			const configName = "default"
 			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{

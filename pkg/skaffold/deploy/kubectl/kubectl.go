@@ -176,7 +176,7 @@ func (k *Deployer) trackNamespaces(namespaces []string) {
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifestsByConfig *manifest.ManifestListByConfig) error {
-	manifests := manifestsByConfig.GetForConfig(k.configName)
+	manifests := manifestsByConfig.GetForConfig(k.ConfigName())
 	var (
 		err      error
 		childCtx context.Context

@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 	"strconv"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -105,12 +104,7 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 }
 
 func (m DeployerMux) ConfigName() string {
-	var configNames []string
-	for _, deployer := range m.deployers {
-		configNames = append(configNames, deployer.ConfigName())
-	}
-
-	return strings.Join(configNames, ",")
+	return ""
 }
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l *manifest.ManifestListByConfig) error {

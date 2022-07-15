@@ -64,5 +64,6 @@ type Deployer interface {
 	// GetStatusMonitor returns a Deployer's implementation of a StatusMonitor
 	GetStatusMonitor() status.Monitor
 
+	// Returns the unique name of the config yaml file related with the Deployer
 	ConfigName() string
 }

@@ -30,6 +30,7 @@ import (
 //nolint:golint
 type ManifestList [][]byte
 
+//nolint:golint
 type ManifestListByConfig struct {
 	manifests map[string]ManifestList
 
