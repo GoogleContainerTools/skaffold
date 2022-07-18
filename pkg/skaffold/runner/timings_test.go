@@ -74,7 +74,7 @@ type mockRenderer struct {
 	err bool
 }
 
-func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
+func (m *mockRenderer) Render(context.Context, io.Writer, []graph.Artifact, bool) (*manifest.ManifestListByConfig, error) {
 	if m.err {
 		return nil, errors.New("Unable to render")
 	}
@@ -93,7 +93,7 @@ type mockDeployer struct {
 	err bool
 }
 
-func (m *mockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
+func (m *mockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error {
 	if m.err {
 		return errors.New("Unable to deploy")
 	}

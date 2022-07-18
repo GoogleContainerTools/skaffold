@@ -63,6 +63,8 @@ var (
 
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
+	configName string
+
 	*latest.KptDeploy
 	applyDir string
 
@@ -90,7 +92,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy, opts config.SkaffoldOptions) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy, opts config.SkaffoldOptions, configName string) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -119,6 +121,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 	return &Deployer{
+		configName:         configName,
 		KptDeploy:          d,
 		applyDir:           d.Dir,
 		podSelector:        podSelector,
@@ -135,6 +138,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 		namespace:          cfg.GetKubeNamespace(),
 		namespaces:         &namespaces,
 	}, nil
+}
+
+func (k *Deployer) ConfigName() string {
+	return k.configName
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -299,7 +306,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	return nil
 }
 
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ *manifest.ManifestListByConfig) error {
 	if err := kptInitFunc(ctx, out, k); err != nil {
 		return err
 	}

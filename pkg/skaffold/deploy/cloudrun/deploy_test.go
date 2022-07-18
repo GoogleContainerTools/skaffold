@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -123,12 +124,14 @@ func TestDeploy(tOuter *testing.T) {
 				w.Write(b)
 			}))
 
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region})
+			configName := "default"
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
-			manifest, _ := json.Marshal(test.toDeploy)
-			manifests := [][]byte{manifest}
-			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifests)
+			manifestList, _ := json.Marshal(test.toDeploy)
+			manifestsByConfig := manifest.NewManifestListByConfig()
+			manifestsByConfig.Add(configName, manifest.ManifestList{manifestList})
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, &manifestsByConfig)
 			if test.errCode == proto.StatusCode_OK && err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			} else if test.errCode != proto.StatusCode_OK {
@@ -240,12 +243,14 @@ func TestDeployRewrites(tOuter *testing.T) {
 				}
 				w.Write(b)
 			}))
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region})
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, "")
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
-			manifest, _ := json.Marshal(test.toDeploy)
-			manifests := [][]byte{manifest}
-			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifests)
+			m, _ := json.Marshal(test.toDeploy)
+			manifests := [][]byte{m}
+			manifestByConfig := manifest.NewManifestListByConfig()
+			manifestByConfig.Add("", manifests)
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, &manifestByConfig)
 			if err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			}
@@ -318,7 +323,8 @@ func TestCleanup(tOuter *testing.T) {
 				w.Write(b)
 			}))
 			defer ts.Close()
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region})
+			configName := "default"
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifest, _ := json.Marshal(test.toDelete)

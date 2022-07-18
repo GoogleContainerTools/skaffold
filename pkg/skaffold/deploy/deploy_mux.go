@@ -103,7 +103,11 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 	}
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l manifest.ManifestList) error {
+func (m DeployerMux) ConfigName() string {
+	return ""
+}
+
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l *manifest.ManifestListByConfig) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
 		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))

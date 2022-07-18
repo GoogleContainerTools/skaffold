@@ -30,6 +30,45 @@ import (
 //nolint:golint
 type ManifestList [][]byte
 
+//nolint:golint
+type ManifestListByConfig struct {
+	manifests map[string]ManifestList
+
+	// configNames is use to preserve the order of the configs added to the map, and be able to go through them in the added order.
+	configNames []string
+}
+
+func NewManifestListByConfig() ManifestListByConfig {
+	return ManifestListByConfig{
+		manifests:   make(map[string]ManifestList),
+		configNames: []string{},
+	}
+}
+
+func (ml *ManifestListByConfig) Add(configName string, manifest ManifestList) {
+	ml.configNames = append(ml.configNames, configName)
+	ml.manifests[configName] = manifest
+}
+
+func (ml ManifestListByConfig) GetForConfig(configName string) ManifestList {
+	return ml.manifests[configName]
+}
+
+func (ml ManifestListByConfig) ConfigNames() []string {
+	return ml.configNames
+}
+
+func (ml ManifestListByConfig) String() string {
+	var manifests []string
+
+	for _, configName := range ml.configNames {
+		manifest := ml.manifests[configName]
+		manifests = append(manifests, manifest.String())
+	}
+
+	return strings.Join(manifests, "\n---\n")
+}
+
 // Load uses the Kubernetes `apimachinery` to split YAML content into a set of YAML documents.
 func Load(in io.Reader) (ManifestList, error) {
 	r := k8syaml.NewYAMLReader(bufio.NewReader(in))

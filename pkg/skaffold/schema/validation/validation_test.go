@@ -705,13 +705,15 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 			})
 
 			err := ProcessWithRunContext(context.Background(), &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-					{
-						Build: latest.BuildConfig{
-							Artifacts: test.artifacts,
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							Build: latest.BuildConfig{
+								Artifacts: test.artifacts,
+							},
 						},
 					},
-				}),
+				),
 			})
 
 			t.CheckError(test.shouldErr, err)

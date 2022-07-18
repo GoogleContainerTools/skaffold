@@ -32,25 +32,25 @@ import (
 )
 
 type Renderer interface {
-	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestList, error)
+	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error)
 	// ManifestDeps returns the user kubernetes manifests to file watcher. In dev mode, a "redeploy" will be triggered
 	// if any of the "Dependencies" manifest is changed.
 	ManifestDeps() ([]string, error)
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
+func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, configName string) (Renderer, error) {
 	if usingLegacyHelmDeploy {
 		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Helm != nil {
 		log.Entry(context.TODO()).Debug("setting up helm renderer")
-		return helm.New(cfg, renderCfg, labels)
+		return helm.New(cfg, renderCfg, labels, configName)
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Kpt == nil {
 		log.Entry(context.TODO()).Debug("setting up kubectl renderer")
-		return kubectl.New(cfg, renderCfg, labels)
+		return kubectl.New(cfg, renderCfg, labels, configName)
 	}
 	log.Entry(context.TODO()).Infof("setting up kpt renderer")
-	return kpt.New(cfg, renderCfg, hydrationDir, labels)
+	return kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
 }

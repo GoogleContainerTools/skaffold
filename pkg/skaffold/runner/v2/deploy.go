@@ -34,7 +34,7 @@ import (
 )
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
-func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestList) error {
+func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list *manifest.ManifestListByConfig) error {
 	defer r.deployer.GetLogger().Stop()
 
 	// Logs should be retrieved up to just before the deploy
@@ -63,7 +63,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	return nil
 }
 
-func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestList) error {
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list *manifest.ManifestListByConfig) error {
 	defer r.deployer.GetStatusMonitor().Reset()
 
 	out, ctx = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)

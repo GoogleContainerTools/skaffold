@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/util"
 )
 
-func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
+func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
 	renderOut, postRenderFn, err := util.WithLogFile(time.Now().Format(util.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return nil, err

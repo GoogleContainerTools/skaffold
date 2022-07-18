@@ -34,7 +34,7 @@ import (
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error
+	Deploy(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -63,4 +63,7 @@ type Deployer interface {
 
 	// GetStatusMonitor returns a Deployer's implementation of a StatusMonitor
 	GetStatusMonitor() status.Monitor
+
+	// Returns the unique name of the config yaml file related with the Deployer
+	ConfigName() string
 }

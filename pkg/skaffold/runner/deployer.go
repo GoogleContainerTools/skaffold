@@ -121,14 +121,14 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	var deployers []deploy.Deployer
 	localDeploy := false
 	remoteDeploy := false
-	for _, pl := range pipelines.All() {
+	for configName, pl := range pipelines.AllByConfigNames() {
 		d := pl.Deploy
 		r := pl.Render
 		dCtx := &deployerCtx{runCtx, d}
 
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
+			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -150,7 +150,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				d.LegacyHelmDeploy.Flags = r.Helm.Flags
 			}
 
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts())
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +158,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy)
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, configName)
 			if err != nil {
 				return nil, err
 			}
@@ -170,7 +170,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				log.Entry(context.TODO()).Infof("manifests are deployed from render path %v\n", hydrationDir)
 				d.KptDeploy.Dir = hydrationDir
 			}
-			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts)
+			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts, configName)
 			if err != nil {
 				return nil, err
 			}
@@ -178,14 +178,14 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy)
+			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy, configName)
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
-			deployer, err := cloudrun.NewDeployer(dCtx, labeller, d.CloudRunDeploy)
+			deployer, err := cloudrun.NewDeployer(dCtx, labeller, d.CloudRunDeploy, configName)
 			if err != nil {
 				return nil, err
 			}
@@ -281,7 +281,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		DefaultNamespace: defaultNamespace,
 	}
 	dCtx := &deployerCtx{runCtx, latest.DeployConfig{StatusCheck: statusCheck, KubeContext: kubeContext, DeployType: latest.DeployType{KubectlDeploy: k}}}
-	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k)
+	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, "")
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
@@ -328,5 +328,5 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 			defaultProject = crDeploy.ProjectID
 		}
 	}
-	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject})
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject}, "")
 }

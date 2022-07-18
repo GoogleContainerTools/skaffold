@@ -209,7 +209,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			if !test.skipSkaffoldNamespaceOption {
 				skaffoldNamespaceOption = TestNamespace
 			}
-
+			const configName = "default"
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				force:      test.forceDeploy,
@@ -220,18 +220,22 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption}},
-			}, &label.DefaultLabeller{}, &test.kubectl)
+			}, &label.DefaultLabeller{}, &test.kubectl, configName)
 			t.RequireNoError(err)
 
 			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
-					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Render: rc}}),
+					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
+						configName: {
+							Render: rc,
+						},
+					}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
+
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -308,28 +312,32 @@ func TestKubectlCleanup(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir()
 			tmpDir.Write("deployment.yaml", DeploymentWebYAML).Chdir()
-
+			const configName = "default"
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl)
+			}, &label.DefaultLabeller{}, &test.kubectl, configName)
 			t.RequireNoError(err)
 			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
 					WorkingDir: tmpDir.Root(),
-					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Render: rc}}),
+					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
+						configName: {
+							Render: rc,
+						},
+					}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
+
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true)
 			t.CheckNoError(errR)
 
-			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m.GetForConfig(configName))
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -372,7 +380,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl)
+			}, &label.DefaultLabeller{}, &test.kubectl, "default")
 			t.RequireNoError(err)
 
 			err = k.Cleanup(context.Background(), io.Discard, false, nil)
@@ -395,39 +403,48 @@ func TestKubectlRedeploy(t *testing.T) {
 			AndRunOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", "").
 			AndRun("kubectl --context kubecontext apply -f -"))
 
+		const configName = "default"
 		deployer, err := NewDeployer(&kubectlConfig{
 			workingDir: ".",
 			waitForDeletions: config.WaitForDeletions{
 				Enabled: true,
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}})
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}}, configName)
 		t.RequireNoError(err)
 
 		// Deploy both manifests
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv1)))
 		m.Append([]byte(DeploymentWebYAMLv1))
+
 		t.CheckNoError(err)
+
+		manifestListByConfig := manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
+
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, m)
+		}, &manifestListByConfig)
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		m, err = manifest.Load(bytes.NewReader([]byte(DeploymentAppYAMLv2)))
 		t.CheckNoError(err)
+		manifestListByConfig = manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, m)
+		}, &manifestListByConfig)
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
+		emptyManifestList := manifest.NewManifestListByConfig()
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, nil)
+		}, &emptyManifestList)
 		t.CheckErrorContains("nothing to deploy", err)
 	})
 }
@@ -461,7 +478,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 			AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 			AndRunInput("kubectl --context kubecontext apply -f -", DeploymentWebYAMLv1),
 		)
-
+		const configName = "default"
 		deployer, err := NewDeployer(&kubectlConfig{
 			workingDir: tmpDir.Root(),
 			waitForDeletions: config.WaitForDeletions{
@@ -469,15 +486,19 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}}, configName)
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
 		t.CheckNoError(err)
+
+		manifestListByConfig := manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
+
 		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, m)
+		}, &manifestListByConfig)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
@@ -500,6 +521,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 			}`),
 		)
 
+		const configName = "default"
 		deployer, err := NewDeployer(&kubectlConfig{
 			workingDir: tmpDir.Root(),
 			waitForDeletions: config.WaitForDeletions{
@@ -507,14 +529,18 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 				Delay:   10 * time.Second,
 				Max:     100 * time.Millisecond,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}}, configName)
 		t.RequireNoError(err)
 
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
 		t.CheckNoError(err)
+
+		manifestListByConfig := manifest.NewManifestListByConfig()
+		manifestListByConfig.Add(configName, m)
+
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, m)
+		}, &manifestListByConfig)
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})
@@ -570,7 +596,7 @@ func TestDependencies(t *testing.T) {
 				Touch("00/b.yaml", "00/a.yaml").
 				Chdir()
 
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: test.manifests})
+			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: test.manifests}, "default")
 			t.RequireNoError(err)
 
 			dependencies, err := k.Dependencies()
@@ -607,14 +633,18 @@ func TestGCSManifests(t *testing.T) {
 			if err := os.WriteFile(manifest.ManifestTmpDir+"/deployment.yaml", []byte(DeploymentWebYAML), os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
+			const configName = "default"
 			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-						{Render: latest.RenderConfig{Generate: test.generate}}}),
+					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
+						configName: {
+							Render: latest.RenderConfig{Generate: test.generate},
+						},
+					}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{})
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -624,7 +654,7 @@ func TestGCSManifests(t *testing.T) {
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{})
+			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, configName)
 			t.RequireNoError(err)
 
 			err = k.Deploy(context.Background(), io.Discard, nil, m)
@@ -661,7 +691,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg, "default")
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)
