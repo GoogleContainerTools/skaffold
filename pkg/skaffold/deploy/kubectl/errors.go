@@ -43,20 +43,6 @@ func versionGetErr(err error) error {
 		})
 }
 
-func offlineModeErr() error {
-	return sErrors.NewErrorWithStatusCode(
-		&proto.ActionableErr{
-			Message: "Cannot use offline mode if URL manifests are configured",
-			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_OFFLINE_MODE_ERR,
-			Suggestions: []*proto.Suggestion{
-				{
-					SuggestionCode: proto.SuggestionCode_SET_RENDER_FLAG_OFFLINE_FALSE,
-					Action:         "Please rerun with --offline=false",
-				},
-			},
-		})
-}
-
 func waitForDeletionErr(err error) error {
 	return sErrors.NewError(err,
 		&proto.ActionableErr{

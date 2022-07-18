@@ -329,7 +329,7 @@ func TestCleanup(tOuter *testing.T) {
 			deployer.useGcpOptions = false
 			manifest, _ := json.Marshal(test.toDelete)
 			manifests := [][]byte{manifest}
-			err := deployer.Cleanup(context.Background(), os.Stderr, false, manifests)
+			err := deployer.Cleanup(context.Background(), os.Stderr, false, manifests, nil)
 			if test.httpErr == 0 && err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			} else if test.httpErr != 0 && err == nil {

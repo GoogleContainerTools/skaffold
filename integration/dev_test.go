@@ -133,6 +133,9 @@ func TestDevGracefulCancel(t *testing.T) {
 
 			// once deployments are stable, send a SIGINT and make sure things cleanup correctly
 			p.Signal(syscall.SIGINT)
+
+			client.WaitForPodsDeletionWithTimeout(time.Minute*1, time.Second*5, test.pods...)
+			client.WaitForDeploymentDeletionWithTimeout(time.Minute*1, time.Second*5, test.deployments...)
 		})
 	}
 }

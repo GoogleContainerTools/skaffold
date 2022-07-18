@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/segmentio/textio"
@@ -328,50 +327,6 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	return filteredManifests, nil
 }
 
-// readManifests reads the manifests to deploy/delete.
-func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
-	var manifests []string
-
-	// Clean the temporary directory that holds the manifests downloaded from GCS
-	defer os.RemoveAll(k.gcsManifestDir)
-
-	// Append URL manifests. URL manifests are excluded from `Dependencies`.
-	hasURLManifest := false
-	for _, manifest := range k.KubectlDeploy.Manifests {
-		if util.IsURL(manifest) {
-			manifests = append(manifests, manifest)
-			hasURLManifest = true
-		}
-	}
-
-	if len(manifests) == 0 {
-		return manifest.ManifestList{}, nil
-	}
-
-	if !offline {
-		return k.kubectl.ReadManifests(ctx, manifests)
-	}
-
-	// In case no URLs are provided, we can stay offline - no need to run "kubectl create" which
-	// would try to connect to a cluster (https://github.com/kubernetes/kubernetes/issues/51475)
-	if hasURLManifest {
-		return nil, offlineModeErr()
-	}
-	return createManifestList(manifests)
-}
-
-func createManifestList(manifests []string) (manifest.ManifestList, error) {
-	var manifestList manifest.ManifestList
-	for _, manifestFilePath := range manifests {
-		manifestFileContent, err := os.ReadFile(manifestFilePath)
-		if err != nil {
-			return nil, readManifestErr(fmt.Errorf("reading manifest file %v: %w", manifestFilePath, err))
-		}
-		manifestList.Append(manifestFileContent)
-	}
-	return manifestList, nil
-}
-
 // readRemoteManifests will try to read manifests from the given kubernetes
 // context in the specified namespace and for the specified type
 func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
@@ -393,15 +348,13 @@ func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte,
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList, manifestsByConfig *manifest.ManifestListByConfig) error {
+	if manifestsByConfig != nil {
+		manifests = append(manifests, manifestsByConfig.GetForConfig(k.ConfigName())...)
+	}
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
-	other, err := k.readManifests(ctx, false)
-	manifests = append(manifests, other...)
-	if err != nil {
-		return err
-	}
 	if dryRun {
 		for _, manifest := range manifests {
 			output.White.Fprintf(out, "---\n%s", manifest)
@@ -411,6 +364,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, mani
 	// revert remote manifests
 	// TODO(dgageot): That seems super dangerous and I don't understand
 	// why we need to update resources just before we delete them.
+	// todo clean up this block as RemoteManifests is no longer used for deployer
 	if len(k.RemoteManifests) > 0 {
 		var rm manifest.ManifestList
 		for _, m := range k.RemoteManifests {

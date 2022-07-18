@@ -143,7 +143,7 @@ func (t *TestBench) TestDependencies(context.Context, *latest.Artifact) ([]strin
 	return nil, nil
 }
 func (t *TestBench) Dependencies() ([]string, error) { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList, byConfig *manifest.ManifestListByConfig) error {
 	return nil
 }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error { return nil }

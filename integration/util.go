@@ -19,6 +19,7 @@ package integration
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -41,6 +42,7 @@ import (
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
@@ -360,6 +362,77 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 
 			log.Entry(ctx).Infoln("Deployments", depNames, "are stable")
 			return
+		}
+	}
+}
+
+type getResult struct {
+	Items []Item `json:"items"`
+}
+
+type Item struct {
+	Metadata struct {
+		Name              string `json:"name"`
+		DeletionTimestamp string `json:"deletionTimestamp"`
+	} `json:"metadata"`
+}
+
+func (k *NSKubernetesClient) WaitForPodsDeletionWithTimeout(timeout time.Duration, interval time.Duration, podNames ...string) {
+	k.waitForResourceDeletionWithTimeout(timeout, interval, "Pod", podNames...)
+}
+
+func (k *NSKubernetesClient) WaitForDeploymentDeletionWithTimeout(timeout time.Duration, interval time.Duration, deployments ...string) {
+	k.waitForResourceDeletionWithTimeout(timeout, interval, "Deployment", deployments...)
+}
+
+func (k *NSKubernetesClient) waitForResourceDeletionWithTimeout(timeout time.Duration, interval time.Duration, kind string, resources ...string) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	previousCount := len(resources)
+	// add this to make sure we always have at least 2 pods to query, so the query result will come back as
+	// "kind" : "List" instead of "kind" : "Pod" or "kind" : "Deployment"
+	resources = append(resources, "non-existed-resource")
+	args := []string{"get", kind, "-n", k.ns}
+	args = append(args, resources...)
+	args = append(args, []string{"--ignore-not-found", "-ojson"}...)
+
+	for {
+		select {
+		case <-ctx.Done():
+			k.t.Fatalf("%d resources failed to complete their deletion", previousCount)
+		default:
+			cmd := exec.Command("kubectl", args...)
+			buf, err := util.RunCmdOut(context.Background(), cmd)
+			if err != nil {
+				k.t.Fatalf("waiting for deletion error: %s", err)
+			}
+			// No resource found.
+			if len(buf) == 0 {
+				return
+			}
+			// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
+			var result getResult
+			if err := json.Unmarshal(buf, &result); err != nil {
+				k.t.Fatalf("unable to unmartshal buffer, error: %s", err)
+			}
+
+			var marked []string
+			for _, item := range result.Items {
+				if item.Metadata.DeletionTimestamp != "" {
+					marked = append(marked, item.Metadata.Name)
+				}
+			}
+
+			list := `"` + strings.Join(marked, `", "`) + `"`
+			log.Entry(ctx).Infoln("Resources are marked for deletion: ", list)
+			if len(marked) != 0 {
+				log.Entry(ctx).Infof("%d resources are marked for deletion, waiting for completion: %s\n", len(marked), list)
+			}
+			previousCount = len(result.Items)
+			select {
+			case <-ctx.Done():
+			case <-time.After(interval):
+			}
 		}
 	}
 }

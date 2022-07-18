@@ -369,7 +369,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList, _ *manifest.ManifestListByConfig) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kustomize",
 	})
