@@ -39,8 +39,8 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, configName string) (Renderer, error) {
-	if usingLegacyHelmDeploy {
+func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) (Renderer, error) {
+	if usingLegacyHelmDeploy && command != "render" {
 		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
 	}
 	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Helm != nil {

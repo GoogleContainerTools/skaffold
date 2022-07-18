@@ -29,7 +29,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 
 	var renderers []renderer.Renderer
 	for configName, p := range ps {
-		r, err := renderer.New(runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, configName)
+		r, err := renderer.New(runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
 		if err != nil {
 			return nil, err
 		}
