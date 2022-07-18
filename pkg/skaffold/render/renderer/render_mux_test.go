@@ -38,14 +38,14 @@ func TestRenderMux_Render(t *testing.T) {
 		expectedDeps []string
 		shouldErr    bool
 	}{
-		// {
-		// 	name: "concatenates render results with separator",
-		// 	renderers: []Renderer{
-		// 		mock{configName: "config1", manifests: "manifest-1", deps: []string{"file1.txt", "file2.txt"}},
-		// 		mock{configName: "config2", manifests: "manifest-2", deps: []string{"file2.txt", "file3.txt"}}},
-		// 	expected:     "manifest-1\n---\nmanifest-2",
-		// 	expectedDeps: []string{"file1.txt", "file2.txt", "file3.txt"},
-		// },
+		{
+			name: "concatenates render results with separator",
+			renderers: []Renderer{
+				mock{configName: "config1", manifests: "manifest-1", deps: []string{"file1.txt", "file2.txt"}},
+				mock{configName: "config2", manifests: "manifest-2", deps: []string{"file2.txt", "file3.txt"}}},
+			expected:     "manifest-1\n---\nmanifest-2",
+			expectedDeps: []string{"file1.txt", "file2.txt", "file3.txt"},
+		},
 		{
 			name: "short-circuits when first call fails",
 			renderers: []Renderer{
@@ -54,14 +54,14 @@ func TestRenderMux_Render(t *testing.T) {
 			expectedDeps: []string{"file1.txt", "file2.txt"},
 			shouldErr:    true,
 		},
-		// {
-		// 	name: "short-circuits when second call fails",
-		// 	renderers: []Renderer{
-		// 		mock{deps: []string{"file1.txt"}, shouldErr: true},
-		// 		mock{manifests: "manifest-2", deps: []string{"file2.txt"}}},
-		// 	expectedDeps: []string{"file1.txt", "file2.txt"},
-		// 	shouldErr:    true,
-		// },
+		{
+			name: "short-circuits when second call fails",
+			renderers: []Renderer{
+				mock{deps: []string{"file1.txt"}, shouldErr: true},
+				mock{manifests: "manifest-2", deps: []string{"file2.txt"}}},
+			expectedDeps: []string{"file1.txt", "file2.txt"},
+			shouldErr:    true,
+		},
 	}
 	for _, tc := range tests {
 		testutil.Run(t, tc.name, func(t *testutil.T) {
