@@ -31,6 +31,7 @@ const (
 	Jib       = "jib"
 	Custom    = "custom"
 	Buildpack = "buildpack"
+	Ko        = "ko"
 )
 
 // ArtifactType returns a string representing the type found in an artifact. Used for error messages.
@@ -49,6 +50,8 @@ func ArtifactType(a *latest.Artifact) string {
 		return Custom
 	case a.BuildpackArtifact != nil:
 		return Buildpack
+	case a.KoArtifact != nil:
+		return Ko
 	default:
 		return ""
 	}
