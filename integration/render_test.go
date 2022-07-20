@@ -19,6 +19,7 @@ package integration
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"regexp"
@@ -36,7 +37,7 @@ import (
 
 func TestKubectlRenderOutput(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-
+	ns, _ := SetupNamespace(t)
 	test := struct {
 		description string
 		builds      []graph.Artifact
@@ -57,12 +58,14 @@ spec:
   - image: gcr.io/k8s-skaffold/skaffold
     name: skaffold
 `,
-		expectedOut: `apiVersion: v1
+		expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
+metadata:
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`}
+    name: skaffold`, ns.Namespace)}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
@@ -73,7 +76,7 @@ spec:
 				RawK8s: []string{"deployment.yaml"}},
 		}
 		mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default")
+		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Namespace)
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		l, err := r.Render(context.Background(), &b, test.builds, false)
@@ -86,7 +89,7 @@ spec:
 
 func TestKubectlRender(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-
+	ns, _ := SetupNamespace(t)
 	tests := []struct {
 		description string
 		builds      []graph.Artifact
@@ -110,14 +113,15 @@ spec:
   - image: gcr.io/k8s-skaffold/skaffold
     name: skaffold
 `,
-			expectedOut: `apiVersion: v1
+			expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`,
+    name: skaffold`, ns.Namespace),
 		},
 		{
 			description: "two artifacts",
@@ -142,16 +146,17 @@ spec:
   - image: gcr.io/project/image2
     name: image2
 `,
-			expectedOut: `apiVersion: v1
+			expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
     name: image1
   - image: gcr.io/project/image2:tag2
-    name: image2`,
+    name: image2`, ns.Namespace),
 		},
 		{
 			description: "two artifacts, combined manifests",
@@ -183,10 +188,11 @@ spec:
   - image: gcr.io/project/image2
     name: image2
 `,
-			expectedOut: `apiVersion: v1
+			expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
@@ -196,10 +202,11 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-456
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image2:tag2
-    name: image2`,
+    name: image2`, ns.Namespace, ns.Namespace),
 		},
 	}
 	for _, test := range tests {
@@ -212,7 +219,7 @@ spec:
 					RawK8s: []string{"deployment.yaml"}},
 			}
 			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default")
+			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Namespace)
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			l, err := r.Render(context.Background(), &b, test.builds, false)
