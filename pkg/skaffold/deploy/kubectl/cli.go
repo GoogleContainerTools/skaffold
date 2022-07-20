@@ -57,6 +57,7 @@ type Config interface {
 	WaitForDeletions() config.WaitForDeletions
 	Mode() config.RunMode
 	HydratedManifests() []string
+	GetNamespaces() []string
 	DefaultPipeline() latest.Pipeline
 	Tail() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)

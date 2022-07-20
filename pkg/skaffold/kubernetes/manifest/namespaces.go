@@ -17,10 +17,12 @@ limitations under the License.
 package manifest
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -73,4 +75,67 @@ func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[st
 		}
 	}
 	return false
+}
+
+// SetNamespace sets labels to a list of Kubernetes manifests if they are not set.
+// Returns error if any manifest in the list has namespace set.
+func (l *ManifestList) SetNamespace(namespace string, rs ResourceSelector) (ManifestList, error) {
+	if namespace == "" {
+		return *l, nil
+	}
+	replacer := newNamespaceSetter(namespace)
+	updated, err := l.Visit(replacer, rs)
+	if err != nil {
+		return nil, nsSettingErr(err)
+	}
+	if replacer.inValid {
+		return nil, nsAlreadySetErr()
+	}
+
+	log.Entry(context.TODO()).Debugln("manifests set with namespace", updated.String())
+
+	return updated, nil
+}
+
+type namespaceSetter struct {
+	ns      string
+	inValid bool
+}
+
+func newNamespaceSetter(ns string) *namespaceSetter {
+	return &namespaceSetter{
+		ns:      ns,
+		inValid: false,
+	}
+}
+
+func (r *namespaceSetter) Visit(gk schema.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
+	if k != metadataField {
+		return true
+	}
+
+	metadata, ok := v.(map[string]interface{})
+	if !ok {
+		return true
+	}
+
+	nsValue, present := metadata["namespace"]
+	if !present || isEmptyOrEqual(nsValue, r.ns) {
+		metadata["namespace"] = r.ns
+		return false
+	}
+	r.inValid = true
+	return false
+}
+
+func isEmptyOrEqual(v interface{}, s string) bool {
+	// check if namespace is set to empty string
+	if v == nil {
+		return true
+	}
+	nsString, ok := v.(string)
+	if !ok {
+		return false
+	}
+	return nsString == "" || nsString == s
 }

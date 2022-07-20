@@ -173,3 +173,190 @@ spec:
 		})
 	}
 }
+
+func TestSetNamespaces(t *testing.T) {
+	tests := []struct {
+		description string
+		manifests   ManifestList
+		expected    ManifestList
+		namespace   string
+		shouldErr   bool
+	}{
+		{
+			description: "single Pod manifest in the list",
+			namespace:   "test",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: test
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+		}, {
+			description: "multiple manifest in the list with no namespace set",
+			namespace:   "test",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example`), []byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bar
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+  namespace: test
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example`), []byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bar
+  namespace: test
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+		}, {
+			description: "single Pod manifest with nil namespace",
+			namespace:   "test",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace:
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: test
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+		}, {
+			description: "single Pod manifest with empty namespace",
+			namespace:   "test",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: ""
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: test
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+		}, {
+			description: "empty manifest",
+			namespace:   "test",
+			manifests:   ManifestList{[]byte(``)},
+			expected:    ManifestList{[]byte(``)},
+		}, {
+			description: "unexpected metadata type",
+			namespace:   "test",
+			manifests:   ManifestList{[]byte(`metadata: []`)},
+			expected:    ManifestList{[]byte(`metadata: []`)},
+		},
+		{
+			description: "single Pod manifest in the list with same namespace as set",
+			namespace:   "test",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: test
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: test
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+		},
+		{
+			description: "single Pod manifest in the list with same namespace set to other",
+			namespace:   "test",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: other
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected:  nil,
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual, err := test.manifests.SetNamespace(test.namespace,
+				NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String())
+		})
+	}
+}

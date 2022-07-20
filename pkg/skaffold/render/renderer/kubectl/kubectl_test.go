@@ -89,7 +89,7 @@ func TestRender(t *testing.T) {
 				Touch("empty.ignored").
 				Chdir()
 			mockCfg := render.MockConfig{WorkingDir: tmpDirObj.Root()}
-			r, err := New(mockCfg, test.renderConfig, test.labels, "default")
+			r, err := New(mockCfg, test.renderConfig, test.labels, "default", "")
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},

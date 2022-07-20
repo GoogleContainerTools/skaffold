@@ -52,6 +52,7 @@ type Kpt struct {
 	transform.Transformer
 	hydrationDir string
 	labels       map[string]string
+	namespace    string
 
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -61,7 +62,7 @@ const (
 	DryFileName = "manifests.yaml"
 )
 
-func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string) (*Kpt, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string) (*Kpt, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
@@ -98,6 +99,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 		labels:             labels,
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
+		namespace:          ns,
 	}, nil
 }
 
@@ -153,8 +155,8 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		TransformDenylist:          r.transformDenylist,
 		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
 	}
-	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, opts)
-	if err != nil {
+	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
+	if errH != nil {
 		return ml, errH
 	}
 	// Write generated dry manifests.

@@ -41,8 +41,7 @@ metadata:
 spec:
   containers:
   - name: leeroy-web
-    image: leeroy-web
-`
+    image: leeroy-web`
 
 	// Test file under <tmp>/pods.yaml. This file contains multiple config object.
 	podsYaml = `apiVersion: v1
