@@ -19,14 +19,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
-	manifestListByConfig, err := r.renderer.Render(ctx, io.Discard, []graph.Artifact{}, false)
-	if err != nil {
-		return err
-	}
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList, manifestListByConfig *manifest.ManifestListByConfig) error {
 	return r.deployer.Cleanup(ctx, out, dryRun, list, manifestListByConfig)
 }
