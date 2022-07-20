@@ -17,7 +17,6 @@ limitations under the License.
 package kubectl
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -283,13 +282,13 @@ func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 
 func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	var nonURLManifests, gcsManifests []string
-	for _, manifest := range manifests {
+	for _, manifestP := range manifests {
 		switch {
-		case util.IsURL(manifest):
-		case strings.HasPrefix(manifest, "gs://"):
-			gcsManifests = append(gcsManifests, manifest)
+		case util.IsURL(manifestP):
+		case strings.HasPrefix(manifestP, "gs://"):
+			gcsManifests = append(gcsManifests, manifestP)
 		default:
-			nonURLManifests = append(nonURLManifests, manifest)
+			nonURLManifests = append(nonURLManifests, manifestP)
 		}
 	}
 
@@ -327,26 +326,6 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	return filteredManifests, nil
 }
 
-// readRemoteManifests will try to read manifests from the given kubernetes
-// context in the specified namespace and for the specified type
-func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
-	var args []string
-	ns := ""
-	if parts := strings.Split(name, ":"); len(parts) > 1 {
-		ns = parts[0]
-		name = parts[1]
-	}
-	args = append(args, name, "-o", "yaml")
-
-	var manifest bytes.Buffer
-	err := k.kubectl.RunInNamespace(ctx, nil, &manifest, "get", ns, args...)
-	if err != nil {
-		return nil, readRemoteManifestErr(fmt.Errorf("getting remote manifests: %w", err))
-	}
-
-	return manifest.Bytes(), nil
-}
-
 // Cleanup deletes what was deployed by calling Deploy.
 func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestsByConfig *manifest.ManifestListByConfig) error {
 	var manifests manifest.ManifestList
@@ -357,33 +336,10 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, mani
 		"DeployerType": "kubectl",
 	})
 	if dryRun {
-		for _, manifest := range manifests {
-			output.White.Fprintf(out, "---\n%s", manifest)
+		for _, manifestP := range manifests {
+			output.White.Fprintf(out, "---\n%s", manifestP)
 		}
 		return nil
-	}
-	// revert remote manifests
-	// TODO(dgageot): That seems super dangerous and I don't understand
-	// why we need to update resources just before we delete them.
-	// todo clean up this block as RemoteManifests is no longer used for deployer
-	if len(k.RemoteManifests) > 0 {
-		var rm manifest.ManifestList
-		for _, m := range k.RemoteManifests {
-			manifest, err := k.readRemoteManifest(ctx, m)
-			if err != nil {
-				return err
-			}
-			rm = append(rm, manifest)
-		}
-
-		upd, err := rm.ReplaceRemoteManifestImages(ctx, k.originalImages, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
-		if err != nil {
-			return err
-		}
-
-		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
-			return err
-		}
 	}
 
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
@@ -395,5 +351,5 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, mani
 
 // Dependencies lists all the files that describe what needs to be deployed.
 func (k *Deployer) Dependencies() ([]string, error) {
-	return k.manifestFiles(k.KubectlDeploy.Manifests)
+	return []string{}, nil
 }

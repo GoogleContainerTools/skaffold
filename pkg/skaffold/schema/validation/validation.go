@@ -753,13 +753,13 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 		if c.Deploy.KubectlDeploy == nil {
 			continue
 		}
-		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
+		if len(c.Render.RawK8s) == 1 && c.Render.RawK8s[0] == constants.DefaultKubectlManifests[0] {
 			log.Entry(context.TODO()).Debug("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
 			continue
 		}
 
 		// validate that manifest files referenced in config exist
-		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
+		for _, pattern := range c.Render.RawK8s {
 			if util.IsURL(pattern) {
 				continue
 			}
@@ -777,7 +777,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 				msg := fmt.Sprintf("Manifest file %q referenced in skaffold config could not be found", pattern)
 				errMsg := wrapWithContext(c, ErrorWithLocation{
 					Error:    fmt.Errorf(msg),
-					Location: c.YAMLInfos.Locate(&c.Deploy.KubectlDeploy.Manifests),
+					Location: c.YAMLInfos.Locate(&c.Render.RawK8s),
 				})
 				errs = append(errs, ErrorWithLocation{
 					Error: sErrors.NewError(errMsg[0].Error,

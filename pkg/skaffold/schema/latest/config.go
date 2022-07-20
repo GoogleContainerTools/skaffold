@@ -721,15 +721,6 @@ type DockerDeploy struct {
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 // You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 type KubectlDeploy struct {
-	// Manifests lists the Kubernetes yaml or json manifests.
-	// Defaults to `["k8s/*.yaml"]`.
-	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
-	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
-
-	// RemoteManifests lists Kubernetes manifests in remote clusters.
-	// This field is only used by v1 kubectl deployer.
-	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
-
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
 

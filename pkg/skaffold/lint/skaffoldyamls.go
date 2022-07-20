@@ -109,7 +109,7 @@ var skaffoldYamlLintRules = []Rule{
 			if lintInputs.SkaffoldConfig.Deploy.KubectlDeploy == nil {
 				return explanationInfo{}, fmt.Errorf("expected kubectl deploy information to be populated but it was nil")
 			}
-			for _, pattern := range lintInputs.SkaffoldConfig.Deploy.KubectlDeploy.Manifests {
+			for _, pattern := range lintInputs.SkaffoldConfig.Render.Generate.RawK8s {
 				// NOTE: pattern is a pattern that can have wildcards, eg: leeroy-app/kubernetes/*
 				if util.IsURL(pattern) {
 					log.Entry(context.TODO()).Infof("skaffold lint found url manifest when processing rule %d and is skipping lint rules for: %s", SkaffoldYamlUseStaticPort, pattern)

@@ -205,9 +205,9 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				}
 				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
 					Metadata: latest.Metadata{Name: module},
-					Pipeline: latest.Pipeline{Deploy: latest.DeployConfig{DeployType: latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{
+					Pipeline: latest.Pipeline{Render: latest.RenderConfig{Generate: latest.Generate{RawK8s: []string{
 						mp,
-					}}}}},
+					}}}},
 				},
 					SourceFile: fp,
 				})
