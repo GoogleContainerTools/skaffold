@@ -499,6 +499,8 @@ enum StatusCode {
     RENDER_SET_NAMESPACE_ERR = 1403;
     // Namespace is already set.
     RENDER_NAMESPACE_ALREADY_SET_ERR = 1404;
+    // Multiple namespaces found.
+    RENDER_MULTIPLE_NAMESPACE_ERR = 1405;
 
     // Configuration errors
 
