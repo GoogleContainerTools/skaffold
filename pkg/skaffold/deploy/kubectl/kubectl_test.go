@@ -337,7 +337,7 @@ func TestKubectlCleanup(t *testing.T) {
 				true)
 			t.CheckNoError(errR)
 
-			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, manifest.ManifestList{}, m)
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -383,7 +383,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.kubectl, "default")
 			t.RequireNoError(err)
 
-			err = k.Cleanup(context.Background(), io.Discard, false, nil, nil)
+			err = k.Cleanup(context.Background(), io.Discard, false, nil)
 
 			t.CheckNoError(err)
 		})

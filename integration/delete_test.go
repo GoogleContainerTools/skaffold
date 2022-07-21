@@ -68,8 +68,6 @@ func TestDelete(t *testing.T) {
 			client.waitForDeploymentsToStabilizeWithTimeout(time.Minute*2, test.deployments...)
 
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
-			client.WaitForPodsDeletionWithTimeout(time.Minute*1, time.Second*5, test.pods...)
-			client.WaitForDeploymentDeletionWithTimeout(time.Minute*1, time.Second*5, test.deployments...)
 		})
 	}
 }

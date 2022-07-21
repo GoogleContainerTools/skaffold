@@ -348,7 +348,8 @@ func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte,
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList, manifestsByConfig *manifest.ManifestListByConfig) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestsByConfig *manifest.ManifestListByConfig) error {
+	var manifests manifest.ManifestList
 	if manifestsByConfig != nil {
 		manifests = append(manifests, manifestsByConfig.GetForConfig(k.ConfigName())...)
 	}

@@ -1027,7 +1027,7 @@ func TestHelmCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.helm, nil, "default")
 			t.RequireNoError(err)
 
-			deployer.Cleanup(context.Background(), io.Discard, test.dryRun, nil, nil)
+			deployer.Cleanup(context.Background(), io.Discard, test.dryRun, nil)
 
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

@@ -60,7 +60,7 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList, *manifest.ManifestListByConfig) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
 }
@@ -150,7 +150,7 @@ func (m *mockConfigChangeRunner) Render(ctx context.Context, out io.Writer, buil
 	return nil, nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList, *manifest.ManifestListByConfig) error {
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
 	return nil
 }
 

@@ -327,9 +327,11 @@ func TestCleanup(tOuter *testing.T) {
 			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
+			manifestListByConfig := manifest.NewManifestListByConfig()
 			manifest, _ := json.Marshal(test.toDelete)
 			manifests := [][]byte{manifest}
-			err := deployer.Cleanup(context.Background(), os.Stderr, false, manifests, nil)
+			manifestListByConfig.Add(configName, manifests)
+			err := deployer.Cleanup(context.Background(), os.Stderr, false, &manifestListByConfig)
 			if test.httpErr == 0 && err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			} else if test.httpErr != 0 && err == nil {
