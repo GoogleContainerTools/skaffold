@@ -337,7 +337,7 @@ func TestKubectlCleanup(t *testing.T) {
 				true)
 			t.CheckNoError(errR)
 
-			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m.GetForConfig(configName))
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
 
 			t.CheckError(test.shouldErr, err)
 		})

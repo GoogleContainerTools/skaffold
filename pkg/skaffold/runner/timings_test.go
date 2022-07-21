@@ -100,7 +100,7 @@ func (m *mockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, *man
 	return nil
 }
 
-func (m *mockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
+func (m *mockDeployer) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
 	if m.err {
 		return errors.New("Unable to cleanup")
 	}

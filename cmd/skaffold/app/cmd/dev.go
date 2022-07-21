@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -74,11 +74,11 @@ func runDev(ctx context.Context, out io.Writer) error {
 
 				if r.HasDeployed() {
 					cleanup = func() {
-						manifests, err := deployutil.GetManifestsFromHydrationDir(ctx, opts)
+						manifestsByConfig, err := r.Render(ctx, io.Discard, []graph.Artifact{}, false)
 						if err != nil {
-							log.Entry(ctx).Warn(fmt.Errorf("getting manifests from hydration dir: %w", err))
+							log.Entry(ctx).Warn(fmt.Errorf("failed to render manifests: %w", err))
 						}
-						if err := r.Cleanup(context.Background(), out, false, manifests); err != nil {
+						if err := r.Cleanup(context.Background(), out, false, manifestsByConfig); err != nil {
 							log.Entry(ctx).Warn("deployer cleanup:", err)
 						}
 					}

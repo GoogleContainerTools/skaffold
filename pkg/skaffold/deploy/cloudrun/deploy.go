@@ -101,8 +101,8 @@ func (d *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes the created Cloud Run services
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
-	return d.deleteRunService(ctx, out, dryRun, manifests)
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig *manifest.ManifestListByConfig) error {
+	return d.deleteRunService(ctx, out, dryRun, byConfig.GetForConfig(d.configName))
 }
 
 // GetDebugger Get the Debugger for Cloud Run. Not supported by this deployer.

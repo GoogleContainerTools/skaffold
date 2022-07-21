@@ -183,7 +183,7 @@ func TestGenerate(t *testing.T) {
 
 func TestGenerateFromURLManifest(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, podYaml)
+		fmt.Fprint(w, podYaml)
 	}))
 
 	defer ts.Close()

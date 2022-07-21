@@ -22,6 +22,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
-	return r.deployer.Cleanup(ctx, out, dryRun, list)
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig *manifest.ManifestListByConfig) error {
+	return r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
 }

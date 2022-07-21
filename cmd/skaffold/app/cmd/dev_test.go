@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
@@ -32,10 +33,11 @@ import (
 
 type mockDevRunner struct {
 	runner.Runner
-	hasBuilt    bool
-	hasDeployed bool
-	errDev      error
-	calls       []string
+	hasBuilt          bool
+	hasDeployed       bool
+	errDev            error
+	calls             []string
+	manifestsByConfig *manifest.ManifestListByConfig
 }
 
 func (r *mockDevRunner) Dev(context.Context, io.Writer, []*latest.Artifact) error {
@@ -58,9 +60,14 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
+}
+
+func (r *mockDevRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
+	r.calls = append(r.calls, "Render")
+	return r.manifestsByConfig, nil
 }
 
 func TestDoDev(t *testing.T) {
@@ -74,7 +81,7 @@ func TestDoDev(t *testing.T) {
 			description:   "cleanup and then prune",
 			hasBuilt:      true,
 			hasDeployed:   true,
-			expectedCalls: []string{"Dev", "HasDeployed", "HasBuilt", "Cleanup", "Prune"},
+			expectedCalls: []string{"Dev", "HasDeployed", "HasBuilt", "Render", "Cleanup", "Prune"},
 		},
 		{
 			description:   "hasn't deployed",
@@ -139,7 +146,11 @@ func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
+func (m *mockConfigChangeRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
+	return nil, nil
+}
+
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
 	return nil
 }
 
