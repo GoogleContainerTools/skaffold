@@ -699,6 +699,9 @@ type DeployType struct {
 // CloudRunDeploy *alpha* deploys the container to Google Cloud Run.
 type CloudRunDeploy struct {
 	// ProjectID of the GCP Project to use for Cloud Run.
+	// If specified, all Services will be deployed to this project. If not specified,
+	// each Service will be deployed to the project specified in `metadata.namespace` of
+	// the Cloud Run manifest.
 	ProjectID string `yaml:"projectid,omitempty"`
 
 	// Region in GCP to use for the Cloud Run Deploy.
