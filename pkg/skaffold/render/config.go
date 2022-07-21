@@ -29,23 +29,23 @@ type Config interface {
 	GetKubeConfig() string
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter
-	GetNamespaces() []string
+	GetNamespace() string
 	Mode() config.RunMode
 	EnablePlatformNodeAffinityInRenderedManifests() bool
 }
 
 type MockConfig struct {
 	WorkingDir string
-	Namespaces []string
+	Namespace  string
 }
 
-func (mc MockConfig) GetWorkingDir() string                       { return mc.WorkingDir }
-func (mc MockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
-func (mc MockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
-func (mc MockConfig) TransformRulesFile() string                  { return "" }
-func (mc MockConfig) ConfigurationFile() string                   { return "" }
-func (mc MockConfig) GetKubeConfig() string                       { return "" }
-func (mc MockConfig) GetKubeContext() string                      { return "" }
-func (mc MockConfig) Mode() config.RunMode                        { return "" }
-func (mc MockConfig) GetNamespaces() []string                     { return mc.Namespaces }
+func (mc MockConfig) GetWorkingDir() string                               { return mc.WorkingDir }
+func (mc MockConfig) TransformAllowList() []latest.ResourceFilter         { return nil }
+func (mc MockConfig) TransformDenyList() []latest.ResourceFilter          { return nil }
+func (mc MockConfig) TransformRulesFile() string                          { return "" }
+func (mc MockConfig) ConfigurationFile() string                           { return "" }
+func (mc MockConfig) GetKubeConfig() string                               { return "" }
+func (mc MockConfig) GetKubeContext() string                              { return "" }
+func (mc MockConfig) Mode() config.RunMode                                { return "" }
 func (mc MockConfig) EnablePlatformNodeAffinityInRenderedManifests() bool { return true }
+func (mc MockConfig) GetNamespace() string                                { return mc.Namespace }

@@ -306,7 +306,7 @@ spec:
 			description: "unexpected metadata type",
 			namespace:   "test",
 			manifests:   ManifestList{[]byte(`metadata: []`)},
-			expected:    ManifestList{[]byte(`metadata: []`)},
+			shouldErr:   true,
 		},
 		{
 			description: "single Pod manifest in the list with same namespace as set",

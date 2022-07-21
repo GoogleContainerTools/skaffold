@@ -25,7 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
+
+const namespaceField = "namespace"
 
 // CollectNamespaces returns all the namespaces in the manifests.
 func (l *ManifestList) CollectNamespaces() ([]string, error) {
@@ -66,7 +69,7 @@ func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[st
 	if !ok {
 		return true
 	}
-	if nsValue, present := metadata["namespace"]; present {
+	if nsValue, present := metadata[namespaceField]; present {
 		nsString, ok := nsValue.(string)
 		if !ok || nsString == "" {
 			return true
@@ -84,49 +87,48 @@ func (l *ManifestList) SetNamespace(namespace string, rs ResourceSelector) (Mani
 	if namespace == "" {
 		return *l, nil
 	}
-	replacer := newNamespaceSetter(namespace)
-	updated, err := l.Visit(replacer, rs)
-	if err != nil {
-		return nil, nsSettingErr(err)
-	}
-	if replacer.inValid {
-		return nil, nsAlreadySetErr()
+	var updated ManifestList
+	for _, item := range *l {
+		m := make(map[string]interface{})
+		if err := yaml.Unmarshal(item, &m); err != nil {
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
+		}
+		if len(m) == 0 {
+			continue
+		}
+		if errU := addOrUpdateNamespace(m, namespace); errU != nil {
+			return nil, errU
+		}
+		updatedManifest, err := yaml.Marshal(m)
+		if err != nil {
+			return nil, nsSettingErr(err)
+		}
+
+		updated = append(updated, updatedManifest)
 	}
 
 	log.Entry(context.TODO()).Debugln("manifests set with namespace", updated.String())
-
 	return updated, nil
 }
 
-type namespaceSetter struct {
-	ns      string
-	inValid bool
-}
-
-func newNamespaceSetter(ns string) *namespaceSetter {
-	return &namespaceSetter{
-		ns:      ns,
-		inValid: false,
-	}
-}
-
-func (r *namespaceSetter) Visit(gk schema.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
-	if k != metadataField {
-		return true
-	}
-
-	metadata, ok := v.(map[string]interface{})
+func addOrUpdateNamespace(manifest map[string]interface{}, ns string) error {
+	originalMetadata, ok := manifest[metadataField]
 	if !ok {
-		return true
+		metadataAdded := make(map[string]interface{})
+		metadataAdded[namespaceField] = ns
+		manifest[metadataField] = metadataAdded
+		return nil
 	}
-
-	nsValue, present := metadata["namespace"]
-	if !present || isEmptyOrEqual(nsValue, r.ns) {
-		metadata["namespace"] = r.ns
-		return false
+	metadata, ok := originalMetadata.(map[string]interface{})
+	if !ok {
+		return nsSettingErr(fmt.Errorf("error converting %s to map[string]interface{}", originalMetadata))
 	}
-	r.inValid = true
-	return false
+	nsValue, present := metadata[namespaceField]
+	if !present || isEmptyOrEqual(nsValue, ns) {
+		metadata[namespaceField] = ns
+		return nil
+	}
+	return nsAlreadySetErr()
 }
 
 func isEmptyOrEqual(v interface{}, s string) bool {

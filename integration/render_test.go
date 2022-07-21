@@ -60,6 +60,8 @@ spec:
 `,
 		expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
+metadata:
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
@@ -179,8 +181,6 @@ spec:
 ---
 apiVersion: v1
 kind: Pod
-metadata:
-  name: my-pod-456
 spec:
   containers:
   - image: gcr.io/project/image2
@@ -199,7 +199,6 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: my-pod-456
   namespace: %s
 spec:
   containers:
