@@ -22,8 +22,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // CollectNamespaces returns all the namespaces in the manifests.

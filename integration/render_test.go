@@ -65,7 +65,7 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`, ns.Namespace)}
+    name: skaffold`, ns.Name)}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
@@ -76,7 +76,7 @@ spec:
 				RawK8s: []string{"deployment.yaml"}},
 		}
 		mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Namespace)
+		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name)
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		l, err := r.Render(context.Background(), &b, test.builds, false)
@@ -121,7 +121,7 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`, ns.Namespace),
+    name: skaffold`, ns.Name),
 		},
 		{
 			description: "two artifacts",
@@ -156,7 +156,7 @@ spec:
   - image: gcr.io/project/image1:tag1
     name: image1
   - image: gcr.io/project/image2:tag2
-    name: image2`, ns.Namespace),
+    name: image2`, ns.Name),
 		},
 		{
 			description: "two artifacts, combined manifests",
@@ -206,7 +206,7 @@ metadata:
 spec:
   containers:
   - image: gcr.io/project/image2:tag2
-    name: image2`, ns.Namespace, ns.Namespace),
+    name: image2`, ns.Name, ns.Name),
 		},
 	}
 	for _, test := range tests {
@@ -219,7 +219,7 @@ spec:
 					RawK8s: []string{"deployment.yaml"}},
 			}
 			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Namespace)
+			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name)
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			l, err := r.Render(context.Background(), &b, test.builds, false)
