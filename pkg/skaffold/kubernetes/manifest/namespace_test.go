@@ -306,7 +306,13 @@ spec:
 			description: "unexpected metadata type",
 			namespace:   "test",
 			manifests:   ManifestList{[]byte(`metadata: []`)},
-			shouldErr:   true,
+			expected:    ManifestList{[]byte(`metadata: []`)},
+		},
+		{
+			description: "empty metadata",
+			namespace:   "test",
+			manifests:   ManifestList{[]byte(``)},
+			expected:    ManifestList{[]byte(``)},
 		},
 		{
 			description: "single Pod manifest in the list with same namespace as set",
@@ -375,6 +381,21 @@ spec:
     name: example
 `)},
 		},
+		{
+			description: "should not add namespace to any resource",
+			namespace:   "test",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: getting-started
+`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: getting-started
+`)}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

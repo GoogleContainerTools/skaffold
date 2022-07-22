@@ -89,21 +89,21 @@ func (l *ManifestList) SetNamespace(namespace string, rs ResourceSelector) (Mani
 	}
 	var updated ManifestList
 	for _, item := range *l {
+		updatedManifest := item
 		m := make(map[string]interface{})
 		if err := yaml.Unmarshal(item, &m); err != nil {
 			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
-		if len(m) == 0 {
-			continue
+		if shouldTransformManifest(m, rs) {
+			var errU error
+			if errU = addOrUpdateNamespace(m, namespace); errU != nil {
+				return nil, errU
+			}
+			updatedManifest, errU = yaml.Marshal(m)
+			if errU != nil {
+				return nil, nsSettingErr(errU)
+			}
 		}
-		if errU := addOrUpdateNamespace(m, namespace); errU != nil {
-			return nil, errU
-		}
-		updatedManifest, err := yaml.Marshal(m)
-		if err != nil {
-			return nil, nsSettingErr(err)
-		}
-
 		updated = append(updated, updatedManifest)
 	}
 

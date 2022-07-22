@@ -43,13 +43,8 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	if usingLegacyHelmDeploy && command != "render" {
 		return GroupRenderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
 	}
-	ns, err := getNamespace(cfg.GetNamespaces())
-	if err != nil {
-		// TODO: add actionable error message
-		return nil, err
-	}
 	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
-		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, ns)
+		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace())
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +55,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	var rs GroupRenderer
 
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
-		r, err := kubectl.New(cfg, renderCfg, labels, configName, ns)
+		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
 		if err != nil {
 			return nil, err
 		}
@@ -74,15 +69,4 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 		rs = append(rs, r)
 	}
 	return rs, nil
-
-}
-
-func getNamespace(ns []string) (string, error) {
-	if len(ns) == 0 {
-		return "", nil
-	}
-	if len(ns) > 1 {
-		return "", fmt.Errorf("mutiple namespace not allowed while rendering")
-	}
-	return ns[0], nil
 }

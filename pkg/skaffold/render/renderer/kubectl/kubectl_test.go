@@ -154,7 +154,7 @@ func TestDependencies(t *testing.T) {
 			rCfg := latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: test.manifests},
 			}
-			r, err := New(mockCfg, rCfg, map[string]string{}, "default")
+			r, err := New(mockCfg, rCfg, map[string]string{}, "default", "")
 			t.CheckNoError(err)
 
 			dependencies, err := r.ManifestDeps()
