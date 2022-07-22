@@ -154,6 +154,32 @@ func TestResourcesAddedConfigurePorts(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "resources added twice only have one port forward configured",
+			resources: []RunResourceName{
+				{
+					Project: "test-proj",
+					Region:  "test-region",
+					Service: "test-service",
+				},
+				{
+					Project: "test-proj",
+					Region:  "test-region",
+					Service: "test-service",
+				},
+			},
+			forwardConfigs: []*latest.PortForwardResource{},
+			outputs: []forwardedResource{
+				{
+					name: RunResourceName{
+						Project: "test-proj",
+						Region:  "test-region",
+						Service: "test-service",
+					},
+					port: 0,
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -167,8 +193,11 @@ func TestResourcesAddedConfigurePorts(t *testing.T) {
 			if len(test.outputs) != len(accessor.resources.resources) {
 				t.Fatalf("Mismatch in expected outputs. Expected %v, got %v", test.outputs, accessor.resources.resources)
 			}
-			for i, output := range test.outputs {
-				got := accessor.resources.resources[i]
+			for _, output := range test.outputs {
+				got, found := accessor.resources.resources[output.name]
+				if !found {
+					t.Fatalf("expected to find port forward for %v but got nothing", output.name)
+				}
 				if output.name != got.name || output.port != got.port {
 					t.Fatalf("did not get expected port set. Expected %v, got %v", output, got)
 				}

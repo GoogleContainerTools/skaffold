@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strconv"
 
@@ -40,13 +41,14 @@ var (
 )
 
 type resourceTracker struct {
-	resources          []forwardedResource
+	resources          map[RunResourceName]*forwardedResource
 	configuredForwards []*latest.PortForwardResource
 	forwardedPorts     *util.PortSet
 }
 
 type forwardedResource struct {
 	name    RunResourceName
+	cmd     *exec.Cmd
 	cancel  context.CancelFunc
 	started bool
 	port    int
@@ -59,7 +61,7 @@ type forwarder interface {
 }
 
 // RunAccessor is an access.Accessor for Cloud Run resources
-// It uses `gcloud run proxy``to enable port forwarding for Cloud Run. This makes it easier to call IAM-protected Cloud Run services
+// It uses `gcloud run proxy“to enable port forwarding for Cloud Run. This makes it easier to call IAM-protected Cloud Run services
 // by going through localhost. In order to set up forwarding, the services must have their ingress setting set to "all", gcloud  must be
 // installed and on the path, and the currently configured gcloud user has run.services.invoke permission on the services being proxied
 type RunAccessor struct {
@@ -84,13 +86,21 @@ func NewAccessor(cfg Config, label string) *RunAccessor {
 
 // AddResource tracks an additional resource to port forward
 func (r *RunAccessor) AddResource(resource RunResourceName) {
+	if r.resources.resources == nil {
+		r.resources.resources = make(map[RunResourceName]*forwardedResource)
+	}
 	port := 0
 	for _, forward := range r.resources.configuredForwards {
 		if forward.Type == "service" && forward.Name == resource.Service {
 			port = forward.LocalPort
 		}
 	}
-	r.resources.resources = append(r.resources.resources, forwardedResource{name: resource, started: false, port: port})
+	if _, present := r.resources.resources[resource]; !present {
+		r.resources.resources[resource] = &forwardedResource{name: resource, started: false, port: port}
+	} else {
+		// signal that we need to start a new forward for this resource
+		r.resources.resources[resource].started = false
+	}
 }
 
 // Start begins port forwarding for the tracked Cloud Run services.
@@ -134,6 +144,10 @@ func (r *runProxyForwarder) Start(ctx context.Context, out io.Writer) error {
 		output.Red.Fprintln(out, "gcloud not found on path. Unable to set up Cloud Run port forwarding")
 		return sErrors.NewError(fmt.Errorf("gcloud not found"), &proto.ActionableErr{ErrCode: proto.StatusCode_PORT_FORWARD_RUN_GCLOUD_NOT_FOUND})
 	}
+	if r.resources.resources == nil {
+		// no forwards configured
+		return nil
+	}
 	for _, resource := range r.resources.resources {
 		if resource.port == 0 {
 			port := retrieveAvailablePort("localhost", 8080, r.resources.forwardedPorts)
@@ -155,7 +169,6 @@ func (r *runProxyForwarder) Start(ctx context.Context, out io.Writer) error {
 			go func() {
 				err := cmd.Wait()
 				if err != nil {
-					output.Red.Fprintf(out, "Port forward of %s quit unsuccessfuly: %v", resource.name.String(), err)
 					eventV2.TaskFailed(constants.PortForward, err)
 				} else {
 					eventV2.TaskSucceeded(constants.PortForward)
@@ -163,6 +176,7 @@ func (r *runProxyForwarder) Start(ctx context.Context, out io.Writer) error {
 			}()
 			eventV2.PortForwarded(int32(resource.port), schemautil.FromInt(443), "", "", resource.name.Project, "", "run-service", resource.name.Service, resource.name.String())
 			resource.started = true
+			resource.cmd = cmd
 		}
 	}
 	return nil
@@ -176,9 +190,17 @@ func getGcloudProxyArgs(resource RunResourceName, port int) []string {
 func (r *runProxyForwarder) Stop() {
 	for _, resource := range r.resources.resources {
 		if resource.cancel != nil {
-			resource.cancel()
+			if resource.cmd != nil {
+				if err := resource.cmd.Process.Signal(os.Interrupt); err != nil {
+					// signaling didn't work, force cancel
+					resource.cancel()
+				}
+			} else {
+				// we don't have a command, force cancel the context.
+				resource.cancel()
+			}
 			resource.cancel = nil
-			resource.started = false
+			resource.cmd = nil
 		}
 	}
 }
