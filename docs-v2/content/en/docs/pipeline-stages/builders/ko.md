@@ -256,7 +256,7 @@ Useful tips for existing `ko` users:
 
 - You can generate `skaffold.yaml` files by examining an existing code base,
   using the command
-  [`skaffold init`]({{< relref "/docs/pipeline-stages/init" >}}).
+  [`skaffold init --XXenableKoInit=true`]({{< relref "/docs/pipeline-stages/init" >}}).
   Select the Ko builder for your images when prompted.
 
 ### `ko` commands and workflows in Skaffold

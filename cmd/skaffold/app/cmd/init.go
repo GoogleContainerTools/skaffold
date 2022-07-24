@@ -66,7 +66,7 @@ func NewCmdInit() *cobra.Command {
 			{Value: &enableNewInitFormat, Name: "XXenableNewInitFormat", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &enableJibInit, Name: "XXenableJibInit", DefValue: true, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &enableJibGradleInit, Name: "XXenableJibGradleInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
-			{Value: &enableKoInit, Name: "XXenableKoInit", DefValue: true, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableKoInit, Name: "XXenableKoInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &enableBuildpacksInit, Name: "XXenableBuildpacksInit", DefValue: true, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &buildpacksBuilder, Name: "XXdefaultBuildpacksBuilder", DefValue: "gcr.io/buildpacks/builder:v1", Usage: "", Hidden: true},
 			{Value: &enableManifestGeneration, Name: "generate-manifests", DefValue: false, Usage: "Allows skaffold to try and generate basic kubernetes resources to get your project started", IsEnum: true},
