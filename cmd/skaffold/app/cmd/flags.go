@@ -644,6 +644,14 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"verify"},
 	},
+	{
+		Name:          "enable-platform-node-affinity",
+		Usage:         "If true, skaffold will add platform (os/arch) node affinity to rendered manifests based on the image platforms",
+		Value:         &opts.EnablePlatformNodeAffinity,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {

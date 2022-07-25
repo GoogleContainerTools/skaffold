@@ -44,6 +44,7 @@ import (
 )
 
 type Kpt struct {
+	cfg        render.Config
 	configName string
 
 	generate.Generator
@@ -88,6 +89,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 		transformer, _ = transform.NewTransformer([]latest.Transformer{})
 	}
 	return &Kpt{
+		cfg:                cfg,
 		configName:         configName,
 		Generator:          generator,
 		Validator:          validator,
@@ -145,7 +147,12 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		return nil, errors.DeleteKptfileError(err, r.hydrationDir)
 	}
 	endTrace()
-	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.transformAllowlist, r.transformDenylist)
+	opts := rUtil.GenerateHydratedManifestsOptions{
+		TransformAllowList:         r.transformAllowlist,
+		TransformDenylist:          r.transformDenylist,
+		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+	}
+	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, opts)
 	if err != nil {
 		return nil, errH
 	}

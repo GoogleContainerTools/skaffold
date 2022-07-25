@@ -61,6 +61,7 @@ type Config interface {
 	Tail() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	JSONParseConfig() latest.JSONParseConfig
+	EnablePlatformNodeAffinityInRenderedManifests() bool
 }
 
 func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNamespace string) CLI {
