@@ -254,30 +254,10 @@ Useful tips for existing `ko` users:
   specify these fields in `.ko.yaml`, you do not need to repeat them in
   `skaffold.yaml`.
 
-- Future Skaffold releases will include support for generating `skaffold.yaml`
-  files by examining an existing code base. For now, you can generate a starter
-  `skaffold.yaml` file by searching your existing manifests for image
-  references starting with `ko://` by using this snippet:
-
-  ```shell
-  cat << EOF > skaffold.yaml
-  apiVersion: skaffold/v2beta26
-  kind: Config
-  build:
-    artifacts:
-  EOF
-  grep -rho "ko://$(go list -m)[^\"]*" ./config/ | sort | uniq | xargs -Iimg echo -e "  - image: img\n    ko: {}" >> skaffold.yaml
-  cat << EOF >> skaffold.yaml
-    local:
-      concurrency: 0
-  deploy:
-    kubectl:
-      manifests:
-      - ./config/**
-  EOF
-  ```
-
-  Replace `./config/` with the path to your Kubernetes manifest files.
+- You can generate `skaffold.yaml` files by examining an existing code base,
+  using the command
+  [`skaffold init --XXenableKoInit=true`]({{< relref "/docs/pipeline-stages/init" >}}).
+  Select the Ko builder for your images when prompted.
 
 ### `ko` commands and workflows in Skaffold
 
