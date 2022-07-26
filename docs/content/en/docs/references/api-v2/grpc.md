@@ -195,6 +195,27 @@ If the build fails, an error will be attached to the event.
 
 
 
+<a name="proto.v2.CloudRunReadyEvent"></a>
+#### CloudRunReadyEvent
+A Resource StatusCheck Event for a Cloud Run Service.
+Indicates that a Cloud Run Service has deployed successfully and is serving
+on the specified URL
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id of the subtask which will be used in SkaffoldLog |
+| task_id | [string](#string) |  | id of the task of skaffold that this event came from |
+| resource | [string](#string) |  | the Cloud Run resource that was deployed |
+| url | [string](#string) |  | the base URL that the Cloud Run service is serving on. |
+| ready_revision | [string](#string) |  | the name of the revision that went ready. |
+
+
+
+
+
+
+
 <a name="proto.v2.DebuggingContainerEvent"></a>
 #### DebuggingContainerEvent
 DebuggingContainerEvent is raised when a debugging container is started or terminated
@@ -326,6 +347,7 @@ It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusChe
 | testEvent | [TestSubtaskEvent](#proto.v2.TestSubtaskEvent) |  | describes if the test has started, is in progress or is complete. |
 | renderEvent | [RenderSubtaskEvent](#proto.v2.RenderSubtaskEvent) |  | describes if the render has started, is in progress or is complete. |
 | verifyEvent | [VerifySubtaskEvent](#proto.v2.VerifySubtaskEvent) |  | describes if the render has started, is in progress or is complete. |
+| cloudRunReadyEvent | [CloudRunReadyEvent](#proto.v2.CloudRunReadyEvent) |  | describes a deployed Cloud Run service. |
 
 
 

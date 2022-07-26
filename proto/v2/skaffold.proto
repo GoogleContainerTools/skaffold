@@ -171,6 +171,7 @@ message Event {
         TestSubtaskEvent testEvent = 13; // describes if the test has started, is in progress or is complete.
         RenderSubtaskEvent renderEvent = 14; // describes if the render has started, is in progress or is complete.
         VerifySubtaskEvent verifyEvent = 15; // describes if the render has started, is in progress or is complete.
+        CloudRunReadyEvent cloudRunReadyEvent = 16; // describes a deployed Cloud Run service.
     }
 }
 
@@ -285,6 +286,17 @@ message StatusCheckSubtaskEvent {
     string message = 5;
     enums.StatusCode statusCode = 6;
     ActionableErr actionableErr = 7; // actionable error message
+}
+
+// A Resource StatusCheck Event for a Cloud Run Service.
+// Indicates that a Cloud Run Service has deployed successfully and is serving
+// on the specified URL
+message CloudRunReadyEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string resource = 3; // the Cloud Run resource that was deployed
+    string url = 4; // the base URL that the Cloud Run service is serving on.
+    string ready_revision = 5; // the name of the revision that went ready.
 }
 
 // PortForwardEvent Event describes each port forwarding event.

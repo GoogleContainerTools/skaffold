@@ -760,6 +760,27 @@
       },
       "description": "`BuildSubtaskvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
     },
+    "v2CloudRunReadyEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "ready_revision": {
+          "type": "string"
+        }
+      },
+      "description": "A Resource StatusCheck Event for a Cloud Run Service.\nIndicates that a Cloud Run Service has deployed successfully and is serving\non the specified URL"
+    },
     "v2DebuggingContainerEvent": {
       "type": "object",
       "properties": {
@@ -896,6 +917,9 @@
         },
         "verifyEvent": {
           "$ref": "#/definitions/v2VerifySubtaskEvent"
+        },
+        "cloudRunReadyEvent": {
+          "$ref": "#/definitions/v2CloudRunReadyEvent"
         }
       },
       "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent."

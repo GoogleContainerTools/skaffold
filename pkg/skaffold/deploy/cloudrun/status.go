@@ -142,6 +142,8 @@ type runResource struct {
 	name      string
 	completed bool
 	status    Status
+	url       string
+	revision  string
 }
 
 type Status struct {
@@ -249,6 +251,8 @@ func (r *runResource) checkStatus(crClient *run.APIService) {
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 			Message: "Service started",
 		})
+		r.url = res.Status.Url
+		r.revision = res.Status.LatestReadyRevisionName
 	case "False":
 		r.completed = true
 		r.updateStatus(&proto.ActionableErr{
@@ -305,6 +309,9 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, c *counter, r *runResou
 		return
 	}
 	eventV2.ResourceStatusCheckEventCompleted(r.path, curStatus.ae)
+	if r.url != "" {
+		eventV2.CloudRunServiceReady(r.path, r.url, r.revision)
+	}
 	if curStatus.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s failed with error: %s", r.name, curStatus.ae.Message))
 	} else {
