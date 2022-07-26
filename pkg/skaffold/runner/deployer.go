@@ -314,18 +314,35 @@ func validateKubectlFlags(flags *latest.KubectlFlags, additional latest.KubectlF
 /* The Cloud Run deployer for apply. Used when Cloud Run is specified. */
 func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (*cloudrun.Deployer, error) {
 	var region string
+	regionFlag := false
 	var defaultProject string
+	projectFlag := false
+	if runCtx.Opts.CloudRunLocation != "" {
+		region = runCtx.Opts.CloudRunLocation
+		regionFlag = true
+	}
+	if runCtx.Opts.CloudRunProject != "" {
+		defaultProject = runCtx.Opts.CloudRunProject
+		projectFlag = true
+	}
 	for _, d := range runCtx.DeployConfigs() {
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
-			if region != "" && region != crDeploy.Region {
-				return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+			if !regionFlag {
+				// No region flag was provided, so take it from the config.
+				if region != "" && region != crDeploy.Region {
+					return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+				}
+
+				region = crDeploy.Region
 			}
-			region = crDeploy.Region
-			if defaultProject != "" && defaultProject != crDeploy.ProjectID {
-				return nil, fmt.Errorf("expected all Cloud Run deploys to use the same project, found deploys to projects %s and %s", defaultProject, crDeploy.ProjectID)
+			if !projectFlag {
+				// No project flag was specified so take it from the config.
+				if defaultProject != "" && defaultProject != crDeploy.ProjectID {
+					return nil, fmt.Errorf("expected all Cloud Run deploys to use the same project, found deploys to projects %s and %s", defaultProject, crDeploy.ProjectID)
+				}
+				defaultProject = crDeploy.ProjectID
 			}
-			defaultProject = crDeploy.ProjectID
 		}
 	}
 	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject}, "")
