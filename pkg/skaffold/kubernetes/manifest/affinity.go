@@ -33,6 +33,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
+// for testing
+var getPlatforms = docker.GetPlatforms
+
 const (
 	specField     = "spec"
 	affinityField = "affinity"
@@ -126,7 +129,6 @@ func (l *ManifestList) GetImagePlatforms(ctx context.Context, rs ResourceSelecto
 }
 
 // PodPlatforms maps the pod spec json path to the list of common platforms for all containers in that pod.
-// for example,
 type PodPlatforms map[string][]spec.Platform
 
 type imagePlatformSaver struct {
@@ -142,7 +144,7 @@ func (r *imagePlatformSaver) Visit(gk apimachinery.GroupKind, navpath string, o 
 	if !ok {
 		return true
 	}
-	platforms, err := docker.GetPlatforms(image)
+	platforms, err := getPlatforms(image)
 	if err != nil {
 		log.Entry(r.ctx).Debugf("Couldn't get target platforms for image %q: %s", image, err.Error())
 		return false
@@ -226,7 +228,7 @@ func updateAffinity(data interface{}, platforms []spec.Platform) (map[string]int
 	var terms []v1.NodeSelectorTerm
 	for _, pl := range platforms {
 		for _, term := range affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms {
-			t := term
+			t := term.DeepCopy()
 			if pl.OS != "" {
 				t.MatchExpressions = append(t.MatchExpressions, v1.NodeSelectorRequirement{
 					Key:      nodeOperatingSystemLabel,
@@ -241,7 +243,7 @@ func updateAffinity(data interface{}, platforms []spec.Platform) (map[string]int
 					Values:   []string{pl.Architecture},
 				})
 			}
-			terms = append(terms, t)
+			terms = append(terms, *t)
 		}
 	}
 	affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = terms

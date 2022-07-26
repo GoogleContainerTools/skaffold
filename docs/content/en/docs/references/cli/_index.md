@@ -408,6 +408,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
+      --enable-platform-node-affinity=false: If true, skaffold will add platform (os/arch) node affinity to rendered manifests based on the image platforms
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
@@ -466,6 +467,7 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
+* `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
@@ -580,6 +582,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
+      --enable-platform-node-affinity=false: If true, skaffold will add platform (os/arch) node affinity to rendered manifests based on the image platforms
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
@@ -626,6 +629,7 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
+* `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
@@ -678,6 +682,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
+      --enable-platform-node-affinity=false: If true, skaffold will add platform (os/arch) node affinity to rendered manifests based on the image platforms
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
@@ -736,6 +741,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
+* `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
@@ -945,6 +951,7 @@ Options:
       --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
+      --enable-platform-node-affinity=false: If true, skaffold will add platform (os/arch) node affinity to rendered manifests based on the image platforms
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
   -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
@@ -976,6 +983,7 @@ Env vars:
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
+* `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_IMAGES` (same as `--images`)
@@ -1019,6 +1027,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
+      --enable-platform-node-affinity=false: If true, skaffold will add platform (os/arch) node affinity to rendered manifests based on the image platforms
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
@@ -1072,6 +1081,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
+* `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
