@@ -724,6 +724,9 @@ type KubectlDeploy struct {
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
 
+	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
+
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 

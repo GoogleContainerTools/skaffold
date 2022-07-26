@@ -1563,11 +1563,9 @@ func TestValidateKubectlManifests(t *testing.T) {
 			configs: []*latest.SkaffoldConfig{
 				{
 					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
-								KubectlDeploy: &latest.KubectlDeploy{
-									Manifests: []string{filepath.Join(tempDir, "validation-test-exists.yaml")},
-								},
+						Render: latest.RenderConfig{
+							Generate: latest.Generate{
+								RawK8s: []string{filepath.Join(tempDir, "validation-test-exists.yaml")},
 							},
 						},
 					},
@@ -1580,11 +1578,9 @@ func TestValidateKubectlManifests(t *testing.T) {
 			configs: []*latest.SkaffoldConfig{
 				{
 					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
-								KubectlDeploy: &latest.KubectlDeploy{
-									Manifests: []string{filepath.Join(tempDir, "validation-test-missing.yaml")},
-								},
+						Render: latest.RenderConfig{
+							Generate: latest.Generate{
+								RawK8s: []string{filepath.Join(tempDir, "validation-test-missing.yaml")},
 							},
 						},
 					},
