@@ -19,11 +19,12 @@ package util
 import (
 	"testing"
 
+        "k8s.io/client-go/tools/clientcmd/api"
+
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestCollectHelmReleasesNamespaces(t *testing.T) {

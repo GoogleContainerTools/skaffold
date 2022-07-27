@@ -59,14 +59,14 @@ func TestRun(t *testing.T) {
 			description: "multiple namespaces with an empty namespace and no labels",
 			ns:          []string{"foo", "bar", ""},
 			expected: &mockValidator{
-				ns:          []string{"foo", "bar"},
+				ns:          []string{"foo", "bar", ""},
 				listOptions: metav1.ListOptions{},
 			},
 		},
 		{
 			description: "empty namespaces no labels",
 			ns:          []string{""},
-			expected:    &mockValidator{ns: nil},
+			expected:    &mockValidator{ns: []string{""}},
 		},
 		{
 			description: "multiple namespaces and multiple labels",

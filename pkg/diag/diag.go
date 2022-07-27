@@ -39,12 +39,8 @@ type diag struct {
 }
 
 func New(namespaces []string) Diagnose {
-	var ns []string
-	for _, n := range namespaces {
-		ns = append(ns, n)
-	}
 	return &diag{
-		namespaces: ns,
+		namespaces: namespaces,
 		labels:     map[string]string{},
 	}
 }
