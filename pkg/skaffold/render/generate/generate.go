@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
@@ -51,6 +50,19 @@ type Generator struct {
 	workingDir   string
 	hydrationDir string
 	config       latest.Generate
+}
+
+func localManifests(paths []string, workdir string) ([]string, error) {
+	var localPaths []string
+	for _, path := range paths {
+		switch {
+		case util.IsURL(path):
+		case strings.HasPrefix(path, "gs://"):
+		default:
+			localPaths = append(localPaths, path)
+		}
+	}
+	return util.ExpandPathsGlob(workdir, localPaths)
 }
 
 func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
@@ -259,34 +271,31 @@ func isKptDir(path string) (string, bool) {
 	return dir, true
 }
 
-// walkManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
+// walkLocalManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
 // Note: the logic about manifest dependencies shall separate from the "Generate" function, which requires "context" and
 // only be called when a rendering action is needed (normally happens after the file watcher registration).
-func (g Generator) walkManifests() ([]string, error) {
+func (g Generator) walkLocalManifests() ([]string, error) {
 	var dependencyPaths []string
 
 	// Generate kustomize Manifests
 	if g.config.Kustomize != nil {
-		kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
+		kustomizePaths, err := localManifests(g.config.Kustomize.Paths, g.workingDir)
 		if err != nil {
-			event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
 			return nil, err
 		}
 		dependencyPaths = append(dependencyPaths, kustomizePaths...)
 	}
 
 	// Generate in-place hydrated kpt Manifests
-	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
+	kptPaths, err := localManifests(g.config.Kpt, g.workingDir)
 	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
 		return nil, err
 	}
 	dependencyPaths = append(dependencyPaths, kptPaths...)
 
 	// Generate Raw Manifests
-	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
+	sourceManifests, err := localManifests(g.config.RawK8s, g.workingDir)
 	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
 		return nil, err
 	}
 	dependencyPaths = append(dependencyPaths, sourceManifests...)
@@ -294,9 +303,9 @@ func (g Generator) walkManifests() ([]string, error) {
 }
 
 func (g Generator) ManifestDeps() ([]string, error) {
-	deps := stringset.New()
+	deps := []string{}
 
-	dependencyPaths, err := g.walkManifests()
+	dependencyPaths, err := g.walkLocalManifests()
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +317,7 @@ func (g Generator) ManifestDeps() ([]string, error) {
 				}
 				fname := filepath.Base(p)
 				if strings.HasSuffix(fname, ".yaml") || strings.HasSuffix(fname, ".yml") || fname == kptfile.KptFileName {
-					deps.Insert(p)
+					deps = append(deps, p)
 				}
 				return nil
 			})
@@ -316,5 +325,5 @@ func (g Generator) ManifestDeps() ([]string, error) {
 			return nil, err
 		}
 	}
-	return deps.ToList(), nil
+	return deps, nil
 }
