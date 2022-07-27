@@ -106,9 +106,6 @@ var skaffoldYamlLintRules = []Rule{
 		ExplanationPopulator: func(lintInputs InputParams) (explanationInfo, error) {
 			fieldMap := map[string]interface{}{}
 			forwardedPorts := util.PortSet{}
-			if lintInputs.SkaffoldConfig.Deploy.KubectlDeploy == nil {
-				return explanationInfo{}, fmt.Errorf("expected kubectl deploy information to be populated but it was nil")
-			}
 			for _, pattern := range lintInputs.SkaffoldConfig.Render.Generate.RawK8s {
 				// NOTE: pattern is a pattern that can have wildcards, eg: leeroy-app/kubernetes/*
 				if util.IsURL(pattern) {
