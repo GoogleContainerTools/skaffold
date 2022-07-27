@@ -170,7 +170,6 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	}
 	resources := make([]*resource.Resource, 0)
 	for _, n := range *s.namespaces {
-		fmt.Println("namespace ---", n)
 		newDeployments, err := getDeployments(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)

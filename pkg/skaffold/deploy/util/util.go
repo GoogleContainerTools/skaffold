@@ -78,8 +78,6 @@ func MockK8sClient(string) (k8s.Interface, error) {
 }
 
 func ConsolidateNamespaces(original, new []string) []string {
-	fmt.Println("old len", len(original), len(new))
-	fmt.Println("old ", original, new)
 	if len(new) == 0 {
 		return original
 	}

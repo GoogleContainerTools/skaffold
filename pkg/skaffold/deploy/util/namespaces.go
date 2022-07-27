@@ -60,9 +60,10 @@ func GetAllPodNamespaces(configNamespace string, pipelines []latest.Pipeline) ([
 
 	// Collate the slice of namespaces.
 	namespaces := make([]string, 0, len(nsMap))
-	for k, _ := range nsMap {
-		namespaces = append(namespaces, k)
+	for ns := range nsMap {
+		namespaces = append(namespaces, ns)
 	}
+
 	sort.Strings(namespaces)
 	return namespaces, nil
 }
