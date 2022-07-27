@@ -66,6 +66,58 @@ var (
 	}
 )
 
+func TestValidateArtifactTypes(t *testing.T) {
+	tests := []struct {
+		description  string
+		bc           latest.BuildConfig
+		expectedErrs int
+	}{
+		{
+			description: "gcb - builder not set",
+			bc: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName: "leeroy-web",
+						Workspace: "leeroy-web",
+					},
+				},
+			},
+		},
+		{
+			description: "gcb - custom builder  set",
+			bc: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName:    "leeroy-web",
+						Workspace:    "leeroy-web",
+						ArtifactType: latest.ArtifactType{CustomArtifact: &latest.CustomArtifact{}},
+					},
+				},
+			},
+			expectedErrs: 1,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			config := &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: test.bc,
+				},
+			}
+			cfg := &parser.SkaffoldConfigEntry{SkaffoldConfig: config,
+				YAMLInfos: configlocations.NewYAMLInfos()}
+			errs := validateArtifactTypes(cfg, test.bc)
+
+			t.CheckDeepEqual(test.expectedErrs, len(errs))
+		})
+	}
+}
 func TestValidateSchema(t *testing.T) {
 	tests := []struct {
 		description string
