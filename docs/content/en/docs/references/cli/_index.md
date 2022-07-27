@@ -122,6 +122,8 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
+      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
@@ -147,6 +149,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
+* `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
@@ -405,6 +409,8 @@ Options:
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
+      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
+      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -464,6 +470,8 @@ Env vars:
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
+* `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
+* `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -518,6 +526,8 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
+      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -543,6 +553,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
+* `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -579,6 +591,8 @@ Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
+      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
+      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -626,6 +640,8 @@ Env vars:
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
+* `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
+* `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -678,6 +694,8 @@ Options:
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
+      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
+      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -737,6 +755,8 @@ Env vars:
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
+* `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
+* `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -1023,6 +1043,8 @@ Options:
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
+      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
+      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -1077,6 +1099,8 @@ Env vars:
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
+* `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
+* `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
