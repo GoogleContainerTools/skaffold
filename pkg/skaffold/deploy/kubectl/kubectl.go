@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/segmentio/textio"
 	"go.opentelemetry.io/otel/trace"
@@ -49,7 +48,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // Deployer deploys workflows using kubectl CLI.
@@ -71,7 +69,6 @@ type Deployer struct {
 	hydratedManifests  []string
 	workingDir         string
 	globalConfig       string
-	gcsManifestDir     string
 	defaultRepo        *string
 	multiLevelRepo     *bool
 	kubectl            CLI
@@ -278,52 +275,6 @@ func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 	}
 	endTrace()
 	return nil
-}
-
-func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
-	var nonURLManifests, gcsManifests []string
-	for _, manifestP := range manifests {
-		switch {
-		case util.IsURL(manifestP):
-		case strings.HasPrefix(manifestP, "gs://"):
-			gcsManifests = append(gcsManifests, manifestP)
-		default:
-			nonURLManifests = append(nonURLManifests, manifestP)
-		}
-	}
-
-	list, err := util.ExpandPathsGlob(k.workingDir, nonURLManifests)
-	if err != nil {
-		return nil, userErr(fmt.Errorf("expanding kubectl manifest paths: %w", err))
-	}
-
-	if len(gcsManifests) != 0 {
-		// return tmp dir of the downloaded manifests
-		tmpDir, err := manifest.DownloadFromGCS(gcsManifests)
-		if err != nil {
-			return nil, userErr(fmt.Errorf("downloading from GCS: %w", err))
-		}
-		k.gcsManifestDir = tmpDir
-		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
-		if err != nil {
-			return nil, userErr(fmt.Errorf("expanding kubectl manifest paths: %w", err))
-		}
-		list = append(list, l...)
-	}
-
-	var filteredManifests []string
-	for _, f := range list {
-		if !kubernetes.HasKubernetesFileExtension(f) {
-			if !stringslice.Contains(manifests, f) {
-				olog.Entry(context.TODO()).Infof("refusing to deploy/delete non {json, yaml} file %s", f)
-				olog.Entry(context.TODO()).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
-				continue
-			}
-		}
-		filteredManifests = append(filteredManifests, f)
-	}
-
-	return filteredManifests, nil
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
