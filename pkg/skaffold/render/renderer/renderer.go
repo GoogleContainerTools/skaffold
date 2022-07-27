@@ -39,18 +39,32 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) (Renderer, error) {
+func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) ([]Renderer, error) {
 	if usingLegacyHelmDeploy && command != "render" {
-		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
+		return []Renderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
 	}
-	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Helm != nil {
-		log.Entry(context.TODO()).Debug("setting up helm renderer")
-		return helm.New(cfg, renderCfg, labels, configName)
+	if renderCfg.Validate != nil && renderCfg.Transform != nil {
+		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
+		if err != nil {
+			return nil, err
+		}
+		log.Entry(context.TODO()).Infof("setting up kpt renderer")
+		return []Renderer{r}, nil
 	}
-	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Kpt == nil {
-		log.Entry(context.TODO()).Debug("setting up kubectl renderer")
-		return kubectl.New(cfg, renderCfg, labels, configName)
+	var rs []Renderer
+	var r Renderer
+	var err error
+	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
+		if r, err = kubectl.New(cfg, renderCfg, labels, configName); err != nil {
+			return nil, err
+		}
+		rs = append(rs, r)
 	}
-	log.Entry(context.TODO()).Infof("setting up kpt renderer")
-	return kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
+	if renderCfg.Helm != nil {
+		if r, err = helm.New(cfg, renderCfg, labels, configName); err != nil {
+			return nil, err
+		}
+		rs = append(rs, r)
+	}
+	return rs, nil
 }

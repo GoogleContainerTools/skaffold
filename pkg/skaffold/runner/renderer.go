@@ -29,11 +29,11 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 
 	var renderers []renderer.Renderer
 	for configName, p := range ps {
-		r, err := renderer.New(runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
+		rs, err := renderer.New(runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
 		if err != nil {
 			return nil, err
 		}
-		renderers = append(renderers, r)
+		renderers = append(renderers, rs...)
 	}
 	return renderer.NewRenderMux(renderers), nil
 }
