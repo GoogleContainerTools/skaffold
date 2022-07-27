@@ -13,7 +13,7 @@ profiles:
         - image: skaffold-in-cluster-builder
           kaniko:
             cache: {}
-    deploy:
+    manifests:
       kustomize:
         path: build-step
   - name: build-target
