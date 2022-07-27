@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -110,6 +111,7 @@ func TestValidateArtifactTypes(t *testing.T) {
 					Build: test.bc,
 				},
 			}
+			defaults.Set(config)
 			cfg := &parser.SkaffoldConfigEntry{SkaffoldConfig: config,
 				YAMLInfos: configlocations.NewYAMLInfos()}
 			errs := validateArtifactTypes(cfg, test.bc)

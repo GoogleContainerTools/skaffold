@@ -27,10 +27,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	util2 "github.com/containerd/containerd/pkg/cri/util"
 )
 
 var (
@@ -46,11 +48,11 @@ func NewCmdFix() *cobra.Command {
 		WithExample("Update \"skaffold.yaml\" in the current folder in-place", "fix --overwrite").
 		WithExample("Update \"skaffold.yaml\" and write the output to a new file", "fix --output skaffold.new.yaml").
 		WithCommonFlags().
-		WithFlags([]*Flag{
-			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
-			{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
-			{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
-		}).
+			WithFlags([]*Flag{
+				{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
+				{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
+				{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
+			}).
 		NoArgs(doFix)
 }
 
@@ -98,8 +100,13 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 	if toVersion == latest.Version {
 		var cfgs parser.SkaffoldConfigSet
 		for _, cfg := range upgraded {
+			cpCfg := latest.NewSkaffoldConfig()
+			if err = util2.DeepCopy(cpCfg, cfg); err != nil {
+				cpCfg = cfg
+			}
+			defaults.Set(cpCfg.(*latest.SkaffoldConfig))
 			cfgs = append(cfgs, &parser.SkaffoldConfigEntry{
-				SkaffoldConfig: cfg.(*latest.SkaffoldConfig),
+				SkaffoldConfig: cpCfg.(*latest.SkaffoldConfig),
 				SourceFile:     configFile,
 				IsRootConfig:   true})
 		}

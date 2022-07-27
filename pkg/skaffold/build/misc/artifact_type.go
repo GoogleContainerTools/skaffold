@@ -53,7 +53,7 @@ func ArtifactType(a *latest.Artifact) string {
 	case a.KoArtifact != nil:
 		return Ko
 	default:
-		return Docker
+		return ""
 	}
 }
 
