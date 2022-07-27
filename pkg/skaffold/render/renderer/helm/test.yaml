@@ -1,0 +1,183 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: guestbook
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    tier: db
+  name: go-guestbook-mongodb
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  selector:
+    app: guestbook
+    tier: db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: backend
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    tier: backend
+  name: backend
+spec:
+  ports:
+  - port: 8081
+    targetPort: http-server
+  selector:
+    app: backend
+    tier: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: backend
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+  name: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    spec:
+      containers:
+      - env:
+        - name: PORT
+          value: "8081"
+        - name: GUESTBOOK_DB_ADDR
+          value: go-guestbook-mongodb:27017
+        image: go-guestbook-backend
+        name: backend
+        ports:
+        - containerPort: 8081
+          name: http-server
+        - containerPort: 3000
+          name: debug
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: guestbook
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    tier: db
+  name: go-guestbook-mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guestbook
+      tier: db
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+        tier: db
+    spec:
+      containers:
+      - image: mongo:4
+        name: mongo
+        ports:
+        - containerPort: 27017
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: guestbook
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    tier: db
+  name: go-guestbook-mongodb
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  selector:
+    app: guestbook
+    tier: db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: backend
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    tier: backend
+  name: backend
+spec:
+  ports:
+  - port: 8081
+    targetPort: http-server
+  selector:
+    app: backend
+    tier: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: backend
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+  name: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    spec:
+      containers:
+      - env:
+        - name: PORT
+          value: "8081"
+        - name: GUESTBOOK_DB_ADDR
+          value: go-guestbook-mongodb:27017
+        image: gcr.io/tejal-gke1/go-guestbook-backend:v1.37.2-124-g3bedcf310-dirty@sha256:1aa0519da1663092bc55b4b64a7e673af164c4b9812c189959b58534e26e1ef7
+        name: backend
+        ports:
+        - containerPort: 8081
+          name: http-server
+        - containerPort: 3000
+          name: debug
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: guestbook
+    skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+    tier: db
+  name: go-guestbook-mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guestbook
+      tier: db
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        skaffold.dev/run-id: 8bfed8a6-db41-4e51-9ae2-3c14b16ad9fb
+        tier: db
+    spec:
+      containers:
+      - image: mongo:4
+        name: mongo
+        ports:
+        - containerPort: 27017

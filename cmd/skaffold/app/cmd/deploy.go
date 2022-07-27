@@ -56,6 +56,6 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 		if errR != nil {
 			return errR
 		}
-		return r.DeployAndLog(ctx, out, buildArtifacts, manifests)
+		return r.DeployAndLog(ctx, out, buildArtifacts, *manifests)
 	})
 }

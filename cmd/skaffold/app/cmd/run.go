@@ -64,7 +64,7 @@ func doRun(ctx context.Context, out io.Writer) error {
 			return manifest.Write(manifestList.String(), opts.RenderOutput, out)
 		}
 
-		err = r.DeployAndLog(ctx, out, bRes, manifestList)
+		err = r.DeployAndLog(ctx, out, bRes, *manifestList)
 		if err != nil {
 			return fmt.Errorf("failed to deploy: %w", err)
 		}

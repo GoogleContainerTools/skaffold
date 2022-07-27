@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v2
 
 import (
@@ -68,7 +69,7 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-	r.hasDeployed = true
+	r.deployManifests = list
 	event.DeployComplete()
 	return nil
 }

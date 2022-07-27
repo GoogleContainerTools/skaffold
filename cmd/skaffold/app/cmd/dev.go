@@ -19,12 +19,10 @@ package cmd
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -72,16 +70,8 @@ func runDev(ctx context.Context, out io.Writer) error {
 				}
 				err := r.Dev(ctx, out, artifacts)
 
-				if r.HasDeployed() {
-					cleanup = func() {
-						manifestsByConfig, err := r.Render(ctx, io.Discard, []graph.Artifact{}, false)
-						if err != nil {
-							log.Entry(ctx).Warn(fmt.Errorf("failed to render manifests: %w", err))
-						}
-						if err := r.Cleanup(context.Background(), out, false, manifestsByConfig); err != nil {
-							log.Entry(ctx).Warn("deployer cleanup:", err)
-						}
-					}
+				if err := r.Cleanup(context.Background(), out, false, r.DeployManifests()); err != nil {
+					log.Entry(ctx).Warn("deployer cleanup:", err)
 				}
 
 				if r.HasBuilt() {

@@ -49,6 +49,6 @@ func doDelete(ctx context.Context, out io.Writer) error {
 		if err != nil {
 			return err
 		}
-		return r.Cleanup(ctx, out, dryRun, manifestListByConfig)
+		return r.Cleanup(ctx, out, dryRun, *manifestListByConfig)
 	})
 }
