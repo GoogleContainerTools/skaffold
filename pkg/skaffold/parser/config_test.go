@@ -1348,37 +1348,34 @@ kind: Config
 build:
   artifacts:
     - image: app-0
-deploy:
-  kubectl:
-    manifests:
-      - manifests-0
+manifests:
+  rawYaml:
+    - manifests-0
 profiles:
   - name: profile-0
     build:
       artifacts:
         - image: app-0-profile
           context: app-0-profile
-    deploy:
-      kubectl:
-        manifests:
-          - manifests-0-profile
+    manifests:
+      rawYaml:
+      - manifests-0-profile
     patches:
       - op: replace
         path: /build/artifacts/0
         value:
           image: app-0-patch
       - op: add
-        path: /deploy/kubectl/manifests/1
+        path: /manifests/rawYaml/1
         value: 'manifests-1'
   - name: profile-1
     build:
       artifacts:
         - image: app-1-profile
           context: app-1-profile
-    deploy:
-      kubectl:
-        manifests:
-          - manifests-1-profile
+    manifests:
+      rawYaml:
+      - manifests-1-profile
 `
 
 func TestConfigLocationsParse(t *testing.T) {
@@ -1398,9 +1395,8 @@ func TestConfigLocationsParse(t *testing.T) {
 				{kyaml.Lookup("kind")},
 				{kyaml.Lookup("build")},
 				{kyaml.Lookup("build", "artifacts")},
-				{kyaml.Lookup("deploy")},
-				{kyaml.Lookup("deploy", "kubectl")},
-				{kyaml.Lookup("deploy", "kubectl", "manifests")},
+				{kyaml.Lookup("manifests")},
+				{kyaml.Lookup("manifests", "rawYaml")},
 			},
 		},
 		{
@@ -1426,9 +1422,9 @@ func TestConfigLocationsParse(t *testing.T) {
 					kyaml.Lookup("patches"), kyaml.GetElementByIndex(0), kyaml.Lookup("value"), kyaml.Lookup("image")},
 				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}),
 					kyaml.Lookup("patches"), kyaml.GetElementByIndex(1), kyaml.Lookup("value")},
-				{kyaml.Lookup("deploy")},
-				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("deploy"), kyaml.Lookup("kubectl")},
-				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("deploy"), kyaml.Lookup("kubectl"), kyaml.Lookup("manifests")},
+				{kyaml.Lookup("manifests")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("manifests")},
+				{kyaml.Lookup("profiles"), kyaml.MatchElementList([]string{"name"}, []string{"profile-0"}), kyaml.Lookup("manifests"), kyaml.Lookup("rawYaml")},
 			},
 		},
 		{
@@ -1517,9 +1513,9 @@ func TestConfigLocationsLocate(t *testing.T) {
 			profiles:         []string{"profile-0"},
 			expected: []configlocations.Location{
 				{
-					StartLine:   24,
+					StartLine:   22,
 					StartColumn: 18,
-					EndLine:     25,
+					EndLine:     23,
 					EndColumn:   0,
 				},
 			},
@@ -1530,9 +1526,9 @@ func TestConfigLocationsLocate(t *testing.T) {
 			profiles:         []string{"profile-1"},
 			expected: []configlocations.Location{
 				{
-					StartLine:   31,
+					StartLine:   29,
 					StartColumn: 18,
-					EndLine:     32,
+					EndLine:     30,
 					EndColumn:   0,
 				},
 			},
