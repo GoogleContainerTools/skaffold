@@ -24,6 +24,10 @@ spec:
           containerPort: 3000
         env:
         - name: PORT
+<<<<<<< HEAD
           value: "8080"
+=======
+          value: "27017"
+>>>>>>> 14b1e178a (feat: allow multiple mixed in renderers)
         - name: GUESTBOOK_API_ADDR
           value: localhost:27017

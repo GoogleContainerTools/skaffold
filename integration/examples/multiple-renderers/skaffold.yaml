@@ -25,7 +25,11 @@ manifests:
       version: 0.1.0
 
 profiles:
+<<<<<<< HEAD
   - name: mix-deploy
+=======
+  - name: helm-deploy
+>>>>>>> 14b1e178a (feat: allow multiple mixed in renderers)
     patches:
      - op: remove
        path: /manifests/helm

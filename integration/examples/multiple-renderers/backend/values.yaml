@@ -1,3 +1,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+<<<<<<< HEAD
 replicaCount: 1
+=======
+replicaCount: 2
+>>>>>>> 14b1e178a (feat: allow multiple mixed in renderers)
