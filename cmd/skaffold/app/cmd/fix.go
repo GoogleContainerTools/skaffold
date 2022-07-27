@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -45,11 +46,11 @@ func NewCmdFix() *cobra.Command {
 		WithExample("Update \"skaffold.yaml\" in the current folder in-place", "fix --overwrite").
 		WithExample("Update \"skaffold.yaml\" and write the output to a new file", "fix --output skaffold.new.yaml").
 		WithCommonFlags().
-		WithFlags([]*Flag{
-			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
-			{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
-			{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
-		}).
+			WithFlags([]*Flag{
+				{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
+				{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
+				{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
+			}).
 		NoArgs(doFix)
 }
 
@@ -87,7 +88,8 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 	if err != nil {
 		return err
 	}
-	if versionedCfgs, err = schema.UpgradeTo(versionedCfgs, toVersion); err != nil {
+	var upgraded []util.VersionedConfig
+	if upgraded, err = schema.UpgradeTo(versionedCfgs, toVersion); err != nil {
 		return err
 	}
 
@@ -95,7 +97,7 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 	// but that's not the case. They can only run on the latest version for now.
 	if toVersion == latest.Version {
 		var cfgs parser.SkaffoldConfigSet
-		for _, cfg := range versionedCfgs {
+		for _, cfg := range upgraded {
 			cfgs = append(cfgs, &parser.SkaffoldConfigEntry{
 				SkaffoldConfig: cfg.(*latest.SkaffoldConfig),
 				SourceFile:     configFile,
@@ -105,18 +107,37 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 			return fmt.Errorf("validating upgraded config: %w", err)
 		}
 	}
-	newCfg, err := yaml.MarshalWithSeparator(versionedCfgs)
+	newCfg, err := yaml.MarshalWithSeparator(upgraded)
 	if err != nil {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}
 	if outFile != "" {
+		var mvErr error
+		if overwrite {
+			mvFile := fmt.Sprintf("%s.v2", outFile)
+			mvErr = os.Rename(outFile, mvFile)
+			if mvErr == nil {
+				output.Default.Fprintln(out, "Backed up previous skaffold.yaml at ", mvFile)
+			}
+		}
 		if err := os.WriteFile(outFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
 		output.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, outFile)
+		if mvErr != nil {
+			output.Yellow.Fprintln(out, "Error moving old config. Dumping old v2 config on stdout:")
+			output.Default.Fprintln(out, getOldConfigYaml(versionedCfgs))
+		}
 	} else {
 		out.Write(newCfg)
 	}
-
 	return nil
+}
+
+func getOldConfigYaml(cfgs []util.VersionedConfig) string {
+	yamlStr, err := yaml.MarshalWithSeparator(cfgs)
+	if err != nil {
+		return fmt.Sprintf("marshaling old config: %v", err)
+	}
+	return string(yamlStr)
 }

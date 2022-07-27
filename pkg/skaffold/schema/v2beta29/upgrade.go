@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -35,6 +36,7 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	newConfig.APIVersion = next.Version
 
 	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+	defaults.Set(&newConfig)
 	return &newConfig, err
 }
 
