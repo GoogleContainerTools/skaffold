@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 
+	util2 "github.com/containerd/containerd/pkg/cri/util"
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -32,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	util2 "github.com/containerd/containerd/pkg/cri/util"
 )
 
 var (
