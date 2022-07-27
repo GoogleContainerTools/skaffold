@@ -48,11 +48,11 @@ func NewCmdFix() *cobra.Command {
 		WithExample("Update \"skaffold.yaml\" in the current folder in-place", "fix --overwrite").
 		WithExample("Update \"skaffold.yaml\" and write the output to a new file", "fix --output skaffold.new.yaml").
 		WithCommonFlags().
-			WithFlags([]*Flag{
-				{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
-				{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
-				{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
-			}).
+		WithFlags([]*Flag{
+			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
+			{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
+			{Value: &fixOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write the changed config (instead of standard output)"},
+		}).
 		NoArgs(doFix)
 }
 
