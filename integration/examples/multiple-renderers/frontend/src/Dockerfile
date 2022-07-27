@@ -8,7 +8,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy rest of the application source code
-COPY .. ./
+COPY . ./
 
 # Compile the application to /app/frontend.
 # Skaffold passes in debug-oriented compiler flags

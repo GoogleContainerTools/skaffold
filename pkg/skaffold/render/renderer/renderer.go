@@ -43,7 +43,7 @@ func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, 
 	if usingLegacyHelmDeploy && command != "render" {
 		return []Renderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
 	}
-	if renderCfg.Validate != nil && renderCfg.Transform != nil {
+	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
 		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err

@@ -25,7 +25,7 @@ manifests:
       version: 0.1.0
 
 profiles:
-  - name: helm-deploy
+  - name: mix-deploy
     patches:
      - op: remove
        path: /manifests/helm
