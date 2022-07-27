@@ -19,9 +19,11 @@ package util
 import (
 	"testing"
 
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestCollectHelmReleasesNamespaces(t *testing.T) {
@@ -77,6 +79,81 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 			ns, err := collectHelmReleasesNamespaces([]latest.Pipeline{
+				{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
+								Releases: test.helmReleases,
+							},
+						},
+					},
+				},
+			})
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.expected, ns)
+			}
+		})
+	}
+}
+
+func TestGetAllPodNamespaces(t *testing.T) {
+	tests := []struct {
+		description  string
+		ns           string
+		helmReleases []latest.HelmRelease
+		apiConfig    api.Config
+		env          []string
+		expected     []string
+		shouldErr    bool
+	}{
+		{
+			description: "current config empty, ns empty with helm releases",
+			ns:          "",
+			apiConfig:   api.Config{CurrentContext: ""},
+			helmReleases: []latest.HelmRelease{
+				{
+					Namespace: "foo",
+				},
+				{
+					Namespace: "bar",
+				},
+				{
+					Namespace: "baz",
+				},
+			},
+			expected: []string{"", "bar", "baz", "foo"},
+		},
+		{
+			description: "current config empty, ns empty",
+			ns:          "",
+			apiConfig:   api.Config{CurrentContext: ""},
+			expected:    []string{""},
+		},
+		{
+			description: "ns empty, current config set",
+			ns:          "",
+			apiConfig: api.Config{CurrentContext: "test",
+				Contexts: map[string]*api.Context{
+					"test": {Namespace: "test-ns"}}},
+			expected: []string{"test-ns"},
+		},
+		{
+			description: "ns set and current config set",
+			ns:          "cli-ns",
+			apiConfig: api.Config{CurrentContext: "test",
+				Contexts: map[string]*api.Context{
+					"test": {Namespace: "test-ns"}}},
+			expected: []string{"cli-ns"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return test.env })
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+				return test.apiConfig, nil
+			})
+			ns, err := GetAllPodNamespaces(test.ns, []latest.Pipeline{
 				{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
