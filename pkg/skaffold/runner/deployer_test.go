@@ -515,7 +515,7 @@ func TestGetCloudRunDeployer(tOuter *testing.T) {
 				Opts:      test.opts,
 				Pipelines: runcontext.NewPipelines(pipelines),
 			}
-			crDeployer, err := getCloudRunDeployer(rctx, &label.DefaultLabeller{})
+			crDeployer, err := getCloudRunDeployer(rctx, &label.DefaultLabeller{}, rctx.DeployConfigs(), "")
 			t.CheckErrorAndFailNow(test.haveErr, err)
 			t.CheckDeepEqual(crDeployer, test.expected, cmpopts.IgnoreUnexported(cloudrun.Deployer{}))
 		})
