@@ -53,6 +53,8 @@ build:
   - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
     ko: {}
     platforms: ['linux/arm64', 'linux/amd64']
+  - image: gcr.io/k8s-skaffold/leeroy-app
+    context: leeroy-web
   googleCloudBuild:
     projectId: test-project
 test:
@@ -139,6 +141,8 @@ build:
   - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
     ko: {}
     platforms: ['linux/arm64', 'linux/amd64']
+  - image: gcr.io/k8s-skaffold/leeroy-app
+    context: leeroy-web
   googleCloudBuild:
     projectId: test-project
 test:
