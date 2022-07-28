@@ -17,14 +17,16 @@ limitations under the License.
 package util
 
 import (
+	"testing"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	specs "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func ConvertToV1Platform(platform specs.Platform) v1.Platform {
-	return v1.Platform{Architecture: platform.Architecture, OS: platform.OS, OSVersion: platform.OSVersion, OSFeatures: platform.OSFeatures, Variant: platform.Variant}
-}
-
-func ConvertFromV1Platform(platform v1.Platform) specs.Platform {
-	return specs.Platform{Architecture: platform.Architecture, OS: platform.OS, OSVersion: platform.OSVersion, OSFeatures: platform.OSFeatures, Variant: platform.Variant}
+func TestConvert(t *testing.T) {
+	pl1 := v1.Platform{Architecture: "arch", OS: "os", OSVersion: "os_ver", Variant: "variant", OSFeatures: []string{"os_feature"}}
+	pl2 := ConvertFromV1Platform(pl1)
+	pl3 := ConvertToV1Platform(pl2)
+	testutil.CheckDeepEqual(t, pl1, pl3)
 }
