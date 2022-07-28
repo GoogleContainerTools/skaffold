@@ -157,7 +157,7 @@ var tests = []struct {
 	{
 		description: "multiple renderers mixed in",
 		dir:         "examples/multiple-renderers",
-		deployments: []string{"frontend", "backed", "go-guestbook-mongodb"},
+		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
 	},
 }
 
