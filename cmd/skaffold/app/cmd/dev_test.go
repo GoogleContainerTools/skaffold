@@ -73,34 +73,36 @@ func TestDoDev(t *testing.T) {
 	tests := []struct {
 		description       string
 		hasBuilt          bool
-		deployedManifests manifest.ManifestListByConfig
+		deployedManifests manifest.ManifestList
 		expectedCalls     []string
 	}{
 		{
 			description:       "cleanup and then prune",
 			hasBuilt:          true,
-			deployedManifests: manifest.ManifestListByConfig{},
+			deployedManifests: manifest.ManifestList{[]byte("dummy")},
 			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Render", "Cleanup", "Prune"},
 		},
 		{
 			description:       "hasn't deployed",
 			hasBuilt:          true,
-			deployedManifests: manifest.ManifestListByConfig{},
+			deployedManifests: manifest.ManifestList{},
 			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Prune"},
 		},
 		{
 			description:       "hasn't built",
 			hasBuilt:          false,
-			deployedManifests: manifest.ManifestListByConfig{},
+			deployedManifests: manifest.ManifestList{},
 			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt"},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			dm := manifest.NewManifestListByConfig()
+			dm.Add("test", test.deployedManifests)
 			mockRunner := &mockDevRunner{
 				hasBuilt:          test.hasBuilt,
-				deployedManifests: test.deployedManifests,
+				deployedManifests: dm,
 				errDev:            context.Canceled,
 			}
 			t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
