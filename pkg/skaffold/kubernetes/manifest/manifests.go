@@ -45,7 +45,7 @@ func NewManifestListByConfig() ManifestListByConfig {
 	}
 }
 
-func (ml *ManifestListByConfig) Add(configName string, manifest ManifestList) {
+func (ml ManifestListByConfig) Add(configName string, manifest ManifestList) {
 	ml.configNames = append(ml.configNames, configName)
 	ml.manifests[configName] = manifest
 }
