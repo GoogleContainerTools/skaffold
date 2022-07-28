@@ -80,7 +80,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 }
 
 // Deploy creates a Cloud Run service using the provided manifest.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifestsByConfig *manifest.ManifestListByConfig) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifestsByConfig manifest.ManifestListByConfig) error {
 	manifests := manifestsByConfig.GetForConfig(d.ConfigName())
 
 	for _, manifest := range manifests {
@@ -101,7 +101,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes the created Cloud Run services
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig *manifest.ManifestListByConfig) error {
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig manifest.ManifestListByConfig) error {
 	return d.deleteRunService(ctx, out, dryRun, byConfig.GetForConfig(d.configName))
 }
 

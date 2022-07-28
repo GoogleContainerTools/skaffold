@@ -39,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	rhelm "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -945,7 +946,7 @@ func TestHelmDeploy(t *testing.T) {
 			}
 			deployer.pkgTmpDir = tmpDir
 			// Deploy returns nil unless `helm get all <release>` is set up to return actual release info
-			err = deployer.Deploy(context.Background(), io.Discard, test.builds, nil)
+			err = deployer.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, *deployer.namespaces)
@@ -1027,7 +1028,7 @@ func TestHelmCleanup(t *testing.T) {
 			}, &label.DefaultLabeller{}, &test.helm, nil, "default")
 			t.RequireNoError(err)
 
-			deployer.Cleanup(context.Background(), io.Discard, test.dryRun, nil)
+			deployer.Cleanup(context.Background(), io.Discard, test.dryRun, manifest.ManifestListByConfig{})
 
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

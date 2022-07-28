@@ -131,7 +131,7 @@ func TestDeploy(tOuter *testing.T) {
 			manifestList, _ := json.Marshal(test.toDeploy)
 			manifestsByConfig := manifest.NewManifestListByConfig()
 			manifestsByConfig.Add(configName, manifest.ManifestList{manifestList})
-			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, &manifestsByConfig)
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifestsByConfig)
 			if test.errCode == proto.StatusCode_OK && err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			} else if test.errCode != proto.StatusCode_OK {
@@ -250,7 +250,7 @@ func TestDeployRewrites(tOuter *testing.T) {
 			manifests := [][]byte{m}
 			manifestByConfig := manifest.NewManifestListByConfig()
 			manifestByConfig.Add("", manifests)
-			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, &manifestByConfig)
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifestByConfig)
 			if err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			}
@@ -331,7 +331,7 @@ func TestCleanup(tOuter *testing.T) {
 			manifest, _ := json.Marshal(test.toDelete)
 			manifests := [][]byte{manifest}
 			manifestListByConfig.Add(configName, manifests)
-			err := deployer.Cleanup(context.Background(), os.Stderr, false, &manifestListByConfig)
+			err := deployer.Cleanup(context.Background(), os.Stderr, false, manifestListByConfig)
 			if test.httpErr == 0 && err != nil {
 				t.Fatalf("Expected success but got err: %v", err)
 			} else if test.httpErr != 0 && err == nil {

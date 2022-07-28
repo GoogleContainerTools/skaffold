@@ -37,7 +37,7 @@ type mockDevRunner struct {
 	hasDeployed       bool
 	errDev            error
 	calls             []string
-	manifestsByConfig *manifest.ManifestListByConfig
+	manifestsByConfig manifest.ManifestListByConfig
 }
 
 func (r *mockDevRunner) Dev(context.Context, io.Writer, []*latest.Artifact) error {
@@ -60,12 +60,12 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
 }
 
-func (r *mockDevRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
+func (r *mockDevRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	r.calls = append(r.calls, "Render")
 	return r.manifestsByConfig, nil
 }
@@ -146,11 +146,11 @@ func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (m *mockConfigChangeRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
-	return nil, nil
+func (m *mockConfigChangeRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
+	return manifest.ManifestListByConfig{}, nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
 	return nil
 }
 

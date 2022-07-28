@@ -33,6 +33,7 @@ import (
 	ctl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -214,7 +215,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Namespace: skaffoldNamespaceOption,
 				}}}, &label.DefaultLabeller{}, &test.kustomize, "default")
 			t.RequireNoError(err)
-			err = k.Deploy(context.Background(), io.Discard, test.builds, nil)
+			err = k.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -291,7 +292,7 @@ func TestKustomizeCleanup(t *testing.T) {
 					Namespace: kubectl.TestNamespace}},
 			}, &label.DefaultLabeller{}, &test.kustomize, "default")
 			t.RequireNoError(err)
-			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, nil)
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, manifest.ManifestListByConfig{})
 
 			t.CheckError(test.shouldErr, err)
 		})
