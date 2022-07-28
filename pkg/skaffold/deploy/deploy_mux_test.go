@@ -87,7 +87,7 @@ func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
 
-func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error {
+func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
 	return m.cleanupErr
 }
 
@@ -111,7 +111,7 @@ func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error {
 	return m.deployErr
 }
 
@@ -161,7 +161,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				NewMockDeployer().WithDeployErr(test.err2),
 			}, false)
 
-			err := deployerMux.Deploy(context.Background(), nil, nil, nil)
+			err := deployerMux.Deploy(context.Background(), nil, nil, manifest.NewManifestListByConfig())
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

@@ -41,7 +41,7 @@ func NewRenderMux(renderers []Renderer) Renderer {
 	return RenderMux{renderers: renderers}
 }
 
-func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
+func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	allManifests := manifest.NewManifestListByConfig()
 	for i, renderer := range r.renderers {
 		eventV2.RendererInProgress(i)
@@ -51,7 +51,7 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 		if err != nil {
 			eventV2.RendererFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
+			return manifest.NewManifestListByConfig(), err
 		}
 
 		for _, configName := range manifestsByConfig.ConfigNames() {
@@ -65,7 +65,7 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 		eventV2.RendererSucceeded(i)
 		endTrace()
 	}
-	return &allManifests, nil
+	return allManifests, nil
 }
 
 func (r RenderMux) ManifestDeps() ([]string, error) {

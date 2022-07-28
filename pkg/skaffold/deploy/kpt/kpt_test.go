@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -175,7 +176,7 @@ func TestDeploy(t *testing.T) {
 
 			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{}, "default")
 			t.CheckNoError(err)
-			err = k.Deploy(context.Background(), io.Discard, test.builds, nil)
+			err = k.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
 			t.CheckNoError(err)
 			fmt.Fprintf(os.Stdout, "deployer namespaces: %+v\n", *k.namespaces)
 			t.CheckDeepEqual(*k.namespaces, []string{"test-kptv2"})
