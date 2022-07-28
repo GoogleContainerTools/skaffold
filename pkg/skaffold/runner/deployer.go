@@ -173,6 +173,9 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			if err != nil {
 				return nil, err
 			}
+			if len(deployers) > 0 {
+				return nil, fmt.Errorf("kpt deployer mixed in with other deployers not supported yet. Please use only kpt deployer")
+			}
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
