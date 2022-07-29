@@ -33,14 +33,14 @@ import (
 func TestRenderMux_Render(t *testing.T) {
 	tests := []struct {
 		name         string
-		renderers    []Renderer
+		renderers    GroupRenderer
 		expected     string
 		expectedDeps []string
 		shouldErr    bool
 	}{
 		{
 			name: "concatenates render results with separator",
-			renderers: []Renderer{
+			renderers: GroupRenderer{
 				mock{configName: "config1", manifests: "manifest-1", deps: []string{"file1.txt", "file2.txt"}},
 				mock{configName: "config2", manifests: "manifest-2", deps: []string{"file2.txt", "file3.txt"}}},
 			expected:     "manifest-1\n---\nmanifest-2",
@@ -48,7 +48,7 @@ func TestRenderMux_Render(t *testing.T) {
 		},
 		{
 			name: "returns empty string when any call fails",
-			renderers: []Renderer{
+			renderers: GroupRenderer{
 				mock{manifests: "manifest-1", deps: []string{"file1.txt"}},
 				mock{deps: []string{"file2.txt"}, shouldErr: true}},
 			expectedDeps: []string{"file1.txt", "file2.txt"},
@@ -56,7 +56,7 @@ func TestRenderMux_Render(t *testing.T) {
 		},
 		{
 			name: "short-circuits when first call fails",
-			renderers: []Renderer{
+			renderers: GroupRenderer{
 				mock{deps: []string{"file1.txt"}, shouldErr: true},
 				mock{manifests: "manifest-2", deps: []string{"file2.txt"}}},
 			expectedDeps: []string{"file1.txt", "file2.txt"},

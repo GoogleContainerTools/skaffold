@@ -39,19 +39,19 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) ([]Renderer, error) {
+func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) (GroupRenderer, error) {
 	if usingLegacyHelmDeploy && command != "render" {
-		return []Renderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
+		return GroupRenderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
 	}
 	if renderCfg.Validate != nil && renderCfg.Transform != nil {
 		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err
 		}
-		log.Entry(context.TODO()).Infof("setting up kpt renderer")
-		return []Renderer{r}, nil
+		log.Entry(ctx).Infof("setting up kpt renderer")
+		return GroupRenderer{r}, nil
 	}
-	var rs []Renderer
+	var rs GroupRenderer
 	var r Renderer
 	var err error
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {

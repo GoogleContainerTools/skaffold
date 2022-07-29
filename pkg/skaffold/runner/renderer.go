@@ -27,9 +27,9 @@ import (
 func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (renderer.Renderer, error) {
 	ps := runCtx.Pipelines.AllByConfigNames()
 
-	var renderers []renderer.Renderer
+	var renderers renderer.GroupRenderer
 	for configName, p := range ps {
-		rs, err := renderer.New(runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
+		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
 		if err != nil {
 			return nil, err
 		}
