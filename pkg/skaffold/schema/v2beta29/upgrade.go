@@ -45,7 +45,6 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 	// Copy kubectl deploy config to render config
 	if oldPL.Deploy.KubectlDeploy != nil {
 		newPL.Render.RawK8s = oldPL.Deploy.KubectlDeploy.Manifests
-		newPL.Deploy.KubectlDeploy.Manifests = nil
 	}
 
 	// Copy kustomize deploy config to render config

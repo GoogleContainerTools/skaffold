@@ -5,7 +5,6 @@ metadata:
 build:
   artifacts:
   - image: skaffold-example
-deploy:
-  kubectl:
-    manifests:
-    - k8s-pod.yaml
+manifests:
+  rawYaml:
+  - k8s-pod.yaml

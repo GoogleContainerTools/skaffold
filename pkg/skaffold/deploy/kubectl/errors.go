@@ -59,14 +59,6 @@ func readManifestErr(err error) error {
 		})
 }
 
-func readRemoteManifestErr(err error) error {
-	return sErrors.NewError(err,
-		&proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_READ_REMOTE_MANIFEST_ERR,
-		})
-}
-
 func userErr(err error) error {
 	return deployerr.UserError(err, proto.StatusCode_DEPLOY_KUBECTL_USER_ERR)
 }

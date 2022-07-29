@@ -31,10 +31,11 @@ build:
         after:
           - container:
               command: ["sh", "-c", "set -x; kill -HUP 1"]
+manifests:
+  rawYaml:
+  - deployment.yaml
 deploy:
   kubectl:
-    manifests:
-      - deployment.yaml
     hooks:
       before:
         - host:

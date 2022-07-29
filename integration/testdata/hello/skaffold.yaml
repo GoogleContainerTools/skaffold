@@ -6,12 +6,10 @@ build:
 
 profiles:
   - name: pod
-    deploy:
-      kubectl:
-        manifests:
-          - k8s/pod.yaml
+    manifests:
+      rawYaml:
+      - k8s/pod.yaml
   - name: deployment
-    deploy:
-      kubectl:
-        manifests:
-          - k8s/deployment.yaml
+    manifests:
+      rawYaml:
+      - k8s/deployment.yaml

@@ -45,6 +45,20 @@ deploy:
       - leeroy-app/kubernetes/*
 `
 
+var testSkaffoldYamlV3 = `apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  artifacts:
+    - image: leeroy-app
+      context: leeroy-app
+      requires:
+        - image: base
+          alias: BASE
+manifests:
+  rawYaml:
+  - leeroy-app/kubernetes/*
+`
+
 var testManifest = `apiVersion: v1
 kind: Service
 metadata:
@@ -148,14 +162,14 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 		{
 			description:            "verify SkaffoldYamlUseStaticPort rule works as intended",
 			rules:                  []RuleID{SkaffoldYamlUseStaticPort},
-			moduleAndSkaffoldYamls: map[string]string{"cfg0": testSkaffoldYaml},
+			moduleAndSkaffoldYamls: map[string]string{"cfg0": testSkaffoldYamlV3},
 			modules:                []string{"cfg0"},
 			expected: map[string]*[]Result{
 				"cfg0": {
 					{
 						Rule:        ruleIDToskaffoldYamlRule[SkaffoldYamlUseStaticPort],
-						StartLine:   14,
-						EndLine:     15,
+						StartLine:   13,
+						EndLine:     14,
 						StartColumn: 1,
 						EndColumn:   0,
 						Explanation: "It is a skaffold best practice to specify a static port (vs skaffold dynamically choosing one) for port forwarding " +
@@ -205,9 +219,9 @@ func TestGetSkaffoldYamlsLintResults(t *testing.T) {
 				}
 				configSet = append(configSet, &parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
 					Metadata: latest.Metadata{Name: module},
-					Pipeline: latest.Pipeline{Deploy: latest.DeployConfig{DeployType: latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{
+					Pipeline: latest.Pipeline{Render: latest.RenderConfig{Generate: latest.Generate{RawK8s: []string{
 						mp,
-					}}}}},
+					}}}},
 				},
 					SourceFile: fp,
 				})

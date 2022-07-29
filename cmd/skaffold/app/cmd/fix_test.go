@@ -24,7 +24,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -38,7 +37,7 @@ func TestFix(t *testing.T) {
 	}{
 		{
 			description:   "v1alpha4 to latest",
-			targetVersion: latestV1.Version,
+			targetVersion: latest.Version,
 			inputYaml: `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
@@ -66,15 +65,16 @@ test:
 - image: docker/image
   structureTests:
   - ./test/*
+manifests:
+  rawYaml:
+  - k8s/deployment.yaml
 deploy:
-  kubectl:
-    manifests:
-    - k8s/deployment.yaml
-`, latestV1.Version),
+  kubectl: {}
+`, latest.Version),
 		},
 		{
 			description:   "v1alpha1 to latest",
-			targetVersion: latestV1.Version,
+			targetVersion: latest.Version,
 			inputYaml: `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
@@ -94,11 +94,12 @@ build:
   - image: docker/image
     docker:
       dockerfile: dockerfile.test
+manifests:
+  rawYaml:
+  - k8s/deployment.yaml
 deploy:
-  kubectl:
-    manifests:
-    - k8s/deployment.yaml
-`, latestV1.Version),
+  kubectl: {}
+`, latest.Version),
 		},
 		{
 			description:   "v1alpha1 to v1",
@@ -194,17 +195,18 @@ test:
 - image: docker/image
   structureTests:
   - ./test/*
+manifests:
+  rawYaml:
+  - k8s/deployment.yaml
 deploy:
-  kubectl:
-    manifests:
-    - k8s/deployment.yaml
-`, latestV1.Version)
+  kubectl: {}
+`, latest.Version)
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfgFile := t.TempFile("config", []byte(inputYaml))
 
 		var b bytes.Buffer
-		err := fix(&b, cfgFile, cfgFile, latestV1.Version)
+		err := fix(&b, cfgFile, cfgFile, latest.Version)
 
 		output, _ := os.ReadFile(cfgFile)
 

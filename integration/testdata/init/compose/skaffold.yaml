@@ -7,8 +7,7 @@ build:
   - image: gcr.io/k8s-skaffold/compose
     docker:
       dockerfile: Dockerfile
-deploy:
-  kubectl:
-    manifests:
-    - compose-deployment.yaml
-    - compose-service.yaml
+manifests:
+  rawYaml:
+  - compose-deployment.yaml
+  - compose-service.yaml
