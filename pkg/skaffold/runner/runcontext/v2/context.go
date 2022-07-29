@@ -279,6 +279,9 @@ func (rc *RunContext) VerifyDockerNetwork() string                   { return rc
 func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
 }
+func (rc *RunContext) EnablePlatformNodeAffinityInRenderedManifests() bool {
+	return rc.Opts.EnablePlatformNodeAffinity
+}
 
 // GetRenderConfig returns the top tier RenderConfig.
 // TODO: design how to support multi-module.

@@ -306,7 +306,7 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 	return nil
 }
 
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ *manifest.ManifestListByConfig) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	if err := kptInitFunc(ctx, out, k); err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (k *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ *manifest.ManifestListByConfig) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ manifest.ManifestListByConfig) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": deployerName,
 	})

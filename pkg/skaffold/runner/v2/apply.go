@@ -61,7 +61,7 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	event.DeployInProgress()
 	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_Deploying")
 	defer endTrace()
-	err = r.deployer.Deploy(ctx, deployOut, artifacts, &list)
+	err = r.deployer.Deploy(ctx, deployOut, artifacts, list)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)

@@ -47,7 +47,7 @@ func TestRenderMux_Render(t *testing.T) {
 			expectedDeps: []string{"file1.txt", "file2.txt", "file3.txt"},
 		},
 		{
-			name: "short-circuits when first call fails",
+			name: "returns empty string when any call fails",
 			renderers: []Renderer{
 				mock{manifests: "manifest-1", deps: []string{"file1.txt"}},
 				mock{deps: []string{"file2.txt"}, shouldErr: true}},
@@ -55,7 +55,7 @@ func TestRenderMux_Render(t *testing.T) {
 			shouldErr:    true,
 		},
 		{
-			name: "short-circuits when second call fails",
+			name: "short-circuits when first call fails",
 			renderers: []Renderer{
 				mock{deps: []string{"file1.txt"}, shouldErr: true},
 				mock{manifests: "manifest-2", deps: []string{"file2.txt"}}},
@@ -76,10 +76,7 @@ func TestRenderMux_Render(t *testing.T) {
 			mux := NewRenderMux(tc.renderers)
 			buf := &bytes.Buffer{}
 			actual, err := mux.Render(context.Background(), buf, nil, true)
-			actualValue := ""
-			if actual != nil {
-				actualValue = actual.String()
-			}
+			actualValue := actual.String()
 			t.CheckErrorAndDeepEqual(tc.shouldErr, err, tc.expected, actualValue)
 			actualDeps, errD := mux.ManifestDeps()
 			t.CheckNoError(errD)
@@ -99,12 +96,12 @@ func (m mock) ManifestDeps() ([]string, error) {
 	return m.deps, nil
 }
 
-func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool) (*manifest.ManifestListByConfig, error) {
+func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestListByConfig, error) {
 	if m.shouldErr {
-		return nil, fmt.Errorf("render error")
+		return manifest.ManifestListByConfig{}, fmt.Errorf("render error")
 	}
 	manifests, err := manifest.Load(bytes.NewReader([]byte(m.manifests)))
 	manifestListByConfig := manifest.NewManifestListByConfig()
 	manifestListByConfig.Add(m.configName, manifests)
-	return &manifestListByConfig, err
+	return manifestListByConfig, err
 }

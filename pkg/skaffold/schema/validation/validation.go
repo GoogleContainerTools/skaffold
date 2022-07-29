@@ -119,6 +119,7 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) error {
 	var errs []error
 	errs = append(errs, validateDockerNetworkContainerExists(ctx, runCtx.Artifacts(), runCtx)...)
+	errs = append(errs, validateVerifyTestsExistOnVerifyCommand(runCtx.DefaultPipeline().Verify, runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -384,6 +385,15 @@ func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*lat
 		cfgErrs = append(cfgErrs, networkModeCfgErr)
 	}
 	return
+}
+
+// Validate that test cases exist when `verify` is called, otherwise Skaffold should error
+func validateVerifyTestsExistOnVerifyCommand(tcs []*latest.VerifyTestCase, runCtx *runcontext.RunContext) []error {
+	var errs []error
+	if len(tcs) == 0 && runCtx.Opts.Command == "verify" {
+		errs = append(errs, fmt.Errorf("verify command expects non-zero number of test cases"))
+	}
+	return errs
 }
 
 // Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container

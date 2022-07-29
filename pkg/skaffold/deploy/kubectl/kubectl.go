@@ -170,7 +170,7 @@ func (k *Deployer) trackNamespaces(namespaces []string) {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifestsByConfig *manifest.ManifestListByConfig) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifestsByConfig manifest.ManifestListByConfig) error {
 	manifests := manifestsByConfig.GetForConfig(k.ConfigName())
 	var (
 		err      error
@@ -278,11 +278,9 @@ func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestsByConfig *manifest.ManifestListByConfig) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestsByConfig manifest.ManifestListByConfig) error {
 	var manifests manifest.ManifestList
-	if manifestsByConfig != nil {
-		manifests = append(manifests, manifestsByConfig.GetForConfig(k.ConfigName())...)
-	}
+	manifests = append(manifests, manifestsByConfig.GetForConfig(k.ConfigName())...)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})

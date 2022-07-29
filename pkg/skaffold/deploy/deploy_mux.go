@@ -107,7 +107,7 @@ func (m DeployerMux) ConfigName() string {
 	return ""
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l *manifest.ManifestListByConfig) error {
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l manifest.ManifestListByConfig) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
 		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))
@@ -160,7 +160,7 @@ func (m DeployerMux) Dependencies() ([]string, error) {
 	return deps.ToList(), nil
 }
 
-func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, manifestsByConfig *manifest.ManifestListByConfig) error {
+func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, manifestsByConfig manifest.ManifestListByConfig) error {
 	for _, deployer := range m.deployers {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Cleanup")
 		if dryRun {

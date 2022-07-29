@@ -24,3 +24,7 @@ import (
 func ConvertToV1Platform(platform specs.Platform) v1.Platform {
 	return v1.Platform{Architecture: platform.Architecture, OS: platform.OS, OSVersion: platform.OSVersion, OSFeatures: platform.OSFeatures, Variant: platform.Variant}
 }
+
+func ConvertFromV1Platform(platform v1.Platform) specs.Platform {
+	return specs.Platform{Architecture: platform.Architecture, OS: platform.OS, OSVersion: platform.OSVersion, OSFeatures: platform.OSFeatures, Variant: platform.Variant}
+}

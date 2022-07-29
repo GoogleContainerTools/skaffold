@@ -84,3 +84,13 @@ func TestVerifyOneTestFailsWithEnvVar(t *testing.T) {
 
 	// TODO(aaron-prindle) verify that FAILED event is found where expected
 }
+
+func TestVerifyNoTestsFails(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out, err := skaffold.Verify("--default-repo=").InDir("testdata/verify-no-tests").RunWithCombinedOutput(t)
+	logs := string(out)
+
+	testutil.CheckError(t, true, err)
+	testutil.CheckContains(t, "verify command expects non-zero number of test cases", logs)
+}

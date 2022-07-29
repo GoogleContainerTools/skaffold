@@ -379,7 +379,7 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
@@ -390,7 +390,7 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
@@ -398,7 +398,7 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, &emptyManifestList)
+		}, emptyManifestList)
 		t.CheckErrorContains("nothing to deploy", err)
 	})
 }
@@ -452,7 +452,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 
 		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 
 		t.CheckNoError(err)
 	})
@@ -491,7 +491,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})

@@ -83,19 +83,19 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 	return nil
 }
 
-func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
+func (w withTimings) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	start := time.Now()
 	log.Entry(ctx).Infoln("Starting render...")
 
 	manifestsLists, err := w.Renderer.Render(ctx, out, builds, offline)
 	if err != nil {
-		return nil, err
+		return manifest.NewManifestListByConfig(), err
 	}
 	log.Entry(ctx).Infoln("Render completed in", timeutil.Humanize(time.Since(start)))
 	return manifestsLists, nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, l *manifest.ManifestListByConfig) error {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, l manifest.ManifestListByConfig) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Starting deploy...")
 
@@ -107,7 +107,7 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.A
 	return err
 }
 
-func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool, config *manifest.ManifestListByConfig) error {
+func (w withTimings) Cleanup(ctx context.Context, out io.Writer, dryRun bool, config manifest.ManifestListByConfig) error {
 	start := time.Now()
 	output.Default.Fprintln(out, "Cleaning up...")
 
