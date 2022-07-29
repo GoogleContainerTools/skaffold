@@ -130,5 +130,9 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	} else {
 		customMap["DIGEST_HEX"] = digest
 	}
+
+	// IMAGE_DOMAIN and IMAGE_REPO_NO_DOMAIN added for v2beta* 'helm+explicitRegistry' -> v3alpha* compatibility
+	customMap["IMAGE_DOMAIN"] = ref.Domain
+	customMap["IMAGE_REPO_NO_DOMAIN"] = strings.TrimPrefix(ref.BaseName, ref.Domain+"/")
 	return customMap
 }
