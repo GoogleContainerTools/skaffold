@@ -42,7 +42,7 @@ type Runner interface {
 	DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error
 	GeneratePipeline(context.Context, io.Writer, []util.VersionedConfig, []string, string) error
 	HasBuilt() bool
-	HasDeployed() bool
+	DeployManifests() manifest.ManifestListByConfig
 	Prune(context.Context, io.Writer) error
 
 	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error)

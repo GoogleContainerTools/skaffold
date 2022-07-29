@@ -30,14 +30,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
+// GroupRenderer maintains the slice of all `Renderer`s defined in a single Skaffold config.
+type GroupRenderer []Renderer
+
 // RenderMux forwards all method calls to the renderers it contains.
 // When encountering an error, it aborts and returns the error. Otherwise,
 // it collects the results and returns all the manifests.
 type RenderMux struct {
-	renderers []Renderer
+	renderers GroupRenderer
 }
 
-func NewRenderMux(renderers []Renderer) Renderer {
+func NewRenderMux(renderers GroupRenderer) Renderer {
 	return RenderMux{renderers: renderers}
 }
 

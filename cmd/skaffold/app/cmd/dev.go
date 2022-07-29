@@ -72,7 +72,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 				}
 				err := r.Dev(ctx, out, artifacts)
 
-				if r.HasDeployed() {
+				if r.DeployManifests().String() != "" {
 					cleanup = func() {
 						manifestsByConfig, err := r.Render(ctx, io.Discard, []graph.Artifact{}, false)
 						if err != nil {

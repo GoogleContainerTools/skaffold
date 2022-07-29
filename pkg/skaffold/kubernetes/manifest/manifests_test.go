@@ -162,3 +162,57 @@ func TestAppendServiceAndRoleBinding(t *testing.T) {
 	testutil.CheckDeepEqual(t, service, string(manifests[1]))
 	testutil.CheckDeepEqual(t, manifests.String(), roleBinding+"\n---\n"+service)
 }
+
+func TestManifestListByConfigAdd(t *testing.T) {
+	tests := []struct {
+		description string
+		mlbc        ManifestListByConfig
+		config      string
+		ml          ManifestList
+		expected    ManifestListByConfig
+	}{
+		{
+			description: "same config name appends to original list",
+			mlbc: ManifestListByConfig{
+				manifests: map[string]ManifestList{
+					"config-a": {[]byte(pod1)},
+				},
+				configNames: []string{"config-a"},
+			},
+			config: "config-a",
+			ml:     ManifestList{[]byte(pod2)},
+			expected: ManifestListByConfig{
+				manifests: map[string]ManifestList{
+					"config-a": {[]byte(pod1), []byte(pod2)},
+				},
+				configNames: []string{"config-a"},
+			},
+		},
+		{
+			description: "different config name appends to original list",
+			mlbc: ManifestListByConfig{
+				manifests: map[string]ManifestList{
+					"config-a": {[]byte(pod1)},
+				},
+				configNames: []string{"config-a"},
+			},
+			config: "config-b",
+			ml:     ManifestList{[]byte(pod2)},
+			expected: ManifestListByConfig{
+				manifests: map[string]ManifestList{
+					"config-a": {[]byte(pod1)},
+					"config-b": {[]byte(pod2)},
+				},
+				configNames: []string{"config-a", "config-b"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			test.mlbc.Add(test.config, test.ml)
+			t.CheckDeepEqual(test.expected.configNames, test.mlbc.configNames)
+			t.CheckDeepEqual(test.expected.manifests, test.mlbc.manifests)
+		})
+	}
+}
