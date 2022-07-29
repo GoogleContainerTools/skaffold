@@ -692,9 +692,6 @@ type DeployType struct {
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
-	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
-	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
-
 	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API
 	CloudRunDeploy *CloudRunDeploy `yaml:"cloudrun,omitempty"`
 }
@@ -1733,25 +1730,4 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 		m["volumeMounts"] = vList
 	}
 	return m, err
-}
-
-// TODO (yuwenma): KustomizeDeploy shall be deprecated.
-
-// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
-type KustomizeDeploy struct {
-	// KustomizePaths is the path to Kustomization files.
-	// Defaults to `["."]`.
-	KustomizePaths []string `yaml:"paths,omitempty" skaffold:"filepath"`
-
-	// Flags are additional flags passed to `kubectl`.
-	Flags KubectlFlags `yaml:"flags,omitempty"`
-
-	// BuildArgs are additional args passed to `kustomize build`.
-	BuildArgs []string `yaml:"buildArgs,omitempty"`
-
-	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
-	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
-
-	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }

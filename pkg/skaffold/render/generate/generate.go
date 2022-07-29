@@ -25,16 +25,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // NewGenerator instantiates a Generator object.
@@ -76,6 +80,11 @@ func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 		case strings.HasPrefix(path, "gs://"):
 			gcsManifests = append(gcsManifests, path)
 		default:
+			// expand paths
+			path, err := util.ExpandEnvTemplate(path, nil)
+			if err != nil {
+				return nil, err
+			}
 			localPaths = append(localPaths, path)
 		}
 	}
@@ -193,10 +202,19 @@ func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, er
 			kustomizePathMap[dir] = true
 		}
 	}
+
+	kCLI := kubectl.NewCLI(kCfg{}, "")
+	useKubectlKustomize := !kustomizeBinaryExists() && kubectlVersionCheck(kCLI)
+
 	for kPath := range kustomizePathMap {
-		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
-		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
-		out, err := util.RunCmdOut(ctx, cmd)
+		var out []byte
+		var err error
+		if useKubectlKustomize {
+			out, err = kCLI.Kustomize(ctx, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath))
+		} else {
+			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
+			out, err = util.RunCmdOut(ctx, cmd)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -325,5 +343,31 @@ func (g Generator) ManifestDeps() ([]string, error) {
 			return nil, err
 		}
 	}
+	// kustomize deps
+	kDeps, err := kustomizeDependencies(g.config.Kustomize.Paths)
+	if err != nil {
+		return nil, err
+	}
+	deps = append(deps, kDeps...)
 	return deps, nil
+}
+
+func kustomizeDependencies(paths []string) ([]string, error) {
+	deps := stringset.New()
+	for _, kustomizePath := range paths {
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
+		if err != nil {
+			return nil, sErrors.NewError(err,
+				&proto.ActionableErr{
+					Message: err.Error(),
+					ErrCode: proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
+				})
+		}
+		deps.Insert(depsForKustomization...)
+	}
+	return deps.ToList(), nil
 }

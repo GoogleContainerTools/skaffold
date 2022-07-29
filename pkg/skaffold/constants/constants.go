@@ -126,6 +126,8 @@ var (
 	}
 
 	AllowedUserPattern = `^%v(\/.+)?$`
+
+	KustomizeFilePaths = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
 )
 
 var ImageRef = struct {

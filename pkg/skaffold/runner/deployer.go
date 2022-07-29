@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	kptV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -77,7 +76,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		cloudRunDeployFound := false
 
 		for _, d := range pipelines.Deployers() {
-			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
+			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil {
 				nonHelmDeployFound = true
 			}
 
@@ -176,14 +175,6 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			}
 			deployers = append(deployers, deployer)
 		}
-
-		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy, configName)
-			if err != nil {
-				return nil, err
-			}
-			deployers = append(deployers, deployer)
-		}
 		if d.CloudRunDeploy != nil {
 			deployer, err := getCloudRunDeployer(dCtx.RunContext, labeller, runCtx.DeployConfigs(), configName)
 			if err != nil {
@@ -255,10 +246,6 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		if d.KubectlDeploy != nil {
 			currentDefaultNamespace = d.KubectlDeploy.DefaultNamespace
 			currentKubectlFlags = d.KubectlDeploy.Flags
-		}
-		if d.KustomizeDeploy != nil {
-			currentDefaultNamespace = d.KustomizeDeploy.DefaultNamespace
-			currentKubectlFlags = d.KustomizeDeploy.Flags
 		}
 		if kFlags == nil {
 			kFlags = &currentKubectlFlags
