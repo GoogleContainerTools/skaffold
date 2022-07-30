@@ -344,56 +344,10 @@ func TestKubectlCleanup(t *testing.T) {
 	}
 }
 
-func TestKubectlDeployerRemoteCleanup(t *testing.T) {
-	tests := []struct {
-		description string
-		kubectl     latest.KubectlDeploy
-		commands    util.Command
-	}{
-		{
-			description: "cleanup success",
-			kubectl: latest.KubectlDeploy{
-				RemoteManifests: []string{"pod/leeroy-web"},
-			},
-			commands: testutil.
-				CmdRun("kubectl --context kubecontext --namespace testNamespace get pod/leeroy-web -o yaml").
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -").
-				AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", DeploymentWebYAML),
-		},
-		{
-			description: "cleanup error",
-			kubectl: latest.KubectlDeploy{
-				RemoteManifests: []string{"anotherNamespace:pod/leeroy-web"},
-			},
-			commands: testutil.
-				CmdRun("kubectl --context kubecontext --namespace anotherNamespace get pod/leeroy-web -o yaml").
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -").
-				AndRunInput("kubectl --context kubecontext --namespace anotherNamespace apply -f -", DeploymentWebYAML),
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, "cleanup remote", func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.commands)
-			tmpDir := t.NewTempDir()
-			tmpDir.Write("deployment.yaml", DeploymentWebYAML).Chdir()
-
-			k, err := NewDeployer(&kubectlConfig{
-				workingDir: ".",
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl, "default")
-			t.RequireNoError(err)
-
-			err = k.Cleanup(context.Background(), io.Discard, false, nil)
-
-			t.CheckNoError(err)
-		})
-	}
-}
-
 func TestKubectlRedeploy(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&client.Client, deployutil.MockK8sClient)
-		tmpDir := t.NewTempDir().
+		t.NewTempDir().
 			Write("deployment-web.yaml", DeploymentWebYAML).
 			Write("deployment-app.yaml", DeploymentAppYAML)
 
@@ -410,7 +364,7 @@ func TestKubectlRedeploy(t *testing.T) {
 				Enabled: true,
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}}, configName)
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, configName)
 		t.RequireNoError(err)
 
 		// Deploy both manifests
@@ -425,7 +379,7 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
@@ -436,7 +390,7 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
@@ -444,7 +398,7 @@ func TestKubectlRedeploy(t *testing.T) {
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, &emptyManifestList)
+		}, emptyManifestList)
 		t.CheckErrorContains("nothing to deploy", err)
 	})
 }
@@ -486,7 +440,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}}, configName)
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, configName)
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
@@ -498,12 +452,9 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 
 		err = deployer.Deploy(context.Background(), &out, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
- - "leeroy-web" is marked for deletion, waiting for completion
-`, out.String())
 	})
 }
 
@@ -529,7 +480,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 				Delay:   10 * time.Second,
 				Max:     100 * time.Millisecond,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}}, configName)
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, configName)
 		t.RequireNoError(err)
 
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
@@ -540,71 +491,10 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 
 		err = deployer.Deploy(context.Background(), io.Discard, []graph.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}, &manifestListByConfig)
+		}, manifestListByConfig)
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})
-}
-
-func TestDependencies(t *testing.T) {
-	tests := []struct {
-		description string
-		manifests   []string
-		expected    []string
-	}{
-		{
-			description: "no manifest",
-			manifests:   []string(nil),
-			expected:    []string(nil),
-		},
-		{
-			description: "missing manifest file",
-			manifests:   []string{"missing.yaml"},
-			expected:    []string(nil),
-		},
-		{
-			description: "ignore non-manifest",
-			manifests:   []string{"*.ignored"},
-			expected:    []string(nil),
-		},
-		{
-			description: "single manifest",
-			manifests:   []string{"deployment.yaml"},
-			expected:    []string{"deployment.yaml"},
-		},
-		{
-			description: "keep manifests order",
-			manifests:   []string{"01_name.yaml", "00_service.yaml"},
-			expected:    []string{"01_name.yaml", "00_service.yaml"},
-		},
-		{
-			description: "sort children",
-			manifests:   []string{"01/*.yaml", "00/*.yaml"},
-			expected:    []string{filepath.Join("01", "a.yaml"), filepath.Join("01", "b.yaml"), filepath.Join("00", "a.yaml"), filepath.Join("00", "b.yaml")},
-		},
-		{
-			description: "http manifest",
-			manifests:   []string{"deployment.yaml", "http://remote.yaml"},
-			expected:    []string{"deployment.yaml"},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			tmpDir.Touch("deployment.yaml", "01_name.yaml", "00_service.yaml", "empty.ignored").
-				Touch("01/a.yaml", "01/b.yaml").
-				Touch("00/b.yaml", "00/a.yaml").
-				Chdir()
-
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latest.KubectlDeploy{Manifests: test.manifests}, "default")
-			t.RequireNoError(err)
-
-			dependencies, err := k.Dependencies()
-
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, dependencies)
-		})
-	}
 }
 
 func TestGCSManifests(t *testing.T) {

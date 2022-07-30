@@ -34,14 +34,14 @@ import (
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error
+	Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
 	Dependencies() ([]string, error)
 
 	// Cleanup deletes what was deployed by calling Deploy.
-	Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error
+	Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error
 
 	// GetDebugger returns a Deployer's implementation of a Debugger
 	GetDebugger() debug.Debugger

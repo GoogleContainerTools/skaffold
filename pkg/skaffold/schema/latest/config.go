@@ -721,17 +721,11 @@ type DockerDeploy struct {
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 // You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 type KubectlDeploy struct {
-	// Manifests lists the Kubernetes yaml or json manifests.
-	// Defaults to `["k8s/*.yaml"]`.
-	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
-	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
-
-	// RemoteManifests lists Kubernetes manifests in remote clusters.
-	// This field is only used by v1 kubectl deployer.
-	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
-
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
@@ -1560,8 +1554,10 @@ type ResourceFilter struct {
 	GroupKind string `yaml:"groupKind" yamltags:"required"`
 	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
 	Image []string `yaml:"image,omitempty"`
-	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
+	// Labels is an optional slice of JSON-path-like paths of where to add a labels block if missing.
 	Labels []string `yaml:"labels,omitempty"`
+	// Affinity is an optional slice of JSON-path-like paths of where to add `affinity` definitions for scheduling Pods.
+	Affinity []string `yaml:"affinity,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

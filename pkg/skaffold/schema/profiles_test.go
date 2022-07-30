@@ -36,10 +36,9 @@ func TestApplyPatch(t *testing.T) {
 	config := `build:
   artifacts:
   - image: example
-deploy:
-  kubectl:
-    manifests:
-    - k8s-*
+manifests:
+  rawYaml:
+  - k8s-*
 profiles:
 - name: patches
   patches:
@@ -56,7 +55,7 @@ profiles:
       docker:
         dockerfile: Dockerfile.second
   - op: remove
-    path: /deploy
+    path: /manifests
 `
 
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -123,7 +122,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
 					Pipeline: latest.Pipeline{
@@ -148,7 +147,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 			),
 		},
 		{
@@ -160,7 +159,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "dev",
 					Pipeline: latest.Pipeline{
@@ -175,7 +174,7 @@ func TestApplyProfiles(t *testing.T) {
 					withShaTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 			),
 		},
 		{
@@ -187,7 +186,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
 					Pipeline: latest.Pipeline{
@@ -214,7 +213,7 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile.DEV"),
 					withDockerArtifact("imageProd", ".", "Dockerfile.DEV"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 			),
 		},
 		{
@@ -225,7 +224,7 @@ func TestApplyProfiles(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
 					Pipeline: latest.Pipeline{
@@ -242,7 +241,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 				),
 				withHelmDeploy(),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 			),
 		},
 		{
@@ -254,7 +253,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
 					Patches: []latest.JSONPatch{{
@@ -268,7 +267,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile.DEV"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 			),
 		},
 		{
@@ -280,7 +279,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
 					Patches: []latest.JSONPatch{{
@@ -424,7 +423,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "dev",
 				},
@@ -443,7 +442,7 @@ func TestApplyProfiles(t *testing.T) {
 					withShaTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 			),
 		},
 		{
@@ -455,7 +454,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "dev",
 				},
@@ -474,7 +473,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s("k8s/*.yaml"),
 			),
 		},
 	}

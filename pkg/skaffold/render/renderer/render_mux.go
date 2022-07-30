@@ -30,18 +30,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
+// GroupRenderer maintains the slice of all `Renderer`s defined in a single Skaffold config.
+type GroupRenderer []Renderer
+
 // RenderMux forwards all method calls to the renderers it contains.
 // When encountering an error, it aborts and returns the error. Otherwise,
 // it collects the results and returns all the manifests.
 type RenderMux struct {
-	renderers []Renderer
+	renderers GroupRenderer
 }
 
-func NewRenderMux(renderers []Renderer) Renderer {
+func NewRenderMux(renderers GroupRenderer) Renderer {
 	return RenderMux{renderers: renderers}
 }
 
-func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error) {
+func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	allManifests := manifest.NewManifestListByConfig()
 	for i, renderer := range r.renderers {
 		eventV2.RendererInProgress(i)
@@ -51,7 +54,7 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 		if err != nil {
 			eventV2.RendererFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
+			return manifest.NewManifestListByConfig(), err
 		}
 
 		for _, configName := range manifestsByConfig.ConfigNames() {
@@ -65,7 +68,7 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 		eventV2.RendererSucceeded(i)
 		endTrace()
 	}
-	return &allManifests, nil
+	return allManifests, nil
 }
 
 func (r RenderMux) ManifestDeps() ([]string, error) {

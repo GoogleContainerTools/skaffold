@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v2
 
 import (
@@ -22,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -50,13 +52,13 @@ type SkaffoldRunner struct {
 	sourceDependencies graph.SourceDependenciesCache
 	platforms          platform.Resolver
 
-	devIteration int
-	isLocalImage func(imageName string) (bool, error)
-	hasDeployed  bool
-	intents      *runner.Intents
+	devIteration    int
+	isLocalImage    func(imageName string) (bool, error)
+	deployManifests manifest.ManifestListByConfig
+	intents         *runner.Intents
 }
 
-// HasDeployed returns true if this runner has deployed something.
-func (r *SkaffoldRunner) HasDeployed() bool {
-	return r.hasDeployed
+// DeployManifests returns a list of manifest if this runner has deployed something.
+func (r *SkaffoldRunner) DeployManifests() manifest.ManifestListByConfig {
+	return r.deployManifests
 }

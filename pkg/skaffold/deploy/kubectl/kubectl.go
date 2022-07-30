@@ -17,11 +17,9 @@ limitations under the License.
 package kubectl
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/segmentio/textio"
 	"go.opentelemetry.io/otel/trace"
@@ -50,7 +48,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
 // Deployer deploys workflows using kubectl CLI.
@@ -72,7 +69,6 @@ type Deployer struct {
 	hydratedManifests  []string
 	workingDir         string
 	globalConfig       string
-	gcsManifestDir     string
 	defaultRepo        *string
 	multiLevelRepo     *bool
 	kubectl            CLI
@@ -174,7 +170,7 @@ func (k *Deployer) trackNamespaces(namespaces []string) {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifestsByConfig *manifest.ManifestListByConfig) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, manifestsByConfig manifest.ManifestListByConfig) error {
 	manifests := manifestsByConfig.GetForConfig(k.ConfigName())
 	var (
 		err      error
@@ -281,109 +277,18 @@ func (k *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
-	var nonURLManifests, gcsManifests []string
-	for _, manifest := range manifests {
-		switch {
-		case util.IsURL(manifest):
-		case strings.HasPrefix(manifest, "gs://"):
-			gcsManifests = append(gcsManifests, manifest)
-		default:
-			nonURLManifests = append(nonURLManifests, manifest)
-		}
-	}
-
-	list, err := util.ExpandPathsGlob(k.workingDir, nonURLManifests)
-	if err != nil {
-		return nil, userErr(fmt.Errorf("expanding kubectl manifest paths: %w", err))
-	}
-
-	if len(gcsManifests) != 0 {
-		// return tmp dir of the downloaded manifests
-		tmpDir, err := manifest.DownloadFromGCS(gcsManifests)
-		if err != nil {
-			return nil, userErr(fmt.Errorf("downloading from GCS: %w", err))
-		}
-		k.gcsManifestDir = tmpDir
-		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
-		if err != nil {
-			return nil, userErr(fmt.Errorf("expanding kubectl manifest paths: %w", err))
-		}
-		list = append(list, l...)
-	}
-
-	var filteredManifests []string
-	for _, f := range list {
-		if !kubernetes.HasKubernetesFileExtension(f) {
-			if !stringslice.Contains(manifests, f) {
-				olog.Entry(context.TODO()).Infof("refusing to deploy/delete non {json, yaml} file %s", f)
-				olog.Entry(context.TODO()).Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
-				continue
-			}
-		}
-		filteredManifests = append(filteredManifests, f)
-	}
-
-	return filteredManifests, nil
-}
-
-// readRemoteManifests will try to read manifests from the given kubernetes
-// context in the specified namespace and for the specified type
-func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
-	var args []string
-	ns := ""
-	if parts := strings.Split(name, ":"); len(parts) > 1 {
-		ns = parts[0]
-		name = parts[1]
-	}
-	args = append(args, name, "-o", "yaml")
-
-	var manifest bytes.Buffer
-	err := k.kubectl.RunInNamespace(ctx, nil, &manifest, "get", ns, args...)
-	if err != nil {
-		return nil, readRemoteManifestErr(fmt.Errorf("getting remote manifests: %w", err))
-	}
-
-	return manifest.Bytes(), nil
-}
-
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestsByConfig *manifest.ManifestListByConfig) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestsByConfig manifest.ManifestListByConfig) error {
 	var manifests manifest.ManifestList
-	if manifestsByConfig != nil {
-		manifests = append(manifests, manifestsByConfig.GetForConfig(k.ConfigName())...)
-	}
+	manifests = append(manifests, manifestsByConfig.GetForConfig(k.ConfigName())...)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
 	})
 	if dryRun {
-		for _, manifest := range manifests {
-			output.White.Fprintf(out, "---\n%s", manifest)
+		for _, manifestP := range manifests {
+			output.White.Fprintf(out, "---\n%s", manifestP)
 		}
 		return nil
-	}
-	// revert remote manifests
-	// TODO(dgageot): That seems super dangerous and I don't understand
-	// why we need to update resources just before we delete them.
-	// todo clean up this block as RemoteManifests is no longer used for deployer
-	if len(k.RemoteManifests) > 0 {
-		var rm manifest.ManifestList
-		for _, m := range k.RemoteManifests {
-			manifest, err := k.readRemoteManifest(ctx, m)
-			if err != nil {
-				return err
-			}
-			rm = append(rm, manifest)
-		}
-
-		upd, err := rm.ReplaceRemoteManifestImages(ctx, k.originalImages, manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
-		if err != nil {
-			return err
-		}
-
-		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
-			return err
-		}
 	}
 
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
@@ -395,5 +300,5 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, mani
 
 // Dependencies lists all the files that describe what needs to be deployed.
 func (k *Deployer) Dependencies() ([]string, error) {
-	return k.manifestFiles(k.KubectlDeploy.Manifests)
+	return []string{}, nil
 }

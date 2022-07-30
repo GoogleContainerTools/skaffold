@@ -143,7 +143,7 @@ func (t *TestBench) TestDependencies(context.Context, *latest.Artifact) ([]strin
 	return nil, nil
 }
 func (t *TestBench) Dependencies() ([]string, error) { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig *manifest.ManifestListByConfig) error {
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig manifest.ManifestListByConfig) error {
 	return nil
 }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error { return nil }
@@ -202,7 +202,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests *manifest.ManifestListByConfig) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestListByConfig) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -219,16 +219,16 @@ func (t *TestBench) ConfigName() string {
 	return ""
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool) (*manifest.ManifestListByConfig, error) {
+func (t *TestBench) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]
 		if err != nil {
-			return nil, err
+			return manifest.NewManifestListByConfig(), err
 		}
 	}
 	t.currentActions.Rendered = findTags(artifacts)
-	return nil, nil
+	return manifest.NewManifestListByConfig(), nil
 }
 
 func (t *TestBench) ManifestDeps() ([]string, error) {

@@ -14,15 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package util
 
 import (
-	"context"
-	"io"
+	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig manifest.ManifestListByConfig) error {
-	return r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
+func TestConvert(t *testing.T) {
+	pl1 := v1.Platform{Architecture: "arch", OS: "os", OSVersion: "os_ver", Variant: "variant", OSFeatures: []string{"os_feature"}}
+	pl2 := ConvertFromV1Platform(pl1)
+	pl3 := ConvertToV1Platform(pl2)
+	testutil.CheckDeepEqual(t, pl1, pl3)
 }

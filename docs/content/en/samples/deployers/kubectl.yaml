@@ -1,4 +1,3 @@
-deploy:
-  kubectl:
-    manifests:
-    - k8s-*
+manifests:
+  rawYaml:    
+  - k8s-*

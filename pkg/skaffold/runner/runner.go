@@ -35,17 +35,17 @@ type Runner interface {
 	Apply(context.Context, io.Writer) error
 	ApplyDefaultRepo(tag string) (string, error)
 	Build(context.Context, io.Writer, []*latest.Artifact) ([]graph.Artifact, error)
-	Cleanup(context.Context, io.Writer, bool, *manifest.ManifestListByConfig) error
+	Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	// Deploy and DeployAndLog: Do they need the `graph.Artifact` and could use render output.
-	Deploy(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error
-	DeployAndLog(context.Context, io.Writer, []graph.Artifact, *manifest.ManifestListByConfig) error
+	Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error
+	DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error
 	GeneratePipeline(context.Context, io.Writer, []util.VersionedConfig, []string, string) error
 	HasBuilt() bool
-	HasDeployed() bool
+	DeployManifests() manifest.ManifestListByConfig
 	Prune(context.Context, io.Writer) error
 
-	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error)
+	Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error)
 	Test(context.Context, io.Writer, []graph.Artifact) error
 	Verify(context.Context, io.Writer, []graph.Artifact) error
 	VerifyAndLog(context.Context, io.Writer, []graph.Artifact) error

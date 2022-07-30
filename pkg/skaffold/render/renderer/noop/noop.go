@@ -34,9 +34,9 @@ func New(_ latest.RenderConfig, _, _ string, _ map[string]string) Noop {
 	return Noop{}
 }
 
-func (r Noop) Render(_ context.Context, _ io.Writer, _ []graph.Artifact, _ bool) (*manifest.ManifestListByConfig, error) {
+func (r Noop) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	manifestListByConfig := manifest.NewManifestListByConfig()
-	return &manifestListByConfig, nil
+	return manifestListByConfig, nil
 }
 
 func (r Noop) ManifestDeps() ([]string, error) {

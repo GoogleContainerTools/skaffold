@@ -23,8 +23,7 @@ build:
         cache: {}
   cluster:
     pullSecretName: e2esecret
-deploy:
-  kubectl:
-    manifests:
-      - ./leeroy-web/kubernetes/*
-      - ./leeroy-app/kubernetes/*
+manifests:
+  rawYaml:
+  - ./leeroy-web/kubernetes/*
+  - ./leeroy-app/kubernetes/*

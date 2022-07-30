@@ -223,7 +223,7 @@ func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ *manifest.ManifestListByConfig) error {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy", map[string]string{
 		"DeployerType": "helm",
 	})
@@ -355,7 +355,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ *manifest.ManifestListByConfig) error {
+func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ manifest.ManifestListByConfig) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "helm",
 	})

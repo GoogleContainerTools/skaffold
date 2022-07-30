@@ -246,10 +246,10 @@ func TestManifestDeps(t *testing.T) {
 				Kpt: []string{"kpt-sample"},
 			},
 			expected: []string{
-				"kpt-sample/Kptfile",
-				"kpt-sample/deployment.yaml",
 				"kustomize-sample/kustomization.yaml",
 				"kustomize-sample/patch.yaml",
+				"kpt-sample/Kptfile",
+				"kpt-sample/deployment.yaml",
 				"rawYaml-sample/pod.yaml",
 				"rawYaml-sample/pods2.yaml",
 			},

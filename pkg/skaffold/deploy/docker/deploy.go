@@ -117,7 +117,7 @@ func (d *Deployer) TrackContainerFromBuild(artifact graph.Artifact, container tr
 
 // Deploy deploys built artifacts by creating containers in the local docker daemon
 // from each artifact's image.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ *manifest.ManifestListByConfig) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network)
@@ -295,7 +295,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ *manifest.ManifestListByConfig) error {
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ manifest.ManifestListByConfig) error {
 	if dryRun {
 		for _, container := range d.tracker.DeployedContainers() {
 			output.Yellow.Fprintln(out, container.ID)

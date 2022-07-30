@@ -32,16 +32,16 @@ import (
 )
 
 type Renderer interface {
-	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (*manifest.ManifestListByConfig, error)
+	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error)
 	// ManifestDeps returns the user kubernetes manifests to file watcher. In dev mode, a "redeploy" will be triggered
 	// if any of the "Dependencies" manifest is changed.
 	ManifestDeps() ([]string, error)
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) ([]Renderer, error) {
+func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) (GroupRenderer, error) {
 	if usingLegacyHelmDeploy && command != "render" {
-		return []Renderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
+		return GroupRenderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
 	}
 	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
 		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
@@ -51,20 +51,22 @@ func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, 
 		log.Entry(context.TODO()).Infof("setting up kpt renderer")
 		return []Renderer{r}, nil
 	}
-	var rs []Renderer
-	var r Renderer
-	var err error
+
+	var rs GroupRenderer
+
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
-		if r, err = kubectl.New(cfg, renderCfg, labels, configName); err != nil {
+		if r, err := kubectl.New(cfg, renderCfg, labels, configName); err != nil {
 			return nil, err
+		} else {
+			rs = append(rs, r)
 		}
-		rs = append(rs, r)
 	}
 	if renderCfg.Helm != nil {
-		if r, err = helm.New(cfg, renderCfg, labels, configName); err != nil {
+		if r, err := helm.New(cfg, renderCfg, labels, configName); err != nil {
 			return nil, err
+		} else {
+			rs = append(rs, r)
 		}
-		rs = append(rs, r)
 	}
 	return rs, nil
 }
