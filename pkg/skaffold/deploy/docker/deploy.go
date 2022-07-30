@@ -25,6 +25,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -229,7 +230,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 			continue
 		}
 		// pull the debug support image into the local daemon
-		if err := d.client.Pull(ctx, out, c.Image); err != nil {
+		if err := d.client.Pull(ctx, out, c.Image, v1.Platform{}); err != nil {
 			return nil, errors.Wrap(err, "pulling init container image")
 		}
 		// create the init container

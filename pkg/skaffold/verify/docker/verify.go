@@ -30,6 +30,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/fatih/semgroup"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -145,7 +146,7 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 			}
 		}
 		if !foundArtifact {
-			err = v.client.Pull(ctx, out, tc.Container.Image)
+			err = v.client.Pull(ctx, out, tc.Container.Image, v1.Platform{})
 			if err != nil {
 				return err
 			}
