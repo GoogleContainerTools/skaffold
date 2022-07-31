@@ -55,18 +55,18 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	var rs GroupRenderer
 
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
-		if r, err := kubectl.New(cfg, renderCfg, labels, configName); err != nil {
+		r, err := kubectl.New(cfg, renderCfg, labels, configName)
+		if err != nil {
 			return nil, err
-		} else {
-			rs = append(rs, r)
 		}
+			rs = append(rs, r)
 	}
 	if renderCfg.Helm != nil {
-		if r, err := helm.New(cfg, renderCfg, labels, configName); err != nil {
+		r, err := helm.New(cfg, renderCfg, labels, configName)
+		if err != nil {
 			return nil, err
-		} else {
-			rs = append(rs, r)
 		}
+		rs = append(rs, r)
 	}
 	return rs, nil
 }
