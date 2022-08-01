@@ -154,6 +154,11 @@ var tests = []struct {
 		deployments: []string{"skaffold-helm"},
 		targetLog:   "Hello world!",
 	},
+	{
+		description: "multiple renderers mixed in",
+		dir:         "examples/multiple-renderers",
+		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
+	},
 }
 
 func TestRun(t *testing.T) {

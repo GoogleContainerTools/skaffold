@@ -43,25 +43,27 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	if usingLegacyHelmDeploy && command != "render" {
 		return GroupRenderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
 	}
-	if renderCfg.Validate != nil && renderCfg.Transform != nil {
+	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
 		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err
 		}
-		log.Entry(ctx).Infof("setting up kpt renderer")
-		return GroupRenderer{r}, nil
+		log.Entry(context.TODO()).Infof("setting up kpt renderer")
+		return []Renderer{r}, nil
 	}
+
 	var rs GroupRenderer
-	var r Renderer
-	var err error
+
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
-		if r, err = kubectl.New(cfg, renderCfg, labels, configName); err != nil {
+		r, err := kubectl.New(cfg, renderCfg, labels, configName)
+		if err != nil {
 			return nil, err
 		}
 		rs = append(rs, r)
 	}
 	if renderCfg.Helm != nil {
-		if r, err = helm.New(cfg, renderCfg, labels, configName); err != nil {
+		r, err := helm.New(cfg, renderCfg, labels, configName)
+		if err != nil {
 			return nil, err
 		}
 		rs = append(rs, r)
