@@ -90,7 +90,7 @@ func TestRemoteImage(t *testing.T) {
 
 			img, err := getRemoteImage(test.image, &mockConfig{
 				insecureRegistries: test.insecureRegistries,
-			}, nil)
+			}, v1.Platform{})
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {

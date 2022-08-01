@@ -40,14 +40,27 @@ var (
 
 func AddRemoteTag(src, target string, cfg Config, platforms []specs.Platform) error {
 	log.Entry(context.TODO()).Debugf("attempting to add tag %s to src %s", target, src)
-	img, err := getRemoteImage(src, cfg, platforms)
-	if err != nil {
-		return fmt.Errorf("getting image: %w", err)
-	}
 
 	targetRef, err := parseReference(target, cfg, name.WeakValidation)
 	if err != nil {
 		return err
+	}
+
+	if len(platforms) > 1 {
+		index, err := getRemoteIndex(src, cfg)
+		if err != nil {
+			return fmt.Errorf("getting image index: %w", err)
+		}
+		return remote.WriteIndex(targetRef, index, remote.WithAuthFromKeychain(primaryKeychain))
+	}
+
+	var pl v1.Platform
+	if len(platforms) == 1 {
+		pl = util.ConvertToV1Platform(platforms[0])
+	}
+	img, err := getRemoteImage(src, cfg, pl)
+	if err != nil {
+		return fmt.Errorf("getting image: %w", err)
 	}
 
 	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(primaryKeychain))
@@ -58,8 +71,14 @@ func getRemoteDigest(identifier string, cfg Config, platforms []specs.Platform) 
 	if err == nil {
 		return digest(idx)
 	}
-
-	img, err := getRemoteImage(identifier, cfg, platforms)
+	if len(platforms) > 1 {
+		return "", fmt.Errorf("cannot fetch remote index for multiple platform image %q: %w", identifier, err)
+	}
+	var pl v1.Platform
+	if len(platforms) == 1 {
+		pl = util.ConvertToV1Platform(platforms[0])
+	}
+	img, err := getRemoteImage(identifier, cfg, pl)
 	if err != nil {
 		return "", fmt.Errorf("getting image: %w", err)
 	}
@@ -68,8 +87,8 @@ func getRemoteDigest(identifier string, cfg Config, platforms []specs.Platform) 
 }
 
 // RetrieveRemoteConfig retrieves the remote config file for an image
-func RetrieveRemoteConfig(identifier string, cfg Config, platforms []specs.Platform) (*v1.ConfigFile, error) {
-	img, err := getRemoteImage(identifier, cfg, platforms)
+func RetrieveRemoteConfig(identifier string, cfg Config, platform v1.Platform) (*v1.ConfigFile, error) {
+	img, err := getRemoteImage(identifier, cfg, platform)
 	if err != nil {
 		return nil, err
 	}
@@ -96,13 +115,7 @@ func Push(tarPath, tag string, cfg Config, platforms []specs.Platform) (string, 
 	return getRemoteDigest(tag, cfg, platforms)
 }
 
-func getRemoteImage(identifier string, cfg Config, platforms []specs.Platform) (v1.Image, error) {
-	// for multi-arch images, we can only get the image for one platform at a time.
-	// If the platform is not specified then it'll fetch the image for the host architecture.
-	// To avoid discrepencies, we fail image fetch for multi-platform images. These should instead be accessed with the `remoteIndex` method.
-	if len(platforms) > 1 {
-		return nil, fmt.Errorf("cannot fetch remote image %q for multiple platforms %q", identifier, platforms)
-	}
+func getRemoteImage(identifier string, cfg Config, platform v1.Platform) (v1.Image, error) {
 	ref, err := parseReference(identifier, cfg)
 	if err != nil {
 		return nil, err
@@ -110,8 +123,8 @@ func getRemoteImage(identifier string, cfg Config, platforms []specs.Platform) (
 	options := []remote.Option{
 		remote.WithAuthFromKeychain(primaryKeychain),
 	}
-	if len(platforms) == 1 {
-		options = append(options, remote.WithPlatform(util.ConvertToV1Platform(platforms[0])))
+	if platform.String() != "" {
+		options = append(options, remote.WithPlatform(platform))
 	}
 
 	return remoteImage(ref, options...)
