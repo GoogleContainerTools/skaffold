@@ -186,7 +186,7 @@ func TestLocalRun(t *testing.T) {
 			}).Add("pull1", ""),
 			tag:              "gcr.io/test/image:tag",
 			expected:         "gcr.io/test/image:1",
-			expectedWarnings: []string{"cacheFrom image couldn't be pulled: pull1\n"},
+			expectedWarnings: []string{"cacheFrom image \"pull1\" couldn't be pulled for platform \"\"\n"},
 		},
 		{
 			description: "error checking cache-from image",
