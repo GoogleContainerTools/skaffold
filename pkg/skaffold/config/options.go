@@ -61,6 +61,8 @@ type SkaffoldOptions struct {
 	EnablePlatformNodeAffinity bool
 	MakePathsAbsolute          *bool
 	MultiLevelRepo             *bool
+	CloudRunProject            string
+	CloudRunLocation           string
 	ConfigurationFile          string
 	HydrationDir               string
 	InventoryNamespace         string

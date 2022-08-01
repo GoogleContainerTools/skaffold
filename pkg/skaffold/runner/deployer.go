@@ -99,7 +99,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				return nil, errors.New("skaffold apply called with both Cloud Run and Kubernetes deployers. Mixing deployment targets is not allowed" +
 					" when using the Cloud Run deployer")
 			}
-			return getCloudRunDeployer(runCtx, labeller)
+			return getCloudRunDeployer(runCtx, labeller, pipelines.Deployers(), "")
 		}
 		if len(helmNamespaces) > 1 || (nonHelmDeployFound && len(helmNamespaces) == 1) {
 			return nil, errors.New("skaffold apply called with conflicting namespaces set via skaffold.yaml. This is likely due to the use of the 'deploy.helm.releases.*.namespace' field which is not supported in apply.  Remove the 'deploy.helm.releases.*.namespace' field(s) and run skaffold apply again")
@@ -185,7 +185,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
-			deployer, err := cloudrun.NewDeployer(dCtx, labeller, d.CloudRunDeploy, configName)
+			deployer, err := getCloudRunDeployer(dCtx.RunContext, labeller, runCtx.DeployConfigs(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -312,21 +312,38 @@ func validateKubectlFlags(flags *latest.KubectlFlags, additional latest.KubectlF
 }
 
 /* The Cloud Run deployer for apply. Used when Cloud Run is specified. */
-func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (*cloudrun.Deployer, error) {
+func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, deployers []latest.DeployConfig, configName string) (*cloudrun.Deployer, error) {
 	var region string
+	regionFlag := false
 	var defaultProject string
-	for _, d := range runCtx.DeployConfigs() {
+	projectFlag := false
+	if runCtx.Opts.CloudRunLocation != "" {
+		region = runCtx.Opts.CloudRunLocation
+		regionFlag = true
+	}
+	if runCtx.Opts.CloudRunProject != "" {
+		defaultProject = runCtx.Opts.CloudRunProject
+		projectFlag = true
+	}
+	for _, d := range deployers {
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
-			if region != "" && region != crDeploy.Region {
-				return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+			if !regionFlag {
+				// No region flag was provided, so take it from the config.
+				if region != "" && region != crDeploy.Region {
+					return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+				}
+
+				region = crDeploy.Region
 			}
-			region = crDeploy.Region
-			if defaultProject != "" && defaultProject != crDeploy.ProjectID {
-				return nil, fmt.Errorf("expected all Cloud Run deploys to use the same project, found deploys to projects %s and %s", defaultProject, crDeploy.ProjectID)
+			if !projectFlag {
+				// No project flag was specified so take it from the config.
+				if defaultProject != "" && defaultProject != crDeploy.ProjectID {
+					return nil, fmt.Errorf("expected all Cloud Run deploys to use the same project, found deploys to projects %s and %s", defaultProject, crDeploy.ProjectID)
+				}
+				defaultProject = crDeploy.ProjectID
 			}
-			defaultProject = crDeploy.ProjectID
 		}
 	}
-	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject}, "")
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject}, configName)
 }

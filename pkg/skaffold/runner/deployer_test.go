@@ -470,3 +470,54 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 		}
 	})
 }
+
+func TestGetCloudRunDeployer(tOuter *testing.T) {
+	tests := []struct {
+		name     string
+		opts     config.SkaffoldOptions
+		cfgs     map[string]latest.DeployType
+		expected *cloudrun.Deployer
+		haveErr  bool
+	}{
+		{
+			name: "deploy one config with no flags set",
+			cfgs: map[string]latest.DeployType{"": {
+				CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "test-project", Region: "test-region"},
+			}},
+			expected: &cloudrun.Deployer{Project: "test-project", Region: "test-region"},
+		},
+		{
+			name: "deploy with two configs and conflicting processes",
+			cfgs: map[string]latest.DeployType{"": {
+				CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "test-project", Region: "test-region"}},
+				"second": {
+					CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "test-project2", Region: "test-region"},
+				},
+			},
+			haveErr: true,
+		},
+		{
+			name: "deploy with flags set overrides config",
+			opts: config.SkaffoldOptions{CloudRunProject: "overridden-project"},
+			cfgs: map[string]latest.DeployType{"": {
+				CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "test-project", Region: "test-region"},
+			}},
+			expected: &cloudrun.Deployer{Project: "overridden-project", Region: "test-region"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(tOuter, test.name, func(t *testutil.T) {
+			pipelines := make(map[string]latest.Pipeline)
+			for name, config := range test.cfgs {
+				pipelines[name] = latest.Pipeline{Deploy: latest.DeployConfig{DeployType: config}}
+			}
+			rctx := &runcontext.RunContext{
+				Opts:      test.opts,
+				Pipelines: runcontext.NewPipelines(pipelines),
+			}
+			crDeployer, err := getCloudRunDeployer(rctx, &label.DefaultLabeller{}, rctx.DeployConfigs(), "")
+			t.CheckErrorAndFailNow(test.haveErr, err)
+			t.CheckDeepEqual(crDeployer, test.expected, cmpopts.IgnoreUnexported(cloudrun.Deployer{}))
+		})
+	}
+}

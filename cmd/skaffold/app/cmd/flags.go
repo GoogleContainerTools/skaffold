@@ -652,6 +652,24 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
 	},
+	{
+		Name:          "cloud-run-project",
+		Shorthand:     "",
+		Usage:         "The GCP Project ID or Project Number to deploy for Cloud Run",
+		Value:         &opts.CloudRunProject,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "apply", "delete"},
+	},
+	{
+		Name:          "cloud-run-location",
+		Shorthand:     "",
+		Usage:         "The GCP Region to deploy Cloud Run services to",
+		Value:         &opts.CloudRunLocation,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "apply", "delete"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {
