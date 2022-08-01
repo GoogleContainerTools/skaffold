@@ -7,18 +7,13 @@ aliases: [/docs/how-tos/deployers]
 no_list: true
 ---
 
-When Skaffold deploys your application to Kubernetes, it (usually) goes through these steps:
+When Skaffold deploys your application to Kubernetes, it goes through these steps:
 
 In the default case (no manifest provided using the kubectl or kpt deployer ), skaffold deploy will do the following:
 * the Skaffold renderer _renders_ the final Kubernetes manifests: Skaffold replaces untagged image names in the Kubernetes manifests with the final tagged image names.
-It also might go through the extra intermediate step of expanding templates (for helm) or calculating overlays (for kustomize).
+It also might go through the extra intermediate step of expanding templates (for helm) or calculating overlays (for kustomize).  Additionally some deployers (docker) do not render manifests as such don't use this phase.
 * the Skaffold deployer _deploys_ the final Kubernetes manifests to the cluster (or to local docker for the docker deployer)
 * the Skaffold deployer performs [status checks]({{< relref "/docs/pipeline-stages/status-check" >}}) and waits for the deployed resources to stabilize.
-
-In the case that a manifest file is supplied via the --TODO flag or the deployer does not accept manifests (eg: helm and docker) skaffold deploy will only do the following steps:
-* the Skaffold deployer _deploys_ the supplied Kubernetes manifests to the cluster (or deploys the specified container to docker for the docker deployer)
-* the Skaffold deployer performs [status checks]({{< relref "/docs/pipeline-stages/status-check" >}}) and waits for the deployed resources to stabilize
-
 ### Supported deployers
 
 Skaffold supports the following tools for deploying applications:
