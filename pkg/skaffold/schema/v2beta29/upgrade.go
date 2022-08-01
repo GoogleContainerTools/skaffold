@@ -86,6 +86,43 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		newPL.Render.Helm.Releases = newHelm.Releases
 		newPL.Render.Helm.Flags = newHelm.Flags
 
+		// Copy over removed artifactOverrides & imageStrategy field as identical setValues fields
+		for i := 0; i < len(newPL.Render.Helm.Releases); i++ {
+			// need to append, not override
+			svs := map[string]string(oldPL.Deploy.HelmDeploy.Releases[i].SetValues)
+			svts := map[string]string(oldPL.Deploy.HelmDeploy.Releases[i].SetValueTemplates)
+			aos := map[string]string(oldPL.Deploy.HelmDeploy.Releases[i].ArtifactOverrides)
+			if aos != nil && svs == nil {
+				svs = map[string]string{}
+			}
+			if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig != nil {
+				// is 'helm' imageStrategy
+				for k, v := range aos {
+					if k == "image" {
+						if svts == nil {
+							svts = map[string]string{}
+						}
+						svts["image.tag"] = "{{.IMAGE_TAG}}@{{.IMAGE_DIGEST}}"
+						svts["image.repository"] = "{{.IMAGE_REPO}}"
+						if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig.ExplicitRegistry {
+							// is 'helm' imageStrategy + explicitRegistry
+							svts["image.registry"] = "{{.IMAGE_DOMAIN}}"
+							svts["image.repository"] = "{{.IMAGE_REPO_NO_DOMAIN}}"
+						}
+						continue
+					}
+					svs[k] = v
+				}
+			} else {
+				// is 'fqn' imageStrategy
+				for k, v := range aos {
+					svs[k] = v
+				}
+			}
+			newPL.Render.Helm.Releases[i].SetValues = svs
+			newPL.Render.Helm.Releases[i].SetValueTemplates = svts
+		}
+
 		// Copy over lifecyle hooks for helm deployer
 		newPL.Deploy.LegacyHelmDeploy = &next.LegacyHelmDeploy{}
 		newPL.Deploy.LegacyHelmDeploy.LifecycleHooks = newHelm.LifecycleHooks
