@@ -1,6 +1,6 @@
 ---
-title: "Kpt"
-linkTitle: "Kpt"
+title: "Kpt [new in v2.0.0]"
+linkTitle: "Kpt [new in v2.0.0]"
 weight: 30
 featureId: render
 ---
@@ -10,6 +10,11 @@ featureId: render
 [`kpt`](https://kpt.dev/) allows Kubernetes
 developers to customize raw, template-free YAML files for multiple purposes.
 Skaffold can work with `kpt` by calling its command-line interface.
+
+{{< alert title="Note" >}}
+kpt CLI must be installed on your machine. Skaffold will not
+install it.
+{{< /alert >}}
 
 ### Configuration
 
@@ -25,7 +30,3 @@ artifacts using kpt.  Each entry should point to a folder with a Kptfile.
 
 {{% readfile file="samples/renderers/kpt.yaml" %}}
 
-{{< alert title="Note" >}}
-kpt CLI must be installed on your machine. Skaffold will not
-install it.
-{{< /alert >}}
