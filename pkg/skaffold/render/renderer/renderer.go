@@ -59,7 +59,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 		if err != nil {
 			return nil, err
 		}
-			rs = append(rs, r)
+		rs = append(rs, r)
 	}
 	if renderCfg.Helm != nil {
 		r, err := helm.New(cfg, renderCfg, labels, configName)
