@@ -37,6 +37,7 @@ type GenerateHydratedManifestsOptions struct {
 	TransformAllowList         map[apim.GroupKind]latest.ResourceFilter
 	TransformDenylist          map[apim.GroupKind]latest.ResourceFilter
 	EnablePlatformNodeAffinity bool
+	Offline                    bool
 }
 
 func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, ns string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
@@ -60,10 +61,14 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)); err != nil {
 		return nil, err
 	}
-	if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
-		return nil, err
+	// TODO(tejaldesai) consult with cloud deploy team if namespaces can be set offline mode
+	// in case namespace is set on the skaffold render cli command.
+	if opts.Offline {
+		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
+			return nil, err
+		}
+		endTrace()
 	}
-	endTrace()
 
 	if !opts.EnablePlatformNodeAffinity {
 		return manifests, nil

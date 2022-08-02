@@ -154,6 +154,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
 		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+		Offline:                    offline,
 	}
 	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
 	if errH != nil {

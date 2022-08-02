@@ -73,6 +73,7 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
 		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+		Offline:                    offline,
 	}
 	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
 	endTrace()
