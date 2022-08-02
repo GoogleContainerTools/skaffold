@@ -171,32 +171,31 @@ func maintainArtifactOrder(built []graph.Artifact, artifacts []*latest.Artifact)
 	return ordered
 }
 
-func (c *cache) AddArtifacts(ctx context.Context, bRes []graph.Artifact) error {
-	for _, a := range bRes {
-		entry := ImageDetails{}
-		isLocal, err := c.isLocalImage(a.ImageName)
+func (c *cache) AddArtifact(ctx context.Context, a graph.Artifact) error {
+	entry := ImageDetails{}
+	isLocal, err := c.isLocalImage(a.ImageName)
+	if err != nil {
+		return err
+	}
+	if isLocal {
+		imageID, err := c.client.ImageID(ctx, a.Tag)
 		if err != nil {
 			return err
 		}
-		if isLocal {
-			imageID, err := c.client.ImageID(ctx, a.Tag)
-			if err != nil {
-				return err
-			}
 
-			if imageID != "" {
-				entry.ID = imageID
-			}
-		} else {
-			ref, err := docker.ParseReference(a.Tag)
-			if err != nil {
-				return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
-			}
-			entry.Digest = ref.Digest
+		if imageID != "" {
+			entry.ID = imageID
 		}
-		c.cacheMutex.Lock()
-		c.artifactCache[c.hashByName[a.ImageName]] = entry
-		c.cacheMutex.Unlock()
+	} else {
+		ref, err := docker.ParseReference(a.Tag)
+		if err != nil {
+			return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
+		}
+		entry.Digest = ref.Digest
 	}
+	c.cacheMutex.Lock()
+	c.artifactCache[c.hashByName[a.ImageName]] = entry
+	c.cacheMutex.Unlock()
+
 	return nil
 }

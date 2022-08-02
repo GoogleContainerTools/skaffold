@@ -41,7 +41,7 @@ type BuilderMux struct {
 }
 
 type Cache interface {
-	AddArtifacts(ctx context.Context, bRes []graph.Artifact) error
+	AddArtifact(ctx context.Context, a graph.Artifact) error
 }
 
 // Config represents an interface for getting all config pipelines.
@@ -107,11 +107,9 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 			return "", err
 		}
 
-		if err := b.cache.AddArtifacts(ctx, []graph.Artifact{
-			{
-				ImageName: artifact.ImageName,
-				Tag:       built,
-			},
+		if err := b.cache.AddArtifact(ctx, graph.Artifact{
+			ImageName: artifact.ImageName,
+			Tag:       built,
 		}); err != nil {
 			log.Entry(ctx).Warnf("error adding artifact to cache; caching may not work as expected: %v", err)
 		}

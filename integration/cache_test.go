@@ -60,7 +60,6 @@ func TestCacheIfBuildFail(t *testing.T) {
 
 	ns, _ := SetupNamespace(t)
 
-	// TODO: add events?
 	cacheFile := "cache_" + ns.Name
 	testDir := "testdata/cache"
 	relativePath := path.Join(testDir, cacheFile)
