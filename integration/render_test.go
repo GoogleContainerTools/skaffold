@@ -19,7 +19,6 @@ package integration
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"regexp"
@@ -58,14 +57,12 @@ spec:
   - image: gcr.io/k8s-skaffold/skaffold
     name: skaffold
 `,
-		expectedOut: fmt.Sprintf(`apiVersion: v1
+		expectedOut: `apiVersion: v1
 kind: Pod
-metadata:
-  namespace: %s
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`, ns.Name)}
+    name: skaffold`}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
@@ -113,15 +110,14 @@ spec:
   - image: gcr.io/k8s-skaffold/skaffold
     name: skaffold
 `,
-			expectedOut: fmt.Sprintf(`apiVersion: v1
+			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: %s
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`, ns.Name),
+    name: skaffold`,
 		},
 		{
 			description: "two artifacts",
@@ -146,17 +142,16 @@ spec:
   - image: gcr.io/project/image2
     name: image2
 `,
-			expectedOut: fmt.Sprintf(`apiVersion: v1
+			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
     name: image1
   - image: gcr.io/project/image2:tag2
-    name: image2`, ns.Name),
+    name: image2`,
 		},
 		{
 			description: "two artifacts, combined manifests",
@@ -181,16 +176,17 @@ spec:
 ---
 apiVersion: v1
 kind: Pod
+metadata:
+  name: my-pod-456
 spec:
   containers:
   - image: gcr.io/project/image2
     name: image2
 `,
-			expectedOut: fmt.Sprintf(`apiVersion: v1
+			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
@@ -199,11 +195,11 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: %s
+  name: my-pod-456
 spec:
   containers:
   - image: gcr.io/project/image2:tag2
-    name: image2`, ns.Name, ns.Name),
+    name: image2`,
 		},
 	}
 	for _, test := range tests {
@@ -424,7 +420,6 @@ spec:
     name: b
 `,
 		},
-
 		{
 			description: "kubectl render from build output, offline, no labels",
 			config: `
@@ -454,7 +449,7 @@ spec:
   - image: gcr.io/my/project-b
     name: b
 `},
-			// No `metadata.namespace` is added in offline mode
+			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
@@ -681,7 +676,7 @@ spec:
 
 			if test.offline {
 				env := []string{"KUBECONFIG=not-supposed-to-be-used-in-offline-mode"}
-				args = append(args, "--offline")
+				args = append(args, "--offline=true")
 				skaffold.Render(args...).WithEnv(env).RunOrFail(t.T)
 			} else {
 				skaffold.Render(args...).RunOrFail(t.T)
