@@ -30,6 +30,11 @@ import (
 )
 
 func TestGetRenderer(tOuter *testing.T) {
+	rc := &runcontext.RunContext{
+		Pipelines: runcontext.NewPipelines(
+			map[string]latest.Pipeline{
+				"default": {},
+			})}
 	labels := map[string]string{}
 	kubectlCfg := latest.RenderConfig{
 		Generate: latest.Generate{
@@ -78,7 +83,7 @@ func TestGetRenderer(tOuter *testing.T) {
 					},
 				},
 				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(helm.New(nil, helmConfig, labels, "")).(renderer.Renderer)}),
+					t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)}),
 			},
 			{
 				description: "helm renderer",
@@ -86,7 +91,7 @@ func TestGetRenderer(tOuter *testing.T) {
 					Render: helmConfig,
 				},
 				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(helm.New(nil, helmConfig, labels, "")).(renderer.Renderer)}),
+					t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)}),
 			},
 			{
 				description: "kubectl renderer",
@@ -94,7 +99,7 @@ func TestGetRenderer(tOuter *testing.T) {
 					Render: kubectlCfg,
 				},
 				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kubectl.New(nil, kubectlCfg, labels, "")).(renderer.Renderer)}),
+					t.RequireNonNilResult(kubectl.New(rc, kubectlCfg, labels, "")).(renderer.Renderer)}),
 			},
 			{
 				description: "kpt renderer",
@@ -102,7 +107,18 @@ func TestGetRenderer(tOuter *testing.T) {
 					Render: kptConfig,
 				},
 				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kpt.New(nil, kptConfig, "", labels, "")).(renderer.Renderer)}),
+					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "")).(renderer.Renderer)}),
+			},
+			{
+				description: "kpt renderer when validate configured",
+				cfg: latest.Pipeline{
+					Render: latest.RenderConfig{
+						Generate: latest.Generate{RawK8s: []string{"test"}},
+						Validate: &[]latest.Validator{{Name: "kubeval"}},
+					},
+				},
+				expected: renderer.NewRenderMux([]renderer.Renderer{
+					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "")).(renderer.Renderer)}),
 			},
 		}
 		for _, test := range tests {
