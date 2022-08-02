@@ -21,15 +21,16 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-/*
 func TestCacheAPITriggers(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -49,11 +50,24 @@ func TestCacheAPITriggers(t *testing.T) {
 	})
 }
 
+func TestCacheHits(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	testutil.Run(t, "TestCacheHits", func(t *testutil.T) {
+		// Run skaffold build first to fail quickly on a build failure
+		skaffold.Build().InDir("examples/getting-started").RunOrFail(t.T)
+
+		ns, _ := SetupNamespace(t.T)
+		rpcAddr := randomPort()
+
+		// Rebuild with a different tag so that we get a cache hit.
+		out := skaffold.Build("--tag", ns.Name, "--rpc-port", rpcAddr).InDir("examples/getting-started").RunOrFailOutput(t.T)
+		t.CheckContains("skaffold-example: Found. Tagging", string(out))
+	})
+}
 
 func waitForEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
 	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
 }
-*/
 
 func TestCacheIfBuildFail(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
@@ -72,5 +86,4 @@ func TestCacheIfBuildFail(t *testing.T) {
 	if b := fInfo.Size(); b == 0 {
 		failNowIfError(t, fmt.Errorf("expected to see content in the cache file, saw %d bytes", b))
 	}
-
 }

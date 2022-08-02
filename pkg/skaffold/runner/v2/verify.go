@@ -103,7 +103,6 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	r.verifier.RegisterLocalImages(localAndBuiltImages)
 	err = r.verifier.Verify(ctx, deployOut, artifacts)
-	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
 	postDeployFn()
 	if err != nil {
 		eventV2.TaskFailed(constants.Verify, err)

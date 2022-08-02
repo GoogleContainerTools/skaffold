@@ -19,7 +19,7 @@ package util
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -42,7 +42,7 @@ func ReadConfiguration(filePath string) ([]byte, error) {
 	case filePath == "-":
 		if len(stdin) == 0 {
 			var err error
-			stdin, err = ioutil.ReadAll(os.Stdin)
+			stdin, err = io.ReadAll(os.Stdin)
 			if err != nil {
 				return []byte{}, err
 			}

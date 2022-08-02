@@ -19,7 +19,7 @@ package loader
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -89,7 +89,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 	}
 
 	runImageLoadingTests(t, tests, func(i *ImageLoader, test ImageLoadingTest) error {
-		return i.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+		return i.loadImagesInKindNodes(context.Background(), io.Discard, test.cluster, test.deployed)
 	})
 }
 
@@ -143,7 +143,7 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 	}
 
 	runImageLoadingTests(t, tests, func(i *ImageLoader, test ImageLoadingTest) error {
-		return i.loadImagesInK3dNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+		return i.loadImagesInK3dNodes(context.Background(), io.Discard, test.cluster, test.deployed)
 	})
 }
 

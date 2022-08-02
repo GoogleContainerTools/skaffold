@@ -23,7 +23,7 @@ We also generate the [reference doc for the HTTP layer]({{<relref "/docs/referen
 
 ## v1/skaffold.proto
 
-You can find the source for v1/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/v1/skaffold.proto).
+You can find the source for v1/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/main/proto/v1/skaffold.proto).
 
 
 
@@ -82,6 +82,8 @@ If the build fails, an error will be attached to the event.
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
 | errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
+| hostPlatform | [string](#string) |  | architecture of the host machine. For example `linux/amd64` |
+| targetPlatforms | [string](#string) |  | comma-delimited list of build target architectures. For example `linux/amd64,linux/arm64` |
 
 
 
@@ -1041,6 +1043,10 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_KPT_SOURCE_ERR | 1025 | The `kpt fn source` cannot read the given manifests. |
 | DEPLOY_KPTFILE_INVALID_YAML_ERR | 1026 | The Kptfile exists but cannot be opened or parsed. |
 | DEPLOY_KPT_APPLY_ERR | 1027 | kpt fails to live apply the manifests to the cluster. |
+| DEPLOY_GET_CLOUD_RUN_CLIENT_ERR | 1028 | The Cloud Run Client could not be created |
+| DEPLOY_CLOUD_RUN_GET_SERVICE_ERR | 1029 | The Cloud Run Client could not get details about the service. |
+| DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR | 1030 | The Cloud Run Client was unable to update the service. |
+| DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR | 1031 | The Cloud Run Client was unable to delete the service. |
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
@@ -1078,6 +1084,8 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
 | INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR | 1303 | Trying to modify build environment that doesn't exist |
 | INSPECT_PROFILE_NOT_FOUND_ERR | 1304 | Trying to modify a profile that doesn't exist |
+| PORT_FORWARD_RUN_GCLOUD_NOT_FOUND | 1601 |  |
+| PORT_FORWARD_RUN_PROXY_START_ERROR | 1602 |  |
 
 
 

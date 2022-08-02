@@ -18,6 +18,9 @@ package generate
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -178,6 +181,25 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+func TestGenerateFromURLManifest(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, podYaml)
+	}))
+
+	defer ts.Close()
+	defer os.RemoveAll(manifest.ManifestTmpDir)
+	g := NewGenerator(".", latest.Generate{
+		RawK8s: []string{ts.URL},
+	})
+	var output bytes.Buffer
+	actual, err := g.Generate(context.Background(), &output)
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.CheckNoError(err)
+		manifestList := manifest.ManifestList{[]byte(podYaml)}
+		t.CheckDeepEqual(actual.String(), manifestList.String())
+	})
+}
+
 func TestManifestDeps(t *testing.T) {
 	tests := []struct {
 		description    string
@@ -201,7 +223,9 @@ func TestManifestDeps(t *testing.T) {
 		{
 			description: "kustomize dir",
 			generateConfig: latest.Generate{
-				Kustomize: []string{"kustomize-sample"},
+				Kustomize: &latest.Kustomize{
+					Paths: []string{"kustomize-sample"},
+				},
 			},
 			expected: []string{"kustomize-sample/kustomization.yaml", "kustomize-sample/patch.yaml"},
 		},
@@ -215,15 +239,17 @@ func TestManifestDeps(t *testing.T) {
 		{
 			description: "multi manifest, mixed dir and file",
 			generateConfig: latest.Generate{
-				RawK8s:    []string{"rawYaml-sample"},
-				Kustomize: []string{"kustomize-sample"},
-				Kpt:       []string{"kpt-sample"},
+				RawK8s: []string{"rawYaml-sample"},
+				Kustomize: &latest.Kustomize{
+					Paths: []string{"kustomize-sample"},
+				},
+				Kpt: []string{"kpt-sample"},
 			},
 			expected: []string{
-				"kpt-sample/Kptfile",
-				"kpt-sample/deployment.yaml",
 				"kustomize-sample/kustomization.yaml",
 				"kustomize-sample/patch.yaml",
+				"kpt-sample/Kptfile",
+				"kpt-sample/deployment.yaml",
 				"rawYaml-sample/pod.yaml",
 				"rawYaml-sample/pods2.yaml",
 			},

@@ -18,7 +18,7 @@ package portforward
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -76,7 +76,7 @@ func TestForwarderManagerZeroValue(t *testing.T) {
 	var m *ForwarderManager
 
 	// Should not raise a nil dereference
-	m.Start(context.Background(), ioutil.Discard)
+	m.Start(context.Background(), io.Discard)
 	m.Stop()
 }
 

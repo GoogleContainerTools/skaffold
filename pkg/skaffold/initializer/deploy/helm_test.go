@@ -46,6 +46,24 @@ func TestDeployConfig(t *testing.T) {
 					ChartPath:   "charts",
 					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
 				},
+			}},
+		{
+			description: "charts with one or more values file",
+			input: map[string][]string{
+				"charts":     {"charts/val.yml", "charts/values.yaml"},
+				"charts-foo": {"charts-foo/values.yaml"},
+			},
+			expected: []latest.HelmRelease{
+				{
+					Name:        "charts-foo",
+					ChartPath:   "charts-foo",
+					ValuesFiles: []string{"charts-foo/values.yaml"},
+				},
+				{
+					Name:        "charts",
+					ChartPath:   "charts",
+					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
+				},
 			},
 		},
 	}
@@ -55,7 +73,7 @@ func TestDeployConfig(t *testing.T) {
 				return []byte{}, nil
 			})
 			h := newHelmInitializer(test.input)
-			d, _ := h.DeployConfig()
+			d := h.DeployConfig()
 			CheckHelmInitStruct(t, test.expected, d.LegacyHelmDeploy.Releases)
 		})
 	}

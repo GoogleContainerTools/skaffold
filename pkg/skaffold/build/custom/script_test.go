@@ -18,7 +18,7 @@ package custom
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os/exec"
 	"runtime"
 	"testing"
@@ -146,7 +146,7 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(nil, nil, false, true, nil)
-			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
+			cmd, err := builder.retrieveCmd(context.Background(), io.Discard, test.artifact, test.tag, platform.Matcher{})
 
 			t.CheckNoError(err)
 			if runtime.GOOS == "windows" {

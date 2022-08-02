@@ -17,11 +17,9 @@ limitations under the License.
 package kustomize
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,6 +33,7 @@ import (
 	ctl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -214,9 +213,9 @@ func TestKustomizeDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, &label.DefaultLabeller{}, &test.kustomize)
+				}}}, &label.DefaultLabeller{}, &test.kustomize, "default")
 			t.RequireNoError(err)
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err = k.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -291,9 +290,9 @@ func TestKustomizeCleanup(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kustomize)
+			}, &label.DefaultLabeller{}, &test.kustomize, "default")
 			t.RequireNoError(err)
-			err = k.Cleanup(context.Background(), ioutil.Discard, test.dryRun, nil)
+			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, manifest.NewManifestListByConfig())
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -341,11 +340,11 @@ func TestKustomizeHooks(t *testing.T) {
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{})
+			}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{}, "default")
 			t.RequireNoError(err)
-			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PreDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
-			err = k.PostDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PostDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -544,7 +543,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &latest.KustomizeDeploy{KustomizePaths: kustomizePaths}, "default")
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -619,190 +618,6 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 	}
 }
 
-func TestKustomizeRender(t *testing.T) {
-	type kustomizationCall struct {
-		folder      string
-		buildResult string
-	}
-	tests := []struct {
-		description    string
-		builds         []graph.Artifact
-		labels         []string
-		kustomizations []kustomizationCall
-		expected       string
-		shouldErr      bool
-	}{
-		{
-			description: "single kustomization",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			kustomizations: []kustomizationCall{
-				{
-					folder: ".",
-					buildResult: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
-  - image: gcr.io/project/image2
-    name: image2
-`,
-				},
-			},
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "single kustomization with user labels",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			labels: []string{"user/label=test"},
-			kustomizations: []kustomizationCall{
-				{
-					folder: ".",
-					buildResult: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
-  - image: gcr.io/project/image2
-    name: image2
-`,
-				},
-			},
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    user/label: test
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "multiple kustomizations",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			kustomizations: []kustomizationCall{
-				{
-					folder: "a",
-					buildResult: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
-`,
-				},
-				{
-					folder: "b",
-					buildResult: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image2
-    name: image2
-`,
-				},
-			},
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
----
-apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			var kustomizationPaths []string
-			fakeCmd := testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectl.KubectlVersion112)
-			for _, kustomizationCall := range test.kustomizations {
-				fakeCmd.AndRunOut("kustomize build "+kustomizationCall.folder, kustomizationCall.buildResult)
-				kustomizationPaths = append(kustomizationPaths, kustomizationCall.folder)
-			}
-			t.Override(&util.DefaultExecCommand, fakeCmd)
-			t.NewTempDir().Chdir()
-
-			labeller := label.NewLabeller(false, test.labels, "")
-
-			k, err := NewDeployer(&kustomizeConfig{
-				workingDir: ".",
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, labeller, &latest.KustomizeDeploy{
-				KustomizePaths: kustomizationPaths,
-			})
-			t.RequireNoError(err)
-
-			var b bytes.Buffer
-			err = k.Render(context.Background(), &b, test.builds, true, "")
-			t.CheckError(test.shouldErr, err)
-			t.CheckDeepEqual(test.expected, b.String())
-		})
-	}
-}
-
 func TestHasRunnableHooks(t *testing.T) {
 	tests := []struct {
 		description string
@@ -830,7 +645,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &test.cfg)
+			k, err := NewDeployer(&kustomizeConfig{}, &label.DefaultLabeller{}, &test.cfg, "default")
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)

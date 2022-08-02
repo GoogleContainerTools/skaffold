@@ -17,7 +17,7 @@ limitations under the License.
 package context
 
 import (
-	"io/ioutil"
+	"os"
 	"sync"
 	"testing"
 
@@ -159,7 +159,7 @@ func TestGetRestClientConfig(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)
 
-		if err = ioutil.WriteFile(kubeConfig, []byte(changedKubeConfig), 0644); err != nil {
+		if err = os.WriteFile(kubeConfig, []byte(changedKubeConfig), 0644); err != nil {
 			t.Error(err)
 		}
 

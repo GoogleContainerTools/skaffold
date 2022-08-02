@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,18 +17,17 @@ limitations under the License.
 package v2beta28
 
 import (
-	"encoding/json"
-
-	"github.com/pkg/errors"
-
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta29"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// v2beta28 is the last config version for skaffold v1, and future version will
-// follow the naming scheme of v3*
+// Config changes from v2beta28 to v2beta29
+// 1. Additions:
+//    GoogleCloudBuild.Region
+// 2. Removals:
+// 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -39,53 +38,5 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldPL := oldPipeline.(*Pipeline)
-	newPL := newPipeline.(*next.Pipeline)
-
-	// Copy kubectl deploy config to render config
-	if oldPL.Deploy.KubectlDeploy != nil {
-		newPL.Render.RawK8s = oldPL.Deploy.KubectlDeploy.Manifests
-		newPL.Deploy.KubectlDeploy.Manifests = nil
-	}
-
-	// TODO(marlongamez): port over buildArgs config and copy that
-	// Copy kustomize deploy config to render config
-	if oldPL.Deploy.KustomizeDeploy != nil {
-		newPL.Render.Kustomize = oldPL.Deploy.KustomizeDeploy.KustomizePaths
-		// nil out kustomize deployer as it shouldn't be a thing anymore
-		newPL.Deploy.KustomizeDeploy = nil
-
-		if len(oldPL.Deploy.KustomizeDeploy.BuildArgs) != 0 {
-			return errors.New("converting deploy.kustomize.buildArgs isn't currently supported")
-		}
-	}
-
-	// TODO(marlongamez): what should happen when migrating v2?
-	// Copy Kpt deploy config to render config
-	if oldPL.Deploy.KptDeploy != nil {
-		return errors.New("converting deploy.kpt isn't currently supported")
-	}
-
-	// Copy helm deploy config
-	if oldPL.Deploy.HelmDeploy != nil {
-		oldHelm, err := json.Marshal(*oldPL.Deploy.HelmDeploy)
-		if err != nil {
-			return errors.Wrap(err, "marshalling old helm deploy")
-		}
-		newHelm := next.LegacyHelmDeploy{}
-		if err = json.Unmarshal(oldHelm, &newHelm); err != nil {
-			return errors.Wrap(err, "unmarshalling into new helm deploy")
-		}
-
-		// Copy Releases and Flags into the render config
-		newPL.Render.Helm = &next.Helm{}
-		newPL.Render.Helm.Releases = newHelm.Releases
-		newPL.Render.Helm.Flags = newHelm.Flags
-
-		// Copy over lifecyle hooks for helm deployer
-		newPL.Deploy.LegacyHelmDeploy = &next.LegacyHelmDeploy{}
-		newPL.Deploy.LegacyHelmDeploy.LifecycleHooks = newHelm.LifecycleHooks
-	}
-
 	return nil
 }

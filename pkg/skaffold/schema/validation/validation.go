@@ -119,6 +119,7 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) error {
 	var errs []error
 	errs = append(errs, validateDockerNetworkContainerExists(ctx, runCtx.Artifacts(), runCtx)...)
+	errs = append(errs, validateVerifyTestsExistOnVerifyCommand(runCtx.DefaultPipeline().Verify, runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -386,6 +387,15 @@ func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*lat
 	return
 }
 
+// Validate that test cases exist when `verify` is called, otherwise Skaffold should error
+func validateVerifyTestsExistOnVerifyCommand(tcs []*latest.VerifyTestCase, runCtx *runcontext.RunContext) []error {
+	var errs []error
+	if len(tcs) == 0 && runCtx.Opts.Command == "verify" {
+		errs = append(errs, fmt.Errorf("verify command expects non-zero number of test cases"))
+	}
+	return errs
+}
+
 // Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
 func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*latest.Artifact, runCtx docker.Config) []error {
 	var errs []error
@@ -612,7 +622,7 @@ func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfi
 	case bc.GoogleCloudBuild != nil:
 		for i, a := range bc.Artifacts {
 			at := misc.ArtifactType(a)
-			if at != misc.Kaniko && at != misc.Docker && at != misc.Jib && at != misc.Buildpack {
+			if at != misc.Kaniko && at != misc.Docker && at != misc.Jib && at != misc.Buildpack && at != misc.Ko {
 				cfgErrs = append(cfgErrs, ErrorWithLocation{
 					Error:    fmt.Errorf("found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)),
 					Location: cfg.YAMLInfos.Locate(&cfg.Build.Artifacts[i].ArtifactType),
@@ -663,18 +673,29 @@ func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latest.LogsConfig) []
 
 // validateVerifyTests
 // - makes sure that each test name is unique
+// - makes sure that each container name is unique
 func validateVerifyTests(cfg *parser.SkaffoldConfigEntry, tcs []*latest.VerifyTestCase) (cfgErrs []ErrorWithLocation) {
-	seen := map[string]bool{}
+	seenTestName := map[string]bool{}
+	seenContainerName := map[string]bool{}
 	for i, tc := range tcs {
-		if _, ok := seen[tc.Name]; ok {
+		if _, ok := seenTestName[tc.Name]; ok {
 			return []ErrorWithLocation{
 				{
-					Error:    fmt.Errorf("found duplicate name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name),
+					Error:    fmt.Errorf("found duplicate test name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name),
 					Location: cfg.YAMLInfos.Locate(&cfg.Verify[i]),
 				},
 			}
 		}
-		seen[tc.Name] = true
+		if _, ok := seenContainerName[tc.Container.Name]; ok {
+			return []ErrorWithLocation{
+				{
+					Error:    fmt.Errorf("found duplicate container name '%s' in 'verify' test cases. 'verify' container names must be unique", tc.Container.Name),
+					Location: cfg.YAMLInfos.Locate(&cfg.Verify[i]),
+				},
+			}
+		}
+		seenTestName[tc.Name] = true
+		seenContainerName[tc.Container.Name] = true
 	}
 	return nil
 }
@@ -739,16 +760,13 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 		if c.IsRemote {
 			continue
 		}
-		if c.Deploy.KubectlDeploy == nil {
-			continue
-		}
-		if len(c.Deploy.KubectlDeploy.Manifests) == 1 && c.Deploy.KubectlDeploy.Manifests[0] == constants.DefaultKubectlManifests[0] {
+		if len(c.Render.RawK8s) == 1 && c.Render.RawK8s[0] == constants.DefaultKubectlManifests[0] {
 			log.Entry(context.TODO()).Debug("skipping validating `kubectl` deployer manifests since only the default manifest list is defined")
 			continue
 		}
 
 		// validate that manifest files referenced in config exist
-		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
+		for _, pattern := range c.Render.RawK8s {
 			if util.IsURL(pattern) {
 				continue
 			}
@@ -766,7 +784,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 				msg := fmt.Sprintf("Manifest file %q referenced in skaffold config could not be found", pattern)
 				errMsg := wrapWithContext(c, ErrorWithLocation{
 					Error:    fmt.Errorf(msg),
-					Location: c.YAMLInfos.Locate(&c.Deploy.KubectlDeploy.Manifests),
+					Location: c.YAMLInfos.Locate(&c.Render.RawK8s),
 				})
 				errs = append(errs, ErrorWithLocation{
 					Error: sErrors.NewError(errMsg[0].Error,

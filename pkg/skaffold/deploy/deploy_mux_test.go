@@ -34,16 +34,17 @@ import (
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
-func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
+func NewMockDeployer() *MockDeployer {
+	return &MockDeployer{labels: make(map[string]string), configName: "default"}
+}
 
 type MockDeployer struct {
+	configName      string
 	labels          map[string]string
 	deployErr       error
 	dependencies    []string
 	dependenciesErr error
 	cleanupErr      error
-	renderResult    string
-	renderErr       error
 }
 
 func (m *MockDeployer) HasRunnableHooks() bool {
@@ -86,7 +87,7 @@ func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
 
-func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
+func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
 	return m.cleanupErr
 }
 
@@ -110,18 +111,8 @@ func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
-	m.renderErr = err
-	return m
-}
-
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error {
 	return m.deployErr
-}
-
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []graph.Artifact, _ bool, _ string) error {
-	w.Write([]byte(m.renderResult))
-	return m.renderErr
 }
 
 func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
@@ -129,9 +120,8 @@ func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) WithRenderResult(renderResult string) *MockDeployer {
-	m.renderResult = renderResult
-	return m
+func (m *MockDeployer) ConfigName() string {
+	return m.configName
 }
 
 func TestDeployerMux_Deploy(t *testing.T) {
@@ -171,7 +161,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				NewMockDeployer().WithDeployErr(test.err2),
 			}, false)
 
-			err := deployerMux.Deploy(context.Background(), nil, nil, nil)
+			err := deployerMux.Deploy(context.Background(), nil, nil, manifest.NewManifestListByConfig())
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

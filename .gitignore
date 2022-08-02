@@ -19,3 +19,5 @@ pkg/skaffold/output/debug.test
 fs/assets/*_generated
 fs/assets/check.txt
 secrets/keys.json
+integration/testdata/dev/foo
+pkg/skaffold/build/app.tar

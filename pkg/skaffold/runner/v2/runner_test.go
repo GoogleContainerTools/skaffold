@@ -143,7 +143,7 @@ func (t *TestBench) TestDependencies(context.Context, *latest.Artifact) ([]strin
 	return nil, nil
 }
 func (t *TestBench) Dependencies() ([]string, error) { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig manifest.ManifestListByConfig) error {
 	return nil
 }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error { return nil }
@@ -202,7 +202,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestList) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestListByConfig) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -215,16 +215,20 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Art
 	return nil
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []graph.Artifact, _ bool) (manifest.ManifestList, error) {
+func (t *TestBench) ConfigName() string {
+	return ""
+}
+
+func (t *TestBench) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	if len(t.renderErrors) > 0 {
 		err := t.renderErrors[0]
 		t.renderErrors = t.renderErrors[1:]
 		if err != nil {
-			return nil, err
+			return manifest.NewManifestListByConfig(), err
 		}
 	}
 	t.currentActions.Rendered = findTags(artifacts)
-	return nil, nil
+	return manifest.NewManifestListByConfig(), nil
 }
 
 func (t *TestBench) ManifestDeps() ([]string, error) {
@@ -308,7 +312,11 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	}
 	_ = defaults.Set(cfg)
 	runCtx := &runcontext.RunContext{
-		Pipelines: runcontext.NewPipelines([]latest.Pipeline{cfg.Pipeline}),
+		Pipelines: runcontext.NewPipelines(
+			map[string]latest.Pipeline{
+				"default": cfg.Pipeline,
+			},
+		),
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
@@ -541,7 +549,11 @@ func TestNewForConfig(t *testing.T) {
 			tmpDir := t.NewTempDir()
 			tmpDir.Chdir()
 			runCtx := &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{tt.pipeline}),
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": tt.pipeline,
+					},
+				),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
@@ -647,8 +659,12 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				},
 			}
 			r, _ := NewForConfig(context.Background(), &runcontext.RunContext{
-				Opts:       opts,
-				Pipelines:  runcontext.NewPipelines([]latest.Pipeline{pipeline}),
+				Opts: opts,
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": pipeline,
+					},
+				),
 				WorkingDir: tmpDir.Root(),
 			})
 

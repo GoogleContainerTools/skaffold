@@ -12,10 +12,10 @@ build:
     gitCommit: {}
   local:
     concurrency: 1
+manifests:
+  rawYaml:
+  - /k8s/*
 deploy:
-  kubectl:
-    manifests:
-    - /k8s/*
   logs:
     prefix: container
 ---
@@ -33,10 +33,10 @@ build:
     gitCommit: {}
   local:
     concurrency: 1
+manifests:
+  rawYaml:
+  - /k8s/*
 deploy:
-  kubectl:
-    manifests:
-    - /k8s/*
   logs:
     prefix: container
 ---
@@ -52,9 +52,9 @@ build:
     gitCommit: {}
   local:
     concurrency: 1
+manifests:
+  rawYaml:
+  - /k8s/*
 deploy:
-  kubectl:
-    manifests:
-    - /k8s/*
   logs:
     prefix: container

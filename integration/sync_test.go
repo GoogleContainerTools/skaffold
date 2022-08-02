@@ -18,7 +18,7 @@ package integration
 
 import (
 	"bufio"
-	"io/ioutil"
+	"context"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // TODO: remove nolint once we've reenabled integration tests
@@ -68,7 +69,7 @@ func TestDevSync(t *testing.T) {
 
 			client.WaitForPodsReady("test-file-sync")
 
-			ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
+			os.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 			defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
@@ -95,7 +96,7 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 
 			client.WaitForPodsReady("test-file-sync")
 
-			ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
+			os.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 			defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
@@ -159,7 +160,7 @@ func TestDevAutoSync(t *testing.T) {
 			directFile := "direct-file"
 			directFilePath := dir + "src/main/jib/" + directFile
 			directFileData := "direct-data"
-			if err := ioutil.WriteFile(directFilePath, []byte(directFileData), 0644); err != nil {
+			if err := os.WriteFile(directFilePath, []byte(directFileData), 0644); err != nil {
 				t.Fatalf("Failed to write local file to sync %s", directFilePath)
 			}
 			defer func() { os.Truncate(directFilePath, 0) }()
@@ -172,15 +173,15 @@ func TestDevAutoSync(t *testing.T) {
 
 			// compile and sync
 			generatedFileSrc := dir + "src/main/java/hello/HelloController.java"
-			if oldContents, err := ioutil.ReadFile(generatedFileSrc); err != nil {
+			if oldContents, err := os.ReadFile(generatedFileSrc); err != nil {
 				t.Fatalf("Failed to read file %s", generatedFileSrc)
 			} else {
 				newContents := strings.Replace(string(oldContents), "text-to-replace", test.uniqueStr, 1)
-				if err := ioutil.WriteFile(generatedFileSrc, []byte(newContents), 0644); err != nil {
+				if err := os.WriteFile(generatedFileSrc, []byte(newContents), 0644); err != nil {
 					t.Fatalf("Failed to write new contents to file %s", generatedFileSrc)
 				}
 				defer func() {
-					ioutil.WriteFile(generatedFileSrc, oldContents, 0644)
+					os.WriteFile(generatedFileSrc, oldContents, 0644)
 				}()
 			}
 			err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
@@ -193,11 +194,7 @@ func TestDevAutoSync(t *testing.T) {
 	}
 }
 
-/*
 func TestDevSyncAPITrigger(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
@@ -216,7 +213,7 @@ func TestDevSyncAPITrigger(t *testing.T) {
 
 	client.WaitForPodsReady("test-file-sync")
 
-	ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
+	os.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 	defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
 	rpcClient.Execute(context.Background(), &proto.UserIntentRequest{
@@ -229,9 +226,6 @@ func TestDevSyncAPITrigger(t *testing.T) {
 }
 
 func TestDevAutoSyncAPITrigger(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
@@ -249,7 +243,7 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 
 	client.WaitForPodsReady("test-file-sync")
 
-	ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
+	os.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 	defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
 	rpcClient.AutoSync(context.Background(), &proto.TriggerRequest{
@@ -262,7 +256,7 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 
 	verifySyncCompletedWithEvents(t, entries, ns.Name, "foo")
 
-	ioutil.WriteFile("testdata/file-sync/foo", []byte("bar"), 0644)
+	os.WriteFile("testdata/file-sync/foo", []byte("bar"), 0644)
 	defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
 	verifySyncCompletedWithEvents(t, entries, ns.Name, "bar")
@@ -299,4 +293,3 @@ func verifySyncCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, n
 	})
 	failNowIfError(t, err)
 }
-*/

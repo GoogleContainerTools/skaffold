@@ -22,7 +22,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"os/exec"
 )
@@ -51,7 +50,7 @@ func UpdateVersionComment(origFile string, released bool) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(origFile, content, info.Mode()); err != nil {
+	if err := os.WriteFile(origFile, content, info.Mode()); err != nil {
 		return err
 	}
 

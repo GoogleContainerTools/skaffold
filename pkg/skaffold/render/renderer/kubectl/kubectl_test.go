@@ -18,9 +18,11 @@ package kubectl
 import (
 	"bytes"
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -86,8 +88,8 @@ func TestRender(t *testing.T) {
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := mockConfig{workingDir: tmpDirObj.Root()}
-			r, err := New(mockCfg, test.renderConfig, test.labels)
+			mockCfg := render.MockConfig{WorkingDir: tmpDirObj.Root()}
+			r, err := New(mockCfg, test.renderConfig, test.labels, "default")
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -98,11 +100,71 @@ func TestRender(t *testing.T) {
 	}
 }
 
-type mockConfig struct {
-	workingDir string
-}
+func TestDependencies(t *testing.T) {
+	tests := []struct {
+		description string
+		manifests   []string
+		expected    []string
+	}{
+		{
+			description: "no manifest",
+			manifests:   []string(nil),
+			expected:    []string(nil),
+		},
+		{
+			description: "missing manifest file",
+			manifests:   []string{"missing.yaml"},
+			expected:    []string(nil),
+		},
+		{
+			description: "ignore non-manifest",
+			manifests:   []string{"*.ignored"},
+			expected:    []string(nil),
+		},
+		{
+			description: "single manifest",
+			manifests:   []string{"deployment.yaml"},
+			expected:    []string{"deployment.yaml"},
+		},
+		{
+			description: "keep manifests order",
+			manifests:   []string{"01_name.yaml", "00_service.yaml"},
+			expected:    []string{"01_name.yaml", "00_service.yaml"},
+		},
+		{
+			description: "sort children",
+			manifests:   []string{"01/*.yaml", "00/*.yaml"},
+			expected:    []string{filepath.Join("01", "a.yaml"), filepath.Join("01", "b.yaml"), filepath.Join("00", "a.yaml"), filepath.Join("00", "b.yaml")},
+		},
+		{
+			description: "http manifest",
+			manifests:   []string{"deployment.yaml", "http://remote.yaml"},
+			expected:    []string{"deployment.yaml"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Touch("deployment.yaml", "01_name.yaml", "00_service.yaml", "empty.ignored").
+				Touch("01/a.yaml", "01/b.yaml").
+				Touch("00/b.yaml", "00/a.yaml").
+				Chdir()
 
-func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
-func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
-func (mc mockConfig) TransformRulesFile() string                  { return "" }
+			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
+			rCfg := latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: test.manifests},
+			}
+			r, err := New(mockCfg, rCfg, map[string]string{}, "default")
+			t.CheckNoError(err)
+
+			dependencies, err := r.ManifestDeps()
+
+			t.CheckNoError(err)
+			expected := make([]string, len(test.expected))
+			for i, p := range test.expected {
+				expected[i] = filepath.Join(tmpDir.Root(), p)
+			}
+			t.CheckDeepEqual(expected, dependencies)
+		})
+	}
+}

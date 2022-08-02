@@ -25,15 +25,15 @@ import (
 
 // GetRenderer creates a renderer from a given RunContext and pipeline definitions.
 func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (renderer.Renderer, error) {
-	rs := runCtx.Renderers()
+	ps := runCtx.Pipelines.AllByConfigNames()
 
-	var renderers []renderer.Renderer
-	for _, r := range rs {
-		r, err := renderer.New(runCtx, r, hydrationDir, labels, usingLegacyHelmDeploy)
+	var renderers renderer.GroupRenderer
+	for configName, p := range ps {
+		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
 		if err != nil {
 			return nil, err
 		}
-		renderers = append(renderers, r)
+		renderers = append(renderers, rs...)
 	}
 	return renderer.NewRenderMux(renderers), nil
 }

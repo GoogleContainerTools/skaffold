@@ -1,17 +1,11 @@
-# Global owners
-
-* @GoogleContainerTools/skaffold-team
-
 # JIB owners
-
 **/**jib** @GoogleContainerTools/skaffold-team @chanseokoh
 
 # kpt owners
 pkg/skaffold/deploy/**kpt** @GoogleContainerTools/skaffold-team @yuwenma
 
 # Debug owners
-
-pkg/skaffold/debug/** @GoogleContainerTools/skaffold-team @quoctruong
-docs/content/en/docs/how-tos/debug/** @GoogleContainerTools/skaffold-team @quoctruong
-integration/test-data/debug/** @GoogleContainerTools/skaffold-team @quoctruong
-integration/debug_test.go @GoogleContainerTools/skaffold-team @quoctruong
+pkg/skaffold/debug/** @GoogleContainerTools/skaffold-team
+docs/content/en/docs/how-tos/debug/** @GoogleContainerTools/skaffold-team
+integration/test-data/debug/** @GoogleContainerTools/skaffold-team
+integration/debug_test.go @GoogleContainerTools/skaffold-team

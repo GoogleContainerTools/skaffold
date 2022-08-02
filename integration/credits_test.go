@@ -17,7 +17,7 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -34,7 +34,7 @@ func TestCredits(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckContains("Successfully exported third party notices", string(out))
 
-		content, err := ioutil.ReadFile(tmpDir.Path("skaffold-credits/github.com/docker/docker/LICENSE"))
+		content, err := os.ReadFile(tmpDir.Path("skaffold-credits/github.com/docker/docker/LICENSE"))
 		t.CheckNoError(err)
 		t.CheckContains("Apache License", string(content))
 	})
@@ -51,7 +51,7 @@ func TestCreditsDir(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckContains("Successfully exported third party notices", string(out))
 
-		content, err := ioutil.ReadFile(tmpDir.Path("test/skaffold-credits/credits/github.com/docker/docker/LICENSE"))
+		content, err := os.ReadFile(tmpDir.Path("test/skaffold-credits/credits/github.com/docker/docker/LICENSE"))
 		t.CheckNoError(err)
 		t.CheckContains("Apache License", string(content))
 	})

@@ -19,7 +19,7 @@ package cache
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -147,7 +147,7 @@ func resolveCacheFile(cacheFile string) (string, error) {
 
 func retrieveArtifactCache(cacheFile string) (ArtifactCache, error) {
 	cache := ArtifactCache{}
-	contents, err := ioutil.ReadFile(cacheFile)
+	contents, err := os.ReadFile(cacheFile)
 	if err != nil {
 		return nil, err
 	}
@@ -163,5 +163,5 @@ func saveArtifactCache(cacheFile string, contents ArtifactCache) error {
 		return err
 	}
 
-	return ioutil.WriteFile(cacheFile, data, 0755)
+	return os.WriteFile(cacheFile, data, 0755)
 }

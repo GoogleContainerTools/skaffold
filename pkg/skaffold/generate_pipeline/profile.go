@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -72,7 +71,7 @@ confirmLoop:
 		return fmt.Errorf("marshaling new profile: %w", err)
 	}
 
-	fileContents, err := ioutil.ReadFile(configFile.Path)
+	fileContents, err := os.ReadFile(configFile.Path)
 	if err != nil {
 		return fmt.Errorf("reading file contents: %w", err)
 	}
@@ -97,7 +96,7 @@ confirmLoop:
 
 	fileContents = []byte((strings.Join(fileStrings, "\n")))
 
-	if err := ioutil.WriteFile(configFile.Path, fileContents, 0644); err != nil {
+	if err := os.WriteFile(configFile.Path, fileContents, 0644); err != nil {
 		return fmt.Errorf("writing profile to skaffold config: %w", err)
 	}
 

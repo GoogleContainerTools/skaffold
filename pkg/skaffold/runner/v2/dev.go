@@ -186,6 +186,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil
 		}
+		r.deployManifests = manifests
 
 		if err := r.Deploy(childCtx, out, r.Builds, manifests); err != nil {
 			log.Entry(ctx).Warn("Skipping deploy due to error:", err)
@@ -348,6 +349,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// First render
 	manifests, err := r.Render(ctx, out, r.Builds, true)
+	r.deployManifests = manifests
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
 		eventV2.TaskFailed(constants.DevLoop, err)

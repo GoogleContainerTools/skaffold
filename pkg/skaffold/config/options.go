@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"os"
 	"strings"
 	"time"
 
@@ -33,74 +32,77 @@ type WaitForDeletions struct {
 
 // SkaffoldOptions are options that are set by command line arguments not included in the config file itself
 type SkaffoldOptions struct {
-	Apply                 bool
-	AutoBuild             bool
-	AutoCreateConfig      bool
-	AutoDeploy            bool
-	AutoSync              bool
-	AssumeYes             bool
-	CacheArtifacts        bool
-	ContainerDebugging    bool
-	Cleanup               bool
-	DetectMinikube        bool
-	DryRun                bool
-	EnableRPC             bool
-	Force                 bool
-	ForceLoadImages       bool
-	IterativeStatusCheck  bool
-	Notification          bool
-	NoPrune               bool
-	NoPruneChildren       bool
-	ProfileAutoActivation bool
-	PropagateProfiles     bool
-	RenderOnly            bool
-	SkipTests             bool
-	SkipRender            bool
-	SkipConfigDefaults    bool
-	Tail                  bool
-	WaitForConnection     bool
-	MakePathsAbsolute     *bool
-	MultiLevelRepo        *bool
-	ConfigurationFile     string
-	HydrationDir          string
-	InventoryNamespace    string
-	InventoryID           string
-	InventoryName         string
-	GlobalConfig          string
-	EventLogFile          string
-	RenderOutput          string
-	User                  string
-	CustomTag             string
-	Namespace             string
-	CacheFile             string
-	Trigger               string
-	KubeContext           string
-	KubeConfig            string
-	LastLogFile           string
-	DigestSource          string
-	Command               string
-	MinikubeProfile       string
-	RepoCacheDir          string
-	TransformRulesFile    string
-	VerifyDockerNetwork   string
-	CustomLabels          []string
-	TargetImages          []string
-	Profiles              []string
-	InsecureRegistries    []string
-	ConfigurationFilter   []string
-	HydratedManifests     []string
-	Platforms             []string
-	BuildConcurrency      int
-	WatchPollInterval     int
-	StatusCheck           BoolOrUndefined
-	PushImages            BoolOrUndefined
-	RPCPort               IntOrUndefined
-	RPCHTTPPort           IntOrUndefined
-	Muted                 Muted
-	PortForward           PortForwardOptions
-	DefaultRepo           StringOrUndefined
-	SyncRemoteCache       SyncRemoteCacheOption
-	WaitForDeletions      WaitForDeletions
+	Apply                      bool
+	AutoBuild                  bool
+	AutoCreateConfig           bool
+	AutoDeploy                 bool
+	AutoSync                   bool
+	AssumeYes                  bool
+	CacheArtifacts             bool
+	ContainerDebugging         bool
+	Cleanup                    bool
+	DetectMinikube             bool
+	DryRun                     bool
+	EnableRPC                  bool
+	Force                      bool
+	ForceLoadImages            bool
+	IterativeStatusCheck       bool
+	FastFailStatusCheck        bool
+	Notification               bool
+	NoPrune                    bool
+	NoPruneChildren            bool
+	ProfileAutoActivation      bool
+	PropagateProfiles          bool
+	RenderOnly                 bool
+	SkipTests                  bool
+	SkipConfigDefaults         bool
+	Tail                       bool
+	WaitForConnection          bool
+	EnablePlatformNodeAffinity bool
+	MakePathsAbsolute          *bool
+	MultiLevelRepo             *bool
+	CloudRunProject            string
+	CloudRunLocation           string
+	ConfigurationFile          string
+	HydrationDir               string
+	InventoryNamespace         string
+	InventoryID                string
+	InventoryName              string
+	GlobalConfig               string
+	EventLogFile               string
+	RenderOutput               string
+	User                       string
+	CustomTag                  string
+	Namespace                  string
+	CacheFile                  string
+	Trigger                    string
+	KubeContext                string
+	KubeConfig                 string
+	LastLogFile                string
+	DigestSource               string
+	Command                    string
+	MinikubeProfile            string
+	RepoCacheDir               string
+	TransformRulesFile         string
+	VerifyDockerNetwork        string
+	CustomLabels               []string
+	TargetImages               []string
+	Profiles                   []string
+	InsecureRegistries         []string
+	ConfigurationFilter        []string
+	HydratedManifests          []string
+	Platforms                  []string
+	BuildConcurrency           int
+	WatchPollInterval          int
+	StatusCheck                BoolOrUndefined
+	PushImages                 BoolOrUndefined
+	RPCPort                    IntOrUndefined
+	RPCHTTPPort                IntOrUndefined
+	Muted                      Muted
+	PortForward                PortForwardOptions
+	DefaultRepo                StringOrUndefined
+	SyncRemoteCache            SyncRemoteCacheOption
+	WaitForDeletions           WaitForDeletions
 }
 
 type RunMode string
@@ -114,7 +116,6 @@ var RunModes = struct {
 	Render   RunMode
 	Delete   RunMode
 	Diagnose RunMode
-	IntTest  RunMode
 }{
 	Build:    "build",
 	Dev:      "dev",
@@ -124,7 +125,6 @@ var RunModes = struct {
 	Render:   "render",
 	Delete:   "delete",
 	Diagnose: "diagnose",
-	IntTest:  "testing",
 }
 
 // Prune returns true iff the user did NOT specify the --no-prune flag,
@@ -134,9 +134,6 @@ func (opts *SkaffoldOptions) Prune() bool {
 }
 
 func (opts *SkaffoldOptions) Mode() RunMode {
-	if _, ok := os.LookupEnv("SKAFFOLD_INT_TEST"); ok {
-		return RunModes.IntTest
-	}
 	return RunMode(opts.Command)
 }
 

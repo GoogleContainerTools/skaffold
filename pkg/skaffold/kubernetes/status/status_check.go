@@ -77,6 +77,7 @@ type Config interface {
 	kubectl.Config
 
 	StatusCheckDeadlineSeconds() int
+	FastFailStatusCheck() bool
 	Muted() config.Muted
 	StatusCheck() *bool
 }
@@ -92,6 +93,7 @@ type monitor struct {
 	labeller        *label.DefaultLabeller
 	deadlineSeconds int
 	muteLogs        bool
+	failFast        bool
 	seenResources   resource.Group
 	singleRun       singleflight.Group
 	namespaces      *[]string
@@ -112,6 +114,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		namespaces:      namespaces,
 		kubeContext:     cfg.GetKubeContext(),
 		manifests:       make(manifest.ManifestList, 0),
+		failFast:        cfg.FastFailStatusCheck(),
 	}
 }
 
@@ -232,9 +235,10 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			pollResourceStatus(ctx, s.cfg, r)
 			rcCopy, failed := c.markProcessed(ctx, r.StatusCode())
 			s.printStatusCheckSummary(out, r, rcCopy)
-			// if a resource fails, cancel status checks for all resources to fail fast
-			// and capture the first failed exit code.
-			if failed {
+			// if a resource fails and fast fail enabled, cancel status checks
+			// for all resources to fail fast and capture the first failed exit code.
+			// otherwise wait for all resources to report status once before failing
+			if failed && s.failFast {
 				exitStatusOnce.Do(func() {
 					exitStatus = r.StatusCode()
 				})

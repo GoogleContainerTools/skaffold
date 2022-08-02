@@ -34,7 +34,7 @@ import (
 )
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
-func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestList) error {
+func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestListByConfig) error {
 	defer r.deployer.GetLogger().Stop()
 
 	// Logs should be retrieved up to just before the deploy
@@ -63,7 +63,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	return nil
 }
 
-func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestList) error {
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, list manifest.ManifestListByConfig) error {
 	defer r.deployer.GetStatusMonitor().Reset()
 
 	out, ctx = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)
@@ -110,7 +110,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	r.deployer.RegisterLocalImages(localAndBuiltImages)
 	err = r.deployer.Deploy(ctx, deployOut, artifacts, list)
-	r.hasDeployed = true // set even if deploy may have failed, because we want to cleanup any partially created resources
+	r.deployManifests = list // set even if deploy may have failed, because we want to cleanup any partially created resources
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)

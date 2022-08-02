@@ -31,6 +31,7 @@ type Config struct {
 	Analyze                  bool
 	EnableJibInit            bool // TODO: Remove this parameter
 	EnableJibGradleInit      bool
+	EnableKoInit             bool
 	EnableBuildpacksInit     bool
 	EnableNewInitFormat      bool
 	EnableManifestGeneration bool

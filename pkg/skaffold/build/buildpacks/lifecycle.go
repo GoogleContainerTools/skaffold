@@ -48,6 +48,7 @@ var images pulledImages
 
 func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	artifact := a.BuildpackArtifact
+	clearCache := artifact.ClearCache
 	workspace := a.Workspace
 
 	// Read `project.toml` if it exists.
@@ -105,6 +106,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		Image:           latest,
 		PullPolicy:      pullPolicy,
 		TrustBuilder:    func(_ string) bool { return artifact.TrustBuilder },
+		ClearCache:      clearCache,
 		ContainerConfig: cc,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },

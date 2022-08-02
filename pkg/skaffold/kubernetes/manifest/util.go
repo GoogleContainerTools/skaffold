@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,7 +42,7 @@ func Write(manifests string, output string, manifestOut io.Writer) error {
 		_, err := fmt.Fprintln(manifestOut, manifests)
 		return err
 	case strings.HasPrefix(output, gcsPrefix):
-		tempDir, err := ioutil.TempDir("", manifestsStagingFolder)
+		tempDir, err := os.MkdirTemp("", manifestsStagingFolder)
 		if err != nil {
 			return writeErr(fmt.Errorf("failed to create the tmp directory: %w", err))
 		}

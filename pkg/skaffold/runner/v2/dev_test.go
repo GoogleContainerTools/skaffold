@@ -19,7 +19,7 @@ package v2
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -161,7 +161,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 			r := createRunner(t, test.testBench, test.monitor, artifacts, nil)
 			test.testBench.firstMonitor = test.monitor.Run
 
-			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), io.Discard, artifacts)
 
 			t.CheckErrorAndDeepEqual(true, err, test.expectedActions, test.testBench.Actions())
 		})
@@ -324,7 +324,7 @@ func TestDev(t *testing.T) {
 				testBench: test.testBench,
 			}, artifacts, nil)
 
-			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), io.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
@@ -479,7 +479,7 @@ func TestDevAutoTriggers(t *testing.T) {
 
 			testBench.intents = r.intents
 
-			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), io.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(append([]Actions{firstAction}, test.expectedActions...), testBench.Actions())
@@ -586,7 +586,7 @@ func TestDevSync(t *testing.T) {
 				testBench: test.testBench,
 			}, artifacts, nil)
 
-			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), io.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())

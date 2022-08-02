@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,9 +42,11 @@ func TestVerifyPassingTestsWithEnvVar(t *testing.T) {
 	testutil.CheckError(t, false, err)
 	testutil.CheckContains(t, "Hello from Docker!", logs)
 	testutil.CheckContains(t, "foo-var", logs)
+	testutil.CheckContains(t, "alpine-1", logs)
+	testutil.CheckContains(t, "alpine-2", logs)
 
 	// verify logs are in the event output as well
-	b, err := ioutil.ReadFile(logFile + ".v2")
+	b, err := os.ReadFile(logFile + ".v2")
 	if err != nil {
 		t.Fatalf("error reading %s", logFile+".v2")
 	}
@@ -73,7 +74,7 @@ func TestVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	testutil.CheckContains(t, "foo-var", logs)
 
 	// verify logs are in the event output as well
-	b, err := ioutil.ReadFile(logFile + ".v2")
+	b, err := os.ReadFile(logFile + ".v2")
 	if err != nil {
 		t.Fatalf("error reading %s", logFile+".v2")
 	}
@@ -82,4 +83,14 @@ func TestVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	testutil.CheckContains(t, "foo-var", v2EventLogs)
 
 	// TODO(aaron-prindle) verify that FAILED event is found where expected
+}
+
+func TestVerifyNoTestsFails(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out, err := skaffold.Verify("--default-repo=").InDir("testdata/verify-no-tests").RunWithCombinedOutput(t)
+	logs := string(out)
+
+	testutil.CheckError(t, true, err)
+	testutil.CheckContains(t, "verify command expects non-zero number of test cases", logs)
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package initializer
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -60,10 +61,10 @@ spec:
 		{
 			description: "helm charts with values files",
 			filesWithContents: map[string]string{
-				"apache/Chart.yaml":               "",
-				"apache/values.yaml":              "",
-				"apache/another.yml":              "",
-				"apache/templates/deployment.yml": deployment,
+				filepath.Join("apache", "Chart.yaml"):                  "",
+				filepath.Join("apache", "values.yaml"):                 "",
+				filepath.Join("apache", "another.yml"):                 "",
+				filepath.Join("apache", "templates", "deployment.yml"): deployment,
 			},
 			expected: []latest.HelmRelease{
 				{
@@ -75,14 +76,14 @@ spec:
 		{
 			description: "helm charts with multiple sub charts",
 			filesWithContents: map[string]string{
-				"apache/Chart.yaml":                        "",
-				"apache/values.yaml":                       "",
-				"apache/subchart/Chart.yaml":               "",
-				"apache/templates/deployment.yml":          deployment,
-				"apache/subchart/templates/deployment.yml": deployment,
-				"apache/subchart/val.yaml":                 "",
-				"apache/subchart2/Chart.yaml":              "",
-				"apache/subchart2/values.yaml":             "",
+				filepath.Join("apache", "Chart.yaml"):                              "",
+				filepath.Join("apache", "values.yaml"):                             "",
+				filepath.Join("apache", "subchart", "Chart.yaml"):                  "",
+				filepath.Join("apache", "templates", "deployment.yml"):             deployment,
+				filepath.Join("apache", "subchart", "templates", "deployment.yml"): deployment,
+				filepath.Join("apache", "subchart", "val.yaml"):                    "",
+				filepath.Join("apache", "subchart2", "Chart.yaml"):                 "",
+				filepath.Join("apache", "subchart2", "values.yaml"):                "",
 			},
 			expected: []latest.HelmRelease{
 				{
@@ -108,8 +109,8 @@ spec:
 			a := analyze.NewAnalyzer(config)
 			err := a.Analyze(".")
 			t.CheckError(test.shouldErr, err)
-			d := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), config)
-			dc, _ := d.DeployConfig()
+			d := deploy.NewInitializer(a.HelmChartInfo(), config)
+			dc := d.DeployConfig()
 			deploy.CheckHelmInitStruct(t, test.expected, dc.LegacyHelmDeploy.Releases)
 		})
 	}

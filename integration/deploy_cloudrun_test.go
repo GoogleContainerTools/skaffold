@@ -42,6 +42,8 @@ func TestDeployCloudRun(t *testing.T) {
 	}
 }
 
+// TODO: remove nolint when test is unskipped
+//nolint:unused
 func getRunService(ctx context.Context, project, region, service string) (*run.Service, error) {
 	crclient, err := run.NewService(ctx, gcp.ClientOptions(ctx)...)
 	if err != nil {
@@ -52,6 +54,8 @@ func getRunService(ctx context.Context, project, region, service string) (*run.S
 	return call.Do()
 }
 
+// TODO: remove nolint when test is unskipped
+//nolint:unused
 func checkReady(svc *run.Service) error {
 	var ready *run.GoogleCloudRunV1Condition
 	for _, cond := range svc.Status.Conditions {

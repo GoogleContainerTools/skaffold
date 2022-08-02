@@ -96,26 +96,16 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions, name
 	if opts.ProfileAutoActivation {
 		// Auto-activated profiles
 		for _, profile := range profiles {
-			for _, cond := range profile.Activation {
-				command := isCommand(cond.Command, opts)
+			isActivated, isCtxSpecific, err := isProfileActivated(profile, opts)
+			if err != nil {
+				return nil, nil, err
+			}
 
-				env, err := isEnv(cond.Env)
-				if err != nil {
-					return nil, nil, err
+			if isActivated {
+				if isCtxSpecific {
+					contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
 				}
-
-				kubeContext, err := isKubeContext(cond.KubeContext, opts)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				if command && env && kubeContext {
-					if cond.KubeContext != "" {
-						contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
-					}
-					activated = append(activated, profile.Name)
-					break
-				}
+				activated = append(activated, profile.Name)
 			}
 		}
 	}
@@ -146,6 +136,67 @@ func removeValue(values []string, value string) []string {
 	}
 
 	return updated
+}
+
+func isProfileActivated(profile latest.Profile, opts cfg.SkaffoldOptions) (bool, bool, error) {
+	if profile.RequiresAllActivations {
+		return isAllActivationsTriggered(profile, opts)
+	}
+	return isAnyActivationTriggered(profile, opts)
+}
+
+// isAnyActivationTriggered returns true when the profile has at least one of its activations triggered.
+// When the profile is activated, the second returned value indicates whether the profile is context-specific.
+func isAnyActivationTriggered(profile latest.Profile, opts cfg.SkaffoldOptions) (bool, bool, error) {
+	for _, cond := range profile.Activation {
+		activated, err := isActivationTriggered(cond, opts)
+		if err != nil {
+			return false, false, err
+		}
+		if activated {
+			isContextSpecific := cond.KubeContext != ""
+			return true, isContextSpecific, nil
+		}
+	}
+	return false, false, nil
+}
+
+// isAllActivationsTriggered returns true when the profile has all of its activations triggered.
+// When the profile is activated, the second returned value indicates whether the profile is context-specific.
+func isAllActivationsTriggered(profile latest.Profile, opts cfg.SkaffoldOptions) (bool, bool, error) {
+	// no activation conditions means no auto-activation
+	if len(profile.Activation) == 0 {
+		return false, false, nil
+	}
+
+	isContextSpecific := false
+	for _, cond := range profile.Activation {
+		activated, err := isActivationTriggered(cond, opts)
+		if err != nil {
+			return false, false, err
+		}
+		if !activated {
+			return false, false, nil
+		}
+		isContextSpecific = isContextSpecific || cond.KubeContext != ""
+	}
+
+	return true, isContextSpecific, nil
+}
+
+func isActivationTriggered(cond latest.Activation, opts cfg.SkaffoldOptions) (bool, error) {
+	command := isCommand(cond.Command, opts)
+
+	env, err := isEnv(cond.Env)
+	if err != nil {
+		return false, err
+	}
+
+	kubeContext, err := isKubeContext(cond.KubeContext, opts)
+	if err != nil {
+		return false, err
+	}
+	return command && env && kubeContext, nil
 }
 
 func isEnv(env string) (bool, error) {

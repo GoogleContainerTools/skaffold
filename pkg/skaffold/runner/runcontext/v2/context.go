@@ -45,12 +45,17 @@ type RunContext struct {
 // Pipelines encapsulates multiple config pipelines
 type Pipelines struct {
 	pipelines            []latest.Pipeline
+	pipelinesByConfig    map[string]latest.Pipeline
 	pipelinesByImageName map[string]latest.Pipeline
 }
 
 // All returns all config pipelines.
 func (ps Pipelines) All() []latest.Pipeline {
 	return ps.pipelines
+}
+
+func (ps Pipelines) AllByConfigNames() map[string]latest.Pipeline {
+	return ps.pipelinesByConfig
 }
 
 // Head returns the first `latest.Pipeline`.
@@ -150,14 +155,18 @@ func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	}
 	return c
 }
-func NewPipelines(pipelines []latest.Pipeline) Pipelines {
+func NewPipelines(pipelinesByConfig map[string]latest.Pipeline) Pipelines {
 	m := make(map[string]latest.Pipeline)
-	for _, p := range pipelines {
+	var pipelines []latest.Pipeline
+
+	for _, p := range pipelinesByConfig {
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = p
 		}
+		pipelines = append(pipelines, p)
 	}
-	return Pipelines{pipelines: pipelines, pipelinesByImageName: m}
+
+	return Pipelines{pipelines: pipelines, pipelinesByImageName: m, pipelinesByConfig: pipelinesByConfig}
 }
 
 func (rc *RunContext) PipelineForImage(imageName string) (latest.Pipeline, bool) {
@@ -251,9 +260,9 @@ func (rc *RunContext) PortForwardOptions() config.PortForwardOptions { return rc
 func (rc *RunContext) Prune() bool                                   { return rc.Opts.Prune() }
 func (rc *RunContext) RenderOnly() bool                              { return rc.Opts.RenderOnly }
 func (rc *RunContext) RenderOutput() string                          { return rc.Opts.RenderOutput }
-func (rc *RunContext) SkipRender() bool                              { return rc.Opts.SkipRender }
 func (rc *RunContext) StatusCheck() *bool                            { return rc.Opts.StatusCheck.Value() }
 func (rc *RunContext) IterativeStatusCheck() bool                    { return rc.Opts.IterativeStatusCheck }
+func (rc *RunContext) FastFailStatusCheck() bool                     { return rc.Opts.FastFailStatusCheck }
 func (rc *RunContext) Tail() bool                                    { return rc.Opts.Tail }
 func (rc *RunContext) Trigger() string                               { return rc.Opts.Trigger }
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions     { return rc.Opts.WaitForDeletions }
@@ -269,6 +278,9 @@ func (rc *RunContext) TransformRulesFile() string                    { return rc
 func (rc *RunContext) VerifyDockerNetwork() string                   { return rc.Opts.VerifyDockerNetwork }
 func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
+}
+func (rc *RunContext) EnablePlatformNodeAffinityInRenderedManifests() bool {
+	return rc.Opts.EnablePlatformNodeAffinity
 }
 
 // GetRenderConfig returns the top tier RenderConfig.
@@ -291,11 +303,24 @@ func (rc *RunContext) DigestSource() string {
 	return constants.RemoteDigestSource
 }
 
+func getConfigName(configName string) string {
+	pipelineConfigName := configName
+
+	if len(pipelineConfigName) == 0 {
+		configNameUUID, _ := uuid.NewUUID()
+		pipelineConfigName = configNameUUID.String()
+	}
+
+	return pipelineConfigName
+}
+
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
-	var pipelines []latest.Pipeline
+	pipelines := make(map[string]latest.Pipeline)
 	for _, cfg := range configs {
 		if cfg != nil {
-			pipelines = append(pipelines, cfg.(*latest.SkaffoldConfig).Pipeline)
+			pipeline := cfg.(*latest.SkaffoldConfig).Pipeline
+			cfgName := getConfigName(cfg.(*latest.SkaffoldConfig).Metadata.Name)
+			pipelines[cfgName] = pipeline
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()

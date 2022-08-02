@@ -13,13 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v2
 
 import (
 	"context"
 	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool) error {
-	return r.deployer.Cleanup(ctx, out, dryRun, nil)
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig manifest.ManifestListByConfig) error {
+	return r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
 }

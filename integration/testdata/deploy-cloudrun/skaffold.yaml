@@ -7,5 +7,5 @@ manifests:
     - service.yaml
 deploy:
   cloudrun:
-    defaultprojectid: k8s-skaffold
+    projectid: k8s-skaffold
     region: us-central1

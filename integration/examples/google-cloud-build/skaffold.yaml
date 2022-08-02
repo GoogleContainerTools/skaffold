@@ -5,7 +5,6 @@ build:
     projectId: k8s-skaffold
   artifacts:
   - image: skaffold-example
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+manifests:
+  rawYaml:
+  - k8s-*

@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -252,7 +251,7 @@ func TestInOrderConcurrency(t *testing.T) {
 			}
 
 			initializeEvents()
-			results, err := InOrder(context.Background(), ioutil.Discard, tags, platform.Resolver{}, artifacts, builder, test.limit, NewArtifactStore())
+			results, err := InOrder(context.Background(), io.Discard, tags, platform.Resolver{}, artifacts, builder, test.limit, NewArtifactStore())
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.artifacts, len(results))
@@ -375,7 +374,7 @@ func TestInOrderForArgs(t *testing.T) {
 
 			setDependencies(artifacts, test.dependency)
 			initializeEvents()
-			actual, err := InOrder(context.Background(), ioutil.Discard, tags, platform.Resolver{}, artifacts, test.buildArtifact, test.concurrency, NewArtifactStore())
+			actual, err := InOrder(context.Background(), io.Discard, tags, platform.Resolver{}, artifacts, test.buildArtifact, test.concurrency, NewArtifactStore())
 
 			t.CheckDeepEqual(test.expected, actual)
 			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))
@@ -388,7 +387,7 @@ func TestInOrderForArgs(t *testing.T) {
 // m = {
 //    0 : {1, 2},
 //    2 : {3},
-//}
+// }
 // implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
 func setDependencies(a []*latest.Artifact, d map[int][]int) {
 	for k, dep := range d {

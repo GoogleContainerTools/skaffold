@@ -90,6 +90,12 @@ func TestConsolidateNamespaces(t *testing.T) {
 			oldNamespaces: []string{},
 			newNamespaces: []string{""},
 		},
+		{
+			description:   "update namespace when namespace is empty string new namespace is nil",
+			oldNamespaces: []string{""},
+			newNamespaces: []string{},
+			expected:      []string{""},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

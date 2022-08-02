@@ -543,6 +543,11 @@ enum StatusCode {
     INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR = 1303;
     // Trying to modify a profile that doesn't exist
     INSPECT_PROFILE_NOT_FOUND_ERR = 1304;
+
+    // Port Forwarding Errors
+
+    PORT_FORWARD_RUN_GCLOUD_NOT_FOUND = 1601;
+    PORT_FORWARD_RUN_PROXY_START_ERROR = 1602;
 }
 
 // Enum for Suggestion codes

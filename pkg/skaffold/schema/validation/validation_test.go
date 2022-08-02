@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -66,6 +67,59 @@ var (
 	}
 )
 
+func TestValidateArtifactTypes(t *testing.T) {
+	tests := []struct {
+		description  string
+		bc           latest.BuildConfig
+		expectedErrs int
+	}{
+		{
+			description: "gcb - builder not set",
+			bc: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName: "leeroy-web",
+						Workspace: "leeroy-web",
+					},
+				},
+			},
+		},
+		{
+			description: "gcb - custom builder  set",
+			bc: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName:    "leeroy-web",
+						Workspace:    "leeroy-web",
+						ArtifactType: latest.ArtifactType{CustomArtifact: &latest.CustomArtifact{}},
+					},
+				},
+			},
+			expectedErrs: 1,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			config := &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: test.bc,
+				},
+			}
+			defaults.Set(config)
+			cfg := &parser.SkaffoldConfigEntry{SkaffoldConfig: config,
+				YAMLInfos: configlocations.NewYAMLInfos()}
+			errs := validateArtifactTypes(cfg, test.bc)
+
+			t.CheckDeepEqual(test.expectedErrs, len(errs))
+		})
+	}
+}
 func TestValidateSchema(t *testing.T) {
 	tests := []struct {
 		description string
@@ -705,13 +759,15 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 			})
 
 			err := ProcessWithRunContext(context.Background(), &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-					{
-						Build: latest.BuildConfig{
-							Artifacts: test.artifacts,
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							Build: latest.BuildConfig{
+								Artifacts: test.artifacts,
+							},
 						},
 					},
-				}),
+				),
 			})
 
 			t.CheckError(test.shouldErr, err)
@@ -1561,11 +1617,9 @@ func TestValidateKubectlManifests(t *testing.T) {
 			configs: []*latest.SkaffoldConfig{
 				{
 					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
-								KubectlDeploy: &latest.KubectlDeploy{
-									Manifests: []string{filepath.Join(tempDir, "validation-test-exists.yaml")},
-								},
+						Render: latest.RenderConfig{
+							Generate: latest.Generate{
+								RawK8s: []string{filepath.Join(tempDir, "validation-test-exists.yaml")},
 							},
 						},
 					},
@@ -1578,11 +1632,9 @@ func TestValidateKubectlManifests(t *testing.T) {
 			configs: []*latest.SkaffoldConfig{
 				{
 					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
-								KubectlDeploy: &latest.KubectlDeploy{
-									Manifests: []string{filepath.Join(tempDir, "validation-test-missing.yaml")},
-								},
+						Render: latest.RenderConfig{
+							Generate: latest.Generate{
+								RawK8s: []string{filepath.Join(tempDir, "validation-test-missing.yaml")},
 							},
 						},
 					},

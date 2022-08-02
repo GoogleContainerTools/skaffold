@@ -24,9 +24,11 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // for testing
@@ -36,28 +38,47 @@ var (
 	remoteIndex  = remote.Index
 )
 
-func AddRemoteTag(src, target string, cfg Config, platform *v1.Platform) error {
+func AddRemoteTag(src, target string, cfg Config, platforms []specs.Platform) error {
 	log.Entry(context.TODO()).Debugf("attempting to add tag %s to src %s", target, src)
-	img, err := getRemoteImage(src, cfg, platform)
-	if err != nil {
-		return fmt.Errorf("getting image: %w", err)
-	}
 
 	targetRef, err := parseReference(target, cfg, name.WeakValidation)
 	if err != nil {
 		return err
 	}
 
+	if len(platforms) > 1 {
+		index, err := getRemoteIndex(src, cfg)
+		if err != nil {
+			return fmt.Errorf("getting image index: %w", err)
+		}
+		return remote.WriteIndex(targetRef, index, remote.WithAuthFromKeychain(primaryKeychain))
+	}
+
+	var pl v1.Platform
+	if len(platforms) == 1 {
+		pl = util.ConvertToV1Platform(platforms[0])
+	}
+	img, err := getRemoteImage(src, cfg, pl)
+	if err != nil {
+		return fmt.Errorf("getting image: %w", err)
+	}
+
 	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(primaryKeychain))
 }
 
-func getRemoteDigest(identifier string, cfg Config, platform *v1.Platform) (string, error) {
+func getRemoteDigest(identifier string, cfg Config, platforms []specs.Platform) (string, error) {
 	idx, err := getRemoteIndex(identifier, cfg)
 	if err == nil {
 		return digest(idx)
 	}
-
-	img, err := getRemoteImage(identifier, cfg, platform)
+	if len(platforms) > 1 {
+		return "", fmt.Errorf("cannot fetch remote index for multiple platform image %q: %w", identifier, err)
+	}
+	var pl v1.Platform
+	if len(platforms) == 1 {
+		pl = util.ConvertToV1Platform(platforms[0])
+	}
+	img, err := getRemoteImage(identifier, cfg, pl)
 	if err != nil {
 		return "", fmt.Errorf("getting image: %w", err)
 	}
@@ -66,7 +87,7 @@ func getRemoteDigest(identifier string, cfg Config, platform *v1.Platform) (stri
 }
 
 // RetrieveRemoteConfig retrieves the remote config file for an image
-func RetrieveRemoteConfig(identifier string, cfg Config, platform *v1.Platform) (*v1.ConfigFile, error) {
+func RetrieveRemoteConfig(identifier string, cfg Config, platform v1.Platform) (*v1.ConfigFile, error) {
 	img, err := getRemoteImage(identifier, cfg, platform)
 	if err != nil {
 		return nil, err
@@ -76,7 +97,7 @@ func RetrieveRemoteConfig(identifier string, cfg Config, platform *v1.Platform) 
 }
 
 // Push pushes the tarball image
-func Push(tarPath, tag string, cfg Config, platform *v1.Platform) (string, error) {
+func Push(tarPath, tag string, cfg Config, platforms []specs.Platform) (string, error) {
 	t, err := name.NewTag(tag, name.WeakValidation)
 	if err != nil {
 		return "", fmt.Errorf("parsing tag %q: %w", tag, err)
@@ -91,10 +112,10 @@ func Push(tarPath, tag string, cfg Config, platform *v1.Platform) (string, error
 		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, t, err)
 	}
 
-	return getRemoteDigest(tag, cfg, platform)
+	return getRemoteDigest(tag, cfg, platforms)
 }
 
-func getRemoteImage(identifier string, cfg Config, platform *v1.Platform) (v1.Image, error) {
+func getRemoteImage(identifier string, cfg Config, platform v1.Platform) (v1.Image, error) {
 	ref, err := parseReference(identifier, cfg)
 	if err != nil {
 		return nil, err
@@ -102,8 +123,8 @@ func getRemoteImage(identifier string, cfg Config, platform *v1.Platform) (v1.Im
 	options := []remote.Option{
 		remote.WithAuthFromKeychain(primaryKeychain),
 	}
-	if platform != nil {
-		options = append(options, remote.WithPlatform(*platform))
+	if platform.String() != "" {
+		options = append(options, remote.WithPlatform(platform))
 	}
 
 	return remoteImage(ref, options...)

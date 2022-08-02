@@ -18,7 +18,7 @@ package docker
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -70,7 +70,7 @@ func TestPush(t *testing.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			digest, err := localDocker.Push(context.Background(), ioutil.Discard, test.imageName)
+			digest, err := localDocker.Push(context.Background(), io.Discard, test.imageName)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})
@@ -85,14 +85,14 @@ func TestDoNotPushAlreadyPushed(t *testing.T) {
 		api.Add("image", "sha256:imageIDabcab")
 		localDocker := NewLocalDaemon(api, nil, false, nil)
 
-		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
+		digest, err := localDocker.Push(context.Background(), io.Discard, "image")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 
 		// Images already pushed don't need being pushed.
 		api.ErrImagePush = true
 
-		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
+		digest, err = localDocker.Push(context.Background(), io.Discard, "image")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 	})
@@ -202,7 +202,7 @@ func TestBuild(t *testing.T) {
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
 			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, "final-image", test.artifact, opts)
+			_, err := localDocker.Build(context.Background(), io.Discard, test.workspace, "final-image", test.artifact, opts)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)

@@ -17,7 +17,7 @@ limitations under the License.
 package generatepipeline
 
 import (
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -167,7 +167,7 @@ func TestGenerateProfile(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			profile, err := generateProfile(ioutil.Discard, test.namespace, test.skaffoldConfig)
+			profile, err := generateProfile(io.Discard, test.namespace, test.skaffoldConfig)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedProfile, profile)
 		})
 	}

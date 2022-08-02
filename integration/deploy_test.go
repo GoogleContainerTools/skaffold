@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,9 +33,6 @@ import (
 )
 
 func TestBuildDeploy(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
@@ -81,9 +77,6 @@ func TestBuildDeploy(t *testing.T) {
 }
 
 func TestDeploy(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
@@ -119,7 +112,7 @@ func TestDeployWithImages(t *testing.T) {
 	skaffold.Build("--file-output=artifacts.json", "--default-repo=").InDir("examples/getting-started").RunOrFail(t)
 
 	var artifacts flags.BuildOutput
-	if ba, err := ioutil.ReadFile("examples/getting-started/artifacts.json"); err != nil {
+	if ba, err := os.ReadFile("examples/getting-started/artifacts.json"); err != nil {
 		t.Fatal("could not read artifacts.json", err)
 	} else if err := json.Unmarshal(ba, &artifacts); err != nil {
 		t.Fatal("could not decode artifacts.json", err)

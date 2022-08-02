@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -62,7 +63,7 @@ func TestDeploy(t *testing.T) {
 			err := r.Deploy(context.Background(), out, []graph.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
-			}, nil)
+			}, manifest.ManifestListByConfig{})
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -86,7 +87,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 		}
 		var builds []graph.Artifact
 
-		err = r.Deploy(context.Background(), ioutil.Discard, builds, nil)
+		err = r.Deploy(context.Background(), io.Discard, builds, manifest.ManifestListByConfig{})
 
 		t.CheckNoError(err)
 	})

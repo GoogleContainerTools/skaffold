@@ -99,7 +99,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				return nil, errors.New("skaffold apply called with both Cloud Run and Kubernetes deployers. Mixing deployment targets is not allowed" +
 					" when using the Cloud Run deployer")
 			}
-			return getCloudRunDeployer(runCtx, labeller)
+			return getCloudRunDeployer(runCtx, labeller, pipelines.Deployers(), "")
 		}
 		if len(helmNamespaces) > 1 || (nonHelmDeployFound && len(helmNamespaces) == 1) {
 			return nil, errors.New("skaffold apply called with conflicting namespaces set via skaffold.yaml. This is likely due to the use of the 'deploy.helm.releases.*.namespace' field which is not supported in apply.  Remove the 'deploy.helm.releases.*.namespace' field(s) and run skaffold apply again")
@@ -115,20 +115,20 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			}
 		}
 
-		return getDefaultDeployer(runCtx, labeller, hydrationDir)
+		return getDefaultDeployer(runCtx, labeller)
 	}
 
 	var deployers []deploy.Deployer
 	localDeploy := false
 	remoteDeploy := false
-	for _, pl := range pipelines.All() {
+	for configName, pl := range pipelines.AllByConfigNames() {
 		d := pl.Deploy
 		r := pl.Render
 		dCtx := &deployerCtx{runCtx, d}
 
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources())
+			d, err := docker.NewDeployer(ctx, runCtx, labeller, d.DockerDeploy, runCtx.PortForwardResources(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -150,7 +150,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				d.LegacyHelmDeploy.Flags = r.Helm.Flags
 			}
 
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts())
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +158,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, hydrationDir)
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, configName)
 			if err != nil {
 				return nil, err
 			}
@@ -170,7 +170,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				log.Entry(context.TODO()).Infof("manifests are deployed from render path %v\n", hydrationDir)
 				d.KptDeploy.Dir = hydrationDir
 			}
-			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts)
+			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts, configName)
 			if err != nil {
 				return nil, err
 			}
@@ -178,14 +178,14 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy)
+			deployer, err := kustomize.NewDeployer(dCtx, labeller, d.KustomizeDeploy, configName)
 			if err != nil {
 				return nil, err
 			}
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
-			deployer, err := cloudrun.NewDeployer(labeller, d.CloudRunDeploy)
+			deployer, err := getCloudRunDeployer(dCtx.RunContext, labeller, runCtx.DeployConfigs(), configName)
 			if err != nil {
 				return nil, err
 			}
@@ -204,16 +204,17 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 The "default deployer" is used in `skaffold apply`, which uses a `kubectl` deployer to actuate resources
 on a cluster regardless of provided deployer configuration in the skaffold.yaml.
 The default deployer will honor a select set of deploy configuration from an existing skaffold.yaml:
-	- deploy.StatusCheckDeadlineSeconds
-	- deploy.Logs.Prefix
-	- deploy.Kubectl.Flags
-	- deploy.Kubectl.DefaultNamespace
-	- deploy.Kustomize.Flags
-	- deploy.Kustomize.DefaultNamespace
+  - deploy.StatusCheckDeadlineSeconds
+  - deploy.Logs.Prefix
+  - deploy.Kubectl.Flags
+  - deploy.Kubectl.DefaultNamespace
+  - deploy.Kustomize.Flags
+  - deploy.Kustomize.DefaultNamespace
+
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, hydrationDir string) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latest.KubectlFlags
@@ -280,7 +281,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		DefaultNamespace: defaultNamespace,
 	}
 	dCtx := &deployerCtx{runCtx, latest.DeployConfig{StatusCheck: statusCheck, KubeContext: kubeContext, DeployType: latest.DeployType{KubectlDeploy: k}}}
-	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, hydrationDir)
+	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, "")
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
@@ -311,20 +312,38 @@ func validateKubectlFlags(flags *latest.KubectlFlags, additional latest.KubectlF
 }
 
 /* The Cloud Run deployer for apply. Used when Cloud Run is specified. */
-func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (*cloudrun.Deployer, error) {
+func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, deployers []latest.DeployConfig, configName string) (*cloudrun.Deployer, error) {
 	var region string
+	regionFlag := false
 	var defaultProject string
-	for _, d := range runCtx.DeployConfigs() {
+	projectFlag := false
+	if runCtx.Opts.CloudRunLocation != "" {
+		region = runCtx.Opts.CloudRunLocation
+		regionFlag = true
+	}
+	if runCtx.Opts.CloudRunProject != "" {
+		defaultProject = runCtx.Opts.CloudRunProject
+		projectFlag = true
+	}
+	for _, d := range deployers {
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
-			if region != "" && region != crDeploy.Region {
-				return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+			if !regionFlag {
+				// No region flag was provided, so take it from the config.
+				if region != "" && region != crDeploy.Region {
+					return nil, fmt.Errorf("expected all Cloud Run deploys to be in the same region, found deploys to %s and %s", region, crDeploy.Region)
+				}
+
+				region = crDeploy.Region
 			}
-			region = crDeploy.Region
-			if defaultProject != "" && defaultProject != crDeploy.DefaultProjectID {
-				return nil, fmt.Errorf("expected all Cloud Run deploys to use the same default project, found deploys to projects %s and %s", defaultProject, crDeploy.DefaultProjectID)
+			if !projectFlag {
+				// No project flag was specified so take it from the config.
+				if defaultProject != "" && defaultProject != crDeploy.ProjectID {
+					return nil, fmt.Errorf("expected all Cloud Run deploys to use the same project, found deploys to projects %s and %s", defaultProject, crDeploy.ProjectID)
+				}
+				defaultProject = crDeploy.ProjectID
 			}
 		}
 	}
-	return cloudrun.NewDeployer(labeller, &latest.CloudRunDeploy{Region: region, DefaultProjectID: defaultProject})
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject}, configName)
 }

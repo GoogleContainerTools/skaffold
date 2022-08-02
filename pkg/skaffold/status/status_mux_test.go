@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -52,7 +51,7 @@ func TestMonitorMux(t *testing.T) {
 			for i := 0; i < 3; i++ {
 				m = append(m, &MockMonitor{monitor: test.monitor})
 			}
-			err := m.Check(context.Background(), ioutil.Discard)
+			err := m.Check(context.Background(), io.Discard)
 			if test.shouldErr {
 				t.CheckError(true, err)
 			} else {

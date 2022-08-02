@@ -19,7 +19,7 @@ package util
 import (
 	"context"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
@@ -33,7 +33,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, transformAllowlist, transformDenylist map[apim.GroupKind]latest.ResourceFilter) (manifest.ManifestList, error) {
+type GenerateHydratedManifestsOptions struct {
+	TransformAllowList         map[apim.GroupKind]latest.ResourceFilter
+	TransformDenylist          map[apim.GroupKind]latest.ResourceFilter
+	EnablePlatformNodeAffinity bool
+}
+
+func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
 	// Generate manifests.
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateManifest")
 	manifests, err := g.Generate(rCtx, out)
@@ -45,12 +51,25 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	// Update image labels.renderer_test.go
 	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setSkaffoldLabels")
 	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
-	manifests, err = manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(transformAllowlist, transformDenylist))
+	manifests, err = manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
 	if err != nil {
 		return nil, err
 	}
 	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
-	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(transformAllowlist, transformDenylist)); err != nil {
+	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)); err != nil {
+		return nil, err
+	}
+	endTrace()
+
+	if !opts.EnablePlatformNodeAffinity {
+		return manifests, nil
+	}
+	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setPlatformNodeAffinity")
+	platforms, err := manifests.GetImagePlatforms(rCtx, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
+	if err != nil {
+		return nil, err
+	}
+	if manifests, err = manifests.SetPlatformNodeAffinity(rCtx, manifest.NewResourceSelectorAffinity(opts.TransformAllowList, opts.TransformDenylist), platforms); err != nil {
 		return nil, err
 	}
 	endTrace()
@@ -90,7 +109,7 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 	// add user flag values, override user schema values and defaults
 	// TODO(aaron-prindle) see if workdir needs to be considered in this read
 	if cfg.TransformRulesFile() != "" {
-		transformRulesFromFile, err := ioutil.ReadFile(cfg.TransformRulesFile())
+		transformRulesFromFile, err := os.ReadFile(cfg.TransformRulesFile())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -120,6 +139,18 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 func ConvertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
 	nrf := latest.ResourceFilter{}
 	nrf.GroupKind = rf.GroupKind
+	if len(rf.Affinity) > 0 {
+		naffinity := []string{}
+		for _, str := range rf.Affinity {
+			if str == ".*" {
+				naffinity = append(naffinity, str)
+				continue
+			}
+			nstr := strings.ReplaceAll(str, ".*", "")
+			naffinity = append(naffinity, nstr)
+		}
+		nrf.Affinity = naffinity
+	}
 
 	if len(rf.Labels) > 0 {
 		nlabels := []string{}

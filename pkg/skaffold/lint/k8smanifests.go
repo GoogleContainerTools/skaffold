@@ -67,10 +67,7 @@ func GetK8sManifestsLintResults(ctx context.Context, opts Options) (*[]Result, e
 	}
 
 	for _, c := range cfgs {
-		if c.Deploy.KubectlDeploy == nil {
-			continue
-		}
-		for _, pattern := range c.Deploy.KubectlDeploy.Manifests {
+		for _, pattern := range c.Render.RawK8s {
 			// NOTE: pattern is a pattern that can have wildcards, eg: leeroy-app/kubernetes/*
 			if util.IsURL(pattern) {
 				log.Entry(ctx).Debugf("skaffold lint found url manifest and is skipping lint rules for: %s", pattern)

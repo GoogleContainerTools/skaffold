@@ -19,7 +19,6 @@ package testutil
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -389,7 +388,7 @@ func CheckFileExistAndContent(t *testing.T, path string, expectedContent []byte)
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		t.Fatalf("file %v does not exist", path)
 	}
-	actualContent, err := ioutil.ReadFile(absPath)
+	actualContent, err := os.ReadFile(absPath)
 	if err != nil {
 		t.Error(err)
 	}

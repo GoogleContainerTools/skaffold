@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	koinit "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/init"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 )
@@ -31,6 +32,7 @@ type builderAnalyzer struct {
 	directoryAnalyzer
 	enableJibInit        bool
 	enableJibGradleInit  bool
+	enableKoInit         bool
 	enableBuildpacksInit bool
 	findBuilders         bool
 	buildpacksBuilder    string
@@ -82,6 +84,14 @@ func (a *builderAnalyzer) detectBuilders(ctx context.Context, path string, detec
 			results = append(results, docker.ArtifactConfig{
 				// Docker expects forward slashes (for Linux containers at least)
 				File: filepath.ToSlash(path),
+			})
+		}
+	}
+
+	if a.enableKoInit {
+		if koinit.Validate(path) {
+			results = append(results, koinit.ArtifactConfig{
+				File: path,
 			})
 		}
 	}

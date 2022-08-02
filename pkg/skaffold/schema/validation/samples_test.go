@@ -19,7 +19,7 @@ package validation
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -47,9 +47,6 @@ var (
 // Test that every example can be parsed and produces a valid
 // Skaffold configuration.
 func TestParseExamples(t *testing.T) {
-	// TODO: add examples for v2
-	t.SkipNow()
-
 	parseConfigFiles(t, "../../../../examples")
 	parseConfigFiles(t, "../../../../integration/examples")
 	parseConfigFiles(t, "../../../../integration/testdata/regressions")
@@ -58,9 +55,6 @@ func TestParseExamples(t *testing.T) {
 // Samples are skaffold.yaml fragments that are used
 // in the documentation.
 func TestParseSamples(t *testing.T) {
-	// TODO: add sample for v2
-	t.SkipNow()
-
 	paths, err := walk.From(samplesRoot).WhenIsFile().CollectPaths()
 	if err != nil {
 		t.Fatalf("unable to list samples in %q", samplesRoot)
@@ -78,7 +72,7 @@ func TestParseSamples(t *testing.T) {
 
 		testutil.Run(t, name, func(t *testutil.T) {
 			t.Logf("Checking %s...", path)
-			buf, err := ioutil.ReadFile(path)
+			buf, err := os.ReadFile(path)
 			t.CheckNoError(err)
 
 			checkSkaffoldConfig(t, addHeader(buf))
@@ -102,7 +96,6 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 	t.CheckNoError(err)
 }
 
-//nolint:golint,unused
 func parseConfigFiles(t *testing.T, root string) {
 	groupedPaths, err := walk.From(root).WhenHasName("skaffold.yaml").CollectPathsGrouped(1)
 	if err != nil {
@@ -120,7 +113,7 @@ func parseConfigFiles(t *testing.T, root string) {
 		testutil.Run(t, name, func(t *testutil.T) {
 			var data []string
 			for _, path := range paths {
-				buf, err := ioutil.ReadFile(path)
+				buf, err := os.ReadFile(path)
 				t.CheckNoError(err)
 				data = append(data, string(buf))
 			}

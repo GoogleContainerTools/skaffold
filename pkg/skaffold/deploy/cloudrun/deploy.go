@@ -27,9 +27,9 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -42,16 +42,23 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+// Config contains config options needed for cloud run
+type Config interface {
+	PortForwardResources() []*latest.PortForwardResource
+	PortForwardOptions() config.PortForwardOptions
+	Mode() config.RunMode
+}
+
 // Deployer deploys code to Google Cloud Run.
 type Deployer struct {
-	logger   log.Logger
-	monitor  *Monitor
-	labeller *label.DefaultLabeller
+	configName string
+	logger     log.Logger
+	accessor   *RunAccessor
+	monitor    *Monitor
+	labeller   *label.DefaultLabeller
 
-	DefaultProject string
-	Region         string
-
-	Cfg deploy.Config
+	Project string
+	Region  string
 
 	// additional client options for connecting to Cloud Run, used for tests
 	clientOptions []option.ClientOption
@@ -59,19 +66,23 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
-func NewDeployer(labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string) (*Deployer, error) {
 	return &Deployer{
-		DefaultProject: crDeploy.DefaultProjectID,
-		Region:         crDeploy.Region,
+		configName: configName,
+		Project:    crDeploy.ProjectID,
+		Region:     crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
 		logger:        &log.NoopLogger{},
+		accessor:      NewAccessor(cfg, labeller.GetRunID()),
 		labeller:      labeller,
 		useGcpOptions: true,
 	}, nil
 }
 
 // Deploy creates a Cloud Run service using the provided manifest.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifests manifest.ManifestList) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact, manifestsByConfig manifest.ManifestListByConfig) error {
+	manifests := manifestsByConfig.GetForConfig(d.ConfigName())
+
 	for _, manifest := range manifests {
 		if err := d.deployToCloudRun(ctx, out, manifest); err != nil {
 			return err
@@ -80,20 +91,18 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, artifacts []graph.
 	return nil
 }
 
+func (d *Deployer) ConfigName() string {
+	return d.configName
+}
+
 // Dependencies list the files that would trigger a redeploy
 func (d *Deployer) Dependencies() ([]string, error) {
 	return []string{}, nil
 }
 
 // Cleanup deletes the created Cloud Run services
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
-	return d.deleteRunService(ctx, out, dryRun, manifests)
-}
-
-// Render writes out the k8s configs, we may want to support this with service configs in the future
-// but it's not being implemented now
-func (d *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
-	return nil
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig manifest.ManifestListByConfig) error {
+	return d.deleteRunService(ctx, out, dryRun, byConfig.GetForConfig(d.configName))
 }
 
 // GetDebugger Get the Debugger for Cloud Run. Not supported by this deployer.
@@ -108,7 +117,7 @@ func (d *Deployer) GetLogger() log.Logger {
 
 // GetAccessor gets a no-op accessor for Cloud Run.
 func (d *Deployer) GetAccessor() access.Accessor {
-	return &access.NoopAccessor{}
+	return d.accessor
 }
 
 // GetSyncer gets the file syncer for Cloud Run. Not supported by this deployer.
@@ -156,8 +165,13 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
 	}
-	if service.Metadata.Namespace == "" {
-		service.Metadata.Namespace = d.DefaultProject
+	if d.Project != "" {
+		service.Metadata.Namespace = d.Project
+	} else if service.Metadata.Namespace == "" {
+		return sErrors.NewError(fmt.Errorf("unable to detect project for Cloud Run"), &proto.ActionableErr{
+			Message: "No Google Cloud project found in Cloud Run Manifest or Skaffold Config",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
 	}
 
 	// we need to strip "skaffold.dev" from the run-id label because gcp labels don't support domains
@@ -166,13 +180,26 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		delete(service.Metadata.Labels, "skaffold.dev/run-id")
 		service.Metadata.Labels["run-id"] = runID
 	}
+	if service.Spec != nil && service.Spec.Template != nil && service.Spec.Template.Metadata != nil {
+		runID, foundID = service.Spec.Template.Metadata.Labels["skaffold.dev/run-id"]
+		if foundID {
+			delete(service.Spec.Template.Metadata.Labels, "skaffold.dev/run-id")
+			service.Spec.Template.Metadata.Labels["run-id"] = runID
+		}
+	}
 
+	resName := RunResourceName{
+		Project: service.Metadata.Namespace,
+		Region:  d.Region,
+		Service: service.Metadata.Name,
+	}
 	output.Default.Fprintln(out, "Deploying Cloud Run service:\n\t", service.Metadata.Name)
 	parent := fmt.Sprintf("projects/%s/locations/%s", service.Metadata.Namespace, d.Region)
 
-	sName := fmt.Sprintf("%s/services/%s", parent, service.Metadata.Name)
+	sName := resName.String()
 
 	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: sName, name: service.Metadata.Name})
+	d.accessor.AddResource(resName)
 	getCall := crclient.Projects.Locations.Services.Get(sName)
 	_, err = getCall.Do()
 
@@ -181,7 +208,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		if !ok || gErr.Code != http.StatusNotFound {
 			return sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
 				Message: err.Error(),
-				ErrCode: proto.StatusCode_DEPLOY_CANCELLED,
+				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
 			})
 		}
 		// This is a new service, we need to create it
@@ -192,7 +219,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		_, err = replaceCall.Do()
 	}
 	if err != nil {
-		return sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service: %s", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
 		})
@@ -218,10 +245,17 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 	}
 
 	var projectID string
-	if service.Metadata.Namespace != "" {
+	switch {
+	case d.Project != "":
+		projectID = d.Project
+	case service.Metadata.Namespace != "":
 		projectID = service.Metadata.Namespace
-	} else {
-		projectID = d.DefaultProject
+	default:
+		// no project specified, we don't know what to delete.
+		return sErrors.NewError(fmt.Errorf("unable to determine Google Cloud Project"), &proto.ActionableErr{
+			Message: "No Google Cloud Project found in Cloud Run manifest or Skaffold Manifest.",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
 	}
 	parent := fmt.Sprintf("projects/%s/locations/%s", projectID, d.Region)
 	sName := fmt.Sprintf("%s/services/%s", parent, service.Metadata.Name)

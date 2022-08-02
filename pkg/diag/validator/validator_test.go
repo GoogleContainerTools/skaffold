@@ -56,12 +56,14 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			description: "pod don't exist in test namespace",
-			pods: []*v1.Pod{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "foo-ns",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "foo-ns",
+					},
+					TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				},
-				TypeMeta: metav1.TypeMeta{Kind: "Pod"}},
 			},
 			expected: nil,
 		},
@@ -261,16 +263,20 @@ func TestRun(t *testing.T) {
 								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
 							},
 						},
-					}},
+					},
+				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
 				&proto.ActionableErr{
 					Message: "container foo-container terminated with exit code 1",
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
 					Suggestions: []*proto.Suggestion{
-						{SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
-							Action: "Try checking container logs"},
-					}}, []string{})},
+						{
+							SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
+							Action:         "Try checking container logs",
+						},
+					},
+				}, []string{})},
 		},
 		{
 			description: "one of the pod containers is in Terminated State with non zero exit code",
@@ -291,16 +297,20 @@ func TestRun(t *testing.T) {
 								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
 							},
 						},
-					}},
+					},
+				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
 				&proto.ActionableErr{
 					Message: "container foo-container terminated with exit code 1",
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
 					Suggestions: []*proto.Suggestion{
-						{SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
-							Action: "Try checking container logs"},
-					}}, []string{})},
+						{
+							SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
+							Action:         "Try checking container logs",
+						},
+					},
+				}, []string{})},
 		},
 		{
 			description: "pod is in Stable State",
@@ -415,7 +425,8 @@ func TestRun(t *testing.T) {
 					}},
 				}, []string{
 					"[foo foo-container] main.go:57 ",
-					"[foo foo-container] go panic"},
+					"[foo foo-container] go panic",
+				},
 			)},
 		},
 		{
@@ -448,7 +459,8 @@ func TestRun(t *testing.T) {
 						Action:         "Try checking container logs",
 					}},
 				}, []string{
-					"Error retrieving logs for pod foo: error retrieving.\nTry `kubectl logs foo -n test -c foo-container`"},
+					"Error retrieving logs for pod foo: error retrieving.\nTry `kubectl logs foo -n test -c foo-container`",
+				},
 			)},
 		},
 		// Events Test cases
@@ -644,7 +656,8 @@ func TestRun(t *testing.T) {
 							Name:  "foo-container",
 							Image: "foo-image",
 							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{Reason: "CrashLoopBackOff",
+								Waiting: &v1.ContainerStateWaiting{
+									Reason:  "CrashLoopBackOff",
 									Message: "Back off restarting container",
 								},
 							},
@@ -680,7 +693,8 @@ func TestRun(t *testing.T) {
 							Name:  "foo-container",
 							Image: "foo-image",
 							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{Reason: "PodInitializing",
+								Waiting: &v1.ContainerStateWaiting{
+									Reason:  "PodInitializing",
 									Message: "waiting to initialize",
 								},
 							},
@@ -719,7 +733,8 @@ func TestRun(t *testing.T) {
 								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
 							},
 						},
-					}},
+					},
+				},
 			}},
 			logOutput: mockLogOutput{
 				output: []byte("standard_init_linux.go:219: exec user process caused: exec format error"),
@@ -752,7 +767,8 @@ func TestRun(t *testing.T) {
 								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
 							},
 						},
-					}},
+					},
+				},
 			}},
 		},
 	}

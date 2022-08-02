@@ -19,7 +19,7 @@ package prompt
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -70,7 +70,7 @@ func TestWriteSkaffoldConfig(t *testing.T) {
 				return nil
 			})
 
-			done, err := WriteSkaffoldConfig(ioutil.Discard, []byte{}, nil, "")
+			done, err := WriteSkaffoldConfig(io.Discard, []byte{}, nil, "")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDone, done)
 		})
 	}
@@ -166,7 +166,7 @@ func TestPortForwardResource(t *testing.T) {
 				return nil
 			})
 
-			port, err := portForwardResource(ioutil.Discard, "image-name")
+			port, err := portForwardResource(io.Discard, "image-name")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, port)
 		})
 	}
@@ -214,7 +214,7 @@ func TestConfirmInitOptions(t *testing.T) {
 				return nil
 			})
 
-			done, err := ConfirmInitOptions(ioutil.Discard, test.config)
+			done, err := ConfirmInitOptions(io.Discard, test.config)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDone, done)
 		})
 	}

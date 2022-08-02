@@ -86,7 +86,7 @@ type LocalDaemon interface {
 	ContainerInspect(ctx context.Context, id string) (types.ContainerJSON, error)
 	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
-	Pull(ctx context.Context, out io.Writer, ref string) error
+	Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
 	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
@@ -213,7 +213,7 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 	return nil
 }
 
-// Run creates a container from a given image reference, and returns then container ID.
+// Run creates a container from a given image reference, and returns a wait channel and the container ID.
 func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error) {
 	if opts.ContainerConfig == nil {
 		return nil, nil, "", fmt.Errorf("cannot call Run with empty container config")
@@ -287,7 +287,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = RetrieveRemoteConfig(image, l.cfg, nil)
+		cfg, err = RetrieveRemoteConfig(image, l.cfg, v1.Platform{})
 		if err != nil {
 			return nil, err
 		}
@@ -472,7 +472,7 @@ func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth str
 }
 
 // Pull pulls an image reference from a registry.
-func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
+func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error {
 	// We first try pulling the image with credentials.  If that fails then retry
 	// without credentials in case the image is public.
 
@@ -503,6 +503,7 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error
 			//     return "" to retry as an anonymous pull.
 			return "", err
 		},
+		Platform: platform.String(),
 	})
 	if err != nil {
 		return fmt.Errorf("pulling image from repository: %w", err)

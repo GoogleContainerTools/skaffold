@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -43,7 +44,11 @@ func NewCmdDelete() *cobra.Command {
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, out, func(r runner.Runner, _ []util.VersionedConfig) error {
-		return r.Cleanup(ctx, out, dryRun)
+	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
+		manifestListByConfig, err := r.Render(ctx, io.Discard, []graph.Artifact{}, false)
+		if err != nil {
+			return err
+		}
+		return r.Cleanup(ctx, out, dryRun, manifestListByConfig)
 	})
 }

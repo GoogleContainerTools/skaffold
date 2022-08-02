@@ -19,10 +19,11 @@ package cmd
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -32,10 +33,10 @@ import (
 
 type mockDevRunner struct {
 	runner.Runner
-	hasBuilt    bool
-	hasDeployed bool
-	errDev      error
-	calls       []string
+	hasBuilt          bool
+	errDev            error
+	calls             []string
+	deployedManifests manifest.ManifestListByConfig
 }
 
 func (r *mockDevRunner) Dev(context.Context, io.Writer, []*latest.Artifact) error {
@@ -48,9 +49,9 @@ func (r *mockDevRunner) HasBuilt() bool {
 	return r.hasBuilt
 }
 
-func (r *mockDevRunner) HasDeployed() bool {
-	r.calls = append(r.calls, "HasDeployed")
-	return r.hasDeployed
+func (r *mockDevRunner) DeployManifests() manifest.ManifestListByConfig {
+	r.calls = append(r.calls, "DeployManifests")
+	return r.deployedManifests
 }
 
 func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
@@ -58,44 +59,51 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
 }
 
+func (r *mockDevRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
+	r.calls = append(r.calls, "Render")
+	return r.deployedManifests, nil
+}
+
 func TestDoDev(t *testing.T) {
 	tests := []struct {
-		description   string
-		hasBuilt      bool
-		hasDeployed   bool
-		expectedCalls []string
+		description       string
+		hasBuilt          bool
+		deployedManifests manifest.ManifestList
+		expectedCalls     []string
 	}{
 		{
-			description:   "cleanup and then prune",
-			hasBuilt:      true,
-			hasDeployed:   true,
-			expectedCalls: []string{"Dev", "HasDeployed", "HasBuilt", "Cleanup", "Prune"},
+			description:       "cleanup and then prune",
+			hasBuilt:          true,
+			deployedManifests: manifest.ManifestList{[]byte("dummy")},
+			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Render", "Cleanup", "Prune"},
 		},
 		{
-			description:   "hasn't deployed",
-			hasBuilt:      true,
-			hasDeployed:   false,
-			expectedCalls: []string{"Dev", "HasDeployed", "HasBuilt", "Prune"},
+			description:       "hasn't deployed",
+			hasBuilt:          true,
+			deployedManifests: manifest.ManifestList{},
+			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Prune"},
 		},
 		{
-			description:   "hasn't built",
-			hasBuilt:      false,
-			hasDeployed:   false,
-			expectedCalls: []string{"Dev", "HasDeployed", "HasBuilt"},
+			description:       "hasn't built",
+			hasBuilt:          false,
+			deployedManifests: manifest.ManifestList{},
+			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt"},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			dm := manifest.NewManifestListByConfig()
+			dm.Add("test", test.deployedManifests)
 			mockRunner := &mockDevRunner{
-				hasBuilt:    test.hasBuilt,
-				hasDeployed: test.hasDeployed,
-				errDev:      context.Canceled,
+				hasBuilt:          test.hasBuilt,
+				deployedManifests: dm,
+				errDev:            context.Canceled,
 			}
 			t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
 				return mockRunner, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
@@ -105,7 +113,7 @@ func TestDoDev(t *testing.T) {
 				NoPrune: false,
 			})
 
-			err := doDev(context.Background(), ioutil.Discard)
+			err := doDev(context.Background(), io.Discard)
 
 			t.CheckDeepEqual(test.expectedCalls, mockRunner.calls)
 			t.CheckTrue(err == context.Canceled)
@@ -131,15 +139,19 @@ func (m *mockConfigChangeRunner) HasBuilt() bool {
 	return true
 }
 
-func (m *mockConfigChangeRunner) HasDeployed() bool {
-	return true
+func (m *mockConfigChangeRunner) DeployManifests() manifest.ManifestListByConfig {
+	return manifest.ManifestListByConfig{}
 }
 
 func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool) error {
+func (m *mockConfigChangeRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
+	return manifest.ManifestListByConfig{}, nil
+}
+
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
 	return nil
 }
 
@@ -155,7 +167,7 @@ func TestDevConfigChange(t *testing.T) {
 			NoPrune: false,
 		})
 
-		err := doDev(context.Background(), ioutil.Discard)
+		err := doDev(context.Background(), io.Discard)
 
 		// ensure that we received the context.Canceled error (and not ErrorConfigurationChanged)
 		// also ensure that the we run through dev cycles (since we reloaded on the first),

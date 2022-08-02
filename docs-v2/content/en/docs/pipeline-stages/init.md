@@ -17,7 +17,8 @@ and [deploy](#deploy-config-initialization) config.
 
 1. [Docker]({{<relref "/docs/pipeline-stages/builders/docker">}})
 2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}})
-2. [Buildpacks]({{<relref "/docs/pipeline-stages/builders/buildpacks">}})
+3. [Ko]({{<relref "/docs/pipeline-stages/builders/ko">}})
+4. [Buildpacks]({{<relref "/docs/pipeline-stages/builders/buildpacks">}})
 
 `skaffold init` walks your project directory and looks for any build configuration files such as `Dockerfile`,
 `build.gradle/pom.xml`, `package.json`, `requirements.txt` or `go.mod`. `init` skips files that are larger
@@ -108,7 +109,7 @@ If bringing a project to skaffold that has no kubernetes manifests yet, it may b
 ## `--force` Flag
 `skaffold init` allows for use of a `--force` flag, which removes the prompts from vanilla `skaffold init`, and allows skaffold to make a best effort attempt to automatically generate a config for your project.
 
-In a situation where one image is detected, but multiple possible builders are detected, skaffold will choose a builder as follows: Docker > Jib > Bazel > Buildpacks.
+In a situation where one image is detected, but multiple possible builders are detected, skaffold will choose a builder as follows: Docker > Jib > Ko > Bazel > Buildpacks.
 
 *Note: This feature is still under development, and doesn't currently support use cases such as multiple images in a project.*
 

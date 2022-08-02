@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -170,10 +171,10 @@ pipeline:
 				Write(filepath.Join(constants.DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := mockConfig{
-				workingDir: tmpDirObj.Root(),
+			mockCfg := render.MockConfig{
+				WorkingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
+			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default")
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -241,10 +242,10 @@ inventory:
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 				Validate: &[]latest.Validator{{Name: "kubeval"}},
 			}
-			mockCfg := mockConfig{
-				workingDir: tmpDirObj.Root(),
+			mockCfg := render.MockConfig{
+				WorkingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{})
+			r, err := New(mockCfg, renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default")
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -260,12 +261,3 @@ inventory:
 		})
 	}
 }
-
-type mockConfig struct {
-	workingDir string
-}
-
-func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
-func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
-func (mc mockConfig) TransformRulesFile() string                  { return "" }

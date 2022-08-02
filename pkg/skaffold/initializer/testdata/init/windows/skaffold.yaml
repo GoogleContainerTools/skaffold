@@ -8,7 +8,6 @@ build:
     context: apps/web
     docker:
       dockerfile: build/Dockerfile
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - apps/web/deployment.yaml

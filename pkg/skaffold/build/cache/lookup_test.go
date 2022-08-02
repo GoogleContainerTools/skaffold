@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/client"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -197,7 +197,7 @@ func TestLookupRemote(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config, _ *v1.Platform) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config, _ []specs.Platform) (string, error) {
 				switch {
 				case identifier == "tag":
 					return "digest", nil

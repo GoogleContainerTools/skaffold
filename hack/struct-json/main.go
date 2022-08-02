@@ -23,13 +23,12 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	blackfriday "github.com/russross/blackfriday/v2"
+	"github.com/russross/blackfriday/v2"
 )
 
 var camelSepRegex = regexp.MustCompile(`([a-z0-9])([A-Z])`)
@@ -62,7 +61,7 @@ func generateJSON(root, input, output string, dryRun bool) error {
 	}
 
 	if !dryRun {
-		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+		if err := os.WriteFile(output, buf, os.ModePerm); err != nil {
 			return fmt.Errorf("unable to write json %q: %w", output, err)
 		}
 	}

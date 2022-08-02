@@ -144,6 +144,10 @@ DOCKER_HOST`),
 			description: "minikube exit code 51 (minikube >= 1.13.0) - fallback to host docker",
 			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &driverConflictErr{})),
 		},
+		{
+			description: "minikube exit code 89 - fallback to host docker",
+			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &exGuestUnavailable{})),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -168,6 +172,11 @@ type driverConflictErr struct{}
 
 func (e *driverConflictErr) Error() string { return "driver conflict" }
 func (e *driverConflictErr) ExitCode() int { return 51 }
+
+type exGuestUnavailable struct{}
+
+func (e *exGuestUnavailable) Error() string { return "minikube not available" }
+func (e *exGuestUnavailable) ExitCode() int { return 89 }
 
 type fakeMinikubeClient struct{}
 

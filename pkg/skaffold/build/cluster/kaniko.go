@@ -79,7 +79,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		if err := pods.Delete(ctx, pod.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
-			log.Entry(ctx).Fatalf("deleting pod: %s", err)
+			log.Entry(ctx).Errorf("deleting pod: %s", err)
 		}
 	}()
 

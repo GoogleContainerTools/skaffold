@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
 
@@ -54,12 +52,27 @@ type Generator struct {
 	config       latest.Generate
 }
 
-func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
+func localManifests(paths []string, workdir string) ([]string, error) {
 	var localPaths []string
-	var gcsManifests []string
 	for _, path := range paths {
 		switch {
 		case util.IsURL(path):
+		case strings.HasPrefix(path, "gs://"):
+		default:
+			localPaths = append(localPaths, path)
+		}
+	}
+	return util.ExpandPathsGlob(workdir, localPaths)
+}
+
+func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
+	var localPaths []string
+	var gcsManifests []string
+	var urlManifests []string
+	for _, path := range paths {
+		switch {
+		case util.IsURL(path):
+			urlManifests = append(urlManifests, path)
 		case strings.HasPrefix(path, "gs://"):
 			gcsManifests = append(gcsManifests, path)
 		default:
@@ -82,6 +95,13 @@ func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 		}
 		list = append(list, l...)
 	}
+	if len(urlManifests) != 0 {
+		paths, err := manifest.DownloadFromURL(urlManifests)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, paths...)
+	}
 	return list, nil
 }
 
@@ -91,34 +111,18 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 	var manifests manifest.ManifestList
 
 	// Generate kustomize Manifests
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
-	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize, g.workingDir)
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
-		return nil, err
-	}
-	endTrace()
-	kustomizePathMap := make(map[string]bool)
-	for _, path := range kustomizePaths {
-		if dir, ok := isKustomizeDir(path); ok {
-			kustomizePathMap[dir] = true
-		}
-	}
-	for kPath := range kustomizePathMap {
-		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
-		cmd := exec.CommandContext(ctx, "kustomize", "build", kPath)
-		out, err := util.RunCmdOut(ctx, cmd)
+	if g.config.Kustomize != nil && len(g.config.Kustomize.Paths) != 0 {
+		kustomizeManifests, err := g.generateKustomizeManifests(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if len(out) == 0 {
-			continue
+		for _, m := range kustomizeManifests {
+			manifests.Append(m)
 		}
-		manifests.Append(out)
 	}
 
 	// Generate in-place hydrated kpt Manifests
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
 	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
@@ -163,14 +167,45 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 				continue
 			}
 		}
-		manifestFileContent, err := ioutil.ReadFile(nkPath)
+		manifestFileContent, err := os.ReadFile(nkPath)
 		if err != nil {
 			return nil, err
 		}
 		manifests.Append(manifestFileContent)
 	}
 
-	// TODO(yuwenma): helm resources. `render.generate.helmCharts`
+	return manifests, nil
+}
+
+func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, error) {
+	var manifests [][]byte
+
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
+	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
+		return nil, err
+	}
+	endTrace()
+	kustomizePathMap := make(map[string]bool)
+	for _, path := range kustomizePaths {
+		if dir, ok := isKustomizeDir(path); ok {
+			kustomizePathMap[dir] = true
+		}
+	}
+	for kPath := range kustomizePathMap {
+		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
+		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
+		out, err := util.RunCmdOut(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
+		if len(out) == 0 {
+			continue
+		}
+		manifests = append(manifests, out)
+	}
+
 	return manifests, nil
 }
 
@@ -200,6 +235,24 @@ func isKustomizeDir(path string) (string, bool) {
 	return "", false
 }
 
+// kustomizeBuildArgs returns a list of build args to be passed to kustomize build.
+func kustomizeBuildArgs(buildArgs []string, kustomizePath string) []string {
+	var args []string
+
+	if len(buildArgs) > 0 {
+		for _, v := range buildArgs {
+			parts := strings.Split(v, " ")
+			args = append(args, parts...)
+		}
+	}
+
+	if len(kustomizePath) > 0 {
+		args = append(args, kustomizePath)
+	}
+
+	return args
+}
+
 func isKptDir(path string) (string, bool) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
@@ -218,31 +271,31 @@ func isKptDir(path string) (string, bool) {
 	return dir, true
 }
 
-// walkManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
+// walkLocalManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
 // Note: the logic about manifest dependencies shall separate from the "Generate" function, which requires "context" and
-// only be called when a renderig action is needed (normally happens after the file watcher registration).
-func (g Generator) walkManifests() ([]string, error) {
+// only be called when a rendering action is needed (normally happens after the file watcher registration).
+func (g Generator) walkLocalManifests() ([]string, error) {
 	var dependencyPaths []string
+
 	// Generate kustomize Manifests
-	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize, g.workingDir)
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
-		return nil, err
+	if g.config.Kustomize != nil {
+		kustomizePaths, err := localManifests(g.config.Kustomize.Paths, g.workingDir)
+		if err != nil {
+			return nil, err
+		}
+		dependencyPaths = append(dependencyPaths, kustomizePaths...)
 	}
-	dependencyPaths = append(dependencyPaths, kustomizePaths...)
 
 	// Generate in-place hydrated kpt Manifests
-	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
+	kptPaths, err := localManifests(g.config.Kpt, g.workingDir)
 	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
 		return nil, err
 	}
 	dependencyPaths = append(dependencyPaths, kptPaths...)
 
 	// Generate Raw Manifests
-	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
+	sourceManifests, err := localManifests(g.config.RawK8s, g.workingDir)
 	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
 		return nil, err
 	}
 	dependencyPaths = append(dependencyPaths, sourceManifests...)
@@ -250,9 +303,9 @@ func (g Generator) walkManifests() ([]string, error) {
 }
 
 func (g Generator) ManifestDeps() ([]string, error) {
-	deps := stringset.New()
+	deps := []string{}
 
-	dependencyPaths, err := g.walkManifests()
+	dependencyPaths, err := g.walkLocalManifests()
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +317,7 @@ func (g Generator) ManifestDeps() ([]string, error) {
 				}
 				fname := filepath.Base(p)
 				if strings.HasSuffix(fname, ".yaml") || strings.HasSuffix(fname, ".yml") || fname == kptfile.KptFileName {
-					deps.Insert(p)
+					deps = append(deps, p)
 				}
 				return nil
 			})
@@ -272,5 +325,5 @@ func (g Generator) ManifestDeps() ([]string, error) {
 			return nil, err
 		}
 	}
-	return deps.ToList(), nil
+	return deps, nil
 }

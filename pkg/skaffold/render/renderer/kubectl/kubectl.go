@@ -33,6 +33,10 @@ import (
 )
 
 type Kubectl struct {
+	cfg render.Config
+
+	configName string
+
 	generate.Generator
 	labels map[string]string
 
@@ -40,28 +44,37 @@ type Kubectl struct {
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string) (Kubectl, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string) (Kubectl, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Kubectl{}, err
 	}
 	return Kubectl{
-		Generator: generator,
-		labels:    labels,
+		cfg:        cfg,
+		configName: configName,
+		Generator:  generator,
+		labels:     labels,
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
 	}, nil
 }
 
-func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool) (manifest.ManifestList, error) {
+func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_KubectlManifests")
 	log.Entry(ctx).Infof("rendering using kubectl")
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"RendererType": "kubectl",
 	})
-	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.transformAllowlist, r.transformDenylist)
+	opts := util.GenerateHydratedManifestsOptions{
+		TransformAllowList:         r.transformAllowlist,
+		TransformDenylist:          r.transformDenylist,
+		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+	}
+	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, opts)
 	endTrace()
-	return manifests, err
+	manifestListByConfig := manifest.NewManifestListByConfig()
+	manifestListByConfig.Add(r.configName, manifests)
+	return manifestListByConfig, err
 }

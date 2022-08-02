@@ -13,10 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v2
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -29,8 +31,16 @@ import (
 
 // Apply sends Kubernetes manifests to the cluster.
 func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
-	// TODO: fix empty manifest list and instead read manifests from hydrationDir
-	if err := r.applyResources(ctx, out, nil, nil, manifest.ManifestList{}); err != nil {
+	var manifests manifest.ManifestList
+	var err error
+	manifests, err = deployutil.GetManifestsFromHydratedManifests(ctx, r.runCtx.HydratedManifests())
+	manifestsByConfig := manifest.NewManifestListByConfig()
+	manifestsByConfig.Add(r.deployer.ConfigName(), manifests)
+
+	if err != nil {
+		return fmt.Errorf("getting manifests from hydrated manifests: %w", err)
+	}
+	if err := r.applyResources(ctx, out, nil, nil, manifestsByConfig); err != nil {
 		return err
 	}
 
@@ -43,7 +53,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	return sErr
 }
 
-func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, _ []graph.Artifact, list manifest.ManifestList) error {
+func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, _ []graph.Artifact, list manifest.ManifestListByConfig) error {
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err
@@ -59,7 +69,7 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-	r.hasDeployed = true
+	r.deployManifests = list
 	event.DeployComplete()
 	return nil
 }

@@ -19,7 +19,7 @@ package local
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -186,7 +186,7 @@ func TestLocalRun(t *testing.T) {
 			}).Add("pull1", ""),
 			tag:              "gcr.io/test/image:tag",
 			expected:         "gcr.io/test/image:1",
-			expectedWarnings: []string{"cacheFrom image couldn't be pulled: pull1\n"},
+			expectedWarnings: []string{"cacheFrom image \"pull1\" couldn't be pulled for platform \"\"\n"},
 		},
 		{
 			description: "error checking cache-from image",
@@ -244,8 +244,8 @@ func TestLocalRun(t *testing.T) {
 				Concurrency: &constants.DefaultLocalConcurrency,
 			})
 			t.CheckNoError(err)
-			ab := builder.Build(context.Background(), ioutil.Discard, test.artifact)
-			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
+			ab := builder.Build(context.Background(), io.Discard, test.artifact)
+			res, err := ab(context.Background(), io.Discard, test.artifact, test.tag, platform.Matcher{})
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())

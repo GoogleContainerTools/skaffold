@@ -38,6 +38,7 @@ const (
 	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 	defaultCloudBuildKanikoImage = kaniko.DefaultImage
 	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
+	defaultCloudBuildKoImage     = "gcr.io/k8s-skaffold/skaffold"
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
@@ -88,6 +89,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultCloudBuildGradleImage,
 		setDefaultCloudBuildKanikoImage,
 		setDefaultCloudBuildPackImage,
+		setDefaultCloudBuildKoImage,
 	)
 
 	if err := withClusterConfig(c,
@@ -108,8 +110,6 @@ func Set(c *latest.SkaffoldConfig) error {
 	}
 
 	setDefaultTestWorkspace(c)
-	SetDefaultRenderer(c)
-	SetDefaultDeployer(c)
 	return nil
 }
 
@@ -121,7 +121,7 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 	if len(c.Render.Generate.RawK8s) > 0 {
 		return
 	}
-	if len(c.Render.Generate.Kustomize) > 0 {
+	if c.Render.Generate.Kustomize != nil {
 		return
 	}
 	if c.Render.Generate.Helm != nil {
@@ -195,6 +195,10 @@ func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
 	gcb.PackImage = valueOrDefault(gcb.PackImage, defaultCloudBuildPackImage)
 }
 
+func setDefaultCloudBuildKoImage(gcb *latest.GoogleCloudBuild) {
+	gcb.KoImage = valueOrDefault(gcb.KoImage, defaultCloudBuildKoImage)
+}
+
 func setDefaultTagger(c *latest.SkaffoldConfig) {
 	if c.Build.TagPolicy != (latest.TagPolicy{}) {
 		return
@@ -233,6 +237,10 @@ func setBuildpackArtifactDefaults(a *latest.BuildpackArtifact) {
 		a.Dependencies = &latest.BuildpackDependencies{
 			Paths: []string{"."},
 		}
+	}
+	if a.Builder == "" && len(a.Buildpacks) == 0 {
+		a.Builder = constants.DefaultBuildpacksBuilderImage
+		a.TrustBuilder = true
 	}
 }
 

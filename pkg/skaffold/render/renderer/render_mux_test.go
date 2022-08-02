@@ -33,30 +33,30 @@ import (
 func TestRenderMux_Render(t *testing.T) {
 	tests := []struct {
 		name         string
-		renderers    []Renderer
+		renderers    GroupRenderer
 		expected     string
 		expectedDeps []string
 		shouldErr    bool
 	}{
 		{
 			name: "concatenates render results with separator",
-			renderers: []Renderer{
-				mock{manifests: "manifest-1", deps: []string{"file1.txt", "file2.txt"}},
-				mock{manifests: "manifest-2", deps: []string{"file2.txt", "file3.txt"}}},
+			renderers: GroupRenderer{
+				mock{configName: "config1", manifests: "manifest-1", deps: []string{"file1.txt", "file2.txt"}},
+				mock{configName: "config2", manifests: "manifest-2", deps: []string{"file2.txt", "file3.txt"}}},
 			expected:     "manifest-1\n---\nmanifest-2",
 			expectedDeps: []string{"file1.txt", "file2.txt", "file3.txt"},
 		},
 		{
-			name: "short-circuits when first call fails",
-			renderers: []Renderer{
+			name: "returns empty string when any call fails",
+			renderers: GroupRenderer{
 				mock{manifests: "manifest-1", deps: []string{"file1.txt"}},
 				mock{deps: []string{"file2.txt"}, shouldErr: true}},
 			expectedDeps: []string{"file1.txt", "file2.txt"},
 			shouldErr:    true,
 		},
 		{
-			name: "short-circuits when second call fails",
-			renderers: []Renderer{
+			name: "short-circuits when first call fails",
+			renderers: GroupRenderer{
 				mock{deps: []string{"file1.txt"}, shouldErr: true},
 				mock{manifests: "manifest-2", deps: []string{"file2.txt"}}},
 			expectedDeps: []string{"file1.txt", "file2.txt"},
@@ -72,10 +72,12 @@ func TestRenderMux_Render(t *testing.T) {
 						LocalBuild: &latest.LocalBuild{},
 					},
 				}}})
+
 			mux := NewRenderMux(tc.renderers)
 			buf := &bytes.Buffer{}
 			actual, err := mux.Render(context.Background(), buf, nil, true)
-			t.CheckErrorAndDeepEqual(tc.shouldErr, err, tc.expected, actual.String())
+			actualValue := actual.String()
+			t.CheckErrorAndDeepEqual(tc.shouldErr, err, tc.expected, actualValue)
 			actualDeps, errD := mux.ManifestDeps()
 			t.CheckNoError(errD)
 			t.CheckDeepEqual(tc.expectedDeps, actualDeps)
@@ -84,18 +86,22 @@ func TestRenderMux_Render(t *testing.T) {
 }
 
 type mock struct {
-	manifests string
-	deps      []string
-	shouldErr bool
+	configName string
+	manifests  string
+	deps       []string
+	shouldErr  bool
 }
 
 func (m mock) ManifestDeps() ([]string, error) {
 	return m.deps, nil
 }
 
-func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
+func (m mock) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestListByConfig, error) {
 	if m.shouldErr {
-		return nil, fmt.Errorf("render error")
+		return manifest.ManifestListByConfig{}, fmt.Errorf("render error")
 	}
-	return manifest.Load(bytes.NewReader([]byte(m.manifests)))
+	manifests, err := manifest.Load(bytes.NewReader([]byte(m.manifests)))
+	manifestListByConfig := manifest.NewManifestListByConfig()
+	manifestListByConfig.Add(m.configName, manifests)
+	return manifestListByConfig, err
 }

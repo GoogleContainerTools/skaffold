@@ -92,15 +92,15 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, platforms pla
 	err := n.waitForDependencies(ctx)
 	if err != nil {
 		// `waitForDependencies` only returns `context.Canceled` error
-		event.BuildCanceled(a.ImageName)
-		eventV2.BuildCanceled(a.ImageName, err)
+		event.BuildCanceled(a.ImageName, platforms.GetPlatforms(a.ImageName).String())
+		eventV2.BuildCanceled(a.ImageName, platforms.GetPlatforms(a.ImageName).String(), err)
 		return err
 	}
 	release := s.concurrencySem.acquire()
 	defer release()
 
-	event.BuildInProgress(a.ImageName)
-	eventV2.BuildInProgress(a.ImageName)
+	event.BuildInProgress(a.ImageName, platforms.GetPlatforms(a.ImageName).String())
+	eventV2.BuildInProgress(a.ImageName, platforms.GetPlatforms(a.ImageName).String())
 	ctx, endTrace := instrumentation.StartTrace(ctx, "build_BuildInProgress", map[string]string{
 		"ArtifactNumber": strconv.Itoa(i),
 		"ImageName":      instrumentation.PII(a.ImageName),
@@ -109,8 +109,8 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, platforms pla
 
 	w, closeFn, err := s.logger.GetWriter(ctx)
 	if err != nil {
-		event.BuildFailed(a.ImageName, err)
-		eventV2.BuildFailed(a.ImageName, err)
+		event.BuildFailed(a.ImageName, platforms.GetPlatforms(a.ImageName).String(), err)
+		eventV2.BuildFailed(a.ImageName, platforms.GetPlatforms(a.ImageName).String(), err)
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
@@ -120,25 +120,25 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, platforms pla
 	output.Default.Fprintf(w, "Building [%s]...\n", a.ImageName)
 	finalTag, err := performBuild(ctx, w, tags, platforms, a, s.artifactBuilder)
 	if err != nil {
-		event.BuildFailed(a.ImageName, err)
+		event.BuildFailed(a.ImageName, platforms.GetPlatforms(a.ImageName).String(), err)
 		endTrace(instrumentation.TraceEndError(err))
 		if errors.Is(ctx.Err(), context.Canceled) {
 			output.Yellow.Fprintf(w, "Build [%s] was canceled\n", a.ImageName)
-			eventV2.BuildCanceled(a.ImageName, err)
+			eventV2.BuildCanceled(a.ImageName, platforms.GetPlatforms(a.ImageName).String(), err)
 			return err
 		}
 		if s.reportFailure {
 			output.Red.Fprintf(w, "Build [%s] failed: %v\n", a.ImageName, err)
 		}
-		eventV2.BuildFailed(a.ImageName, err)
+		eventV2.BuildFailed(a.ImageName, platforms.GetPlatforms(a.ImageName).String(), err)
 		return fmt.Errorf("build [%s] failed: %w", a.ImageName, err)
 	}
 
 	output.Default.Fprintf(w, "Build [%s] succeeded\n", a.ImageName)
 	s.results.Record(a, finalTag)
 	n.markComplete()
-	event.BuildComplete(a.ImageName)
-	eventV2.BuildSucceeded(a.ImageName)
+	event.BuildComplete(a.ImageName, platforms.GetPlatforms(a.ImageName).String())
+	eventV2.BuildSucceeded(a.ImageName, platforms.GetPlatforms(a.ImageName).String())
 	return nil
 }
 

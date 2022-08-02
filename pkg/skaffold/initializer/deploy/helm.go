@@ -18,13 +18,11 @@ package deploy
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -36,7 +34,7 @@ const (
 
 // for testing
 var (
-	readFile = ioutil.ReadFile
+	readFile = os.ReadFile
 )
 
 // helm implements deploymentInitializer for the helm deployer.
@@ -46,9 +44,10 @@ type helm struct {
 
 type chart struct {
 	name        string
-	chartValues map[string]string
+	chartValues map[string]interface{}
 	path        string
 	valueFiles  []string
+	version     string
 }
 
 // newHelmInitializer returns a helm config generator.
@@ -61,15 +60,7 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 			log.Entry(context.TODO()).Infof("Skipping chart dir %s, as %s could not be parsed as valid yaml", chDir, chFile)
 			continue
 		}
-		name := getChartName(parsed, chDir)
-		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
-		replaced := strings.ReplaceAll(chDir, string(os.PathSeparator), "/")
-		charts = append(charts, chart{
-			chartValues: parsed,
-			name:        name,
-			path:        replaced,
-			valueFiles:  vfs,
-		})
+		charts = append(charts, buildChart(parsed, chDir, vfs))
 	}
 	return helm{
 		charts: charts,
@@ -78,14 +69,23 @@ func newHelmInitializer(chartValuesMap map[string][]string) helm {
 
 // DeployConfig implements the Initializer interface and generates
 // a helm configuration
-func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
+func (h helm) DeployConfig() latest.DeployConfig {
 	releases := []latest.HelmRelease{}
 	for _, ch := range h.charts {
-		releases = append(releases, latest.HelmRelease{
+		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
+		rPath := strings.ReplaceAll(ch.path, string(os.PathSeparator), "/")
+		rVfs := make([]string, len(ch.valueFiles))
+		for i, vf := range ch.valueFiles {
+			rVfs[i] = strings.ReplaceAll(vf, string(os.PathSeparator), "/")
+		}
+
+		r := latest.HelmRelease{
 			Name:        ch.name,
-			ChartPath:   ch.path,
-			ValuesFiles: ch.valueFiles,
-		})
+			ChartPath:   rPath,
+			Version:     ch.version,
+			ValuesFiles: rVfs,
+		}
+		releases = append(releases, r)
 	}
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
@@ -93,45 +93,44 @@ func (h helm) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 				Releases: releases,
 			},
 		},
-	}, nil
-}
-
-// Validate implements the Initializer interface and ensures
-// we have at least one manifest before generating a config
-func (h helm) Validate() error {
-	if len(h.charts) == 0 {
-		return errors.NoHelmChartsErr{}
 	}
-	return nil
 }
 
-// we don't generate manifests for helm
-func (h helm) AddManifestForImage(string, string) {}
-
-// GetImages return an empty string for helm.
-func (h helm) GetImages() []string {
-	artifacts := []string{}
-	for _, ch := range h.charts {
-		artifacts = append(artifacts, ch.name)
-	}
-	return artifacts
-}
-
-func parseChartValues(fp string) (map[string]string, error) {
+func parseChartValues(fp string) (map[string]interface{}, error) {
 	in, err := readFile(fp)
 	if err != nil {
 		return nil, err
 	}
-	m := map[string]string{}
-	if err := yaml.UnmarshalStrict(in, &m); err != nil {
-		return nil, err
+	m := map[string]interface{}{}
+	if errY := yaml.UnmarshalStrict(in, &m); errY != nil {
+		return nil, errY
 	}
 	return m, nil
 }
 
-func getChartName(parsed map[string]string, chDir string) string {
+func getChartName(parsed map[string]interface{}, chDir string) string {
 	if v, ok := parsed[nameKey]; ok {
-		return v
+		return v.(string)
 	}
 	return filepath.Base(chDir)
+}
+
+func buildChart(parsed map[string]interface{}, chDir string, vfs []string) chart {
+	ch := chart{
+		chartValues: parsed,
+		name:        getChartName(parsed, chDir),
+		path:        chDir,
+		valueFiles:  vfs,
+	}
+	if v := getVersion(parsed); v != "" {
+		ch.version = v
+	}
+	return ch
+}
+
+func getVersion(m map[string]interface{}) string {
+	if v, ok := m["version"]; ok {
+		return v.(string)
+	}
+	return ""
 }
