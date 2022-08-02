@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	samplesRoot = "../../../../docs/content/en/samples"
+	samplesRoot = "../../../../docs-v2/content/en/samples"
 )
 
 var (

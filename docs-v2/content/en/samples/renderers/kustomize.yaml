@@ -1,3 +1,4 @@
 manifests:
    kustomize:
-      - path/to/folder-with-kustomize-dot-yaml
+      paths:
+       - path/to/folder-with-kustomize-dot-yaml
