@@ -176,10 +176,10 @@ func TestGenerate(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(kubectlVersionCheck, func(*kubectl.CLI) bool {
+			t.Override(&kubectlVersionCheck, func(*kubectl.CLI) bool {
 				return test.useKubectlKustomize
 			})
-			t.Override(kustomizeBinary, func() bool {
+			t.Override(&kustomizeBinaryExists, func() bool {
 				return test.useKubectlKustomize
 			})
 			t.NewTempDir().

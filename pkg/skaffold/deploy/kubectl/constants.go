@@ -16,11 +16,6 @@ limitations under the License.
 
 package kubectl
 
-const (
-	KubectlVersion112 = `{"clientVersion":{"major":"1","minor":"12"}}`
-	KubectlVersion118 = `{"clientVersion":{"major":"1","minor":"18"}}`
-)
-
 var TestKubeConfig = "kubeconfig"
 var TestKubeContext = "kubecontext"
 var TestNamespace = "testNamespace"

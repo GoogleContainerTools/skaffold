@@ -50,12 +50,6 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 		envs                        map[string]string
 	}{
 		{
-			description: "no manifest",
-			paths:       []string{"."},
-			commands: testutil.
-				CmdRunOut("kustomize build .", ""),
-		},
-		{
 			description: "deploy success",
 			paths:       []string{"."},
 			commands: testutil.
@@ -76,8 +70,8 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRunOut("kustomize build .", DeploymentWebYAML).
-				AndRunInputOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
-				AndRun("kubectl --context kubecontext apply -f - --force --grace-period=0"),
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f - --force --grace-period=0"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -148,15 +142,8 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 			t.SetEnvs(test.envs)
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&client.Client, deployutil.MockK8sClient)
-			t.Override(&client.Client, deployutil.MockK8sClient)
 			tmpDir := t.NewTempDir()
-			for _, d := range []string{".", "a", "b"} {
-				// create dir
-				if d != "." {
-					tmpDir.Mkdir(d)
-				}
-				tmpDir.Write(filepath.Join(d, "kustomization.yaml"), "")
-			}
+			setUpKustomizePaths(tmpDir)
 			tmpDir.Chdir()
 			skaffoldNamespaceOption := ""
 			if !test.skipSkaffoldNamespaceOption {
@@ -178,8 +165,7 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
 			var b bytes.Buffer
-			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true)
+			m, errR := r.Render(context.Background(), &b, test.builds, true)
 			t.CheckNoError(errR)
 
 			k, err := NewDeployer(&kubectlConfig{
@@ -203,17 +189,18 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 
 func TestKustomizeCleanup(t *testing.T) {
 	tmpDir := testutil.NewTempDir(t)
-
+	setUpKustomizePaths(tmpDir)
 	tests := []struct {
 		description string
 		paths       []string
 		commands    util.Command
 		shouldErr   bool
+		renderErr   bool
 		dryRun      bool
 	}{
 		{
 			description: "cleanup dry-run",
-			paths:       []string{tmpDir.Root()},
+			paths:       []string{"."},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), DeploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --dry-run --ignore-not-found=true --wait=false -f -"),
@@ -221,14 +208,14 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success",
-			paths:       []string{tmpDir.Root()},
+			paths:       []string{"."},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), DeploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
 			description: "cleanup success with multiple kustomizations",
-			paths:       tmpDir.Paths("a", "b"),
+			paths:       []string{"a", "b"},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Path("a"), DeploymentWebYAML).
 				AndRunOut("kustomize build "+tmpDir.Path("b"), DeploymentAppYAML).
@@ -236,7 +223,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			paths:       []string{tmpDir.Root()},
+			paths:       []string{"."},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), DeploymentWebYAML).
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -", errors.New("BUG")),
@@ -244,10 +231,10 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "fail to read manifests",
-			paths:       []string{tmpDir.Root()},
+			paths:       []string{"."},
 			commands: testutil.
 				CmdRunOutErr("kustomize build "+tmpDir.Root(), "", errors.New("BUG")),
-			shouldErr: true,
+			renderErr: true,
 		},
 	}
 	for _, test := range tests {
@@ -272,15 +259,16 @@ func TestKustomizeCleanup(t *testing.T) {
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				true)
-			t.CheckNoError(errR)
-			k, err := NewDeployer(&kubectlConfig{
-				workingDir: tmpDir.Root(),
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
-					Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, "default")
-			t.RequireNoError(err)
-			err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
-			t.CheckError(test.shouldErr, err)
+			t.CheckError(test.renderErr, errR)
+			if !test.renderErr {
+				k, err := NewDeployer(&kubectlConfig{
+					RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
+						Namespace: TestNamespace}},
+				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, "default")
+				t.RequireNoError(err)
+				err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
+				t.CheckError(test.shouldErr, err)
+			}
 		})
 	}
 }
@@ -485,5 +473,15 @@ func TestDependenciesForKustomization(t *testing.T) {
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), deps)
 		})
+	}
+}
+
+func setUpKustomizePaths(tmpDir *testutil.TempDir) {
+	for _, d := range []string{".", "a", "b"} {
+		// create dir
+		if d != "." {
+			tmpDir.Mkdir(d)
+		}
+		tmpDir.Write(filepath.Join(d, "kustomization.yaml"), "")
 	}
 }
