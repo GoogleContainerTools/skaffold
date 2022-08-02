@@ -63,7 +63,7 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	}
 	// TODO(tejaldesai) consult with cloud deploy team if namespaces can be set offline mode
 	// in case namespace is set on the skaffold render cli command.
-	if opts.Offline {
+	if !opts.Offline {
 		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
 			return nil, err
 		}
