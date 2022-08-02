@@ -109,7 +109,7 @@ var flagRegistry = []Flag{
 	{
 		Name:          "namespace",
 		Shorthand:     "n",
-		Usage:         "Run deployments in the specified namespace",
+		Usage:         "Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace",
 		Value:         &opts.Namespace,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",

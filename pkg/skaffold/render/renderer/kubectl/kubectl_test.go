@@ -44,6 +44,7 @@ metadata:
   labels:
     run.id: test
   name: leeroy-web
+  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1
@@ -53,6 +54,7 @@ spec:
 kind: Pod
 metadata:
   name: leeroy-web
+  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1

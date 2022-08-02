@@ -375,6 +375,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: getting-started
+  namespace: default
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/example

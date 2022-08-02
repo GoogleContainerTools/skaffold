@@ -48,6 +48,7 @@ spec:
 kind: Pod
 metadata:
   name: leeroy-web
+  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1

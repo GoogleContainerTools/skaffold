@@ -85,7 +85,7 @@ func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[st
 // Returns error if any manifest in the list has namespace set.
 func (l *ManifestList) SetNamespace(namespace string, rs ResourceSelector) (ManifestList, error) {
 	if namespace == "" {
-		return *l, nil
+		namespace = "default"
 	}
 	var updated ManifestList
 	for _, item := range *l {
