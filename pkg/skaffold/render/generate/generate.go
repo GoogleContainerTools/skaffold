@@ -313,7 +313,7 @@ func (g Generator) walkLocalManifests() ([]string, error) {
 }
 
 func (g Generator) ManifestDeps() ([]string, error) {
-	deps := []string{}
+	var deps []string
 
 	dependencyPaths, err := g.walkLocalManifests()
 	if err != nil {
@@ -336,20 +336,27 @@ func (g Generator) ManifestDeps() ([]string, error) {
 		}
 	}
 	// kustomize deps
-	kDeps, err := kustomizeDependencies(g.config.Kustomize.Paths)
-	if err != nil {
-		return nil, err
+	if g.config.Kustomize != nil {
+		kDeps, err := kustomizeDependencies(g.workingDir, g.config.Kustomize.Paths)
+		if err != nil {
+			return nil, err
+		}
+		deps = append(deps, kDeps...)
 	}
-	deps = append(deps, kDeps...)
+
 	return deps, nil
 }
 
-func kustomizeDependencies(paths []string) ([]string, error) {
+func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
 	deps := stringset.New()
 	for _, kustomizePath := range paths {
 		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+
+		if !filepath.IsAbs(expandedKustomizePath) {
+			expandedKustomizePath = filepath.Join(workdir, expandedKustomizePath)
 		}
 		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
 		if err != nil {

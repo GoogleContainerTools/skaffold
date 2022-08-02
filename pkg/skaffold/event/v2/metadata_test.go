@@ -78,7 +78,7 @@ func TestEmptyState(t *testing.T) {
 				},
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
-						KustomizeDeploy: &latest.KustomizeDeploy{},
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -95,7 +95,7 @@ func TestEmptyState(t *testing.T) {
 				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_GKE,
-					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
+					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUBECTL, Count: 1}},
 				},
 				RunID: "run-id",
 			},
@@ -122,11 +122,11 @@ func TestEmptyState(t *testing.T) {
 			},
 		},
 		{
-			description: "no build, kustomize deployer other cluster",
+			description: "no build, kubectl deployer other cluster",
 			cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
-						KustomizeDeploy: &latest.KustomizeDeploy{},
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -136,7 +136,7 @@ func TestEmptyState(t *testing.T) {
 				Render: &proto.RenderMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_OTHER,
-					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
+					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUBECTL, Count: 1}},
 				},
 				RunID: "run-id",
 			},

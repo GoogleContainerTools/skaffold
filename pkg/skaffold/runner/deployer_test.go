@@ -421,21 +421,6 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Flags: latest.KubectlFlags{},
 				}, configNameForDefaultDeployer)).(*kubectl.Deployer),
 			},
-			{
-				name: "one config with kustomize deploy",
-				cfgs: map[string]latest.DeployType{
-					configNameForDefaultDeployer: {KustomizeDeploy: &latest.KustomizeDeploy{}},
-				},
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines(
-						map[string]latest.Pipeline{
-							configNameForDefaultDeployer: {},
-						},
-					),
-				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
-					Flags: latest.KubectlFlags{},
-				}, configNameForDefaultDeployer)).(*kubectl.Deployer),
-			},
 		}
 
 		for _, test := range tests {

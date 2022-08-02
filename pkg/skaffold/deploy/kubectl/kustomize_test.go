@@ -115,26 +115,6 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 				"MYENV": "a",
 			},
 		},
-		{
-			description: "deploy success with multiple kustomizations",
-			paths:       []string{"a", "b"},
-			commands: testutil.
-				CmdRunOut("kustomize build a", DeploymentWebYAML).
-				AndRunOut("kustomize build b", DeploymentAppYAML).
-				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1+"\n---\n"+DeploymentAppYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
-			builds: []graph.Artifact{
-				{
-					ImageName: "leeroy-web",
-					Tag:       "leeroy-web:v1",
-				},
-				{
-					ImageName: "leeroy-app",
-					Tag:       "leeroy-app:v1",
-				},
-			},
-			forceDeploy: true,
-		},
 	}
 
 	for _, test := range tests {

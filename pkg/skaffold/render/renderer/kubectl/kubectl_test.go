@@ -158,13 +158,16 @@ func TestDependencies(t *testing.T) {
 			t.CheckNoError(err)
 
 			dependencies, err := r.ManifestDeps()
-
 			t.CheckNoError(err)
-			expected := make([]string, len(test.expected))
-			for i, p := range test.expected {
-				expected[i] = filepath.Join(tmpDir.Root(), p)
+			if len(dependencies) == 0 {
+				t.CheckDeepEqual(test.expected, dependencies)
+			} else {
+				expected := make([]string, len(test.expected))
+				for i, p := range test.expected {
+					expected[i] = filepath.Join(tmpDir.Root(), p)
+				}
+				t.CheckDeepEqual(expected, dependencies)
 			}
-			t.CheckDeepEqual(expected, dependencies)
 		})
 	}
 }
