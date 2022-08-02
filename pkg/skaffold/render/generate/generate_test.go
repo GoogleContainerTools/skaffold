@@ -159,19 +159,17 @@ func TestGenerate(t *testing.T) {
 			commands:            testutil.CmdRunOut("kustomize build base", patchYaml),
 			expected:            manifest.ManifestList{[]byte(patchYaml)},
 		},
-		/*
-			{
-				description: "render kpt manifests",
-				generateConfig: latest.Generate{
-					Kpt: []string{filepath.Join("fn", "Kptfile")},
-				},
-				// Using "filepath" to join path so as the result can fix when running in either linux or
-				// windows (skaffold integration test).
-				commands: testutil.CmdRun(fmt.Sprintf("kpt fn render fn --output=%v",
-					filepath.Join(".kpt-pipeline", "fn"))),
-				expected: manifest.ManifestList{},
+
+		{
+			description: "render kpt manifests",
+			generateConfig: latest.Generate{
+				Kpt: []string{"Kptfile"},
 			},
-		*/
+			// Using "filepath" to join path so as the result can fix when running in either linux or
+			// windows (skaffold integration test).
+			commands: testutil.CmdRun(fmt.Sprintf("kpt fn render fn --output=%v", "fn")),
+			expected: manifest.ManifestList{},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
