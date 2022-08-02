@@ -30,6 +30,7 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	kubectlR "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -122,6 +123,7 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 			t.SetEnvs(test.envs)
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&client.Client, deployutil.MockK8sClient)
+			t.Override(&generate.KustomizeBinaryCheck, func() bool { return true })
 			tmpDir := t.NewTempDir()
 			setUpKustomizePaths(tmpDir)
 			tmpDir.Chdir()

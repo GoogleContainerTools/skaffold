@@ -34,8 +34,8 @@ import (
 
 // for testing
 var (
-	kubectlVersionCheck   = kubectlVersion
-	kustomizeBinaryExists = kustomizeBinary
+	kubectlVersionCheck  = kubectlVersion
+	KustomizeBinaryCheck = kustomizeBinary
 )
 
 // kustomization is the content of a kustomization.yaml file.

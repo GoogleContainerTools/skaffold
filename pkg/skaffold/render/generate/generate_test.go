@@ -179,7 +179,7 @@ func TestGenerate(t *testing.T) {
 			t.Override(&kubectlVersionCheck, func(*kubectl.CLI) bool {
 				return test.useKubectlKustomize
 			})
-			t.Override(&kustomizeBinaryExists, func() bool {
+			t.Override(&KustomizeBinaryCheck, func() bool {
 				return test.useKubectlKustomize
 			})
 			t.NewTempDir().
