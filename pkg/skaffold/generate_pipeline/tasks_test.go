@@ -355,7 +355,6 @@ func TestGenerateDeployTask(t *testing.T) {
 				DeployType: latest.DeployType{
 					LegacyHelmDeploy: nil,
 					KubectlDeploy:    nil,
-					KustomizeDeploy:  nil,
 				},
 			},
 			shouldErr: true,

@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -117,10 +118,11 @@ pipeline:
 
 func TestGenerate(t *testing.T) {
 	tests := []struct {
-		description    string
-		generateConfig latest.Generate
-		expected       manifest.ManifestList
-		commands       util.Command
+		description         string
+		generateConfig      latest.Generate
+		expected            manifest.ManifestList
+		commands            util.Command
+		useKubectlKustomize bool
 	}{
 		{
 			description: "render raw manifests",
@@ -136,31 +138,48 @@ func TestGenerate(t *testing.T) {
 			},
 			expected: manifest.ManifestList{[]byte(podYaml), []byte(podsYaml)},
 		},
-		/* disabled
 		{
 			description: "render kustomize manifests",
 			generateConfig: latest.Generate{
-				Kustomize: []string{"base"},
+				Kustomize: &latest.Kustomize{
+					Paths: []string{"base"},
+				},
 			},
-			commands: testutil.CmdRunOut("kustomize build base", kustomizePatchedOutput),
-			expected: manifest.ManifestList{[]byte(kustomizePatchedOutput)},
+			commands: testutil.CmdRunOut("kustomize build base", podsYaml),
+			expected: manifest.ManifestList{[]byte(podsYaml)},
 		},
+		{
+			description: "render kustomize manifests - kubectl",
+			generateConfig: latest.Generate{
+				Kustomize: &latest.Kustomize{
+					Paths: []string{"base"},
+				},
+			},
+			useKubectlKustomize: true,
+			commands:            testutil.CmdRunOut("kustomize build base", patchYaml),
+			expected:            manifest.ManifestList{[]byte(patchYaml)},
+		},
+
 		{
 			description: "render kpt manifests",
 			generateConfig: latest.Generate{
-				Kpt: []string{filepath.Join("fn", "Kptfile")},
+				Kpt: []string{"Kptfile"},
 			},
 			// Using "filepath" to join path so as the result can fix when running in either linux or
 			// windows (skaffold integration test).
-			commands: testutil.CmdRun(fmt.Sprintf("kpt fn render fn --output=%v",
-				filepath.Join(".kpt-pipeline", "fn"))),
+			commands: testutil.CmdRun(fmt.Sprintf("kpt fn render fn --output=%v", "fn")),
 			expected: manifest.ManifestList{},
 		},
-		*/
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&KubectlVersionCheck, func(*kubectl.CLI) bool {
+				return test.useKubectlKustomize
+			})
+			t.Override(&KustomizeBinaryCheck, func() bool {
+				return test.useKubectlKustomize
+			})
 			t.NewTempDir().
 				Write("pod.yaml", podYaml).
 				Write("pods.yaml", podsYaml).
@@ -246,12 +265,12 @@ func TestManifestDeps(t *testing.T) {
 				Kpt: []string{"kpt-sample"},
 			},
 			expected: []string{
-				"kustomize-sample/kustomization.yaml",
-				"kustomize-sample/patch.yaml",
 				"kpt-sample/Kptfile",
 				"kpt-sample/deployment.yaml",
 				"rawYaml-sample/pod.yaml",
 				"rawYaml-sample/pods2.yaml",
+				"kustomize-sample/kustomization.yaml",
+				"kustomize-sample/patch.yaml",
 			},
 		},
 	}
@@ -275,6 +294,71 @@ func TestManifestDeps(t *testing.T) {
 			actual, err := g.ManifestDeps()
 			t.CheckNoError(err)
 			t.CheckDeepEqual(expectedPaths, actual)
+		})
+	}
+}
+
+func TestBuildCommandArgs(t *testing.T) {
+	tests := []struct {
+		description   string
+		buildArgs     []string
+		kustomizePath string
+		expectedArgs  []string
+	}{
+		{
+			description:   "no BuildArgs, empty KustomizePaths ",
+			buildArgs:     []string{},
+			kustomizePath: "",
+			expectedArgs:  nil,
+		},
+		{
+			description:   "One BuildArg, empty KustomizePaths",
+			buildArgs:     []string{"--foo"},
+			kustomizePath: "",
+			expectedArgs:  []string{"--foo"},
+		},
+		{
+			description:   "no BuildArgs, non-empty KustomizePaths",
+			buildArgs:     []string{},
+			kustomizePath: "foo",
+			expectedArgs:  []string{"foo"},
+		},
+		{
+			description:   "One BuildArg, non-empty KustomizePaths",
+			buildArgs:     []string{"--foo"},
+			kustomizePath: "bar",
+			expectedArgs:  []string{"--foo", "bar"},
+		},
+		{
+			description:   "Multiple BuildArg, empty KustomizePaths",
+			buildArgs:     []string{"--foo", "--bar"},
+			kustomizePath: "",
+			expectedArgs:  []string{"--foo", "--bar"},
+		},
+		{
+			description:   "Multiple BuildArg with spaces, empty KustomizePaths",
+			buildArgs:     []string{"--foo bar", "--baz"},
+			kustomizePath: "",
+			expectedArgs:  []string{"--foo", "bar", "--baz"},
+		},
+		{
+			description:   "Multiple BuildArg with spaces, non-empty KustomizePaths",
+			buildArgs:     []string{"--foo bar", "--baz"},
+			kustomizePath: "barfoo",
+			expectedArgs:  []string{"--foo", "bar", "--baz", "barfoo"},
+		},
+		{
+			description:   "Multiple BuildArg no spaces, non-empty KustomizePaths",
+			buildArgs:     []string{"--foo", "bar", "--baz"},
+			kustomizePath: "barfoo",
+			expectedArgs:  []string{"--foo", "bar", "--baz", "barfoo"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			args := kustomizeBuildArgs(test.buildArgs, test.kustomizePath)
+			t.CheckDeepEqual(test.expectedArgs, args)
 		})
 	}
 }

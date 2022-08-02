@@ -25,16 +25,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // NewGenerator instantiates a Generator object.
@@ -76,6 +80,11 @@ func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 		case strings.HasPrefix(path, "gs://"):
 			gcsManifests = append(gcsManifests, path)
 		default:
+			// expand paths
+			path, err := util.ExpandEnvTemplate(path, nil)
+			if err != nil {
+				return nil, err
+			}
 			localPaths = append(localPaths, path)
 		}
 	}
@@ -193,10 +202,19 @@ func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, er
 			kustomizePathMap[dir] = true
 		}
 	}
+
+	kCLI := kubectl.NewCLI(kCfg{}, "")
+	useKubectlKustomize := !KustomizeBinaryCheck() && KubectlVersionCheck(kCLI)
+
 	for kPath := range kustomizePathMap {
-		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
-		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
-		out, err := util.RunCmdOut(ctx, cmd)
+		var out []byte
+		var err error
+		if useKubectlKustomize {
+			out, err = kCLI.Kustomize(ctx, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath))
+		} else {
+			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
+			out, err = util.RunCmdOut(ctx, cmd)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -276,15 +294,7 @@ func isKptDir(path string) (string, bool) {
 // only be called when a rendering action is needed (normally happens after the file watcher registration).
 func (g Generator) walkLocalManifests() ([]string, error) {
 	var dependencyPaths []string
-
-	// Generate kustomize Manifests
-	if g.config.Kustomize != nil {
-		kustomizePaths, err := localManifests(g.config.Kustomize.Paths, g.workingDir)
-		if err != nil {
-			return nil, err
-		}
-		dependencyPaths = append(dependencyPaths, kustomizePaths...)
-	}
+	var err error
 
 	// Generate in-place hydrated kpt Manifests
 	kptPaths, err := localManifests(g.config.Kpt, g.workingDir)
@@ -303,7 +313,7 @@ func (g Generator) walkLocalManifests() ([]string, error) {
 }
 
 func (g Generator) ManifestDeps() ([]string, error) {
-	deps := []string{}
+	var deps []string
 
 	dependencyPaths, err := g.walkLocalManifests()
 	if err != nil {
@@ -325,5 +335,38 @@ func (g Generator) ManifestDeps() ([]string, error) {
 			return nil, err
 		}
 	}
+	// kustomize deps
+	if g.config.Kustomize != nil {
+		kDeps, err := kustomizeDependencies(g.workingDir, g.config.Kustomize.Paths)
+		if err != nil {
+			return nil, err
+		}
+		deps = append(deps, kDeps...)
+	}
+
 	return deps, nil
+}
+
+func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
+	deps := stringset.New()
+	for _, kustomizePath := range paths {
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+
+		if !filepath.IsAbs(expandedKustomizePath) {
+			expandedKustomizePath = filepath.Join(workdir, expandedKustomizePath)
+		}
+		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
+		if err != nil {
+			return nil, sErrors.NewError(err,
+				&proto.ActionableErr{
+					Message: err.Error(),
+					ErrCode: proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
+				})
+		}
+		deps.Insert(depsForKustomization...)
+	}
+	return deps.ToList(), nil
 }

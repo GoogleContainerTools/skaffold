@@ -20,7 +20,7 @@ import (
 	"context"
 	"path/filepath"
 
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // kustomizeAnalyzer is a Visitor during the directory analysis that finds kustomize files
@@ -33,10 +33,24 @@ type kustomizeAnalyzer struct {
 
 func (k *kustomizeAnalyzer) analyzeFile(ctx context.Context, filePath string) error {
 	switch {
-	case deploy.IsKustomizationBase(filePath):
+	case isKustomizationBase(filePath):
 		k.bases = append(k.bases, filepath.Dir(filePath))
-	case deploy.IsKustomizationPath(filePath):
+	case isKustomizationPath(filePath):
 		k.kustomizePaths = append(k.kustomizePaths, filepath.Dir(filePath))
 	}
 	return nil
+}
+
+func isKustomizationBase(path string) bool {
+	return filepath.Dir(path) == "base"
+}
+
+func isKustomizationPath(path string) bool {
+	filename := filepath.Base(path)
+	for _, candidate := range constants.KustomizeFilePaths {
+		if filename == candidate {
+			return true
+		}
+	}
+	return false
 }

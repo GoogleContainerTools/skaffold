@@ -56,9 +56,6 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		if len(newPL.Render.Kustomize.Paths) == 0 {
 			newPL.Render.Kustomize.Paths = append(newPL.Render.Kustomize.Paths, ".")
 		}
-		// nil out kustomize deployer as it shouldn't be a thing anymore
-		newPL.Deploy.KustomizeDeploy = nil
-
 		if len(oldPL.Deploy.KustomizeDeploy.BuildArgs) != 0 {
 			return errors.New("converting deploy.kustomize.buildArgs isn't currently supported")
 		}
