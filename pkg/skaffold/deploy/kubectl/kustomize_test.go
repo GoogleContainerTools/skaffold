@@ -212,6 +212,8 @@ func TestKustomizeCleanup(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&generate.KustomizeBinaryCheck, func() bool { return true })
+			t.Override(&generate.KubectlVersionCheck, func(*kubectl.CLI) bool { return true })
 			const configName = "default"
 			rc := latest.RenderConfig{Generate: latest.Generate{
 				Kustomize: &latest.Kustomize{
