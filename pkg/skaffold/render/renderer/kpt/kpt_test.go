@@ -184,7 +184,7 @@ pipeline:
 						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true)
+				false)
 			t.CheckNoError(err)
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, DryFileName), []byte(labeledPodYaml))
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
