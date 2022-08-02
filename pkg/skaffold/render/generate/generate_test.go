@@ -176,7 +176,7 @@ func TestGenerate(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&kubectlVersionCheck, func(*kubectl.CLI) bool {
+			t.Override(&KubectlVersionCheck, func(*kubectl.CLI) bool {
 				return test.useKubectlKustomize
 			})
 			t.Override(&KustomizeBinaryCheck, func() bool {

@@ -204,7 +204,7 @@ func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, er
 	}
 
 	kCLI := kubectl.NewCLI(kCfg{}, "")
-	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kCLI)
+	useKubectlKustomize := !KustomizeBinaryCheck() && KubectlVersionCheck(kCLI)
 
 	for kPath := range kustomizePathMap {
 		var out []byte

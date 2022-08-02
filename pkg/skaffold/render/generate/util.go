@@ -34,7 +34,7 @@ import (
 
 // for testing
 var (
-	kubectlVersionCheck  = kubectlVersion
+	KubectlVersionCheck  = kubectlVersion
 	KustomizeBinaryCheck = kustomizeBinary
 )
 
