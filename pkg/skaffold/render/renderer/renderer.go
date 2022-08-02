@@ -38,8 +38,8 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string) ([]Renderer, error) {
-	if renderCfg.Validate != nil && renderCfg.Transform != nil {
+func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) (GroupRenderer, error) {
+	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
 		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace())
 		if err != nil {
 			return nil, err
@@ -48,7 +48,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 		return []Renderer{r}, nil
 	}
 
-	var rs []Renderer
+	var rs GroupRenderer
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
 		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
 		if err != nil {

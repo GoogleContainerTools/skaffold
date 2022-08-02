@@ -159,6 +159,12 @@ var tests = []struct {
 		dir:         "examples/multiple-renderers",
 		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
 	},
+	{
+		description: "multiple renderers mixed in",
+		dir:         "examples/multiple-renderers",
+		args:        []string{"-p", "mix-deploy"},
+		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
+	},
 }
 
 func TestRun(t *testing.T) {
