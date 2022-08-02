@@ -1063,6 +1063,8 @@ For Cancelled Error code, use range 800 to 850.<br>
 | RENDER_KPTFILE_INIT_ERR | 1501 | Render errors The Kptfile cannot be created via `kpt pkg init`. |
 | RENDER_KPTFILE_INVALID_YAML_ERR | 1401 | The Kptfile is not a valid yaml file |
 | RENDER_KPTFILE_INVALID_SCHEMA_ERR | 1402 | The Kptfile is not a valid API schema |
+| RENDER_SET_NAMESPACE_ERR | 1403 | Error setting namespace. |
+| RENDER_NAMESPACE_ALREADY_SET_ERR | 1404 | Namespace is already set. |
 | CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
 | CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
 | CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
@@ -1143,6 +1145,7 @@ Enum for Suggestion codes
 | SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
 | KPTFILE_MANUAL_INIT | 601 | Manually run `kpt pkg init` or `kpt live init` |
 | KPTFILE_CHECK_YAML | 602 | Check if the Kptfile is correct. |
+| REMOVE_NAMESPACE_FROM_MANIFESTS | 603 | Remove namespace from manifests |
 | CONFIG_CHECK_FILE_PATH | 700 | Check configuration file path |
 | CONFIG_CHECK_DEPENDENCY_DEFINITION | 701 | Check dependency config definition |
 | CONFIG_CHANGE_NAMES | 702 | Change config name to avoid duplicates |

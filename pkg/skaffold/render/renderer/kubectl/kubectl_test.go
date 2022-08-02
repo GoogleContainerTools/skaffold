@@ -44,6 +44,7 @@ metadata:
   labels:
     run.id: test
   name: leeroy-web
+  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1
@@ -53,6 +54,7 @@ spec:
 kind: Pod
 metadata:
   name: leeroy-web
+  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1
@@ -89,11 +91,11 @@ func TestRender(t *testing.T) {
 				Touch("empty.ignored").
 				Chdir()
 			mockCfg := render.MockConfig{WorkingDir: tmpDirObj.Root()}
-			r, err := New(mockCfg, test.renderConfig, test.labels, "default")
+			r, err := New(mockCfg, test.renderConfig, test.labels, "default", "")
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true)
+				false)
 			t.CheckNoError(errR)
 			t.CheckDeepEqual(test.expected, manifestList.String())
 		})
@@ -154,7 +156,7 @@ func TestDependencies(t *testing.T) {
 			rCfg := latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: test.manifests},
 			}
-			r, err := New(mockCfg, rCfg, map[string]string{}, "default")
+			r, err := New(mockCfg, rCfg, map[string]string{}, "default", "")
 			t.CheckNoError(err)
 
 			dependencies, err := r.ManifestDeps()

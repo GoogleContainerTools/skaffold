@@ -131,7 +131,7 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --status-check=: Wait for deployed resources to stabilize
@@ -209,7 +209,7 @@ Options:
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
       --platform=[]: The platform to target for the build artifacts
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
@@ -425,7 +425,7 @@ Options:
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --platform=[]: The platform to target for the build artifacts
@@ -536,7 +536,7 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
@@ -608,7 +608,7 @@ Options:
       --load-images=false: If true, skaffold will force load the container images into the local cluster.
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --platform=[]: The platform to target for the build artifacts
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
@@ -711,7 +711,7 @@ Options:
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --platform=[]: The platform to target for the build artifacts
@@ -978,7 +978,7 @@ Options:
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --offline=false: Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.
   -o, --output='': File to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
@@ -1060,7 +1060,7 @@ Options:
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --platform=[]: The platform to target for the build artifacts

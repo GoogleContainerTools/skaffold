@@ -48,6 +48,7 @@ spec:
 kind: Pod
 metadata:
   name: leeroy-web
+  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1
@@ -174,7 +175,7 @@ pipeline:
 			mockCfg := render.MockConfig{
 				WorkingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default")
+			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "")
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -183,7 +184,7 @@ pipeline:
 						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
-				true)
+				false)
 			t.CheckNoError(err)
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, DryFileName), []byte(labeledPodYaml))
 			t.CheckFileExistAndContent(filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
@@ -245,7 +246,7 @@ inventory:
 			mockCfg := render.MockConfig{
 				WorkingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default")
+			r, err := New(mockCfg, renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "")
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",

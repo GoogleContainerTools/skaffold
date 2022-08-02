@@ -37,9 +37,10 @@ type GenerateHydratedManifestsOptions struct {
 	TransformAllowList         map[apim.GroupKind]latest.ResourceFilter
 	TransformDenylist          map[apim.GroupKind]latest.ResourceFilter
 	EnablePlatformNodeAffinity bool
+	Offline                    bool
 }
 
-func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
+func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, ns string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
 	// Generate manifests.
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateManifest")
 	manifests, err := g.Generate(rCtx, out)
@@ -55,11 +56,19 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	if err != nil {
 		return nil, err
 	}
+	rs := manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)
 	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
 	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)); err != nil {
 		return nil, err
 	}
-	endTrace()
+	// TODO(tejaldesai) consult with cloud deploy team if namespaces can be set in offline mode
+	// in case namespace is set on the skaffold render cli command.
+	if !opts.Offline {
+		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
+			return nil, err
+		}
+		endTrace()
+	}
 
 	if !opts.EnablePlatformNodeAffinity {
 		return manifests, nil

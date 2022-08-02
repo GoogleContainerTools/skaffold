@@ -36,6 +36,7 @@ type Kubectl struct {
 	cfg render.Config
 
 	configName string
+	namespace  string
 
 	generate.Generator
 	labels map[string]string
@@ -44,7 +45,7 @@ type Kubectl struct {
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string) (Kubectl, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string) (Kubectl, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
@@ -54,6 +55,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		cfg:        cfg,
 		configName: configName,
 		Generator:  generator,
+		namespace:  ns,
 		labels:     labels,
 
 		transformAllowlist: transformAllowlist,
@@ -71,8 +73,9 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
 		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+		Offline:                    offline,
 	}
-	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, opts)
+	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
 	endTrace()
 	manifestListByConfig := manifest.NewManifestListByConfig()
 	manifestListByConfig.Add(r.configName, manifests)

@@ -44,18 +44,18 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 		return GroupRenderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
 	}
 	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
-		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName)
+		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace())
 		if err != nil {
 			return nil, err
 		}
-		log.Entry(context.TODO()).Infof("setting up kpt renderer")
+		log.Entry(ctx).Infof("setting up kpt renderer")
 		return []Renderer{r}, nil
 	}
 
 	var rs GroupRenderer
 
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
-		r, err := kubectl.New(cfg, renderCfg, labels, configName)
+		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
 		if err != nil {
 			return nil, err
 		}

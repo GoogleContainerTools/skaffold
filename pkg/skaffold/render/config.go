@@ -29,12 +29,14 @@ type Config interface {
 	GetKubeConfig() string
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter
+	GetNamespace() string
 	Mode() config.RunMode
 	EnablePlatformNodeAffinityInRenderedManifests() bool
 }
 
 type MockConfig struct {
 	WorkingDir string
+	Namespace  string
 }
 
 func (mc MockConfig) GetWorkingDir() string                               { return mc.WorkingDir }
@@ -46,3 +48,4 @@ func (mc MockConfig) GetKubeConfig() string                               { retu
 func (mc MockConfig) GetKubeContext() string                              { return "" }
 func (mc MockConfig) Mode() config.RunMode                                { return "" }
 func (mc MockConfig) EnablePlatformNodeAffinityInRenderedManifests() bool { return true }
+func (mc MockConfig) GetNamespace() string                                { return mc.Namespace }

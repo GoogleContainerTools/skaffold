@@ -126,6 +126,7 @@ type Config interface {
 	kstatus.Config
 	kloader.Config
 	portforward.Config
+	GetNamespace() string
 	IsMultiConfig() bool
 	JSONParseConfig() latest.JSONParseConfig
 }
