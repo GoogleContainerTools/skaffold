@@ -42,9 +42,11 @@ type changelogData struct {
 func main() {
 	data, err := getChangelogData(schema.IsReleased)
 	if err != nil {
+		fmt.Printf("error occurred: %v\n", err)
 		os.Exit(1)
 	}
 	if err = updateChangelog(path.Join("CHANGELOG.md"), path.Join("hack", "release", "changelog", "template.md"), data); err != nil {
+		fmt.Printf("error occurred: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -64,7 +66,7 @@ func getChangelogData(schemaIsReleased func(string) (bool, error)) (changelogDat
 	data.Date = currentTime.Format("01/02/2006")
 
 	// Add extra string if new schema version is being released
-	schema := path.Join("pkg", "skaffold", "schema", "latest", "v1", "config.go")
+	schema := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
 	released, err := schemaIsReleased(schema)
 	if err != nil {
 		return changelogData{}, fmt.Errorf("checking if schema is released: %w", err)
