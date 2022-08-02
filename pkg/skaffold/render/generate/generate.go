@@ -294,15 +294,7 @@ func isKptDir(path string) (string, bool) {
 // only be called when a rendering action is needed (normally happens after the file watcher registration).
 func (g Generator) walkLocalManifests() ([]string, error) {
 	var dependencyPaths []string
-
-	// Generate kustomize Manifests
-	if g.config.Kustomize != nil {
-		kustomizePaths, err := localManifests(g.config.Kustomize.Paths, g.workingDir)
-		if err != nil {
-			return nil, err
-		}
-		dependencyPaths = append(dependencyPaths, kustomizePaths...)
-	}
+	var err error
 
 	// Generate in-place hydrated kpt Manifests
 	kptPaths, err := localManifests(g.config.Kpt, g.workingDir)

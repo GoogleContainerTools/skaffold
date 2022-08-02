@@ -156,11 +156,7 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 				},
 			}}
 			mockCfg := &kubectlConfig{
-				RunContext: runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
-						configName: {Render: rc},
-					}),
-				},
+				RunContext: runcontext.RunContext{},
 			}
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
@@ -214,14 +210,6 @@ func TestKustomizeCleanup(t *testing.T) {
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
 		},
 		{
-			description: "cleanup success with multiple kustomizations",
-			paths:       []string{"a", "b"},
-			commands: testutil.
-				CmdRunOut("kustomize build "+tmpDir.Path("a"), DeploymentWebYAML).
-				AndRunOut("kustomize build "+tmpDir.Path("b"), DeploymentAppYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true --wait=false -f -"),
-		},
-		{
 			description: "cleanup error",
 			paths:       []string{"."},
 			commands: testutil.
@@ -248,11 +236,7 @@ func TestKustomizeCleanup(t *testing.T) {
 			}}
 			mockCfg := &kubectlConfig{
 				workingDir: tmpDir.Root(),
-				RunContext: runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{
-						configName: {Render: rc},
-					}),
-				},
+				RunContext: runcontext.RunContext{},
 			}
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName)
 			t.CheckNoError(err)
@@ -466,10 +450,18 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, "default")
-			t.RequireNoError(err)
+			rc := latest.RenderConfig{Generate: latest.Generate{
+				Kustomize: &latest.Kustomize{
+					Paths: kustomizePaths,
+				},
+			}}
+			mockCfg := &kubectlConfig{
+				RunContext: runcontext.RunContext{},
+			}
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, "default")
+			t.CheckNoError(err)
 
-			deps, err := k.Dependencies()
+			deps, err := r.ManifestDeps()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), deps)
 		})

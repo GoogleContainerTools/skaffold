@@ -23,9 +23,12 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	yamlv3 "gopkg.in/yaml.v3"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -214,4 +217,32 @@ func kubectlVersion(kubectl *kubectl.CLI) bool {
 	}
 
 	return gt == 1
+}
+
+// Values of `patchesStrategicMerge` can be either:
+// + a file path, referenced as a plain string
+// + an inline patch referenced as a string literal
+func (p *strategicMergePatch) UnmarshalYAML(node *yamlv3.Node) error {
+	if node.Style == 0 || node.Style == yamlv3.DoubleQuotedStyle || node.Style == yamlv3.SingleQuotedStyle {
+		p.Path = node.Value
+	} else {
+		p.Patch = node.Value
+	}
+
+	return nil
+}
+
+// UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.
+func (p *patchWrapper) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
+	pp := &patchPath{}
+	if err := unmarshal(&pp); err != nil {
+		var oldPathString string
+		if err := unmarshal(&oldPathString); err != nil {
+			return err
+		}
+		warnings.Printf("list of file paths deprecated: see https://github.com/kubernetes-sigs/kustomize/blob/master/docs/plugins/builtins.md#patchtransformer")
+		pp.Path = oldPathString
+	}
+	p.patchPath = pp
+	return nil
 }
