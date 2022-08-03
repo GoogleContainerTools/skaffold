@@ -134,7 +134,6 @@ func TestGetRenderer(tOuter *testing.T) {
 
 				t.CheckError(test.shouldErr, err)
 				t.CheckTypeEquality(test.expected, rs)
-
 			})
 		}
 	})

@@ -57,7 +57,6 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 			}
 			renderers = append(renderers, r)
 		}
-
 	}
 	return renderer.NewRenderMux(renderers), nil
 }
