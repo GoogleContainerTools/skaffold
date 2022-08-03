@@ -18,7 +18,9 @@ package bazel
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -94,9 +96,10 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 
 func TestBazelTarPath(t *testing.T) {
 	testutil.Run(t, "EmptyExecutionRoot", func(t *testutil.T) {
+		osSpecificPath := filepath.Join("absolute", "path", "bin")
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
 			"bazel cquery //:skaffold_example.tar --output starlark --starlark:expr target.files.to_list()[0].path --arg1 --arg2",
-			"/absolute/path/bin\n",
+			fmt.Sprintf("%s\n", osSpecificPath),
 		).AndRunOut("bazel info execution_root", ""))
 
 		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
@@ -105,13 +108,14 @@ func TestBazelTarPath(t *testing.T) {
 		})
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("/absolute/path/bin", bazelBin)
+		t.CheckDeepEqual(osSpecificPath, bazelBin)
 	})
 	testutil.Run(t, "AbsoluteExecutionRoot", func(t *testutil.T) {
+		osSpecificPath := filepath.Join("var", "tmp", "bazel-execution-roots", "abcdefg", "execroot", "workspace_name")
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
 			"bazel cquery //:skaffold_example.tar --output starlark --starlark:expr target.files.to_list()[0].path --arg1 --arg2",
 			"bazel-bin/darwin-fastbuild-ST-confighash/path/to/bin\n",
-		).AndRunOut("bazel info execution_root", "/var/tmp/bazel-execution-roots/abcdefg/execroot/workspace_name"))
+		).AndRunOut("bazel info execution_root", osSpecificPath))
 
 		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
 			BuildArgs:   []string{"--arg1", "--arg2"},
@@ -119,7 +123,8 @@ func TestBazelTarPath(t *testing.T) {
 		})
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("/var/tmp/bazel-execution-roots/abcdefg/execroot/workspace_name/bazel-bin/darwin-fastbuild-ST-confighash/path/to/bin", bazelBin)
+		expected := filepath.Join(osSpecificPath, "bazel-bin", "darwin-fastbuild-ST-confighash", "path", "to", "bin")
+		t.CheckDeepEqual(expected, bazelBin)
 	})
 }
 
