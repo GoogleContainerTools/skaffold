@@ -12,6 +12,8 @@ manifests:
   kustomize:
     paths:
     - overlays/dev
+deploy:
+  kubectl:{}
 profiles:
 - name: prod
   manifests:
