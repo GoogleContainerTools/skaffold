@@ -585,7 +585,7 @@ type Generate struct {
 	// To use helm to deploy, please see deploy.helm section.
 	Helm *Helm `yaml:"helm,omitempty"`
 
-	// Kpt defines the kpt resources in the application
+	// Kpt defines the kpt resources in the application.
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
 }
 
