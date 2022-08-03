@@ -158,7 +158,7 @@
     "run": "x",
     "debug": "x",
     "area": "Deploy",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
     "url": "/docs/pipeline-stages/deployers"
   },
@@ -189,18 +189,18 @@
     "debug": "x",
     "area": "Deploy",
     "feature": "Status check",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "User can wait for deployments to stabilize",
     "url": "/docs/pipeline-stages/status-check/"
   },
   "render": {
     "dev": "x",
     "deploy": "x",
-    "render": "x",
     "run": "x",
     "debug": "x",
+    "render": "x",
     "area": "Render",
-    "maturity": "Beta",
+    "maturity": "beta",
     "description": "Renders a set of resources in your applications and replace the image name with the built images ",
     "url": "/docs/pipeline-stages/renderers"
   },
@@ -316,20 +316,14 @@
     "debug": "x",
     "render": "x",
     "area": "Profiles",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "Create different pipeline configurations based on overrides and patches defined in one or more profiles",
     "url": "/docs/environment/profiles/"
-  },
-  "render": {
-    "deploy": "x",
-    "area": "Render",
-    "maturity": "beta",
-    "description": "Produce hydrated Kubernetes manifests that reference the built resources"
   },
   "run.cmd": {
     "run": "x",
     "area": "skaffold run",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "One-off build & deployment of the skaffold application",
     "url": "/docs/workflows/ci-cd"
   },
@@ -337,13 +331,13 @@
     "dev": "x",
     "area": "Filesync",
     "feature": "sync.infer",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "mark files as \"syncable\" - infer the destinations based on the Dockerfile"
   },
   "sync": {
     "dev": "x",
     "area": "Filesync",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "Instead of rebuilding, copy the changed files in the running container",
     "url": "/docs/pipeline-stages/filesync"
   },
