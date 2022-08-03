@@ -99,7 +99,7 @@ func TestGetRenderer(tOuter *testing.T) {
 					Render: kubectlCfg,
 				},
 				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kubectl.New(rc, kubectlCfg, labels, "")).(renderer.Renderer)}),
+					t.RequireNonNilResult(kubectl.New(rc, kubectlCfg, labels, "", "")).(renderer.Renderer)}),
 			},
 			{
 				description: "kpt renderer",
@@ -107,7 +107,7 @@ func TestGetRenderer(tOuter *testing.T) {
 					Render: kptConfig,
 				},
 				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "")).(renderer.Renderer)}),
+					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "", "")).(renderer.Renderer)}),
 			},
 			{
 				description: "kpt renderer when validate configured",
@@ -118,7 +118,7 @@ func TestGetRenderer(tOuter *testing.T) {
 					},
 				},
 				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "")).(renderer.Renderer)}),
+					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "", "")).(renderer.Renderer)}),
 			},
 		}
 		for _, test := range tests {
