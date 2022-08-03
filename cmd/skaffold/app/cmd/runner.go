@@ -33,8 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -70,7 +69,7 @@ func createNewRunner(ctx context.Context, out io.Writer, opts config.SkaffoldOpt
 	}
 	instrumentation.Init(v2Configs, opts.User, runCtx.GetKubeContext())
 	hooks.SetupStaticEnvOptions(runCtx)
-	runner, err := v2.NewForConfig(ctx, runCtx)
+	runner, err := runner.NewForConfig(ctx, runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
 		return nil, nil, nil, fmt.Errorf("creating runner: %w", err)

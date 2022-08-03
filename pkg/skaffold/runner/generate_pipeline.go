@@ -13,16 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package v2
+package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig manifest.ManifestListByConfig) error {
-	return r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
+func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []util.VersionedConfig, configPaths []string, fileOut string) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).GeneratePipeline")
 }

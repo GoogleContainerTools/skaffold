@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -91,11 +91,11 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 						StartColumn: 1,
 						EndColumn:   0,
 						Explanation: `Found docker 'COPY' command where the source directory "." has over 1000 files.  This has the potential ` +
-							`to dramatically slow 'skaffold dev' down as skaffold watches all sources files referenced in dockerfile COPY directives ` +
-							`for changes. If you notice skaffold rebuilding images unnecessarily when non-image-critical files are modified, consider ` +
-							`changing this to 'COPY $REQUIRED_SOURCE_FILE(s) /' for each required source file instead of or adding a .dockerignore file ` +
-							`(https://docs.docker.com/engine/reference/builder/#dockerignore-file) ignoring non-image-critical files.  skaffold respects ` +
-							`files ignored via the .dockerignore`,
+								`to dramatically slow 'skaffold dev' down as skaffold watches all sources files referenced in dockerfile COPY directives ` +
+								`for changes. If you notice skaffold rebuilding images unnecessarily when non-image-critical files are modified, consider ` +
+								`changing this to 'COPY $REQUIRED_SOURCE_FILE(s) /' for each required source file instead of or adding a .dockerignore file ` +
+								`(https://docs.docker.com/engine/reference/builder/#dockerignore-file) ignoring non-image-critical files.  skaffold respects ` +
+								`files ignored via the .dockerignore`,
 					},
 				},
 			},
@@ -130,11 +130,11 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 						StartColumn: 1,
 						EndColumn:   0,
 						Explanation: `Found docker 'COPY' command where the source directory "." contains a '.git' directory at .git.  This has the potential ` +
-							`to dramatically slow 'skaffold dev' down as skaffold will watch all of the files in the .git directory as skaffold watches all sources ` +
-							`files referenced in dockerfile COPY directives for changes. skaffold will likely rebuild images unnecessarily when non-image-critical ` +
-							`files are modified during any git related operation. Consider adding a .dockerignore file ` +
-							`(https://docs.docker.com/engine/reference/builder/#dockerignore-file) ignoring the '.git' directory. skaffold respects files ignored ` +
-							`via the .dockerignore`,
+								`to dramatically slow 'skaffold dev' down as skaffold will watch all of the files in the .git directory as skaffold watches all sources ` +
+								`files referenced in dockerfile COPY directives for changes. skaffold will likely rebuild images unnecessarily when non-image-critical ` +
+								`files are modified during any git related operation. Consider adding a .dockerignore file ` +
+								`(https://docs.docker.com/engine/reference/builder/#dockerignore-file) ignoring the '.git' directory. skaffold respects files ignored ` +
+								`via the .dockerignore`,
 					},
 				},
 			},

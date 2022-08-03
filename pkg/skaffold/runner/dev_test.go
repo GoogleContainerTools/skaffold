@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package runner
 
 import (
 	"context"
@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -339,7 +338,7 @@ func TestDevAutoTriggers(t *testing.T) {
 		expectedActions []Actions
 		autoTriggers    triggerState // the state of auto triggers
 		singleTriggers  triggerState // the state of single intent triggers at the end of dev loop
-		userIntents     []func(i *runner.Intents)
+		userIntents     []func(i *Intents)
 	}{
 		{
 			description: "build on; sync on; deploy on",
@@ -410,8 +409,8 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *runner.Intents){
-				func(i *runner.Intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.SetBuild(true)
 				},
 			},
@@ -422,8 +421,8 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *runner.Intents){
-				func(i *runner.Intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.SetBuild(true)
 					i.SetSync(true)
 				},
@@ -435,11 +434,11 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *runner.Intents){
-				func(i *runner.Intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.SetBuild(true)
 				},
-				func(i *runner.Intents) {
+				func(i *Intents) {
 					i.SetSync(true)
 				},
 			},
