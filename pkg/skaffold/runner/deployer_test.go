@@ -174,7 +174,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
-							KptDeploy:        &latest.KptDeploy{},
+							KubectlDeploy:    &latest.KubectlDeploy{},
 							LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
 						},
 					},
@@ -182,8 +182,21 @@ func TestGetDeployer(tOuter *testing.T) {
 				helmVersion: `version.BuildInfo{Version:"v3.7.0"}`,
 				expected: deploy.NewDeployerMux([]deploy.Deployer{
 					&helm.Deployer{},
-					&kptV2.Deployer{},
+					&kubectl.Deployer{},
 				}, false),
+			},
+			{
+				description: "multiple deployers with kpt",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KptDeploy:        &latest.KptDeploy{},
+							LegacyHelmDeploy: &latest.LegacyHelmDeploy{},
+						},
+					},
+				},
+				shouldErr:   true,
+				helmVersion: `version.BuildInfo{Version:"v3.7.0"}`,
 			},
 			{
 				description: "apply does not allow multiple deployers when a helm namespace is set",

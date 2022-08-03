@@ -20,7 +20,9 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // GetRenderer creates a renderer from a given RunContext and pipeline definitions.
@@ -29,11 +31,32 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 
 	var renderers renderer.GroupRenderer
 	for configName, p := range ps {
-		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
+		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err
 		}
 		renderers = append(renderers, rs...)
+	}
+	// In case of legacy helm deployer configured and render command used
+	// force a helm renderer from deploy helm config
+	if usingLegacyHelmDeploy && runCtx.Opts.Command == "render" {
+		for configName, p := range ps {
+			if p.Deploy.LegacyHelmDeploy == nil {
+				continue
+			}
+			rCfg := latest.RenderConfig{
+				Generate: latest.Generate{
+					Helm: &latest.Helm{
+						Releases: p.Deploy.LegacyHelmDeploy.Releases,
+					},
+				},
+			}
+			r, err := helm.New(runCtx, rCfg, labels, configName)
+			if err != nil {
+				return nil, err
+			}
+			renderers = append(renderers, r)
+		}
 	}
 	return renderer.NewRenderMux(renderers), nil
 }

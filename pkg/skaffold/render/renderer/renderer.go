@@ -27,7 +27,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/noop"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -39,10 +38,7 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool, command string, configName string) (GroupRenderer, error) {
-	if usingLegacyHelmDeploy && command != "render" {
-		return GroupRenderer{noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)}, nil
-	}
+func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string) (GroupRenderer, error) {
 	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
 		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace())
 		if err != nil {
@@ -53,7 +49,6 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	}
 
 	var rs GroupRenderer
-
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
 		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
 		if err != nil {
