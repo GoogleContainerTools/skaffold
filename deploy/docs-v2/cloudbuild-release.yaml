@@ -21,14 +21,14 @@ steps:
   - 'runtime_deps'
   - 'deploy/webhook-v2'
 
-- name: gcr.io/$PROJECT_ID/docs-controller-v2:latest
-  env:
-    - 'HUGO_ENV=production'
-  args:
-  - 'bash'
-  - '-xc'
-  - |
-    deploy/docs-v2/build.sh https://skaffold-v2.firebaseapp.com && cd docs-v2 && firebase deploy --only hosting:release --project $PROJECT_ID
+# - name: gcr.io/$PROJECT_ID/docs-controller-v2:latest
+#   env:
+#     - 'HUGO_ENV=production'
+#   args:
+#   - 'bash'
+#   - '-xc'
+#   - |
+#     deploy/docs-v2/build.sh https://skaffold-v2.firebaseapp.com && cd docs-v2 && firebase deploy --only hosting:release --project $PROJECT_ID
 
 images: [
   'gcr.io/$PROJECT_ID/docs-controller-v2:latest'
