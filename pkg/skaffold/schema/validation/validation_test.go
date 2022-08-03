@@ -1155,6 +1155,82 @@ func TestValidateJibPluginType(t *testing.T) {
 	}
 }
 
+func TestValidateKoSync(t *testing.T) {
+	tests := []struct {
+		description string
+		artifacts   []*latest.Artifact
+		wantErr     bool
+	}{
+		{
+			description: "basic infer sync with no errors",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"kodata/**/*"},
+				},
+			}},
+		},
+		{
+			description: "no error for wildcard in Main when no infer sync set up",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
+						Main: "./...",
+					},
+				},
+				ImageName: "test",
+			}},
+		},
+		{
+			description: "error for wildcard in Main when infer sync is set up",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
+						Main: "./...",
+					},
+				},
+				Sync: &latest.Sync{
+					Infer: []string{"kodata/**/*"},
+				},
+			}},
+			wantErr: true,
+		},
+		{
+			description: "error for patterns outside kodata",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
+				},
+				Sync: &latest.Sync{
+					Infer: []string{"**/*"},
+				},
+			}},
+			wantErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := &parser.SkaffoldConfigEntry{
+				SkaffoldConfig: &latest.SkaffoldConfig{
+					APIVersion: latest.Version,
+					Kind:       "Config",
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				},
+				YAMLInfos: configlocations.NewYAMLInfos(),
+			}
+			err := Process(parser.SkaffoldConfigSet{cfg}, Options{CheckDeploySource: false})
+			t.CheckError(test.wantErr, err)
+		})
+	}
+}
+
 func TestValidateLogsConfig(t *testing.T) {
 	tests := []struct {
 		prefix    string
@@ -1333,9 +1409,11 @@ func TestValidateAcyclicDependencies(t *testing.T) {
 // setDependencies constructs a graph of artifact dependencies using the map as an adjacency list representation of indices in the artifacts array.
 // For example:
 // m = {
-//    0 : {1, 2},
-//    2 : {3},
-//}
+//
+//	0 : {1, 2},
+//	2 : {3},
+//
+// }
 // implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
 func setDependencies(a []*latest.Artifact, d map[int][]int) {
 	for k, dep := range d {

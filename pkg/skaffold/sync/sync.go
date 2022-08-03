@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	kosync "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -106,6 +107,21 @@ func syncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Eve
 }
 
 func inferredSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
+	// the ko builder doesn't need or use a sync map
+	if a.KoArtifact != nil {
+		log.Entry(ctx).Debugf("ko inferred sync %+v", e)
+		toCopy, toDelete, err := kosync.Infer(ctx, a, e)
+		if err != nil {
+			return nil, err
+		}
+		return &Item{
+			Image:    tag,
+			Artifact: a,
+			Copy:     toCopy,
+			Delete:   toDelete,
+		}, nil
+	}
+
 	// deleted files are no longer contained in the syncMap, so we need to rebuild
 	if len(e.Deleted) > 0 {
 		return nil, nil

@@ -80,6 +80,7 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		errs = append(errs, validateSyncRules(config, config.Build.Artifacts)...)
 		errs = append(errs, validatePortForwardResources(config, config.PortForward)...)
 		errs = append(errs, validateJibPluginTypes(config, config.Build.Artifacts)...)
+		errs = append(errs, validateKoSync(config, config.Build.Artifacts)...)
 		errs = append(errs, validateLogPrefix(config, config.Deploy.Logs)...)
 		errs = append(errs, validateArtifactTypes(config, config.Build)...)
 		errs = append(errs, validateTaggingPolicy(config, config.Build)...)
@@ -604,6 +605,31 @@ func validateJibPluginTypes(cfg *parser.SkaffoldConfigEntry, artifacts []*latest
 		})
 	}
 	return
+}
+
+// validateKoSync ensures that infer sync patterns contain the `kodata` string, since infer sync for the ko builder only supports static assets.
+func validateKoSync(cfg *parser.SkaffoldConfigEntry, artifacts []*latest.Artifact) []ErrorWithLocation {
+	var cfgErrs []ErrorWithLocation
+	for i, a := range artifacts {
+		if a.KoArtifact == nil || a.Sync == nil {
+			continue
+		}
+		if len(a.Sync.Infer) > 0 && strings.Contains(a.KoArtifact.Main, "...") {
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    fmt.Errorf("artifact %s cannot use inferred file sync when the ko.main field contains the '...' wildcard. Instead, specify the path to the main package without using wildcards", a.ImageName),
+				Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i].KoArtifact, "Main"),
+			})
+		}
+		for _, pattern := range a.Sync.Infer {
+			if !strings.Contains(pattern, "kodata") {
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("artifact %s has an invalid pattern %s for inferred file sync with the ko builder. The pattern must specify the 'kodata' directory. For instance, if you want to sync all static content, and your main package is in the workspace directory, you can use the pattern 'kodata/**/*'", a.ImageName, pattern),
+					Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i].Sync, "Infer"),
+				})
+			}
+		}
+	}
+	return cfgErrs
 }
 
 // validateArtifactTypes checks that the artifact types are compatible with the specified builder.

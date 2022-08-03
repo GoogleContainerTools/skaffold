@@ -389,7 +389,46 @@ To learn more about how Skaffold debugs Go applications, read the
 
 ### File sync
 
-File `sync` is not supported while the ko builder feature is in Alpha.
+The `ko` builder can
+[sync files to a running container]({{< relref "/docs/pipeline-stages/filesync" >}})
+when you run `skaffold dev`.
+
+The sync feature for the `ko` builder only works for 
+[static assets bundled with the container image](https://github.com/google/ko#static-assets).
+
+Use `infer` mode to specify patterns for the files you want to sync. The
+infer patterns are relative to the `context` directory.
+
+For instance, if your main package is in the `context` directory, you can use
+this configuration to sync all the static files bundled with the container
+image:
+
+```yaml
+    sync:
+      infer:
+      - kodata/**/*
+```
+
+Note that the file sync feature requires the `tar` command to be available in
+the container. The default `ko` builder base image does not include the `tar`
+command. Use the `fromImage` field in the `ko` builder configuration in your
+`skaffold.yaml` file to specify a base image that contains the `tar` command,
+such as `gcr.io/distroless/base:debug`.
+
+You can use [profiles]({{< relref "/docs/environment/profiles" >}}) with
+activation by command to override the `fromImage` value only when running
+`skaffold dev`, such as in this example:
+
+```yaml
+profiles:
+- name: sync
+  activation:
+  - command: dev
+  patches:
+  - op: add
+    path: /build/artifacts/0/ko/fromImage
+    value: gcr.io/distroless/base:debug
+```
 
 ### Remote builds
 
