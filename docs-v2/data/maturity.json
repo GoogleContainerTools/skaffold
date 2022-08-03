@@ -162,6 +162,15 @@
     "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
     "url": "/docs/pipeline-stages/deployers"
   },
+    "deploy.cloudrun": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "area": "Deploy",
+    "feature": "Cloud Run Deployer",
+    "maturity": "alpha",
+    "description": "Deploy applications to Google Cloud RUn"
+  },
   "deploy.docker": {
     "dev": "x",
     "deploy": "x",

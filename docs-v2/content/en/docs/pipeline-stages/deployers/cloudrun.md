@@ -20,7 +20,7 @@ This deployer will use the [application default credentials](https://cloud.googl
 
 ## Configuring Cloud Run
 
-To deploy to Cloud Run, use the `cloudrun` type in the `deploy` section of `skaffold.yaml`. A `region` must be provided.
+To deploy to Cloud Run, use the `cloudrun` type in the `deploy` section of `skaffold.yaml`.
 
 The `cloudrun` type offers the following options:
 
@@ -32,3 +32,9 @@ The following `deploy` section instructs Skaffold to deploy
 artifacts to Cloud Run:
 
 {{% readfile file="samples/deployers/cloudrun.yaml" %}}
+
+{{< alert title="Note" >}}
+Images listed to be deployed with the Cloud Run deployer must be present in Google Artifact
+Registry or Google Container Registry. If you are using Skaffold to build the images, ensure `push` is 
+set to true.
+{{< /alert >}}
