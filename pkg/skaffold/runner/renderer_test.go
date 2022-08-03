@@ -123,7 +123,6 @@ func TestGetRenderer(tOuter *testing.T) {
 		}
 		for _, test := range tests {
 			testutil.Run(tOuter, test.description, func(t *testutil.T) {
-
 				rs, err := GetRenderer(context.Background(), &runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(
 						map[string]latest.Pipeline{
