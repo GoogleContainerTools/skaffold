@@ -400,7 +400,7 @@ type GoogleCloudBuild struct {
 	// Region configures the region to run the build. If WorkerPool is configured, the region will
 	// be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured,
 	// the build will be run in global(non-regional).
-	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations)
+	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations).
 	Region string `yaml:"region,omitempty"`
 }
 
@@ -576,7 +576,7 @@ type Generate struct {
 	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
 
 	// Kustomize defines the paths to be modified with kustomize, along with extra
-	// flags to be passed to kustomize
+	// flags to be passed to kustomize.
 	Kustomize *Kustomize `yaml:"kustomize,omitempty"`
 
 	// Helm TODO: add description.
@@ -587,7 +587,7 @@ type Generate struct {
 }
 
 // Kustomize defines the paths to be modified with kustomize, along with
-// extra flags to be passed to kustomize
+// extra flags to be passed to kustomize.
 type Kustomize struct {
 	// Paths is the path to Kustomization files.
 	// Defaults to `["."]`.
@@ -692,7 +692,7 @@ type DeployType struct {
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
-	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API
+	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API.
 	CloudRunDeploy *CloudRunDeploy `yaml:"cloudrun,omitempty"`
 }
 
@@ -1093,8 +1093,8 @@ type BuildpackArtifact struct {
 	// TrustBuilder indicates that the builder should be trusted.
 	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
 
-	// Removes old cache volume associated with the specific image
-	// and supplies a clean cache volume for build
+	// ClearCache removes old cache volume associated with the specific image
+	// and supplies a clean cache volume for build.
 	ClearCache bool `yaml:"clearCache,omitempty"`
 
 	// ProjectDescriptor is the path to the project descriptor file.

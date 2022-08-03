@@ -835,8 +835,8 @@
         },
         "clearCache": {
           "type": "boolean",
-          "description": "Removes old cache volume associated with the specific image and supplies a clean cache volume for build",
-          "x-intellij-html-description": "Removes old cache volume associated with the specific image and supplies a clean cache volume for build",
+          "description": "removes old cache volume associated with the specific image and supplies a clean cache volume for build.",
+          "x-intellij-html-description": "removes old cache volume associated with the specific image and supplies a clean cache volume for build.",
           "default": "false"
         },
         "dependencies": {
@@ -1377,8 +1377,8 @@
       "properties": {
         "cloudrun": {
           "$ref": "#/definitions/CloudRunDeploy",
-          "description": "*alpha* deploys to Google Cloud Run using the Cloud Run v1 API",
-          "x-intellij-html-description": "<em>alpha</em> deploys to Google Cloud Run using the Cloud Run v1 API"
+          "description": "*alpha* deploys to Google Cloud Run using the Cloud Run v1 API.",
+          "x-intellij-html-description": "<em>alpha</em> deploys to Google Cloud Run using the Cloud Run v1 API."
         },
         "docker": {
           "$ref": "#/definitions/DockerDeploy",
@@ -1408,11 +1408,6 @@
           "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
           "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
         },
-        "kustomize": {
-          "$ref": "#/definitions/KustomizeDeploy",
-          "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
-        },
         "logs": {
           "$ref": "#/definitions/LogsConfig",
           "description": "configures how container logs are printed as a result of a deployment.",
@@ -1434,7 +1429,6 @@
         "helm",
         "kpt",
         "kubectl",
-        "kustomize",
         "cloudrun",
         "statusCheck",
         "statusCheckDeadlineSeconds",
@@ -1904,8 +1898,8 @@
         },
         "region": {
           "type": "string",
-          "description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See [Cloud Build locations](https://cloud.google.com/build/docs/locations)",
-          "x-intellij-html-description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See <a href=\"https://cloud.google.com/build/docs/locations\">Cloud Build locations</a>"
+          "description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See [Cloud Build locations](https://cloud.google.com/build/docs/locations).",
+          "x-intellij-html-description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See <a href=\"https://cloud.google.com/build/docs/locations\">Cloud Build locations</a>."
         },
         "timeout": {
           "type": "string",
@@ -2964,56 +2958,8 @@
       ],
       "additionalProperties": false,
       "type": "object",
-      "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize",
-      "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize"
-    },
-    "KustomizeDeploy": {
-      "properties": {
-        "buildArgs": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional args passed to `kustomize build`.",
-          "x-intellij-html-description": "additional args passed to <code>kustomize build</code>.",
-          "default": "[]"
-        },
-        "defaultNamespace": {
-          "type": "string",
-          "description": "default namespace passed to kubectl on deployment if no other override is given.",
-          "x-intellij-html-description": "default namespace passed to kubectl on deployment if no other override is given."
-        },
-        "flags": {
-          "$ref": "#/definitions/KubectlFlags",
-          "description": "additional flags passed to `kubectl`.",
-          "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
-        },
-        "hooks": {
-          "$ref": "#/definitions/DeployHooks",
-          "description": "describes a set of lifecycle hooks that are executed before and after every deploy.",
-          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after every deploy."
-        },
-        "paths": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "path to Kustomization files.",
-          "x-intellij-html-description": "path to Kustomization files.",
-          "default": "[\".\"]"
-        }
-      },
-      "preferredOrder": [
-        "paths",
-        "flags",
-        "buildArgs",
-        "defaultNamespace",
-        "hooks"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-      "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+      "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize.",
+      "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize."
     },
     "LegacyHelmDeploy": {
       "properties": {
@@ -3388,8 +3334,8 @@
         },
         "kustomize": {
           "$ref": "#/definitions/Kustomize",
-          "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize",
-          "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize"
+          "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize.",
+          "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize."
         },
         "output": {
           "type": "string",
