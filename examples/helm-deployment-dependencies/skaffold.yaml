@@ -28,3 +28,8 @@ deploy:
       #setValues:
       # some:
       #   key: someValue
+      #example: add flags to upgrade stage of helm
+      # flags:
+      #   upgrade:
+      #     - '--history-max=3'
+      #use '=' to replace a space in the flag to avoid 'Error: unknown flag: --history-max 3'
