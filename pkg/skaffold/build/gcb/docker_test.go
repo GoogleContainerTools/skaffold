@@ -157,6 +157,8 @@ func TestDockerBuildSpec(t *testing.T) {
 					},
 				},
 				Steps: []*cloudbuild.BuildStep{{
+					Name: defaultPlatformEmulatorInstallStep.Image,
+				}, {
 					Name: "docker/docker",
 					Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--platform", "freebsd/arm", "--build-arg", "arg1=value1", "--build-arg", "arg2", "."},
 					Env:  []string{"DOCKER_BUILDKIT=1"},
@@ -269,6 +271,8 @@ func TestPullCacheFrom(t *testing.T) {
 			tag:       "nginx2",
 			platforms: platform.Matcher{Platforms: []v1.Platform{{Architecture: "arm", OS: "freebsd"}}},
 			expected: []*cloudbuild.BuildStep{{
+				Name: defaultPlatformEmulatorInstallStep.Image,
+			}, {
 				Name:       "docker/docker",
 				Entrypoint: "sh",
 				Args:       []string{"-c", "docker pull --platform freebsd/arm from/image1 || true"},

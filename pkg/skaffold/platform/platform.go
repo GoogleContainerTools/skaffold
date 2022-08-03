@@ -90,6 +90,15 @@ func (m Matcher) Intersect(other Matcher) Matcher {
 	return res
 }
 
+// Contains returns if the Matcher contains the other platform
+func (m Matcher) Contains(other specs.Platform) bool {
+	if m.All {
+		return true
+	}
+	matcher := platforms.Any(m.Platforms...)
+	return matcher.Match(other)
+}
+
 func Parse(ps []string) (Matcher, error) {
 	var sl []specs.Platform
 	for _, p := range ps {
