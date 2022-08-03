@@ -136,6 +136,9 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 	if c.Deploy.DockerDeploy != nil {
 		return
 	}
+	if c.Deploy.CloudRunDeploy != nil {
+		return
+	}
 	// Set default manifests to "k8s/*.yaml", same as v1.
 	c.Render.Generate.RawK8s = constants.DefaultKubectlManifests
 }
