@@ -698,12 +698,15 @@ type DeployType struct {
 
 // CloudRunDeploy *alpha* deploys the container to Google Cloud Run.
 type CloudRunDeploy struct {
-	// ProjectID of the GCP Project to use for Cloud Run.
+	// ProjectID the GCP Project to use for Cloud Run.
+	// If specified, all Services will be deployed to this project. If not specified,
+	// each Service will be deployed to the project specified in `metadata.namespace` of
+	// the Cloud Run manifest.
 	ProjectID string `yaml:"projectid,omitempty"`
 
-	// Region in GCP to use for the Cloud Run Deploy.
+	// Region GCP location to use for the Cloud Run Deploy.
 	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
-	Region string `yaml:"region,omitempty"`
+	Region string `yaml:"region,omitempty" yamltags:"required"`
 }
 
 // DockerDeploy uses the `docker` CLI to create application containers in Docker.

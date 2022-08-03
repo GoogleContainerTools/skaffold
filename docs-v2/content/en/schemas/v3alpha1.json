@@ -966,16 +966,19 @@
       "x-intellij-html-description": "<em>alpha</em> used to mount host volumes or directories in the build container."
     },
     "CloudRunDeploy": {
+      "required": [
+        "region"
+      ],
       "properties": {
         "projectid": {
           "type": "string",
-          "description": "of the GCP Project to use for Cloud Run.",
-          "x-intellij-html-description": "of the GCP Project to use for Cloud Run."
+          "description": "the GCP Project to use for Cloud Run. If specified, all Services will be deployed to this project. If not specified, each Service will be deployed to the project specified in `metadata.namespace` of the Cloud Run manifest.",
+          "x-intellij-html-description": "the GCP Project to use for Cloud Run. If specified, all Services will be deployed to this project. If not specified, each Service will be deployed to the project specified in <code>metadata.namespace</code> of the Cloud Run manifest."
         },
         "region": {
           "type": "string",
-          "description": "in GCP to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations.",
-          "x-intellij-html-description": "in GCP to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations."
+          "description": "GCP location to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations.",
+          "x-intellij-html-description": "GCP location to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations."
         }
       },
       "preferredOrder": [
