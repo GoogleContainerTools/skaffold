@@ -85,7 +85,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 		return "", fmt.Errorf("getting bazel tar path: %w", err)
 	}
 
-	return filepath.Join(workspace, tarPath), nil
+	return tarPath, nil
 }
 
 func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
@@ -129,7 +129,19 @@ func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact
 		return "", err
 	}
 
-	return strings.TrimSpace(string(buf)), nil
+	targetPath := strings.TrimSpace(string(buf))
+
+	cmd = exec.CommandContext(ctx, "bazel", "info", "execution_root")
+	cmd.Dir = workspace
+
+	buf, err = util.RunCmdOut(ctx, cmd)
+	if err != nil {
+		return "", err
+	}
+
+	execRoot := strings.TrimSpace(string(buf))
+
+	return filepath.Join(execRoot, targetPath), nil
 }
 
 func trimTarget(buildTarget string) string {

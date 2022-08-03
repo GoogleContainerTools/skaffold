@@ -18,7 +18,9 @@ package bazel
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -33,7 +35,7 @@ func TestBuildBazel(t *testing.T) {
 		t.NewTempDir().Mkdir("bin").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
 			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
-			"bin/app.tar"))
+			"bin/app.tar").AndRunOut("bazel info execution_root", ""))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
 		artifact := &latest.Artifact{
@@ -52,11 +54,11 @@ func TestBuildBazel(t *testing.T) {
 	})
 }
 
-func TestBazelTarPathFRespectWorkspace(t *testing.T) {
+func TestBazelTarPathPrependExecutionRoot(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
 			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
-			"app.tar"))
+			"app.tar").AndRunOut("bazel info execution_root", ".."))
 		testutil.CreateFakeImageTar("bazel:app", "../app.tar")
 
 		artifact := &latest.Artifact{
@@ -93,11 +95,12 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 }
 
 func TestBazelTarPath(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
+	testutil.Run(t, "EmptyExecutionRoot", func(t *testutil.T) {
+		osSpecificPath := filepath.Join("absolute", "path", "bin")
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
 			"bazel cquery //:skaffold_example.tar --output starlark --starlark:expr target.files.to_list()[0].path --arg1 --arg2",
-			"/absolute/path/bin\n",
-		))
+			fmt.Sprintf("%s\n", osSpecificPath),
+		).AndRunOut("bazel info execution_root", ""))
 
 		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
 			BuildArgs:   []string{"--arg1", "--arg2"},
@@ -105,7 +108,23 @@ func TestBazelTarPath(t *testing.T) {
 		})
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("/absolute/path/bin", bazelBin)
+		t.CheckDeepEqual(osSpecificPath, bazelBin)
+	})
+	testutil.Run(t, "AbsoluteExecutionRoot", func(t *testutil.T) {
+		osSpecificPath := filepath.Join("var", "tmp", "bazel-execution-roots", "abcdefg", "execroot", "workspace_name")
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+			"bazel cquery //:skaffold_example.tar --output starlark --starlark:expr target.files.to_list()[0].path --arg1 --arg2",
+			"bazel-bin/darwin-fastbuild-ST-confighash/path/to/bin\n",
+		).AndRunOut("bazel info execution_root", osSpecificPath))
+
+		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
+			BuildArgs:   []string{"--arg1", "--arg2"},
+			BuildTarget: "//:skaffold_example.tar",
+		})
+
+		t.CheckNoError(err)
+		expected := filepath.Join(osSpecificPath, "bazel-bin", "darwin-fastbuild-ST-confighash", "path", "to", "bin")
+		t.CheckDeepEqual(expected, bazelBin)
 	})
 }
 
