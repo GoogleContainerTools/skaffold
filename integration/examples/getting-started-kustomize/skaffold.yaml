@@ -13,7 +13,7 @@ manifests:
     paths:
     - overlays/dev
 deploy:
-  kubectl:{}
+  kubectl: {}
 profiles:
 - name: prod
   manifests:
