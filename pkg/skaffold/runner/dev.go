@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package runner
 
 import (
 	"context"
@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
@@ -50,7 +49,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	defer r.intents.Reset()
 
 	if r.changeSet.NeedsReload() {
-		return runner.ErrorConfigurationChanged
+		return ErrorConfigurationChanged
 	}
 
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()

@@ -21,10 +21,20 @@ import (
 	"errors"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/verify"
 )
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
@@ -49,4 +59,35 @@ type Runner interface {
 	Test(context.Context, io.Writer, []graph.Artifact) error
 	Verify(context.Context, io.Writer, []graph.Artifact) error
 	VerifyAndLog(context.Context, io.Writer, []graph.Artifact) error
+}
+
+// SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
+type SkaffoldRunner struct {
+	Builder
+	Pruner
+	tester test.Tester
+
+	renderer renderer.Renderer
+	deployer deploy.Deployer
+	verifier verify.Verifier
+	monitor  filemon.Monitor
+	listener Listener
+
+	cache              cache.Cache
+	changeSet          ChangeSet
+	runCtx             *runcontext.RunContext
+	labeller           *label.DefaultLabeller
+	artifactStore      build.ArtifactStore
+	sourceDependencies graph.SourceDependenciesCache
+	platforms          platform.Resolver
+
+	devIteration    int
+	isLocalImage    func(imageName string) (bool, error)
+	deployManifests manifest.ManifestListByConfig
+	intents         *Intents
+}
+
+// DeployManifests returns a list of manifest if this runner has deployed something.
+func (r *SkaffoldRunner) DeployManifests() manifest.ManifestListByConfig {
+	return r.deployManifests
 }

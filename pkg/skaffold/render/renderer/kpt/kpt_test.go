@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -180,8 +180,8 @@ pipeline:
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
 					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
-					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
-						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
+						AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+							filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				false)
@@ -251,8 +251,8 @@ inventory:
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
 					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
-					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
-						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
+						AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+							filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{},
 				true)

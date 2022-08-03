@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package runner
 
 import (
 	"context"
@@ -41,8 +41,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	kRenderer "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
@@ -68,8 +67,8 @@ type TestBench struct {
 	renderErrors  []error
 	deployErrors  []error
 	namespaces    []string
-	userIntents   []func(*runner.Intents)
-	intents       *runner.Intents
+	userIntents   []func(*Intents)
+	intents       *Intents
 	intentTrigger bool
 
 	devLoop        func(context.Context, io.Writer, func() error) error
@@ -567,7 +566,7 @@ func TestNewForConfig(t *testing.T) {
 			cfg, err := NewForConfig(context.Background(), runCtx)
 			t.CheckError(tt.shouldErr, err)
 			if cfg != nil {
-				b, _t, r, d := runner.WithTimings(&tt.expectedBuilder, tt.expectedTester, tt.expectedRenderer,
+				b, _t, r, d := WithTimings(&tt.expectedBuilder, tt.expectedTester, tt.expectedRenderer,
 					tt.expectedDeployer, tt.cacheArtifacts)
 				if tt.shouldErr {
 					t.CheckError(true, err)

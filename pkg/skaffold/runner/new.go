@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package runner
 
 import (
 	"context"
@@ -32,8 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -81,13 +80,13 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("getting render output path: %w", err)
 	}
 
-	renderer, err := runner.GetRenderer(ctx, runCtx, hydrationDir, labeller.Labels(), runCtx.UsingLegacyHelmDeploy())
+	renderer, err := GetRenderer(ctx, runCtx, hydrationDir, labeller.Labels(), runCtx.UsingLegacyHelmDeploy())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating renderer: %w", err)
 	}
 
-	deployer, err = runner.GetDeployer(ctx, runCtx, labeller, hydrationDir, runCtx.UsingLegacyHelmDeploy())
+	deployer, err = GetDeployer(ctx, runCtx, labeller, hydrationDir, runCtx.UsingLegacyHelmDeploy())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
@@ -99,7 +98,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	}
 
 	var verifier verify.Verifier
-	verifier, err = runner.GetVerifier(ctx, runCtx, labeller)
+	verifier, err = GetVerifier(ctx, runCtx, labeller)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating verifier: %w", err)
@@ -109,7 +108,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	// the Cluster object on the RunContext, which in turn influences whether or not we will push images.
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
-		return runner.GetBuilder(ctx, runCtx, store, sourceDependencies, p)
+		return GetBuilder(ctx, runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -140,9 +139,9 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	builder, tester, renderer, deployer = runner.WithTimings(builder, tester, renderer, deployer, runCtx.CacheArtifacts())
+	builder, tester, renderer, deployer = WithTimings(builder, tester, renderer, deployer, runCtx.CacheArtifacts())
 	if runCtx.Notification() {
-		deployer = runner.WithNotification(deployer)
+		deployer = WithNotification(deployer)
 	}
 
 	monitor := filemon.NewMonitor()
@@ -153,16 +152,16 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	rbuilder := runner.NewBuilder(builder, tagger, platforms, artifactCache, runCtx)
+	rbuilder := NewBuilder(builder, tagger, platforms, artifactCache, runCtx)
 	return &SkaffoldRunner{
 		Builder:            *rbuilder,
-		Pruner:             runner.Pruner{Builder: builder},
+		Pruner:             Pruner{Builder: builder},
 		renderer:           renderer,
 		tester:             tester,
 		deployer:           deployer,
 		platforms:          platforms,
 		monitor:            monitor,
-		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
+		listener:           NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
 		artifactStore:      store,
 		sourceDependencies: sourceDependencies,
 		labeller:           labeller,
@@ -174,8 +173,8 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	}, nil
 }
 
-func setupIntents(runCtx *runcontext.RunContext) (*runner.Intents, chan bool) {
-	intents := runner.NewIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
+func setupIntents(runCtx *runcontext.RunContext) (*Intents, chan bool) {
+	intents := NewIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
 
 	intentChan := make(chan bool, 1)
 	setupTrigger("build", intents.SetBuild, intents.SetAutoBuild, intents.GetAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)

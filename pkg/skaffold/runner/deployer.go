@@ -32,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
@@ -96,7 +96,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			if nonHelmDeployFound || len(helmNamespaces) > 0 {
 				// Cloud Run doesn't support multiple deployers in the config.
 				return nil, errors.New("skaffold apply called with both Cloud Run and Kubernetes deployers. Mixing deployment targets is not allowed" +
-					" when using the Cloud Run deployer")
+						" when using the Cloud Run deployer")
 			}
 			return getCloudRunDeployer(runCtx, labeller, pipelines.Deployers(), "")
 		}
