@@ -33,6 +33,9 @@ To use render using helm but deploy via kubectl deployer define your helm charts
 The following `manifests` section instructs Skaffold to render
 artifacts using helm.
 
+{{% readfile file="samples/renderers/helm.yaml" %}}
+
+
 ### `skaffold.yaml` Configuration
 
 The `helm` type offers the following options:
@@ -42,13 +45,4 @@ The `helm` type offers the following options:
 Each `release` includes the following fields:
 
 {{< schema root="HelmRelease" >}}
-
-
-
-{{% readfile file="samples/renderers/kustomize.yaml" %}}
-
-{{< alert title="Note" >}}
-kustomize CLI must be installed on your machine. Skaffold will not
-install it.
-{{< /alert >}}
 
