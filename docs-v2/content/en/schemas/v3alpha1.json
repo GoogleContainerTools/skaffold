@@ -3323,16 +3323,16 @@
       "properties": {
         "helm": {
           "$ref": "#/definitions/Helm",
-          "description": "TODO: add description.",
-          "x-intellij-html-description": "TODO: add description."
+          "description": "defines the helm charts used in the application. NOTE: Defines cherts in this section to render via helm but deployed via kubectl or kpt deployer. To use helm to deploy, please see deploy.helm section.",
+          "x-intellij-html-description": "defines the helm charts used in the application. NOTE: Defines cherts in this section to render via helm but deployed via kubectl or kpt deployer. To use helm to deploy, please see deploy.helm section."
         },
         "kpt": {
           "items": {
             "type": "string"
           },
           "type": "array",
-          "description": "TODO: add description.",
-          "x-intellij-html-description": "TODO: add description.",
+          "description": "defines the kpt resources in the application.",
+          "x-intellij-html-description": "defines the kpt resources in the application.",
           "default": "[]"
         },
         "kustomize": {
@@ -3350,8 +3350,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "TODO: add description.",
-          "x-intellij-html-description": "TODO: add description.",
+          "description": "defines the raw kubernetes resources.",
+          "x-intellij-html-description": "defines the raw kubernetes resources.",
           "default": "[]"
         },
         "transform": {

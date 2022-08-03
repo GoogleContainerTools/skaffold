@@ -572,17 +572,20 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	// RawK8s TODO: add description.
+	// RawK8s defines the raw kubernetes resources.
 	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
 
 	// Kustomize defines the paths to be modified with kustomize, along with extra
 	// flags to be passed to kustomize.
 	Kustomize *Kustomize `yaml:"kustomize,omitempty"`
 
-	// Helm TODO: add description.
+	// Helm defines the helm charts used in the application.
+	// NOTE: Defines cherts in this section to render via helm but
+	// deployed via kubectl or kpt deployer.
+	// To use helm to deploy, please see deploy.helm section.
 	Helm *Helm `yaml:"helm,omitempty"`
 
-	// Kpt TODO: add description.
+	// Kpt defines the kpt resources in the application.
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
 }
 
