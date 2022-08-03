@@ -1,3 +1,89 @@
+# v2.0.0-beta1 Release - 08/03/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.0.0-beta1`
+
+Note: This release comes with a new config version, `v3alpha1`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Skaffold’s v2 beta release `v2.0.0-beta1` is out today!  To try it out, you can go to our [v2.0.0-beta1 installation guide](https://skaffold-v2.web.app/docs/install/) or use the instructions above.  For information on migrating from skaffold v1.*.* to skaffold v2.0.0-beta1 see our [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/).  TLDR; there should not be any changes required for most use cases, see the [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/) for the full details.  
+
+
+Highlights:
+
+In Skaffold v2 what was previously the `deploy` phase of Skaffold is now split into a new `render` phase and `deploy` phase.  This clear boundary of separation between render and deploy phases allowed the team to simplify our code and CLI allowing us to clean up previously confusing or redundant flags like `skaffold deploy --render-only`, `skaffold deploy --skip-render`. 
+This release comes with a new schema version `v3alpha1`. This schema introduced a new `manifests` section which declares all resources an application deploys e.g helm charts, kubernetes yaml, kustomize directories and kpt configuration. This decoupling of manifests declaration from the deploy section allows manifests to be used across deploy tools e.g.
+* you can configure kpt deployer to render and apply kubernetes yaml, helm charts or
+* you can configure the kubectl deployer to apply helm charts and helm to render the charts. 
+See the [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/) for more information.
+
+
+New Features and Additions:
+* More advanced and configurable `render` functionality.  See the render docs [here](https://skaffold-v2.web.app/docs/pipeline-stages/renderers/) for more details.
+    * Skaffold v2 supports rendering, validating and transforming manifests with kpt v1.0.0-beta. See the kpt renderer docs [here](https://skaffold-v2.web.app/docs/pipeline-stages/renderers/kpt/) for more details.
+    * Please take a look at the [kpt v0.39.0 to kpt v1.0.0 migration guide](https://kpt.dev/installation/migration) for more information
+* Better rendering support for applications with helm charts. See the helm renderer docs [here](https://skaffold-v2.web.app/docs/pipeline-stages/renderers/helm/) for more details.
+    * skaffold under the hood uses `helm template` to render helm charts now
+* New `skaffold verify` command which allows for Skaffold to run test containers against skaffold deployments.  See the verify docs [here](https://skaffold-v2.web.app/docs/pipeline-stages/verify/) for full set of details and examples. With this users can use off the shelf (`alpine`, etc.) or skaffold built test containers and run them in a pipeline that skaffold watches and streams logs from. Supports customer requested CI/CD functionality for a Skaffold native way of supporting:
+    * health checks (deployment success, readiness)
+    * integration/smoke/load tests
+    * monitoring checks(metrics and alerting)
+* `Cloud Run` deployer support (in alpha stage).  Currently supports deploying applications, port-forwarding and eventing but not log streaming or `debug` support which will be added soon. See the docs [here](https://skaffold-v2.web.app/docs/pipeline-stages/deployers/cloudrun/) for more information
+
+Docs, Test, and Release Updates:
+* For the skaffold v2 beta period, there will be a temporary v2 docs site hosted at [https://skaffold-v2.web.app/](https://skaffold-v2.web.app/) which explains all changes, new features, and potential regressions.S
+
+This release marks the culmination of lots of hard work across multiple teams, organizations, and external contributors.  Special thanks to @yuwenma and @bksaplan for all of their work in getting important v2 functionality across the finish line!  Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Aaron Son
+- Abhinav Nair
+- Alessandro Ros
+- Alex
+- beast
+- betaboon
+- Brian de Alwis
+- bskaplan
+- CuriousCorrelation
+- dependabot[bot]
+- ericzzzzzzz
+- Flávio Roberto Santos
+- GagarinX
+- Gaurav
+- Halvard Skogsrud
+- Ikumi Nakamura
+- Javier Cañadillas
+- Kourtney
+- Lukas
+- Marlon Gamez
+- Naofumi MURATA
+- neilnaveen
+- Nelson Chen
+- Pablo Caderno
+- piotrostr
+- Renzo Rojas
+- Sergei Morozov
+- Shabir Mohamed Abdul Samadh
+- Shuhei Kitagawa
+- Suzuki Shota
+- Tejal Desai
+- Tomás Mota
+- Tuan Anh Pham
+- Yuwen Ma
+
 # v1.37.2 Release - 04/29/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.37.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
