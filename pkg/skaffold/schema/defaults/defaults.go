@@ -135,7 +135,6 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 	}
 	// Set default manifests to "k8s/*.yaml", same as v1.
 	c.Render.Generate.RawK8s = constants.DefaultKubectlManifests
-	c.Deploy.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
 // SetDefaultDeployer adds a default kubectl deploy configuration.

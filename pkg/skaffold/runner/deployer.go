@@ -202,8 +202,6 @@ The default deployer will honor a select set of deploy configuration from an exi
   - deploy.Logs.Prefix
   - deploy.Kubectl.Flags
   - deploy.Kubectl.DefaultNamespace
-  - deploy.Kustomize.Flags
-  - deploy.Kustomize.DefaultNamespace
 
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
