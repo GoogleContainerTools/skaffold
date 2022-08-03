@@ -1,6 +1,6 @@
 ---
-title: "Google Cloud Run"
-linkTitle: "Google Cloud Run"
+title: "Google Cloud Run [NEW]"
+linkTitle: "Google Cloud Run [NEW]"
 weight: 60
 featureId: deploy.cloudrun
 ---
