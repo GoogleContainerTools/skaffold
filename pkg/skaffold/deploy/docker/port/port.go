@@ -74,12 +74,12 @@ func (pm *PortManager) Stop() {
 }
 
 /*
-	allocatePorts converts PortForwardResources into docker.PortSet objects, and combines them with
-	pre-configured debug bindings into one docker.PortMap. The debug bindings will have their
-	requested host ports validated against the port tracker, and modified if a port collision is found.
+allocatePorts converts PortForwardResources into docker.PortSet objects, and combines them with
+pre-configured debug bindings into one docker.PortMap. The debug bindings will have their
+requested host ports validated against the port tracker, and modified if a port collision is found.
 
-	These ports are added to the provided container configuration's port set, and the bindings
-	are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
+These ports are added to the provided container configuration's port set, and the bindings
+are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
 */
 func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
 	pm.lock.Lock()

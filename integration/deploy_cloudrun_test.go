@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,6 +43,7 @@ func TestDeployCloudRun(t *testing.T) {
 }
 
 // TODO: remove nolint when test is unskipped
+//
 //nolint:unused
 func getRunService(ctx context.Context, project, region, service string) (*run.Service, error) {
 	crclient, err := run.NewService(ctx, gcp.ClientOptions(ctx)...)
@@ -55,6 +56,7 @@ func getRunService(ctx context.Context, project, region, service string) (*run.S
 }
 
 // TODO: remove nolint when test is unskipped
+//
 //nolint:unused
 func checkReady(svc *run.Service) error {
 	var ready *run.GoogleCloudRunV1Condition

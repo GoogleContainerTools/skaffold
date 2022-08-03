@@ -96,7 +96,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			if nonHelmDeployFound || len(helmNamespaces) > 0 {
 				// Cloud Run doesn't support multiple deployers in the config.
 				return nil, errors.New("skaffold apply called with both Cloud Run and Kubernetes deployers. Mixing deployment targets is not allowed" +
-						" when using the Cloud Run deployer")
+					" when using the Cloud Run deployer")
 			}
 			return getCloudRunDeployer(runCtx, labeller, pipelines.Deployers(), "")
 		}

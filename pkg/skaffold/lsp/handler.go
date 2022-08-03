@@ -246,7 +246,7 @@ func sendDiagnostics(ctx context.Context, diags map[string][]protocol.Diagnostic
 }
 
 func validateFiles(ctx context.Context,
-		opts config.SkaffoldOptions, req jsonrpc2.Request) (map[string][]protocol.Diagnostic, error) {
+	opts config.SkaffoldOptions, req jsonrpc2.Request) (map[string][]protocol.Diagnostic, error) {
 	// TODO(aaron-prindle) currently lint checks only filesystem, instead need to check VFS w/ documentManager info (validation uses VFS currently NOT lint)
 
 	// TODO(aaron-prindle) if invalid yaml and parser fails, need to handle that as well as a validation error vs server erroring
@@ -285,7 +285,7 @@ func validateFiles(ctx context.Context,
 }
 
 func lintFiles(ctx context.Context, runCtx docker.Config,
-		opts config.SkaffoldOptions, req jsonrpc2.Request) (map[string][]protocol.Diagnostic, error) {
+	opts config.SkaffoldOptions, req jsonrpc2.Request) (map[string][]protocol.Diagnostic, error) {
 	// TODO(aaron-prindle) currently lint checks only filesystem, instead need to check VFS w/ documentManager info
 	// need to make sure something like k8a-manifest.yaml comes from afero VFS and not os FS always
 	results, err := lint.GetAllLintResults(ctx, lint.Options{

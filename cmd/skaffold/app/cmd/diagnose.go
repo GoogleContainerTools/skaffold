@@ -48,8 +48,8 @@ func NewCmdDiagnose() *cobra.Command {
 		WithExample("Search for configuration issues and print the effective configuration", "diagnose").
 		WithExample("Print the effective skaffold.yaml configuration for given profile", "diagnose --yaml-only --profile PROFILE").
 		WithCommonFlags().
-			WithFlags([]*Flag{
-				{Value: &yamlOnly, Name: "yaml-only", DefValue: false, Usage: "Only prints the effective skaffold.yaml configuration"}}).
+		WithFlags([]*Flag{
+			{Value: &yamlOnly, Name: "yaml-only", DefValue: false, Usage: "Only prints the effective skaffold.yaml configuration"}}).
 		NoArgs(doDiagnose)
 }
 

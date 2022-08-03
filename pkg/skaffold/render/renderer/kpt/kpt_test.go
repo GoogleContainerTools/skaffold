@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -180,8 +180,8 @@ pipeline:
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
 					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
-						AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
-							filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
+					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				false)
@@ -251,8 +251,8 @@ inventory:
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
 					filepath.Join(tmpDirObj.Root(), ".kpt-pipeline"))).
-						AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
-							filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
+					AndRunOut(fmt.Sprintf("kpt fn source %v -o unwrap",
+						filepath.Join(tmpDirObj.Root(), ".kpt-pipeline")), ""))
 			var b bytes.Buffer
 			_, err = r.Render(context.Background(), &b, []graph.Artifact{},
 				true)

@@ -36,6 +36,7 @@ const (
 // Note: `custom-buildx` is not included as it depends on having a
 // `skaffold-builder` builder configured and a registry to push to.
 // TODO: remove nolint once we've reenabled integration tests
+//
 //nolint:golint,unused
 var tests = []struct {
 	description string

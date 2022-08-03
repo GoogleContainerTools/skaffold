@@ -85,7 +85,7 @@ func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary st
 	return
 }
 
-// generateSkaffoldFilter creates a `skaffold filter`` command-line for applying the various
+// generateSkaffoldFilter creates a `skaffold filter“ command-line for applying the various
 // Skaffold manifest filters, such a debugging, image replacement, and applying labels.
 func generateSkaffoldFilter(h Client, buildsFile string) []string {
 	args := []string{"filter", "--kube-context", h.KubeContext()}

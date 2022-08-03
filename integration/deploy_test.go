@@ -191,14 +191,14 @@ func TestDeployWithoutWorkspaces(t *testing.T) {
 }
 
 // Copies a file or directory tree.  There are 2x3 cases:
-//   1. If _src_ is a file,
-//      1. and _dst_ exists and is a file then _src_ is copied into _dst_
-//      2. and _dst_ exists and is a directory, then _src_ is copied as _dst/$(basename src)_
-//      3. and _dst_ does not exist, then _src_ is copied as _dst_.
-//   2. If _src_ is a directory,
-//      1. and _dst_ exists and is a file, then return an error
-//      2. and _dst_ exists and is a directory, then src is copied as _dst/$(basename src)_
-//      3. and _dst_ does not exist, then src is copied as _dst/src[1:]_.
+//  1. If _src_ is a file,
+//  1. and _dst_ exists and is a file then _src_ is copied into _dst_
+//  2. and _dst_ exists and is a directory, then _src_ is copied as _dst/$(basename src)_
+//  3. and _dst_ does not exist, then _src_ is copied as _dst_.
+//  2. If _src_ is a directory,
+//  1. and _dst_ exists and is a file, then return an error
+//  2. and _dst_ exists and is a directory, then src is copied as _dst/$(basename src)_
+//  3. and _dst_ does not exist, then src is copied as _dst/src[1:]_.
 func copyFiles(dst, src string) error {
 	if util.IsFile(src) {
 		switch {
