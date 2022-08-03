@@ -1,7 +1,7 @@
 ---
 title: "Docker"
 linkTitle: "Docker"
-weight: 20
+weight: 50
 featureId: deploy.docker
 ---
 
