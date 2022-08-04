@@ -70,7 +70,9 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 		endTrace()
 	}
 
-	if !opts.EnablePlatformNodeAffinity {
+	if opts.Offline || !opts.EnablePlatformNodeAffinity {
+		// TODO (gaghosh): To support platform node affinity in offline mode, we'll need to save the image platform
+		// information in the build output file, and consume that here instead of looking up in the container registry.
 		return manifests, nil
 	}
 	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setPlatformNodeAffinity")
