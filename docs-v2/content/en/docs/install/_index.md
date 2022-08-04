@@ -1,6 +1,6 @@
 ---
-title: "Installing Skaffold v2.0.0-beta1"
-linkTitle: "Installing Skaffold v2.0.0-beta1"
+title: "Installing Skaffold v2.0.0-beta1 [NEW]"
+linkTitle: "Installing Skaffold v2.0.0-beta1 [NEW]"
 weight: 10
 aliases: [/docs/getting-started]
 ---

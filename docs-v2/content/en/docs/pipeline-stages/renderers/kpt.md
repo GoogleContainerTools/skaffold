@@ -1,6 +1,6 @@
 ---
-title: "Kpt [new in v2.0.0]"
-linkTitle: "Kpt [new in v2.0.0]"
+title: "Kpt [NEW]"
+linkTitle: "Kpt [NEW]"
 weight: 30
 featureId: render
 ---

@@ -1,6 +1,6 @@
 ---
-title: "Render [new in v2.0.0]"
-linkTitle: "Render [new in v2.0.0]"
+title: "Render [NEW]"
+linkTitle: "Render [NEW]"
 weight: 10
 featureId: render
 aliases: [/docs/how-tos/renderers]

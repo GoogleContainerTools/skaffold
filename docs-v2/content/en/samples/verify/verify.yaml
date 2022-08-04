@@ -1,0 +1,22 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  artifacts:
+    - image: integration-test-container
+      context: integration-test-container
+    - image: metrics-test-container
+      context: metrics-test-container
+verify:
+- name: integration-test-container
+  container:
+    name: integration-test-container
+    image: 	integration-test-container
+- name: metrics-test-container
+  container:
+    name: metrics-test-container
+    image: 	metrics-test-container
+- name: alpine-curl
+  container:
+    name: alpine/curl
+    image: alpine/curl:3.15.4
+    args: ["http://www.google.com"]
