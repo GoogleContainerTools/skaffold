@@ -42,10 +42,10 @@ and `skaffold verify` will exit with error code `0`
 
 If a test fails, for example changing the `alpine-wget` test to point to a URL that doesn't exist:
 ```yaml
-- name: alpine-curl
+- name: alpine-wget
   container:
-    name: alpine/curl
-    image: alpine/curl:3.15.4
+    name: alpine-wget
+    image: alpine:3.15.4
     args: ["http://incorrect-url"]
 ```
 
