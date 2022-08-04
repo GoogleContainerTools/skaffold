@@ -83,7 +83,23 @@ sudo install skaffold /usr/local/bin/
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/v2/skaffold-darwin-arm64 && \
 sudo install skaffold /usr/local/bin/
 ```
+{{% /tab %}}
 
+
+{{% tab "WINDOWS" %}}
+
+The latest **stable** release binary can be found here:
+
+https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-windows-amd64.exe
+
+Simply download it and place it in your `PATH` as `skaffold.exe`.
+
+We also release a **bleeding edge** build, built from the latest commit:
+
+https://storage.googleapis.com/skaffold/builds/latest/v2/skaffold-windows-amd64.exe
+{{% /tab %}}
+
+{{% tab "DOCKER" %}}
 ### Stable binary
 
 For the latest v2.0.0 beta **stable** release, you can use:
