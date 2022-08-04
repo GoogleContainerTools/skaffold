@@ -280,7 +280,7 @@ func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 	return rc.DefaultPipeline().Deploy.Logs.JSONParse
 }
 func (rc *RunContext) EnablePlatformNodeAffinityInRenderedManifests() bool {
-	return rc.Opts.EnablePlatformNodeAffinity
+	return rc.Opts.EnablePlatformNodeAffinity && rc.Cluster.IsMixedPlatform
 }
 
 // GetRenderConfig returns the top tier RenderConfig.
