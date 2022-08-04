@@ -22,11 +22,8 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/google/go-containerregistry/pkg/v1/types"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -67,52 +64,6 @@ func AddRemoteTag(src, target string, cfg Config, platforms []specs.Platform) er
 	}
 
 	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(primaryKeychain))
-}
-
-type SinglePlatformImage struct {
-	Platform *v1.Platform
-	Image    string
-}
-
-func Merge(images []SinglePlatformImage, targetTag string) (string, error) {
-	adds := make([]mutate.IndexAddendum, len(images))
-	for i, image := range images {
-		ref, err := name.ParseReference(image.Image, name.WeakValidation)
-		if err != nil {
-			return "", err
-		}
-		img, err := remoteImage(ref)
-		if err != nil {
-			return "", err
-		}
-		adds[i] = mutate.IndexAddendum{
-			Add: img,
-			Descriptor: v1.Descriptor{
-				Platform: image.Platform,
-			},
-		}
-	}
-	idx := mutate.AppendManifests(mutate.IndexMediaType(empty.Index, types.DockerManifestList), adds...)
-	targetRef, err := name.ParseReference(targetTag, name.WeakValidation)
-	if err != nil {
-		return "", err
-	}
-
-	err = remote.WriteIndex(targetRef, idx, remote.WithAuthFromKeychain(primaryKeychain))
-	if err != nil {
-		return "", err
-	}
-	h, err := idx.Digest()
-	if err != nil {
-		return "", err
-	}
-	dig := fmt.Sprintf("%s", h)
-	log.Entry(context.TODO()).Printf("Created ManifestList for image %s. Digest: %s\n", targetRef, dig)
-	parsed, err := ParseReference(targetTag)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s@%s", parsed.BaseName, parsed.Tag, dig), nil
 }
 
 func getRemoteDigest(identifier string, cfg Config, platforms []specs.Platform) (string, error) {
