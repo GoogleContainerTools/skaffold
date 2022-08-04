@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // MergeWithPreviousBuilds merges previous or prebuilt build artifacts with
@@ -64,4 +65,15 @@ func TagWithDigest(tag, digest string) string {
 
 func TagWithImageID(ctx context.Context, tag string, imageID string, localDocker docker.LocalDaemon) (string, error) {
 	return localDocker.TagWithImageID(ctx, tag, imageID)
+}
+
+func SupportsMultiPlatformBuild(a latest.Artifact) bool {
+	switch {
+	case a.DockerArtifact != nil || a.BazelArtifact != nil || a.BuildpackArtifact != nil:
+		return false
+	case a.JibArtifact != nil || a.CustomArtifact != nil || a.KoArtifact != nil:
+		return true
+	default:
+		return false
+	}
 }

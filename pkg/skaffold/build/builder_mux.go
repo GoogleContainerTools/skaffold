@@ -21,14 +21,19 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
+
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // BuilderMux encapsulates multiple build configs.
@@ -94,11 +99,22 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 			return "", err
 		}
 		r := hooks.BuildRunner(artifact.LifecycleHooks, hooksOpts)
-		var built string
 		if err = r.RunPreHooks(ctx, out); err != nil {
 			return "", err
 		}
-		if built, err = artifactBuilder(ctx, out, artifact, tag, platforms); err != nil {
+		var built string
+
+		if platforms.IsMultiPlatform() {
+			if SupportsMultiPlatformBuild(*artifact) {
+				built, err = artifactBuilder(ctx, out, artifact, tag, platforms)
+			} else {
+				built, err = createManifestsList(ctx, out, artifact, tag, platforms, artifactBuilder)
+			}
+		} else {
+			built, err = artifactBuilder(ctx, out, artifact, tag, platforms)
+		}
+
+		if err != nil {
 			return "", err
 		}
 		if err = r.RunPostHooks(ctx, out); err != nil {
@@ -106,6 +122,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 		return built, nil
 	}
+
 	ar, err := InOrder(ctx, out, tags, resolver, artifacts, builderF, b.concurrency, b.store)
 	if err != nil {
 		return nil, err
@@ -174,4 +191,25 @@ func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
 	}
 	log.Entry(ctx).Infof("final build concurrency value is %d", minConcurrency)
 	return minConcurrency
+}
+
+func createManifestsList(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, matcher platform.Matcher, artifactBuilder ArtifactBuilder) (string, error) {
+	var images []docker.SinglePlatformImage
+	for _, p := range matcher.Platforms {
+		m := platform.Matcher{
+			All:       false,
+			Platforms: []specs.Platform{p},
+		}
+		tagWithPlatform := fmt.Sprintf("%s_%s", tag, strings.ReplaceAll(platform.Format(p), "/", "_"))
+		imageId, err := artifactBuilder(ctx, out, a, tagWithPlatform, m)
+		if err != nil {
+			return "", err
+		}
+		pl := util.ConvertToV1Platform(p)
+		images = append(images, docker.SinglePlatformImage{
+			Platform: &pl,
+			Image:    imageId,
+		})
+	}
+	return docker.Merge(images, tag)
 }
