@@ -40,6 +40,6 @@ func (n *noCache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (n *noCache) AddArtifact(ctx context.Context, a graph.Artifact) error {
-	//noop
+	// noop
 	return nil
 }
