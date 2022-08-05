@@ -75,7 +75,7 @@ func nsSettingErr(err error) error {
 }
 
 func nsAlreadySetErr() error {
-	err := fmt.Errorf("namespace already set in the namesapce")
+	err := fmt.Errorf("namespace field already set in the manifests")
 	return sErrors.NewError(err,
 		&proto.ActionableErr{
 			Message: err.Error(),
