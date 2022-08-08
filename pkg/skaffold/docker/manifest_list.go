@@ -29,12 +29,17 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
+// Describes the result of an image build.
 type SinglePlatformImage struct {
+	// Platform (OS + architecture) associated with the image built.
 	Platform *v1.Platform
-	Image    string
+
+	// Name of the image built.
+	Image string
 }
 
-func CreateManifestList(images []SinglePlatformImage, targetTag string) (string, error) {
+// Returns a manifest list that contains the given images.
+func CreateManifestList(ctx context.Context, images []SinglePlatformImage, targetTag string) (string, error) {
 	adds := make([]mutate.IndexAddendum, len(images))
 
 	for i, image := range images {
@@ -71,12 +76,16 @@ func CreateManifestList(images []SinglePlatformImage, targetTag string) (string,
 		return "", err
 	}
 
-	dig := fmt.Sprintf("%s", h)
-	log.Entry(context.TODO()).Printf("Created ManifestList for image %s. Digest: %s\n", targetRef, dig)
+	dig := h.String()
+	log.Entry(ctx).Printf("Created ManifestList for image %s. Digest: %s\n", targetRef, dig)
 	parsed, err := ParseReference(targetTag)
 	if err != nil {
 		return "", err
 	}
 
+	// TODO: manifestlists are only supported in a container registry so we
+	// return the fully qualified image name with tag and digest. When the local
+	// docker daemon can support multi-platform images, we'll have to return the
+	// image with imageID.
 	return fmt.Sprintf("%s:%s@%s", parsed.BaseName, parsed.Tag, dig), nil
 }

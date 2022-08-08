@@ -47,7 +47,7 @@ func CreateMultiPlatformImage(ctx context.Context, out io.Writer, a *latest.Arti
 		return "", err
 	}
 
-	return docker.CreateManifestList(images, tag)
+	return docker.CreateManifestList(ctx, images, tag)
 }
 
 func buildImageForPlatforms(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, matcher platform.Matcher, ab ArtifactBuilder) ([]docker.SinglePlatformImage, error) {
@@ -59,7 +59,7 @@ func buildImageForPlatforms(ctx context.Context, out io.Writer, a *latest.Artifa
 			Platforms: []specs.Platform{p},
 		}
 		tagWithPlatform := fmt.Sprintf("%s_%s", tag, strings.ReplaceAll(platform.Format(p), "/", "_"))
-		imageId, err := ab(ctx, out, a, tagWithPlatform, m)
+		imageID, err := ab(ctx, out, a, tagWithPlatform, m)
 
 		if err != nil {
 			return nil, err
@@ -68,7 +68,7 @@ func buildImageForPlatforms(ctx context.Context, out io.Writer, a *latest.Artifa
 		pl := util.ConvertToV1Platform(p)
 		images = append(images, docker.SinglePlatformImage{
 			Platform: &pl,
-			Image:    imageId,
+			Image:    imageID,
 		})
 	}
 
