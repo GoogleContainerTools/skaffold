@@ -3364,6 +3364,11 @@
           "description": "defines the helm charts used in the application. NOTE: Defines cherts in this section to render via helm but deployed via kubectl or kpt deployer. To use helm to deploy, please see deploy.helm section.",
           "x-intellij-html-description": "defines the helm charts used in the application. NOTE: Defines cherts in this section to render via helm but deployed via kubectl or kpt deployer. To use helm to deploy, please see deploy.helm section."
         },
+        "hooks": {
+          "$ref": "#/definitions/RenderHooks",
+          "description": "describes a set of lifecycle hooks that are executed before and after every render.",
+          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after every render."
+        },
         "kpt": {
           "items": {
             "type": "string"
@@ -3406,6 +3411,7 @@
         "kustomize",
         "helm",
         "kpt",
+        "hooks",
         "transform",
         "validate",
         "output"
@@ -3414,6 +3420,50 @@
       "type": "object",
       "description": "contains all the configuration needed by the render steps.",
       "x-intellij-html-description": "contains all the configuration needed by the render steps."
+    },
+    "RenderHookItem": {
+      "properties": {
+        "host": {
+          "$ref": "#/definitions/HostHook",
+          "description": "describes a single lifecycle hook to run on the host machine.",
+          "x-intellij-html-description": "describes a single lifecycle hook to run on the host machine."
+        }
+      },
+      "preferredOrder": [
+        "host"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes a single lifecycle hook to execute before or after each deployer step.",
+      "x-intellij-html-description": "describes a single lifecycle hook to execute before or after each deployer step."
+    },
+    "RenderHooks": {
+      "properties": {
+        "after": {
+          "items": {
+            "$ref": "#/definitions/RenderHookItem"
+          },
+          "type": "array",
+          "description": "describes the list of lifecycle hooks to execute *after* each render step.",
+          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>after</em> each render step."
+        },
+        "before": {
+          "items": {
+            "$ref": "#/definitions/RenderHookItem"
+          },
+          "type": "array",
+          "description": "describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).",
+          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>before</em> each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during <code>skaffold dev</code>)."
+        }
+      },
+      "preferredOrder": [
+        "before",
+        "after"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes the list of lifecycle hooks to execute before and after each render step.",
+      "x-intellij-html-description": "describes the list of lifecycle hooks to execute before and after each render step."
     },
     "ResourceFilter": {
       "required": [

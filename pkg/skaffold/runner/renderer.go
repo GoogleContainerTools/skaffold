@@ -29,13 +29,14 @@ import (
 func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (renderer.Renderer, error) {
 	ps := runCtx.Pipelines.AllByConfigNames()
 
-	var renderers renderer.GroupRenderer
+	var gr renderer.GroupRenderer
 	for configName, p := range ps {
 		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err
 		}
-		renderers = append(renderers, rs...)
+		gr.Renderers = append(gr.Renderers, rs.Renderers...)
+		gr.HookRunner = rs.HookRunner
 	}
 	// In case of legacy helm deployer configured and render command used
 	// force a helm renderer from deploy helm config
@@ -55,8 +56,8 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 			if err != nil {
 				return nil, err
 			}
-			renderers = append(renderers, r)
+			gr.Renderers = append(gr.Renderers, r)
 		}
 	}
-	return renderer.NewRenderMux(renderers), nil
+	return renderer.NewRenderMux(gr), nil
 }
