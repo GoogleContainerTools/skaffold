@@ -44,8 +44,8 @@ var tests = []struct {
 }{
 	{
 		description: "copying-empty-directory",
-		dir:         "testdata/getting-started",
-		pods:        []string{"getting-started"},
+		dir:         "testdata/empty-dir",
+		pods:        []string{"empty-dir"},
 		targetLog:   "Hello world!",
 	},
 	{
@@ -174,7 +174,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
 			args := append(test.args, "--cache-artifacts=false")
-			if test.dir == "testdata/getting-started" {
+			if test.dir == "testdata/empty-dir" {
 				err := os.Mkdir(filepath.Join(test.dir, "testdir"), 0755)
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
