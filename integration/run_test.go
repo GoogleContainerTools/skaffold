@@ -175,7 +175,8 @@ func TestRun(t *testing.T) {
 			ns, client := SetupNamespace(t)
 			args := append(test.args, "--cache-artifacts=false")
 			if test.dir == "testdata/empty-dir" {
-				err := os.Mkdir(filepath.Join(test.dir, "testdir"), 0755)
+				err := os.Mkdir(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
 				}
