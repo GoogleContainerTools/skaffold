@@ -8,10 +8,12 @@ build:
       dockerfile: Dockerfile
   tagPolicy:
     gitCommit: {}
-  platforms:
-  - linux/amd64
   local:
     concurrency: 1
 manifests:
   rawYaml:
   - k8s-*
+profiles:
+  - name: cloudbuild
+    build:
+      googleCloudBuild: {}

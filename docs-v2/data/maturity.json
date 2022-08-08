@@ -41,6 +41,18 @@
     "maturity": "GA",
     "description": "Define build artifact dependencies"
   },
+  "build.platforms": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "render": "x",
+    "deploy": "x",
+    "area": "Build",
+    "feature": "Cross-arch and Multi-arch builds",
+    "maturity": "alpha",
+    "description": "Build cross-architecture and Multi-architecture images"
+  },
   "build.ko": {
     "dev": "x",
     "build": "x",
