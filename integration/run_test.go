@@ -178,7 +178,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
 			args := append(test.args, "--cache-artifacts=false")
-			if test.dir == "emptydir" {
+			if test.dir == emptydir {
 				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
 				t.Log("Creating empty directory")
 				if err != nil {
@@ -203,7 +203,7 @@ func TestRunTail(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
-			if test.dir == "emptydir" {
+			if test.dir == emptydir {
 				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
 				t.Log("Creating empty directory")
 				if err != nil {
@@ -230,7 +230,7 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
-			if test.dir == "emptydir" {
+			if test.dir == emptydir {
 				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
 				t.Log("Creating empty directory")
 				if err != nil {
