@@ -199,6 +199,13 @@ func TestRunTail(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
+			if test.dir == "testdata/empty-dir" {
+				err := os.Mkdir(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
+			}
 			ns, _ := SetupNamespace(t)
 
 			args := append(test.args, "--tail")
@@ -218,6 +225,13 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
+			}
+			if test.dir == "testdata/empty-dir" {
+				err := os.Mkdir(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
 			}
 
 			args := append(test.args, "--tail")
