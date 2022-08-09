@@ -6,7 +6,9 @@ featureId: verify
 aliases: [/docs/how-tos/verify]
 ---
 
-In skaffold v2.0.0-beta1, skaffold now supports running post-deployment verification tests.  This is done via a new `verify` phase and associated schema configuration that allows users to add a list of test containers (either standalone containers or built by skaffold) to be run post-deployment and monitored for success/failure. Below is an example of a `skaffold.yaml` file with a `verify` configuration that runs 3 verification tests (which all succeed) against deployments including a user built `integration-test-container`, a user built `metrics-test-container`, and a simple health check done via "off the shelf" alpine using it's wget:
+In skaffold `v2.0.0-beta1`, skaffold now supports running post-deployment verification tests.  This is done via a new `verify` phase and associated [`verify` schema configuration]({{< relref "/docs/references/yaml#verify" >}}) that allows users to add a list of test containers (either standalone containers or built by skaffold) to be run post-deployment and monitored for success/failure. Currently in the `v2.0.0-beta1` release the `verify` phase is not run in the `skaffold dev` flow but is only accessible via the standalone `skaffold verify` command which runs only the `verify` phase.
+
+Below is an example of a `skaffold.yaml` file with a `verify` configuration that runs 3 verification tests (which all succeed) against deployments including a user built `integration-test-container`, a user built `metrics-test-container`, and a simple health check done via "off the shelf" alpine using its installed `wget`:
 
 `skaffold.yaml`
 {{% readfile file="samples/verify/verify.yaml" %}}
@@ -42,11 +44,12 @@ and `skaffold verify` will exit with error code `0`
 
 If a test fails, for example changing the `alpine-wget` test to point to a URL that doesn't exist:
 ```yaml
-- name: alpine-curl
+- name: alpine-wget
   container:
-    name: alpine/curl
-    image: alpine/curl:3.15.4
-    args: ["http://incorrect-url"]
+    name: alpine-wget
+    image: alpine:3.15.4
+    command: ["/bin/sh"]
+    args: ["-c", "wget http://incorrect-url"]
 ```
 
 The following will occur (simulating a single test failure on one of the three tests):
