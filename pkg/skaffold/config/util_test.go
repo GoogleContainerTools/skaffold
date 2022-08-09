@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -442,6 +443,56 @@ func TestIsKindCluster(t *testing.T) {
 			isKind := IsKindCluster(test.context)
 
 			t.CheckDeepEqual(test.expectedIsKind, isKind)
+		})
+	}
+}
+
+func TestIsMixedPlatformCluster(t *testing.T) {
+	type platform struct {
+		os   string
+		arch string
+	}
+	tests := []struct {
+		description string
+		nodes       []platform
+		expected    bool
+	}{
+		{
+			description: "no nodes",
+			expected:    false,
+		},
+		{
+			description: "single platform nodes",
+			nodes: []platform{
+				{os: "linux", arch: "amd64"},
+				{os: "linux", arch: "amd64"},
+			},
+			expected: false,
+		},
+		{
+			description: "mixed platform nodes",
+			nodes: []platform{
+				{os: "linux", arch: "amd64"},
+				{os: "linux", arch: "amd64"},
+				{os: "linux", arch: "arm64"},
+			},
+			expected: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			nodes := &v1.NodeList{}
+			for _, n := range test.nodes {
+				nodes.Items = append(nodes.Items, v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: uuid.New().String(),
+					},
+					Status: v1.NodeStatus{NodeInfo: v1.NodeSystemInfo{MachineID: uuid.New().String(), Architecture: n.arch, OperatingSystem: n.os}},
+				})
+			}
+			cl := fake.NewSimpleClientset(nodes)
+			t.Override(&kubeclient.Client, func(kubeContext string) (kubernetes.Interface, error) { return cl, nil })
+			t.CheckDeepEqual(test.expected, IsMixedPlatformCluster(context.Background(), ""))
 		})
 	}
 }

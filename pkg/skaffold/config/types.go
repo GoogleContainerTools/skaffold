@@ -172,8 +172,9 @@ func (m Muted) mute(phase string) bool {
 }
 
 type Cluster struct {
-	Local       bool
-	PushImages  bool
-	LoadImages  bool
-	DefaultRepo StringOrUndefined
+	Local           bool
+	PushImages      bool
+	LoadImages      bool
+	IsMixedPlatform bool
+	DefaultRepo     StringOrUndefined
 }
