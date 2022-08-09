@@ -48,7 +48,7 @@ var tests = []struct {
 }{
 	{
 		description: "copying-empty-directory",
-		dir:         "emptydir",
+		dir:         emptydir,
 		pods:        []string{"empty-dir"},
 		targetLog:   "Hello world!",
 	},
