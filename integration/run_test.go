@@ -29,7 +29,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-const emptydir = "testdata/emptydir"
+const (
+	emptydir = "testdata/empty-dir"
+)
 
 // Note: `custom-buildx` is not included as it depends on having a
 // `skaffold-builder` builder configured and a registry to push to.
@@ -46,7 +48,7 @@ var tests = []struct {
 }{
 	{
 		description: "copying-empty-directory",
-		dir:         emptydir,
+		dir:         "emptydir",
 		pods:        []string{"empty-dir"},
 		targetLog:   "Hello world!",
 	},
@@ -176,8 +178,9 @@ func TestRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
 			args := append(test.args, "--cache-artifacts=false")
-			if test.dir == emptydir {
+			if test.dir == "emptydir" {
 				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
 				}
@@ -200,8 +203,9 @@ func TestRunTail(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
-			if test.dir == emptydir {
+			if test.dir == "emptydir" {
 				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
 				}
@@ -226,8 +230,9 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
-			if test.dir == emptydir {
+			if test.dir == "emptydir" {
 				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
 				}
