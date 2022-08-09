@@ -23,6 +23,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -285,6 +286,19 @@ func IsDir(path string) bool {
 	info, err := os.Stat(path)
 	// err could be permission-related
 	return (err == nil || !os.IsNotExist(err)) && info.IsDir()
+}
+
+// IsEmptyDir returns true for empty directories otherwise false
+func IsEmptyDir(path string) bool {
+	d, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer d.Close()
+	if _, err := d.ReadDir(1); err == io.EOF {
+		return true
+	}
+	return false
 }
 
 // IsHiddenDir returns if a directory is hidden.

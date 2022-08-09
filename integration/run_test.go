@@ -18,6 +18,7 @@ package integration
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+)
+
+const (
+	emptydir = "testdata/empty-dir"
 )
 
 // Note: `custom-buildx` is not included as it depends on having a
@@ -42,14 +47,14 @@ var tests = []struct {
 	targetLog   string
 }{
 	{
-		description: "copying directory",
-		dir:         "examples/getting-started",
-		pods:        []string{"getting-started"},
+		description: "copying-empty-directory",
+		dir:         emptydir,
+		pods:        []string{"empty-dir"},
 		targetLog:   "Hello world!",
 	},
 	{
 		description: "getting-started",
-		dir:         "testdata/getting-started",
+		dir:         "examples/getting-started",
 		pods:        []string{"getting-started"},
 		targetLog:   "Hello world!",
 	},
@@ -172,8 +177,14 @@ func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
-
 			args := append(test.args, "--cache-artifacts=false")
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
+			}
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
@@ -191,6 +202,13 @@ func TestRunTail(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
+			}
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
 			}
 			ns, _ := SetupNamespace(t)
 
@@ -211,6 +229,13 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
+			}
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
 			}
 
 			args := append(test.args, "--tail")
