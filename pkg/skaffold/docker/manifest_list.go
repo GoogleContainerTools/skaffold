@@ -20,13 +20,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
 // Describes the result of an image build.
@@ -38,7 +39,7 @@ type SinglePlatformImage struct {
 	Image string
 }
 
-// Returns a manifest list that contains the given images.
+// CreateManifestList returns a manifest list that contains the given images.
 func CreateManifestList(ctx context.Context, images []SinglePlatformImage, targetTag string) (string, error) {
 	adds := make([]mutate.IndexAddendum, len(images))
 
