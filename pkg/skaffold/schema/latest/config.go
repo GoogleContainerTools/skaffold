@@ -402,6 +402,20 @@ type GoogleCloudBuild struct {
 	// the build will be run in global(non-regional).
 	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations).
 	Region string `yaml:"region,omitempty"`
+
+	// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
+	// If unspecified, Skaffold uses the `docker/binfmt` image by default.
+	PlatformEmulatorInstallStep *PlatformEmulatorInstallStep `yaml:"platformEmulatorInstallStep,omitempty"`
+}
+
+// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
+type PlatformEmulatorInstallStep struct {
+	// Image specifies the image that will install the required tooling for QEMU emulation on the GoogleCloudBuild containers.
+	Image string `yaml:"image" yamltags:"required"`
+	// Args specifies arguments passed to the emulator installer image.
+	Args []string `yaml:"args,omitempty"`
+	// Entrypoint specifies the ENTRYPOINT argument to the emulator installer image.
+	Entrypoint string `yaml:"entrypoint,omitempty"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
