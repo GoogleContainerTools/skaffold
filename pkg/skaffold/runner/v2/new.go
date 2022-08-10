@@ -92,7 +92,14 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
-	platforms, err := platform.NewResolver(ctx, runCtx.Pipelines.All(), runCtx.Opts.Platforms, runCtx.Mode(), runCtx.KubeContext)
+	rOpts := platform.ResolverOpts{
+		KubeContext:               runCtx.KubeContext,
+		CliPlatformsSelection:     runCtx.Opts.Platforms,
+		CheckClusterNodePlatforms: runCtx.CheckClusterNodePlatforms(),
+		DisableMultiPlatformBuild: runCtx.DisableMultiPlatformBuild(),
+	}
+
+	platforms, err := platform.NewResolver(ctx, runCtx.Pipelines.All(), rOpts)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("getting target platforms: %w", err)

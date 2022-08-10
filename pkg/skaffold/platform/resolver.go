@@ -24,7 +24,6 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	coreV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -41,6 +40,13 @@ type Resolver struct {
 	platformsByImageName map[string]Matcher
 }
 
+type ResolverOpts struct {
+	KubeContext               string
+	CliPlatformsSelection     []string
+	DisableMultiPlatformBuild bool
+	CheckClusterNodePlatforms bool
+}
+
 func (r Resolver) GetPlatforms(imageName string) Matcher {
 	if r.platformsByImageName == nil {
 		return Matcher{}
@@ -48,28 +54,31 @@ func (r Resolver) GetPlatforms(imageName string) Matcher {
 	return r.platformsByImageName[imageName]
 }
 
-func NewResolver(ctx context.Context, pipelines []latest.Pipeline, cliPlatformsSelection []string, runMode config.RunMode, kubeContext string) (Resolver, error) {
+func NewResolver(ctx context.Context, pipelines []latest.Pipeline, opts ResolverOpts) (Resolver, error) {
 	r := Resolver{}
 	r.platformsByImageName = make(map[string]Matcher)
 
 	var fromCli, fromClusterNodes Matcher
 	var err error
-	fromCli, err = Parse(cliPlatformsSelection)
+	fromCli, err = Parse(opts.CliPlatformsSelection)
 	if err != nil {
 		return r, fmt.Errorf("failed to parse platforms: %w", err)
 	}
 	log.Entry(ctx).Debugf("CLI platforms provided: %q", fromCli)
 	instrumentation.AddCliBuildTargetPlatforms(fromCli.String())
 
-	if runMode == config.RunModes.Dev || runMode == config.RunModes.Debug || runMode == config.RunModes.Run {
-		fromClusterNodes, err = getClusterPlatforms(ctx, kubeContext, runMode == config.RunModes.Dev || runMode == config.RunModes.Debug)
+	if opts.CheckClusterNodePlatforms {
+		fromClusterNodes, err = getClusterPlatforms(ctx, opts.KubeContext)
 		if err != nil {
 			log.Entry(ctx).Debugf("failed to get cluster node details: %v", err)
 			log.Entry(ctx).Warnln("failed to detect active kubernetes cluster node platform. Specify the correct build platform in the `skaffold.yaml` file or using the `--platform` flag")
 		}
+		log.Entry(ctx).Debugf("platforms detected from active kubernetes cluster nodes: %q", fromClusterNodes)
+		instrumentation.AddDeployNodePlatforms(fromClusterNodes.String())
+	} else {
+		log.Entry(ctx).Debugln("platform detection from active kubernetes cluster is not enabled")
 	}
-	log.Entry(ctx).Debugf("platforms detected from active kubernetes cluster nodes: %q", fromClusterNodes)
-	instrumentation.AddDeployNodePlatforms(fromClusterNodes.String())
+
 	for _, pipeline := range pipelines {
 		platforms := fromCli
 		if platforms.IsEmpty() {
@@ -101,7 +110,9 @@ func NewResolver(ctx context.Context, pipelines []latest.Pipeline, cliPlatformsS
 					return r, fmt.Errorf("build target platforms %q do not match platform constraints %q defined for artifact %q", platforms, artifact.Platforms, artifact.ImageName)
 				}
 			}
-
+			if pl.IsMultiPlatform() && opts.DisableMultiPlatformBuild {
+				pl = selectOnePlatform(pl)
+			}
 			r.platformsByImageName[artifact.ImageName] = pl
 			log.Entry(ctx).Debugf("platforms selected for artifact %q: %q", artifact.ImageName, pl)
 		}
@@ -110,8 +121,7 @@ func NewResolver(ctx context.Context, pipelines []latest.Pipeline, cliPlatformsS
 }
 
 // GetClusterPlatforms returns the platforms for the active kubernetes cluster.
-// For `dev` or `debug` if there are multiple cluster node platforms, then it returns only one selection, preferably matching the host platform.
-func GetClusterPlatforms(ctx context.Context, kContext string, isDevOrDebug bool) (Matcher, error) {
+func GetClusterPlatforms(ctx context.Context, kContext string) (Matcher, error) {
 	client, err := kubernetesclient.Client(kContext)
 	if err != nil {
 		return Matcher{}, fmt.Errorf("failed to determine kubernetes cluster node platforms: %w", err)
@@ -137,18 +147,18 @@ func GetClusterPlatforms(ctx context.Context, kContext string, isDevOrDebug bool
 	for _, key := range keys {
 		m.Platforms = append(m.Platforms, set[key])
 	}
+	return m, nil
+}
 
-	if !isDevOrDebug || len(m.Platforms) <= 1 {
-		return m, nil
-	}
-
-	// If there's more than 1 node platform type and we're running `dev` or `debug`,
-	// then select the platform type that matches the host platform.
-	// If there's no match then just return the first node platform type found.
+func selectOnePlatform(m Matcher) Matcher {
+	// Select the platform type that matches the host platform if possible.
 	filtered := m.Intersect(getHostMatcher())
-	if len(filtered.Platforms) == 0 {
-		m.Platforms = m.Platforms[0:1] // guaranteed to have at least 1 element
-		return m, nil
+	if len(filtered.Platforms) != 0 {
+		return filtered
 	}
-	return filtered, nil
+	if len(m.Platforms) > 1 {
+		// If there's no match then just return the first node platform type found.
+		m.Platforms = m.Platforms[0:1]
+	}
+	return m
 }
