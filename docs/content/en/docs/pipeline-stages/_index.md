@@ -28,7 +28,6 @@ will not push artifacts to a remote repository.
 | [Tag]({{< relref "/docs/pipeline-stages/taggers" >}}) | tag images based on different policies |
 | [Test]({{< relref "/docs/pipeline-stages/testers" >}}) | run tests with testers |
 | [Deploy]({{< relref "/docs/pipeline-stages/deployers" >}}) |  deploy with kubectl, kustomize or helm |
-| [Verify]({{< relref "/docs/pipeline-stages/verify" >}}) |  verify deployments with specified test containers |
 | [File Sync]({{< relref "/docs/pipeline-stages/filesync" >}}) |  sync changed files directly to containers |
 | [Log Tailing]({{< relref "/docs/pipeline-stages/log-tailing" >}}) |  tail logs from workloads |
 | [Port Forwarding]({{< relref "/docs/pipeline-stages/port-forwarding" >}}) | forward ports from services and arbitrary resources to localhost  |
