@@ -348,7 +348,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.deployer.GetLogger().SetSince(time.Now())
 
 	// First render
-	manifests, err := r.Render(ctx, out, r.Builds, true)
+	manifests, err := r.Render(ctx, out, r.Builds, false)
 	r.deployManifests = manifests
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
