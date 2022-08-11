@@ -134,7 +134,12 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 	// add profiles to record and validate that config names are unique if specified
 	seen := make(map[string]bool)
 	for _, cfg := range parsed {
-		config := cfg.(*latest.SkaffoldConfig)
+		config, ok := cfg.(*latest.SkaffoldConfig)
+		if !ok {
+			log.Entry(context.TODO()).Debugf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg)
+			return nil, nil, fmt.Errorf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg)
+		}
+
 		for _, profile := range config.Profiles {
 			if !stringslice.Contains(r.allProfiles, profile.Name) {
 				r.allProfiles = append(r.allProfiles, profile.Name)
@@ -153,7 +158,12 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 
 	var configs SkaffoldConfigSet
 	for i, cfg := range parsed {
-		config := cfg.(*latest.SkaffoldConfig)
+		config, ok := cfg.(*latest.SkaffoldConfig)
+		if !ok {
+			log.Entry(context.TODO()).Debugf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg)
+			return nil, nil, fmt.Errorf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg)
+		}
+
 		processed, err := processEachConfig(ctx, config, cfgOpts, opts, r, i, fieldsOverrodeByProfile)
 		if err != nil {
 			return nil, nil, err
