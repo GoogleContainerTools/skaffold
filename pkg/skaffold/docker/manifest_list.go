@@ -30,6 +30,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 )
 
+// for testing
+var (
+	mutateAppendManifest = mutate.AppendManifests
+	remoteWriteIndex     = remote.WriteIndex
+)
+
 // Describes the result of an image build.
 type SinglePlatformImage struct {
 	// Platform (OS + architecture) associated with the image built.
@@ -49,7 +55,7 @@ func CreateManifestList(ctx context.Context, images []SinglePlatformImage, targe
 			return "", err
 		}
 
-		img, err := remote.Image(ref)
+		img, err := remoteImage(ref)
 		if err != nil {
 			return "", err
 		}
@@ -61,13 +67,13 @@ func CreateManifestList(ctx context.Context, images []SinglePlatformImage, targe
 			},
 		}
 	}
-	idx := mutate.AppendManifests(mutate.IndexMediaType(empty.Index, types.DockerManifestList), adds...)
+	idx := mutateAppendManifest(mutate.IndexMediaType(empty.Index, types.DockerManifestList), adds...)
 	targetRef, err := name.ParseReference(targetTag, name.WeakValidation)
 	if err != nil {
 		return "", err
 	}
 
-	err = remote.WriteIndex(targetRef, idx, remote.WithAuthFromKeychain(primaryKeychain))
+	err = remoteWriteIndex(targetRef, idx, remote.WithAuthFromKeychain(primaryKeychain))
 	if err != nil {
 		return "", err
 	}
