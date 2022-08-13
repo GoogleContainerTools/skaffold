@@ -136,8 +136,7 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 	for _, cfg := range parsed {
 		config, ok := cfg.(*latest.SkaffoldConfig)
 		if !ok {
-			log.Entry(context.TODO()).Debugf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg)
-			return nil, nil, sErrors.ConfigParsingError(fmt.Errorf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg))
+			return nil, nil, sErrors.SkaffoldConfigUpgradeErr(cfg.GetVersion())
 		}
 
 		for _, profile := range config.Profiles {
@@ -160,8 +159,7 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 	for i, cfg := range parsed {
 		config, ok := cfg.(*latest.SkaffoldConfig)
 		if !ok {
-			log.Entry(context.TODO()).Debugf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg)
-			return nil, nil, sErrors.ConfigParsingError(fmt.Errorf("failed interface conversion: %v is %T not *latest.SkaffoldConfig", cfg, cfg))
+			return nil, nil, sErrors.SkaffoldConfigUpgradeErr(cfg.GetVersion())
 		}
 
 		processed, err := processEachConfig(ctx, config, cfgOpts, opts, r, i, fieldsOverrodeByProfile)
