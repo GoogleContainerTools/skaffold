@@ -718,6 +718,8 @@ enum SuggestionCode {
   CONFIG_FIX_MISSING_MANIFEST_FILE = 710;
   // Enable remote repo sync, or clone manually
   CONFIG_ENABLE_REMOTE_REPO_SYNC = 711;
+  // Upgrade skaffold config version to latest
+  CONFIG_FIX_SKAFFOLD_CONFIG_VERSION = 712;
 
   // `skaffold inspect` command error suggestion codes
 

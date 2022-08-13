@@ -1159,6 +1159,7 @@ Enum for Suggestion codes
 | CONFIG_ALLOWLIST_transformers | 709 | Only the allow listed transformers are acceptable in skaffold-managed mode. |
 | CONFIG_FIX_MISSING_MANIFEST_FILE | 710 | Check mising manifest file section of config and fix as needed. |
 | CONFIG_ENABLE_REMOTE_REPO_SYNC | 711 | Enable remote repo sync, or clone manually |
+| CONFIG_FIX_SKAFFOLD_CONFIG_VERSION | 712 | Upgrade skaffold config version to latest |
 | INSPECT_USE_MODIFY_OR_NEW_PROFILE | 800 | Create new build env in a profile instead, or use the 'modify' command |
 | INSPECT_USE_ADD_BUILD_ENV | 801 | Check profile selection, or use the 'add' command instead |
 | INSPECT_CHECK_INPUT_PROFILE | 802 | Check profile flag value |
