@@ -1082,6 +1082,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | CONFIG_UNKNOWN_TRANSFORMER | 1215 | The transformer is not allowed in skaffold-managed mode. |
 | CONFIG_MISSING_MANIFEST_FILE_ERR | 1216 | Manifest file not found |
 | CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR | 1217 | Remote config repository cache not found and sync disabled |
+| CONFIG_UPGRADE_ERR | 1218 | Skaffold config version mismatch |
 | INSPECT_UNKNOWN_ERR | 1301 | Catch-all `skaffold inspect` command error |
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
 | INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR | 1303 | Trying to modify build environment that doesn't exist |
