@@ -232,6 +232,8 @@ func (rc *RunContext) GetWorkingDir() string                         { return rc
 func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
 func (rc *RunContext) GetNamespace() string                          { return rc.Opts.Namespace }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
+func (rc *RunContext) DisableMultiPlatformBuild() bool               { return rc.Opts.DisableMultiPlatformBuild }
+func (rc *RunContext) CheckClusterNodePlatforms() bool               { return rc.Opts.CheckClusterNodePlatforms }
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
 func (rc *RunContext) AutoSync() bool                                { return rc.Opts.AutoSync }
 func (rc *RunContext) ContainerDebugging() bool                      { return rc.Opts.ContainerDebugging }

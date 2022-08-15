@@ -59,6 +59,8 @@ type SkaffoldOptions struct {
 	Tail                       bool
 	WaitForConnection          bool
 	EnablePlatformNodeAffinity bool
+	DisableMultiPlatformBuild  bool
+	CheckClusterNodePlatforms  bool
 	MakePathsAbsolute          *bool
 	MultiLevelRepo             *bool
 	CloudRunProject            string

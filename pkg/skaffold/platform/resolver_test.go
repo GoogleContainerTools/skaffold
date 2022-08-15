@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	fakeclient "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -35,22 +34,22 @@ import (
 
 func TestResolver(t *testing.T) {
 	tests := []struct {
-		description      string
-		cliPlatforms     []string
-		clusterPlatforms []string
-		pipelines        []latest.Pipeline
-		runMode          config.RunMode
-		shouldErr        bool
-		expected         map[string]Matcher
+		description           string
+		cliPlatforms          []string
+		clusterPlatforms      []string
+		pipelines             []latest.Pipeline
+		checkClusterPlatforms bool
+		disableMultiPlatform  bool
+		shouldErr             bool
+		expected              map[string]Matcher
 	}{
 		{
-			description:      "all platforms specified valid for `build` mode",
+			description:      "all platforms specified valid; multiplat enabled",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/arm64"},
 			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
 				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
-			runMode: config.RunModes.Build,
 			expected: map[string]Matcher{
 				"img1": {Platforms: []v1.Platform{
 					{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "386"},
@@ -61,39 +60,28 @@ func TestResolver(t *testing.T) {
 			},
 		},
 		{
-			description:      "cluster platform mismatch for `dev` mode",
+			description:      "cluster platform mismatch; multiplat disabled",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/arm64"},
 			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
 				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
-			runMode: config.RunModes.Dev,
-			expected: map[string]Matcher{
-				"img1": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "386"}}},
-				"img2": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "386"}}},
-			},
-		},
-		{
-			description:      "cluster platform selected for `dev` mode",
-			cliPlatforms:     []string{"linux/amd64", "linux/386"},
-			clusterPlatforms: []string{"linux/amd64"},
-			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
-				Platforms: []string{"windows/amd64"},
-				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
-			runMode: config.RunModes.Dev,
+			checkClusterPlatforms: true,
+			disableMultiPlatform:  true,
 			expected: map[string]Matcher{
 				"img1": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}},
 				"img2": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}},
 			},
 		},
 		{
-			description:      "cluster platform selected for `debug` mode",
+			description:      "cluster platform selected; multiplat disabled",
 			cliPlatforms:     []string{"linux/amd64", "linux/386"},
 			clusterPlatforms: []string{"linux/amd64"},
 			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
 				Artifacts: []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}}}},
-			runMode: config.RunModes.Debug,
+			checkClusterPlatforms: true,
+			disableMultiPlatform:  true,
 			expected: map[string]Matcher{
 				"img1": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}},
 				"img2": {Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}}},
@@ -117,22 +105,75 @@ func TestResolver(t *testing.T) {
 			pipelines: []latest.Pipeline{{Build: latest.BuildConfig{
 				Platforms: []string{"windows/amd64"},
 				Artifacts: []*latest.Artifact{{ImageName: "img1", Platforms: []string{"darwin/arm64"}}, {ImageName: "img2"}}}}},
-			runMode:   config.RunModes.Dev,
-			shouldErr: true,
+			checkClusterPlatforms: true,
+			disableMultiPlatform:  true,
+			shouldErr:             true,
 		},
 	}
 
 	for _, test := range tests {
+		host := Matcher{Platforms: []v1.Platform{{Architecture: "amd64", OS: "linux"}}}
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getClusterPlatforms, func(context.Context, string, bool) (Matcher, error) {
+			t.Override(&getClusterPlatforms, func(context.Context, string) (Matcher, error) {
 				return Parse(test.clusterPlatforms)
 			})
+			t.Override(&getHostMatcher, func() Matcher { return host })
 
-			r, err := NewResolver(context.Background(), test.pipelines, test.cliPlatforms, test.runMode, "")
+			opts := ResolverOpts{
+				CliPlatformsSelection:     test.cliPlatforms,
+				DisableMultiPlatformBuild: test.disableMultiPlatform,
+				CheckClusterNodePlatforms: test.checkClusterPlatforms,
+			}
+			r, err := NewResolver(context.Background(), test.pipelines, opts)
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
 				t.CheckMapsMatch(test.expected, r.platformsByImageName)
 			}
+		})
+	}
+}
+
+func TestSelectOnePlatform(t *testing.T) {
+	host := Matcher{Platforms: []v1.Platform{{Architecture: "amd64", OS: "linux"}}}
+	tests := []struct {
+		description string
+		input       Matcher
+		expected    Matcher
+	}{
+		{
+			description: "empty",
+			input:       Matcher{},
+			expected:    Matcher{},
+		},
+		{
+			description: "all matcher",
+			input:       Matcher{All: true},
+			expected:    host,
+		},
+		{
+			description: "matching host",
+			input: Matcher{Platforms: []v1.Platform{
+				{Architecture: "arm", OS: "freebsd"},
+				{Architecture: "amd64", OS: "linux"},
+			}},
+			expected: host,
+		},
+		{
+			description: "not matching host",
+			input: Matcher{Platforms: []v1.Platform{
+				{Architecture: "arm", OS: "freebsd"},
+				{Architecture: "arm", OS: "linux"},
+			}},
+			expected: Matcher{Platforms: []v1.Platform{
+				{Architecture: "arm", OS: "freebsd"},
+			}},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&getHostMatcher, func() Matcher { return host })
+			actual := selectOnePlatform(test.input)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
@@ -146,7 +187,7 @@ func TestGetClusterPlatforms(t *testing.T) {
 		isDevOrDebug bool
 	}{
 		{
-			description: "homogeneous node platforms; not dev or debug",
+			description: "homogeneous node platforms",
 			nodes: []node{
 				{operatingSystem: "linux", architecture: "amd64"},
 				{operatingSystem: "linux", architecture: "amd64"},
@@ -158,20 +199,7 @@ func TestGetClusterPlatforms(t *testing.T) {
 			}},
 		},
 		{
-			description: "homogeneous node platforms; is dev or debug",
-			nodes: []node{
-				{operatingSystem: "linux", architecture: "amd64"},
-				{operatingSystem: "linux", architecture: "amd64"},
-				{operatingSystem: "linux", architecture: "amd64"},
-			},
-			host: Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "386"}}},
-			expected: Matcher{Platforms: []v1.Platform{
-				{OS: "linux", Architecture: "amd64"},
-			}},
-			isDevOrDebug: true,
-		},
-		{
-			description: "heterogeneous node platforms; not dev or debug",
+			description: "heterogeneous node platforms",
 			nodes: []node{
 				{operatingSystem: "linux", architecture: "amd64"},
 				{operatingSystem: "linux", architecture: "arm64"},
@@ -182,32 +210,6 @@ func TestGetClusterPlatforms(t *testing.T) {
 				{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "arm64"},
 			}},
 		},
-		{
-			description: "heterogeneous node platforms; is dev or debug; matching host",
-			nodes: []node{
-				{operatingSystem: "linux", architecture: "amd64"},
-				{operatingSystem: "linux", architecture: "arm64"},
-				{operatingSystem: "linux", architecture: "amd64"},
-			},
-			host: Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}}},
-			expected: Matcher{Platforms: []v1.Platform{
-				{OS: "linux", Architecture: "arm64"},
-			}},
-			isDevOrDebug: true,
-		},
-		{
-			description: "heterogeneous node platforms; is dev or debug; not matching host",
-			nodes: []node{
-				{operatingSystem: "linux", architecture: "amd64"},
-				{operatingSystem: "linux", architecture: "arm64"},
-				{operatingSystem: "linux", architecture: "amd64"},
-			},
-			host: Matcher{Platforms: []v1.Platform{{OS: "windows", Architecture: "amd64"}}},
-			expected: Matcher{Platforms: []v1.Platform{
-				{OS: "linux", Architecture: "amd64"},
-			}},
-			isDevOrDebug: true,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -215,7 +217,7 @@ func TestGetClusterPlatforms(t *testing.T) {
 				return fakeKubernetesClient(test.nodes)
 			})
 			t.Override(&getHostMatcher, func() Matcher { return test.host })
-			m, err := GetClusterPlatforms(context.Background(), "", test.isDevOrDebug)
+			m, err := GetClusterPlatforms(context.Background(), "")
 			t.CheckErrorAndDeepEqual(false, err, test.expected, m)
 		})
 	}

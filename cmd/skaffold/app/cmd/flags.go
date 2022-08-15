@@ -658,6 +658,31 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
 	},
 	{
+		Name:     "disable-multi-platform-build",
+		Usage:    "When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast",
+		Value:    &opts.DisableMultiPlatformBuild,
+		DefValue: false,
+		DefValuePerCommand: map[string]interface{}{
+			"dev":   true,
+			"debug": true,
+		},
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"build", "dev", "run", "debug"},
+	},
+	{
+		Name:     "check-cluster-node-platforms",
+		Usage:    "When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`",
+		Value:    &opts.CheckClusterNodePlatforms,
+		DefValue: false,
+		DefValuePerCommand: map[string]interface{}{
+			"dev":   true,
+			"debug": true,
+			"run":   true,
+		},
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"build", "dev", "run", "debug"},
+	},
+	{
 		Name:          "cloud-run-project",
 		Shorthand:     "",
 		Usage:         "The GCP Project ID or Project Number to deploy for Cloud Run",
