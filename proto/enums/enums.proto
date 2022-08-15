@@ -229,6 +229,10 @@ enum StatusCode {
     // Value provided to --platform flag cannot be parsed
     BUILD_UNKNOWN_PLATFORM_FLAG = 150;
 
+    // Cross-platform build failures
+    BUILD_CROSS_PLATFORM_ERR = 151;
+
+
     // Container errors
 
     // Container image pull error
@@ -598,7 +602,12 @@ enum SuggestionCode {
     SET_CLEANUP_FLAG = 116;
 
     // Build platform error suggestion codes
+
+    // Check value provided to the `--platform` flag
     BUILD_FIX_UNKNOWN_PLATFORM_FLAG = 117;
+
+    // Check if QEMU platform emulators are installed
+    BUILD_INSTALL_PLATFORM_EMULATORS = 118;
 
     // Deploy error suggestion codes
 

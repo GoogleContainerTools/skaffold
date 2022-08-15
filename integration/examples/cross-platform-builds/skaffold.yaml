@@ -6,6 +6,7 @@ build:
     context: .
     docker:
       dockerfile: Dockerfile
+      noCache: true
   tagPolicy:
     gitCommit: {}
   local:
