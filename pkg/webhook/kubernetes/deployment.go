@@ -45,9 +45,8 @@ const (
 
 // CreateDeployment creates a deployment for this pull request
 // The deployment has two containers:
-//  1. An init container to git clone the PR branch
-//  2. A container to run hugo server
-//
+// 		1. An init container to git clone the PR branch
+// 		2. A container to run hugo server
 // and one emptyDir volume to hold the git repository
 func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP string) (*appsv1.Deployment, error) {
 	client, err := kubernetesclient.DefaultClient()

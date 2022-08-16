@@ -24,10 +24,10 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta8 to v1beta9
-//  1. Additions:
-//     gitTagger/variant
-//  2. Removed all schemas associated with builder plugins
-//  3. No updates
+// 1. Additions:
+//    gitTagger/variant
+// 2. Removed all schemas associated with builder plugins
+// 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)

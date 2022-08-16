@@ -72,19 +72,19 @@ func hasCNBLauncherEntrypoint(ic ImageConfiguration) bool {
 // execution environment as configured by the various buildpacks, and then hands off to the
 // configured launch.  The CNB launcher supports three types of launches:
 //
-//  1. _predefined processes_ are named sets of command+arguments (similar to a container image's
-//     ENTRYPOINT/CMD).  Processes are created by the buildpacks, and oftentimes there is a
-//     buildpack that parses a user's `Procfile` and turns those contents into processes.
-//     There are two types of process definitions:
-//     - *direct*: these are passed uninterpreted to os.exec; the command is resolved in PATH
-//     Note that in practice we see direct-style definitions that execute `/bin/sh -c ...`
-//     - *script*: the command is treated as a shell script and passed to `sh -c`, and any remaining
-//     arguments on the container command-line are added to the shell and so become available
-//     as positional arguments (see https://github.com/buildpacks/lifecycle/issues/218#issuecomment-567091462).
-//     For example: `sh -c 'echo $0 $1 $2 $3' arg0 arg1 arg2 arg3` => `arg0 arg1 arg2 arg3`.
-//  2. _direct execs_: the user can provide a command-line which is treated like a _direct process_.
-//  3. _shell scripts_: the user can provide a shell script as the first argument and any
-//     remaining arguments are available as positional arguments like _script processes_.
+//   1. _predefined processes_ are named sets of command+arguments (similar to a container image's
+//      ENTRYPOINT/CMD).  Processes are created by the buildpacks, and oftentimes there is a
+//      buildpack that parses a user's `Procfile` and turns those contents into processes.
+//      There are two types of process definitions:
+//      - *direct*: these are passed uninterpreted to os.exec; the command is resolved in PATH
+//        Note that in practice we see direct-style definitions that execute `/bin/sh -c ...`
+//      - *script*: the command is treated as a shell script and passed to `sh -c`, and any remaining
+//        arguments on the container command-line are added to the shell and so become available
+//        as positional arguments (see https://github.com/buildpacks/lifecycle/issues/218#issuecomment-567091462).
+//        For example: `sh -c 'echo $0 $1 $2 $3' arg0 arg1 arg2 arg3` => `arg0 arg1 arg2 arg3`.
+//   2. _direct execs_: the user can provide a command-line which is treated like a _direct process_.
+//   3. _shell scripts_: the user can provide a shell script as the first argument and any
+//      remaining arguments are available as positional arguments like _script processes_.
 //
 // Script-style launches support referencing environment variables since they are expanded by the shell.
 //
@@ -92,14 +92,14 @@ func hasCNBLauncherEntrypoint(ic ImageConfiguration) bool {
 // the builder's lifecycle version, which is itself determined by the pack used to create a builder.
 //   - In Platform API 0.3 (pack 0.12 and earlier / lifecycle 0.8 and earlier) the image entrypoint
 //     is set to `/cnb/lifecycle/launcher`.  The launch is determined by:
-//     1. If there are arguments:
-//     1. If there is a single argument and it matches a process type, then the corresponding
-//     process is launched.
-//     2. If the first argument is `--` then the remaining arguments are treated as a _direct exec_.
-//     3. Otherwise the first argument is treated as a shell script launch with the first
-//     argument as the script and remaining arguments are positional arguments to the script.
-//     2. If there are no arguments, a process type is taken from the `CNB_PROCESS_TYPE`
-//     environment variable, defaulting to `web`.
+//       1. If there are arguments:
+//          1. If there is a single argument and it matches a process type, then the corresponding
+//             process is launched.
+//          2. If the first argument is `--` then the remaining arguments are treated as a _direct exec_.
+//          3. Otherwise the first argument is treated as a shell script launch with the first
+//             argument as the script and remaining arguments are positional arguments to the script.
+//       2. If there are no arguments, a process type is taken from the `CNB_PROCESS_TYPE`
+//          environment variable, defaulting to `web`.
 //   - In Platform API 0.4 (pack 0.13 / lifecycle 0.9) the process types are turned into executables
 //     found in `/cnb/process/`, and the image entrypoint is set to the corresponding executable for
 //     the default process type.  `CNB_PROCESS_TYPE` is ignored in this situation.  A different process

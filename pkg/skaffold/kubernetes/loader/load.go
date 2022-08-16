@@ -58,8 +58,8 @@ func NewImageLoader(kubeContext string, cli *kubectl.CLI) *ImageLoader {
 }
 
 // We only load images that
-//  1. Were identified as local images by the Runner, and
-//  2. Are part of the set of images being deployed by a given Deployer, so we don't duplicate effort
+//    1) Were identified as local images by the Runner, and
+//    2) Are part of the set of images being deployed by a given Deployer, so we don't duplicate effort
 func imagesToLoad(localImages, deployerImages, images []graph.Artifact) []graph.Artifact {
 	local := map[string]bool{}
 	for _, image := range localImages {

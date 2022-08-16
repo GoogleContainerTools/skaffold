@@ -24,10 +24,10 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta16 to v1beta17
-//  1. Additions:
-//     Add EphemeralStorage and ResourceStorage to Kaniko Pod Resource Requirement.
-//  2. Removals:
-//  3. No updates
+// 1. Additions:
+//    Add EphemeralStorage and ResourceStorage to Kaniko Pod Resource Requirement.
+// 2. Removals:
+// 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

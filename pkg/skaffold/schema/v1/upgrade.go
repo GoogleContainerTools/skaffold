@@ -24,12 +24,12 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1 to v2alpha1
-//  1. Additions:
-//     PortForwardResource.Address
-//     BuildpackArtifact.Env
-//     KanikoArtifact.Env
-//  2. Removals:
-//  3. No updates
+// 1. Additions:
+//    PortForwardResource.Address
+//    BuildpackArtifact.Env
+//    KanikoArtifact.Env
+// 2. Removals:
+// 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

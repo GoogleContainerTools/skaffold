@@ -24,10 +24,10 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v2alpha1 to v2alpha2
-//  1. Additions:
-//  2. Removals:
-//     kaniko.buildContext
-//  3. No updates
+// 1. Additions:
+// 2. Removals:
+//    kaniko.buildContext
+// 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)

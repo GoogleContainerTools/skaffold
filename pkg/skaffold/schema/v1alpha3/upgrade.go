@@ -29,17 +29,16 @@ import (
 //   - KanikoBuildContext.LocalDir, LocalDir
 //   - KanikoBuild.Image
 //   - Artifact.Sync
-//   - JibMavenArtifact, JibGradleArtifact
-//
+// 	 - JibMavenArtifact, JibGradleArtifact
 // 2. No removal
 // 3. Updates
-//   - EnvTemplate.Template is now optional in yaml
-//   - LocalBuild.SkipPush=false (v1alpha3) -> LocalBuild.Push=true (v1alpha4)_
-//   - kustomizePath -> path in yaml
-//   - HelmRelease, HelmPackaged, HelmFQNConfig fields are optional in yaml,
-//   - Artifact.imageName -> image, workspace -> context in yaml
-//   - DockerArtifact.dockerfilePath -> dockerfile in yaml
-//   - BazelArtifact.BuildTarget is optional in yaml
+//    - EnvTemplate.Template is now optional in yaml
+//    - LocalBuild.SkipPush=false (v1alpha3) -> LocalBuild.Push=true (v1alpha4)_
+//    - kustomizePath -> path in yaml
+// 		- HelmRelease, HelmPackaged, HelmFQNConfig fields are optional in yaml,
+//    - Artifact.imageName -> image, workspace -> context in yaml
+//		- DockerArtifact.dockerfilePath -> dockerfile in yaml
+//    - BazelArtifact.BuildTarget is optional in yaml
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig

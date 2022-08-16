@@ -27,7 +27,6 @@ import (
 )
 
 // ManifestList is a list of yaml manifests.
-//
 //nolint:golint
 type ManifestList [][]byte
 

@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package sync
 
 import (
@@ -746,42 +745,6 @@ func TestNewSyncItem(t *testing.T) {
 					"file.class": {"/some/file.class"},
 				},
 				Delete: nil,
-			},
-		},
-
-		// Infer with Ko
-		{
-			description: "infer: ko static assets",
-			artifact: &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					KoArtifact: &latest.KoArtifact{},
-				},
-				ImageName: "test",
-				Sync: &latest.Sync{
-					Infer: []string{"kodata/**/*"},
-				},
-			},
-			builds: []graph.Artifact{{
-				ImageName: "test",
-				Tag:       "test:123",
-			}},
-			evt: filemon.Events{
-				Added: []string{filepath.Join("kodata", "foo", "bar.html")},
-				Modified: []string{
-					filepath.Join("kodata", "frob", "baz.js"),
-					"main.go",
-				},
-				Deleted: []string{filepath.Join("kodata", "corge", "grault.css")},
-			},
-			expected: &Item{
-				Image: "test:123",
-				Copy: map[string][]string{
-					filepath.Join("kodata", "foo", "bar.html"): {"/var/run/ko/foo/bar.html"},
-					filepath.Join("kodata", "frob", "baz.js"):  {"/var/run/ko/frob/baz.js"},
-				},
-				Delete: map[string][]string{
-					filepath.Join("kodata", "corge", "grault.css"): {"/var/run/ko/corge/grault.css"},
-				},
 			},
 		},
 	}
