@@ -136,7 +136,7 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 	for _, cfg := range parsed {
 		config, ok := cfg.(*latest.SkaffoldConfig)
 		if !ok {
-			return nil, nil, sErrors.SkaffoldConfigUpgradeErr(cfg.GetVersion())
+			return nil, nil, sErrors.SkaffoldConfigUpgradeErr(cfg.GetVersion(), latest.Version)
 		}
 
 		for _, profile := range config.Profiles {
@@ -159,7 +159,7 @@ func getConfigs(ctx context.Context, cfgOpts configOpts, opts config.SkaffoldOpt
 	for i, cfg := range parsed {
 		config, ok := cfg.(*latest.SkaffoldConfig)
 		if !ok {
-			return nil, nil, sErrors.SkaffoldConfigUpgradeErr(cfg.GetVersion())
+			return nil, nil, sErrors.SkaffoldConfigUpgradeErr(cfg.GetVersion(), latest.Version)
 		}
 
 		processed, err := processEachConfig(ctx, config, cfgOpts, opts, r, i, fieldsOverrodeByProfile)

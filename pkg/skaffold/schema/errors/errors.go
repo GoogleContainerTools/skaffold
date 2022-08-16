@@ -202,8 +202,8 @@ func ConfigUnknownAPIVersionErr(version string) error {
 }
 
 // SkaffoldConfigUpgradeErr specifies that skaffold config needs to be upgraded to the latest version.
-func SkaffoldConfigUpgradeErr(version string) error {
-	msg := fmt.Sprintf("skaffold config version is %s not *latest.SkaffoldConfig", version)
+func SkaffoldConfigUpgradeErr(currentVersion, targetVersion string) error {
+	msg := fmt.Sprintf("skaffold cannot auto-upgrade the config from version %s to version %s", currentVersion, targetVersion)
 	return sErrors.NewError(fmt.Errorf(msg),
 		&proto.ActionableErr{
 			Message: msg,
@@ -211,7 +211,7 @@ func SkaffoldConfigUpgradeErr(version string) error {
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_CONFIG_FIX_SKAFFOLD_CONFIG_VERSION,
-					Action:         "Upgrade skaffold config version to the latest",
+					Action:         fmt.Sprintf("Upgrade skaffold config version to %s manually", targetVersion),
 				},
 			},
 		})
