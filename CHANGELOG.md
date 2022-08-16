@@ -1,3 +1,27 @@
+# v1.39.2 Release - 08/17/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.2/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.2/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.2/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+`https://storage.googleapis.com/skaffold/releases/v1.39.2/skaffold-windows-amd64.exe`
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.39.2`
+
+Note: This release is a patch to v1.39.1, fixing an `index out of range error` caused when rebuilding an artifact with a new tag [#7587].
+
+Fixes:
+* fix: index out of range error [#7593](https://github.com/GoogleContainerTools/skaffold/pull/7593)
+
 # v1.39.1 Release - 06/28/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
@@ -21,7 +45,6 @@ Note: This release is patch to v1.39.1 which fixes issue helm debug issue for cl
 
 Fixes:
 * Revert Helm 3.0 and Helm 3.1 Deployer changes [#7582](https://github.com/GoogleContainerTools/skaffold/issues/7582)
-* fix: index out of range error [#7593](https://github.com/GoogleContainerTools/skaffold/pull/7593)
 
 # v1.39.0 Release - 06/23/2022
 **Linux amd64**
