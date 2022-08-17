@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package runner
 
 import (
 	"bytes"
@@ -29,8 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -79,7 +78,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 			KubeContext: "does-not-exist",
 		}
 
-		deployer, err := runner.GetDeployer(context.Background(), runCtx, nil, "", false)
+		deployer, err := GetDeployer(context.Background(), runCtx, nil, "", false)
 		t.RequireNoError(err)
 		r := SkaffoldRunner{
 			runCtx:   runCtx,

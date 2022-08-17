@@ -26,7 +26,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 func TestPortForward(t *testing.T) {

@@ -46,7 +46,7 @@ require (
 	github.com/golang/glog v1.0.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/google/go-containerregistry v0.8.1-0.20220209165246-a44adc326839
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/ko v0.11.2
