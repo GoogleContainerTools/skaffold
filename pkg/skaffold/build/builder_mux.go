@@ -128,6 +128,11 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		return built, nil
 	}
 
+	err := checkMultiplatformHaveRegistry(ctx, b, artifacts, resolver)
+	if err != nil {
+		return nil, err
+	}
+
 	ar, err := InOrder(ctx, out, tags, resolver, artifacts, builderF, b.concurrency, b.store)
 	if err != nil {
 		return nil, err
@@ -196,4 +201,21 @@ func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
 	}
 	log.Entry(ctx).Infof("final build concurrency value is %d", minConcurrency)
 	return minConcurrency
+}
+
+func checkMultiplatformHaveRegistry(ctx context.Context, b *BuilderMux, artifacts []*latest.Artifact, platforms platform.Resolver) error {
+	for _, artifact := range artifacts {
+		pb := b.byImageName[artifact.ImageName]
+		hasExternalRegistry := pb.PushImages()
+		pl, err := filterBuildEnvSupportedPlatforms(pb.SupportedPlatforms(), platforms.GetPlatforms(artifact.ImageName))
+		if err != nil {
+			return err
+		}
+
+		if pl.IsMultiPlatform() && !hasExternalRegistry {
+			return fmt.Errorf("WIP")
+		}
+	}
+
+	return nil
 }
