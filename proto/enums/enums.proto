@@ -396,6 +396,8 @@ enum StatusCode {
     INIT_CREATE_WATCH_TRIGGER_ERROR = 908;
     // Skaffold encountered an error when evaluating artifact dependencies
     INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
+    // No Location was specified for Cloud Run
+    INIT_CLOUD_RUN_LOCATION_ERROR = 910;
 
     // Deploy errors
 
@@ -633,6 +635,9 @@ enum SuggestionCode {
     // Install kubectl tool
     INSTALL_KUBECTL = 220;
 
+    // Specify Cloud Run Location
+    SPECIFY_CLOUD_RUN_LOCATION = 230;
+    
     // Container Run time error
 
     // Container run error
@@ -641,6 +646,7 @@ enum SuggestionCode {
     CHECK_READINESS_PROBE = 302;
     // Check Container image
     CHECK_CONTAINER_IMAGE = 303;
+
 
 
     // Common infra errors
