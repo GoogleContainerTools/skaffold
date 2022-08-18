@@ -128,7 +128,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		return built, nil
 	}
 
-	err := checkMultiplatformHaveRegistry(ctx, b, artifacts, resolver)
+	err := checkMultiplatformHaveRegistry(b, artifacts, resolver)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
 	return minConcurrency
 }
 
-func checkMultiplatformHaveRegistry(ctx context.Context, b *BuilderMux, artifacts []*latest.Artifact, platforms platform.Resolver) error {
+func checkMultiplatformHaveRegistry(b *BuilderMux, artifacts []*latest.Artifact, platforms platform.Resolver) error {
 	for _, artifact := range artifacts {
 		pb := b.byImageName[artifact.ImageName]
 		hasExternalRegistry := pb.PushImages()
@@ -213,7 +213,7 @@ func checkMultiplatformHaveRegistry(ctx context.Context, b *BuilderMux, artifact
 		}
 
 		if pl.IsMultiPlatform() && !hasExternalRegistry {
-			return fmt.Errorf("WIP")
+			return noRegistryForMultiplatformBuildErr(fmt.Errorf("multi-platform build requires pushing images to a valid container registry"))
 		}
 	}
 

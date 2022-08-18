@@ -240,7 +240,8 @@ enum StatusCode {
 
     // Cross-platform build failures
     BUILD_CROSS_PLATFORM_ERR = 151;
-
+    // Multi-platfor build fails due to no container registry set
+    BUILD_CROSS_PLATFORM_NO_REGISTRY_ERR = 152;
 
     // Container errors
 
@@ -626,6 +627,9 @@ enum SuggestionCode {
 
     // Check if QEMU platform emulators are installed
     BUILD_INSTALL_PLATFORM_EMULATORS = 118;
+
+    // Set --push and container registry to run a multi-platform build
+    SET_PUSH_AND_CONTAINER_REGISTRY = 119;
 
     // Deploy error suggestion codes
 

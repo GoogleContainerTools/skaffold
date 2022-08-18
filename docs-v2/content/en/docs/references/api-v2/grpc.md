@@ -1095,6 +1095,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | BUILD_GET_CLOUD_BUILD_CLIENT_ERR | 145 | GCB error to get cloud build client to perform GCB operations. |
 | BUILD_UNKNOWN_PLATFORM_FLAG | 150 | Value provided to --platform flag cannot be parsed |
 | BUILD_CROSS_PLATFORM_ERR | 151 | Cross-platform build failures |
+| BUILD_CROSS_PLATFORM_NO_REGISTRY_ERR | 152 | Multi-platfor build fails due to no container registry set |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -1266,6 +1267,7 @@ Enum for Suggestion codes
 | SET_CLEANUP_FLAG | 116 | Set Cleanup flag for skaffold command. |
 | BUILD_FIX_UNKNOWN_PLATFORM_FLAG | 117 | Check value provided to the `--platform` flag |
 | BUILD_INSTALL_PLATFORM_EMULATORS | 118 | Check if QEMU platform emulators are installed |
+| SET_PUSH_AND_CONTAINER_REGISTRY | 119 | Set --push and container registry to run a multi-platform build |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
