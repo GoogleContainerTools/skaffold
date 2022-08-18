@@ -723,7 +723,7 @@ type CloudRunDeploy struct {
 
 	// Region GCP location to use for the Cloud Run Deploy.
 	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
-	Region string `yaml:"region,omitempty" yamltags:"required"`
+	Region string `yaml:"region,omitempty"`
 }
 
 // DockerDeploy uses the `docker` CLI to create application containers in Docker.

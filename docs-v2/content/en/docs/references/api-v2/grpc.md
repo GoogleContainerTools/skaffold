@@ -1162,6 +1162,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INIT_CACHE_ERROR | 907 | Skaffold encountered an error validating the artifact cache |
 | INIT_CREATE_WATCH_TRIGGER_ERROR | 908 | Skaffold encountered an error when configuring file watching |
 | INIT_CREATE_ARTIFACT_DEP_ERROR | 909 | Skaffold encountered an error when evaluating artifact dependencies |
+| INIT_CLOUD_RUN_LOCATION_ERROR | 910 | No Location was specified for Cloud Run |
 | DEPLOY_CLUSTER_CONNECTION_ERR | 1001 | Unable to connect to cluster |
 | DEPLOY_DEBUG_HELPER_RETRIEVE_ERR | 1002 | Could not retrieve debug helpers. |
 | DEPLOY_CLEANUP_ERR | 1003 | Deploy clean up error |
@@ -1274,6 +1275,7 @@ Enum for Suggestion codes
 | INVALID_KPT_MANIFESTS | 208 | check the Kptfile validation. |
 | ALIGN_KPT_INVENTORY | 209 | align the inventory info in kpt live apply. |
 | INSTALL_KUBECTL | 220 | Install kubectl tool |
+| SPECIFY_CLOUD_RUN_LOCATION | 230 | Specify Cloud Run Location |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |

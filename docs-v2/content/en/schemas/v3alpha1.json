@@ -966,9 +966,6 @@
       "x-intellij-html-description": "<em>alpha</em> used to mount host volumes or directories in the build container."
     },
     "CloudRunDeploy": {
-      "required": [
-        "region"
-      ],
       "properties": {
         "projectid": {
           "type": "string",
