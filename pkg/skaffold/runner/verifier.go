@@ -21,7 +21,7 @@ import (
 	"errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/verify"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/verify/docker"
 )

@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Skaffold Authors
+Copyright 2022 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package main
 
 import (
-	"context"
-	"io"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig manifest.ManifestListByConfig) error {
-	return r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
+const defaultStaticPath = "kodata" // the value to use for local development
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "%+v", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	staticPath := os.Getenv("KO_DATA_PATH")
+	if staticPath == "" {
+		staticPath = defaultStaticPath
+	}
+	http.Handle("/", http.FileServer(http.Dir(staticPath)))
+	log.Println("Listening on port 8080")
+	return http.ListenAndServe(":8080", nil)
 }

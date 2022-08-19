@@ -84,6 +84,78 @@ This release marks the culmination of lots of hard work across multiple teams, o
 - Tuan Anh Pham
 - Yuwen Ma
 
+# v1.39.1 Release - 06/28/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.1/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.1/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.39.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.39.1`
+
+Note: This release is patch to v1.39.0 which fixes a helm debug issue for client using Helm 3.1 and above; and fixes an index out of range error seen in some cases.
+
+Fixes:
+* Revert Helm 3.0 and Helm 3.1 Deployer changes [#7582](https://github.com/GoogleContainerTools/skaffold/issues/7582)
+* fix: index out of range error [#7593](https://github.com/GoogleContainerTools/skaffold/pull/7593)
+
+# v1.39.0 Release - 06/23/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.39.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.39.0`
+
+Note: This release comes with a new config version, `v2beta29`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+
+New Features and Additions:
+* feat: add `hostPlatform` and `targetPlatforms` to `v1` and `v2` skaffold events.  [#7559](https://github.com/GoogleContainerTools/skaffold/pull/7559)
+* feat: Add privateWorkerPool and location configuration for gcb [#7440](https://github.com/GoogleContainerTools/skaffold/pull/7440)
+
+* Fixes:
+* fix: add panic fix and recovery logic to reflection for yaml line number info [#7577](https://github.com/GoogleContainerTools/skaffold/pull/7577)
+* fix: add default value for status-check flag when no value is specified [7278](https://github.com/GoogleContainerTools/skaffold/pull/7278)
+* fix: fix kubectl result formatting for debug logs [#7293](https://github.com/GoogleContainerTools/skaffold/pull/7293)
+* fix: change error to warning for build platform [#7402](https://github.com/GoogleContainerTools/skaffold/pull/7402)
+
+Docs, Test, and Release Updates:
+* doc: remove image build from the render command decription [#7569](https://github.com/GoogleContainerTools/skaffold/pull/7569)
+
+Huge thanks goes out to all of our contributors for this release:
+- Aaron Prindle
+- Brian de Alwis
+- Gaurav
+- Marlon Gamez
+- Renzo Rojas
+- Tejal Desai
+- ericzzzzzzz
+- neilnaveen
+
+
 # v1.37.2 Release - 04/29/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.37.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`

@@ -1094,6 +1094,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | BUILD_GET_CLOUD_STORAGE_CLIENT_ERR | 144 | GCB error to get cloud storage client to perform GCS operation. |
 | BUILD_GET_CLOUD_BUILD_CLIENT_ERR | 145 | GCB error to get cloud build client to perform GCB operations. |
 | BUILD_UNKNOWN_PLATFORM_FLAG | 150 | Value provided to --platform flag cannot be parsed |
+| BUILD_CROSS_PLATFORM_ERR | 151 | Cross-platform build failures |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -1161,6 +1162,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INIT_CACHE_ERROR | 907 | Skaffold encountered an error validating the artifact cache |
 | INIT_CREATE_WATCH_TRIGGER_ERROR | 908 | Skaffold encountered an error when configuring file watching |
 | INIT_CREATE_ARTIFACT_DEP_ERROR | 909 | Skaffold encountered an error when evaluating artifact dependencies |
+| INIT_CLOUD_RUN_LOCATION_ERROR | 910 | No Location was specified for Cloud Run |
 | DEPLOY_CLUSTER_CONNECTION_ERR | 1001 | Unable to connect to cluster |
 | DEPLOY_DEBUG_HELPER_RETRIEVE_ERR | 1002 | Could not retrieve debug helpers. |
 | DEPLOY_CLEANUP_ERR | 1003 | Deploy clean up error |
@@ -1262,7 +1264,8 @@ Enum for Suggestion codes
 | FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME | 114 | Executing extractContainerNameFromNetworkMode with a non valid mode (only container mode allowed) |
 | RUN_DOCKER_PRUNE | 115 | Prune Docker image |
 | SET_CLEANUP_FLAG | 116 | Set Cleanup flag for skaffold command. |
-| BUILD_FIX_UNKNOWN_PLATFORM_FLAG | 117 | Build platform error suggestion codes |
+| BUILD_FIX_UNKNOWN_PLATFORM_FLAG | 117 | Check value provided to the `--platform` flag |
+| BUILD_INSTALL_PLATFORM_EMULATORS | 118 | Check if QEMU platform emulators are installed |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
@@ -1273,6 +1276,7 @@ Enum for Suggestion codes
 | INVALID_KPT_MANIFESTS | 208 | check the Kptfile validation. |
 | ALIGN_KPT_INVENTORY | 209 | align the inventory info in kpt live apply. |
 | INSTALL_KUBECTL | 220 | Install kubectl tool |
+| SPECIFY_CLOUD_RUN_LOCATION | 230 | Specify Cloud Run Location |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |

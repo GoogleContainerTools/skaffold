@@ -39,7 +39,7 @@ Let's test this in a [sample Golang](https://github.com/GoogleContainerTools/ska
   skaffold dev --default-repo=your/container/registy
   ```
 
-* Skaffold will detect the cluster node platform `linux/amd64` and build the image for this platform:
+  Skaffold will detect the cluster node platform `linux/amd64` and build the image for this platform:
 
   ```cmd
   skaffold dev --default-repo=gcr.io/k8s-skaffold
@@ -64,7 +64,7 @@ Let's test this in a [sample Golang](https://github.com/GoogleContainerTools/ska
 
 * Now set the active Kubernetes context to a cluster containing only `linux/arm64` nodes. See [here](https://cloud.google.com/kubernetes-engine/docs/how-to/prepare-arm-workloads-for-deployment) to know how you can create an ARM GKE cluster.
 
-* Re-running the `dev` command will now build a `linux/arm64` image.
+  Re-running the `dev` command will now build a `linux/arm64` image.
 
   ```cmd
   skaffold dev --default-repo=gcr.io/k8s-skaffold
@@ -75,13 +75,13 @@ Let's test this in a [sample Golang](https://github.com/GoogleContainerTools/ska
 
 * Now set the active Kubernetes context to a cluster containing both `linux/arm64` and `linux/amd64` nodes. You can create a GKE cluster with 2 node pools, one having `linux/amd64` nodes, and the other having `linux/arm64` nodes.
 
-* Re-run the `dev` command but with an explicit platform target this time.
+  Re-run the `dev` command but with an explicit platform target this time via the `--platform` flag. If we don't provide the target platform explicitly then Skaffold will choose one between `linux/amd64` and `linux/arm64`, trying to match your local dev machine architecture.
 
   ```cmd
   skaffold dev --default-repo=your/container/registy --platform=linux/amd64
   ```
 
-* Skaffold will build a `linux/amd64` image and insert a `nodeAffinity` definition to the `Pod` so that it get scheduled on the matching architecture node.
+  Skaffold will build a `linux/amd64` image and insert a `nodeAffinity` definition to the `Pod` so that it gets scheduled on the matching architecture node.
 
   ```cmd
   skaffold dev --default-repo=gcr.io/k8s-skaffold --platform=linux/amd64
@@ -130,14 +130,16 @@ Skaffold also supports cross-architecture builds on [Google Cloud Build](https:/
 
 A [multi-arch image](https://www.docker.com/blog/multi-arch-build-and-images-the-simple-way/) is an image that can support multiple architectures. It looks like a single image with a single tag, but is actually a list of images targeting multiple architectures organized by an [image index](https://github.com/opencontainers/image-spec/blob/main/image-index.md). When you deploy a multi-arch image to a cluster, the container runtime automatically chooses the right image that is compatible with the architecture of the node to which it is being deployed. This simplifies targeting multiple clusters of different architecture nodes, and/or mixed-architecture nodes.
 
-Skaffold supports building multi-platform images natively for the [jib builder]({{<relref "/docs/pipeline-stages/builders/jib" >}}), the [ko builder]({{<relref "/docs/pipeline-stages/builders/ko">}}) and the [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}). For other builders that support building cross-architecture images, Skaffold will iteratively build a single platform image for each target architecture and stitch them together into a multi-platform image, and push it to the registry.
+Skaffold supports building multi-platform images natively using the [jib builder]({{<relref "/docs/pipeline-stages/builders/jib" >}}), the [ko builder]({{<relref "/docs/pipeline-stages/builders/ko">}}) and the [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}). For other builders that support building cross-architecture images, Skaffold will iteratively build a single platform image for each target architecture and stitch them together into a multi-platform image, and push it to the registry.
+
+![multi-arch-flow](/images/multi-arch-flow.png)
 
 Let's test this in the same [sample Golang](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/cross-platform-builds) project as before:
 
 * Run this command to build for the target architectures `linux/amd64` and `linux/arm64`:
 
   ```cmd
-  skaffold dev -t latest --default-repo=your/container/registy --platform=linux/amd64,linux/arm64
+  skaffold build -t latest --default-repo=your/container/registy --platform=linux/amd64,linux/arm64
   ...
   Building [skaffold-example]...
   Target platforms: [linux/amd64,linux/arm64]

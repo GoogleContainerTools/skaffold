@@ -238,6 +238,10 @@ enum StatusCode {
     // Value provided to --platform flag cannot be parsed
     BUILD_UNKNOWN_PLATFORM_FLAG = 150;
 
+    // Cross-platform build failures
+    BUILD_CROSS_PLATFORM_ERR = 151;
+
+
     // Container errors
 
     // Container image pull error
@@ -404,6 +408,8 @@ enum StatusCode {
     INIT_CREATE_WATCH_TRIGGER_ERROR = 908;
     // Skaffold encountered an error when evaluating artifact dependencies
     INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
+    // No Location was specified for Cloud Run
+    INIT_CLOUD_RUN_LOCATION_ERROR = 910;
 
     // Deploy errors
 
@@ -614,7 +620,12 @@ enum SuggestionCode {
     SET_CLEANUP_FLAG = 116;
 
     // Build platform error suggestion codes
+
+    // Check value provided to the `--platform` flag
     BUILD_FIX_UNKNOWN_PLATFORM_FLAG = 117;
+
+    // Check if QEMU platform emulators are installed
+    BUILD_INSTALL_PLATFORM_EMULATORS = 118;
 
     // Deploy error suggestion codes
 
@@ -641,6 +652,9 @@ enum SuggestionCode {
     // Install kubectl tool
     INSTALL_KUBECTL = 220;
 
+    // Specify Cloud Run Location
+    SPECIFY_CLOUD_RUN_LOCATION = 230;
+    
     // Container Run time error
 
     // Container run error
@@ -649,6 +663,8 @@ enum SuggestionCode {
     CHECK_READINESS_PROBE = 302;
     // Check Container image
     CHECK_CONTAINER_IMAGE = 303;
+
+
 
     // Common infra errors
 

@@ -966,9 +966,6 @@
       "x-intellij-html-description": "<em>alpha</em> used to mount host volumes or directories in the build container."
     },
     "CloudRunDeploy": {
-      "required": [
-        "region"
-      ],
       "properties": {
         "projectid": {
           "type": "string",
@@ -1894,6 +1891,11 @@
           "x-intellij-html-description": "image that runs a Cloud Native Buildpacks build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/k8s-skaffold/pack"
         },
+        "platformEmulatorInstallStep": {
+          "$ref": "#/definitions/PlatformEmulatorInstallStep",
+          "description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild. If unspecified, Skaffold uses the `docker/binfmt` image by default.",
+          "x-intellij-html-description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild. If unspecified, Skaffold uses the <code>docker/binfmt</code> image by default."
+        },
         "projectId": {
           "type": "string",
           "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
@@ -1930,7 +1932,8 @@
         "koImage",
         "concurrency",
         "workerPool",
-        "region"
+        "region",
+        "platformEmulatorInstallStep"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -3138,6 +3141,41 @@
       "type": "object",
       "description": "describes a lifecycle hook definition to execute on a named container.",
       "x-intellij-html-description": "describes a lifecycle hook definition to execute on a named container."
+    },
+    "PlatformEmulatorInstallStep": {
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies arguments passed to the emulator installer image.",
+          "x-intellij-html-description": "specifies arguments passed to the emulator installer image.",
+          "default": "[]"
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "specifies the ENTRYPOINT argument to the emulator installer image.",
+          "x-intellij-html-description": "specifies the ENTRYPOINT argument to the emulator installer image."
+        },
+        "image": {
+          "type": "string",
+          "description": "specifies the image that will install the required tooling for QEMU emulation on the GoogleCloudBuild containers.",
+          "x-intellij-html-description": "specifies the image that will install the required tooling for QEMU emulation on the GoogleCloudBuild containers."
+        }
+      },
+      "preferredOrder": [
+        "image",
+        "args",
+        "entrypoint"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.",
+      "x-intellij-html-description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild."
     },
     "PortForwardResource": {
       "properties": {

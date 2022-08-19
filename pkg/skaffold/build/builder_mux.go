@@ -99,11 +99,18 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 			return "", err
 		}
 		r := hooks.BuildRunner(artifact.LifecycleHooks, hooksOpts)
-		var built string
 		if err = r.RunPreHooks(ctx, out); err != nil {
 			return "", err
 		}
-		if built, err = artifactBuilder(ctx, out, artifact, tag, platforms); err != nil {
+		var built string
+
+		if platforms.IsMultiPlatform() && !SupportsMultiPlatformBuild(*artifact) {
+			built, err = CreateMultiPlatformImage(ctx, out, artifact, tag, platforms, artifactBuilder)
+		} else {
+			built, err = artifactBuilder(ctx, out, artifact, tag, platforms)
+		}
+
+		if err != nil {
 			return "", err
 		}
 
@@ -117,8 +124,10 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		if err = r.RunPostHooks(ctx, out); err != nil {
 			return "", err
 		}
+
 		return built, nil
 	}
+
 	ar, err := InOrder(ctx, out, tags, resolver, artifacts, builderF, b.concurrency, b.store)
 	if err != nil {
 		return nil, err

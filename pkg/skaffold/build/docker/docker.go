@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -123,10 +124,13 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
-	cmd.Stderr = out
+
+	var errBuffer bytes.Buffer
+	stderr := io.MultiWriter(out, &errBuffer)
+	cmd.Stderr = stderr
 
 	if err := util.RunCmd(ctx, cmd); err != nil {
-		return "", fmt.Errorf("running build: %w", err)
+		return "", tryExecFormatErr(fmt.Errorf("running build: %w", err), errBuffer)
 	}
 
 	return b.localDocker.ImageID(ctx, opts.Tag)
