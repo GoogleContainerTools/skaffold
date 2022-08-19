@@ -494,8 +494,8 @@ const (
 	StatusCode_BUILD_DOCKER_UNAUTHORIZED StatusCode = 106
 	// Docker system build error
 	StatusCode_BUILD_DOCKER_SYSTEM_ERR StatusCode = 107
-	// Docker build error due to Docker build container is already in the desired
-	// state
+	// Docker build error due to Docker build container is already in the
+	// desired state
 	StatusCode_BUILD_DOCKER_NOT_MODIFIED_ERR StatusCode = 108
 	// Docker build error indicating a feature not supported
 	StatusCode_BUILD_DOCKER_NOT_IMPLEMENTED_ERR StatusCode = 109
@@ -675,8 +675,8 @@ const (
 	StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS StatusCode = 703
 	// Failed to configure watcher for Skaffold configuration file.
 	StatusCode_DEVINIT_REGISTER_CONFIG_DEP StatusCode = 704
-	// Failed to configure watcher for build dependencies for a base image with v1
-	// manifest.
+	// Failed to configure watcher for build dependencies for a base image with
+	// v1 manifest.
 	StatusCode_DEVINIT_UNSUPPORTED_V1_MANIFEST StatusCode = 705
 	// Failed to configure watcher for render dependencies in dev loop
 	StatusCode_DEVINIT_REGISTER_RENDER_DEPS StatusCode = 706
@@ -686,7 +686,8 @@ const (
 	StatusCode_STATUSCHECK_DEADLINE_EXCEEDED StatusCode = 801
 	// Build Cancelled
 	StatusCode_BUILD_CANCELLED StatusCode = 802
-	// Deploy cancelled due to user cancellation or one or more deployers failed.
+	// Deploy cancelled due to user cancellation or one or more deployers
+	// failed.
 	StatusCode_DEPLOY_CANCELLED StatusCode = 803
 	// Docker build cancelled.
 	StatusCode_BUILD_DOCKER_CANCELLED StatusCode = 804
@@ -733,7 +734,8 @@ const (
 	StatusCode_DEPLOY_KUBECTL_VERSION_ERR StatusCode = 1109
 	// User specified offline mode for rendering but remote manifests presents.
 	StatusCode_DEPLOY_KUBECTL_OFFLINE_MODE_ERR StatusCode = 1010
-	// Error waiting for previous version deletion before next version is active.
+	// Error waiting for previous version deletion before next version is
+	// active.
 	StatusCode_DEPLOY_ERR_WAITING_FOR_DELETION StatusCode = 1011
 	// Error reading manifests
 	StatusCode_DEPLOY_READ_MANIFEST_ERR StatusCode = 1012
@@ -1400,7 +1402,8 @@ const (
 	SuggestionCode_CONFIG_FIX_API_VERSION SuggestionCode = 707
 	// Only the allow listed validators are acceptable in skaffold-managed mode.
 	SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS SuggestionCode = 708
-	// Only the allow listed transformers are acceptable in skaffold-managed mode.
+	// Only the allow listed transformers are acceptable in skaffold-managed
+	// mode.
 	SuggestionCode_CONFIG_ALLOWLIST_transformers SuggestionCode = 709
 	// Check mising manifest file section of config and fix as needed.
 	SuggestionCode_CONFIG_FIX_MISSING_MANIFEST_FILE SuggestionCode = 710
