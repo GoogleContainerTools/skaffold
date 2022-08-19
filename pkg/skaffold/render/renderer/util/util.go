@@ -37,7 +37,9 @@ type GenerateHydratedManifestsOptions struct {
 	TransformAllowList         map[apim.GroupKind]latest.ResourceFilter
 	TransformDenylist          map[apim.GroupKind]latest.ResourceFilter
 	EnablePlatformNodeAffinity bool
+	EnableGKEARMNodeToleration bool
 	Offline                    bool
+	KubeContext                string
 }
 
 func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, ns string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
@@ -69,6 +71,19 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 		}
 		endTrace()
 	}
+	var platforms manifest.PodPlatforms
+
+	if opts.EnableGKEARMNodeToleration && isGKECluster(opts.KubeContext) {
+		rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setGKEARMToleration")
+		platforms, err = manifests.GetImagePlatforms(rCtx, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
+		if err != nil {
+			return nil, err
+		}
+		if manifests, err = manifests.SetGKEARMToleration(rCtx, manifest.NewResourceSelectorPodSpec(opts.TransformAllowList, opts.TransformDenylist), platforms); err != nil {
+			return nil, err
+		}
+		endTrace()
+	}
 
 	if !opts.EnablePlatformNodeAffinity {
 		// TODO (gaghosh): To support platform node affinity in offline mode, we'll need to save the image platform
@@ -76,11 +91,13 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 		return manifests, nil
 	}
 	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setPlatformNodeAffinity")
-	platforms, err := manifests.GetImagePlatforms(rCtx, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
-	if err != nil {
-		return nil, err
+	if platforms == nil {
+		platforms, err = manifests.GetImagePlatforms(rCtx, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
+		if err != nil {
+			return nil, err
+		}
 	}
-	if manifests, err = manifests.SetPlatformNodeAffinity(rCtx, manifest.NewResourceSelectorAffinity(opts.TransformAllowList, opts.TransformDenylist), platforms); err != nil {
+	if manifests, err = manifests.SetPlatformNodeAffinity(rCtx, manifest.NewResourceSelectorPodSpec(opts.TransformAllowList, opts.TransformDenylist), platforms); err != nil {
 		return nil, err
 	}
 	endTrace()
@@ -150,17 +167,17 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 func ConvertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
 	nrf := latest.ResourceFilter{}
 	nrf.GroupKind = rf.GroupKind
-	if len(rf.Affinity) > 0 {
-		naffinity := []string{}
-		for _, str := range rf.Affinity {
+	if len(rf.PodSpec) > 0 {
+		nspec := []string{}
+		for _, str := range rf.PodSpec {
 			if str == ".*" {
-				naffinity = append(naffinity, str)
+				nspec = append(nspec, str)
 				continue
 			}
 			nstr := strings.ReplaceAll(str, ".*", "")
-			naffinity = append(naffinity, nstr)
+			nspec = append(nspec, nstr)
 		}
-		nrf.Affinity = naffinity
+		nrf.PodSpec = nspec
 	}
 
 	if len(rf.Labels) > 0 {
@@ -191,3 +208,5 @@ func ConvertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
 
 	return nrf
 }
+
+func isGKECluster(kubeContext string) bool { return strings.HasPrefix(kubeContext, "gke") }

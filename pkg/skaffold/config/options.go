@@ -59,6 +59,7 @@ type SkaffoldOptions struct {
 	Tail                       bool
 	WaitForConnection          bool
 	EnablePlatformNodeAffinity bool
+	EnableGKEARMNodeToleration bool
 	DisableMultiPlatformBuild  bool
 	CheckClusterNodePlatforms  bool
 	MakePathsAbsolute          *bool
