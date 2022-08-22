@@ -130,7 +130,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 
 	err := checkMultiplatformHaveRegistry(b, artifacts, resolver)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err) // TODO: remove error wrapping after fixing #7790
 	}
 
 	ar, err := InOrder(ctx, out, tags, resolver, artifacts, builderF, b.concurrency, b.store)
