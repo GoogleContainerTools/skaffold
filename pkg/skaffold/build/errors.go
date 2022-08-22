@@ -29,7 +29,7 @@ func noRegistryForMultiplatformBuildErr(err error) error {
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_SET_PUSH_AND_CONTAINER_REGISTRY,
-					Action:         "To run multi-platform builds, set --push to true and set a container registry with --default-registry or in the global config",
+					Action:         "To run multi-platform builds, set --push to true and set a container registry with --default-repo or in the global config",
 				},
 			},
 		})
