@@ -284,6 +284,9 @@ func (rc *RunContext) JSONParseConfig() latest.JSONParseConfig {
 func (rc *RunContext) EnablePlatformNodeAffinityInRenderedManifests() bool {
 	return rc.Opts.EnablePlatformNodeAffinity && rc.Cluster.IsMixedPlatform
 }
+func (rc *RunContext) EnableGKEARMNodeTolerationInRenderedManifests() bool {
+	return rc.Opts.EnableGKEARMNodeToleration
+}
 
 // GetRenderConfig returns the top tier RenderConfig.
 // TODO: design how to support multi-module.

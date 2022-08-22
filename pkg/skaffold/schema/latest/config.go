@@ -1573,8 +1573,8 @@ type ResourceFilter struct {
 	Image []string `yaml:"image,omitempty"`
 	// Labels is an optional slice of JSON-path-like paths of where to add a labels block if missing.
 	Labels []string `yaml:"labels,omitempty"`
-	// Affinity is an optional slice of JSON-path-like paths of where to add `affinity` definitions for scheduling Pods.
-	Affinity []string `yaml:"affinity,omitempty"`
+	// PodSpec is an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.
+	PodSpec []string `yaml:"podSpec,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

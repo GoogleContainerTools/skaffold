@@ -658,6 +658,15 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
 	},
 	{
+		Name:          "enable-gke-arm-node-toleration",
+		Usage:         "Setting this flag provides the appropriate toleration for Pods to be scheduled on GKE ARM nodes that are tainted to disallow workloads by default.",
+		Value:         &opts.EnableGKEARMNodeToleration,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
+		Hidden:        true,
+	},
+	{
 		Name:     "disable-multi-platform-build",
 		Usage:    "When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast",
 		Value:    &opts.DisableMultiPlatformBuild,

@@ -45,21 +45,21 @@ const (
 	nodeArchitectureLabel    = "kubernetes.io/arch"
 )
 
-type ResourceSelectorAffinity struct {
+type ResourceSelectorPodSpec struct {
 	allowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	denylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func NewResourceSelectorAffinity(allowlist map[apimachinery.GroupKind]latest.ResourceFilter, denylist map[apimachinery.GroupKind]latest.ResourceFilter) *ResourceSelectorAffinity {
-	return &ResourceSelectorAffinity{
+func NewResourceSelectorPodSpec(allowlist map[apimachinery.GroupKind]latest.ResourceFilter, denylist map[apimachinery.GroupKind]latest.ResourceFilter) *ResourceSelectorPodSpec {
+	return &ResourceSelectorPodSpec{
 		allowlist: allowlist,
 		denylist:  denylist,
 	}
 }
 
-func (rsa *ResourceSelectorAffinity) allowByGroupKind(gk apimachinery.GroupKind) bool {
-	if _, allowed := rsa.allowlist[gk]; allowed {
-		if rf, disallowed := rsa.denylist[gk]; disallowed {
+func (rs *ResourceSelectorPodSpec) allowByGroupKind(gk apimachinery.GroupKind) bool {
+	if _, allowed := rs.allowlist[gk]; allowed {
+		if rf, disallowed := rs.denylist[gk]; disallowed {
 			for _, s := range rf.Labels {
 				if s == ".*" {
 					return false
@@ -70,7 +70,7 @@ func (rsa *ResourceSelectorAffinity) allowByGroupKind(gk apimachinery.GroupKind)
 					return false
 				}
 			}
-			for _, s := range rf.Affinity {
+			for _, s := range rf.PodSpec {
 				if s == ".*" {
 					return false
 				}
@@ -82,15 +82,15 @@ func (rsa *ResourceSelectorAffinity) allowByGroupKind(gk apimachinery.GroupKind)
 }
 
 //nolint:unparam
-func (rsa *ResourceSelectorAffinity) allowByNavpath(gk apimachinery.GroupKind, navpath string, k string) (string, bool) {
+func (rs *ResourceSelectorPodSpec) allowByNavpath(gk apimachinery.GroupKind, navpath string, k string) (string, bool) {
 	for _, w := range ConfigConnectorResourceSelector {
 		if w.Matches(gk.Group, gk.Kind) {
 			return "", false
 		}
 	}
 
-	if rf, ok := rsa.denylist[gk]; ok {
-		for _, denypath := range rf.Affinity {
+	if rf, ok := rs.denylist[gk]; ok {
+		for _, denypath := range rf.PodSpec {
 			if denypath == ".*" {
 				return "", false
 			}
@@ -100,8 +100,8 @@ func (rsa *ResourceSelectorAffinity) allowByNavpath(gk apimachinery.GroupKind, n
 		}
 	}
 
-	if rf, ok := rsa.allowlist[gk]; ok {
-		for _, allowpath := range rf.Affinity {
+	if rf, ok := rs.allowlist[gk]; ok {
+		for _, allowpath := range rf.PodSpec {
 			if allowpath == ".*" {
 				if k != specField {
 					return "", false

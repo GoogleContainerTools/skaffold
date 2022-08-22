@@ -3420,15 +3420,6 @@
         "groupKind"
       ],
       "properties": {
-        "affinity": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "an optional slice of JSON-path-like paths of where to add `affinity` definitions for scheduling Pods.",
-          "x-intellij-html-description": "an optional slice of JSON-path-like paths of where to add <code>affinity</code> definitions for scheduling Pods.",
-          "default": "[]"
-        },
         "groupKind": {
           "type": "string",
           "description": "compact format of a resource type.",
@@ -3451,13 +3442,22 @@
           "description": "an optional slice of JSON-path-like paths of where to add a labels block if missing.",
           "x-intellij-html-description": "an optional slice of JSON-path-like paths of where to add a labels block if missing.",
           "default": "[]"
+        },
+        "podSpec": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.",
+          "x-intellij-html-description": "an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
         "groupKind",
         "image",
         "labels",
-        "affinity"
+        "podSpec"
       ],
       "additionalProperties": false,
       "type": "object",

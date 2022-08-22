@@ -73,7 +73,9 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
 		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
+		KubeContext:                r.cfg.GetKubeContext(),
 	}
 	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
 	endTrace()
