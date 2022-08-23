@@ -213,7 +213,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
 	},
 	{
 		Name:          "rpc-http-port",
@@ -221,7 +221,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCHTTPPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
 	},
 	{
 		Name:          "label",
