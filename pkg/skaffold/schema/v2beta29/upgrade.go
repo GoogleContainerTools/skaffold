@@ -60,10 +60,7 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		if err != nil {
 			return &newConfig, err
 		}
-		err = upgradePatches(p.Patches, newProfiles[i].Patches)
-		if err != nil {
-			return &newConfig, err
-		}
+		upgradePatches(p.Patches, newProfiles[i].Patches)
 	}
 
 	newConfig.Profiles = newProfiles
@@ -156,16 +153,15 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 	return nil
 }
 
-func upgradePatches(olds []JSONPatch, news []next.JSONPatch) error {
+func upgradePatches(olds []JSONPatch, news []next.JSONPatch) {
 	for i, old := range olds {
 		for str, repStr := range migrations {
 			if strings.Contains(old.Path, str) {
-				news[i].Path = strings.Replace(old.Path, str, repStr, 0)
+				news[i].Path = strings.Replace(old.Path, str, repStr, -1)
 			}
 			if strings.Contains(old.Path, "/deploy/kpt") {
 				fmt.Println("skip migrating kpt deploy sections. Please migrate these over manually")
 			}
 		}
 	}
-	return nil
 }
