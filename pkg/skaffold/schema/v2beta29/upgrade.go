@@ -18,6 +18,8 @@ package v2beta29
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -25,6 +27,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
+
+var migrations = map[string]string{
+	"/deploy/kubectl/manifests":   "/manifests/rawYaml",
+	"/deploy/kustomize/paths":     "/manifests/kustomize/paths",
+	"/deploy/kustomize/buildArgs": "/manifests/kustomize/buildArgs",
+	"/deploy/helm/releases":       "/manifests/helm/releases",
+}
 
 // Upgrade upgrades a configuration to the next version.
 // v2beta29 is the last config version for skaffold v1, and future version will
@@ -35,7 +44,31 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	newConfig.APIVersion = next.Version
 
 	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
-	return &newConfig, err
+	if err != nil {
+		return &newConfig, err
+	}
+
+	var newProfiles []next.Profile
+	// convert Profiles (should be the same)
+	if c.Profiles != nil {
+		pkgutil.CloneThroughJSON(c.Profiles, &newProfiles)
+	}
+
+	// Update profiles
+	for i, p := range c.Profiles {
+		err = upgradeOnePipeline(&p.Pipeline, &newProfiles[i].Pipeline)
+		if err != nil {
+			return &newConfig, err
+		}
+		err = upgradePatches(p.Patches, newProfiles[i].Patches)
+		if err != nil {
+			return &newConfig, err
+		}
+	}
+
+	newConfig.Profiles = newProfiles
+
+	return &newConfig, nil
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
@@ -56,12 +89,8 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		if len(newPL.Render.Kustomize.Paths) == 0 {
 			newPL.Render.Kustomize.Paths = append(newPL.Render.Kustomize.Paths, ".")
 		}
-		if len(oldPL.Deploy.KustomizeDeploy.BuildArgs) != 0 {
-			return errors.New("converting deploy.kustomize.buildArgs isn't currently supported")
-		}
 	}
 
-	// TODO(marlongamez): what should happen when migrating v2?
 	// Copy Kpt deploy config to render config
 	if oldPL.Deploy.KptDeploy != nil {
 		return errors.New("converting deploy.kpt isn't currently supported")
@@ -124,6 +153,19 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		newPL.Deploy.LegacyHelmDeploy = &next.LegacyHelmDeploy{}
 		newPL.Deploy.LegacyHelmDeploy.LifecycleHooks = newHelm.LifecycleHooks
 	}
+	return nil
+}
 
+func upgradePatches(olds []JSONPatch, news []next.JSONPatch) error {
+	for i, old := range olds {
+		for str, repStr := range migrations {
+			if strings.Contains(old.Path, str) {
+				news[i].Path = strings.Replace(old.Path, str, repStr, 0)
+			}
+			if strings.Contains(old.Path, "/deploy/kpt") {
+				fmt.Println("skip migrating kpt deploy sections. Please migrate these over manually")
+			}
+		}
+	}
 	return nil
 }
