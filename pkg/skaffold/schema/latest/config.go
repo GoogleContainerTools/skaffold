@@ -601,6 +601,9 @@ type Generate struct {
 
 	// Kpt defines the kpt resources in the application.
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every render.
+	LifecycleHooks RenderHooks `yaml:"hooks,omitempty"`
 }
 
 // Kustomize defines the paths to be modified with kustomize, along with
@@ -1520,6 +1523,20 @@ type SyncHooks struct {
 	PreHooks []SyncHookItem `yaml:"before,omitempty"`
 	// PostHooks describes the list of lifecycle hooks to execute *after* each artifact sync step.
 	PostHooks []SyncHookItem `yaml:"after,omitempty"`
+}
+
+// RenderHookItem describes a single lifecycle hook to execute before or after each deployer step.
+type RenderHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
+}
+
+// RenderHooks describes the list of lifecycle hooks to execute before and after each render step.
+type RenderHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
+	PreHooks []RenderHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
+	PostHooks []RenderHookItem `yaml:"after,omitempty"`
 }
 
 // DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.

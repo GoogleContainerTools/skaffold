@@ -22,8 +22,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -82,32 +80,50 @@ func TestGetRenderer(tOuter *testing.T) {
 						},
 					},
 				},
-				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)}),
+				// expected: renderer.NewRenderMux([]renderer.Renderer{
+				// 	t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)}),
+				expected: renderer.NewRenderMux(
+					renderer.GroupRenderer{
+						Renderers: []renderer.Renderer{
+							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)},
+					},
+				),
 			},
 			{
 				description: "helm renderer",
 				cfg: latest.Pipeline{
 					Render: helmConfig,
 				},
-				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)}),
+				expected: renderer.NewRenderMux(
+					renderer.GroupRenderer{
+						Renderers: []renderer.Renderer{
+							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)},
+					},
+				),
 			},
 			{
 				description: "kubectl renderer",
 				cfg: latest.Pipeline{
 					Render: kubectlCfg,
 				},
-				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kubectl.New(rc, kubectlCfg, labels, "", "")).(renderer.Renderer)}),
+				expected: renderer.NewRenderMux(
+					renderer.GroupRenderer{
+						Renderers: []renderer.Renderer{
+							t.RequireNonNilResult(helm.New(rc, kubectlCfg, labels, "")).(renderer.Renderer)},
+					},
+				),
 			},
 			{
 				description: "kpt renderer",
 				cfg: latest.Pipeline{
 					Render: kptConfig,
 				},
-				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "", "")).(renderer.Renderer)}),
+				expected: renderer.NewRenderMux(
+					renderer.GroupRenderer{
+						Renderers: []renderer.Renderer{
+							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "")).(renderer.Renderer)},
+					},
+				),
 			},
 			{
 				description: "kpt renderer when validate configured",
@@ -117,8 +133,12 @@ func TestGetRenderer(tOuter *testing.T) {
 						Validate: &[]latest.Validator{{Name: "kubeval"}},
 					},
 				},
-				expected: renderer.NewRenderMux([]renderer.Renderer{
-					t.RequireNonNilResult(kpt.New(rc, kptConfig, "", labels, "", "")).(renderer.Renderer)}),
+				expected: renderer.NewRenderMux(
+					renderer.GroupRenderer{
+						Renderers: []renderer.Renderer{
+							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "")).(renderer.Renderer)},
+					},
+				),
 			},
 		}
 		for _, test := range tests {

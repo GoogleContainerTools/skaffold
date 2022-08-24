@@ -1,5 +1,15 @@
 apiVersion: skaffold/v3alpha1
 kind: Config
+manifests:
+  rawYaml:
+  - k8s-pod.yaml
+  hooks:
+    before:
+      - host:
+          command: ["sh", "-c", "echo pre-render host hook running on $(hostname)!"]
+    after:
+      - host:
+          command: ["sh", "-c", "echo post-render host hook running on $(hostname)!"]
 build:
   artifacts:
   - image: hooks-example
@@ -31,9 +41,6 @@ build:
         after:
           - container:
               command: ["sh", "-c", "set -x; kill -HUP 1"]
-manifests:
-  rawYaml:
-  - deployment.yaml
 deploy:
   kubectl:
     hooks:
@@ -49,6 +56,7 @@ deploy:
       after:
         - host:
             command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"]
+            os: [darwin, linux]
         - container:
             command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
             containerName: hooks-example* # use a glob pattern to prefix-match the container name and pod name for deployments, stateful-sets, etc.

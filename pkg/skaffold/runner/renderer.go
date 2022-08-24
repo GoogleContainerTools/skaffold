@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -29,13 +30,16 @@ import (
 func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (renderer.Renderer, error) {
 	ps := runCtx.Pipelines.AllByConfigNames()
 
-	var renderers renderer.GroupRenderer
+	var gr renderer.GroupRenderer
+	gr.HookRunner = hooks.NewRenderRunner(runCtx.GetRenderConfig().LifecycleHooks, &[]string{runCtx.GetNamespace()},
+		hooks.NewRenderEnvOpts(runCtx.KubeContext, []string{runCtx.GetNamespace()}))
 	for configName, p := range ps {
 		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err
 		}
-		renderers = append(renderers, rs...)
+		gr.Renderers = append(gr.Renderers, rs.Renderers...)
+		gr.HookRunner = rs.HookRunner
 	}
 	// In case of legacy helm deployer configured and render command used
 	// force a helm renderer from deploy helm config
@@ -55,8 +59,8 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 			if err != nil {
 				return nil, err
 			}
-			renderers = append(renderers, r)
+			gr.Renderers = append(gr.Renderers, r)
 		}
 	}
-	return renderer.NewRenderMux(renderers), nil
+	return renderer.NewRenderMux(gr), nil
 }
