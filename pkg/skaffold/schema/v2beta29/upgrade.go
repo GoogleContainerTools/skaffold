@@ -17,12 +17,13 @@ limitations under the License.
 package v2beta29
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -157,10 +158,10 @@ func upgradePatches(olds []JSONPatch, news []next.JSONPatch) {
 	for i, old := range olds {
 		for str, repStr := range migrations {
 			if strings.Contains(old.Path, str) {
-				news[i].Path = strings.Replace(old.Path, str, repStr, -1)
+				news[i].Path = strings.ReplaceAll(old.Path, str, repStr)
 			}
 			if strings.Contains(old.Path, "/deploy/kpt") {
-				fmt.Println("skip migrating kpt deploy sections. Please migrate these over manually")
+				log.Entry(context.TODO()).Printf("skip migrating kpt deploy sections. Please migrate these over manually")
 			}
 		}
 	}
