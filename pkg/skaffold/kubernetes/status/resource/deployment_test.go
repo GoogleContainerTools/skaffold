@@ -205,11 +205,11 @@ func TestIsErrAndNotRetriable(t *testing.T) {
 			expected:    true,
 		},
 		{
-			description: "un schedule error code",
+			description: "unschedule error code",
 			statusCode:  proto.StatusCode_STATUSCHECK_NODE_UNSCHEDULABLE,
 		},
 		{
-			description: "un schedule unknown error",
+			description: "unschedule unknown error",
 			statusCode:  proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE,
 		},
 		{
