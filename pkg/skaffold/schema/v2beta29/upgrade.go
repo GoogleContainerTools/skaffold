@@ -30,10 +30,10 @@ import (
 )
 
 var migrations = map[string]string{
-	"/deploy/kubectl/manifests":   "/manifests/rawYaml",
+	"/deploy/kubectl":             "/manifests/rawYaml",
 	"/deploy/kustomize/paths":     "/manifests/kustomize/paths",
 	"/deploy/kustomize/buildArgs": "/manifests/kustomize/buildArgs",
-	"/deploy/helm/releases":       "/manifests/helm/releases",
+	"/deploy/helm":                "/manifests/helm",
 }
 
 // Upgrade upgrades a configuration to the next version.
@@ -50,17 +50,13 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	}
 
 	var newProfiles []next.Profile
-	// convert Profiles (should be the same)
+	// seed with existing Profiles
 	if c.Profiles != nil {
-		pkgutil.CloneThroughJSON(c.Profiles, &newProfiles)
+		pkgutil.CloneThroughJSON(newConfig.Profiles, &newProfiles)
 	}
 
-	// Update profiles
+	// Update profiles patches
 	for i, p := range c.Profiles {
-		err = upgradeOnePipeline(&p.Pipeline, &newProfiles[i].Pipeline)
-		if err != nil {
-			return &newConfig, err
-		}
 		upgradePatches(p.Patches, newProfiles[i].Patches)
 	}
 
