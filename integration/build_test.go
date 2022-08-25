@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"os"
 	"os/exec"
 	"strings"
@@ -40,15 +41,37 @@ func TestBuild(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
-		description string
-		dir         string
-		args        []string
-		expectImage string
-		setup       func(t *testing.T, workdir string)
+		description       string
+		dir               string
+		args              []string
+		expectImage       string
+		setup             func(t *testing.T, workdir string)
+		expectedPlatforms []v1.Platform
 	}{
 		{
 			description: "docker build",
 			dir:         "testdata/build",
+		},
+		{
+			description:       "build linux/arm64",
+			dir:               "testdata/hello",
+			args:              []string{"--platform", "linux/arm64", "-t", "arm64"},
+			expectImage:       "gcr.io/k8s-skaffold/skaffold-hello:arm64",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}},
+		},
+		{
+			description:       "build linux/amd64",
+			dir:               "testdata/hello",
+			args:              []string{"--platform", "linux/amd64", "-t", "amd64"},
+			expectImage:       "gcr.io/k8s-skaffold/skaffold-hello:amd64",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}},
+		},
+		{
+			description:       "build linux/amd64,linux/arm64",
+			dir:               "testdata/hello",
+			args:              []string{"--platform=linux/amd64,linux/arm64", "-t", "amd64-arm64", "--push"},
+			expectImage:       "gcr.io/k8s-skaffold/skaffold-hello:amd64-arm64",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "arm64"}},
 		},
 		{
 			description: "git tagger",
@@ -104,7 +127,8 @@ func TestBuild(t *testing.T) {
 			if strings.Contains(string(out), "Not found. Building") {
 				t.Errorf("images were expected to be found in cache: %s", out)
 			}
-			checkImageExists(t, test.expectImage)
+			//checkImageExists(t, test.expectImage)
+			checkImagePlatforms(t, test.expectImage, test.expectedPlatforms)
 		})
 	}
 }
@@ -139,6 +163,35 @@ func TestExpectedBuildFailures(t *testing.T) {
 				t.Fatalf("build failed but for wrong reason")
 			}
 		})
+	}
+}
+
+func checkImagePlatforms(t *testing.T, image string, expected []v1.Platform) {
+	if expected == nil {
+		return
+	}
+	t.Helper()
+	actual, err := docker.GetPlatforms(image)
+	if err != nil {
+		t.Error(err)
+	}
+	expectedLen := len(expected)
+	actualLen := len(actual)
+
+	if expectedLen != actualLen {
+		t.Fatalf("length of the slices differ: Expected %d, but was %d", expectedLen, actualLen)
+	}
+	wmap := make(map[string]int)
+	for _, elem := range expected {
+		wmap[elem.OS+"/"+elem.Architecture]++
+	}
+	for _, elem := range actual {
+		wmap[elem.OS+"/"+elem.Architecture]--
+	}
+	for _, v := range wmap {
+		if v != 0 {
+			t.Fatalf("elements are missing (negative integers) or excess (positive integers): %#v", wmap)
+		}
 	}
 }
 
