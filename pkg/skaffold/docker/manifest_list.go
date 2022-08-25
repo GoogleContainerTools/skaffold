@@ -55,7 +55,7 @@ func CreateManifestList(ctx context.Context, images []SinglePlatformImage, targe
 			return "", err
 		}
 
-		img, err := remoteImage(ref)
+		img, err := remoteImage(ref, remote.WithAuthFromKeychain(primaryKeychain))
 		if err != nil {
 			return "", err
 		}
