@@ -141,15 +141,22 @@ func TestBuildWithMultiPlatform(t *testing.T) {
 		{
 			description:       "build linux/amd64,linux/arm64",
 			dir:               "testdata/hello",
-			args:              []string{"--platform", "linux/amd64,linux/arm64", "-t", "amd64-arm64"},
+			args:              []string{"--platform", "linux/amd64,linux/arm64", "-t", "amd64-arm64", "-vdebug"},
 			image:             "gcr.io/k8s-skaffold/skaffold-hello:amd64-arm64",
 			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "arm64"}},
+		},
+		{
+			description:       "build linux/arm64",
+			dir:               "testdata/hello",
+			args:              []string{"--platform", "linux/arm64", "-t", "arm64"},
+			image:             "gcr.io/k8s-skaffold/skaffold-hello:arm64",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
+			skaffold.Build(test.args...).InDir(test.dir).Run(t)
 			checkImagePlatforms(t, test.image, test.expectedPlatforms)
 		})
 	}
