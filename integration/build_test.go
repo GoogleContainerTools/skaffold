@@ -141,7 +141,7 @@ func TestBuildWithMultiPlatform(t *testing.T) {
 		{
 			description:       "build linux/amd64,linux/arm64",
 			dir:               "testdata/hello",
-			args:              []string{"--platform", "linux/amd64", "-t", "amd64-arm64"},
+			args:              []string{"--platform", "linux/amd64,linux/arm64", "-t", "amd64-arm64"},
 			image:             "gcr.io/k8s-skaffold/skaffold-hello:amd64-arm64",
 			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "arm64"}},
 		},
