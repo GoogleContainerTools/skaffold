@@ -127,7 +127,7 @@ func TestBuild(t *testing.T) {
 }
 
 func TestBuildWithMultiPlatforms(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
+	MarkIntegrationTest(t, NeedsGcp)
 
 	tests := []struct {
 		description       string
