@@ -32,6 +32,7 @@ type Config interface {
 	GetNamespace() string
 	Mode() config.RunMode
 	EnablePlatformNodeAffinityInRenderedManifests() bool
+	EnableGKEARMNodeTolerationInRenderedManifests() bool
 }
 
 type MockConfig struct {
@@ -48,4 +49,5 @@ func (mc MockConfig) GetKubeConfig() string                               { retu
 func (mc MockConfig) GetKubeContext() string                              { return "" }
 func (mc MockConfig) Mode() config.RunMode                                { return "" }
 func (mc MockConfig) EnablePlatformNodeAffinityInRenderedManifests() bool { return true }
+func (mc MockConfig) EnableGKEARMNodeTolerationInRenderedManifests() bool { return true }
 func (mc MockConfig) GetNamespace() string                                { return mc.Namespace }

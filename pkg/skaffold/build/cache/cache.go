@@ -48,6 +48,7 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache      ArtifactCache
+	hashByName         map[string]string
 	artifactGraph      graph.ArtifactGraph
 	artifactStore      build.ArtifactStore
 	cacheMutex         sync.RWMutex
@@ -91,6 +92,8 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		return &noCache{}, nil
 	}
 
+	hashByName := make(map[string]string)
+
 	client, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		// error only if any pipeline is local.
@@ -117,6 +120,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 
 	return &cache{
 		artifactCache:      artifactCache,
+		hashByName:         hashByName,
 		artifactGraph:      graph,
 		artifactStore:      store,
 		client:             client,

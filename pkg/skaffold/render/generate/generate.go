@@ -120,7 +120,9 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 	var manifests manifest.ManifestList
 
 	// Generate kustomize Manifests
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_kustomize")
 	if g.config.Kustomize != nil && len(g.config.Kustomize.Paths) != 0 {
+		log.Entry(ctx).Infof("rendering using kustomize")
 		kustomizeManifests, err := g.generateKustomizeManifests(ctx)
 		if err != nil {
 			return nil, err
@@ -129,9 +131,10 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 			manifests.Append(m)
 		}
 	}
+	endTrace()
 
 	// Generate in-place hydrated kpt Manifests
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
 	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
@@ -145,6 +148,9 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 		}
 	}
 	var kptManifests []string
+	if len(kptPathMap) != 0 {
+		log.Entry(ctx).Infof("rendering using kpt")
+	}
 	for kPath := range kptPathMap {
 		// kpt manifests will be hydrated and stored in the subdir of the hydrated dir, where the subdir name
 		// matches the kPath dir name.

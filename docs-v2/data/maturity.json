@@ -28,7 +28,7 @@
     "debug": "x",
     "area": "Build",
     "feature": "custom artifact Builder",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "build locally using a custom build script "
   },
   "build.dependencies": {
@@ -38,8 +38,20 @@
     "debug": "x",
     "area": "Build",
     "feature": "Build Artifact Dependencies",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "Define build artifact dependencies"
+  },
+  "build.platforms": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "render": "x",
+    "deploy": "x",
+    "area": "Build",
+    "feature": "Cross-arch and Multi-arch builds",
+    "maturity": "alpha",
+    "description": "Build cross-architecture and Multi-architecture images"
   },
   "build.ko": {
     "dev": "x",
@@ -158,9 +170,18 @@
     "run": "x",
     "debug": "x",
     "area": "Deploy",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
     "url": "/docs/pipeline-stages/deployers"
+  },
+    "deploy.cloudrun": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "area": "Deploy",
+    "feature": "Cloud Run Deployer",
+    "maturity": "alpha",
+    "description": "Deploy applications to Google Cloud RUn"
   },
   "deploy.docker": {
     "dev": "x",
@@ -172,6 +193,16 @@
     "maturity": "beta",
     "description": "Deploy applications to the local Docker daemon"
   },
+  "deploy.cloudrun": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Deploy",
+    "feature": "CloudRun Deployer",
+    "maturity": "alpha",
+    "description": "Deploy applications to the Google Cloud Run"
+  },
   "deploy.status_check": {
     "dev": "x",
     "deploy": "x",
@@ -179,10 +210,20 @@
     "debug": "x",
     "area": "Deploy",
     "feature": "Status check",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "User can wait for deployments to stabilize",
     "url": "/docs/pipeline-stages/status-check/"
-
+  },
+  "render": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "render": "x",
+    "area": "Render",
+    "maturity": "beta",
+    "description": "Renders a set of resources in your applications and replace the image name with the built images ",
+    "url": "/docs/pipeline-stages/renderers"
   },
   "dev": {
     "dev": "x",
@@ -193,7 +234,7 @@
   },
   "fix.cmd": {
     "area": "skaffold fix",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "Upgrade an older skaffold config to the current version"
   },
   "generate_pipeline.tekton": {
@@ -201,6 +242,15 @@
     "area": "Generate tekton pipelines",
     "maturity": "alpha",
     "description": "User can generate a starter tekton pipeline using skaffold"
+  },
+  "verify": {
+    "dev": "x",
+    "debug": "x",
+    "run": "x",
+    "deploy": "x",
+    "area": "skaffold verify",
+    "maturity": "beta",
+    "description": "User can run post deployment tests via skaffold monitored test containers"
   },
   "global_config": {
     "dev": "x",
@@ -216,20 +266,20 @@
   },
   "init": {
     "area": "Init",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "Initialize a skaffold.yaml file based on the contents of the current directory",
     "url": "/docs/pipeline-stages/init"
   },
   "init.dockerfiles": {
     "area": "Init",
     "feature": "init for Dockerfiles ",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "skaffold init recognizes Dockerfiles"
   },
   "init.interactive": {
     "area": "Init",
     "feature": "interactive",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "skaffold init interactive for CLI users"
   },
   "init.json_api": {
@@ -241,7 +291,7 @@
   "init.k8s_manifests": {
     "area": "Init",
     "feature": "init for Kubernetes manifests",
-    "maturity": "GA",
+    "maturity": "beta",
     "description": "skaffold init parses images from Kubernetes manifests"
   },
   "init.generate_manifests": {
@@ -266,7 +316,7 @@
     "run": "x",
     "debug": "x",
     "area": "Lifecycle Hooks",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Run code triggered by different events during the skaffold process lifecycle.",
     "url": "/docs/pipeline-stages/lifecycle-hooks/"
   },
@@ -300,12 +350,6 @@
     "description": "Create different pipeline configurations based on overrides and patches defined in one or more profiles",
     "url": "/docs/environment/profiles/"
   },
-  "render": {
-    "deploy": "x",
-    "area": "Render",
-    "maturity": "GA",
-    "description": "Produce hydrated Kubernetes manifests that reference the built resources"
-  },
   "run.cmd": {
     "run": "x",
     "area": "skaffold run",
@@ -317,7 +361,7 @@
     "dev": "x",
     "area": "Filesync",
     "feature": "sync.infer",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "mark files as \"syncable\" - infer the destinations based on the Dockerfile"
   },
   "sync": {
@@ -378,7 +422,7 @@
     "test": "x",
     "area": "Test",
     "feature": "custom tester",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Run custom test command locally",
     "url": "/docs/pipeline-stages/testers/custom"
   },

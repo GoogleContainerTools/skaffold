@@ -119,6 +119,10 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 		return
 	}
 	if len(c.Render.Generate.RawK8s) > 0 {
+		if c.Deploy.KubectlDeploy == nil && c.Deploy.CloudRunDeploy == nil {
+			log.Entry(context.TODO()).Debug("Found raw k8s manifests without cloud run deploy, adding kubectl deployer")
+			c.Deploy.KubectlDeploy = &latest.KubectlDeploy{}
+		}
 		return
 	}
 	if c.Render.Generate.Kustomize != nil {
@@ -128,6 +132,12 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 		return
 	}
 	if c.Deploy.LegacyHelmDeploy != nil {
+		return
+	}
+	if c.Deploy.DockerDeploy != nil {
+		return
+	}
+	if c.Deploy.CloudRunDeploy != nil {
 		return
 	}
 	// Set default manifests to "k8s/*.yaml", same as v1.

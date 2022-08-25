@@ -1,6 +1,6 @@
 ---
-title: "Deploy"
-linkTitle: "Deploy"
+title: "Deploy [UPDATED]"
+linkTitle: "Deploy [UPDATED]"
 weight: 10
 featureId: deploy
 aliases: [/docs/how-tos/deployers]

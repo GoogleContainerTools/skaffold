@@ -835,8 +835,8 @@
         },
         "clearCache": {
           "type": "boolean",
-          "description": "Removes old cache volume associated with the specific image and supplies a clean cache volume for build",
-          "x-intellij-html-description": "Removes old cache volume associated with the specific image and supplies a clean cache volume for build",
+          "description": "removes old cache volume associated with the specific image and supplies a clean cache volume for build.",
+          "x-intellij-html-description": "removes old cache volume associated with the specific image and supplies a clean cache volume for build.",
           "default": "false"
         },
         "dependencies": {
@@ -969,13 +969,13 @@
       "properties": {
         "projectid": {
           "type": "string",
-          "description": "of the GCP Project to use for Cloud Run.",
-          "x-intellij-html-description": "of the GCP Project to use for Cloud Run."
+          "description": "the GCP Project to use for Cloud Run. If specified, all Services will be deployed to this project. If not specified, each Service will be deployed to the project specified in `metadata.namespace` of the Cloud Run manifest.",
+          "x-intellij-html-description": "the GCP Project to use for Cloud Run. If specified, all Services will be deployed to this project. If not specified, each Service will be deployed to the project specified in <code>metadata.namespace</code> of the Cloud Run manifest."
         },
         "region": {
           "type": "string",
-          "description": "in GCP to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations.",
-          "x-intellij-html-description": "in GCP to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations."
+          "description": "GCP location to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations.",
+          "x-intellij-html-description": "GCP location to use for the Cloud Run Deploy. Must be one of the regions listed in https://cloud.google.com/run/docs/locations."
         }
       },
       "preferredOrder": [
@@ -1377,8 +1377,8 @@
       "properties": {
         "cloudrun": {
           "$ref": "#/definitions/CloudRunDeploy",
-          "description": "*alpha* deploys to Google Cloud Run using the Cloud Run v1 API",
-          "x-intellij-html-description": "<em>alpha</em> deploys to Google Cloud Run using the Cloud Run v1 API"
+          "description": "*alpha* deploys to Google Cloud Run using the Cloud Run v1 API.",
+          "x-intellij-html-description": "<em>alpha</em> deploys to Google Cloud Run using the Cloud Run v1 API."
         },
         "docker": {
           "$ref": "#/definitions/DockerDeploy",
@@ -1408,11 +1408,6 @@
           "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
           "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
         },
-        "kustomize": {
-          "$ref": "#/definitions/KustomizeDeploy",
-          "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
-        },
         "logs": {
           "$ref": "#/definitions/LogsConfig",
           "description": "configures how container logs are printed as a result of a deployment.",
@@ -1434,7 +1429,6 @@
         "helm",
         "kpt",
         "kubectl",
-        "kustomize",
         "cloudrun",
         "statusCheck",
         "statusCheckDeadlineSeconds",
@@ -1897,6 +1891,11 @@
           "x-intellij-html-description": "image that runs a Cloud Native Buildpacks build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/k8s-skaffold/pack"
         },
+        "platformEmulatorInstallStep": {
+          "$ref": "#/definitions/PlatformEmulatorInstallStep",
+          "description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild. If unspecified, Skaffold uses the `docker/binfmt` image by default.",
+          "x-intellij-html-description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild. If unspecified, Skaffold uses the <code>docker/binfmt</code> image by default."
+        },
         "projectId": {
           "type": "string",
           "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
@@ -1904,8 +1903,8 @@
         },
         "region": {
           "type": "string",
-          "description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See [Cloud Build locations](https://cloud.google.com/build/docs/locations)",
-          "x-intellij-html-description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See <a href=\"https://cloud.google.com/build/docs/locations\">Cloud Build locations</a>"
+          "description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See [Cloud Build locations](https://cloud.google.com/build/docs/locations).",
+          "x-intellij-html-description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See <a href=\"https://cloud.google.com/build/docs/locations\">Cloud Build locations</a>."
         },
         "timeout": {
           "type": "string",
@@ -1933,7 +1932,8 @@
         "koImage",
         "concurrency",
         "workerPool",
-        "region"
+        "region",
+        "platformEmulatorInstallStep"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -2964,56 +2964,8 @@
       ],
       "additionalProperties": false,
       "type": "object",
-      "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize",
-      "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize"
-    },
-    "KustomizeDeploy": {
-      "properties": {
-        "buildArgs": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional args passed to `kustomize build`.",
-          "x-intellij-html-description": "additional args passed to <code>kustomize build</code>.",
-          "default": "[]"
-        },
-        "defaultNamespace": {
-          "type": "string",
-          "description": "default namespace passed to kubectl on deployment if no other override is given.",
-          "x-intellij-html-description": "default namespace passed to kubectl on deployment if no other override is given."
-        },
-        "flags": {
-          "$ref": "#/definitions/KubectlFlags",
-          "description": "additional flags passed to `kubectl`.",
-          "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
-        },
-        "hooks": {
-          "$ref": "#/definitions/DeployHooks",
-          "description": "describes a set of lifecycle hooks that are executed before and after every deploy.",
-          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after every deploy."
-        },
-        "paths": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "path to Kustomization files.",
-          "x-intellij-html-description": "path to Kustomization files.",
-          "default": "[\".\"]"
-        }
-      },
-      "preferredOrder": [
-        "paths",
-        "flags",
-        "buildArgs",
-        "defaultNamespace",
-        "hooks"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-      "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+      "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize.",
+      "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize."
     },
     "LegacyHelmDeploy": {
       "properties": {
@@ -3189,6 +3141,41 @@
       "type": "object",
       "description": "describes a lifecycle hook definition to execute on a named container.",
       "x-intellij-html-description": "describes a lifecycle hook definition to execute on a named container."
+    },
+    "PlatformEmulatorInstallStep": {
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies arguments passed to the emulator installer image.",
+          "x-intellij-html-description": "specifies arguments passed to the emulator installer image.",
+          "default": "[]"
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "specifies the ENTRYPOINT argument to the emulator installer image.",
+          "x-intellij-html-description": "specifies the ENTRYPOINT argument to the emulator installer image."
+        },
+        "image": {
+          "type": "string",
+          "description": "specifies the image that will install the required tooling for QEMU emulation on the GoogleCloudBuild containers.",
+          "x-intellij-html-description": "specifies the image that will install the required tooling for QEMU emulation on the GoogleCloudBuild containers."
+        }
+      },
+      "preferredOrder": [
+        "image",
+        "args",
+        "entrypoint"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.",
+      "x-intellij-html-description": "specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild."
     },
     "PortForwardResource": {
       "properties": {
@@ -3374,22 +3361,27 @@
       "properties": {
         "helm": {
           "$ref": "#/definitions/Helm",
-          "description": "TODO: add description.",
-          "x-intellij-html-description": "TODO: add description."
+          "description": "defines the helm charts used in the application. NOTE: Defines cherts in this section to render via helm but deployed via kubectl or kpt deployer. To use helm to deploy, please see deploy.helm section.",
+          "x-intellij-html-description": "defines the helm charts used in the application. NOTE: Defines cherts in this section to render via helm but deployed via kubectl or kpt deployer. To use helm to deploy, please see deploy.helm section."
+        },
+        "hooks": {
+          "$ref": "#/definitions/RenderHooks",
+          "description": "describes a set of lifecycle hooks that are executed before and after every render.",
+          "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after every render."
         },
         "kpt": {
           "items": {
             "type": "string"
           },
           "type": "array",
-          "description": "TODO: add description.",
-          "x-intellij-html-description": "TODO: add description.",
+          "description": "defines the kpt resources in the application.",
+          "x-intellij-html-description": "defines the kpt resources in the application.",
           "default": "[]"
         },
         "kustomize": {
           "$ref": "#/definitions/Kustomize",
-          "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize",
-          "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize"
+          "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize.",
+          "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize."
         },
         "output": {
           "type": "string",
@@ -3401,8 +3393,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "TODO: add description.",
-          "x-intellij-html-description": "TODO: add description.",
+          "description": "defines the raw kubernetes resources.",
+          "x-intellij-html-description": "defines the raw kubernetes resources.",
           "default": "[]"
         },
         "transform": {
@@ -3419,6 +3411,7 @@
         "kustomize",
         "helm",
         "kpt",
+        "hooks",
         "transform",
         "validate",
         "output"
@@ -3428,20 +3421,55 @@
       "description": "contains all the configuration needed by the render steps.",
       "x-intellij-html-description": "contains all the configuration needed by the render steps."
     },
+    "RenderHookItem": {
+      "properties": {
+        "host": {
+          "$ref": "#/definitions/HostHook",
+          "description": "describes a single lifecycle hook to run on the host machine.",
+          "x-intellij-html-description": "describes a single lifecycle hook to run on the host machine."
+        }
+      },
+      "preferredOrder": [
+        "host"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes a single lifecycle hook to execute before or after each deployer step.",
+      "x-intellij-html-description": "describes a single lifecycle hook to execute before or after each deployer step."
+    },
+    "RenderHooks": {
+      "properties": {
+        "after": {
+          "items": {
+            "$ref": "#/definitions/RenderHookItem"
+          },
+          "type": "array",
+          "description": "describes the list of lifecycle hooks to execute *after* each render step.",
+          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>after</em> each render step."
+        },
+        "before": {
+          "items": {
+            "$ref": "#/definitions/RenderHookItem"
+          },
+          "type": "array",
+          "description": "describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).",
+          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>before</em> each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during <code>skaffold dev</code>)."
+        }
+      },
+      "preferredOrder": [
+        "before",
+        "after"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes the list of lifecycle hooks to execute before and after each render step.",
+      "x-intellij-html-description": "describes the list of lifecycle hooks to execute before and after each render step."
+    },
     "ResourceFilter": {
       "required": [
         "groupKind"
       ],
       "properties": {
-        "affinity": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "an optional slice of JSON-path-like paths of where to add `affinity` definitions for scheduling Pods.",
-          "x-intellij-html-description": "an optional slice of JSON-path-like paths of where to add <code>affinity</code> definitions for scheduling Pods.",
-          "default": "[]"
-        },
         "groupKind": {
           "type": "string",
           "description": "compact format of a resource type.",
@@ -3464,13 +3492,22 @@
           "description": "an optional slice of JSON-path-like paths of where to add a labels block if missing.",
           "x-intellij-html-description": "an optional slice of JSON-path-like paths of where to add a labels block if missing.",
           "default": "[]"
+        },
+        "podSpec": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.",
+          "x-intellij-html-description": "an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
         "groupKind",
         "image",
         "labels",
-        "affinity"
+        "podSpec"
       ],
       "additionalProperties": false,
       "type": "object",

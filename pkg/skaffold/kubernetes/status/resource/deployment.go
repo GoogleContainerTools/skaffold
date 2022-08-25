@@ -384,7 +384,9 @@ func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
 	return statusCode != proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR &&
 		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING &&
 		statusCode != proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING &&
-		statusCode != proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS
+		statusCode != proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS &&
+		statusCode != proto.StatusCode_STATUSCHECK_NODE_UNSCHEDULABLE &&
+		statusCode != proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE
 }
 
 // HasEncounteredUnrecoverableError goes through all pod statuses and return true

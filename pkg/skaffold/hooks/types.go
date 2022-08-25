@@ -36,6 +36,8 @@ var phases = struct {
 	PostBuild  phase
 	PreSync    phase
 	PostSync   phase
+	PreRender  phase
+	PostRender phase
 	PreDeploy  phase
 	PostDeploy phase
 }{
@@ -43,6 +45,8 @@ var phases = struct {
 	PostBuild:  "post-build",
 	PreSync:    "pre-sync",
 	PostSync:   "post-sync",
+	PreRender:  "pre-render",
+	PostRender: "post-render",
 	PreDeploy:  "pre-deploy",
 	PostDeploy: "post-deploy",
 }

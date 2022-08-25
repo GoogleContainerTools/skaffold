@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -28,6 +29,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 )
+
+var defaultPlatformEmulatorInstallStep = latest.PlatformEmulatorInstallStep{
+	Image: "docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64",
+}
 
 // dockerBuildSpec lists the build steps required to build a docker image.
 func (b *Builder) dockerBuildSpec(a *latest.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {
@@ -37,7 +42,9 @@ func (b *Builder) dockerBuildSpec(a *latest.Artifact, tag string, platforms plat
 	if err != nil {
 		return cloudbuild.Build{}, err
 	}
-	steps := b.cacheFromSteps(a.DockerArtifact, platforms)
+	var steps []*cloudbuild.BuildStep
+	steps = append(steps, platformEmulatorInstallStep(b.GoogleCloudBuild, platforms)...)
+	steps = append(steps, b.cacheFromSteps(a.DockerArtifact, platforms)...)
 	buildStep := &cloudbuild.BuildStep{
 		Name: b.DockerImage,
 		Args: args,
@@ -54,11 +61,27 @@ func (b *Builder) dockerBuildSpec(a *latest.Artifact, tag string, platforms plat
 	}, nil
 }
 
+func platformEmulatorInstallStep(cfg *latest.GoogleCloudBuild, p platform.Matcher) []*cloudbuild.BuildStep {
+	if !p.IsMultiPlatform() && (p.IsEmpty() || p.Contains(v1.Platform{Architecture: "amd64", OS: "linux"})) {
+		// if the build is not multi-platform, or it only targets linux/amd64, then skip platform emulator install step.
+		return nil
+	}
+	step := defaultPlatformEmulatorInstallStep
+	if cfg.PlatformEmulatorInstallStep != nil {
+		step = *cfg.PlatformEmulatorInstallStep
+	}
+	return []*cloudbuild.BuildStep{{
+		Name:       step.Image,
+		Args:       step.Args,
+		Entrypoint: step.Entrypoint,
+	}}
+}
+
 // cacheFromSteps pulls images used by `--cache-from`.
 func (b *Builder) cacheFromSteps(artifact *latest.DockerArtifact, platforms platform.Matcher) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 	argFmt := "docker pull %s || true"
-	if platforms.IsNotEmpty() {
+	if !platforms.IsMultiPlatform() && platforms.IsNotEmpty() {
 		argFmt = "docker pull --platform " + platforms.String() + " %s || true"
 	}
 	for _, cacheFrom := range artifact.CacheFrom {
