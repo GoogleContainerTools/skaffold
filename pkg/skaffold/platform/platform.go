@@ -18,6 +18,7 @@ package platform
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/containerd/containerd/platforms"
@@ -109,9 +110,42 @@ func Parse(ps []string) (Matcher, error) {
 		if err != nil {
 			return Matcher{}, UnknownPlatformCLIFlag(p, err)
 		}
+		if err := isKnownPlatform(platform); err != nil {
+			return Matcher{}, UnknownPlatformCLIFlag(p, err)
+		}
 		sl = append(sl, platform)
 	}
 	return Matcher{Platforms: sl}, nil
+}
+
+func isKnownPlatform(p specs.Platform) error {
+	if err := isKnownOS(p.OS); err != nil {
+		return err
+	}
+	if err := isKnownArch(p.Architecture); err != nil {
+		return err
+	}
+	return nil
+}
+
+// isKnownOS returns an error if we don't know about the operating system.
+// Unexported function copied from "github.com/containerd/containerd/platforms"
+func isKnownOS(os string) error {
+	switch os {
+	case "aix", "android", "darwin", "dragonfly", "freebsd", "hurd", "illumos", "js", "linux", "nacl", "netbsd", "openbsd", "plan9", "solaris", "windows", "zos":
+		return nil
+	}
+	return fmt.Errorf("unknown operating system %q", os)
+}
+
+// isKnownArch returns an error if we don't know about the architecture.
+// Unexported function copied from "github.com/containerd/containerd/platforms"
+func isKnownArch(arch string) error {
+	switch arch {
+	case "386", "amd64", "amd64p32", "arm", "armbe", "arm64", "arm64be", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le", "mips64p32", "mips64p32le", "ppc", "riscv", "riscv64", "s390", "s390x", "sparc", "sparc64", "wasm":
+		return nil
+	}
+	return fmt.Errorf("unknown architecture %q", arch)
 }
 
 func Format(pl specs.Platform) string { return platforms.Format(pl) }

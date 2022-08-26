@@ -253,3 +253,33 @@ func TestIntersect(t *testing.T) {
 		})
 	}
 }
+
+func TestParse(t *testing.T) {
+	tests := []struct {
+		description string
+		input       []string
+		shouldErr   bool
+	}{
+		{
+			description: "known platforms",
+			input:       []string{"linux/arm64", "darwin/amd64", "freebsd/arm"},
+			shouldErr:   false,
+		},
+		{
+			description: "unknown os",
+			input:       []string{"foo/arm64", "darwin/amd64", "freebsd/arm"},
+			shouldErr:   true,
+		},
+		{
+			description: "unknown arch",
+			input:       []string{"linux/arm64", "darwin/foo", "freebsd/arm"},
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := Parse(test.input)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
