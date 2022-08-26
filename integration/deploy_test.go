@@ -206,7 +206,7 @@ func TestDeployBuildWithMultiPlatforms(t *testing.T) {
 		{
 			description:       "build linux/arm64",
 			dir:               "examples/nodejs",
-			args:              []string{"--platform", "linux/arm64", "-t", "arm64", "--quiet"},
+			args:              []string{"--platform", "linux/arm64", "-t", "arm64", "--vdebug"},
 			image:             "gcr.io/k8s-skaffold/node-example:arm64",
 			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}},
 		},
