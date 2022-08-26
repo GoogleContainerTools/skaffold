@@ -126,42 +126,6 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func TestBuildWithMultiPlatforms(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
-
-	tests := []struct {
-		description       string
-		dir               string
-		args              []string
-		image             string
-		setup             func(t *testing.T, workdir string)
-		expectedPlatforms []v1.Platform
-	}{
-
-		{
-			description:       "build linux/amd64,linux/arm64",
-			dir:               "examples/nodejs",
-			args:              []string{"--platform", "linux/amd64,linux/arm64", "-t", "amd64-arm64", "--quiet"},
-			image:             "gcr.io/k8s-skaffold/node-example:amd64-arm64",
-			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "linux", Architecture: "arm64"}},
-		},
-		{
-			description:       "build linux/arm64",
-			dir:               "examples/nodejs",
-			args:              []string{"--platform", "linux/arm64", "-t", "arm64", "--quiet"},
-			image:             "gcr.io/k8s-skaffold/node-example:arm64",
-			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
-			checkImagePlatforms(t, test.image, test.expectedPlatforms)
-		})
-	}
-}
-
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
