@@ -157,7 +157,7 @@ func upgradePatches(olds []JSONPatch, news []next.JSONPatch) {
 				news[i].Path = strings.ReplaceAll(old.Path, str, repStr)
 			}
 			if strings.Contains(old.Path, "/deploy/kpt") {
-				log.Entry(context.TODO()).Printf("skip migrating kpt deploy sections. Please migrate these over manually")
+				log.Entry(context.TODO()).Warn("skip migrating kpt deploy sections. Please migrate these over manually")
 			}
 		}
 	}
