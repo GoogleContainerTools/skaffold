@@ -21,6 +21,7 @@ package binpack
 // GCPTimings contains the timings for tests marked with NeedsGcp
 var GCPTimings = []Timing{
 	{"TestBuildKanikoInsecureRegistry", 10.00},
+	{"TestDeployBuildWithMultiPlatforms", 20.00},
 	{"TestBuildKanikoWithExplicitRepo", 10.00},
 	{"TestBuildInCluster", 10.00},
 	{"TestBuildGCBWithExplicitRepo", 10.00},
@@ -30,7 +31,6 @@ var GCPTimings = []Timing{
 	{"TestDevPortForwardGKELoadBalancer", 10.00},
 	{"TestHelmDeploy", 10.00},
 	{"TestRunGCPOnly", 10.00},
-	{"TestDeployBuildWithMultiPlatforms", 10.00},
 }
 
 const MaxGCPBinTime = 31.0
