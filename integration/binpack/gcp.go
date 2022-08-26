@@ -30,6 +30,7 @@ var GCPTimings = []Timing{
 	{"TestDevPortForwardGKELoadBalancer", 10.00},
 	{"TestHelmDeploy", 10.00},
 	{"TestRunGCPOnly", 10.00},
+	{"TestDeployBuildWithMultiPlatforms", 10.00},
 }
 
 const MaxGCPBinTime = 31.0
