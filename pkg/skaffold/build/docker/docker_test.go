@@ -134,7 +134,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
@@ -233,7 +233,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			a.Workspace = "."
 			a.DockerArtifact.DockerfilePath = dockerfilePath
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 
