@@ -53,7 +53,7 @@ Refer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for deta
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRun(
