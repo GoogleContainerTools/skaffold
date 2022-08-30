@@ -1,3 +1,77 @@
+# v2.0.0-beta2 Release - 08/30/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta2/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta2/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta2/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.0.0-beta2/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.0.0-beta2`
+
+Note: This release comes with a new config version, `v3alpha1`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Skaffold’s v2 beta release `v2.0.0-beta2` is out today!  To try it out, you can go to our [v2.0.0-beta2 installation guide](https://skaffold-v2.web.app/docs/install/) or use the instructions above.  For information on migrating from skaffold v1.X.Y to skaffold v2.0.0-beta2 see our [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/).  TLDR; there should not be any changes required for most use cases, see the [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/) for the full details.  
+
+Highlights:
+
+See Skaffold's [v2.0.0-beta1 Release Notes](https://github.com/GoogleContainerTools/skaffold/releases/tag/v2.0.0-beta1) "Highlights" section for additional information on the large feature additions and changes Skaffold V2 brings.  Below will be the incremental highlights from v2.0.0-beta1 to v2.0.0-beta2
+* cross-platform AND multi-platfor support for Skaffold is now feature complete!  See the [cross-platform and multi-platform docs](https://skaffold-v2-latest.web.app/docs/pipeline-stages/builders/#cross-platform-and-multi-platform-build-support/) and the [Managing ARM Workloads docs](https://skaffold-v2.web.app/docs/workflows/handling-platforms/) for the full information on the feature.  See also the [sample skaffold.yaml & app](https://github.com/GoogleContainerTools/skaffold/blob/main/integration/examples/cross-platform-builds/skaffold.yaml) here.
+* skaffold verify now supports profiles
+* skaffold init functionality for helm applications has increased support for Skaffold V2 - apiVersion:skaffold/v3alpha1
+
+
+New Features and Additions:
+* feat: add profile support to skaffold verify [#7807](https://github.com/GoogleContainerTools/skaffold/pull/7807)
+* feat: upgrade profiles when running skaffold fix [#7800](https://github.com/GoogleContainerTools/skaffold/pull/7800)
+* feat: add hooks support to render schema and phase [#7785](https://github.com/GoogleContainerTools/skaffold/pull/7785)
+
+Fixes:
+* fix: helm template warnings breaking yaml parsing [#7825](https://github.com/GoogleContainerTools/skaffold/pull/7825)
+* fix: Remove the flag from deploy command [#7823](https://github.com/GoogleContainerTools/skaffold/pull/7823)
+* fix: Fill IMAGE_TAG,etc on Docker builds [#7788](https://github.com/GoogleContainerTools/skaffold/pull/7788)
+* chore: Add integration test for build cross platform images [#7818](https://github.com/GoogleContainerTools/skaffold/pull/7818)
+* feat: add toleration for GKE ARM nodes taint [#7789](https://github.com/GoogleContainerTools/skaffold/pull/7789)
+* fix: add auth to image pull [#7814](https://github.com/GoogleContainerTools/skaffold/pull/7814)
+* fix: check platform values for known OS and Arch, and fail fast [#7817](https://github.com/GoogleContainerTools/skaffold/pull/7817)
+* fix: add host platform metric to platform type events [#7821](https://github.com/GoogleContainerTools/skaffold/pull/7821)
+* fix: make helm renderer to use manifest.ManifestList  [#7795](https://github.com/GoogleContainerTools/skaffold/pull/7795)
+* fix: add node unschedulable to retriable errors [#7798](https://github.com/GoogleContainerTools/skaffold/pull/7798)
+* fix: remove required tag from cloud run region [#7784](https://github.com/GoogleContainerTools/skaffold/pull/7784)
+* fix: added apply to --rpc-port and --rpc-http-port definedons [#7799](https://github.com/GoogleContainerTools/skaffold/pull/7799)
+
+Updates and Refactors:
+* chore: raise error when there is a multiplatform build without container registry [#7786](https://github.com/GoogleContainerTools/skaffold/pull/7786)
+* chore: safe type assersions [#7770](https://github.com/GoogleContainerTools/skaffold/pull/7770)
+* chore: add-render-event-in-runner [#7781](https://github.com/GoogleContainerTools/skaffold/pull/7781)
+* refactor: remove v1 runner interfaces and simplify code  [#7724](https://github.com/GoogleContainerTools/skaffold/pull/7724)
+
+Docs, Test, and Release Updates:
+fix: improve multi-arch docs [#7767](https://github.com/GoogleContainerTools/skaffold/pull/7767)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- 조태혁
+- Aaron Prindle
+- Benjamin Kaplan
+- dependabot[bot]
+- dhodun
+- ericzzzzzzz
+- Gaurav
+- Halvard Skogsrud
+- Karolína Lišková
+- Oladapo Ajala
+- Pablo Caderno
+- Renzo Rojas
+- Tejal Desai
 # v2.0.0-beta1 Release - 08/03/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
@@ -19,7 +93,7 @@ https://storage.googleapis.com/skaffold/releases/v2.0.0-beta1/skaffold-windows-a
 
 Note: This release comes with a new config version, `v3alpha1`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
 
-Skaffold’s v2 beta release `v2.0.0-beta1` is out today!  To try it out, you can go to our [v2.0.0-beta1 installation guide](https://skaffold-v2.web.app/docs/install/) or use the instructions above.  For information on migrating from skaffold v1.*.* to skaffold v2.0.0-beta1 see our [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/).  TLDR; there should not be any changes required for most use cases, see the [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/) for the full details.  
+Skaffold’s v2 beta release `v2.0.0-beta1` is out today!  To try it out, you can go to our [v2.0.0-beta1 installation guide](https://skaffold-v2.web.app/docs/install/) or use the instructions above.  For information on migrating from skaffold v1.X.Y to skaffold v2.0.0-beta1 see our [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/).  TLDR; there should not be any changes required for most use cases, see the [upgrade guide here](https://skaffold-v2.web.app/docs/upgrading-to-v2/) for the full details.  
 
 
 Highlights:
