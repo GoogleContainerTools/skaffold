@@ -85,7 +85,7 @@ func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary st
 	return
 }
 
-// generateSkaffoldFilter creates a `skaffold filter`` command-line for applying the various
+// generateSkaffoldFilter creates a "skaffold filter" command-line for applying the various
 // Skaffold manifest filters, such a debugging, image replacement, and applying labels.
 func generateSkaffoldFilter(h Client, buildsFile string) []string {
 	args := []string{"filter", "--kube-context", h.KubeContext()}
@@ -106,8 +106,7 @@ func generateSkaffoldFilter(h Client, buildsFile string) []string {
 	return args
 }
 
-// Exec executes the helm command, writing combined stdout/stderr to the provided writer
-func Exec(ctx context.Context, h Client, out io.Writer, useSecrets bool, env []string, args ...string) error {
+func generateHelmCommand(ctx context.Context, h Client, useSecrets bool, env []string, args ...string) *exec.Cmd {
 	args = append([]string{"--kube-context", h.KubeContext()}, args...)
 	args = append(args, h.GlobalFlags()...)
 
@@ -123,8 +122,23 @@ func Exec(ctx context.Context, h Client, out io.Writer, useSecrets bool, env []s
 	if len(env) > 0 {
 		cmd.Env = env
 	}
+	return cmd
+}
+
+// Exec executes the helm command, writing combined stdout/stderr to the provided writer
+func Exec(ctx context.Context, h Client, out io.Writer, useSecrets bool, env []string, args ...string) error {
+	cmd := generateHelmCommand(ctx, h, useSecrets, env, args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
+
+	return util.RunCmd(ctx, cmd)
+}
+
+// ExecWithStdoutAndStderr executes the helm command, writing combined stdout and stderr to the provided writers
+func ExecWithStdoutAndStderr(ctx context.Context, h Client, stdout io.Writer, stderr io.Writer, useSecrets bool, env []string, args ...string) error {
+	cmd := generateHelmCommand(ctx, h, useSecrets, env, args...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	return util.RunCmd(ctx, cmd)
 }
