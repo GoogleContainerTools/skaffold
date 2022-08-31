@@ -24,7 +24,7 @@ Skaffold’s v2 beta release `v2.0.0-beta2` is out today!  To try it out, you ca
 Highlights:
 
 See Skaffold's [v2.0.0-beta1 Release Notes](https://github.com/GoogleContainerTools/skaffold/releases/tag/v2.0.0-beta1) "Highlights" section for additional information on the large feature additions and changes Skaffold V2 brings.  Below will be the incremental highlights from v2.0.0-beta1 to v2.0.0-beta2
-* cross-platform AND multi-platfor support for Skaffold is now feature complete!  See the [cross-platform and multi-platform docs](https://skaffold-v2-latest.web.app/docs/pipeline-stages/builders/#cross-platform-and-multi-platform-build-support/) and the [Managing ARM Workloads docs](https://skaffold-v2.web.app/docs/workflows/handling-platforms/) for the full information on the feature.  See also the [sample skaffold.yaml & app](https://github.com/GoogleContainerTools/skaffold/blob/main/integration/examples/cross-platform-builds/skaffold.yaml) here.
+* cross-platform AND multi-platform support for Skaffold is now feature complete!  See the [cross-platform and multi-platform docs](https://skaffold-v2-latest.web.app/docs/pipeline-stages/builders/#cross-platform-and-multi-platform-build-support/) and the [Managing ARM Workloads docs](https://skaffold-v2.web.app/docs/workflows/handling-platforms/) for the full information on the feature.  See also the [sample skaffold.yaml & app](https://github.com/GoogleContainerTools/skaffold/blob/main/integration/examples/cross-platform-builds/skaffold.yaml) here.
 * skaffold render phase now supports lifecycle hooks
 * skaffold verify now supports profiles
 * skaffold init functionality for helm applications has increased support for Skaffold V2 - apiVersion:skaffold/v3alpha1
