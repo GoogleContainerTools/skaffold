@@ -134,6 +134,16 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 		for _, b := range allbuilds {
 			if tc.Container.Image == b.ImageName {
 				foundArtifact = true
+				imageID, err := v.client.ImageID(ctx, b.Tag)
+				if err != nil {
+					return fmt.Errorf("getting imageID for %q: %w", b.Tag, err)
+				}
+				if imageID == "" {
+					// not available in local docker daemon, needs to be pulled
+					if err := v.client.Pull(ctx, out, b.Tag, v1.Platform{}); err != nil {
+						return err
+					}
+				}
 				na = graph.Artifact{
 					ImageName: tc.Container.Image,
 					Tag:       b.Tag,
@@ -146,8 +156,7 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 			}
 		}
 		if !foundArtifact {
-			err = v.client.Pull(ctx, out, tc.Container.Image, v1.Platform{})
-			if err != nil {
+			if err := v.client.Pull(ctx, out, tc.Container.Image, v1.Platform{}); err != nil {
 				return err
 			}
 			na = graph.Artifact{
