@@ -30,6 +30,8 @@ import (
 
 const namespaceField = "namespace"
 
+const defaultNamespace = "default"
+
 // CollectNamespaces returns all the namespaces in the manifests.
 func (l *ManifestList) CollectNamespaces() ([]string, error) {
 	replacer := newNamespaceCollector()
@@ -85,7 +87,7 @@ func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[st
 // Returns error if any manifest in the list has namespace set.
 func (l *ManifestList) SetNamespace(namespace string, rs ResourceSelector) (ManifestList, error) {
 	if namespace == "" {
-		namespace = "default"
+		namespace = defaultNamespace
 	}
 	var updated ManifestList
 	for _, item := range *l {
@@ -128,6 +130,11 @@ func addOrUpdateNamespace(manifest map[string]interface{}, ns string) error {
 		metadata[namespaceField] = ns
 		return nil
 	}
+
+	if present && isEmptyOrEqual(ns, defaultNamespace) {
+		return nil
+	}
+
 	return nsAlreadySetErr()
 }
 
