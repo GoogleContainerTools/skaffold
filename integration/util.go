@@ -49,10 +49,16 @@ type TestType int
 const (
 	CanRunWithoutGcp TestType = iota
 	NeedsGcp
+	NeedsHybridCluster
 )
 
 func MarkIntegrationTest(t *testing.T, testType TestType) {
 	t.Helper()
+	runOnHybridCluster := os.Getenv("HYBRID_ONLY") == "true"
+	if runOnHybridCluster != (NeedsHybridCluster == testType) {
+		t.Skipf("Skipping test due to testType doesn't match environment setup : runOnHybrid: %t, NeedsHybridCluster: %t", runOnHybridCluster, NeedsHybridCluster == testType)
+	}
+
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
