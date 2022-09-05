@@ -406,6 +406,11 @@ type GoogleCloudBuild struct {
 	// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
 	// If unspecified, Skaffold uses the `docker/binfmt` image by default.
 	PlatformEmulatorInstallStep *PlatformEmulatorInstallStep `yaml:"platformEmulatorInstallStep,omitempty"`
+
+	// ServiceAccount is the Google Cloud platform service account used by Cloud Build.
+	// If unspecified, it defaults to the Cloud Build service account generated when
+	// the Cloud Build API is enabled.
+	ServiceAccount string `yaml:"serviceAccount,omitempty"`
 }
 
 // PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.

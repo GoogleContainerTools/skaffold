@@ -1906,6 +1906,11 @@
           "description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See [Cloud Build locations](https://cloud.google.com/build/docs/locations).",
           "x-intellij-html-description": "configures the region to run the build. If WorkerPool is configured, the region will be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured, the build will be run in global(non-regional). See <a href=\"https://cloud.google.com/build/docs/locations\">Cloud Build locations</a>."
         },
+        "serviceAccount": {
+          "type": "string",
+          "description": "Google Cloud platform service account used by Cloud Build. If unspecified, it defaults to the Cloud Build service account generated when the Cloud Build API is enabled.",
+          "x-intellij-html-description": "Google Cloud platform service account used by Cloud Build. If unspecified, it defaults to the Cloud Build service account generated when the Cloud Build API is enabled."
+        },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build should be allowed to run. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).",
@@ -1933,7 +1938,8 @@
         "concurrency",
         "workerPool",
         "region",
-        "platformEmulatorInstallStep"
+        "platformEmulatorInstallStep",
+        "serviceAccount"
       ],
       "additionalProperties": false,
       "type": "object",
