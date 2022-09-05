@@ -41,7 +41,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	rhelm "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"

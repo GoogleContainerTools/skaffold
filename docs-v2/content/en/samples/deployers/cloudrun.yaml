@@ -1,0 +1,4 @@
+deploy:
+  cloudrun:
+    projectid: my-gcp-project
+    region: us-central1

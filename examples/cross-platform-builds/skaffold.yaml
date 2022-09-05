@@ -1,7 +1,6 @@
 apiVersion: skaffold/v2beta29
 kind: Config
 build:
-  platforms: ["linux/amd64"]
   artifacts:
   - image: skaffold-example
 deploy:
@@ -9,7 +8,6 @@ deploy:
     manifests:
       - k8s-*
 profiles:
-  - name: googleCloudBuild
+  - name: cloudbuild
     build:
-      googleCloudBuild:
-        projectId: k8s-skaffold
+      googleCloudBuild: {}

@@ -1,8 +1,8 @@
 ---
-title: "Kpt"
-linkTitle: "Kpt"
+title: "Kpt [UPDATED]"
+linkTitle: "Kpt [UPDATED]"
 weight: 30
-featureId: render
+featureId: deploy
 ---
 
 ## Rendering with kpt

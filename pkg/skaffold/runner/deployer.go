@@ -32,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
@@ -173,6 +173,9 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			if err != nil {
 				return nil, err
 			}
+			if len(deployers) > 0 {
+				return nil, fmt.Errorf("kpt deployer mixed in with other deployers not supported yet. Please use only kpt deployer")
+			}
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
@@ -199,8 +202,6 @@ The default deployer will honor a select set of deploy configuration from an exi
   - deploy.Logs.Prefix
   - deploy.Kubectl.Flags
   - deploy.Kubectl.DefaultNamespace
-  - deploy.Kustomize.Flags
-  - deploy.Kustomize.DefaultNamespace
 
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.

@@ -32,6 +32,7 @@ import (
 )
 
 // TODO: remove nolint once we've reenabled integration tests
+//
 //nolint:golint,unused
 var syncTests = []struct {
 	description string

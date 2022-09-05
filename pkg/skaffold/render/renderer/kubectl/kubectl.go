@@ -65,7 +65,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 
 func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	_, endTrace := instrumentation.StartTrace(ctx, "Render_KubectlManifests")
-	log.Entry(ctx).Infof("rendering using kubectl")
+	log.Entry(ctx).Infof("starting render process")
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"RendererType": "kubectl",
 	})
@@ -73,7 +73,9 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
 		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
+		KubeContext:                r.cfg.GetKubeContext(),
 	}
 	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
 	endTrace()

@@ -6,12 +6,15 @@ build:
     context: .
     docker:
       dockerfile: Dockerfile
+      noCache: true
   tagPolicy:
     gitCommit: {}
-  platforms:
-  - linux/amd64
   local:
     concurrency: 1
 manifests:
   rawYaml:
   - k8s-*
+profiles:
+  - name: cloudbuild
+    build:
+      googleCloudBuild: {}

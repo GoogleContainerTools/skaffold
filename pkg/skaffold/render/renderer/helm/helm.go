@@ -97,7 +97,7 @@ func (h Helm) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 }
 
 func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact) (manifest.ManifestList, error) {
-	renderedManifests := new(bytes.Buffer)
+	var renderedManifests manifest.ManifestList
 	helmEnv := sUtil.OSEnviron()
 	var postRendererArgs []string
 
@@ -143,17 +143,15 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 		}
 
 		outBuffer := new(bytes.Buffer)
-		if err := helm.Exec(ctx, h, outBuffer, false, helmEnv, args...); err != nil {
+		errBuffer := new(bytes.Buffer)
+		if err := helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, helmEnv, args...); err != nil {
 			return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String()))
 		}
-		renderedManifests.Write(outBuffer.Bytes())
-	}
-	manifests, err := manifest.Load(bytes.NewReader(renderedManifests.Bytes()))
-	if err != nil {
-		return nil, err
+		log.Entry(ctx).Errorf(errBuffer.String())
+		renderedManifests.Append(outBuffer.Bytes())
 	}
 
-	manifests, err = manifests.SetLabels(h.labels, manifest.NewResourceSelectorLabels(h.transformAllowlist, h.transformDenylist))
+	manifests, err := renderedManifests.SetLabels(h.labels, manifest.NewResourceSelectorLabels(h.transformAllowlist, h.transformDenylist))
 	if err != nil {
 		return nil, err
 	}

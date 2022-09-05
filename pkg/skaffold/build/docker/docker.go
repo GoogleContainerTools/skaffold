@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -92,7 +93,16 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, pl v1.Platform) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
-	ba, err := docker.EvalBuildArgs(b.cfg.Mode(), workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
+	imgRef, err := docker.ParseReference(opts.Tag)
+	if err != nil {
+		return "", fmt.Errorf("couldn't parse image tag: %w", err)
+	}
+	imageInfoEnv := map[string]string{
+		"IMAGE_REPO": imgRef.Repo,
+		"IMAGE_NAME": imgRef.Name,
+		"IMAGE_TAG":  imgRef.Tag,
+	}
+	ba, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs, imageInfoEnv)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -123,10 +133,13 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
-	cmd.Stderr = out
+
+	var errBuffer bytes.Buffer
+	stderr := io.MultiWriter(out, &errBuffer)
+	cmd.Stderr = stderr
 
 	if err := util.RunCmd(ctx, cmd); err != nil {
-		return "", fmt.Errorf("running build: %w", err)
+		return "", tryExecFormatErr(fmt.Errorf("running build: %w", err), errBuffer)
 	}
 
 	return b.localDocker.ImageID(ctx, opts.Tag)

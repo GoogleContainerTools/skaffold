@@ -1,5 +1,6 @@
 FROM golang:1.18 as builder
 WORKDIR /code
+COPY test .
 COPY main.go .
 COPY go.mod .
 # `skaffold debug` sets SKAFFOLD_GO_GCFLAGS to disable compiler optimizations

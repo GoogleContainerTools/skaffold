@@ -24,6 +24,7 @@ Kubernetes cluster.
 * Skaffold projects work everywhere
   * **share with other developers** - Skaffold is the easiest way to **share your project** with the world: `git clone` and `skaffold run`
   * **context aware** - use Skaffold profiles, local user config, environment variables, and flags to easily incorporate differences across environments
+  * **platform aware** - use cross-platform and multi-platform **build** support, with automatic platform detection, to easily handle operating system and architecture differences between the development machine and Kubernetes cluster nodes.
   * **CI/CD building blocks** - use `skaffold build`, `skaffold test` and `skaffold deploy` as part of your CI/CD pipeline, or simply `skaffold run` end-to-end
   * **GitOps integration** - use `skaffold render` to build your images and render templated Kubernetes manifests for use in GitOps workflows
 * skaffold.yaml - a single pluggable, declarative configuration for your project

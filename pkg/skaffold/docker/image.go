@@ -312,7 +312,16 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if err := l.CheckCompatible(a); err != nil {
 		return "", err
 	}
-	buildArgs, err := EvalBuildArgs(opts.Mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
+	imgRef, err := ParseReference(opts.Tag)
+	if err != nil {
+		return "", fmt.Errorf("couldn't parse image tag: %w", err)
+	}
+	imageInfoEnv := map[string]string{
+		"IMAGE_REPO": imgRef.Repo,
+		"IMAGE_NAME": imgRef.Name,
+		"IMAGE_TAG":  imgRef.Tag,
+	}
+	buildArgs, err := EvalBuildArgsWithEnv(opts.Mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs, imageInfoEnv)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}

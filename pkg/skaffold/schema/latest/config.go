@@ -400,8 +400,22 @@ type GoogleCloudBuild struct {
 	// Region configures the region to run the build. If WorkerPool is configured, the region will
 	// be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured,
 	// the build will be run in global(non-regional).
-	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations)
+	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations).
 	Region string `yaml:"region,omitempty"`
+
+	// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
+	// If unspecified, Skaffold uses the `docker/binfmt` image by default.
+	PlatformEmulatorInstallStep *PlatformEmulatorInstallStep `yaml:"platformEmulatorInstallStep,omitempty"`
+}
+
+// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
+type PlatformEmulatorInstallStep struct {
+	// Image specifies the image that will install the required tooling for QEMU emulation on the GoogleCloudBuild containers.
+	Image string `yaml:"image" yamltags:"required"`
+	// Args specifies arguments passed to the emulator installer image.
+	Args []string `yaml:"args,omitempty"`
+	// Entrypoint specifies the ENTRYPOINT argument to the emulator installer image.
+	Entrypoint string `yaml:"entrypoint,omitempty"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -572,22 +586,28 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	// RawK8s TODO: add description.
+	// RawK8s defines the raw kubernetes resources.
 	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
 
 	// Kustomize defines the paths to be modified with kustomize, along with extra
-	// flags to be passed to kustomize
+	// flags to be passed to kustomize.
 	Kustomize *Kustomize `yaml:"kustomize,omitempty"`
 
-	// Helm TODO: add description.
+	// Helm defines the helm charts used in the application.
+	// NOTE: Defines cherts in this section to render via helm but
+	// deployed via kubectl or kpt deployer.
+	// To use helm to deploy, please see deploy.helm section.
 	Helm *Helm `yaml:"helm,omitempty"`
 
-	// Kpt TODO: add description.
+	// Kpt defines the kpt resources in the application.
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every render.
+	LifecycleHooks RenderHooks `yaml:"hooks,omitempty"`
 }
 
 // Kustomize defines the paths to be modified with kustomize, along with
-// extra flags to be passed to kustomize
+// extra flags to be passed to kustomize.
 type Kustomize struct {
 	// Paths is the path to Kustomization files.
 	// Defaults to `["."]`.
@@ -692,16 +712,19 @@ type DeployType struct {
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
-	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API
+	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API.
 	CloudRunDeploy *CloudRunDeploy `yaml:"cloudrun,omitempty"`
 }
 
 // CloudRunDeploy *alpha* deploys the container to Google Cloud Run.
 type CloudRunDeploy struct {
-	// ProjectID of the GCP Project to use for Cloud Run.
+	// ProjectID the GCP Project to use for Cloud Run.
+	// If specified, all Services will be deployed to this project. If not specified,
+	// each Service will be deployed to the project specified in `metadata.namespace` of
+	// the Cloud Run manifest.
 	ProjectID string `yaml:"projectid,omitempty"`
 
-	// Region in GCP to use for the Cloud Run Deploy.
+	// Region GCP location to use for the Cloud Run Deploy.
 	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
 	Region string `yaml:"region,omitempty"`
 }
@@ -1093,8 +1116,8 @@ type BuildpackArtifact struct {
 	// TrustBuilder indicates that the builder should be trusted.
 	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
 
-	// Removes old cache volume associated with the specific image
-	// and supplies a clean cache volume for build
+	// ClearCache removes old cache volume associated with the specific image
+	// and supplies a clean cache volume for build.
 	ClearCache bool `yaml:"clearCache,omitempty"`
 
 	// ProjectDescriptor is the path to the project descriptor file.
@@ -1502,6 +1525,20 @@ type SyncHooks struct {
 	PostHooks []SyncHookItem `yaml:"after,omitempty"`
 }
 
+// RenderHookItem describes a single lifecycle hook to execute before or after each deployer step.
+type RenderHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
+}
+
+// RenderHooks describes the list of lifecycle hooks to execute before and after each render step.
+type RenderHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
+	PreHooks []RenderHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
+	PostHooks []RenderHookItem `yaml:"after,omitempty"`
+}
+
 // DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.
 type DeployHookItem struct {
 	// HostHook describes a single lifecycle hook to run on the host machine.
@@ -1553,8 +1590,8 @@ type ResourceFilter struct {
 	Image []string `yaml:"image,omitempty"`
 	// Labels is an optional slice of JSON-path-like paths of where to add a labels block if missing.
 	Labels []string `yaml:"labels,omitempty"`
-	// Affinity is an optional slice of JSON-path-like paths of where to add `affinity` definitions for scheduling Pods.
-	Affinity []string `yaml:"affinity,omitempty"`
+	// PodSpec is an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.
+	PodSpec []string `yaml:"podSpec,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

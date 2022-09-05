@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
@@ -80,6 +80,7 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		errs = append(errs, validateSyncRules(config, config.Build.Artifacts)...)
 		errs = append(errs, validatePortForwardResources(config, config.PortForward)...)
 		errs = append(errs, validateJibPluginTypes(config, config.Build.Artifacts)...)
+		errs = append(errs, validateKoSync(config, config.Build.Artifacts)...)
 		errs = append(errs, validateLogPrefix(config, config.Deploy.Logs)...)
 		errs = append(errs, validateArtifactTypes(config, config.Build)...)
 		errs = append(errs, validateTaggingPolicy(config, config.Build)...)
@@ -120,6 +121,7 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 	var errs []error
 	errs = append(errs, validateDockerNetworkContainerExists(ctx, runCtx.Artifacts(), runCtx)...)
 	errs = append(errs, validateVerifyTestsExistOnVerifyCommand(runCtx.DefaultPipeline().Verify, runCtx)...)
+	errs = append(errs, validateLocationSetForCloudRun(runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -606,6 +608,31 @@ func validateJibPluginTypes(cfg *parser.SkaffoldConfigEntry, artifacts []*latest
 	return
 }
 
+// validateKoSync ensures that infer sync patterns contain the `kodata` string, since infer sync for the ko builder only supports static assets.
+func validateKoSync(cfg *parser.SkaffoldConfigEntry, artifacts []*latest.Artifact) []ErrorWithLocation {
+	var cfgErrs []ErrorWithLocation
+	for i, a := range artifacts {
+		if a.KoArtifact == nil || a.Sync == nil {
+			continue
+		}
+		if len(a.Sync.Infer) > 0 && strings.Contains(a.KoArtifact.Main, "...") {
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    fmt.Errorf("artifact %s cannot use inferred file sync when the ko.main field contains the '...' wildcard. Instead, specify the path to the main package without using wildcards", a.ImageName),
+				Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i].KoArtifact, "Main"),
+			})
+		}
+		for _, pattern := range a.Sync.Infer {
+			if !strings.Contains(pattern, "kodata") {
+				cfgErrs = append(cfgErrs, ErrorWithLocation{
+					Error:    fmt.Errorf("artifact %s has an invalid pattern %s for inferred file sync with the ko builder. The pattern must specify the 'kodata' directory. For instance, if you want to sync all static content, and your main package is in the workspace directory, you can use the pattern 'kodata/**/*'", a.ImageName, pattern),
+					Location: cfg.YAMLInfos.LocateField(cfg.Build.Artifacts[i].Sync, "Infer"),
+				})
+			}
+		}
+	}
+	return cfgErrs
+}
+
 // validateArtifactTypes checks that the artifact types are compatible with the specified builder.
 func validateArtifactTypes(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfig) []ErrorWithLocation {
 	cfgErrs := []ErrorWithLocation{}
@@ -804,4 +831,40 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 		}
 	}
 	return errs
+}
+
+func validateLocationSetForCloudRun(rCtx *runcontext.RunContext) []error {
+	runDeployer := false
+	hasLocation := false
+	if rCtx.Opts.CloudRunLocation != "" {
+		hasLocation = true
+	}
+	if rCtx.Opts.CloudRunProject != "" {
+		runDeployer = true
+	} else {
+		for _, deployer := range rCtx.Pipelines.Deployers() {
+			if deployer.CloudRunDeploy != nil {
+				runDeployer = true
+				if deployer.CloudRunDeploy.Region != "" {
+					hasLocation = true
+				}
+			}
+		}
+	}
+	if runDeployer && !hasLocation {
+		return []error{sErrors.NewError(fmt.Errorf("location must be specified with Cloud Run Deployer"),
+			&proto.ActionableErr{
+				Message: "Cloud Run Location is not specified",
+				ErrCode: proto.StatusCode_INIT_CLOUD_RUN_LOCATION_ERROR,
+				Suggestions: []*proto.Suggestion{
+					{
+						SuggestionCode: proto.SuggestionCode_SPECIFY_CLOUD_RUN_LOCATION,
+						Action: "Specify a Cloud Run location via the deploy.cloudrun.region field in skaffold.yaml " +
+							"or the --cloud-run-location flag",
+					},
+				},
+			}),
+		}
+	}
+	return nil
 }

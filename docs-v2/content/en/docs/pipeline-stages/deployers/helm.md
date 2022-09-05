@@ -1,6 +1,6 @@
 ---
-title: "Helm"
-linkTitle: "Helm"
+title: "Helm [UPDATED]"
+linkTitle: "Helm [UPDATED]"
 weight: 40
 featureId: deploy
 ---

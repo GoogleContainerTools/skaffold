@@ -1,0 +1,8 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+manifests:
+  rawYaml:
+    - k8s-*

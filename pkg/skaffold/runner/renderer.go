@@ -19,21 +19,48 @@ package runner
 import (
 	"context"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // GetRenderer creates a renderer from a given RunContext and pipeline definitions.
 func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (renderer.Renderer, error) {
 	ps := runCtx.Pipelines.AllByConfigNames()
 
-	var renderers renderer.GroupRenderer
+	var gr renderer.GroupRenderer
+	gr.HookRunner = hooks.NewRenderRunner(runCtx.GetRenderConfig().LifecycleHooks, &[]string{runCtx.GetNamespace()},
+		hooks.NewRenderEnvOpts(runCtx.KubeContext, []string{runCtx.GetNamespace()}))
 	for configName, p := range ps {
-		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, usingLegacyHelmDeploy, runCtx.Opts.Command, configName)
+		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err
 		}
-		renderers = append(renderers, rs...)
+		gr.Renderers = append(gr.Renderers, rs.Renderers...)
+		gr.HookRunner = rs.HookRunner
 	}
-	return renderer.NewRenderMux(renderers), nil
+	// In case of legacy helm deployer configured and render command used
+	// force a helm renderer from deploy helm config
+	if usingLegacyHelmDeploy && runCtx.Opts.Command == "render" {
+		for configName, p := range ps {
+			if p.Deploy.LegacyHelmDeploy == nil {
+				continue
+			}
+			rCfg := latest.RenderConfig{
+				Generate: latest.Generate{
+					Helm: &latest.Helm{
+						Releases: p.Deploy.LegacyHelmDeploy.Releases,
+					},
+				},
+			}
+			r, err := helm.New(runCtx, rCfg, labels, configName)
+			if err != nil {
+				return nil, err
+			}
+			gr.Renderers = append(gr.Renderers, r)
+		}
+	}
+	return renderer.NewRenderMux(gr), nil
 }

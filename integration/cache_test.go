@@ -17,6 +17,9 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
+	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -64,4 +67,23 @@ func TestCacheHits(t *testing.T) {
 
 func waitForEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
 	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
+}
+
+func TestCacheIfBuildFail(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	ns, _ := SetupNamespace(t)
+
+	cacheFile := "cache_" + ns.Name
+	testDir := "testdata/cache"
+	relativePath := path.Join(testDir, cacheFile)
+	defer os.Remove(relativePath)
+
+	skaffold.Build("--cache-file", cacheFile).InDir(testDir).InNs(ns.Name).Run(t)
+
+	fInfo, err := os.Stat(relativePath)
+	failNowIfError(t, err)
+	if b := fInfo.Size(); b == 0 {
+		failNowIfError(t, fmt.Errorf("expected to see content in the cache file, saw %d bytes", b))
+	}
 }

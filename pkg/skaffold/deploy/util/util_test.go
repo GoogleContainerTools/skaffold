@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
