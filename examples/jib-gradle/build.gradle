@@ -39,4 +39,4 @@ compileJava.options.compilerArgs += '-parameters'
 compileTestJava.options.compilerArgs += '-parameters'
 mainClassName = 'example.micronaut.Application'
 
-jib.from.image = 'gcr.io/google-appengine/openjdk:8'
+jib.from.image = 'openjdk:8'

@@ -38,7 +38,7 @@
         <version>${jib.maven-plugin-version}</version>
         <configuration>
           <from>
-            <image>gcr.io/google-appengine/openjdk:8</image>
+            <image>openjdk:8</image>
           </from>
           <container>
             <jvmFlags>
