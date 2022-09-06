@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -135,7 +136,8 @@ func addOrUpdateNamespace(manifest map[string]interface{}, ns string) error {
 		return nil
 	}
 
-	return nsAlreadySetErr()
+	warnings.Printf("a manifest already has namespace set \"%s\" which conflicts with namespace on the CLI \"%s\"", nsValue, ns)
+	return nil
 }
 
 func isEmptyOrEqual(v interface{}, s string) bool {

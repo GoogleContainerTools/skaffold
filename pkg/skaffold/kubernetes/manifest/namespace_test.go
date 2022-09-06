@@ -19,6 +19,7 @@ package manifest
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -176,11 +177,12 @@ spec:
 
 func TestSetNamespaces(t *testing.T) {
 	tests := []struct {
-		description string
-		manifests   ManifestList
-		expected    ManifestList
-		namespace   string
-		shouldErr   bool
+		description      string
+		manifests        ManifestList
+		expected         ManifestList
+		namespace        string
+		shouldErr        bool
+		expectedWarnings []string
 	}{
 		{
 			description: "single Pod manifest in the list",
@@ -354,8 +356,19 @@ spec:
   - image: gcr.io/k8s-skaffold/example
     name: example
 `)},
-			expected:  nil,
-			shouldErr: true,
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: other
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			shouldErr:        false,
+			expectedWarnings: []string{"a manifest already has namespace set \"other\" which conflicts with namespace on the CLI \"test\""},
 		},
 		{
 			description: "empty namespace",
@@ -400,9 +413,12 @@ metadata:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			fakeWarner := &warnings.Collect{}
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			actual, err := test.manifests.SetNamespace(test.namespace,
 				NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String())
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }
