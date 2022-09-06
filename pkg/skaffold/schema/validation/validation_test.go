@@ -1757,6 +1757,7 @@ func TestValidateCloudRunLocation(t *testing.T) {
 		deploy           latest.DeployConfig
 		cloudRunLocation string
 		cloudRunProject  string
+		command          string
 		shouldErr        bool
 	}{
 		{
@@ -1779,6 +1780,16 @@ func TestValidateCloudRunLocation(t *testing.T) {
 				},
 			},
 			shouldErr: true,
+		},
+		{
+			description: "location not specified, command doesn't deploy",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{},
+				},
+			},
+			command:   "diagnose",
+			shouldErr: false,
 		},
 		{
 			description: "location specified via flag",
@@ -1804,6 +1815,10 @@ func TestValidateCloudRunLocation(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			command := test.command
+			if command == "" {
+				command = "run"
+			}
 			err := ProcessWithRunContext(context.Background(), &runcontext.RunContext{
 				Pipelines: runcontext.NewPipelines(
 					map[string]latest.Pipeline{
@@ -1815,6 +1830,7 @@ func TestValidateCloudRunLocation(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					CloudRunProject:  test.cloudRunProject,
 					CloudRunLocation: test.cloudRunLocation,
+					Command:          command,
 				},
 			})
 
