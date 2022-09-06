@@ -409,7 +409,32 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: getting-started
-`)}},
+`)}}, {
+			description: "manifests with namespace set and empty value in CLI",
+			namespace:   "",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: my-namespace
+spec:
+  containers:
+    - image: gcr.io/k8s-skaffold/example
+      name: example
+`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: my-namespace
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
