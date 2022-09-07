@@ -834,6 +834,10 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 }
 
 func validateLocationSetForCloudRun(rCtx *runcontext.RunContext) []error {
+	if !requiresCloudRun(rCtx) {
+		// if the current command doesn't require connecting to Cloud Run, a location isn't needed.
+		return nil
+	}
 	runDeployer := false
 	hasLocation := false
 	if rCtx.Opts.CloudRunLocation != "" {
@@ -867,4 +871,18 @@ func validateLocationSetForCloudRun(rCtx *runcontext.RunContext) []error {
 		}
 	}
 	return nil
+}
+
+// requiresCloudRun returns true if the current command needs to connect to a Cloud Run regional endpoint.
+func requiresCloudRun(rCtx *runcontext.RunContext) bool {
+	runCommands := map[string]bool{
+		"run":    true,
+		"deploy": true,
+		"debug":  true,
+		"dev":    true,
+		"delete": true,
+		"apply":  true,
+	}
+	_, ok := runCommands[rCtx.Opts.Command]
+	return ok
 }
