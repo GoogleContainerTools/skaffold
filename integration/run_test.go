@@ -17,12 +17,15 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	k8sv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -533,4 +536,95 @@ func TestRunNoOptFlags(t *testing.T) {
 
 		WaitForLogs(t, out, test.targetLog)
 	})
+}
+
+func TestRunWithMultiPlatform(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	tests := []struct {
+		description       string
+		dir               string
+		imageName         string
+		pod               string
+		tag               string
+		expectedPlatforms []v1.Platform
+	}{
+		{
+			description:       "Run with multiplatform linux/arm64 and linux/amd64",
+			dir:               "examples/cross-platform-builds",
+			imageName:         "skaffold-example",
+			pod:               "getting-started",
+			tag:               "multiplatform-integration-test",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			defaultRepo := "gcr.io/k8s-skaffold"
+
+			var platformsCliValue []string
+			for _, platform := range test.expectedPlatforms {
+				platformsCliValue = append(platformsCliValue, fmt.Sprintf("%s/%s", platform.OS, platform.Architecture))
+			}
+
+			ns, client := SetupNamespace(t)
+			args := []string{"--platform", strings.Join(platformsCliValue, ","), "--default-repo", defaultRepo, "--tag", test.tag}
+
+			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+
+			pod := client.GetPod(test.pod)
+
+			checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, test.imageName, test.tag), test.expectedPlatforms)
+			checkNodeAffinity(t, test.expectedPlatforms, pod)
+		})
+	}
+}
+
+func checkNodeAffinity(t *testing.T, expectedPlatforms []v1.Platform, pod *k8sv1.Pod) {
+	t.Helper()
+	failIfNodeAffinityNotSet(t, pod)
+	nodeAffinityPlatforms := getPlatformsFromNodeAffinity(pod)
+	checkPlatformsEqual(t, nodeAffinityPlatforms, expectedPlatforms)
+}
+
+func failIfNodeAffinityNotSet(t *testing.T, pod *k8sv1.Pod) {
+	if pod.Spec.Affinity == nil {
+		t.Fatalf("Affinity not defined in spec")
+	}
+
+	if pod.Spec.Affinity.NodeAffinity == nil {
+		t.Fatalf("NodeAffinity not defined in spec")
+	}
+
+	if pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+		t.Fatalf("RequiredDuringSchedulingIgnoredDuringExecution not defined in spec")
+	}
+
+	if pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms == nil {
+		t.Fatalf("NodeSelectorTerms not defined in spec")
+	}
+}
+
+func getPlatformsFromNodeAffinity(pod *k8sv1.Pod) []v1.Platform {
+	var platforms []v1.Platform
+	nodeAffinityPlatforms := pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+
+	for _, np := range nodeAffinityPlatforms {
+		os, arch := "", ""
+		for _, me := range np.MatchExpressions {
+			if me.Key == "kubernetes.io/os" {
+				os = strings.Join(me.Values, "")
+			}
+
+			if me.Key == "kubernetes.io/arch" {
+				arch = strings.Join(me.Values, "")
+			}
+		}
+
+		platforms = append(platforms, v1.Platform{OS: os, Architecture: arch})
+	}
+
+	return platforms
 }
