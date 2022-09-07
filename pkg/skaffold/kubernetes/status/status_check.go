@@ -139,6 +139,7 @@ func (s *monitor) Check(ctx context.Context, out io.Writer) error {
 
 func (s *monitor) check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
+	eventV2.TaskInProgress(constants.StatusCheck, "")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
 
@@ -148,8 +149,10 @@ func (s *monitor) check(ctx context.Context, out io.Writer) error {
 	errCode, err := s.statusCheck(ctx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	if err != nil {
+		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err
 	}
+	eventV2.TaskSucceeded(constants.StatusCheck)
 
 	output.Default.Fprintln(out, "Deployments stabilized in", timeutil.Humanize(time.Since(start)))
 	return nil
