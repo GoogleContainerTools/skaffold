@@ -56,10 +56,9 @@ build:
 
 ### Base image
 
-`ko` uses the [Distroless](https://github.com/GoogleContainerTools/distroless)
-image `gcr.io/distroless/static:nonroot` as the default base image. This is a
-small image that provides a
-[minimal environment for Go binaries](https://github.com/GoogleContainerTools/distroless/tree/main/base).
+`ko` uses a [distroless](https://distroless.dev)
+image `distroless.dev/static` as the default base image. This is a
+small image that provides a minimal environment for Go binaries.
 The  default base image does not provide a shell, and it does not include
 `glibc`.
 
@@ -69,7 +68,7 @@ a shell, you can use this configuration:
 
 ```yaml
     ko:
-      fromImage: gcr.io/distroless/base:debug-nonroot
+      fromImage: debian
 ```
 
 ### Multi-platform images
