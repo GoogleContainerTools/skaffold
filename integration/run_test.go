@@ -540,20 +540,32 @@ func TestRunNoOptFlags(t *testing.T) {
 
 func TestRunWithMultiPlatform(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	type image struct {
+		name string
+		pod  string
+	}
 
 	tests := []struct {
 		description       string
 		dir               string
-		imageName         string
-		pod               string
+		images            []image
 		tag               string
 		expectedPlatforms []v1.Platform
 	}{
 		{
 			description:       "Run with multiplatform linux/arm64 and linux/amd64",
 			dir:               "examples/cross-platform-builds",
-			imageName:         "skaffold-example",
-			pod:               "getting-started",
+			images:            []image{{name: "skaffold-example", pod: "getting-started"}},
+			tag:               "multiplatform-integration-test",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
+		{
+			description: "Run with multiplatform linux/arm64 and linux/amd64 in a multi config project",
+			dir:         "testdata/multi-config-pods",
+			images: []image{
+				{name: "multi-config-module1", pod: "module1"},
+				{name: "multi-config-module2", pod: "module2"},
+			},
 			tag:               "multiplatform-integration-test",
 			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
 		},
@@ -574,10 +586,12 @@ func TestRunWithMultiPlatform(t *testing.T) {
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
-			pod := client.GetPod(test.pod)
+			for _, image := range test.images {
+				pod := client.GetPod(image.pod)
 
-			checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, test.imageName, test.tag), test.expectedPlatforms)
-			checkNodeAffinity(t, test.expectedPlatforms, pod)
+				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag), test.expectedPlatforms)
+				checkNodeAffinity(t, test.expectedPlatforms, pod)
+			}
 		})
 	}
 }
