@@ -575,13 +575,9 @@ func TestRunWithMultiPlatform(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			defaultRepo := "gcr.io/k8s-skaffold"
 
-			var platformsCliValue []string
-			for _, platform := range test.expectedPlatforms {
-				platformsCliValue = append(platformsCliValue, fmt.Sprintf("%s/%s", platform.OS, platform.Architecture))
-			}
-
+			platforms := platformsCliValue(t, test.expectedPlatforms)
 			ns, client := SetupNamespace(t)
-			args := []string{"--platform", strings.Join(platformsCliValue, ","), "--default-repo", defaultRepo, "--tag", test.tag}
+			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag}
 
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
@@ -641,4 +637,15 @@ func getPlatformsFromNodeAffinity(pod *k8sv1.Pod) []v1.Platform {
 	}
 
 	return platforms
+}
+
+func platformsCliValue(t *testing.T, platforms []v1.Platform) string {
+	t.Helper()
+
+	var platformsCliValue []string
+	for _, platform := range platforms {
+		platformsCliValue = append(platformsCliValue, fmt.Sprintf("%s/%s", platform.OS, platform.Architecture))
+	}
+
+	return strings.Join(platformsCliValue, ",")
 }
