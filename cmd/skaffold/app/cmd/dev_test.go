@@ -80,7 +80,7 @@ func TestDoDev(t *testing.T) {
 			description:       "cleanup and then prune",
 			hasBuilt:          true,
 			deployedManifests: manifest.ManifestList{[]byte("dummy")},
-			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Render", "Cleanup", "Prune"},
+			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Cleanup", "Prune"},
 		},
 		{
 			description:       "hasn't deployed",
