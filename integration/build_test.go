@@ -166,7 +166,18 @@ func TestBuildWithMultiPlatforms(t *testing.T) {
 			args:              []string{"--platform", "linux/arm64,linux/amd64"},
 			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
 		},
+		{
+			description:       "docker build linux/arm64,linux/amd64",
+			dir:               "testdata/build/docker-with-platform-arm",
+			args:              []string{"--platform", "linux/arm64,linux/amd64"},
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
 	}
+
+	cmd := exec.Command("docker", "--version")
+
+	buf, _ := util.RunCmdOut(context.Background(), cmd)
+	t.Logf(string(buf))
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
