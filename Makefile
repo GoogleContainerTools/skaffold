@@ -31,7 +31,7 @@ GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
 
 GCP_ONLY ?= false
 GCP_PROJECT ?= k8s-skaffold
-GKE_CLUSTER_NAME ?= integration-tests
+GKE_CLUSTER_NAME ?= integration-tests-hybrid
 GKE_ZONE ?= us-central1-a
 
 SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64 darwin-arm64
