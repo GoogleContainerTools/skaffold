@@ -33,7 +33,9 @@ import (
 )
 
 const (
-	emptydir = "testdata/empty-dir"
+	emptydir          = "testdata/empty-dir"
+	hybridClusterName = "integration-tests-hybrid"
+	armClusterName    = "integration-tests-arm"
 )
 
 // Note: `custom-buildx` is not included as it depends on having a
@@ -539,7 +541,8 @@ func TestRunNoOptFlags(t *testing.T) {
 }
 
 func TestRunWithMultiPlatform(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
+	MarkIntegrationTest(t, NeedsGcp)
+	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
 	type image struct {
 		name string
 		pod  string
@@ -574,26 +577,27 @@ func TestRunWithMultiPlatform(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defaultRepo := "gcr.io/k8s-skaffold"
-
 			platforms := platformsCliValue(t, test.expectedPlatforms)
 			ns, client := SetupNamespace(t)
-			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag}
+			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
+			expectedPlatforms := expectedPlatformsForRunningCluster(t, test.expectedPlatforms)
 
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
 			for _, image := range test.images {
-				pod := client.GetPod(image.pod)
+				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag), expectedPlatforms)
 
-				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag), test.expectedPlatforms)
-				checkNodeAffinity(t, test.expectedPlatforms, pod)
+				if isRunningInHybridCluster {
+					pod := client.GetPod(image.pod)
+					checkNodeAffinity(t, test.expectedPlatforms, pod)
+				}
 			}
 		})
 	}
 }
 
 func checkNodeAffinity(t *testing.T, expectedPlatforms []v1.Platform, pod *k8sv1.Pod) {
-	t.Helper()
 	failIfNodeAffinityNotSet(t, pod)
 	nodeAffinityPlatforms := getPlatformsFromNodeAffinity(pod)
 	checkPlatformsEqual(t, nodeAffinityPlatforms, expectedPlatforms)
@@ -640,12 +644,21 @@ func getPlatformsFromNodeAffinity(pod *k8sv1.Pod) []v1.Platform {
 }
 
 func platformsCliValue(t *testing.T, platforms []v1.Platform) string {
-	t.Helper()
-
 	var platformsCliValue []string
 	for _, platform := range platforms {
 		platformsCliValue = append(platformsCliValue, fmt.Sprintf("%s/%s", platform.OS, platform.Architecture))
 	}
 
 	return strings.Join(platformsCliValue, ",")
+}
+
+func expectedPlatformsForRunningCluster(t *testing.T, platforms []v1.Platform) []v1.Platform {
+	switch clusterName := os.Getenv("GKE_CLUSTER_NAME"); clusterName {
+	case hybridClusterName:
+		return platforms
+	case armClusterName:
+		return []v1.Platform{{OS: "linux", Architecture: "arm64"}}
+	default:
+		return []v1.Platform{{OS: "linux", Architecture: "amd64"}}
+	}
 }
