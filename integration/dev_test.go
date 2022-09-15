@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -470,8 +471,10 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 }
 
 func TestDevMultiplatform(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
+	MarkIntegrationTest(t, NeedsGcp)
 	const platformsExpectedInNodeAffinity = 1
+	const platformsExpectedInCreatedImage = 1
+	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
 
 	type image struct {
 		name string
@@ -507,36 +510,48 @@ func TestDevMultiplatform(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defaultRepo := "gcr.io/k8s-skaffold"
-
 			platforms := platformsCliValue(t, test.expectedPlatforms)
 			ns, client := SetupNamespace(t)
-			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag}
+			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
+			expectedPlatforms := expectedPlatformsForRunningCluster(t, test.expectedPlatforms)
 
 			skaffold.Dev(args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
 			for _, image := range test.images {
-				pod := client.GetPod(image.pod)
-				failIfNodeAffinityNotSet(t, pod)
-				nodeAffinityPlatforms := getPlatformsFromNodeAffinity(pod)
-				platformsInNodeAffinity := len(nodeAffinityPlatforms)
+				client.WaitForPodsReady(image.pod)
+				createdImagePlatforms, err := docker.GetPlatforms(fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag))
+				failNowIfError(t, err)
 
-				if platformsInNodeAffinity != platformsExpectedInNodeAffinity {
-					t.Fatalf("there are more platforms in NodeAffinity than expected, found %v, expected %v", platformsInNodeAffinity, platformsExpectedInNodeAffinity)
+				if len(createdImagePlatforms) != platformsExpectedInCreatedImage {
+					t.Fatalf("there are more platforms in created Image than expected, found %v, expected %v", len(createdImagePlatforms), platformsExpectedInCreatedImage)
 				}
 
-				checkIfAPlatformMatch(t, test.expectedPlatforms, nodeAffinityPlatforms[0])
+				checkIfAPlatformMatch(t, expectedPlatforms, createdImagePlatforms[0])
+
+				if isRunningInHybridCluster {
+					pod := client.GetPod(image.pod)
+					failIfNodeAffinityNotSet(t, pod)
+					nodeAffinityPlatforms := getPlatformsFromNodeAffinity(pod)
+					platformsInNodeAffinity := len(nodeAffinityPlatforms)
+
+					if platformsInNodeAffinity != platformsExpectedInNodeAffinity {
+						t.Fatalf("there are more platforms in NodeAffinity than expected, found %v, expected %v", platformsInNodeAffinity, platformsExpectedInNodeAffinity)
+					}
+
+					checkIfAPlatformMatch(t, expectedPlatforms, nodeAffinityPlatforms[0])
+				}
 			}
 		})
 	}
 }
 
-func checkIfAPlatformMatch(t *testing.T, expectedPlatforms []v1.Platform, nodeAffinityPlatform v1.Platform) {
+func checkIfAPlatformMatch(t *testing.T, platforms []v1.Platform, expectedPlatform v1.Platform) {
 	const expectedMatchedPlatforms = 1
 	matchedPlatforms := 0
-	nodeAffinityPlatformValue := nodeAffinityPlatform.OS + "/" + nodeAffinityPlatform.Architecture
+	nodeAffinityPlatformValue := expectedPlatform.OS + "/" + expectedPlatform.Architecture
 
-	for _, platform := range expectedPlatforms {
+	for _, platform := range platforms {
 		expectedPlatformValue := platform.OS + "/" + platform.Architecture
 
 		if nodeAffinityPlatformValue == expectedPlatformValue {
@@ -545,6 +560,6 @@ func checkIfAPlatformMatch(t *testing.T, expectedPlatforms []v1.Platform, nodeAf
 	}
 
 	if matchedPlatforms != expectedMatchedPlatforms {
-		t.Fatalf("Number of matched  platforms should be %v", expectedMatchedPlatforms)
+		t.Fatalf("Number of matched platforms should be %v", expectedMatchedPlatforms)
 	}
 }
