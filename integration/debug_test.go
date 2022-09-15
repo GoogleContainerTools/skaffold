@@ -19,14 +19,18 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -264,5 +268,81 @@ func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string)
 			default:
 			}
 		}
+	}
+}
+
+func TestDebugWithMultiplatform(t *testing.T) {
+	MarkIntegrationTest(t, NeedsGcp)
+	const platformsExpectedInNodeAffinity = 1
+	const platformsExpectedInCreatedImage = 1
+	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
+
+	type image struct {
+		name string
+		pod  string
+	}
+
+	tests := []struct {
+		description       string
+		dir               string
+		images            []image
+		tag               string
+		expectedPlatforms []v1.Platform
+	}{
+		{
+			description:       "Debug with multiplatform linux/arm64 and linux/amd64",
+			dir:               "examples/cross-platform-builds",
+			images:            []image{{name: "skaffold-example", pod: "getting-started"}},
+			tag:               "multiplatform-integration-test",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
+		{
+			description: "Debug with multiplatform linux/arm64 and linux/amd64 in a multi config project",
+			dir:         "testdata/multi-config-pods",
+			images: []image{
+				{name: "multi-config-module1", pod: "module1"},
+				{name: "multi-config-module2", pod: "module2"},
+			},
+			tag:               "multiplatform-integration-test",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			defaultRepo := "gcr.io/k8s-skaffold"
+			platforms := platformsCliValue(t, test.expectedPlatforms)
+			ns, client := SetupNamespace(t)
+			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
+			expectedPlatforms := expectedPlatformsForRunningCluster(t, test.expectedPlatforms)
+
+			skaffold.Debug(args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunBackground(t)
+
+			for _, image := range test.images {
+				client.WaitForPodsReady(image.pod)
+				createdImagePlatforms, err := docker.GetPlatforms(fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag))
+				failNowIfError(t, err)
+
+				if len(createdImagePlatforms) != platformsExpectedInCreatedImage {
+					t.Fatalf("there are more platforms in created Image than expected, found %v, expected %v", len(createdImagePlatforms), platformsExpectedInCreatedImage)
+				}
+
+				checkIfAPlatformMatch(t, expectedPlatforms, createdImagePlatforms[0])
+
+				if isRunningInHybridCluster {
+					pod := client.GetPod(image.pod)
+					failIfNodeAffinityNotSet(t, pod)
+					nodeAffinityPlatforms := getPlatformsFromNodeAffinity(pod)
+					platformsInNodeAffinity := len(nodeAffinityPlatforms)
+
+					if platformsInNodeAffinity != platformsExpectedInNodeAffinity {
+						t.Fatalf("there are more platforms in NodeAffinity than expected, found %v, expected %v", platformsInNodeAffinity, platformsExpectedInNodeAffinity)
+					}
+
+					checkIfAPlatformMatch(t, expectedPlatforms, nodeAffinityPlatforms[0])
+				}
+			}
+		})
 	}
 }
