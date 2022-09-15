@@ -202,7 +202,7 @@ func TestBuildWithMultiPlatforms(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd = exec.Command("docker", "run", "--rm", "--privileged", "multiarch/qemu-user-static:register", "--reset", "-p", "yes")
+	cmd = exec.Command("docker", "run", "--rm", "--privileged", "multiarch/qemu-user-static", "--reset", "-p", "yes")
 	buf, _ = util.RunCmdOut(context.Background(), cmd)
 	t.Logf(string(buf))
 
