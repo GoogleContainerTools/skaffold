@@ -30,9 +30,7 @@ import (
 )
 
 const (
-	emptydir          = "testdata/empty-dir"
-	hybridClusterName = "integration-tests-hybrid"
-	armClusterName    = "integration-tests-arm"
+	emptydir = "testdata/empty-dir"
 )
 
 // Note: `custom-buildx` is not included as it depends on having a

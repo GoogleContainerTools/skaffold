@@ -22,13 +22,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	k8sv1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
-const defaultRepo = "gcr.io/k8s-skaffold"
+const (
+	defaultRepo       = "gcr.io/k8s-skaffold"
+	hybridClusterName = "integration-tests-hybrid"
+	armClusterName    = "integration-tests-arm"
+)
 
 func TestMultiPlatformWithRun(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
@@ -66,10 +71,10 @@ func TestMultiPlatformWithRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			platforms := platformsCliValue(t, test.expectedPlatforms)
+			platforms := platformsCliValue(test.expectedPlatforms)
 			ns, client := SetupNamespace(t)
 			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
-			expectedPlatforms := expectedPlatformsForRunningCluster(t, test.expectedPlatforms)
+			expectedPlatforms := expectedPlatformsForRunningCluster(test.expectedPlatforms)
 
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
@@ -147,11 +152,10 @@ func TestMultiplatformWithDevAndRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-
-			platforms := platformsCliValue(t, test.expectedPlatforms)
+			platforms := platformsCliValue(test.expectedPlatforms)
 			ns, client := SetupNamespace(t)
 			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
-			expectedPlatforms := expectedPlatformsForRunningCluster(t, test.expectedPlatforms)
+			expectedPlatforms := expectedPlatformsForRunningCluster(test.expectedPlatforms)
 
 			test.command(args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunBackground(t)
@@ -230,7 +234,7 @@ func getPlatformsFromNodeAffinity(pod *k8sv1.Pod) []v1.Platform {
 	return platforms
 }
 
-func platformsCliValue(t *testing.T, platforms []v1.Platform) string {
+func platformsCliValue(platforms []v1.Platform) string {
 	var platformsCliValue []string
 	for _, platform := range platforms {
 		platformsCliValue = append(platformsCliValue, fmt.Sprintf("%s/%s", platform.OS, platform.Architecture))
@@ -239,7 +243,7 @@ func platformsCliValue(t *testing.T, platforms []v1.Platform) string {
 	return strings.Join(platformsCliValue, ",")
 }
 
-func expectedPlatformsForRunningCluster(t *testing.T, platforms []v1.Platform) []v1.Platform {
+func expectedPlatformsForRunningCluster(platforms []v1.Platform) []v1.Platform {
 	switch clusterName := os.Getenv("GKE_CLUSTER_NAME"); clusterName {
 	case hybridClusterName:
 		return platforms
