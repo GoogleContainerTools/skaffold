@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,7 +35,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -468,98 +466,4 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 
 	yaml, err := clientcmd.Write(*kubeConfig)
 	return yaml, contextName, err
-}
-
-func TestDevMultiplatform(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
-	const platformsExpectedInNodeAffinity = 1
-	const platformsExpectedInCreatedImage = 1
-	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
-
-	type image struct {
-		name string
-		pod  string
-	}
-
-	tests := []struct {
-		description       string
-		dir               string
-		images            []image
-		tag               string
-		expectedPlatforms []v1.Platform
-	}{
-		{
-			description:       "Dev with multiplatform linux/arm64 and linux/amd64",
-			dir:               "examples/cross-platform-builds",
-			images:            []image{{name: "skaffold-example", pod: "getting-started"}},
-			tag:               "multiplatform-integration-test",
-			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
-		},
-		{
-			description: "Dev with multiplatform linux/arm64 and linux/amd64 in a multi config project",
-			dir:         "testdata/multi-config-pods",
-			images: []image{
-				{name: "multi-config-module1", pod: "module1"},
-				{name: "multi-config-module2", pod: "module2"},
-			},
-			tag:               "multiplatform-integration-test",
-			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defaultRepo := "gcr.io/k8s-skaffold"
-			platforms := platformsCliValue(t, test.expectedPlatforms)
-			ns, client := SetupNamespace(t)
-			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
-			expectedPlatforms := expectedPlatformsForRunningCluster(t, test.expectedPlatforms)
-
-			skaffold.Dev(args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
-			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunBackground(t)
-
-			for _, image := range test.images {
-				client.WaitForPodsReady(image.pod)
-				createdImagePlatforms, err := docker.GetPlatforms(fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag))
-				failNowIfError(t, err)
-
-				if len(createdImagePlatforms) != platformsExpectedInCreatedImage {
-					t.Fatalf("there are more platforms in created Image than expected, found %v, expected %v", len(createdImagePlatforms), platformsExpectedInCreatedImage)
-				}
-
-				checkIfAPlatformMatch(t, expectedPlatforms, createdImagePlatforms[0])
-
-				if isRunningInHybridCluster {
-					pod := client.GetPod(image.pod)
-					failIfNodeAffinityNotSet(t, pod)
-					nodeAffinityPlatforms := getPlatformsFromNodeAffinity(pod)
-					platformsInNodeAffinity := len(nodeAffinityPlatforms)
-
-					if platformsInNodeAffinity != platformsExpectedInNodeAffinity {
-						t.Fatalf("there are more platforms in NodeAffinity than expected, found %v, expected %v", platformsInNodeAffinity, platformsExpectedInNodeAffinity)
-					}
-
-					checkIfAPlatformMatch(t, expectedPlatforms, nodeAffinityPlatforms[0])
-				}
-			}
-		})
-	}
-}
-
-func checkIfAPlatformMatch(t *testing.T, platforms []v1.Platform, expectedPlatform v1.Platform) {
-	const expectedMatchedPlatforms = 1
-	matchedPlatforms := 0
-	nodeAffinityPlatformValue := expectedPlatform.OS + "/" + expectedPlatform.Architecture
-
-	for _, platform := range platforms {
-		expectedPlatformValue := platform.OS + "/" + platform.Architecture
-
-		if nodeAffinityPlatformValue == expectedPlatformValue {
-			matchedPlatforms++
-		}
-	}
-
-	if matchedPlatforms != expectedMatchedPlatforms {
-		t.Fatalf("Number of matched platforms should be %v", expectedMatchedPlatforms)
-	}
 }
