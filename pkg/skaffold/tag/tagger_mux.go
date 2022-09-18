@@ -85,7 +85,7 @@ func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, erro
 			return nil, fmt.Errorf("creating components: %w", err)
 		}
 
-		return NewCustomTemplateTagger(t.CustomTemplateTagger.Template, components)
+		return NewCustomTemplateTagger(runCtx, t.CustomTemplateTagger.Template, components)
 
 	default:
 		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)

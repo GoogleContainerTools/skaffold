@@ -31,6 +31,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -530,6 +532,9 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 }
 
 func TestGitCommit_CustomTemplate(t *testing.T) {
+	ctx := context.Background()
+	runCtx, _ := runcontext.GetRunContext(ctx, config.SkaffoldOptions{}, nil)
+
 	gitCommitExample, _ := NewGitCommit("", "CommitSha", false)
 	tests := []struct {
 		description   string
@@ -573,11 +578,11 @@ func TestGitCommit_CustomTemplate(t *testing.T) {
 				Workspace: tmpDir.Path(test.subDir),
 			}
 
-			c, err := NewCustomTemplateTagger(test.template, test.customMap)
+			c, err := NewCustomTemplateTagger(runCtx, test.template, test.customMap)
 
 			t.CheckNoError(err)
 
-			tag, err := c.GenerateTag(context.Background(), image)
+			tag, err := c.GenerateTag(ctx, image)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, tag)

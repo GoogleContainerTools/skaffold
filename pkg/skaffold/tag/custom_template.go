@@ -22,24 +22,28 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // customTemplateTagger implements Tagger
 type customTemplateTagger struct {
+	RunCtx     *runcontext.RunContext
 	Template   *template.Template
 	Components map[string]Tagger
 }
 
 // NewCustomTemplateTagger creates a new customTemplateTagger
-func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, error) {
+func NewCustomTemplateTagger(runCtx *runcontext.RunContext, t string, components map[string]Tagger) (Tagger, error) {
 	tmpl, err := ParseCustomTemplate(t)
 	if err != nil {
 		return nil, fmt.Errorf("parsing template: %w", err)
 	}
 
 	return &customTemplateTagger{
+		RunCtx:     runCtx,
 		Template:   tmpl,
 		Components: components,
 	}, nil
@@ -63,20 +67,35 @@ func (t *customTemplateTagger) GenerateTag(ctx context.Context, image latest.Art
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
 func (t *customTemplateTagger) EvaluateComponents(ctx context.Context, image latest.Artifact) (map[string]string, error) {
-	customMap := map[string]string{}
+	taggers := map[string]Tagger{}
 
-	gitTagger, _ := NewGitCommit("", "", false)
-	dateTimeTagger := NewDateTimeTagger("", "")
-
-	for k, v := range map[string]Tagger{"GIT": gitTagger, "DATE": dateTimeTagger, "SHA": &ChecksumTagger{}} {
-		tag, _ := v.GenerateTag(ctx, image)
-		customMap[k] = tag
+	templateFields := GetTemplateFields(t.Template)
+	for _, field := range templateFields {
+		if v, ok := t.Components[field]; ok {
+			if _, ok := v.(*customTemplateTagger); ok {
+				return nil, fmt.Errorf("invalid component specified in custom template: %v", v)
+			}
+			taggers[field] = v
+			continue
+		}
+		switch field {
+		case "GIT":
+			gitTagger, _ := NewGitCommit("", "", false)
+			taggers[field] = gitTagger
+		case "DATE":
+			taggers[field] = NewDateTimeTagger("", "")
+		case "SHA":
+			taggers[field] = &ChecksumTagger{}
+		case "INPUT_DIGEST":
+			inputDigestTagger, _ := NewInputDigestTagger(t.RunCtx, graph.ToArtifactGraph(t.RunCtx.Artifacts()))
+			taggers[field] = inputDigestTagger
+		default:
+			return nil, fmt.Errorf("no tagger available for component %+v", field)
+		}
 	}
 
-	for k, v := range t.Components {
-		if _, ok := v.(*customTemplateTagger); ok {
-			return nil, fmt.Errorf("invalid component specified in custom template: %v", v)
-		}
+	customMap := map[string]string{}
+	for k, v := range taggers {
 		tag, err := v.GenerateTag(ctx, image)
 		if err != nil {
 			return nil, fmt.Errorf("evaluating custom template component: %w", err)
