@@ -245,7 +245,6 @@ func TestMultiplatformWithDeploy(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func checkNodeAffinity(t *testing.T, expectedPlatforms []v1.Platform, pod *k8sv1.Pod) {
