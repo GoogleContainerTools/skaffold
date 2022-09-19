@@ -1,6 +1,6 @@
 ---
-title: "Skaffold Pipeline Stages"
-linkTitle: "Skaffold Pipeline Stages"
+title: "Skaffold Pipeline Stages [Updated]"
+linkTitle: "Skaffold Pipeline Stages [Updated]"
 weight: 40
 aliases: [/docs/concepts/pipeline]
 no_list: true
