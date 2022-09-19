@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 const (
@@ -91,7 +92,7 @@ func TestMultiPlatformWithRun(t *testing.T) {
 	}
 }
 
-func TestMultiplatformWithDevAndRun(t *testing.T) {
+func TestMultiplatformWithDevAndDebug(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
 	const platformsExpectedInNodeAffinity = 1
 	const platformsExpectedInCreatedImage = 1
@@ -186,6 +187,65 @@ func TestMultiplatformWithDevAndRun(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMultiplatformWithDeploy(t *testing.T) {
+	MarkIntegrationTest(t, NeedsGcp)
+	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
+	type image struct {
+		name string
+		pod  string
+	}
+
+	tests := []struct {
+		description       string
+		dir               string
+		images            []image
+		tag               string
+		expectedPlatforms []v1.Platform
+	}{
+		{
+			description:       "Deploy with multiplatform linux/arm64 and linux/amd64",
+			dir:               "examples/cross-platform-builds",
+			images:            []image{{name: "skaffold-example", pod: "getting-started"}},
+			tag:               "multiplatform-integration-test",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
+		{
+			description: "Deploy with multiplatform linux/arm64 and linux/amd64 in a multi config project",
+			dir:         "testdata/multi-config-pods",
+			images: []image{
+				{name: "multi-config-module1", pod: "module1"},
+				{name: "multi-config-module2", pod: "module2"},
+			},
+			tag:               "multiplatform-integration-test",
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			tmpfile := testutil.TempFile(t, "", []byte{})
+			platforms := platformsCliValue(test.expectedPlatforms)
+			argsBuild := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false", "--file-output", tmpfile}
+			argsDeploy := []string{"--build-artifacts", tmpfile, "--default-repo", defaultRepo, "--enable-platform-node-affinity=true"}
+
+			skaffold.Build(argsBuild...).InDir(test.dir).RunOrFail(t)
+			ns, client := SetupNamespace(t)
+			skaffold.Deploy(argsDeploy...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+
+			for _, image := range test.images {
+				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag), test.expectedPlatforms)
+
+				if isRunningInHybridCluster {
+					pod := client.GetPod(image.pod)
+					checkNodeAffinity(t, test.expectedPlatforms, pod)
+				}
+			}
+		})
+	}
+
 }
 
 func checkNodeAffinity(t *testing.T, expectedPlatforms []v1.Platform, pod *k8sv1.Pod) {
