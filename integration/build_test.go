@@ -181,41 +181,6 @@ func TestBuildWithMultiPlatforms(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cmd = exec.Command("apt-get", "update")
-	buf, err = util.RunCmdOut(context.Background(), cmd)
-	t.Logf(string(buf))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("apt-get", "install", "docker-ce", "docker-ce-cli", "-y")
-	buf, err = util.RunCmdOut(context.Background(), cmd)
-	t.Logf(string(buf))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("docker", "version")
-	buf, _ = util.RunCmdOut(context.Background(), cmd)
-	t.Logf(string(buf))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("docker", "buildx", "ls")
-	buf, _ = util.RunCmdOut(context.Background(), cmd)
-	t.Logf(string(buf))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("docker", "run", "--rm", "--privileged", "multiarch/qemu-user-static", "--reset", "-p", "yes")
-	buf, _ = util.RunCmdOut(context.Background(), cmd)
-	t.Logf(string(buf))
-
-	cmd = exec.Command("docker", "buildx", "ls")
-	buf, _ = util.RunCmdOut(context.Background(), cmd)
-	t.Logf(string(buf))
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
