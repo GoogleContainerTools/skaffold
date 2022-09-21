@@ -1,0 +1,19 @@
+apiVersion: skaffold/v3alpha1
+kind: Config
+metadata: 
+  name: guestbook
+manifests:
+  rawYaml:
+    - kpt-k8s-pod.yaml
+  transform:
+    - name: set-annotations
+      configMap:
+        - "author:fake-author"
+    - name: create-setters
+      configMap:
+        - "app:guestbook"
+    - name: apply-setters
+      configMap:
+        - "app:guestbook-fake-author"
+  validate:
+    - name: kubeval:v0.1
