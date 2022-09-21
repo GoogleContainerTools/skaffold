@@ -350,6 +350,9 @@ func TestRunGCPOnly(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		if (os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid") && strings.Contains(test.description, "buildpacks") {
+			continue // buildpacks doesn't support arm64 builds, so skip run on these clusters
+		}
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
 

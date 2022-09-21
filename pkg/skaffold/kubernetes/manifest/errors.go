@@ -73,18 +73,3 @@ func nsSettingErr(err error) error {
 			ErrCode: proto.StatusCode_RENDER_SET_NAMESPACE_ERR,
 		})
 }
-
-func nsAlreadySetErr() error {
-	err := fmt.Errorf("namespace field already set in the manifests")
-	return sErrors.NewError(err,
-		&proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_RENDER_NAMESPACE_ALREADY_SET_ERR,
-			Suggestions: []*proto.Suggestion{
-				{
-					SuggestionCode: proto.SuggestionCode_REMOVE_NAMESPACE_FROM_MANIFESTS,
-					Action:         "remove/unset 'namespace' field in manifests and try again",
-				},
-			},
-		})
-}
