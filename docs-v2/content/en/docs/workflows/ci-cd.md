@@ -4,6 +4,11 @@ linkTitle: "Continuous Delivery"
 weight: 40
 ---
 
+
+{{< alert title="Note">}}
+Skaffold is used under the hood to power Google Cloud Platform's [Cloud Deploy API](https://cloud.google.com/deploy).  See the docs [here](https://cloud.google.com/deploy/docs/using-skaffold) for more information on how to use Skaffold + Cloud Deploy for CI/CD
+{{</alert>}}
+
 Skaffold provides several features and sub-command "building blocks" that make it very useful for integrating with (or creating entirely new) CI/CD pipelines.
 The ability to use the same `skaffold.yaml` for iterative development and continuous delivery eases handing off an application from a development team to an ops team.
 
@@ -64,7 +69,6 @@ Tags used in deployment:
 Starting deploy...
  - pod/getting-started configured
 ```
-
 
 ## Separation of rendering and deployment
 {{< maturity "apply" >}}
