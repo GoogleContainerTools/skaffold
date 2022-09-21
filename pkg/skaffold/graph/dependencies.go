@@ -98,7 +98,10 @@ func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context,
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
-	return res.([]string), nil
+
+	deps := make([]string, len(res.([]string)))
+	copy(deps, res.([]string))
+	return deps, nil
 }
 
 func (r *dependencyResolverImpl) Reset() {
