@@ -31,15 +31,14 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 	ps := runCtx.Pipelines.AllByConfigNames()
 
 	var gr renderer.GroupRenderer
-	gr.HookRunner = hooks.NewRenderRunner(runCtx.GetRenderConfig().LifecycleHooks, &[]string{runCtx.GetNamespace()},
-		hooks.NewRenderEnvOpts(runCtx.KubeContext, []string{runCtx.GetNamespace()}))
 	for configName, p := range ps {
 		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName)
 		if err != nil {
 			return nil, err
 		}
 		gr.Renderers = append(gr.Renderers, rs.Renderers...)
-		gr.HookRunner = rs.HookRunner
+		gr.HookRunners = append(gr.HookRunners, hooks.NewRenderRunner(p.Render.LifecycleHooks, &[]string{runCtx.GetNamespace()},
+			hooks.NewRenderEnvOpts(runCtx.KubeContext, []string{runCtx.GetNamespace()})))
 	}
 	// In case of legacy helm deployer configured and render command used
 	// force a helm renderer from deploy helm config
