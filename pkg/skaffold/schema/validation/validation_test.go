@@ -28,6 +28,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
@@ -1745,6 +1746,94 @@ func TestValidateKubectlManifests(t *testing.T) {
 			if len(errs) > 0 {
 				err = errs[0].Error
 			}
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateCloudRunLocation(t *testing.T) {
+	tests := []struct {
+		description      string
+		deploy           latest.DeployConfig
+		cloudRunLocation string
+		cloudRunProject  string
+		command          string
+		shouldErr        bool
+	}{
+		{
+			description: "location specified in config",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{
+						ProjectID: "test-project",
+						Region:    "test-region",
+					},
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "location not specified, config present",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "location not specified, command doesn't deploy",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{},
+				},
+			},
+			command:   "diagnose",
+			shouldErr: false,
+		},
+		{
+			description: "location specified via flag",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{},
+				},
+			},
+			cloudRunLocation: "test-region",
+			shouldErr:        false,
+		},
+		{
+			description:     "project specified via flag, no location",
+			cloudRunProject: "test-project",
+			shouldErr:       true,
+		},
+		{
+			description:      "project and location specified via flag",
+			cloudRunProject:  "test-project",
+			cloudRunLocation: "test-location",
+			shouldErr:        false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			command := test.command
+			if command == "" {
+				command = "run"
+			}
+			err := ProcessWithRunContext(context.Background(), &runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							Deploy: test.deploy,
+						},
+					},
+				),
+				Opts: config.SkaffoldOptions{
+					CloudRunProject:  test.cloudRunProject,
+					CloudRunLocation: test.cloudRunLocation,
+					Command:          command,
+				},
+			})
+
 			t.CheckError(test.shouldErr, err)
 		})
 	}

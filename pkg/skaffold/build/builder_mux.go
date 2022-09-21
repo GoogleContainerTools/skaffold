@@ -128,6 +128,11 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		return built, nil
 	}
 
+	err := checkMultiplatformHaveRegistry(b, artifacts, resolver)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err) // TODO: remove error wrapping after fixing #7790
+	}
+
 	ar, err := InOrder(ctx, out, tags, resolver, artifacts, builderF, b.concurrency, b.store)
 	if err != nil {
 		return nil, err
@@ -196,4 +201,21 @@ func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
 	}
 	log.Entry(ctx).Infof("final build concurrency value is %d", minConcurrency)
 	return minConcurrency
+}
+
+func checkMultiplatformHaveRegistry(b *BuilderMux, artifacts []*latest.Artifact, platforms platform.Resolver) error {
+	for _, artifact := range artifacts {
+		pb := b.byImageName[artifact.ImageName]
+		hasExternalRegistry := pb.PushImages()
+		pl, err := filterBuildEnvSupportedPlatforms(pb.SupportedPlatforms(), platforms.GetPlatforms(artifact.ImageName))
+		if err != nil {
+			return err
+		}
+
+		if pl.IsMultiPlatform() && !hasExternalRegistry {
+			return noRegistryForMultiplatformBuildErr(fmt.Errorf("multi-platform build requires pushing images to a valid container registry"))
+		}
+	}
+
+	return nil
 }

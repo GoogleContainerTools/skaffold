@@ -223,3 +223,57 @@ func verifyUpgrade(t *testing.T, input, output string) {
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
 }
+
+func TestUpgradePatches(t *testing.T) {
+	yaml := `apiVersion: skaffold/v2beta29
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-debug-java
+    context: java
+deploy:
+  kubectl:
+    manifests:
+    - java/k8s/web.yaml
+  helm:
+   releases:
+   - name: test
+profiles:
+- name: kustomize
+  patches:
+  - op: remove
+    path: /deploy/kubectl
+  - op: remove
+    path: /deploy/helm
+  deploy:
+    kustomize: {}
+`
+	expected := `apiVersion: skaffold/v3alpha1
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-debug-java
+    context: java
+manifests:
+  rawYaml:
+    - java/k8s/web.yaml
+  helm:
+   releases:
+   - name: test
+deploy:
+    helm: {}
+    kubectl: {}
+profiles:
+- name: kustomize
+  patches:
+  - op: remove
+    path: /manifests/rawYaml
+  - op: remove
+    path: /manifests/helm
+  manifests:
+    kustomize:
+      paths:
+      - "."
+`
+	verifyUpgrade(t, yaml, expected)
+}

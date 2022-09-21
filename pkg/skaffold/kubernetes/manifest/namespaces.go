@@ -25,10 +25,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 const namespaceField = "namespace"
+
+const defaultNamespace = "default"
 
 // CollectNamespaces returns all the namespaces in the manifests.
 func (l *ManifestList) CollectNamespaces() ([]string, error) {
@@ -85,7 +88,7 @@ func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[st
 // Returns error if any manifest in the list has namespace set.
 func (l *ManifestList) SetNamespace(namespace string, rs ResourceSelector) (ManifestList, error) {
 	if namespace == "" {
-		namespace = "default"
+		namespace = defaultNamespace
 	}
 	var updated ManifestList
 	for _, item := range *l {
@@ -128,7 +131,13 @@ func addOrUpdateNamespace(manifest map[string]interface{}, ns string) error {
 		metadata[namespaceField] = ns
 		return nil
 	}
-	return nsAlreadySetErr()
+
+	if present && isEmptyOrEqual(ns, defaultNamespace) {
+		return nil
+	}
+
+	warnings.Printf("a manifest already has namespace set \"%s\" which conflicts with namespace on the CLI \"%s\"", nsValue, ns)
+	return nil
 }
 
 func isEmptyOrEqual(v interface{}, s string) bool {

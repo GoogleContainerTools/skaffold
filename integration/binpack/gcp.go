@@ -21,6 +21,7 @@ package binpack
 // GCPTimings contains the timings for tests marked with NeedsGcp
 var GCPTimings = []Timing{
 	{"TestBuildKanikoInsecureRegistry", 10.00},
+	{"TestBuildWithMultiPlatforms", 20.00},
 	{"TestBuildKanikoWithExplicitRepo", 10.00},
 	{"TestBuildInCluster", 10.00},
 	{"TestBuildGCBWithExplicitRepo", 10.00},

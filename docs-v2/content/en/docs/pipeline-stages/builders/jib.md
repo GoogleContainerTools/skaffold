@@ -86,7 +86,7 @@ a container image.  Then for each such sub-project:
 
   - Create a Skaffold `artifact` in the `skaffold.yaml`.
   - Set the `artifact`'s `context` field to the root project location.
-  - Add a `jib` element and set its `project` field to the sub-project's name (the directory, by default).
+  - Add a `jib` element and set its `project` field to the sub-project's name.
 
 
 ## Remotely with Google Cloud Build

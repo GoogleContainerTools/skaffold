@@ -342,7 +342,7 @@ spec:
         - containerPort: 80
         resources: {}
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations: null
@@ -357,9 +357,12 @@ spec:
   - http:
       paths:
       - backend:
-          serviceName: skaffold-helm-skaffold-helm
-          servicePort: 80
+          service:
+            name: skaffold-helm-skaffold-helm
+            port:
+              number: 80
         path: /
+        pathType: ImplementationSpecific
 `,
 		},
 	}

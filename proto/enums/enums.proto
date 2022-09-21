@@ -137,7 +137,8 @@ enum StatusCode {
     BUILD_PROJECT_NOT_FOUND = 102;
     // Docker build error due to docker daemon not running
     BUILD_DOCKER_DAEMON_NOT_RUNNING = 103;
-    // Build error due to user application code, e.g. compilation error, dockerfile error etc
+    // Build error due to user application code, e.g. compilation error,
+    // dockerfile error etc
     BUILD_USER_ERROR = 104;
     // Build error due to docker not available
     BUILD_DOCKER_UNAVAILABLE = 105;
@@ -145,15 +146,19 @@ enum StatusCode {
     BUILD_DOCKER_UNAUTHORIZED = 106;
     // Docker system build error
     BUILD_DOCKER_SYSTEM_ERR = 107;
-    // Docker build error due to Docker build container is already in the desired state
+    // Docker build error due to Docker build container is already in the
+    // desired state
     BUILD_DOCKER_NOT_MODIFIED_ERR = 108;
     // Docker build error indicating a feature not supported
     BUILD_DOCKER_NOT_IMPLEMENTED_ERR = 109;
-    // Docker build error indicates that for given build, data was lost or there is data corruption
+    // Docker build error indicates that for given build, data was lost or there
+    // is data corruption
     BUILD_DOCKER_DATA_LOSS_ERR = 110;
-    // Docker build error indicates user is forbidden to perform the build or step/action.
+    // Docker build error indicates user is forbidden to perform the build or
+    // step/action.
     BUILD_DOCKER_FORBIDDEN_ERR = 111;
-    // Docker build error due to some internal error and docker container state conflicts with the requested action and can't be performed
+    // Docker build error due to some internal error and docker container state
+    // conflicts with the requested action and can't be performed
     BUILD_DOCKER_CONFLICT_ERR = 112;
     // Docker build error indicates the requested object does not exist
     BUILD_DOCKER_ERROR_NOT_FOUND = 113;
@@ -163,13 +168,16 @@ enum StatusCode {
     BUILD_DOCKERFILE_NOT_FOUND = 115;
     // Docker build failed due `cacheFrom` user config error
     BUILD_DOCKER_CACHE_FROM_PULL_ERR = 116;
-    // Build error due to digest for built artifact could not be retrieved from docker daemon.
+    // Build error due to digest for built artifact could not be retrieved from
+    // docker daemon.
     BUILD_DOCKER_GET_DIGEST_ERR = 117;
     // Build error due no space left in docker.
     BUILD_DOCKER_NO_SPACE_ERR = 127;
-    // Build error due to digest for built artifact could not be retrieved from registry.
+    // Build error due to digest for built artifact could not be retrieved from
+    // registry.
     BUILD_REGISTRY_GET_DIGEST_ERR = 118;
-    // Build error indicating unknown Jib plugin type. Should be one of [maven, gradle]
+    // Build error indicating unknown Jib plugin type. Should be one of [maven,
+    // gradle]
     BUILD_UNKNOWN_JIB_PLUGIN_TYPE = 119;
     // Build error determining dependency for jib gradle project.
     BUILD_JIB_GRADLE_DEP_ERR = 120;
@@ -180,7 +188,8 @@ enum StatusCode {
     INIT_DOCKER_NETWORK_LISTING_CONTAINERS = 122;
     // Docker build error indicating an invalid container name (or id).
     INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME = 123;
-    // Docker build error indicating the container referenced does not exists in the docker context used.
+    // Docker build error indicating the container referenced does not exists in
+    // the docker context used.
     INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST = 124;
     // Docker Network invalid mode
     INIT_DOCKER_NETWORK_INVALID_MODE = 125;
@@ -220,7 +229,7 @@ enum StatusCode {
     // GCB error to extract Project ID.
     BUILD_GCB_EXTRACT_PROJECT_ID = 143;
     // GCB error to get cloud storage client to perform GCS operation.
-    BUILD_GET_CLOUD_STORAGE_CLIENT_ERR= 144;
+    BUILD_GET_CLOUD_STORAGE_CLIENT_ERR = 144;
     // GCB error to get cloud build client to perform GCB operations.
     BUILD_GET_CLOUD_BUILD_CLIENT_ERR = 145;
 
@@ -231,7 +240,8 @@ enum StatusCode {
 
     // Cross-platform build failures
     BUILD_CROSS_PLATFORM_ERR = 151;
-
+    // Multi-platfor build fails due to no container registry set
+    BUILD_CROSS_PLATFORM_NO_REGISTRY_ERR = 152;
 
     // Container errors
 
@@ -265,11 +275,11 @@ enum StatusCode {
     // Node PID pressure error
     STATUSCHECK_NODE_PID_PRESSURE = 403;
     // Node unschedulable error
-    STATUSCHECK_NODE_UNSCHEDULABLE= 404;
+    STATUSCHECK_NODE_UNSCHEDULABLE = 404;
     // Node unreachable error
     STATUSCHECK_NODE_UNREACHABLE = 405;
     // Node not ready error
-    STATUSCHECK_NODE_NOT_READY= 406;
+    STATUSCHECK_NODE_NOT_READY = 406;
     // Scheduler failure error
     STATUSCHECK_FAILED_SCHEDULING = 407;
     // Kubectl connection error
@@ -292,11 +302,13 @@ enum StatusCode {
     STATUSCHECK_POD_INITIALIZING = 451;
 
     // Config Connector resource states
-    // Maps to https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus#statuses
+    // Maps to
+    // https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus#statuses
 
     // The actual state of the resource has not yet reached the desired state
     STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS = 452;
-    // The process of reconciling the actual state with the desired state has encountered an error
+    // The process of reconciling the actual state with the desired state has
+    // encountered an error
     STATUSCHECK_CONFIG_CONNECTOR_FAILED = 453;
     // The resource is in the process of being deleted
     STATUSCHECK_CONFIG_CONNECTOR_TERMINATING = 454;
@@ -323,13 +335,13 @@ enum StatusCode {
     // SYNC failed due to known reason
     SYNC_UNKNOWN = 505;
     // Build failed due to unknown reason
-    BUILD_UNKNOWN= 506;
+    BUILD_UNKNOWN = 506;
     // Dev Init failed due to unknown reason
     DEVINIT_UNKNOWN = 507;
     // Cleanup failed due to unknown reason
     CLEANUP_UNKNOWN = 508;
     // Initialization of the Skaffold session failed due to unknown reason(s)
-    INIT_UNKNOWN = 510 ;
+    INIT_UNKNOWN = 510;
     // Build failed due to docker unknown error
     BUILD_DOCKER_UNKNOWN = 511;
     // Test failed due to unknown reason
@@ -337,12 +349,10 @@ enum StatusCode {
     // GCB error indicating build failed due to unknown status.
     BUILD_GCB_BUILD_UNKNOWN_STATUS = 513;
 
-
     // FILE_SYNC Failures
 
     // File Sync Initialize failure
     SYNC_INIT_ERROR = 601;
-
 
     // DevInit Errors
 
@@ -354,7 +364,8 @@ enum StatusCode {
     DEVINIT_REGISTER_DEPLOY_DEPS = 703;
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
-    // Failed to configure watcher for build dependencies for a base image with v1 manifest.
+    // Failed to configure watcher for build dependencies for a base image with
+    // v1 manifest.
     DEVINIT_UNSUPPORTED_V1_MANIFEST = 705;
     // Failed to configure watcher for render dependencies in dev loop
     DEVINIT_REGISTER_RENDER_DEPS = 706;
@@ -367,11 +378,13 @@ enum StatusCode {
     STATUSCHECK_DEADLINE_EXCEEDED = 801;
     // Build Cancelled
     BUILD_CANCELLED = 802;
-    // Deploy cancelled due to user cancellation or one or more deployers failed.
+    // Deploy cancelled due to user cancellation or one or more deployers
+    // failed.
     DEPLOY_CANCELLED = 803;
     // Docker build cancelled.
     BUILD_DOCKER_CANCELLED = 804;
-    // Build error due to docker deadline was reached before the docker action completed
+    // Build error due to docker deadline was reached before the docker action
+    // completed
     BUILD_DOCKER_DEADLINE = 805;
     // GCB Build cancelled.
     BUILD_GCB_BUILD_CANCELLED = 806;
@@ -396,6 +409,8 @@ enum StatusCode {
     INIT_CREATE_WATCH_TRIGGER_ERROR = 908;
     // Skaffold encountered an error when evaluating artifact dependencies
     INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
+    // No Location was specified for Cloud Run
+    INIT_CLOUD_RUN_LOCATION_ERROR = 910;
 
     // Deploy errors
 
@@ -418,8 +433,9 @@ enum StatusCode {
     // Unable to retrieve kubectl version
     DEPLOY_KUBECTL_VERSION_ERR = 1109;
     // User specified offline mode for rendering but remote manifests presents.
-    DEPLOY_KUBECTL_OFFLINE_MODE_ERR =1010;
-    // Error waiting for previous version deletion before next version is active.
+    DEPLOY_KUBECTL_OFFLINE_MODE_ERR = 1010;
+    // Error waiting for previous version deletion before next version is
+    // active.
     DEPLOY_ERR_WAITING_FOR_DELETION = 1011;
     // Error reading manifests
     DEPLOY_READ_MANIFEST_ERR = 1012;
@@ -540,6 +556,8 @@ enum StatusCode {
     CONFIG_MISSING_MANIFEST_FILE_ERR = 1216;
     // Remote config repository cache not found and sync disabled
     CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR = 1217;
+    // Skaffold config version mismatch
+    CONFIG_UPGRADE_ERR = 1218;
 
     // Inspect command errors
 
@@ -594,7 +612,8 @@ enum SuggestionCode {
     FIX_DOCKER_NETWORK_CONTAINER_NAME = 112;
     // Docker build network container not existing in the current context.
     CHECK_DOCKER_NETWORK_CONTAINER_RUNNING = 113;
-    // Executing extractContainerNameFromNetworkMode with a non valid mode (only container mode allowed)
+    // Executing extractContainerNameFromNetworkMode with a non valid mode (only
+    // container mode allowed)
     FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME = 114;
     // Prune Docker image
     RUN_DOCKER_PRUNE = 115;
@@ -609,6 +628,9 @@ enum SuggestionCode {
     // Check if QEMU platform emulators are installed
     BUILD_INSTALL_PLATFORM_EMULATORS = 118;
 
+    // Set --push and container registry to run a multi-platform build
+    SET_PUSH_AND_CONTAINER_REGISTRY = 119;
+
     // Deploy error suggestion codes
 
     // Check cluster connection
@@ -619,7 +641,8 @@ enum SuggestionCode {
     INSTALL_HELM = 203;
     // Upgrade helm tool
     UPGRADE_HELM = 204;
-    // Fix helm `releases.artifactOverrides` config to match with `build.artifacts` (no longer used in Skaffold v2)
+    // Fix helm `releases.artifactOverrides` config to match with
+    // `build.artifacts` (no longer used in Skaffold v2)
     FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES = 205;
     // Upgrade helm version to v3.2.0 and higher.
     UPGRADE_HELM32 = 206;
@@ -633,6 +656,9 @@ enum SuggestionCode {
     // Install kubectl tool
     INSTALL_KUBECTL = 220;
 
+    // Specify Cloud Run Location
+    SPECIFY_CLOUD_RUN_LOCATION = 230;
+    
     // Container Run time error
 
     // Container run error
@@ -641,6 +667,7 @@ enum SuggestionCode {
     CHECK_READINESS_PROBE = 302;
     // Check Container image
     CHECK_CONTAINER_IMAGE = 303;
+
 
 
     // Common infra errors
@@ -671,12 +698,10 @@ enum SuggestionCode {
     // Minikube is paused: use `minikube unpause`
     UNPAUSE_MINIKUBE = 502;
 
-
     // Dev Phase error suggestions
 
     // Run Docker pull for the image with v1 manifest and try again.
     RUN_DOCKER_PULL = 551;
-
 
     // Render Error suggestion codes
 
@@ -709,12 +734,15 @@ enum SuggestionCode {
     CONFIG_FIX_API_VERSION = 707;
     // Only the allow listed validators are acceptable in skaffold-managed mode.
     CONFIG_ALLOWLIST_VALIDATORS = 708;
-    // Only the allow listed transformers are acceptable in skaffold-managed mode.
+    // Only the allow listed transformers are acceptable in skaffold-managed
+    // mode.
     CONFIG_ALLOWLIST_transformers = 709;
     // Check mising manifest file section of config and fix as needed.
     CONFIG_FIX_MISSING_MANIFEST_FILE = 710;
     // Enable remote repo sync, or clone manually
     CONFIG_ENABLE_REMOTE_REPO_SYNC = 711;
+    // Upgrade skaffold config version to latest
+    CONFIG_FIX_SKAFFOLD_CONFIG_VERSION = 712;
 
     // `skaffold inspect` command error suggestion codes
 

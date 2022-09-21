@@ -1095,6 +1095,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | BUILD_GET_CLOUD_BUILD_CLIENT_ERR | 145 | GCB error to get cloud build client to perform GCB operations. |
 | BUILD_UNKNOWN_PLATFORM_FLAG | 150 | Value provided to --platform flag cannot be parsed |
 | BUILD_CROSS_PLATFORM_ERR | 151 | Cross-platform build failures |
+| BUILD_CROSS_PLATFORM_NO_REGISTRY_ERR | 152 | Multi-platfor build fails due to no container registry set |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -1162,6 +1163,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INIT_CACHE_ERROR | 907 | Skaffold encountered an error validating the artifact cache |
 | INIT_CREATE_WATCH_TRIGGER_ERROR | 908 | Skaffold encountered an error when configuring file watching |
 | INIT_CREATE_ARTIFACT_DEP_ERROR | 909 | Skaffold encountered an error when evaluating artifact dependencies |
+| INIT_CLOUD_RUN_LOCATION_ERROR | 910 | No Location was specified for Cloud Run |
 | DEPLOY_CLUSTER_CONNECTION_ERR | 1001 | Unable to connect to cluster |
 | DEPLOY_DEBUG_HELPER_RETRIEVE_ERR | 1002 | Could not retrieve debug helpers. |
 | DEPLOY_CLEANUP_ERR | 1003 | Deploy clean up error |
@@ -1228,6 +1230,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | CONFIG_UNKNOWN_TRANSFORMER | 1215 | The transformer is not allowed in skaffold-managed mode. |
 | CONFIG_MISSING_MANIFEST_FILE_ERR | 1216 | Manifest file not found |
 | CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR | 1217 | Remote config repository cache not found and sync disabled |
+| CONFIG_UPGRADE_ERR | 1218 | Skaffold config version mismatch |
 | INSPECT_UNKNOWN_ERR | 1301 | Catch-all `skaffold inspect` command error |
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
 | INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR | 1303 | Trying to modify build environment that doesn't exist |
@@ -1264,6 +1267,7 @@ Enum for Suggestion codes
 | SET_CLEANUP_FLAG | 116 | Set Cleanup flag for skaffold command. |
 | BUILD_FIX_UNKNOWN_PLATFORM_FLAG | 117 | Check value provided to the `--platform` flag |
 | BUILD_INSTALL_PLATFORM_EMULATORS | 118 | Check if QEMU platform emulators are installed |
+| SET_PUSH_AND_CONTAINER_REGISTRY | 119 | Set --push and container registry to run a multi-platform build |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
@@ -1274,6 +1278,7 @@ Enum for Suggestion codes
 | INVALID_KPT_MANIFESTS | 208 | check the Kptfile validation. |
 | ALIGN_KPT_INVENTORY | 209 | align the inventory info in kpt live apply. |
 | INSTALL_KUBECTL | 220 | Install kubectl tool |
+| SPECIFY_CLOUD_RUN_LOCATION | 230 | Specify Cloud Run Location |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |
@@ -1305,6 +1310,7 @@ Enum for Suggestion codes
 | CONFIG_ALLOWLIST_transformers | 709 | Only the allow listed transformers are acceptable in skaffold-managed mode. |
 | CONFIG_FIX_MISSING_MANIFEST_FILE | 710 | Check mising manifest file section of config and fix as needed. |
 | CONFIG_ENABLE_REMOTE_REPO_SYNC | 711 | Enable remote repo sync, or clone manually |
+| CONFIG_FIX_SKAFFOLD_CONFIG_VERSION | 712 | Upgrade skaffold config version to latest |
 | INSPECT_USE_MODIFY_OR_NEW_PROFILE | 800 | Create new build env in a profile instead, or use the 'modify' command |
 | INSPECT_USE_ADD_BUILD_ENV | 801 | Check profile selection, or use the 'add' command instead |
 | INSPECT_CHECK_INPUT_PROFILE | 802 | Check profile flag value |

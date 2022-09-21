@@ -428,7 +428,7 @@ spec:
 				return test.platforms[image], nil
 			})
 			ml := ManifestList{[]byte(test.manifest)}
-			m, err := ml.SetPlatformNodeAffinity(context.Background(), NewResourceSelectorAffinity(TransformAllowlist, TransformDenylist), test.platforms)
+			m, err := ml.SetPlatformNodeAffinity(context.Background(), NewResourceSelectorPodSpec(TransformAllowlist, TransformDenylist), test.platforms)
 			t.CheckNoError(err)
 			expected := ManifestList{[]byte(test.expected)}
 			t.CheckDeepEqual(expected.String(), m.String())

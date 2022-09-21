@@ -53,6 +53,12 @@ type SyncEnvOpts struct {
 	Namespaces           string
 }
 
+// RenderEnvOpts contains the environment variables to be set in a deploy type lifecycle hook executor.
+type RenderEnvOpts struct {
+	KubeContext string
+	Namespaces  string
+}
+
 // DeployEnvOpts contains the environment variables to be set in a deploy type lifecycle hook executor.
 type DeployEnvOpts struct {
 	RunID       string

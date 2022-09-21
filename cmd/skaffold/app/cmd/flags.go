@@ -104,7 +104,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test", "verify"},
 	},
 	{
 		Name:          "namespace",
@@ -213,7 +213,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
 	},
 	{
 		Name:          "rpc-http-port",
@@ -221,7 +221,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCHTTPPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
 	},
 	{
 		Name:          "label",
@@ -401,7 +401,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Platforms,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
+		DefinedOn:     []string{"build", "debug", "dev", "run"},
 	},
 	{
 		Name:          "minikube-profile",
@@ -421,7 +421,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.ProfileAutoActivation,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify"},
 		IsEnum:        true,
 	},
 	{
@@ -430,7 +430,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.PropagateProfiles,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify"},
 		IsEnum:        true,
 	},
 	{
@@ -656,6 +656,15 @@ var flagRegistry = []Flag{
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
+	},
+	{
+		Name:          "enable-gke-arm-node-toleration",
+		Usage:         "Setting this flag provides the appropriate toleration for Pods to be scheduled on GKE ARM nodes that are tainted to disallow workloads by default.",
+		Value:         &opts.EnableGKEARMNodeToleration,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "render", "run", "debug", "deploy"},
+		Hidden:        true,
 	},
 	{
 		Name:     "disable-multi-platform-build",

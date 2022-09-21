@@ -406,6 +406,11 @@ type GoogleCloudBuild struct {
 	// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
 	// If unspecified, Skaffold uses the `docker/binfmt` image by default.
 	PlatformEmulatorInstallStep *PlatformEmulatorInstallStep `yaml:"platformEmulatorInstallStep,omitempty"`
+
+	// ServiceAccount is the Google Cloud platform service account used by Cloud Build.
+	// If unspecified, it defaults to the Cloud Build service account generated when
+	// the Cloud Build API is enabled.
+	ServiceAccount string `yaml:"serviceAccount,omitempty"`
 }
 
 // PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
@@ -601,6 +606,9 @@ type Generate struct {
 
 	// Kpt defines the kpt resources in the application.
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every render.
+	LifecycleHooks RenderHooks `yaml:"hooks,omitempty"`
 }
 
 // Kustomize defines the paths to be modified with kustomize, along with
@@ -723,7 +731,7 @@ type CloudRunDeploy struct {
 
 	// Region GCP location to use for the Cloud Run Deploy.
 	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
-	Region string `yaml:"region,omitempty" yamltags:"required"`
+	Region string `yaml:"region,omitempty"`
 }
 
 // DockerDeploy uses the `docker` CLI to create application containers in Docker.
@@ -1522,6 +1530,20 @@ type SyncHooks struct {
 	PostHooks []SyncHookItem `yaml:"after,omitempty"`
 }
 
+// RenderHookItem describes a single lifecycle hook to execute before or after each deployer step.
+type RenderHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
+}
+
+// RenderHooks describes the list of lifecycle hooks to execute before and after each render step.
+type RenderHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
+	PreHooks []RenderHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
+	PostHooks []RenderHookItem `yaml:"after,omitempty"`
+}
+
 // DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.
 type DeployHookItem struct {
 	// HostHook describes a single lifecycle hook to run on the host machine.
@@ -1573,8 +1595,8 @@ type ResourceFilter struct {
 	Image []string `yaml:"image,omitempty"`
 	// Labels is an optional slice of JSON-path-like paths of where to add a labels block if missing.
 	Labels []string `yaml:"labels,omitempty"`
-	// Affinity is an optional slice of JSON-path-like paths of where to add `affinity` definitions for scheduling Pods.
-	Affinity []string `yaml:"affinity,omitempty"`
+	// PodSpec is an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.
+	PodSpec []string `yaml:"podSpec,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with

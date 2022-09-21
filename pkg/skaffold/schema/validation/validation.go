@@ -121,6 +121,7 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 	var errs []error
 	errs = append(errs, validateDockerNetworkContainerExists(ctx, runCtx.Artifacts(), runCtx)...)
 	errs = append(errs, validateVerifyTestsExistOnVerifyCommand(runCtx.DefaultPipeline().Verify, runCtx)...)
+	errs = append(errs, validateLocationSetForCloudRun(runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -830,4 +831,58 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 		}
 	}
 	return errs
+}
+
+func validateLocationSetForCloudRun(rCtx *runcontext.RunContext) []error {
+	if !requiresCloudRun(rCtx) {
+		// if the current command doesn't require connecting to Cloud Run, a location isn't needed.
+		return nil
+	}
+	runDeployer := false
+	hasLocation := false
+	if rCtx.Opts.CloudRunLocation != "" {
+		hasLocation = true
+	}
+	if rCtx.Opts.CloudRunProject != "" {
+		runDeployer = true
+	} else {
+		for _, deployer := range rCtx.Pipelines.Deployers() {
+			if deployer.CloudRunDeploy != nil {
+				runDeployer = true
+				if deployer.CloudRunDeploy.Region != "" {
+					hasLocation = true
+				}
+			}
+		}
+	}
+	if runDeployer && !hasLocation {
+		return []error{sErrors.NewError(fmt.Errorf("location must be specified with Cloud Run Deployer"),
+			&proto.ActionableErr{
+				Message: "Cloud Run Location is not specified",
+				ErrCode: proto.StatusCode_INIT_CLOUD_RUN_LOCATION_ERROR,
+				Suggestions: []*proto.Suggestion{
+					{
+						SuggestionCode: proto.SuggestionCode_SPECIFY_CLOUD_RUN_LOCATION,
+						Action: "Specify a Cloud Run location via the deploy.cloudrun.region field in skaffold.yaml " +
+							"or the --cloud-run-location flag",
+					},
+				},
+			}),
+		}
+	}
+	return nil
+}
+
+// requiresCloudRun returns true if the current command needs to connect to a Cloud Run regional endpoint.
+func requiresCloudRun(rCtx *runcontext.RunContext) bool {
+	runCommands := map[string]bool{
+		"run":    true,
+		"deploy": true,
+		"debug":  true,
+		"dev":    true,
+		"delete": true,
+		"apply":  true,
+	}
+	_, ok := runCommands[rCtx.Opts.Command]
+	return ok
 }

@@ -32,6 +32,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const testKubeContext = "context1"
+
 func TestDeployHooks(t *testing.T) {
 	testutil.Run(t, "TestDeployHooks", func(t *testutil.T) {
 		hooks := latest.DeployHooks{
@@ -91,10 +93,9 @@ func TestDeployHooks(t *testing.T) {
 			LifecycleHooks: hooks,
 		}
 		namespaces := []string{"np1", "np2"}
-		kubeContext := "context1"
-		opts := NewDeployEnvOpts("run_id", kubeContext, namespaces)
+		opts := NewDeployEnvOpts("run_id", testKubeContext, namespaces)
 		formatter := func(corev1.Pod, corev1.ContainerStatus, func() bool) log.Formatter { return mockLogFormatter{} }
-		runner := NewDeployRunner(&kubectl.CLI{KubeContext: kubeContext}, deployer.LifecycleHooks, &namespaces, formatter, opts)
+		runner := NewDeployRunner(&kubectl.CLI{KubeContext: testKubeContext}, deployer.LifecycleHooks, &namespaces, formatter, opts)
 
 		t.Override(&util.DefaultExecCommand,
 			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).
