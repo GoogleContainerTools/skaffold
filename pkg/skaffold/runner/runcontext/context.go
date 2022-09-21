@@ -288,16 +288,6 @@ func (rc *RunContext) EnableGKEARMNodeTolerationInRenderedManifests() bool {
 	return rc.Opts.EnableGKEARMNodeToleration
 }
 
-// GetRenderConfig returns the top tier RenderConfig.
-// TODO: design how to support multi-module.
-func (rc *RunContext) GetRenderConfig() *latest.RenderConfig {
-	p := rc.GetPipelines()
-	if len(p) > 0 {
-		return &p[0].Render
-	}
-	return &latest.RenderConfig{}
-}
-
 func (rc *RunContext) DigestSource() string {
 	if rc.Opts.DigestSource != "" {
 		return rc.Opts.DigestSource

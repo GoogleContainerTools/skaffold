@@ -47,13 +47,13 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 		}
 		log.Entry(ctx).Infof("setting up kpt renderer")
 		return GroupRenderer{
-			Renderers:  []Renderer{r},
-			HookRunner: hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()})),
+			Renderers:   []Renderer{r},
+			HookRunners: []hooks.Runner{hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))},
 		}, err
 	}
 
 	var rs GroupRenderer
-	rs.HookRunner = hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))
+	rs.HookRunners = []hooks.Runner{hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))}
 	if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
 		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
 		if err != nil {
