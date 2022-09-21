@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -128,7 +129,19 @@ func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact
 		return "", err
 	}
 
-	return strings.TrimSpace(string(buf)), nil
+	targetPath := strings.TrimSpace(string(buf))
+
+	cmd = exec.CommandContext(ctx, "bazel", "info", "execution_root")
+	cmd.Dir = workspace
+
+	buf, err = util.RunCmdOut(ctx, cmd)
+	if err != nil {
+		return "", err
+	}
+
+	execRoot := strings.TrimSpace(string(buf))
+
+	return filepath.Join(execRoot, targetPath), nil
 }
 
 func trimTarget(buildTarget string) string {
