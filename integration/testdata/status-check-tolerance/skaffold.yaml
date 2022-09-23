@@ -1,0 +1,14 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+build:
+  artifacts:
+    - image: tolerance-check
+      context: tolerance-check
+      docker:
+        buildArgs:
+          STOP_FAILING_TIME: '{{.STOP_FAILING_TIME}}'
+deploy:
+  statusCheckDeadlineSeconds: 120
+  kubectl:
+    manifests:
+      - tolerance-check/kubernetes/*

@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -243,6 +244,44 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 			out := skaffold.Run(args...).InDir(test.dir).WithEnv(test.env).RunLive(t)
 			defer skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
 			WaitForLogs(t, out, test.targetLog)
+		})
+	}
+}
+
+func TestRunTailTolerateFailuresUntilDeadline(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	var tsts = []struct {
+		description  string
+		dir          string
+		args         []string
+		deployments  []string
+		env          []string
+		targetLogOne string
+		targetLogTwo string
+	}{
+		{
+			description:  "status-check-tolerance",
+			dir:          "testdata/status-check-tolerance",
+			args:         []string{"--tolerate-failures-until-deadline"},
+			deployments:  []string{"tolerance-check"},
+			targetLogOne: "container will exit with error",
+			targetLogTwo: "Hello world!",
+			env:          []string{fmt.Sprintf("STOP_FAILING_TIME=%d", time.Now().Unix()+10)},
+		},
+	}
+
+	for _, test := range tsts {
+		t.Run(test.description, func(t *testing.T) {
+			if test.targetLogOne == "" || test.targetLogTwo == "" {
+				t.SkipNow()
+			}
+			ns, _ := SetupNamespace(t)
+
+			args := append(test.args, "--tail")
+			out := skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunLive(t)
+			defer skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
+			WaitForLogs(t, out, test.targetLogOne)
+			WaitForLogs(t, out, test.targetLogTwo)
 		})
 	}
 }

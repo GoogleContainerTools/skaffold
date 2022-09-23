@@ -443,6 +443,15 @@ func overlayProfileField(profileName, fieldName string, yamlFieldName string, fi
 			PatchIndex:  -1,
 		}
 		return v.Interface()
+	case reflect.Bool:
+		if v.Interface() == reflect.Zero(v.Type()).Interface() {
+			return config
+		}
+		fieldsOverrodeByProfile["/"+path.Join(fieldPath...)] = configlocations.YAMLOverrideInfo{
+			ProfileName: profileName,
+			PatchIndex:  -1,
+		}
+		return v.Interface()
 	case reflect.String:
 		if reflect.DeepEqual("", v.Interface()) {
 			return config

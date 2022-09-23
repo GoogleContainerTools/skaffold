@@ -78,6 +78,7 @@ type Config interface {
 
 	StatusCheckDeadlineSeconds() int
 	FastFailStatusCheck() bool
+	StatusCheckTolerateFailures() bool
 	Muted() config.Muted
 	StatusCheck() *bool
 }
@@ -89,32 +90,34 @@ type Monitor interface {
 }
 
 type monitor struct {
-	cfg             Config
-	labeller        *label.DefaultLabeller
-	deadlineSeconds int
-	muteLogs        bool
-	failFast        bool
-	seenResources   resource.Group
-	singleRun       singleflight.Group
-	namespaces      *[]string
-	kubeContext     string
-	manifests       manifest.ManifestList
+	cfg              Config
+	labeller         *label.DefaultLabeller
+	deadlineSeconds  int
+	muteLogs         bool
+	failFast         bool
+	tolerateFailures bool
+	seenResources    resource.Group
+	singleRun        singleflight.Group
+	namespaces       *[]string
+	kubeContext      string
+	manifests        manifest.ManifestList
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on selected resource rollouts.
 // Currently implemented for deployments and statefulsets.
 func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) Monitor {
 	return &monitor{
-		muteLogs:        cfg.Muted().MuteStatusCheck(),
-		cfg:             cfg,
-		labeller:        labeller,
-		deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
-		seenResources:   make(resource.Group),
-		singleRun:       singleflight.Group{},
-		namespaces:      namespaces,
-		kubeContext:     cfg.GetKubeContext(),
-		manifests:       make(manifest.ManifestList, 0),
-		failFast:        cfg.FastFailStatusCheck(),
+		muteLogs:         cfg.Muted().MuteStatusCheck(),
+		cfg:              cfg,
+		labeller:         labeller,
+		deadlineSeconds:  cfg.StatusCheckDeadlineSeconds(),
+		seenResources:    make(resource.Group),
+		singleRun:        singleflight.Group{},
+		namespaces:       namespaces,
+		kubeContext:      cfg.GetKubeContext(),
+		manifests:        make(manifest.ManifestList, 0),
+		failFast:         cfg.FastFailStatusCheck(),
+		tolerateFailures: cfg.StatusCheckTolerateFailures(),
 	}
 }
 
@@ -353,7 +356,7 @@ func getStatefulSets(ctx context.Context, client kubernetes.Interface, ns string
 	return resources, nil
 }
 
-func pollResourceStatus(ctx context.Context, cfg kubectl.Config, r *resource.Resource) {
+func pollResourceStatus(ctx context.Context, cfg Config, r *resource.Resource) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
@@ -388,6 +391,12 @@ func pollResourceStatus(ctx context.Context, cfg kubectl.Config, r *resource.Res
 			// immediately rather than waiting for for statusCheckDeadlineSeconds
 			// TODO: https://github.com/GoogleContainerTools/skaffold/pull/4591
 			if r.HasEncounteredUnrecoverableError() {
+				if cfg.StatusCheckTolerateFailures() {
+					// increase poll duration to reduce issues seen with kubectl/cluster becoming unresponsive with frequent requests
+					// exponential backoff was considered but seemed to be less effective than one large increase in my testing.
+					ticker = time.NewTicker(pollDuration * 10)
+					continue
+				}
 				r.MarkComplete()
 				return
 			}
