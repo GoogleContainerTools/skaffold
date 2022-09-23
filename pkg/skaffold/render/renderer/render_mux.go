@@ -33,8 +33,8 @@ import (
 
 // GroupRenderer maintains the slice of all `Renderer`s and their respective lifecycle hooks defined in a single Skaffold config.
 type GroupRenderer struct {
-	Renderers  []Renderer
-	HookRunner hooks.Runner
+	Renderers   []Renderer
+	HookRunners []hooks.Runner
 }
 
 // RenderMux forwards all method calls to the renderers it contains.
@@ -52,8 +52,8 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 	allManifests := manifest.NewManifestListByConfig()
 
 	w, ctx := output.WithEventContext(ctx, out, constants.Render, constants.SubtaskIDNone)
-	if r.gr.HookRunner != nil {
-		if err := r.gr.HookRunner.RunPreHooks(ctx, w); err != nil {
+	for i := range r.gr.HookRunners {
+		if err := r.gr.HookRunners[i].RunPreHooks(ctx, w); err != nil {
 			return manifest.ManifestListByConfig{}, err
 		}
 	}
@@ -80,8 +80,8 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 		endTrace()
 	}
 	w, ctx = output.WithEventContext(ctx, out, constants.Render, constants.SubtaskIDNone)
-	if r.gr.HookRunner != nil {
-		if err := r.gr.HookRunner.RunPostHooks(ctx, w); err != nil {
+	for i := range r.gr.HookRunners {
+		if err := r.gr.HookRunners[i].RunPostHooks(ctx, w); err != nil {
 			return manifest.ManifestListByConfig{}, err
 		}
 	}
@@ -98,24 +98,4 @@ func (r RenderMux) ManifestDeps() ([]string, error) {
 		deps.Insert(result...)
 	}
 	return deps.ToList(), nil
-}
-
-func (r RenderMux) PreRenderHooks(ctx context.Context, out io.Writer) error {
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_PreHooks")
-	if err := r.gr.HookRunner.RunPreHooks(childCtx, out); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	endTrace()
-	return nil
-}
-
-func (r RenderMux) PostRenderHooks(ctx context.Context, out io.Writer) error {
-	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_PostHooks")
-	if err := r.gr.HookRunner.RunPostHooks(childCtx, out); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		return err
-	}
-	endTrace()
-	return nil
 }
