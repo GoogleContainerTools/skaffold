@@ -690,7 +690,7 @@ var flagRegistry = []Flag{
 			"render": true,
 		},
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"build", "dev", "run", "debug"},
+		DefinedOn:     []string{"build", "dev", "run", "debug", "render"},
 	},
 	{
 		Name:          "cloud-run-project",
