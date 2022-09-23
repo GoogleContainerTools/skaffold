@@ -401,7 +401,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Platforms,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "dev", "run", "render"},
 	},
 	{
 		Name:          "minikube-profile",
