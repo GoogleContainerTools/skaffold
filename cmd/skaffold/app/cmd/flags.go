@@ -684,9 +684,10 @@ var flagRegistry = []Flag{
 		Value:    &opts.CheckClusterNodePlatforms,
 		DefValue: false,
 		DefValuePerCommand: map[string]interface{}{
-			"dev":   true,
-			"debug": true,
-			"run":   true,
+			"dev":    true,
+			"debug":  true,
+			"run":    true,
+			"render": true,
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"build", "dev", "run", "debug"},
