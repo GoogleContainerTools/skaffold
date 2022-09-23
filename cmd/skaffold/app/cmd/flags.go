@@ -401,7 +401,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Platforms,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "dev", "run", "render"},
 	},
 	{
 		Name:          "minikube-profile",
@@ -684,13 +684,12 @@ var flagRegistry = []Flag{
 		Value:    &opts.CheckClusterNodePlatforms,
 		DefValue: false,
 		DefValuePerCommand: map[string]interface{}{
-			"dev":    true,
-			"debug":  true,
-			"run":    true,
-			"render": true,
+			"dev":   true,
+			"debug": true,
+			"run":   true,
 		},
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"build", "dev", "run", "debug", "render"},
+		DefinedOn:     []string{"build", "dev", "run", "debug"},
 	},
 	{
 		Name:          "cloud-run-project",
