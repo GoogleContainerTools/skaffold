@@ -122,15 +122,28 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	}()
 
 	// Send context by piping into `tar`.
-	// In case of an error, print the command's output. (The `err` itself is useless: exit status 1).
+	// In case of an error, retry up to attemptMax and print the command's output. (The `err` itself is useless: exit status 1).
 	var out bytes.Buffer
-	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
-		errRun := fmt.Errorf("uploading build context: %s", out.String())
-		errTar := <-errs
-		if errTar != nil {
-			errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+	attempts := 0
+	attemptMax := 3
+	var errRun error
+	for {
+		if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
+
+			if attempts >= attemptMax {
+				errRun = fmt.Errorf("uploading build context: %s", out.String())
+				errTar := <-errs
+				if errTar != nil {
+					errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+				}
+				return errRun
+			}
+
+			attempts++
+			continue
 		}
-		return errRun
+
+		break
 	}
 
 	// Generate a file to successfully terminate the init container.
