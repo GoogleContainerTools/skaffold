@@ -551,13 +551,14 @@ debug.cloud.google.com/config={
 ### API: Events
 
 Each debuggable container being started or stopped raises a _debug-container-event_ through
-Skaffold's event mechanism ([gRPC](../references/api/grpc/#debuggingcontainerevent),
-[REST](../references/api/swagger/#/SkaffoldService/Events)).
+Skaffold's event mechanism ([gRPC]({{< ref "/docs/references/api/grpc#debuggingcontainerevent" >}}),
+[REST]({{< ref "/docs/references/api/swagger#/SkaffoldService/Events" >}})).
 
 <details>
 <summary>`/v1/events` stream of `skaffold debug` within `examples/jib`</summary>
 
-In this example, we do a `skaffold debug`, and then kill the deployed pod.  The deployment starts a new pod.  We get a terminated event for the container for the killed pod.
+In this example, we do a `skaffold debug`, and then kill the deployed pod.  The deployment starts a new pod.
+We get a terminated event for the container for the killed pod.
 
 ```json
 {
@@ -587,7 +588,8 @@ In this example, we do a `skaffold debug`, and then kill the deployed pod.  The 
 
 ### API: State
 
-The API's _state_ ([gRPC](../references/api/grpc/#skaffoldservice), [REST](../references/api/swagger/#/SkaffoldService/GetState)) also includes a list of debuggable containers.
+The API's _state_ ([gRPC]({{< relref "/docs/references/api/grpc#skaffoldservice" >}}),
+[REST]({{< relref "/docs/references/api/swagger#/SkaffoldService/GetState" >}})) also includes a list of debuggable containers.
 
 <details>
 <summary>The `/v1/state` listing debugging containers</summary>
