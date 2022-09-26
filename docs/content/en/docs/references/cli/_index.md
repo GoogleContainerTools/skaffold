@@ -995,6 +995,7 @@ Options:
   -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --offline=false: Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.
   -o, --output='': File to write rendered manifests to
+      --platform=[]: The platform to target for the build artifacts
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
@@ -1027,6 +1028,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_OFFLINE` (same as `--offline`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
+* `SKAFFOLD_PLATFORM` (same as `--platform`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
