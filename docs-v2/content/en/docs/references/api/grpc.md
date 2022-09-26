@@ -1068,6 +1068,11 @@ For Cancelled Error code, use range 800 to 850.<br>
 | RENDER_KPTFILE_INVALID_SCHEMA_ERR | 1402 | The Kptfile is not a valid API schema |
 | RENDER_SET_NAMESPACE_ERR | 1403 | Error setting namespace. |
 | RENDER_NAMESPACE_ALREADY_SET_ERR | 1404 | Namespace is already set. |
+| RENDER_REPLACE_IMAGE_ERR | 1405 | Error replacing a built artifact in the manifests |
+| RENDER_TRANSFORM_MANIFEST_ERR | 1406 | Error transforming a manifest during skaffold debug |
+| RENDER_SET_LABEL_ERR | 1407 | Error setting user specified additional labels. |
+| RENDER_MANIFEST_WRITE_ERR | 1408 | Error writing hydrated kubernetes manifests. |
+| RENDER_PARSE_MANIFEST_IMAGES_ERR | 1409 | Error getting images from a kubernetes manifest. |
 | CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
 | CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
 | CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
