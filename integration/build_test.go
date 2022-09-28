@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"4d63.com/tz"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -248,23 +250,11 @@ func checkRemoteImagePlatforms(t *testing.T, image string, expected []v1.Platfor
 }
 
 func checkPlatformsEqual(t *testing.T, actual, expected []v1.Platform) {
-	expectedLen := len(expected)
-	actualLen := len(actual)
-
-	if expectedLen != actualLen {
-		t.Fatalf("length of the slices differ: Expected %d, but was %d", expectedLen, actualLen)
+	platLess := func(a, b v1.Platform) bool {
+		return a.OS < b.OS || (a.OS == b.OS && a.Architecture < b.Architecture)
 	}
-	wmap := make(map[string]int)
-	for _, elem := range expected {
-		wmap[elem.OS+"/"+elem.Architecture]++
-	}
-	for _, elem := range actual {
-		wmap[elem.OS+"/"+elem.Architecture]--
-	}
-	for _, v := range wmap {
-		if v != 0 {
-			t.Fatalf("elements are missing (negative integers) or excess (positive integers): %#v", wmap)
-		}
+	if diff := cmp.Diff(expected, actual, cmpopts.SortSlices(platLess)); diff != "" {
+		t.Fatalf("Platforms differ (-got,+want):\n%s", diff)
 	}
 }
 
