@@ -1,7 +1,9 @@
 bin/
 out/
 examples/bazel/bazel-*
+examples/**/.mvn/wrapper/maven-wrapper.jar
 integration/examples/bazel/bazel-*
+integration/**/.mvn/wrapper/maven-wrapper.jar
 integration/testdata/custom/bazel-*
 integration/testdata/plugin/local/bazel/bazel-*
 *.new
