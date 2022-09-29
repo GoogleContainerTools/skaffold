@@ -23,9 +23,21 @@ type RunResourceName struct {
 	Project string
 	Region  string
 	Service string
+	Job     string
 }
 
 // String returns the path representation of a Cloud Run Service.
 func (n RunResourceName) String() string {
-	return fmt.Sprintf("projects/%s/locations/%s/services/%s", n.Project, n.Region, n.Service)
+	// only one of Job or Service should be specified
+	if n.Service != "" {
+		return fmt.Sprintf("projects/%s/locations/%s/services/%s", n.Project, n.Region, n.Service)
+	} else {
+		return fmt.Sprintf("apis/run.googleapis.com/namespaces/%s/jobs/%s", n.Project, n.Job)
+	}
+}
+func (n RunResourceName) Name() string {
+	if n.Service != "" {
+		return n.Service
+	}
+	return n.Job
 }

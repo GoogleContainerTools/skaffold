@@ -25,6 +25,7 @@ import (
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"google.golang.org/api/run/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -150,6 +151,7 @@ func (d *Deployer) getMonitor() *Monitor {
 func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest []byte) error {
 	cOptions := d.clientOptions
 	if d.useGcpOptions {
+		cOptions = append(cOptions, option.WithEndpoint(fmt.Sprintf("%s-run.googleapis.com", d.Region)))
 		cOptions = append(gcp.ClientOptions(ctx), cOptions...)
 	}
 	crclient, err := run.NewService(ctx, cOptions...)
@@ -159,9 +161,40 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 			ErrCode: proto.StatusCode_DEPLOY_GET_CLOUD_RUN_CLIENT_ERR,
 		})
 	}
-	service := &run.Service{}
-	if err = k8syaml.Unmarshal(manifest, service); err != nil {
+	// figure out which type we have:
+	resource := &unstructured.Unstructured{}
+	if err = k8syaml.Unmarshal(manifest, resource); err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	var resName *RunResourceName
+	if resource.GetAPIVersion() == "serving.knative.dev/v1" && resource.GetKind() == "Service" {
+		resName, err = d.deployService(crclient, manifest, out)
+		// the accessor only supports services. Jobs don't run by themselves so port forwarding doesn't make sense.
+		d.accessor.AddResource(*resName)
+	} else if resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "Job" {
+		resName, err = d.deployJob(crclient, manifest, out)
+	} else {
+		return sErrors.NewError(fmt.Errorf("Unsupported Kind for Cloud Run Deployer: %s/%s", resource.GetAPIVersion(), resource.GetKind()),
+			&proto.ActionableErr{
+				Message: "Kind is not supported",
+				ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+			})
+	}
+	if err != nil {
+		return err
+	}
+
+	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: resName.String(), name: resName.Name()})
+	return nil
+}
+
+func (d *Deployer) deployService(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
+	service := &run.Service{}
+	if err := k8syaml.Unmarshal(manifest, service); err != nil {
+		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -169,12 +202,11 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 	if d.Project != "" {
 		service.Metadata.Namespace = d.Project
 	} else if service.Metadata.Namespace == "" {
-		return sErrors.NewError(fmt.Errorf("unable to detect project for Cloud Run"), &proto.ActionableErr{
+		return nil, sErrors.NewError(fmt.Errorf("unable to detect project for Cloud Run"), &proto.ActionableErr{
 			Message: "No Google Cloud project found in Cloud Run Manifest or Skaffold Config",
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
 	}
-
 	// we need to strip "skaffold.dev" from the run-id label because gcp labels don't support domains
 	runID, foundID := service.Metadata.Labels["skaffold.dev/run-id"]
 	if foundID {
@@ -188,7 +220,6 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 			service.Spec.Template.Metadata.Labels["run-id"] = runID
 		}
 	}
-
 	resName := RunResourceName{
 		Project: service.Metadata.Namespace,
 		Region:  d.Region,
@@ -198,16 +229,13 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 	parent := fmt.Sprintf("projects/%s/locations/%s", service.Metadata.Namespace, d.Region)
 
 	sName := resName.String()
-
-	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: sName, name: service.Metadata.Name})
-	d.accessor.AddResource(resName)
 	getCall := crclient.Projects.Locations.Services.Get(sName)
-	_, err = getCall.Do()
+	_, err := getCall.Do()
 
 	if err != nil {
 		gErr, ok := err.(*googleapi.Error)
 		if !ok || gErr.Code != http.StatusNotFound {
-			return sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
+			return nil, sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
 				Message: err.Error(),
 				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
 			})
@@ -220,13 +248,77 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		_, err = replaceCall.Do()
 	}
 	if err != nil {
-		return sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service: %s", err), &proto.ActionableErr{
+		return nil, sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service: %s", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
 		})
 	}
-	// register status monitor
-	return nil
+	return &resName, nil
+}
+
+func (d *Deployer) deployJob(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
+	job := &run.Job{}
+	if err := k8syaml.Unmarshal(manifest, job); err != nil {
+		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	if d.Project != "" {
+		job.Metadata.Namespace = d.Project
+	} else if job.Metadata.Namespace == "" {
+		return nil, sErrors.NewError(fmt.Errorf("unable to detect project for Cloud Run"), &proto.ActionableErr{
+			Message: "No Google Cloud project found in Cloud Run Manifest or Skaffold Config",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	// we need to strip "skaffold.dev" from the run-id label because gcp labels don't support domains
+	runID, foundID := job.Metadata.Labels["skaffold.dev/run-id"]
+	if foundID {
+		delete(job.Metadata.Labels, "skaffold.dev/run-id")
+		job.Metadata.Labels["run-id"] = runID
+	}
+	if job.Spec != nil && job.Spec.Template != nil && job.Spec.Template.Metadata != nil {
+		runID, foundID = job.Spec.Template.Metadata.Labels["skaffold.dev/run-id"]
+		if foundID {
+			delete(job.Spec.Template.Metadata.Labels, "skaffold.dev/run-id")
+			job.Spec.Template.Metadata.Labels["run-id"] = runID
+		}
+	}
+	resName := RunResourceName{
+		Project: job.Metadata.Namespace,
+		Region:  d.Region,
+		Job:     job.Metadata.Name,
+	}
+	output.Default.Fprintln(out, "Deploying Cloud Run service:\n\t", job.Metadata.Name)
+	parent := fmt.Sprintf("projects/%s/locations/%s", job.Metadata.Namespace, d.Region)
+
+	sName := resName.String()
+	getCall := crclient.Namespaces.Jobs.Get(sName)
+	_, err := getCall.Do()
+
+	if err != nil {
+		gErr, ok := err.(*googleapi.Error)
+		if !ok || gErr.Code != http.StatusNotFound {
+			return nil, sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
+				Message: err.Error(),
+				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
+			})
+		}
+		// This is a new service, we need to create it
+		createCall := crclient.Namespaces.Jobs.Create(parent, job)
+		_, err = createCall.Do()
+	} else {
+		replaceCall := crclient.Namespaces.Jobs.ReplaceJob(sName, job)
+		_, err = replaceCall.Do()
+	}
+	if err != nil {
+		return nil, sErrors.NewError(fmt.Errorf("error deploying Cloud Run Job: %s", err), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
+		})
+	}
+	return &resName, nil
 }
 
 func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {

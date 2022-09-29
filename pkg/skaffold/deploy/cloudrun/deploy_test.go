@@ -56,6 +56,8 @@ func TestDeploy(tOuter *testing.T) {
 			region:         "us-central1",
 			expectedPath:   "/v1/projects/testProject/locations/us-central1/services",
 			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name: "test-service",
 				},
@@ -67,6 +69,8 @@ func TestDeploy(tOuter *testing.T) {
 			region:         "us-central1",
 			expectedPath:   "/v1/projects/testProject/locations/us-central1/services",
 			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name:      "test-service",
 					Namespace: "my-project",
@@ -79,6 +83,8 @@ func TestDeploy(tOuter *testing.T) {
 			region:         "us-central1",
 			httpErr:        http.StatusUnauthorized,
 			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name:      "test-service",
 					Namespace: "my-project",
@@ -90,6 +96,8 @@ func TestDeploy(tOuter *testing.T) {
 			description: "test no project specified",
 			region:      "us-central1",
 			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name: "test-service",
 				},
@@ -159,6 +167,8 @@ func TestDeployRewrites(tOuter *testing.T) {
 		{
 			description: "override run-id in service and template",
 			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Labels: map[string]string{
 						"skaffold.dev/run-id": "abc123",
@@ -178,6 +188,8 @@ func TestDeployRewrites(tOuter *testing.T) {
 			defaultProject: "test-project",
 			region:         "us-central1",
 			expected: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Labels: map[string]string{
 						"run-id": "abc123",
@@ -199,6 +211,8 @@ func TestDeployRewrites(tOuter *testing.T) {
 		{
 			description: "test deploy with overridden project",
 			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name:      "test-service",
 					Namespace: "my-project",
@@ -207,6 +221,8 @@ func TestDeployRewrites(tOuter *testing.T) {
 			defaultProject: "test-project",
 			region:         "us-central1",
 			expected: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name:      "test-service",
 					Namespace: "test-project",
@@ -274,6 +290,8 @@ func TestCleanup(tOuter *testing.T) {
 			region:         "us-central1",
 			expectedPath:   "/v1/projects/testProject/locations/us-central1/services/test-service",
 			toDelete: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name: "test-service",
 				},
@@ -285,6 +303,8 @@ func TestCleanup(tOuter *testing.T) {
 			region:         "us-central1",
 			expectedPath:   "/v1/projects/testProject/locations/us-central1/services/test-service",
 			toDelete: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name:      "test-service",
 					Namespace: "my-project",
@@ -297,6 +317,8 @@ func TestCleanup(tOuter *testing.T) {
 			region:         "us-central1",
 			expectedPath:   "/v1/projects/testProject/locations/us-central1/services/test-service",
 			toDelete: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
 				Metadata: &run.ObjectMeta{
 					Name: "test-service",
 				},
