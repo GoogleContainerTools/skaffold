@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	k8sv1 "k8s.io/api/core/v1"
 
@@ -74,14 +75,15 @@ func TestMultiPlatformWithRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			platforms := platformsCliValue(test.expectedPlatforms)
 			ns, client := SetupNamespace(t)
-			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
+			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
+			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", tag, "--cache-artifacts=false"}
 			expectedPlatforms := expectedPlatformsForRunningCluster(test.expectedPlatforms)
 
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
 			for _, image := range test.images {
-				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag), expectedPlatforms)
+				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, tag), expectedPlatforms)
 
 				if isRunningInHybridCluster {
 					pod := client.GetPod(image.pod)
@@ -154,8 +156,9 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			platforms := platformsCliValue(test.expectedPlatforms)
+			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
 			ns, client := SetupNamespace(t)
-			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false"}
+			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", tag, "--cache-artifacts=false"}
 			expectedPlatforms := expectedPlatformsForRunningCluster(test.expectedPlatforms)
 
 			test.command(args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
@@ -163,7 +166,7 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 
 			for _, image := range test.images {
 				client.WaitForPodsReady(image.pod)
-				createdImagePlatforms, err := docker.GetPlatforms(fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag))
+				createdImagePlatforms, err := docker.GetPlatforms(fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, tag))
 				failNowIfError(t, err)
 
 				if len(createdImagePlatforms) != platformsExpectedInCreatedImage {
@@ -226,8 +229,9 @@ func TestMultiplatformWithDeploy(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			tmpfile := testutil.TempFile(t, "", []byte{})
+			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
 			platforms := platformsCliValue(test.expectedPlatforms)
-			argsBuild := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", test.tag, "--cache-artifacts=false", "--file-output", tmpfile}
+			argsBuild := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", tag, "--cache-artifacts=false", "--file-output", tmpfile}
 			argsDeploy := []string{"--build-artifacts", tmpfile, "--default-repo", defaultRepo, "--enable-platform-node-affinity=true"}
 
 			skaffold.Build(argsBuild...).InDir(test.dir).RunOrFail(t)
@@ -236,7 +240,7 @@ func TestMultiplatformWithDeploy(t *testing.T) {
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
 			for _, image := range test.images {
-				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, test.tag), test.expectedPlatforms)
+				checkRemoteImagePlatforms(t, fmt.Sprintf("%s/%s:%s", defaultRepo, image.name, tag), test.expectedPlatforms)
 
 				if isRunningInHybridCluster {
 					pod := client.GetPod(image.pod)
