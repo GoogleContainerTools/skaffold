@@ -448,15 +448,15 @@ enum StatusCode {
     // Deploy error due to user deploy config for kustomize deployer
     DEPLOY_KUSTOMIZE_USER_ERR = 1016;
     // Error replacing a built artifact in the manifests
-    DEPLOY_REPLACE_IMAGE_ERR = 1017;
+    DEPLOY_REPLACE_IMAGE_ERR = 1017 [deprecated = true];
     // Error transforming a manifest during skaffold debug
-    DEPLOY_TRANSFORM_MANIFEST_ERR = 1018;
+    DEPLOY_TRANSFORM_MANIFEST_ERR = 1018 [deprecated = true];
     // Error setting user specified additional labels.
-    DEPLOY_SET_LABEL_ERR = 1019;
+    DEPLOY_SET_LABEL_ERR = 1019 [deprecated = true];
     // Error writing hydrated kubernetes manifests.
-    DEPLOY_MANIFEST_WRITE_ERR = 1020;
+    DEPLOY_MANIFEST_WRITE_ERR = 1020 [deprecated = true];
     // Error getting images from a kubernetes manifest.
-    DEPLOY_PARSE_MANIFEST_IMAGES_ERR = 1021;
+    DEPLOY_PARSE_MANIFEST_IMAGES_ERR = 1021 [deprecated = true];
     // Helm config `createNamespace` not available
     DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = 1022;
     // Kubernetes cluster reported an internal system error
@@ -519,6 +519,16 @@ enum StatusCode {
     RENDER_SET_NAMESPACE_ERR = 1403;
     // Namespace is already set.
     RENDER_NAMESPACE_ALREADY_SET_ERR = 1404;
+    // Error replacing a built artifact in the manifests
+    RENDER_REPLACE_IMAGE_ERR = 1405;
+    // Error transforming a manifest during skaffold debug
+    RENDER_TRANSFORM_MANIFEST_ERR = 1406;
+    // Error setting user specified additional labels.
+    RENDER_SET_LABEL_ERR = 1407;
+    // Error writing hydrated kubernetes manifests.
+    RENDER_MANIFEST_WRITE_ERR = 1408;
+    // Error getting images from a kubernetes manifest.
+    RENDER_PARSE_MANIFEST_IMAGES_ERR = 1409;
 
     // Configuration errors
 
