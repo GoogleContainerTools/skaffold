@@ -177,7 +177,7 @@ func matchServerURL(ctx context.Context, server string) (bool, error) {
 		return false, fmt.Errorf("getting minikube profiles: %w", err)
 	}
 
-	var data profileList
+	var data ProfileList
 	if err = json.Unmarshal(out, &data); err != nil {
 		return false, fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
 	}
@@ -210,7 +210,7 @@ func minikubePath() string {
 	return filepath.Join(minikubeHomeEnv, ".minikube")
 }
 
-type profileList struct {
+type ProfileList struct {
 	Valid   []profile `json:"valid,omitempty"`
 	Invalid []profile `json:"invalid,omitempty"`
 }

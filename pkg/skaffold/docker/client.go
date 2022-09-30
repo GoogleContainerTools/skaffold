@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -122,9 +123,25 @@ type ExitCoder interface {
 	ExitCode() int
 }
 
-// newMinikubeAPIClient returns a docker client using the environment variables
+// newMinikubeAPIClient returns a client using the environment variables
 // provided by minikube.
 func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+	driver, err := getMinikubeDriver(ctx, minikubeProfile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if driver == "docker" {
+		return newMinikubeAPIClientWithDockerDriver(ctx, minikubeProfile)
+	}
+
+	// Load image without docker driver.
+	return nil, nil, nil
+}
+
+// newMinikubeAPIClientWithDockerDriver returns a docker client using the environment variables
+// provided by minikube.
+func newMinikubeAPIClientWithDockerDriver(ctx context.Context, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
 	env, err := getMinikubeDockerEnv(ctx, minikubeProfile)
 	if err != nil {
 		// When minikube uses the infamous `none` driver, `minikube docker-env` will exit with
@@ -190,6 +207,27 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 	sort.Strings(environment)
 
 	return environment, api, err
+}
+
+func getMinikubeDriver(ctx context.Context, minikubeProfile string) (string, error) {
+	if minikubeProfile == "" {
+		return "", fmt.Errorf("empty minikube profile")
+	}
+	cmd, err := cluster.GetClient().MinikubeExec(ctx, "profile", "list", "-o", "json")
+	if err != nil {
+		return "", fmt.Errorf("executing minikube command: %w", err)
+	}
+	out, err := util.RunCmdOut(ctx, cmd)
+	if err != nil {
+		return "", fmt.Errorf("getting minikube profile: %w", err)
+	}
+
+	var data cluster.ProfileList
+	if err = json.Unmarshal(out, &data); err != nil {
+		return "", fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
+	}
+	driver := data.Valid[0].Config.Driver
+	return driver, nil
 }
 
 func getUserAgentHeader() map[string]string {
