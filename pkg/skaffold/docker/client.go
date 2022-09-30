@@ -135,7 +135,14 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 		return newMinikubeAPIClientWithDockerDriver(ctx, minikubeProfile)
 	}
 
-	// Load image without docker driver.
+	cmd, err := cluster.GetClient().MinikubeExec(ctx, "image", "load")
+	if err != nil {
+		return nil, nil, fmt.Errorf("executing minikube command: %w", err)
+	}
+	err = util.RunCmd(ctx, cmd)
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading cluster image: %w", err)
+	}
 	return nil, nil, nil
 }
 
