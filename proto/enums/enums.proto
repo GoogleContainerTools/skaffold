@@ -242,6 +242,8 @@ enum StatusCode {
     BUILD_CROSS_PLATFORM_ERR = 151;
     // Multi-platfor build fails due to no container registry set
     BUILD_CROSS_PLATFORM_NO_REGISTRY_ERR = 152;
+    // Build error load image
+    BUILD_IMAGE_LOAD_ERR = 153;
 
     // Container errors
 
@@ -668,7 +670,7 @@ enum SuggestionCode {
 
     // Specify Cloud Run Location
     SPECIFY_CLOUD_RUN_LOCATION = 230;
-    
+
     // Container Run time error
 
     // Container run error
@@ -677,8 +679,6 @@ enum SuggestionCode {
     CHECK_READINESS_PROBE = 302;
     // Check Container image
     CHECK_CONTAINER_IMAGE = 303;
-
-
 
     // Common infra errors
 
@@ -707,6 +707,8 @@ enum SuggestionCode {
     START_MINIKUBE = 501;
     // Minikube is paused: use `minikube unpause`
     UNPAUSE_MINIKUBE = 502;
+    // Check minikube logs
+    CHECK_MINIKUBE_LOGS = 503;
 
     // Dev Phase error suggestions
 

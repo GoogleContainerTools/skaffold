@@ -951,6 +951,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | BUILD_UNKNOWN_PLATFORM_FLAG | 150 | Value provided to --platform flag cannot be parsed |
 | BUILD_CROSS_PLATFORM_ERR | 151 | Cross-platform build failures |
 | BUILD_CROSS_PLATFORM_NO_REGISTRY_ERR | 152 | Multi-platfor build fails due to no container registry set |
+| BUILD_IMAGE_LOAD_ERR | 153 | Build error load image |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -1153,6 +1154,7 @@ Enum for Suggestion codes
 | CHECK_HOST_CONNECTION | 408 | Cluster Connectivity error |
 | START_MINIKUBE | 501 | Minikube is stopped: use `minikube start` |
 | UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
+| CHECK_MINIKUBE_LOGS | 503 | Check minikube logs |
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
 | SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
 | KPTFILE_MANUAL_INIT | 601 | Manually run `kpt pkg init` or `kpt live init` |
