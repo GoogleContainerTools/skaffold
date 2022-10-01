@@ -28,21 +28,23 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/docker/cli/cli/connhelper"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
-
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/cluster"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 // minikube 1.13.0 renumbered exit codes
 const minikubeDriverConfictExitCode = 51
 const minikubeExGuestUnavailable = 89
 const oldMinikubeBadUsageExitCode = 64
+
+const dockerDriver = "docker"
 
 // For testing
 var (
@@ -68,7 +70,7 @@ type Config interface {
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
 func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(ctx, cfg.GetKubeContext(), cfg.MinikubeProfile())
+		env, apiClient, err := newAPIClient(ctx, cfg.GetKubeContext())
 		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg)
 		dockerAPIClientErr = err
 	})
@@ -76,19 +78,23 @@ func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 	return dockerAPIClient, dockerAPIClientErr
 }
 
-// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
-// remove minikubeProfile from here and instead detect it by matching the
-// kubecontext API Server to minikube profiles
-
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
-func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
-	if minikubeProfile != "" { // skip validation if explicitly specifying minikubeProfile.
-		return newMinikubeAPIClient(ctx, minikubeProfile)
+func newAPIClient(ctx context.Context, kubeContext string) ([]string, client.CommonAPIClient, error) {
+	cmd, err := cluster.GetClient().MinikubeExec(ctx, "profile", "list", "-o", "json")
+	if err != nil {
+		return nil, nil, fmt.Errorf("executing minikube command: %w", err)
 	}
-	if cluster.GetClient().IsMinikube(ctx, kubeContext) {
-		return newMinikubeAPIClient(ctx, kubeContext)
+	out, err := util.RunCmdOut(ctx, cmd)
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting minikube profile: %w", err)
 	}
-	return newEnvAPIClient()
+	var data cluster.ProfileList
+	if err = json.Unmarshal(out, &data); err != nil {
+		return nil, nil, fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
+	}
+	profile := data.Valid[0].Config.Name
+	driver := data.Valid[0].Config.Driver
+	return newMinikubeAPIClient(ctx, profile, driver)
 }
 
 // newEnvAPIClient returns a docker client based on the environment variables set.
@@ -125,19 +131,14 @@ type ExitCoder interface {
 
 // newMinikubeAPIClient returns a client using the environment variables
 // provided by minikube.
-func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
-	driver, err := getMinikubeDriver(ctx, minikubeProfile)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if driver == "docker" {
+func newMinikubeAPIClient(ctx context.Context, minikubeProfile string, minikubeDriver string) ([]string, client.CommonAPIClient, error) {
+	if minikubeDriver == dockerDriver {
 		return newMinikubeAPIClientWithDockerDriver(ctx, minikubeProfile)
 	}
 
 	cmd, err := cluster.GetClient().MinikubeExec(ctx, "image", "load")
 	if err != nil {
-		return nil, nil, fmt.Errorf("executing minikube command: %w", err)
+		return nil, nil, sErrors.MinikubeImageLoadError("10", err)
 	}
 	err = util.RunCmd(ctx, cmd)
 	if err != nil {
@@ -214,27 +215,6 @@ func newMinikubeAPIClientWithDockerDriver(ctx context.Context, minikubeProfile s
 	sort.Strings(environment)
 
 	return environment, api, err
-}
-
-func getMinikubeDriver(ctx context.Context, minikubeProfile string) (string, error) {
-	if minikubeProfile == "" {
-		return "", fmt.Errorf("empty minikube profile")
-	}
-	cmd, err := cluster.GetClient().MinikubeExec(ctx, "profile", "list", "-o", "json")
-	if err != nil {
-		return "", fmt.Errorf("executing minikube command: %w", err)
-	}
-	out, err := util.RunCmdOut(ctx, cmd)
-	if err != nil {
-		return "", fmt.Errorf("getting minikube profile: %w", err)
-	}
-
-	var data cluster.ProfileList
-	if err = json.Unmarshal(out, &data); err != nil {
-		return "", fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
-	}
-	driver := data.Valid[0].Config.Driver
-	return driver, nil
 }
 
 func getUserAgentHeader() map[string]string {
