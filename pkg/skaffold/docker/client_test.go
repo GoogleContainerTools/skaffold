@@ -67,6 +67,7 @@ func TestNewEnvClient(t *testing.T) {
 	}
 }
 
+// FIX: test should handle loading images locally.
 func TestNewMinikubeImageAPIClient(t *testing.T) {
 	tests := []struct {
 		description string
@@ -161,7 +162,7 @@ DOCKER_HOST`),
 			t.Override(&util.DefaultExecCommand, test.command)
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 
-			env, _, err := newMinikubeAPIClient(context.Background(), "minikube")
+			env, _, err := newMinikubeAPIClient(context.Background(), "minikube", "docker")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedEnv, env)
 		})
