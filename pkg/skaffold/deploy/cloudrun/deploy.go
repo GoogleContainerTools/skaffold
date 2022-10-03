@@ -187,7 +187,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		return err
 	}
 
-	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: resName.String(), name: resName.Name()})
+	d.getMonitor().Resources = append(d.getMonitor().Resources, *resName)
 	return nil
 }
 

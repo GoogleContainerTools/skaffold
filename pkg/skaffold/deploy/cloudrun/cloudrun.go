@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,13 @@ limitations under the License.
 package cloudrun
 
 import "fmt"
+
+const (
+	type_service = "service"
+	type_job     = "job"
+)
+
+type ResourceType string
 
 // RunResourceName represents a Cloud Run Service
 type RunResourceName struct {
@@ -40,4 +47,11 @@ func (n RunResourceName) Name() string {
 		return n.Service
 	}
 	return n.Job
+}
+
+func (n RunResourceName) Type() ResourceType {
+	if n.Service != "" {
+		return type_service
+	}
+	return type_job
 }
