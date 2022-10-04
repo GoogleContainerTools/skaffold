@@ -36,7 +36,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const initContainer = "kaniko-init-container"
+const (
+	initContainer = "kaniko-init-container"
+	attemptMax    = 3
+)
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
 	// TODO: Implement building multi-platform images for cluster builder
@@ -125,7 +128,7 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	// In case of an error, retry up to attemptMax and print the command's output. (The `err` itself is useless: exit status 1).
 	var out bytes.Buffer
 	attempts := 0
-	attemptMax := 3
+
 	var errRun error
 	for {
 		if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
