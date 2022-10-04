@@ -76,6 +76,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		kubeContext: cfg.GetKubeContext(),
 		kubeConfig:  cfg.GetKubeConfig(),
 		labels:      labels,
+		namespace:   cfg.GetNamespace(),
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
@@ -132,6 +133,9 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 		namespace, err := helm.ReleaseNamespace(h.namespace, release)
 		if err != nil {
 			return nil, err
+		}
+		if h.namespace != "" {
+			namespace = h.namespace
 		}
 		if namespace != "" {
 			args = append(args, "--namespace", namespace)
