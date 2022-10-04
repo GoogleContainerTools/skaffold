@@ -75,7 +75,7 @@ type config struct {
 	// startsAt mentions the date after the users survey should be prompted. This will ensure, Skaffold team can finalize the survey
 	// even after release date.
 	startsAt time.Time
-	// expiresAt places a time limit of the user survey. As users are only prompted every two weeks
+	// expiresAt places a time limit of the user survey. As users are only prompted every 5 days
 	// by design, this time limit should be at least 4 weeks after the upcoming release date to account
 	// for release propagation lag to Cloud SDK and Cloud Shell.
 	expiresAt    time.Time

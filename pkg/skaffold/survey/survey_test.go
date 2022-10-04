@@ -66,8 +66,8 @@ func TestDisplaySurveyForm(t *testing.T) {
 }
 
 func TestShouldDisplayPrompt(t *testing.T) {
-	tenDaysAgo := time.Now().AddDate(0, 0, -10).Format(time.RFC3339)
 	fiveDaysAgo := time.Now().AddDate(0, 0, -5).Format(time.RFC3339)
+	threeDaysAgo := time.Now().AddDate(0, 0, -3).Format(time.RFC3339)
 	// less than 90 days ago
 	twoMonthsAgo := time.Now().AddDate(0, -2, -5).Format(time.RFC3339)
 	// at least 90 days ago
@@ -86,12 +86,12 @@ func TestShouldDisplayPrompt(t *testing.T) {
 				}},
 		},
 		{
-			description: "should not display prompt when last prompted is less than 2 weeks",
+			description: "should not display prompt when last prompted is less than 5 days",
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
 					Survey: &sConfig.SurveyConfig{
 						DisablePrompt: util.BoolPtr(false),
-						LastPrompted:  fiveDaysAgo,
+						LastPrompted:  threeDaysAgo,
 					}},
 			},
 		},
@@ -106,12 +106,12 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			},
 		},
 		{
-			description: "should display prompt when last prompted is before 2 weeks",
+			description: "should display prompt when last prompted is before 5 days",
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
 					Survey: &sConfig.SurveyConfig{
 						DisablePrompt: util.BoolPtr(false),
-						LastPrompted:  tenDaysAgo,
+						LastPrompted:  fiveDaysAgo,
 					}},
 			},
 			expected: true,
