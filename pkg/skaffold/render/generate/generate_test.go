@@ -189,7 +189,7 @@ func TestGenerate(t *testing.T) {
 				Touch("empty.ignored").
 				Chdir()
 
-			g := NewGenerator(".", test.generateConfig)
+			g := NewGenerator(".", test.generateConfig, "")
 			var output bytes.Buffer
 			actual, err := g.Generate(context.Background(), &output)
 			defer os.RemoveAll(".kpt-pipeline")
@@ -208,7 +208,7 @@ func TestGenerateFromURLManifest(t *testing.T) {
 	defer os.RemoveAll(manifest.ManifestTmpDir)
 	g := NewGenerator(".", latest.Generate{
 		RawK8s: []string{ts.URL},
-	})
+	}, "")
 	var output bytes.Buffer
 	actual, err := g.Generate(context.Background(), &output)
 	testutil.Run(t, "", func(t *testutil.T) {
