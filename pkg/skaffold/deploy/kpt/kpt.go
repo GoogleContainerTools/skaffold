@@ -49,6 +49,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/blang/semver"
 )
 
 const (
@@ -57,8 +58,9 @@ const (
 )
 
 var (
-	openFile    = os.Open
-	kptInitFunc = kptfileInitIfNot
+	openFile                        = os.Open
+	kptInitFunc                     = kptfileInitIfNot
+	maxKptVersionAllowedForDeployer = "1.0.0-beta.13"
 )
 
 // Deployer deploys workflows with kpt CLI
@@ -396,4 +398,24 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 func (k *Deployer) trackNamespaces(namespaces []string) {
 	fmt.Fprintf(os.Stdout, "tracking namespaces: %+v\n", namespaces)
 	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
+}
+
+func CheckIsProperBinVersion(ctx context.Context) error {
+	cmd := exec.Command("kpt", "version")
+	b, err := util.RunCmdOut(ctx, cmd)
+	if err != nil {
+		return fmt.Errorf("kpt version command failed: %w", err)
+	}
+	version := string(b)
+	maxAllowedVersion := semver.MustParse(maxKptVersionAllowedForDeployer)
+	currentVersion, err := semver.ParseTolerant(version)
+	if err != nil {
+		return err
+	}
+
+	if currentVersion.GT(maxAllowedVersion) {
+		return fmt.Errorf("max allowed verion for Kpt deployer is %v, detected version is %v", maxKptVersionAllowedForDeployer, currentVersion)
+	}
+
+	return nil
 }

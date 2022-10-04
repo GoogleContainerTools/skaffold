@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -87,6 +88,7 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		errs = append(errs, validateCustomTest(config, config.Test)...)
 		errs = append(errs, validateGCBConfig(config, config.Build)...)
 		errs = append(errs, validateVerifyTests(config, config.Verify)...)
+		errs = append(errs, validateKptDeployerVersion(config, config.Deploy)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
 	if validateConfig.CheckDeploySource {
@@ -97,6 +99,18 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		return nil
 	}
 	return errs
+}
+
+func validateKptDeployerVersion(cfg *parser.SkaffoldConfigEntry, dc latest.DeployConfig) (cfgErrs []ErrorWithLocation) {
+	if dc.KptDeploy != nil {
+		if err := kpt.CheckIsProperBinVersion(context.TODO()); err != nil {
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    err,
+				Location: cfg.YAMLInfos.LocateField(cfg.Deploy, "KptDeploy"),
+			})
+		}
+	}
+	return
 }
 
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
