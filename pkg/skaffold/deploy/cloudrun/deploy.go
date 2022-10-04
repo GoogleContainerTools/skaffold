@@ -170,19 +170,23 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		})
 	}
 	var resName *RunResourceName
-	if resource.GetAPIVersion() == "serving.knative.dev/v1" && resource.GetKind() == "Service" {
+	switch {
+	case resource.GetAPIVersion() == "serving.knative.dev/v1" && resource.GetKind() == "Service":
 		resName, err = d.deployService(crclient, manifest, out)
 		// the accessor only supports services. Jobs don't run by themselves so port forwarding doesn't make sense.
-		d.accessor.AddResource(*resName)
-	} else if resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "Job" {
+		if resName != nil {
+			d.accessor.AddResource(*resName)
+		}
+	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "Job":
 		resName, err = d.deployJob(crclient, manifest, out)
-	} else {
-		return sErrors.NewError(fmt.Errorf("Unsupported Kind for Cloud Run Deployer: %s/%s", resource.GetAPIVersion(), resource.GetKind()),
+	default:
+		err = sErrors.NewError(fmt.Errorf("unsupported Kind for Cloud Run Deployer: %s/%s", resource.GetAPIVersion(), resource.GetKind()),
 			&proto.ActionableErr{
 				Message: "Kind is not supported",
 				ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 			})
 	}
+
 	if err != nil {
 		return err
 	}

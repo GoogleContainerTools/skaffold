@@ -42,16 +42,14 @@ func TestPrintSummaryStatus(t *testing.T) {
 	tests := []struct {
 		description string
 		pending     int32
-		path        string
-		name        string
+		resource    RunResourceName
 		ae          *proto.ActionableErr
 		expected    string
 	}{
 		{
 			description: "single resource running",
 			pending:     int32(1),
-			path:        "/projects/test/locations/region/services/test-service",
-			name:        "test-service",
+			resource:    RunResourceName{Project: "test", Region: "region", Service: "test-service"},
 			ae: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 				Message: "Service started",
@@ -59,10 +57,19 @@ func TestPrintSummaryStatus(t *testing.T) {
 			expected: "Cloud Run Service test-service finished: Service started. 1/10 deployment(s) still pending\n",
 		},
 		{
+			description: "single job running",
+			pending:     int32(1),
+			resource:    RunResourceName{Project: "test", Region: "region", Job: "test-job"},
+			ae: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+				Message: "Job started",
+			},
+			expected: "Cloud Run Job test-job finished: Job started. 1/10 deployment(s) still pending\n",
+		},
+		{
 			description: "nothing prints if cancelled",
 			pending:     int32(3),
-			path:        "/projects/test/locations/region/services/test-service",
-			name:        "test-service",
+			resource:    RunResourceName{Project: "test", Region: " region", Service: "test-service"},
 			ae: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 				Message: "Deploy cancelled",
@@ -73,9 +80,9 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			res := &runResource{
-				path:   test.path,
-				name:   test.name,
-				status: Status{ae: test.ae},
+				resource: test.resource,
+				status:   Status{ae: test.ae},
+				sub:      &runServiceResource{path: test.resource.String()},
 			}
 			s := NewMonitor(labeller, []option.ClientOption{})
 			out := new(bytes.Buffer)
@@ -87,17 +94,17 @@ func TestPrintSummaryStatus(t *testing.T) {
 		})
 	}
 }
-func TestPollResourceStatus(t *testing.T) {
+func TestPollServiceStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		resource    ResourceName
+		resource    RunResourceName
 		responses   []run.Service
 		expected    *proto.ActionableErr
 		fail        bool
 	}{
 		{
 			description: "test basic check with one resource ready",
-			resource:    ResourceName{name: "test-service", path: "projects/tp/locations/tr/services/test-service"},
+			resource:    RunResourceName{Project: "tp", Region: "tr", Service: "test-service"},
 			responses: []run.Service{
 				{
 					ApiVersion: "serving.knative.dev/v1",
@@ -120,7 +127,7 @@ func TestPollResourceStatus(t *testing.T) {
 		},
 		{
 			description: "test basic check with one resource going ready after 1 non-ready",
-			resource:    ResourceName{name: "test-service", path: "projects/tp/locations/tr/services/test-service"},
+			resource:    RunResourceName{Project: " tp", Region: "tr", Service: "test-service"},
 			responses: []run.Service{
 				{
 					ApiVersion: "serving.knative.dev/v1",
@@ -159,7 +166,7 @@ func TestPollResourceStatus(t *testing.T) {
 		},
 		{
 			description: "test previous deploy failed reports correctly",
-			resource:    ResourceName{name: "test-service", path: "projects/tp/locations/tr/services/test-service"},
+			resource:    RunResourceName{Project: "tp", Region: "tr", Service: "test-service"},
 			responses: []run.Service{
 				{
 					ApiVersion: "serving.knative.dev/v1",
@@ -232,7 +239,118 @@ func TestPollResourceStatus(t *testing.T) {
 			defer ts.Close()
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			resource := &runResource{path: test.resource.path, name: test.resource.name}
+			resource := &runResource{resource: test.resource, sub: &runServiceResource{path: test.resource.String()}}
+			ctx := context.Background()
+			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
+			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
+		})
+	}
+}
+
+func TestPollJobStatus(t *testing.T) {
+	tests := []struct {
+		description string
+		resource    RunResourceName
+		responses   []run.Job
+		expected    *proto.ActionableErr
+		fail        bool
+	}{
+		{
+			description: "test basic check with one resource ready",
+			resource:    RunResourceName{Project: "tp", Region: "tr", Job: "test-job"},
+			responses: []run.Job{
+				{
+					ApiVersion: "run.googleapis.com/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 1,
+					},
+					Status: &run.JobStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:   "Ready",
+								Status: "True",
+							},
+						},
+					},
+				},
+			},
+			expected: &proto.ActionableErr{Message: "Job started", ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+		},
+		{
+			description: "test previous deploy failed reports correctly",
+			resource:    RunResourceName{Project: "tp", Region: "tr", Job: "test-job"},
+			responses: []run.Job{
+				{
+					ApiVersion: "run.googleapis.com/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 2,
+					},
+					Status: &run.JobStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:    "Ready",
+								Status:  "False",
+								Message: "Pre-existing failure",
+							},
+						},
+					},
+				},
+				{
+					ApiVersion: "run.googleapis.com/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 2,
+					},
+					Status: &run.JobStatus{
+						ObservedGeneration: 2,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:   "Ready",
+								Status: "Unknown",
+							},
+						},
+					},
+				},
+				{
+					ApiVersion: "run.googleapis.com/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 2,
+					},
+					Status: &run.JobStatus{
+						ObservedGeneration: 2,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:   "Ready",
+								Status: "True",
+							},
+						},
+					},
+				},
+			},
+			expected: &proto.ActionableErr{Message: "Job started", ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			checkTimes := 0
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if checkTimes >= len(test.responses) {
+					checkTimes = len(test.responses) - 1
+				}
+				resp := test.responses[checkTimes]
+				checkTimes++
+				b, err := json.Marshal(resp)
+				if err != nil {
+					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(b)
+			}))
+			defer ts.Close()
+			testEvent.InitializeState([]latest.Pipeline{{}})
+
+			resource := &runResource{resource: test.resource, sub: &runJobResource{path: test.resource.String()}}
 			ctx := context.Background()
 			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
@@ -252,8 +370,7 @@ func TestMonitorPrintStatus(t *testing.T) {
 			description: "test basic print with one resource getting ready",
 			resources: []*runResource{
 				{
-					path:      "projects/tp/locations/tr/services/test-service",
-					name:      "test-service",
+					resource:  RunResourceName{Project: "tp", Region: "tr", Service: "test-service"},
 					completed: false,
 					status: Status{
 						reported: false,
@@ -271,8 +388,7 @@ func TestMonitorPrintStatus(t *testing.T) {
 			description: "test basic print with one resource ready and reported, one not ready",
 			resources: []*runResource{
 				{
-					path:      "projects/tp/locations/tr/services/test-service1",
-					name:      "test-service1",
+					resource:  RunResourceName{Project: "tp", Region: "tr", Service: "test-service1"},
 					completed: true,
 					status: Status{
 						reported: true,
@@ -283,8 +399,7 @@ func TestMonitorPrintStatus(t *testing.T) {
 					},
 				},
 				{
-					path:      "projects/tp/locations/tr/services/test-service2",
-					name:      "test-service2",
+					resource:  RunResourceName{Project: "tp", Region: "tr", Service: "test-service2"},
 					completed: false,
 					status: Status{
 						reported: false,
@@ -302,8 +417,7 @@ func TestMonitorPrintStatus(t *testing.T) {
 			description: "test resources completed",
 			resources: []*runResource{
 				{
-					path:      "projects/tp/locations/tr/services/test-service",
-					name:      "test-service",
+					resource:  RunResourceName{Project: "tp", Region: "tr", Service: "test-service"},
 					completed: true,
 				},
 			},

@@ -40,6 +40,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const (
+	configName = "default"
+)
+
 func TestDeployService(tOuter *testing.T) {
 	tests := []struct {
 		description    string
@@ -133,7 +137,6 @@ func TestDeployService(tOuter *testing.T) {
 				w.Write(b)
 			}))
 
-			configName := "default"
 			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
@@ -249,7 +252,6 @@ func TestDeployJob(tOuter *testing.T) {
 				w.Write(b)
 			}))
 
-			configName := "default"
 			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
@@ -462,7 +464,6 @@ func TestCleanup(tOuter *testing.T) {
 				w.Write(b)
 			}))
 			defer ts.Close()
-			configName := "default"
 			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false

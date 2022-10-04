@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -77,14 +78,14 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	for i, resource := range s.Resources {
 		var sub runSubresource
 		switch resource.Type() {
-		case type_service:
+		case typeService:
 			sub = &runServiceResource{path: resource.String()}
-		case type_job:
+		case typeJob:
 			sub = &runJobResource{path: resource.String()}
 		default:
-			return fmt.Errorf("Unable to monitor resource. Unknown type %s", resource.Type())
+			return fmt.Errorf("unable to monitor resource. Unknown type %s", resource.Type())
 		}
-		resources[i] = &runResource{resource: resource, sub: sub, name: resource.Name()}
+		resources[i] = &runResource{resource: resource, sub: sub}
 	}
 	c := newCounter(len(resources))
 	cctx, cancel := context.WithCancel(ctx)
@@ -144,7 +145,6 @@ func (c *counter) remaining() string {
 
 type runResource struct {
 	resource  RunResourceName
-	name      string
 	completed bool
 	status    Status
 	sub       runSubresource
@@ -167,6 +167,7 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 	defer cancel()
 	options := clientOptions
 	if useGcpOptions {
+		options = append(options, option.WithEndpoint(fmt.Sprintf("%s-run.googleapis.com", r.resource.Region)))
 		options = append(gcp.ClientOptions(ctx), options...)
 	}
 	crClient, err := run.NewService(ctx, options...)
@@ -219,7 +220,7 @@ func (r *runResource) ReportSinceLastUpdated() string {
 	if curStatus.ae == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s: %s", r.name, curStatus.ae.Message)
+	return fmt.Sprintf("%s: %s", r.resource.Name(), curStatus.ae.Message)
 }
 
 func (r *runResource) checkStatus(crClient *run.APIService) {
@@ -233,7 +234,7 @@ func (r *runResource) checkStatus(crClient *run.APIService) {
 		// No ready condition found, must not have started reconciliation yet
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN,
-			Message: "Waiting for service to start",
+			Message: fmt.Sprintf("Waiting for %s to start", strings.ToLower(string(r.resource.Type()))),
 		})
 		return
 	}
@@ -242,20 +243,20 @@ func (r *runResource) checkStatus(crClient *run.APIService) {
 		r.completed = true
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
-			Message: "Service started",
+			Message: fmt.Sprintf("%s started", r.resource.Type()),
 		})
 
 	case "False":
 		r.completed = true
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNHEALTHY,
-			Message: fmt.Sprintf("Service failed to start: %v", ready.Message),
+			Message: fmt.Sprintf("%s failed to start: %v", r.resource.Type(), ready.Message),
 		})
 	default:
 		// status is unknown
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
-			Message: fmt.Sprintf("Service starting: %v", ready.Message),
+			Message: fmt.Sprintf("%s starting: %v", r.resource.Type(), ready.Message),
 		})
 	}
 }
@@ -303,9 +304,9 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, c *counter, r *runResou
 	eventV2.ResourceStatusCheckEventCompleted(r.resource.String(), curStatus.ae)
 	r.sub.reportSuccess()
 	if curStatus.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
-		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s failed with error: %s", r.name, curStatus.ae.Message))
+		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run %s %s failed with error: %s", r.resource.Type(), r.resource.Name(), curStatus.ae.Message))
 	} else {
-		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s finished: %s. %s", r.name, curStatus.ae.Message, c.remaining()))
+		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run %s %s finished: %s. %s", r.resource.Type(), r.resource.Name(), curStatus.ae.Message, c.remaining()))
 	}
 }
 

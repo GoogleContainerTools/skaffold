@@ -19,8 +19,8 @@ package cloudrun
 import "fmt"
 
 const (
-	type_service = "service"
-	type_job     = "job"
+	typeService = "Service"
+	typeJob     = "Job"
 )
 
 type ResourceType string
@@ -38,9 +38,8 @@ func (n RunResourceName) String() string {
 	// only one of Job or Service should be specified
 	if n.Service != "" {
 		return fmt.Sprintf("projects/%s/locations/%s/services/%s", n.Project, n.Region, n.Service)
-	} else {
-		return fmt.Sprintf("apis/run.googleapis.com/namespaces/%s/jobs/%s", n.Project, n.Job)
 	}
+	return fmt.Sprintf("namespaces/%s/jobs/%s", n.Project, n.Job)
 }
 func (n RunResourceName) Name() string {
 	if n.Service != "" {
@@ -51,7 +50,7 @@ func (n RunResourceName) Name() string {
 
 func (n RunResourceName) Type() ResourceType {
 	if n.Service != "" {
-		return type_service
+		return typeService
 	}
-	return type_job
+	return typeJob
 }
