@@ -42,10 +42,11 @@ import (
 )
 
 // NewGenerator instantiates a Generator object.
-func NewGenerator(workingDir string, config latest.Generate) Generator {
+func NewGenerator(workingDir string, config latest.Generate, hydrationDir string) Generator {
 	return Generator{
-		workingDir: workingDir,
-		config:     config,
+		workingDir:   workingDir,
+		config:       config,
+		hydrationDir: hydrationDir,
 	}
 }
 

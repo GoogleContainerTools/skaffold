@@ -63,7 +63,7 @@ const (
 )
 
 func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string) (*Kpt, error) {
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, hydrationDir)
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return nil, err
