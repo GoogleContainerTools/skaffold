@@ -60,6 +60,7 @@ const (
 var (
 	openFile                        = os.Open
 	kptInitFunc                     = kptfileInitIfNot
+	KptVersion                      = currentKptVersion
 	maxKptVersionAllowedForDeployer = "1.0.0-beta.13"
 )
 
@@ -401,13 +402,12 @@ func (k *Deployer) trackNamespaces(namespaces []string) {
 }
 
 func CheckIsProperBinVersion(ctx context.Context) error {
-	cmd := exec.Command("kpt", "version")
-	b, err := util.RunCmdOut(ctx, cmd)
-	if err != nil {
-		return fmt.Errorf("kpt version command failed: %w", err)
-	}
-	version := string(b)
 	maxAllowedVersion := semver.MustParse(maxKptVersionAllowedForDeployer)
+	version, err := KptVersion(ctx)
+	if err != nil {
+		return err
+	}
+
 	currentVersion, err := semver.ParseTolerant(version)
 	if err != nil {
 		return err
@@ -418,4 +418,14 @@ func CheckIsProperBinVersion(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func currentKptVersion(ctx context.Context) (string, error) {
+	cmd := exec.Command("kpt", "version")
+	b, err := util.RunCmdOut(ctx, cmd)
+	if err != nil {
+		return "", fmt.Errorf("kpt version command failed: %w", err)
+	}
+	version := string(b)
+	return version, nil
 }
