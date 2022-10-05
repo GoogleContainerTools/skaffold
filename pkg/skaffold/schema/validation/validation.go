@@ -102,14 +102,17 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 }
 
 func validateKptDeployerVersion(cfg *parser.SkaffoldConfigEntry, dc latest.DeployConfig) (cfgErrs []ErrorWithLocation) {
-	if dc.KptDeploy != nil {
-		if err := kpt.CheckIsProperBinVersion(context.TODO()); err != nil {
-			cfgErrs = append(cfgErrs, ErrorWithLocation{
-				Error:    err,
-				Location: cfg.YAMLInfos.LocateField(cfg.Deploy, "KptDeploy"),
-			})
-		}
+	if dc.KptDeploy == nil {
+		return
 	}
+
+	if err := kpt.CheckIsProperBinVersion(context.TODO()); err != nil {
+		cfgErrs = append(cfgErrs, ErrorWithLocation{
+			Error:    err,
+			Location: cfg.YAMLInfos.LocateField(cfg.Deploy, "KptDeploy"),
+		})
+	}
+
 	return
 }
 

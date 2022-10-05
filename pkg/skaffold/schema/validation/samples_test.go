@@ -57,13 +57,9 @@ func TestParseExamples(t *testing.T) {
 // Samples are skaffold.yaml fragments that are used
 // in the documentation.
 func TestParseSamples(t *testing.T) {
-	// paths, err := walk.From(samplesRoot).WhenIsFile().CollectPaths()
-	// if err != nil {
-	// 	t.Fatalf("unable to list samples in %q", samplesRoot)
-	// }
-
-	paths := []string{
-		"../../../../docs-v2/content/en/samples/deployers/kpt.yaml",
+	paths, err := walk.From(samplesRoot).WhenIsFile().CollectPaths()
+	if err != nil {
+		t.Fatalf("unable to list samples in %q", samplesRoot)
 	}
 
 	if len(paths) == 0 {
