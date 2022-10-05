@@ -73,6 +73,11 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		nonHelmDeployFound := false
 
 		for _, d := range deployerCfg {
+			// runcontext StatusCheck method returns the value set by the cli flag `--status-check`
+			// which overrides the value set in the individual configs.
+			if runCtx.Opts.StatusCheck.String() == "" && !*d.StatusCheck {
+				runCtx.Opts.StatusCheck = config.NewBoolOrUndefined(d.StatusCheck)
+			}
 			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
 				nonHelmDeployFound = true
 			}
@@ -170,12 +175,13 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 The "default deployer" is used in `skaffold apply`, which uses a `kubectl` deployer to actuate resources
 on a cluster regardless of provided deployer configuration in the skaffold.yaml.
 The default deployer will honor a select set of deploy configuration from an existing skaffold.yaml:
-	- deploy.StatusCheckDeadlineSeconds
-	- deploy.Logs.Prefix
-	- deploy.Kubectl.Flags
-	- deploy.Kubectl.DefaultNamespace
-	- deploy.Kustomize.Flags
-	- deploy.Kustomize.DefaultNamespace
+  - deploy.StatusCheckDeadlineSeconds
+  - deploy.Logs.Prefix
+  - deploy.Kubectl.Flags
+  - deploy.Kubectl.DefaultNamespace
+  - deploy.Kustomize.Flags
+  - deploy.Kustomize.DefaultNamespace
+
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
