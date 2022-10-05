@@ -23,6 +23,7 @@ import (
 
 	pack "github.com/buildpacks/pack/pkg/client"
 	packcfg "github.com/buildpacks/pack/pkg/image"
+	packtypes "github.com/buildpacks/pack/pkg/project/types"
 	"github.com/docker/docker/api/types"
 	"github.com/google/go-cmp/cmp"
 
@@ -192,6 +193,64 @@ value = "VALUE2"
 					"KEY2": "VALUE2",
 				}),
 				Image: "img:latest",
+			},
+		},
+		{
+			description: "file exclusion in project.toml",
+			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
+			tag:         "img:tag",
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
+			files: map[string]string{
+				"project.toml": `[build]
+exclude = [
+	"exclude_me"
+]
+`,
+			},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/otherBuilder",
+				RunImage:   "my/otherRun",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Image:      "img:latest",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				ProjectDescriptor: packtypes.Descriptor{
+					Build: packtypes.Build{
+						Exclude: []string{"exclude_me"},
+					},
+				},
+			},
+		},
+		{
+			description: "file inclusion in project.toml",
+			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
+			tag:         "img:tag",
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
+			files: map[string]string{
+				"project.toml": `[build]
+include = [
+	"include_me"
+]
+`,
+			},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/otherBuilder",
+				RunImage:   "my/otherRun",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Image:      "img:latest",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				ProjectDescriptor: packtypes.Descriptor{
+					Build: packtypes.Build{
+						Include: []string{"include_me"},
+					},
+				},
 			},
 		},
 		{

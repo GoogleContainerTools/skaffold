@@ -67,11 +67,12 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	}
 	latest := parsed.BaseName + ":latest"
 
-	// Evaluate Env Vars.
+	// Evaluate Env Vars replacing those in project.toml.
 	env, err := env(a, b.mode, projectDescriptor)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
+	projectDescriptor.Build.Env = nil
 
 	cc, err := containerConfig(artifact)
 	if err != nil {
@@ -94,22 +95,22 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 			}
 		}
 	}
+	projectDescriptor.Build.Buildpacks = nil
 
 	builderImage, runImage, pullPolicy := resolveDependencyImages(artifact, b.artifacts, a.Dependencies, b.pushImages)
 
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
-		AppPath:         workspace,
-		Builder:         builderImage,
-		RunImage:        runImage,
-		Buildpacks:      buildpacks,
-		Env:             env,
-		Image:           latest,
-		PullPolicy:      pullPolicy,
-		TrustBuilder:    func(_ string) bool { return artifact.TrustBuilder },
-		ClearCache:      clearCache,
-		ContainerConfig: cc,
-		// TODO(dgageot): Support project.toml include/exclude.
-		// FileFilter: func(string) bool { return true },
+		AppPath:           workspace,
+		Builder:           builderImage,
+		RunImage:          runImage,
+		Buildpacks:        buildpacks,
+		Env:               env,
+		Image:             latest,
+		PullPolicy:        pullPolicy,
+		TrustBuilder:      func(_ string) bool { return artifact.TrustBuilder },
+		ClearCache:        clearCache,
+		ContainerConfig:   cc,
+		ProjectDescriptor: projectDescriptor,
 	}); err != nil {
 		return "", err
 	}

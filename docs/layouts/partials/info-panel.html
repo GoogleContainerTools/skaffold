@@ -9,6 +9,7 @@
 {{ $deploy := $data.deploy }}
 {{ $render := $data.render }}
 {{ $all := and $dev $debug $run $build $deploy $render }}
+{{ $examples := $data.examples }}
 
 <div class="alert infopanel" role="contentinfo">
     <table>
@@ -45,6 +46,17 @@
             </td>
         </tr>
         {{end}}
+        
+        {{ if $examples}}
+        <tr>
+            <td><b>Code Samples</b></td>
+            <td>
+                {{ range $example := $examples }}
+                <a href="{{$example.url}}"><code>{{$example.name}}</code></a>
+                {{ end }}
+            </td>
+        </tr>
+        {{ end }}
     </table>
 </div>
 
