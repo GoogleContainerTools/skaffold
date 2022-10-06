@@ -8,6 +8,13 @@ menu:
 no_list: true
 ---
 
+<div class="pageinfo pageinfo-primary">
+    <p class="banner-title">Skaffold v2 has been released!</p>
+    <p>You are viewing the Skaffold v2 documentation. View the archived v1 documentation
+      <a href="https://skaffold.dev/docs/" target="_blank">here.</a>
+    </p>
+</div>
+
 Skaffold is a command line tool that facilitates continuous development for
 Kubernetes-native applications. Skaffold handles the workflow for building,
 pushing, and deploying your application, and provides building blocks for
