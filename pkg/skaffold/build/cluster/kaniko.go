@@ -132,7 +132,6 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	var errRun error
 	for {
 		if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
-
 			if attempts >= attemptMax {
 				errRun = fmt.Errorf("uploading build context: %s", out.String())
 				errTar := <-errs
