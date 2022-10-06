@@ -103,9 +103,9 @@ func (s *Runner) recentlyPromptedOrTaken(cfg *sConfig.GlobalConfig) string {
 	return s.selectSurvey(surveysTaken(cfg.Global.Survey))
 }
 
-// recentlyPrompted returns true if the user has been recently prompted for a survey.
+// recentlyPrompted returns true if the user has been prompted for a survey in last 5 days.
 func recentlyPrompted(gc *sConfig.SurveyConfig) bool {
-	return timeutil.LessThan(gc.LastPrompted, 10*24*time.Hour)
+	return timeutil.LessThan(gc.LastPrompted, 5*24*time.Hour)
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer, id string) error {
