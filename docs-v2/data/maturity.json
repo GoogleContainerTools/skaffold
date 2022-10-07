@@ -50,7 +50,7 @@
     "deploy": "x",
     "area": "Build",
     "feature": "Cross-arch and Multi-arch builds",
-    "maturity": "alpha",
+    "maturity": "GA",
     "description": "Build cross-architecture and Multi-architecture images"
   },
   "build.ko": {
