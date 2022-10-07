@@ -89,6 +89,10 @@ skaffold_version = "skaffold/v3alpha1"
 # enabling local search https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
 offlineSearch = true
 
+# Menu title if your navbar has a versions selector to access old versions of your site.
+# This menu appears only if you have at least one [params.versions] set.
+version_menu = "Versions"
+
 # User interface configuration
 [params.ui]
 # Enable to show the side bar menu in its compact state.
