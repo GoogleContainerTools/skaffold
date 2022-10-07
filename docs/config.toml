@@ -75,6 +75,10 @@ languageName ="English"
 # Weight used for sorting.
 weight = 1
 
+# Configuration for displaying a banner on archived doc sites
+archived_version = true
+version = "v1.39"
+url_latest_version = "https://skaffold-v2-latest.firebaseapp.com/docs"
 
 # Everything below this are Site Params
 
