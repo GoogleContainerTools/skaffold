@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/blang/semver"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -60,6 +61,11 @@ type Kpt struct {
 
 const (
 	DryFileName = "manifests.yaml"
+)
+
+var (
+	KptVersion                      = currentKptVersion
+	maxKptVersionAllowedForDeployer = "1.0.0-beta.13"
 )
 
 func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string) (*Kpt, error) {
@@ -221,4 +227,33 @@ func (r *Kpt) unwrapManifests(ctx context.Context, out io.Writer) (manifest.Mani
 	manifestListByConfig := manifest.NewManifestListByConfig()
 	manifestListByConfig.Add(r.configName, m)
 	return manifestListByConfig, nil
+}
+
+func CheckIsProperBinVersion(ctx context.Context) error {
+	maxAllowedVersion := semver.MustParse(maxKptVersionAllowedForDeployer)
+	version, err := KptVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	currentVersion, err := semver.ParseTolerant(version)
+	if err != nil {
+		return err
+	}
+
+	if currentVersion.GT(maxAllowedVersion) {
+		return fmt.Errorf("max allowed verion for Kpt renderer without Kpt deployer is %v, detected version is %v", maxKptVersionAllowedForDeployer, currentVersion)
+	}
+
+	return nil
+}
+
+func currentKptVersion(ctx context.Context) (string, error) {
+	cmd := exec.Command("kpt", "version")
+	b, err := util.RunCmdOut(ctx, cmd)
+	if err != nil {
+		return "", fmt.Errorf("kpt version command failed: %w", err)
+	}
+	version := string(b)
+	return version, nil
 }

@@ -31,12 +31,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -88,7 +88,7 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		errs = append(errs, validateCustomTest(config, config.Test)...)
 		errs = append(errs, validateGCBConfig(config, config.Build)...)
 		errs = append(errs, validateVerifyTests(config, config.Verify)...)
-		errs = append(errs, validateKptDeployerVersion(config, config.Deploy)...)
+		errs = append(errs, validateKptRendererVersion(config, config.Deploy, config.Render)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
 	if validateConfig.CheckDeploySource {
@@ -101,16 +101,20 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 	return errs
 }
 
-func validateKptDeployerVersion(cfg *parser.SkaffoldConfigEntry, dc latest.DeployConfig) (cfgErrs []ErrorWithLocation) {
-	if dc.KptDeploy == nil {
+func validateKptRendererVersion(cfg *parser.SkaffoldConfigEntry, dc latest.DeployConfig, rc latest.RenderConfig) (cfgErrs []ErrorWithLocation) {
+	if dc.KptDeploy != nil {
 		return
 	}
 
-	if err := kpt.CheckIsProperBinVersion(context.TODO()); err != nil {
-		cfgErrs = append(cfgErrs, ErrorWithLocation{
-			Error:    err,
-			Location: cfg.YAMLInfos.LocateField(cfg.Deploy, "KptDeploy"),
-		})
+	kptRendererWillBeCreated := rc.Kpt != nil || rc.Transform != nil || rc.Validate != nil
+
+	if kptRendererWillBeCreated {
+		if err := kpt.CheckIsProperBinVersion(context.TODO()); err != nil {
+			cfgErrs = append(cfgErrs, ErrorWithLocation{
+				Error:    err,
+				Location: cfg.YAMLInfos.LocateField(cfg, "Render"),
+			})
+		}
 	}
 
 	return

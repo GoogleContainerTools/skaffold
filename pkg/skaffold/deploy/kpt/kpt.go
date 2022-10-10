@@ -25,7 +25,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/blang/semver"
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -58,10 +57,8 @@ const (
 )
 
 var (
-	openFile                        = os.Open
-	kptInitFunc                     = kptfileInitIfNot
-	KptVersion                      = currentKptVersion
-	maxKptVersionAllowedForDeployer = "1.0.0-beta.13"
+	openFile    = os.Open
+	kptInitFunc = kptfileInitIfNot
 )
 
 // Deployer deploys workflows with kpt CLI
@@ -399,33 +396,4 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 func (k *Deployer) trackNamespaces(namespaces []string) {
 	fmt.Fprintf(os.Stdout, "tracking namespaces: %+v\n", namespaces)
 	*k.namespaces = deployutil.ConsolidateNamespaces(*k.namespaces, namespaces)
-}
-
-func CheckIsProperBinVersion(ctx context.Context) error {
-	maxAllowedVersion := semver.MustParse(maxKptVersionAllowedForDeployer)
-	version, err := KptVersion(ctx)
-	if err != nil {
-		return err
-	}
-
-	currentVersion, err := semver.ParseTolerant(version)
-	if err != nil {
-		return err
-	}
-
-	if currentVersion.GT(maxAllowedVersion) {
-		return fmt.Errorf("max allowed verion for Kpt deployer is %v, detected version is %v", maxKptVersionAllowedForDeployer, currentVersion)
-	}
-
-	return nil
-}
-
-func currentKptVersion(ctx context.Context) (string, error) {
-	cmd := exec.Command("kpt", "version")
-	b, err := util.RunCmdOut(ctx, cmd)
-	if err != nil {
-		return "", fmt.Errorf("kpt version command failed: %w", err)
-	}
-	version := string(b)
-	return version, nil
 }
