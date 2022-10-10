@@ -11,7 +11,7 @@ no_list: true
 <div class="pageinfo pageinfo-primary">
     <p class="banner-title">Skaffold v2 has been released!</p>
     <p>You are viewing the Skaffold v2 documentation. View the archived v1 documentation
-      <a href="https://skaffold.dev/docs/" target="_blank">here.</a>
+      <a href="https://skaffold-v1.web.app/docs/" target="_blank">here.</a>
     </p>
 </div>
 
