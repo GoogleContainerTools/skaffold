@@ -21,10 +21,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+type dependencyResolverImpl struct {
+}
+
+func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	return []string{}, nil
+}
+
+func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	return []string{}, nil
+}
+
+func (r *dependencyResolverImpl) Reset() {
+}
 
 func TestTagTemplate_GenerateTag(t *testing.T) {
 	aLocalTimeStamp := time.Date(2015, 03, 07, 11, 06, 39, 123456789, time.Local)
@@ -39,14 +55,21 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.BAR}}")
 	env := []string{"FOO=BAR"}
 
-	customTemplateExample, _ := NewCustomTemplateTagger("", nil)
+	ctx := context.Background()
+	runCtx, _ := runcontext.GetRunContext(ctx, config.SkaffoldOptions{}, nil)
+	inputDigestExample, _ := NewInputDigestTaggerWithSourceCache(runCtx, &dependencyResolverImpl{})
+	customTemplateExample, _ := NewCustomTemplateTagger(runCtx, "", nil)
 
 	tests := []struct {
-		description string
-		template    string
-		customMap   map[string]Tagger
-		expected    string
-		shouldErr   bool
+		description   string
+		template      string
+		customMap     map[string]Tagger
+		artifactType  latest.ArtifactType
+		files         map[string]string
+		expectedQuery string
+		output        string
+		expected      string
+		shouldErr     bool
 	}{
 		{
 			description: "empty template",
@@ -92,23 +115,55 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 		},
 		{
 			description: "override default components",
-			template:    "{{.GIT}}-{{.DATE}}-{{.SHA}}",
-			customMap:   map[string]Tagger{"GIT": dateTimeExample, "DATE": envTemplateExample, "SHA": dateTimeExample},
-			expected:    "2015-03-07-BAR-2015-03-07",
+			template:    "{{.GIT}}-{{.DATE}}-{{.SHA}}-{{.INPUT_DIGEST}}",
+			customMap: map[string]Tagger{
+				"GIT":          dateTimeExample,
+				"DATE":         envTemplateExample,
+				"SHA":          dateTimeExample,
+				"INPUT_DIGEST": inputDigestExample,
+			},
+			expected: "2015-03-07-BAR-2015-03-07-38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed",
+		},
+		{
+			description: "using inputDigest alias",
+			template:    "test-{{.INPUT_DIGEST}}",
+			customMap: map[string]Tagger{
+				"GIT": dateTimeExample,
+			},
+			artifactType: latest.ArtifactType{
+				BazelArtifact: &latest.BazelArtifact{
+					BuildTarget: "target",
+				},
+			},
+			files: map[string]string{
+				"WORKSPACE": "",
+				"BUILD":     "",
+				"dep1":      "",
+				"dep2":      "",
+			},
+			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles(deps('target')) --noimplicit_deps --order_output=no --output=label",
+			output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
+			expected:      "test-bd2d2b76b8f1b5bf54d8a2183a697cc3acd9b314e0e7102f4672123cda0b45db",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return env })
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				test.expectedQuery,
+				test.output,
+			))
 
-			c, err := NewCustomTemplateTagger(test.template, test.customMap)
+			t.NewTempDir().WriteFiles(test.files).Chdir()
+			c, err := NewCustomTemplateTagger(runCtx, test.template, test.customMap)
 
 			t.CheckNoError(err)
 
 			image := latest.Artifact{
-				ImageName: "test",
+				ImageName:    "test",
+				ArtifactType: test.artifactType,
 			}
-			tag, err := c.GenerateTag(context.Background(), image)
+			tag, err := c.GenerateTag(ctx, image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 		})
@@ -116,6 +171,8 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 }
 
 func TestCustomTemplate_NewCustomTemplateTagger(t *testing.T) {
+	runCtx, _ := runcontext.GetRunContext(context.Background(), config.SkaffoldOptions{}, nil)
+
 	tests := []struct {
 		description string
 		template    string
@@ -145,7 +202,7 @@ func TestCustomTemplate_NewCustomTemplateTagger(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := NewCustomTemplateTagger(test.template, test.customMap)
+			_, err := NewCustomTemplateTagger(runCtx, test.template, test.customMap)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
