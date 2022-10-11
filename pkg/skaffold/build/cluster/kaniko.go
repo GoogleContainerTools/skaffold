@@ -144,7 +144,6 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 			errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
 		}
 		return errRun
-
 	}
 
 	// Generate a file to successfully terminate the init container.
