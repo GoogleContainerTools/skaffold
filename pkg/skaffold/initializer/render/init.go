@@ -58,11 +58,30 @@ func (c *cliManifestsInit) Validate() error {
 
 func (c *cliManifestsInit) AddManifestForImage(string, string) {}
 
+type emptyRenderInit struct {
+}
+
+func (e *emptyRenderInit) RenderConfig() (latest.RenderConfig, []latest.Profile) {
+	return latest.RenderConfig{}, nil
+}
+
+func (e *emptyRenderInit) GetImages() []string {
+	return nil
+}
+
+func (e *emptyRenderInit) Validate() error {
+	return nil
+}
+
+func (e *emptyRenderInit) AddManifestForImage(string, string) {}
+
 // if any CLI manifests are provided, we always use those as part of a kubectl render first
 // if not, then if a kustomization yaml is found, we use that next
 // otherwise, default to a kubectl render.
 func NewInitializer(manifests, bases, kustomizations []string, h analyze.HelmChartInfo, c config.Config) Initializer {
 	switch {
+	case c.SkipDeploy:
+		return &emptyRenderInit{}
 	case len(c.CliKubernetesManifests) > 0:
 		return &cliManifestsInit{c.CliKubernetesManifests}
 	case len(kustomizations) > 0:
