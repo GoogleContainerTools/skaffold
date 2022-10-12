@@ -40,7 +40,7 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []gra
 	}
 	defer postRenderFn()
 
-	eventV2.TaskInProgress(constants.Render, "")
+	eventV2.TaskInProgress(constants.Render, "Render Manifests")
 	if r.runCtx.RenderOnly() {
 		// Fetch the digest and append it to the tag with the format of "tag@digest"
 		if r.runCtx.DigestSource() == constants.RemoteDigestSource {
