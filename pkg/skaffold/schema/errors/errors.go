@@ -217,8 +217,8 @@ func SkaffoldConfigUpgradeErr(currentVersion, targetVersion string) error {
 		})
 }
 
-func MinikubeImageLoadError(minikubeExitCode string, err error) error {
-	msg := fmt.Sprintf("skaffold cannot load images, exit code %s", minikubeExitCode)
+func MinikubeImageLoadError(minikubeExitCode int, err error) error {
+	msg := fmt.Sprintf("skaffold cannot load images, exit code %d", minikubeExitCode)
 	return sErrors.NewError(fmt.Errorf(msg),
 		&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_IMAGE_LOAD_ERR,

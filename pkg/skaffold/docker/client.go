@@ -43,6 +43,7 @@ import (
 const minikubeDriverConfictExitCode = 51
 const minikubeExGuestUnavailable = 89
 const oldMinikubeBadUsageExitCode = 64
+const minikubeExGuestError = 80
 
 const dockerDriver = "docker"
 
@@ -70,7 +71,7 @@ type Config interface {
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
 func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(ctx, cfg.GetKubeContext())
+		env, apiClient, err := newAPIClient(ctx)
 		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg)
 		dockerAPIClientErr = err
 	})
@@ -79,7 +80,7 @@ func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 }
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
-func newAPIClient(ctx context.Context, kubeContext string) ([]string, client.CommonAPIClient, error) {
+func newAPIClient(ctx context.Context) ([]string, client.CommonAPIClient, error) {
 	cmd, err := cluster.GetClient().MinikubeExec(ctx, "profile", "list", "-o", "json")
 	if err != nil {
 		return nil, nil, fmt.Errorf("executing minikube command: %w", err)
@@ -138,8 +139,13 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string, minikubeD
 
 	cmd, err := cluster.GetClient().MinikubeExec(ctx, "image", "load")
 	if err != nil {
-		return nil, nil, sErrors.MinikubeImageLoadError("10", err)
+		var exitError ExitCoder
+		if errors.As(err, &exitError) && (exitError.ExitCode() == minikubeExGuestError) {
+			return nil, nil, sErrors.MinikubeImageLoadError(minikubeExGuestError, err)
+		}
+		return nil, nil, err
 	}
+
 	err = util.RunCmd(ctx, cmd)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading cluster image: %w", err)
