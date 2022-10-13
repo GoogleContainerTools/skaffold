@@ -106,15 +106,15 @@ func validateKptRendererVersion(cfg *parser.SkaffoldConfigEntry, dc latest.Deplo
 		return
 	}
 
-	kptRendererWillBeCreated := rc.Kpt != nil || rc.Transform != nil || rc.Validate != nil
+	if rc.Kpt == nil && rc.Transform == nil && rc.Validate == nil { // no kpt renderer created
+		return
+	}
 
-	if kptRendererWillBeCreated {
-		if err := kpt.CheckIsProperBinVersion(context.TODO()); err != nil {
-			cfgErrs = append(cfgErrs, ErrorWithLocation{
-				Error:    err,
-				Location: cfg.YAMLInfos.LocateField(cfg, "Render"),
-			})
-		}
+	if err := kpt.CheckIsProperBinVersion(context.TODO()); err != nil {
+		cfgErrs = append(cfgErrs, ErrorWithLocation{
+			Error:    err,
+			Location: cfg.YAMLInfos.LocateField(cfg, "Render"),
+		})
 	}
 
 	return
