@@ -68,7 +68,7 @@ func MarkIntegrationTest(t *testing.T, testType TestType) {
 	}
 
 	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t.Name()) {
-		t.Skip(fmt.Sprintf("skipping non-GCP integration test that doesn't match partition %s", getPartition()))
+		t.Skipf("skipping non-GCP integration test that doesn't match partition %s", getPartition())
 	}
 }
 

@@ -29,8 +29,10 @@ import (
 // 1. Additions:
 //   - KanikoCache struct, KanikoBuild.Cache
 //   - BazelArtifact.BuildArgs
+//
 // 2. Removals:
 //   - AzureContainerBuilder
+//
 // 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	if c.Build.AzureContainerBuild != nil {

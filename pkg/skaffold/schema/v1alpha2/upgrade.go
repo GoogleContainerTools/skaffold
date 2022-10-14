@@ -27,8 +27,8 @@ import (
 // 1. No additions
 // 2. No removal
 // 3. Updates
-//  - KanikoBuildContext instead of GCSBucket
-//  - HelmRelease.valuesFilePath -> valuesFiles in yaml
+//   - KanikoBuildContext instead of GCSBucket
+//   - HelmRelease.valuesFilePath -> valuesFiles in yaml
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig

@@ -125,7 +125,7 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 
 // rewriteProbes rewrites k8s probes to expand timeouts to 10 minutes to allow debugging local probes.
 func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
-	var minTimeout time.Duration = 10 * time.Minute // make it configurable?
+	var minTimeout = 10 * time.Minute // make it configurable?
 	if annotation, found := metadata.Annotations[types.DebugProbeTimeouts]; found {
 		if annotation == "skip" {
 			log.Entry(context.Background()).Debugf("skipping probe rewrite on %q by request", metadata.Name)
