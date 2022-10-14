@@ -26,9 +26,10 @@ import (
 // Config changes from v1alpha4 to v1alpha5:
 // 1. Additions:
 //   - BuildType.AzureContainerBuild and AzureContainerBuild type
+//
 // 2. No removal
 // 3. Updates
-//    - minor - []TestCase type aliased to TestConfig
+//   - minor - []TestCase type aliased to TestConfig
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

@@ -25,7 +25,8 @@ import (
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta10 to v1beta11
 // 1. Additions:
-//    - GitTagger variants `TreeSha` and `AbbrevTreeSha`
+//   - GitTagger variants `TreeSha` and `AbbrevTreeSha`
+//
 // 2. No removals
 // 3. No Updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {

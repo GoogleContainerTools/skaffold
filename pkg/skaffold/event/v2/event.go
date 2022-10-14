@@ -24,8 +24,6 @@ import (
 	"sync"
 
 	"github.com/acarl005/stripansi"
-
-	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/mitchellh/go-homedir"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -36,6 +34,7 @@ import (
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
+//nolint:golint,staticcheck
 const (
 	NotStarted = "NotStarted"
 	InProgress = "InProgress"

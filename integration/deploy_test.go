@@ -200,6 +200,7 @@ func TestDeployWithoutWorkspaces(t *testing.T) {
 //      1. and _dst_ exists and is a file, then return an error
 //      2. and _dst_ exists and is a directory, then src is copied as _dst/$(basename src)_
 //      3. and _dst_ does not exist, then src is copied as _dst/src[1:]_.
+
 func copyFiles(dst, src string) error {
 	if util.IsFile(src) {
 		switch {
