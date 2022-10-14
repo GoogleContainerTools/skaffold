@@ -100,8 +100,19 @@ def file_passes(filename, refs, regexs):
         if found != 0:
             break
 
+    # Replace all occurrences of "http://www.apache.org/licenses/LICENSE-2.0" with "    http://www.apache.org/licenses/LICENSE-2.0"
+    if extension == "go":
+        for i, d in enumerate(data):
+            if "http://www.apache.org/licenses/LICENSE-2.0" in d:
+                data[i] = "    http://www.apache.org/licenses/LICENSE-2.0"
+                break
+
+
     # if we don't match the reference at this point, fail
     if ref != data:
+        print(ref)
+        print(data)
+        print("return here")
         return False
 
     return True

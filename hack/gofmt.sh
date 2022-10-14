@@ -18,7 +18,7 @@ files=$(find . -name "*.go" | grep -v vendor/ | xargs gofmt -l -s)
 if [[ $files ]]; then
     echo "Gofmt errors in files:"
     echo "$files"
-    diff=$(find . -name "*.go" | grep -v vendor/ | xargs gofmt -w -d)
+    diff=$(find . -name "*.go" | grep -v vendor/ | xargs gofmt -tabs=true -w -d)
     echo "$diff"
     exit 1
 fi
