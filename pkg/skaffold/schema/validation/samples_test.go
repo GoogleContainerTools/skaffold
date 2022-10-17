@@ -18,6 +18,7 @@ package validation
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -92,6 +94,9 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 		t.CheckNoError(err)
 		cfgs = append(cfgs, cfg)
 	}
+	t.Override(&kpt.KptVersion, func(_ context.Context) (string, error) {
+		return "1.0.0-beta.13", nil
+	})
 	err = Process(cfgs, Options{CheckDeploySource: false})
 	t.CheckNoError(err)
 }

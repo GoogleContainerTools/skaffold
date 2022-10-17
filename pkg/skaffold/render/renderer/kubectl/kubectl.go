@@ -46,7 +46,7 @@ type Kubectl struct {
 }
 
 func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string) (Kubectl, error) {
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate)
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Kubectl{}, err
