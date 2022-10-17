@@ -70,7 +70,7 @@ id = "UA-120945544-1"
 [languages]
 [languages.en]
 title = "Skaffold"
-description = "Easy and Repeatable Kubernetes Development"
+description = "Easy and Repeatable Container & Kubernetes Development"
 languageName ="English"
 # Weight used for sorting.
 weight = 1

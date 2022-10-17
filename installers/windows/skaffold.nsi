@@ -3,7 +3,7 @@
 !define WEB_SITE "https://skaffold.dev"
 !define VERSION "$%SKAFFOLD_VERSION%"
 !define COPYRIGHT "Google Skaffold Authors, 2021"
-!define DESCRIPTION "Fast. Repeatable. Simple. Local Kubernetes Development"
+!define DESCRIPTION "Fast. Repeatable. Simple. Container & Kubernetes Development"
 !define INSTALLER_NAME "skaffold_installer.exe"
 !define MAIN_APP_EXE "skaffold.exe"
 !define ICON "..\..\docs\static\favicons\favicon.ico"
