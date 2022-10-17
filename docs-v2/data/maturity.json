@@ -244,12 +244,8 @@
     "description": "User can generate a starter tekton pipeline using skaffold"
   },
   "verify": {
-    "dev": "x",
-    "debug": "x",
-    "run": "x",
-    "deploy": "x",
     "area": "skaffold verify",
-    "maturity": "beta",
+    "maturity": "GA",
     "description": "User can run post deployment tests via skaffold monitored test containers"
   },
   "global_config": {
