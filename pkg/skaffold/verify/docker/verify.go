@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"path"
 	"strings"
 	"sync"
@@ -216,8 +215,6 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 	opts.Bindings = bindings
 	// verify waits for run to complete
 	opts.Wait = true
-	// verify passes through os env to container env
-	opts.ContainerConfig.Env = os.Environ()
 
 	eventV2.VerifyInProgress(opts.VerifyTestName)
 	statusCh, errCh, id, err := v.client.Run(ctx, out, opts)
