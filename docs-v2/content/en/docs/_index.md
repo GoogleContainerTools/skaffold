@@ -1,5 +1,5 @@
 ---
-title: "Skaffold Documentation"
+title: "Skaffold 2.0 Documentation"
 linkTitle: "Documentation"
 weight: 20
 menu:
