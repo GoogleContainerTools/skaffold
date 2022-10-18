@@ -28,6 +28,7 @@ import (
 //    - GitTagger variants `TreeSha` and `AbbrevTreeSha`
 // 2. No removals
 // 3. No Updates
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

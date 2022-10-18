@@ -81,6 +81,7 @@ func (pm *PortManager) Stop() {
 	These ports are added to the provided container configuration's port set, and the bindings
 	are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
 */
+
 func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()

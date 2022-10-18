@@ -76,7 +76,7 @@ type Transformer struct {
 }
 
 // GetDeclarativeValidators transforms and returns the skaffold validators defined in skaffold.yaml
-func (v Transformer) GetDeclarativeTransformers() ([]kptfile.Function, error) {
+func (v *Transformer) GetDeclarativeTransformers() ([]kptfile.Function, error) {
 	// TODO: guarantee the v.kptFn is updated once users changed skaffold.yaml file.
 	if v.needRefresh {
 		newFuncs, err := validateTransformers(v.config)

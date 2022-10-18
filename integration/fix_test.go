@@ -57,7 +57,7 @@ func TestFixOutputFile(t *testing.T) {
 
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	out := skaffold.Fix("--output", filepath.Join("updated.yaml")).InDir("testdata/fix").RunOrFailOutput(t)
+	out := skaffold.Fix("--output", "updated.yaml").InDir("testdata/fix").RunOrFailOutput(t)
 	testutil.CheckContains(t, "written to updated.yaml", string(out))
 	defer os.Remove(filepath.Join("testdata", "fix", "updated.yaml"))
 

@@ -1,6 +1,6 @@
 module backend
 
-go 1.12
+go 1.19
 
 require (
 	github.com/DataDog/zstd v1.4.4 // indirect
