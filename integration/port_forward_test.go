@@ -134,11 +134,11 @@ func TestDevPortForwardDeletePod(t *testing.T) {
 		// pre-build images to avoid tripping the 1-minute timeout in getLocalPortFromPortForwardEvent()
 		skaffold.Build().InDir(test.dir).RunOrFail(t)
 
-		ns, _ := SetupNamespace(t)
+		ns, client := SetupNamespace(t)
 
 		rpcAddr := randomPort()
 		skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
-
+		client.WaitForDeploymentsToStabilize("leeroy-app")
 		_, entries := apiEvents(t, rpcAddr)
 
 		address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)

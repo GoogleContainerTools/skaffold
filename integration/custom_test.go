@@ -45,7 +45,7 @@ func TestCustomTest(t *testing.T) {
 
 	ns, client := SetupNamespace(t)
 
-	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunLive(t)
+	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunBackground(t)
 
 	client.WaitForPodsReady("custom-test-example")
 	ioutil.WriteFile(depFile, []byte("foo"), 0644)

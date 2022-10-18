@@ -24,8 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -64,9 +62,8 @@ func TestControlAPIManualTriggers(t *testing.T) {
 		},
 	})
 	// Ensure we see a build triggered in the event log
-	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev
 	})
 	failNowIfError(t, err)
 	// verify deployment happened.

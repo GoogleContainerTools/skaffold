@@ -84,7 +84,7 @@ func TestDebug(t *testing.T) {
 			ns, client := SetupNamespace(t)
 
 			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
-
+			client.WaitForDeploymentsToStabilize(test.deployments...)
 			verifyDebugAnnotations := func(annotations map[string]string) {
 				var configs map[string]types.ContainerDebugConfiguration
 				if anno, found := annotations["debug.cloud.google.com/config"]; !found {

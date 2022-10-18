@@ -271,10 +271,9 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 
 func verifySyncCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, namespace string, fileContent string) {
 	// Ensure we see a file sync in progress triggered in the event log
-	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
 		event := e.GetEvent().GetFileSyncEvent()
-		return event != nil && event.GetStatus() == InProgress, nil
+		return event != nil && event.GetStatus() == InProgress
 	})
 	failNowIfError(t, err)
 
@@ -285,10 +284,9 @@ func verifySyncCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, n
 	failNowIfError(t, err)
 
 	// Ensure we see a file sync succeeded triggered in the event log
-	err = wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
+	err = waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
 		event := e.GetEvent().GetFileSyncEvent()
-		return event != nil && event.GetStatus() == "Succeeded", nil
+		return event != nil && event.GetStatus() == "Succeeded"
 	})
 	failNowIfError(t, err)
 }

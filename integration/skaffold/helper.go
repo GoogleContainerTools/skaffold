@@ -230,15 +230,9 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 	cmd.Stdout = out
 	t.Logf("Running %s in %s", cmd.Args, cmd.Dir)
 
-	start := time.Now()
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("skaffold %s: %v", b.command, err)
 	}
-
-	go func() {
-		cmd.Wait()
-		t.Logf("Ran %s in %v", cmd.Args, timeutil.Humanize(time.Since(start)))
-	}()
 
 	waitAndTriggerStacktrace(ctx, t, cmd.Process)
 

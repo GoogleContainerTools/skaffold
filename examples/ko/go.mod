@@ -14,4 +14,4 @@
 
 module github.com/GoogleContainerTools/skaffold/examples/ko
 
-go 1.13
+go 1.19
