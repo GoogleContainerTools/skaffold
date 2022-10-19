@@ -22,6 +22,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -215,6 +217,48 @@ func TestDeployerMux_Dependencies(t *testing.T) {
 
 			dependencies, err := deployerMux.Dependencies()
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDeps, dependencies)
+		})
+	}
+}
+
+func TestDeployerMux_GetDeployersInverse(t *testing.T) {
+	d1 := NewMockDeployer()
+	d2 := NewMockDeployer()
+	d3 := NewMockDeployer()
+	d4 := NewMockDeployer()
+	d5 := NewMockDeployer()
+
+	tests := []struct {
+		name     string
+		args     []Deployer
+		expected []Deployer
+	}{
+		{
+			name:     "uneven slice",
+			args:     []Deployer{d1, d2, d3, d4, d5},
+			expected: []Deployer{d5, d4, d3, d2, d1},
+		},
+		{
+			name:     "even slice",
+			args:     []Deployer{d1, d2, d3, d4},
+			expected: []Deployer{d4, d3, d2, d1},
+		},
+		{
+			name:     "slice of one",
+			args:     []Deployer{d1},
+			expected: []Deployer{d1},
+		},
+		{
+			name:     "slice of zero",
+			args:     []Deployer{},
+			expected: []Deployer{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			deployerMux := DeployerMux{deployers: test.args, iterativeStatusCheck: false}
+			testutil.CheckDeepEqual(t, test.expected, deployerMux.GetDeployersInverse(), cmp.AllowUnexported(MockDeployer{}))
 		})
 	}
 }

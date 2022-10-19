@@ -57,6 +57,14 @@ func (m DeployerMux) GetDeployers() []Deployer {
 	return m.deployers
 }
 
+func (m DeployerMux) GetDeployersInverse() []Deployer {
+	inverse := m.deployers
+	for i, j := 0, len(inverse)-1; i < j; i, j = i+1, j-1 {
+		inverse[i], inverse[j] = inverse[j], inverse[i]
+	}
+	return inverse
+}
+
 func (m DeployerMux) GetAccessor() access.Accessor {
 	var accessors access.AccessorMux
 	for _, deployer := range m.deployers {
@@ -161,7 +169,9 @@ func (m DeployerMux) Dependencies() ([]string, error) {
 }
 
 func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, manifestsByConfig manifest.ManifestListByConfig) error {
-	for _, deployer := range m.deployers {
+	// Reverse order of deployers for cleanup to ensure resources
+	// are removed before their definitions are removed.
+	for _, deployer := range m.GetDeployersInverse() {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Cleanup")
 		if dryRun {
 			output.Yellow.Fprintln(w, "Following resources would be deleted:")
