@@ -28,6 +28,7 @@ jobs:
 
     # Skip changes not affecting examples or integration/examples
     - name: Computes number of changes to examples
+      continue-on-error: true
       # can't use github.event.before as it may represent
       run: |
         git diff --name-only ${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}} \
