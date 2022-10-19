@@ -153,11 +153,6 @@ func TestDevAPITriggers(t *testing.T) {
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
 
-	// throw away first 5 entries of log (from first run of dev loop)
-	for i := 0; i < 5; i++ {
-		<-entries
-	}
-
 	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
@@ -171,9 +166,8 @@ func TestDevAPITriggers(t *testing.T) {
 	})
 
 	// Ensure we see a build triggered in the event log
-	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev
 	})
 	failNowIfError(t, err)
 
@@ -202,12 +196,6 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
-
-	// throw away first 5 entries of log (from first run of dev loop)
-	for i := 0; i < 5; i++ {
-		<-entries
-	}
-
 	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
@@ -222,9 +210,8 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 		},
 	})
 	// Ensure we see a build triggered in the event log
-	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev
 	})
 	failNowIfError(t, err)
 
@@ -240,9 +227,8 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 
 func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
-	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetDeployEvent().GetStatus() == InProgress, nil
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetDeployEvent().GetStatus() == InProgress
 	})
 	failNowIfError(t, err)
 
@@ -368,7 +354,7 @@ func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourc
 func assertResponseFromPort(t *testing.T, address string, port int, expected string) {
 	url := fmt.Sprintf("http://%s:%d", address, port)
 	t.Logf("Waiting on %s to return: %s", url, expected)
-	ctx, cancelTimeout := context.WithTimeout(context.Background(), 4*time.Minute)
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
 	for {

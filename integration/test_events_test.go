@@ -20,8 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -88,18 +86,16 @@ func TestTestEvents(t *testing.T) {
 
 func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry) {
 	// Ensure we see a test in progress triggered in the event log
-	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
 		event := e.GetEvent().GetTestEvent()
-		return event != nil && event.GetStatus() == InProgress, nil
+		return event != nil && event.GetStatus() == InProgress
 	})
 	failNowIfError(t, err)
 
 	// Ensure we see the test completed triggered in the event log
-	err = wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
+	err = waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
 		event := e.GetEvent().GetTestEvent()
-		return event != nil && event.GetStatus() == "Complete", nil
+		return event != nil && event.GetStatus() == "Complete"
 	})
 	failNowIfError(t, err)
 }

@@ -484,7 +484,7 @@ func TestRunTest(t *testing.T) {
 			skaffold.Build().InDir(test.testDir).RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
-			skaffold.Run(test.args...).InDir(test.testDir).InNs(ns.Name).RunLive(t)
+			skaffold.Run(test.args...).InDir(test.testDir).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady("custom-test-example")
 
