@@ -65,11 +65,9 @@ func TestValidate(t *testing.T) {
 			expectedValid: false,
 		},
 		{
-			description: "Python (root)",
-			path:        "requirements.txt",
-			otherFiles: []string{
-				filepath.Join("Procfile"),
-			},
+			description:   "Python (root)",
+			path:          "requirements.txt",
+			otherFiles:    []string{"Procfile"},
 			expectedValid: true,
 		},
 		{

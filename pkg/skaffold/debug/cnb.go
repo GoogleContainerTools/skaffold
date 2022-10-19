@@ -105,6 +105,7 @@ func hasCNBLauncherEntrypoint(ic ImageConfiguration) bool {
 //     the default process type.  `CNB_PROCESS_TYPE` is ignored in this situation.  A different process
 //     can be used by overriding the image entrypoint.  Direct and script launches are supported by
 //     setting the entrypoint to `/cnb/lifecycle/launcher` and providing the appropriate arguments.
+
 func updateForCNBImage(adapter types.ContainerAdapter, ic ImageConfiguration, transformer func(adapter types.ContainerAdapter, ic ImageConfiguration) (types.ContainerDebugConfiguration, string, error)) (types.ContainerDebugConfiguration, string, error) {
 	// buildpacks/lifecycle 0.6.0 embeds the process definitions into a special image label.
 	// The build metadata isn't absolutely required as the image args could be

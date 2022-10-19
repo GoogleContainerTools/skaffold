@@ -58,6 +58,7 @@ spec:
 //  Step 3. `kpt fn sink` (to temp dir to run kuustomize build on),
 //  Step 4. `kustomize build` (if the temp dir from step 3 has a Kustomization hydrate the manifest),
 //  Step 5. `kpt fn sink` (store the stdout in a given dir).
+
 func TestKpt_Deploy(t *testing.T) {
 	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
 	tests := []struct {

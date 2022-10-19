@@ -68,7 +68,7 @@ func MarkIntegrationTest(t *testing.T, testType TestType) {
 	}
 
 	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t.Name()) {
-		t.Skip(fmt.Sprintf("skipping non-GCP integration test that doesn't match partition %s", getPartition()))
+		t.Skipf("skipping non-GCP integration test that doesn't match partition %s", getPartition())
 	}
 }
 
@@ -337,7 +337,10 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
 
 		case event := <-w.ResultChan():
-			dp := event.Object.(*appsv1.Deployment)
+			dp, ok := event.Object.(*appsv1.Deployment)
+			if !ok {
+				continue
+			}
 			desiredReplicas := *(dp.Spec.Replicas)
 			log.Entry(ctx).Infof("Deployment %s: Generation %d/%d, Replicas %d/%d, Available %d/%d",
 				dp.Name,

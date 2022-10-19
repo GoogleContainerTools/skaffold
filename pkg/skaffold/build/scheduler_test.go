@@ -390,6 +390,7 @@ func TestInOrderForArgs(t *testing.T) {
 //    2 : {3},
 //}
 // implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
+
 func setDependencies(a []*latest.Artifact, d map[int][]int) {
 	for k, dep := range d {
 		for i := range dep {
