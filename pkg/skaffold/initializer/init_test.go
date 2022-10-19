@@ -213,8 +213,9 @@ func TestDoInit(t *testing.T) {
 			},
 		},
 		{
-			name: "helm init",
-			dir:  "testdata/init/helm-deployment",
+			name:       "helm init",
+			dir:        "testdata/init/helm-deployment",
+			shouldSkip: true, // Github Actions CI runners don't have helm. This test should mock helm.
 			config: initconfig.Config{
 				Force: true,
 				Opts: config.SkaffoldOptions{
