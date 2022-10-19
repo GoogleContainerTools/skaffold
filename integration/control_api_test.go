@@ -45,11 +45,6 @@ func TestControlAPIManualTriggers(t *testing.T) {
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
 
-	// throw away first 5 entries of log (from first run of dev loop)
-	for i := 0; i < 5; i++ {
-		<-entries
-	}
-
 	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo

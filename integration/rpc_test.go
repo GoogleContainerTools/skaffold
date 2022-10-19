@@ -437,7 +437,7 @@ func setupRPCClient(t *testing.T, port string) proto.SkaffoldServiceClient {
 
 	// connect to the skaffold grpc server
 	for i := 0; i < connectionRetries; i++ {
-		conn, err = grpc.Dial(fmt.Sprintf(":%s", port), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(10*time.Second))
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", port), grpc.WithInsecure())
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			time.Sleep(waitTime)

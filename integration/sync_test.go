@@ -202,13 +202,7 @@ func TestDevSyncAPITrigger(t *testing.T) {
 
 	rpcAddr := randomPort()
 	skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
-
 	rpcClient, entries := apiEvents(t, rpcAddr)
-
-	// throw away first 5 entries of log (from first run of dev loop)
-	for i := 0; i < 5; i++ {
-		<-entries
-	}
 
 	client.WaitForPodsReady("test-file-sync")
 

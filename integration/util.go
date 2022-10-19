@@ -337,7 +337,10 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
 
 		case event := <-w.ResultChan():
-			dp := event.Object.(*appsv1.Deployment)
+			dp, ok := event.Object.(*appsv1.Deployment)
+			if !ok {
+				continue
+			}
 			desiredReplicas := *(dp.Spec.Replicas)
 			log.Entry(ctx).Infof("Deployment %s: Generation %d/%d, Replicas %d/%d, Available %d/%d",
 				dp.Name,
