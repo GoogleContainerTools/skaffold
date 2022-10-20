@@ -38,7 +38,7 @@ const (
 // for testing
 var (
 	readFile    = os.ReadFile
-	tempDir     = os.MkdirTemp
+	TempDir     = os.MkdirTemp
 	osRemoveAll = os.RemoveAll
 )
 
@@ -94,7 +94,7 @@ func (h helm) GetImages() []string {
 	// Run helm template in each top level dir.
 	// Parse templated manifest files and then get image names.
 	artifacts := []string{}
-	td, err := tempDir("", "skaffold_")
+	td, err := TempDir("", "skaffold_")
 	if err != nil {
 		log.Entry(context.TODO()).Fatalf("cannot create temporary directory. Encountered error: %s", err)
 	}
@@ -104,7 +104,7 @@ func (h helm) GetImages() []string {
 		for _, v := range ch.valueFiles {
 			args = append(args, "-f", v)
 		}
-		o, err := tempDir(td, ch.name)
+		o, err := TempDir(td, ch.name)
 		if err != nil {
 			log.Entry(context.TODO()).Fatalf("cannot create temporary directory. Encountered error: %s", err)
 		}

@@ -5,35 +5,31 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - dogsled
     - gci
     - goconst
     - gocritic
     - goimports
-    - golint
     - goprintffuncname
     - gosimple
     - govet
     - ineffassign
-    - interfacer
-    - maligned
     - misspell
     - nakedret
     - rowserrcheck
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
 
 linters-settings:
   goimports:
     local-prefixes: github.com/GoogleContainerTools/skaffold
-  maligned:
-      # print struct with more effective memory layout or not, false by default
-      suggest-new: true
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/GoogleContainerTools/skaffold)

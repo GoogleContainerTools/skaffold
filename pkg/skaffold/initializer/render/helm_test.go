@@ -82,7 +82,7 @@ func TestGetImages(t *testing.T) {
 			}
 			cmd := fmt.Sprintf("%s --output-dir %s", test.cmd, tmpDir.Path("template"))
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(cmd, test.err))
-			t.Override(&tempDir, func(dir, pattern string) (name string, err error) {
+			t.Override(&TempDir, func(dir, pattern string) (name string, err error) {
 				return tmpDir.Path("template"), nil
 			})
 			images := h.GetImages()

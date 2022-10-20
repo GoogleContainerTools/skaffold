@@ -26,6 +26,7 @@ import (
 // Config changes from v2beta6 to v2beta7
 // 1. Additions:
 //		New KptDeploy, KptFn, and KptLive to support Kpt Deployer.
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)

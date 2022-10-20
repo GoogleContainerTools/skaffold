@@ -30,6 +30,7 @@ import (
 //    KanikoArtifact.Env
 // 2. Removals:
 // 3. No updates
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

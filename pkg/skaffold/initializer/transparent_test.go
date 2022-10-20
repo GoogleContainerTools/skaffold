@@ -18,15 +18,40 @@ package initializer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+const manifest = `---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skaffold-example
+  labels:
+    app: skaffold-example
+spec:
+  selector:
+    matchLabels:
+      app: skaffold-example
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: skaffold-example
+    spec:
+      containers:
+      - name: skaffold-example
+        image: skaffold-helm
+`
 
 func TestTransparentInit(t *testing.T) {
 	tests := []struct {
@@ -154,6 +179,14 @@ func TestTransparentInit(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Chdir(test.dir)
+
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("template/deployment.yaml", manifest)
+			cmd := fmt.Sprintf("helm template charts -f charts/values.yaml --output-dir %s", tmpDir.Path("template"))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRun(cmd))
+			t.Override(&render.TempDir, func(dir, pattern string) (name string, err error) {
+				return tmpDir.Path("template"), nil
+			})
 
 			t.Override(&confirmInitOptions, func(_ io.Writer, _ *latest.SkaffoldConfig) (bool, error) {
 				return test.doneResponse, nil

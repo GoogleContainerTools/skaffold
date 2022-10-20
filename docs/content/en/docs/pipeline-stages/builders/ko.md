@@ -196,7 +196,7 @@ e.g.:
 
 These templates are evaluated by Skaffold. Note that the syntax is slightly
 different to
-[`ko`'s template expansion](https://github.com/google/ko/blob/v0.9.3/pkg/build/gobuild.go#L632-L660),
+[`ko`'s template expansion](https://github.com/google/ko/blob/v0.12.0/pkg/build/gobuild.go#L632-L660),
 specifically, there's no `.Env` prefix.
 
 ### Source file locations

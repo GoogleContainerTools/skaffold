@@ -40,6 +40,7 @@ import (
 // 3. Updates
 //  - TagPolicy is a struct
 //
+
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var tagPolicy next.TagPolicy
 	if config.Build.TagPolicy == "sha256" {
