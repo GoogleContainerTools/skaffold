@@ -27,7 +27,7 @@ import (
 
 func ModifyGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.BoolPtr(false)})
+	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.Ptr(false)})
 	if err != nil {
 		formatter.WriteErr(err)
 		return err

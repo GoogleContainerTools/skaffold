@@ -132,8 +132,8 @@ func TestBuild(t *testing.T) {
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"k1": nil,
-					"k2": util.StringPtr("value2"),
-					"k3": util.StringPtr("{{.VALUE3}}"),
+					"k2": util.Ptr("value2"),
+					"k3": util.Ptr("{{.VALUE3}}"),
 				},
 				CacheFrom:   []string{"from-1"},
 				Target:      "target",
@@ -147,8 +147,8 @@ func TestBuild(t *testing.T) {
 				Dockerfile: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"k1": nil,
-					"k2": util.StringPtr("value2"),
-					"k3": util.StringPtr("value3"),
+					"k2": util.Ptr("value2"),
+					"k3": util.Ptr("value3"),
 				},
 				CacheFrom:   []string{"from-1"},
 				AuthConfigs: allAuthConfig,
@@ -184,7 +184,7 @@ func TestBuild(t *testing.T) {
 			description: "bad build arg template",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key": util.StringPtr("{{INVALID"),
+					"key": util.Ptr("{{INVALID"),
 				},
 			},
 			mode:          config.RunModes.Dev,
@@ -279,9 +279,9 @@ func TestGetBuildArgs(t *testing.T) {
 			description: "build args",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key1": util.StringPtr("value1"),
+					"key1": util.Ptr("value1"),
 					"key2": nil,
-					"key3": util.StringPtr("{{.FOO}}"),
+					"key3": util.Ptr("{{.FOO}}"),
 				},
 			},
 			env:  []string{"FOO=bar"},
@@ -291,7 +291,7 @@ func TestGetBuildArgs(t *testing.T) {
 			description: "invalid build arg",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key": util.StringPtr("{{INVALID"),
+					"key": util.Ptr("{{INVALID"),
 				},
 			},
 			shouldErr: true,
@@ -400,7 +400,7 @@ func TestGetBuildArgs(t *testing.T) {
 			description: "all",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key1": util.StringPtr("value1"),
+					"key1": util.Ptr("value1"),
 				},
 				CacheFrom:   []string{"foo"},
 				Target:      "stage1",

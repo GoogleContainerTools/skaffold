@@ -40,7 +40,7 @@ func TestNewBuilderMux(t *testing.T) {
 		{
 			description: "only local builder",
 			pipelines: []latest.Pipeline{
-				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.IntPtr(1)}}}},
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.Ptr(1)}}}},
 			},
 			pipeBuilder:         newMockPipelineBuilder,
 			expectedBuilders:    []string{"local"},
@@ -65,8 +65,8 @@ func TestNewBuilderMux(t *testing.T) {
 		{
 			description: "min non-zero concurrency",
 			pipelines: []latest.Pipeline{
-				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.IntPtr(0)}}}},
-				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.IntPtr(3)}}}},
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.Ptr(0)}}}},
+				{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: util.Ptr(3)}}}},
 				{Build: latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{Concurrency: 2}}}},
 			},
 			pipeBuilder:         newMockPipelineBuilder,
@@ -111,8 +111,8 @@ func TestGetConcurrency(t *testing.T) {
 		{
 			description: "builder concurrency set to less than cli concurrency",
 			pbs: []PipelineBuilder{
-				&mockPipelineBuilder{concurrency: util.IntPtr(1), builderType: "local"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(1), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(1), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(1), builderType: "local"},
 				&mockPipelineBuilder{concurrency: nil, builderType: "gcb"},
 			},
 			cliConcurrency:      2,
@@ -121,8 +121,8 @@ func TestGetConcurrency(t *testing.T) {
 		{
 			description: "builder concurrency set",
 			pbs: []PipelineBuilder{
-				&mockPipelineBuilder{concurrency: util.IntPtr(2), builderType: "local"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(2), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(2), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(2), builderType: "local"},
 				&mockPipelineBuilder{concurrency: nil, builderType: "local"},
 			},
 			cliConcurrency:      -1,
@@ -132,8 +132,8 @@ func TestGetConcurrency(t *testing.T) {
 			description: "builder concurrency set to 0 and cli concurrency set to 1",
 			pbs: []PipelineBuilder{
 				// build all in parallel
-				&mockPipelineBuilder{concurrency: util.IntPtr(0), builderType: "local"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(0), builderType: "gcb"},
+				&mockPipelineBuilder{concurrency: util.Ptr(0), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(0), builderType: "gcb"},
 			},
 			cliConcurrency:      1,
 			expectedConcurrency: 1,
@@ -142,8 +142,8 @@ func TestGetConcurrency(t *testing.T) {
 			description: "builder concurrency set to 0 and cli concurrency unset",
 			pbs: []PipelineBuilder{
 				// build all in parallel
-				&mockPipelineBuilder{concurrency: util.IntPtr(0), builderType: "local"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(0), builderType: "gcb"},
+				&mockPipelineBuilder{concurrency: util.Ptr(0), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(0), builderType: "gcb"},
 			},
 			cliConcurrency:      -1,
 			expectedConcurrency: 0,
@@ -155,7 +155,7 @@ func TestGetConcurrency(t *testing.T) {
 				&mockPipelineBuilder{builderType: "local"},
 				&mockPipelineBuilder{builderType: "local"},
 				&mockPipelineBuilder{builderType: "local"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(3), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(3), builderType: "local"},
 			},
 			cliConcurrency:      -1,
 			expectedConcurrency: 3,
@@ -164,8 +164,8 @@ func TestGetConcurrency(t *testing.T) {
 			description: "builder concurrency set to default 0 for gcb",
 			pbs: []PipelineBuilder{
 				// build all in parallel
-				&mockPipelineBuilder{concurrency: util.IntPtr(0), builderType: "gcb"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(0), builderType: "gcb"},
+				&mockPipelineBuilder{concurrency: util.Ptr(0), builderType: "gcb"},
+				&mockPipelineBuilder{concurrency: util.Ptr(0), builderType: "gcb"},
 			},
 			cliConcurrency:      -1,
 			expectedConcurrency: 0,
@@ -173,9 +173,9 @@ func TestGetConcurrency(t *testing.T) {
 		{
 			description: "min non-zero concurrency",
 			pbs: []PipelineBuilder{
-				&mockPipelineBuilder{concurrency: util.IntPtr(0), builderType: "local"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(3), builderType: "gcb"},
-				&mockPipelineBuilder{concurrency: util.IntPtr(2), builderType: "gcb"},
+				&mockPipelineBuilder{concurrency: util.Ptr(0), builderType: "local"},
+				&mockPipelineBuilder{concurrency: util.Ptr(3), builderType: "gcb"},
+				&mockPipelineBuilder{concurrency: util.Ptr(2), builderType: "gcb"},
 			},
 			cliConcurrency:      -1,
 			expectedConcurrency: 2,
@@ -231,9 +231,9 @@ func newMockPipelineBuilder(p latest.Pipeline) (PipelineBuilder, error) {
 	case p.Build.BuildType.LocalBuild != nil:
 		return &mockPipelineBuilder{builderType: "local", concurrency: p.Build.LocalBuild.Concurrency}, nil
 	case p.Build.BuildType.Cluster != nil:
-		return &mockPipelineBuilder{builderType: "cluster", concurrency: util.IntPtr(p.Build.Cluster.Concurrency)}, nil
+		return &mockPipelineBuilder{builderType: "cluster", concurrency: util.Ptr(p.Build.Cluster.Concurrency)}, nil
 	case p.Build.BuildType.GoogleCloudBuild != nil:
-		return &mockPipelineBuilder{builderType: "gcb", concurrency: util.IntPtr(p.Build.GoogleCloudBuild.Concurrency)}, nil
+		return &mockPipelineBuilder{builderType: "gcb", concurrency: util.Ptr(p.Build.GoogleCloudBuild.Concurrency)}, nil
 	default:
 		return nil, errors.New("invalid config")
 	}

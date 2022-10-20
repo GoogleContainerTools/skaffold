@@ -56,7 +56,7 @@ func evalBuildArgs(mode config.RunMode, workspace string, dockerfilePath string,
 		defaults = nonDebugModeArgs
 	}
 	result := map[string]*string{
-		"SKAFFOLD_RUN_MODE": util.StringPtr(string(mode)),
+		"SKAFFOLD_RUN_MODE": util.Ptr(string(mode)),
 	}
 	for k, v := range defaults {
 		result[k] = &v

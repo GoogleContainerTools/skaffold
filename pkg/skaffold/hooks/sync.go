@@ -42,8 +42,8 @@ func NewSyncEnvOpts(a *latest.Artifact, image string, addOrModifyFiles []string,
 	return SyncEnvOpts{
 		Image:                image,
 		BuildContext:         workDir,
-		FilesAddedOrModified: util.StringPtr(strings.Join(addOrModifyFiles, ";")),
-		FilesDeleted:         util.StringPtr(strings.Join(deleteFiles, ";")),
+		FilesAddedOrModified: util.Ptr(strings.Join(addOrModifyFiles, ";")),
+		FilesDeleted:         util.Ptr(strings.Join(deleteFiles, ";")),
 		KubeContext:          kubeContext,
 		Namespaces:           strings.Join(namespaces, ","),
 	}, nil

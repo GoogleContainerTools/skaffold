@@ -109,21 +109,8 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	return set.Files(), nil
 }
 
-// BoolPtr returns a pointer to a bool
-func BoolPtr(b bool) *bool {
-	o := b
-	return &o
-}
-
-// StringPtr returns a pointer to a string
-func StringPtr(s string) *string {
-	o := s
-	return &o
-}
-
-// IntPtr returns a pointer to an int
-func IntPtr(i int) *int {
-	o := i
+func Ptr[T any](t T) *T {
+	o := t
 	return &o
 }
 

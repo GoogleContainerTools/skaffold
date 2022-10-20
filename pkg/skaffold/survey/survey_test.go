@@ -82,7 +82,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			description: "should not display prompt when prompt is disabled",
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
-					Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)},
+					Survey: &sConfig.SurveyConfig{DisablePrompt: util.Ptr(true)},
 				}},
 		},
 		{
@@ -90,7 +90,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
 					Survey: &sConfig.SurveyConfig{
-						DisablePrompt: util.BoolPtr(false),
+						DisablePrompt: util.Ptr(false),
 						LastPrompted:  threeDaysAgo,
 					}},
 			},
@@ -100,7 +100,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
 					Survey: &sConfig.SurveyConfig{
-						DisablePrompt: util.BoolPtr(false),
+						DisablePrompt: util.Ptr(false),
 						LastTaken:     twoMonthsAgo,
 					}},
 			},
@@ -110,7 +110,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
 					Survey: &sConfig.SurveyConfig{
-						DisablePrompt: util.BoolPtr(false),
+						DisablePrompt: util.Ptr(false),
 						LastPrompted:  fiveDaysAgo,
 					}},
 			},
@@ -121,7 +121,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
 					Survey: &sConfig.SurveyConfig{
-						DisablePrompt: util.BoolPtr(false),
+						DisablePrompt: util.Ptr(false),
 						LastTaken:     threeMonthsAgo,
 					}},
 			},
@@ -132,7 +132,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{
 					Survey: &sConfig.SurveyConfig{
-						DisablePrompt: util.BoolPtr(false),
+						DisablePrompt: util.Ptr(false),
 						LastTaken:     twoMonthsAgo,
 						LastPrompted:  twoMonthsAgo,
 					}},
@@ -166,14 +166,14 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 		{
 			description: "config disable-prompt is true",
 			cfg: &sConfig.GlobalConfig{
-				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.Ptr(true)}},
 			},
 			expected: true,
 		},
 		{
 			description: "config disable-prompt is false",
 			cfg: &sConfig.GlobalConfig{
-				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
+				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{DisablePrompt: util.Ptr(false)}},
 			},
 		},
 		{
@@ -259,7 +259,7 @@ func TestRecentlyPromptedOrTaken(t *testing.T) {
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{LastTaken: twoMonthsAgo,
 					UserSurveys: []*sConfig.UserSurvey{
-						{ID: "user", Taken: util.BoolPtr(true)},
+						{ID: "user", Taken: util.Ptr(true)},
 					}}}},
 			input: []config{hats, {id: "user", expiresAt: future,
 				isRelevantFn: func(_ []schemaUtil.VersionedConfig, _ sConfig.RunMode) bool {
@@ -273,7 +273,7 @@ func TestRecentlyPromptedOrTaken(t *testing.T) {
 			cfg: &sConfig.GlobalConfig{
 				Global: &sConfig.ContextConfig{Survey: &sConfig.SurveyConfig{
 					UserSurveys: []*sConfig.UserSurvey{
-						{ID: "user", Taken: util.BoolPtr(true)},
+						{ID: "user", Taken: util.Ptr(true)},
 					}}}},
 			input: []config{hats, {id: "user", expiresAt: future,
 				isRelevantFn: func(_ []schemaUtil.VersionedConfig, _ sConfig.RunMode) bool {

@@ -46,7 +46,7 @@ func TestDockerBuildSpec(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 						BuildArgs: map[string]*string{
-							"arg1": util.StringPtr("value1"),
+							"arg1": util.Ptr("value1"),
 							"arg2": nil,
 						},
 					},
@@ -80,7 +80,7 @@ func TestDockerBuildSpec(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 						BuildArgs: map[string]*string{
-							"arg1": util.StringPtr("value1"),
+							"arg1": util.Ptr("value1"),
 							"arg2": nil,
 						},
 					},
@@ -141,7 +141,7 @@ func TestDockerBuildSpec(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 						BuildArgs: map[string]*string{
-							"arg1": util.StringPtr("value1"),
+							"arg1": util.Ptr("value1"),
 							"arg2": nil,
 						},
 					},

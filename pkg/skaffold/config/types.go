@@ -87,9 +87,9 @@ func (s *BoolOrUndefined) Value() *bool {
 func (s *BoolOrUndefined) Set(v string) error {
 	switch v {
 	case "true":
-		s.value = util.BoolPtr(true)
+		s.value = util.Ptr(true)
 	case "false":
-		s.value = util.BoolPtr(false)
+		s.value = util.Ptr(false)
 	default:
 		s.value = nil
 	}

@@ -71,7 +71,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext:    "this_is_a_context",
-						MultiLevelRepo: util.BoolPtr(false),
+						MultiLevelRepo: util.Ptr(false),
 					},
 				},
 			},
@@ -92,7 +92,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext:  "this_is_a_context",
-						LocalCluster: util.BoolPtr(false),
+						LocalCluster: util.Ptr(false),
 					},
 				},
 			},
@@ -140,7 +140,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			global:      true,
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
-					MultiLevelRepo: util.BoolPtr(true),
+					MultiLevelRepo: util.Ptr(true),
 				},
 				ContextConfigs: []*config.ContextConfig{},
 			},
@@ -156,7 +156,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			global:      true,
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
-					LocalCluster: util.BoolPtr(true),
+					LocalCluster: util.Ptr(true),
 				},
 				ContextConfigs: []*config.ContextConfig{},
 			},
@@ -192,7 +192,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			value:       "true",
 			global:      true,
 			expectedSetCfg: &config.GlobalConfig{
-				Global:         &config.ContextConfig{UpdateCheck: util.BoolPtr(true)},
+				Global:         &config.ContextConfig{UpdateCheck: util.Ptr(true)},
 				ContextConfigs: []*config.ContextConfig{},
 			},
 			expectedUnsetCfg: &config.GlobalConfig{
@@ -209,7 +209,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					Survey: &config.SurveyConfig{
-						DisablePrompt: util.BoolPtr(true),
+						DisablePrompt: util.Ptr(true),
 					},
 				},
 				ContextConfigs: []*config.ContextConfig{},
@@ -228,7 +228,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					Survey: &config.SurveyConfig{
-						DisablePrompt: util.BoolPtr(false),
+						DisablePrompt: util.Ptr(false),
 					},
 				},
 				ContextConfigs: []*config.ContextConfig{},
@@ -251,7 +251,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 					{
 						Kubecontext: "this_is_a_context",
 						Survey: &config.SurveyConfig{
-							DisablePrompt: util.BoolPtr(false),
+							DisablePrompt: util.Ptr(false),
 						},
 					},
 				},
@@ -274,7 +274,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext:     "this_is_a_context",
-						KindDisableLoad: util.BoolPtr(true),
+						KindDisableLoad: util.Ptr(true),
 					},
 				},
 			},
@@ -293,7 +293,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			global:      true,
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
-					KindDisableLoad: util.BoolPtr(true),
+					KindDisableLoad: util.Ptr(true),
 				},
 				ContextConfigs: []*config.ContextConfig{},
 			},
@@ -311,7 +311,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext:    "this_is_a_context",
-						K3dDisableLoad: util.BoolPtr(true),
+						K3dDisableLoad: util.Ptr(true),
 					},
 				},
 			},
@@ -330,7 +330,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			global:      true,
 			expectedSetCfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
-					K3dDisableLoad: util.BoolPtr(true),
+					K3dDisableLoad: util.Ptr(true),
 				},
 				ContextConfigs: []*config.ContextConfig{},
 			},
@@ -350,7 +350,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				Global: &config.ContextConfig{
 					Survey: &config.SurveyConfig{
 						UserSurveys: []*config.UserSurvey{
-							{ID: "helm", Taken: util.BoolPtr(true)}}},
+							{ID: "helm", Taken: util.Ptr(true)}}},
 				},
 				ContextConfigs: []*config.ContextConfig{},
 			},

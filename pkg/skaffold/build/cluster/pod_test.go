@@ -99,8 +99,8 @@ func TestKanikoArgs(t *testing.T) {
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"nil_key":   nil,
-					"empty_key": util.StringPtr(""),
-					"value_key": util.StringPtr("value"),
+					"empty_key": util.Ptr(""),
+					"value_key": util.Ptr("value"),
 				},
 			},
 			expectedArgs: []string{
@@ -113,7 +113,7 @@ func TestKanikoArgs(t *testing.T) {
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
-					"invalid": util.StringPtr("{{Invalid"),
+					"invalid": util.Ptr("{{Invalid"),
 				},
 			},
 			shouldErr: true,

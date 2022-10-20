@@ -53,11 +53,11 @@ func TestGetMonitor(t *testing.T) {
 		},
 		{
 			description: "statusCheck parameter set to true",
-			statusCheck: util.BoolPtr(true),
+			statusCheck: util.Ptr(true),
 		},
 		{
 			description: "statusCheck parameter set to false",
-			statusCheck: util.BoolPtr(false),
+			statusCheck: util.Ptr(false),
 			isNoop:      true,
 		},
 	}

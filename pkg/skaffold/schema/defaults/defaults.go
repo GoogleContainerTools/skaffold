@@ -267,13 +267,13 @@ func setDefaultSync(a *latest.Artifact) {
 		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
 			switch {
 			case a.JibArtifact != nil || a.BuildpackArtifact != nil:
-				a.Sync.Auto = util.BoolPtr(true)
+				a.Sync.Auto = util.Ptr(true)
 			default:
 				a.Sync.Infer = []string{"**/*"}
 			}
 		}
 	} else if a.BuildpackArtifact != nil {
-		a.Sync = &latest.Sync{Auto: util.BoolPtr(true)}
+		a.Sync = &latest.Sync{Auto: util.Ptr(true)}
 	}
 }
 

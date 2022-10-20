@@ -67,7 +67,7 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 }
 
 func (b *Builder) Concurrency() *int {
-	return util.IntPtr(b.GoogleCloudBuild.Concurrency)
+	return util.Ptr(b.GoogleCloudBuild.Concurrency)
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, platform platform.Matcher) (string, error) {

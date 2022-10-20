@@ -123,7 +123,7 @@ func koArtifactSpecifiesBuildConfig(k latest.KoArtifact) bool {
 func labels(a *latest.Artifact) ([]string, error) {
 	rawLabels := map[string]*string{}
 	for k, v := range a.KoArtifact.Labels {
-		rawLabels[k] = util.StringPtr(v)
+		rawLabels[k] = util.Ptr(v)
 	}
 	expandedLabels, err := util.EvaluateEnvTemplateMapWithEnv(rawLabels, nil)
 	if err != nil {
