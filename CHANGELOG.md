@@ -1,3 +1,82 @@
+# v2.0.0 Release - 10/20/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.0.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.0.0`
+
+Note: This release comes with a new config version, `v3`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Skaffold v2.0.0 is officially released today 🎊!  Users can try it out by using the updated Skaffold [installation guide](https://skaffold-v2.web.app/docs/install/).  A critical requirement for Skaffold v2 is that all of your existing Skaffold configurations continue to just work with Skaffold v2.  This means that for the vast majority of users, the new features below should be immediately accessible requiring no additional configuration changes.  For additional information on what has changed from Skaffold v1 to v2 and what specific options might require some manual tweaking, please refer to the upgrade guide.
+
+Highlights & New Features:
+* 💻 Support for deploying to ARM, X86 or Multi-Arch K8s clusters from your x86 or ARM machine 
+* 👟 New Cloud Run Deployer brings the power of Skaffold to Google Clouds serverless container runtime 
+* 📜 Skaffold render phase has been split from deploy phase providing increased granularity of control for GitOps workflows 
+* 🚦New Skaffold verify phase enables improved testing capabilities making Skaffold even better as a CI/CD tool
+* ⚙️ Tighter integration with kpt lets you more dynamically manage large amounts of configuration and keep it in sync 
+
+Note: the below PRs only reflect the changes from v2.0.0-beta3 to the v2.0.0 GA release.  To see all of the PRs related to the v1.39.2 -> v2.0.0 transition see the Release Notes for  [v2.0.0-beta1](https://github.com/GoogleContainerTools/skaffold/releases/tag/v2.0.0-beta1),  [v2.0.0-beta2](https://github.com/GoogleContainerTools/skaffold/releases/tag/v2.0.0-beta2), and  [v2.0.0-beta3](https://github.com/GoogleContainerTools/skaffold/releases/tag/v2.0.0-beta3)
+
+Fixes:
+* fix: add inputDigest tagger alias to customTemplate tagger [#7867](https://github.com/GoogleContainerTools/skaffold/pull/7867)
+* fix: allow `init` without `render` and `deploy` [#7936](https://github.com/GoogleContainerTools/skaffold/pull/7936)
+* fix: Cloud Code log viewer shows render stage correctly [#7937](https://github.com/GoogleContainerTools/skaffold/pull/7937)
+* fix: deploy integration test image builds need to be multi-platform since we're testing against 3 types of k8s cluster [#7882](https://github.com/GoogleContainerTools/skaffold/pull/7882)
+* fix: ensure project descriptor in Pack Build [#7884](https://github.com/GoogleContainerTools/skaffold/pull/7884)
+* fix: images being pushed with same tags overwriting each other [#7900](https://github.com/GoogleContainerTools/skaffold/pull/7900)
+* fix: kpt render with subdirectories [#7909](https://github.com/GoogleContainerTools/skaffold/pull/7909)
+* fix: no longer pass os env vars through to verify as this can cause unexpected issues with PATH, GOPATH, etc. [#7949](https://github.com/GoogleContainerTools/skaffold/pull/7949)
+* fix: resolve issue where helm render did not respect --namespace flag [#7907](https://github.com/GoogleContainerTools/skaffold/pull/7907)
+* fix: reverse order of deployers during cleanup (#7284) [#7925](https://github.com/GoogleContainerTools/skaffold/pull/7925)
+* fix: use relref shortcode to fix links [#7890](https://github.com/GoogleContainerTools/skaffold/pull/7890)
+
+Updates and Refactors:
+* chore: Add an example for helm chart with multiple images [#7874](https://github.com/GoogleContainerTools/skaffold/pull/7874)
+* chore: add generic `util.Ptr` function [#7961](https://github.com/GoogleContainerTools/skaffold/pull/7961)
+* chore: change survey prompt frequency [#7912](https://github.com/GoogleContainerTools/skaffold/pull/7912)
+* chore: create skaffold/v3 schema [#7960](https://github.com/GoogleContainerTools/skaffold/pull/7960)
+* chore: enable platform flag in render command  [#7885](https://github.com/GoogleContainerTools/skaffold/pull/7885)
+* chore: move deploy error codes to render error codes [#7893](https://github.com/GoogleContainerTools/skaffold/pull/7893)
+* chore: update cross and multi-platform build maturity [#7928](https://github.com/GoogleContainerTools/skaffold/pull/7928)
+* chore: update Google API client libraries [#7903](https://github.com/GoogleContainerTools/skaffold/pull/7903)
+* chore: update project to use go 1.19.1  [#7871](https://github.com/GoogleContainerTools/skaffold/pull/7871)
+* chore: update skaffold Dockerfiles to pull from approved GCS buckets vs open internet [#7921](https://github.com/GoogleContainerTools/skaffold/pull/7921)
+* chore: update skaffold v2 docs to point reference v2.0.0 and not v2.0.0-beta* [#7948](https://github.com/GoogleContainerTools/skaffold/pull/7948)
+* chore: update skaffold verify to GA maturity [#7950](https://github.com/GoogleContainerTools/skaffold/pull/7950)
+* chore: update v1 branch to go1.19.1 [#7943](https://github.com/GoogleContainerTools/skaffold/pull/7943)
+* chore: use cmp.Diff to check for differences [#7896](https://github.com/GoogleContainerTools/skaffold/pull/7896)
+* chore(deps): bump ossf/scorecard-action from 2.0.3 to 2.0.4 [#7898](https://github.com/GoogleContainerTools/skaffold/pull/7898)
+* chore(deps): bump peter-evans/create-or-update-comment from 2.0.0 to 2.0.1 [#7946](https://github.com/GoogleContainerTools/skaffold/pull/7946)
+* chore(examples): update examples to Spring Boot 2.7.4 and SnakeYAML 1.32 [#7895](https://github.com/GoogleContainerTools/skaffold/pull/7895)
+
+
+Docs, Test, and Release Updates:
+* docs: Add banner to v1 and v2 docs indicating that v1 is archived [#7920](https://github.com/GoogleContainerTools/skaffold/pull/7920)
+* docs: add cloud deploy info to skaffold ci-cd docs [#7880](https://github.com/GoogleContainerTools/skaffold/pull/7880)
+* docs: Add examples to the info sidebar [#7906](https://github.com/GoogleContainerTools/skaffold/pull/7906)
+* docs: Add new inputDigest tagger alias to customTemplate tagger [#7939](https://github.com/GoogleContainerTools/skaffold/pull/7939)
+* docs: Add version menu label [#7917](https://github.com/GoogleContainerTools/skaffold/pull/7917)
+* docs: Beta3 docs [#7879](https://github.com/GoogleContainerTools/skaffold/pull/7879)
+* docs: Fix v1 and v2 docs links [#7931](https://github.com/GoogleContainerTools/skaffold/pull/7931)
+* docs: Update _index.md [#7951](https://github.com/GoogleContainerTools/skaffold/pull/7951)
+* docs: update skaffold v2 intro text to have correct expanded scope [#7953](https://github.com/GoogleContainerTools/skaffold/pull/7953)
+* docs: update v1 and v2 docs to properly reflect recent tagger changes [#7952](https://github.com/GoogleContainerTools/skaffold/pull/7952)
+* docs(ko): Design proposal: Hot reloading in dev [#7888](https://github.com/GoogleContainerTools/skaffold/pull/7888)
+* test: Add multi platform integration tests [#7852](https://github.com/GoogleContainerTools/skaffold/pull/7852)
+
 # v2.0.0-beta3 Release - 09/21/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0-beta3/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
