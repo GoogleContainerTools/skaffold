@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta29
+package v3alpha1
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3alpha1"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2beta29
+	yaml := `apiVersion: skaffold/v3alpha1
 kind: Config
 build:
   artifacts:
@@ -61,9 +61,8 @@ test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
      - ./test/*
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - k8s-*
   kustomize:
     paths:
@@ -72,6 +71,9 @@ deploy:
     releases:
       - name: skaffold-helm
         chartPath: charts
+deploy:
+  kubectl: {}
+  helm: {}
 portForward:
   - resourceType: deployment
     resourceName: leeroy-app
@@ -92,13 +94,14 @@ profiles:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
          - ./test/*
-    deploy:
-      kubectl:
-        manifests:
-        - k8s-*
+    manifests:
+      rawYaml:
+      - k8s-*
       kustomize:
         paths:
         - kustomization-test
+    deploy:
+      kubectl: {}
   - name: test local
     build:
       artifacts:
@@ -107,13 +110,16 @@ profiles:
           dockerfile: path/to/Dockerfile
       local:
         push: false
+    manifests:
+      rawYaml:
+      - k8s-*
+      kustomize:
+        paths:
+        - "."
     deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize: {}
+      kubectl: {}
 `
-	expected := `apiVersion: skaffold/v3alpha1
+	expected := `apiVersion: skaffold/v3
 kind: Config
 build:
   artifacts:
@@ -222,58 +228,4 @@ func verifyUpgrade(t *testing.T, input, output string) {
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
-}
-
-func TestUpgradePatches(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2beta29
-kind: Config
-build:
-  artifacts:
-  - image: skaffold-debug-java
-    context: java
-deploy:
-  kubectl:
-    manifests:
-    - java/k8s/web.yaml
-  helm:
-   releases:
-   - name: test
-profiles:
-- name: kustomize
-  patches:
-  - op: remove
-    path: /deploy/kubectl
-  - op: remove
-    path: /deploy/helm
-  deploy:
-    kustomize: {}
-`
-	expected := `apiVersion: skaffold/v3alpha1
-kind: Config
-build:
-  artifacts:
-  - image: skaffold-debug-java
-    context: java
-manifests:
-  rawYaml:
-    - java/k8s/web.yaml
-  helm:
-   releases:
-   - name: test
-deploy:
-    helm: {}
-    kubectl: {}
-profiles:
-- name: kustomize
-  patches:
-  - op: remove
-    path: /manifests/rawYaml
-  - op: remove
-    path: /manifests/helm
-  manifests:
-    kustomize:
-      paths:
-      - "."
-`
-	verifyUpgrade(t, yaml, expected)
 }
