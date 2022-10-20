@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/exec"
+	"strings"
 
 	"github.com/segmentio/textio"
 	"go.opentelemetry.io/otel/trace"
@@ -84,6 +86,15 @@ type Deployer struct {
 // with the needed configuration for `kubectl apply`
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, configName string) (*Deployer, error) {
 	defaultNamespace := ""
+	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	if err != nil {
+		olog.Entry(context.Background()).Warn("unable to get the kubectl context's namespace - deploy might not work properly!")
+	} else {
+		defaultNamespace = strings.Trim(string(b), "'")
+		if defaultNamespace == "default" {
+			defaultNamespace = ""
+		}
+	}
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)

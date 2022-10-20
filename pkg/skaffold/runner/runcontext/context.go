@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -29,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type RunContext struct {
@@ -223,14 +226,23 @@ func (rc *RunContext) UsingLegacyHelmDeploy() bool {
 	return false
 }
 
-func (rc *RunContext) DefaultPipeline() latest.Pipeline              { return rc.Pipelines.Head() }
-func (rc *RunContext) GetKubeContext() string                        { return rc.KubeContext }
-func (rc *RunContext) GetNamespaces() []string                       { return rc.Namespaces }
-func (rc *RunContext) GetPipelines() []latest.Pipeline               { return rc.Pipelines.All() }
-func (rc *RunContext) GetInsecureRegistries() map[string]bool        { return rc.InsecureRegistries }
-func (rc *RunContext) GetWorkingDir() string                         { return rc.WorkingDir }
-func (rc *RunContext) GetCluster() config.Cluster                    { return rc.Cluster }
-func (rc *RunContext) GetNamespace() string                          { return rc.Opts.Namespace }
+func (rc *RunContext) DefaultPipeline() latest.Pipeline       { return rc.Pipelines.Head() }
+func (rc *RunContext) GetKubeContext() string                 { return rc.KubeContext }
+func (rc *RunContext) GetNamespaces() []string                { return rc.Namespaces }
+func (rc *RunContext) GetPipelines() []latest.Pipeline        { return rc.Pipelines.All() }
+func (rc *RunContext) GetInsecureRegistries() map[string]bool { return rc.InsecureRegistries }
+func (rc *RunContext) GetWorkingDir() string                  { return rc.WorkingDir }
+func (rc *RunContext) GetCluster() config.Cluster             { return rc.Cluster }
+func (rc *RunContext) GetNamespace() string {
+	if rc.Opts.Namespace != "" {
+		return rc.Opts.Namespace
+	}
+	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	if err != nil {
+		return rc.Opts.Namespace
+	}
+	return strings.Trim(string(b), "'")
+}
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) DisableMultiPlatformBuild() bool               { return rc.Opts.DisableMultiPlatformBuild }
 func (rc *RunContext) CheckClusterNodePlatforms() bool               { return rc.Opts.CheckClusterNodePlatforms }
