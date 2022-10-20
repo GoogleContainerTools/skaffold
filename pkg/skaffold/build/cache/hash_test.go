@@ -118,7 +118,7 @@ func TestGetHashForArtifact(t *testing.T) {
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
 						BuildArgs: map[string]*string{
-							"key": util.StringPtr("value"),
+							"key": util.Ptr("value"),
 						},
 					},
 				},
@@ -302,7 +302,7 @@ func TestBuildArgs(t *testing.T) {
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: Dockerfile,
-						BuildArgs:      map[string]*string{"one": util.StringPtr("1"), "two": util.StringPtr("2")},
+						BuildArgs:      map[string]*string{"one": util.Ptr("1"), "two": util.Ptr("2")},
 					},
 				},
 			}
@@ -314,14 +314,14 @@ func TestBuildArgs(t *testing.T) {
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change order of buildargs
-			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": util.StringPtr("2"), "one": util.StringPtr("1")}
+			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": util.Ptr("2"), "one": util.Ptr("1")}
 			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change build args, get different hash
-			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": util.StringPtr("1")}
+			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": util.Ptr("1")}
 			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
 
 			t.CheckNoError(err)
@@ -345,7 +345,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			Workspace: tmpDir.Path("."),
 			ArtifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
-					BuildArgs:      map[string]*string{"env": util.StringPtr("${{.FOO}}")},
+					BuildArgs:      map[string]*string{"env": util.Ptr("${{.FOO}}")},
 					DockerfilePath: Dockerfile,
 				},
 			},
@@ -452,7 +452,7 @@ func TestHashBuildArgs(t *testing.T) {
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
 					BuildArgs: map[string]*string{
-						"foo": util.StringPtr("bar"),
+						"foo": util.Ptr("bar"),
 					},
 				},
 			},
@@ -463,7 +463,7 @@ func TestHashBuildArgs(t *testing.T) {
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
 					BuildArgs: map[string]*string{
-						"foo": util.StringPtr("bar"),
+						"foo": util.Ptr("bar"),
 					},
 				},
 			},

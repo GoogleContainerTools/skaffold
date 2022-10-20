@@ -566,9 +566,9 @@ func UpdateUserSurveyTaken(configFile string, id string) error {
 func updatedUserSurveys(us []*UserSurvey, id string) []*UserSurvey {
 	for _, s := range us {
 		if s.ID == id {
-			s.Taken = util.BoolPtr(true)
+			s.Taken = util.Ptr(true)
 			return us
 		}
 	}
-	return append(us, &UserSurvey{ID: id, Taken: util.BoolPtr(true)})
+	return append(us, &UserSurvey{ID: id, Taken: util.Ptr(true)})
 }

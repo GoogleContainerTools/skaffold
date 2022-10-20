@@ -456,7 +456,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; no dependencies",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}}}},
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
@@ -466,7 +466,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; no dependencies, config flag",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
@@ -477,7 +477,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; no dependencies, config flag, profiles flag",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
 			expected: func(string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
@@ -489,7 +489,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; branch dependencies",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -512,7 +512,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; cascading dependencies",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -537,7 +537,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; self dependency",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -558,7 +558,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; dependencies in same file",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -579,7 +579,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; looped dependencies",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -608,7 +608,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; dependencies with profile in root, not in dependent",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			profiles:          []string{"pf0"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -634,7 +634,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; dependencies with profile in dependent activated by profile in root",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			profiles:          []string{"pf0"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -666,7 +666,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; dependencies with auto-activated profile in dependent (no `activatedBy` clause)",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -695,7 +695,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; named profile not found",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			profiles:          []string{"pf0", "pf2"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -720,7 +720,7 @@ requires:
 		},
 		{
 			description:       "cascading dependencies with config flag",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			configFilter:      []string{"cfg11"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -752,7 +752,7 @@ requires:
 		},
 		{
 			description:       "named config not found",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			configFilter:      []string{"cfg3"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -779,7 +779,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; duplicate config names across multiple configs",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -796,7 +796,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; duplicate config names in main config",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00"}, {name: "cfg00"}}},
 			},
@@ -804,7 +804,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute false; remote dependencies",
-			makePathsAbsolute: util.BoolPtr(false),
+			makePathsAbsolute: util.Ptr(false),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -838,7 +838,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; no dependencies",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}}}},
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
@@ -848,7 +848,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; no dependencies, config flag",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
@@ -859,7 +859,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; no dependencies, config flag, profiles flag",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents:         []document{{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: ""}, {name: "cfg01", requiresStanza: ""}}}},
 			expected: func(base string) []schemaUtil.VersionedConfig {
 				return []schemaUtil.VersionedConfig{
@@ -871,7 +871,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; branch dependencies",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -894,7 +894,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; cascading dependencies",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -919,7 +919,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; self dependency",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -940,7 +940,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; dependencies in same file",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -961,7 +961,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; looped dependencies",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -990,7 +990,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; dependencies with profile in root, not in dependent",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			profiles:          []string{"pf0"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -1016,7 +1016,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; dependencies with profile in dependent activated by profile in root",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			profiles:          []string{"pf0"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -1048,7 +1048,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; dependencies with auto-activated profile in dependent (no `activatedBy` clause)",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -1077,7 +1077,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; named profile not found",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			profiles:          []string{"pf0", "pf2"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -1102,7 +1102,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; cascading dependencies with config flag",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			configFilter:      []string{"cfg11"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -1134,7 +1134,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; named config not found",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			configFilter:      []string{"cfg3"},
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
@@ -1161,7 +1161,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; duplicate config names across multiple configs",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -1178,7 +1178,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; duplicate config names in main config",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00"}, {name: "cfg00"}}},
 			},
@@ -1186,7 +1186,7 @@ requires:
 		},
 		{
 			description:       "makePathsAbsolute true; remote dependencies",
-			makePathsAbsolute: util.BoolPtr(true),
+			makePathsAbsolute: util.Ptr(true),
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
 requires:
@@ -1246,7 +1246,7 @@ requires:
 		},
 		{
 			description:              "makePathsAbsolute false; recursively applied profiles",
-			makePathsAbsolute:        util.BoolPtr(false),
+			makePathsAbsolute:        util.Ptr(false),
 			profiles:                 []string{"pf0"},
 			applyProfilesRecursively: true,
 			documents: []document{
@@ -1273,7 +1273,7 @@ requires:
 		},
 		{
 			description:              "makePathsAbsolute true; recursively applied profiles",
-			makePathsAbsolute:        util.BoolPtr(true),
+			makePathsAbsolute:        util.Ptr(true),
 			profiles:                 []string{"pf0"},
 			applyProfilesRecursively: true,
 			documents: []document{

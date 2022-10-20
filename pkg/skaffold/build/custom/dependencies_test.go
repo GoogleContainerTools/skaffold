@@ -43,7 +43,7 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 			Dockerfile: &latest.DockerfileDependency{
 				Path: "Dockerfile",
 				BuildArgs: map[string]*string{
-					"file": util.StringPtr("foo"),
+					"file": util.Ptr("foo"),
 				},
 			},
 		},

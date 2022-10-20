@@ -227,7 +227,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 				statusCheck = d.StatusCheck
 			} else if statusCheck != d.StatusCheck {
 				// if we get conflicting values for status check from different skaffold configs, we turn status check off
-				statusCheck = util.BoolPtr(false)
+				statusCheck = util.Ptr(false)
 			}
 		}
 		if d.StatusCheckDeadlineSeconds != 0 && d.StatusCheckDeadlineSeconds != int(status.DefaultStatusCheckDeadline.Seconds()) {

@@ -62,12 +62,12 @@ func TestStringOrUndefined(t *testing.T) {
 		{
 			description: "set",
 			args:        []string{"--flag=value"},
-			expected:    util.StringPtr("value"),
+			expected:    util.Ptr("value"),
 		},
 		{
 			description: "empty",
 			args:        []string{"--flag="},
-			expected:    util.StringPtr(""),
+			expected:    util.Ptr(""),
 		},
 	}
 	for _, test := range tests {
@@ -129,12 +129,12 @@ func TestBoolOrUndefined(t *testing.T) {
 		{
 			description: "true",
 			args:        []string{"--bool-flag=true"},
-			expected:    util.BoolPtr(true),
+			expected:    util.Ptr(true),
 		},
 		{
 			description: "false",
 			args:        []string{"--bool-flag=false"},
-			expected:    util.BoolPtr(false),
+			expected:    util.Ptr(false),
 		},
 	}
 	for _, test := range tests {
@@ -194,17 +194,17 @@ func TestIntOrUndefined(t *testing.T) {
 		{
 			description: "0",
 			args:        []string{"--int-flag=0"},
-			expected:    util.IntPtr(0),
+			expected:    util.Ptr(0),
 		},
 		{
 			description: "1",
 			args:        []string{"--int-flag=1"},
-			expected:    util.IntPtr(1),
+			expected:    util.Ptr(1),
 		},
 		{
 			description: "-1",
 			args:        []string{"--int-flag=-1"},
-			expected:    util.IntPtr(-1),
+			expected:    util.Ptr(-1),
 		},
 	}
 	for _, test := range tests {

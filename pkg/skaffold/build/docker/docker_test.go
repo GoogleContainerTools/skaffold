@@ -65,7 +65,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description:   "buildkit",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
 			wantDockerCLI: true,
 			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
@@ -78,14 +78,14 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description:   "buildkit and extra env",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
 			wantDockerCLI: true,
 			extraEnv:      []string{"OTHER=VALUE"},
 			expectedEnv:   []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description:   "env var collisions",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
 			wantDockerCLI: true,
 			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// DOCKER_BUILDKIT should be overridden
@@ -242,7 +242,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			)
 			t.Override(&util.DefaultExecCommand, mockCmd)
 
-			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.BoolPtr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.Ptr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
 			_, err := builder.Build(context.Background(), io.Discard, &a, test.tag, platform.Matcher{})
 			t.CheckNoError(err)
 		})

@@ -42,16 +42,16 @@ ARG foo3
 ARG SKAFFOLD_GO_GCFLAGS
 FROM bar1`,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			mode: config.RunModes.Debug,
 			expected: map[string]*string{
-				"SKAFFOLD_GO_GCFLAGS": util.StringPtr("all=-N -l"),
-				"foo1":                util.StringPtr("one"),
-				"foo2":                util.StringPtr("two"),
-				"foo3":                util.StringPtr("three"),
+				"SKAFFOLD_GO_GCFLAGS": util.Ptr("all=-N -l"),
+				"foo1":                util.Ptr("one"),
+				"foo2":                util.Ptr("two"),
+				"foo3":                util.Ptr("three"),
 			},
 		},
 		{
@@ -62,15 +62,15 @@ ARG SKAFFOLD_GO_GCFLAGS
 FROM bar1`,
 			mode: config.RunModes.Debug,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			expected: map[string]*string{
-				"SKAFFOLD_GO_GCFLAGS": util.StringPtr("all=-N -l"),
-				"foo1":                util.StringPtr("one"),
-				"foo2":                util.StringPtr("two"),
-				"foo3":                util.StringPtr("three"),
+				"SKAFFOLD_GO_GCFLAGS": util.Ptr("all=-N -l"),
+				"foo1":                util.Ptr("one"),
+				"foo2":                util.Ptr("two"),
+				"foo3":                util.Ptr("three"),
 			},
 		},
 		{
@@ -82,20 +82,20 @@ ARG SKAFFOLD_GO_GCFLAGS
 FROM bar1`,
 			mode: config.RunModes.Debug,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			extra: map[string]*string{
-				"foo4": util.StringPtr("four"),
-				"foo5": util.StringPtr("five"),
+				"foo4": util.Ptr("four"),
+				"foo5": util.Ptr("five"),
 			},
 			expected: map[string]*string{
-				"SKAFFOLD_GO_GCFLAGS": util.StringPtr("all=-N -l"),
-				"foo1":                util.StringPtr("one"),
-				"foo2":                util.StringPtr("two"),
-				"foo3":                util.StringPtr("three"),
-				"foo4":                util.StringPtr("four"),
+				"SKAFFOLD_GO_GCFLAGS": util.Ptr("all=-N -l"),
+				"foo1":                util.Ptr("one"),
+				"foo2":                util.Ptr("two"),
+				"foo3":                util.Ptr("three"),
+				"foo4":                util.Ptr("four"),
 			},
 		},
 		{
@@ -104,15 +104,15 @@ FROM bar1`,
 ARG foo3
 FROM bar1`,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			mode: config.RunModes.Debug,
 			expected: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 		},
 		{
@@ -125,16 +125,16 @@ ARG foo2
 FROM bar2
 ARG foo3`,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			mode: config.RunModes.Debug,
 			expected: map[string]*string{
-				"SKAFFOLD_GO_GCFLAGS": util.StringPtr("all=-N -l"),
-				"foo1":                util.StringPtr("one"),
-				"foo2":                util.StringPtr("two"),
-				"foo3":                util.StringPtr("three"),
+				"SKAFFOLD_GO_GCFLAGS": util.Ptr("all=-N -l"),
+				"foo1":                util.Ptr("one"),
+				"foo2":                util.Ptr("two"),
+				"foo3":                util.Ptr("three"),
 			},
 		},
 		{
@@ -147,17 +147,17 @@ ARG foo2
 FROM bar2
 ARG foo3`,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			mode: config.RunModes.Debug,
 			expected: map[string]*string{
-				"SKAFFOLD_RUN_MODE":   util.StringPtr("debug"),
-				"SKAFFOLD_GO_GCFLAGS": util.StringPtr("all=-N -l"),
-				"foo1":                util.StringPtr("one"),
-				"foo2":                util.StringPtr("two"),
-				"foo3":                util.StringPtr("three"),
+				"SKAFFOLD_RUN_MODE":   util.Ptr("debug"),
+				"SKAFFOLD_GO_GCFLAGS": util.Ptr("all=-N -l"),
+				"foo1":                util.Ptr("one"),
+				"foo2":                util.Ptr("two"),
+				"foo3":                util.Ptr("three"),
 			},
 		},
 		{
@@ -168,16 +168,16 @@ ARG foo3
 ARG SKAFFOLD_RUN_MODE
 FROM bar1`,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			mode: config.RunModes.Dev,
 			expected: map[string]*string{
-				"SKAFFOLD_RUN_MODE": util.StringPtr("dev"),
-				"foo1":              util.StringPtr("one"),
-				"foo2":              util.StringPtr("two"),
-				"foo3":              util.StringPtr("three"),
+				"SKAFFOLD_RUN_MODE": util.Ptr("dev"),
+				"foo1":              util.Ptr("one"),
+				"foo2":              util.Ptr("two"),
+				"foo3":              util.Ptr("three"),
 			},
 		},
 		{
@@ -186,15 +186,15 @@ FROM bar1`,
 ARG foo3
 FROM bar1`,
 			buildArgs: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 			mode: config.RunModes.Dev,
 			expected: map[string]*string{
-				"foo1": util.StringPtr("one"),
-				"foo2": util.StringPtr("two"),
-				"foo3": util.StringPtr("three"),
+				"foo1": util.Ptr("one"),
+				"foo2": util.Ptr("two"),
+				"foo3": util.Ptr("three"),
 			},
 		},
 	}
@@ -228,7 +228,7 @@ func TestCreateBuildArgsFromArtifacts(t *testing.T) {
 			description: "can resolve artifacts",
 			r:           mockArtifactResolver{m: map[string]string{"img1": "tag1", "img2": "tag2", "img3": "tag3", "img4": "tag4"}},
 			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
-			args:        map[string]*string{"alias3": util.StringPtr("tag3"), "alias4": util.StringPtr("tag4")},
+			args:        map[string]*string{"alias3": util.Ptr("tag3"), "alias4": util.Ptr("tag4")},
 		},
 		{
 			description: "cannot resolve artifacts",
@@ -252,8 +252,8 @@ func TestBuildArgTemplating(t *testing.T) {
 	}
 
 	args := map[string]*string{
-		"MY_KEY":    util.StringPtr("{{ .MY_KEY}}"),
-		"SO_SECRET": util.StringPtr("{{ .SO_SECRET}}"),
+		"MY_KEY":    util.Ptr("{{ .MY_KEY}}"),
+		"SO_SECRET": util.Ptr("{{ .SO_SECRET}}"),
 	}
 
 	dockerFile := `

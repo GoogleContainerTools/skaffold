@@ -141,7 +141,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing dirty repo with sync off succeeds",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(false)},
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.Ptr(false)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -161,7 +161,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo with uncommitted changes and sync on resets",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.Ptr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -173,7 +173,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo with unpushed commits and sync on resets",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.Ptr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},

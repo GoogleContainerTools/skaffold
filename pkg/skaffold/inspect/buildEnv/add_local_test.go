@@ -46,7 +46,7 @@ func TestAddLocalBuildEnv(t *testing.T) {
 	}{
 		{
 			description:  "add to default pipeline",
-			buildEnvOpts: inspect.BuildEnvOptions{Push: util.BoolPtr(true), TryImportMissing: util.BoolPtr(false), UseDockerCLI: util.BoolPtr(false), UseBuildkit: nil, Concurrency: 2},
+			buildEnvOpts: inspect.BuildEnvOptions{Push: util.Ptr(true), TryImportMissing: util.Ptr(false), UseDockerCLI: util.Ptr(false), UseBuildkit: nil, Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -81,7 +81,7 @@ profiles:
 		{
 			description:  "add to existing profile",
 			profile:      "p1",
-			buildEnvOpts: inspect.BuildEnvOptions{Push: util.BoolPtr(true), TryImportMissing: util.BoolPtr(false), UseDockerCLI: util.BoolPtr(false), UseBuildkit: nil, Concurrency: 2},
+			buildEnvOpts: inspect.BuildEnvOptions{Push: util.Ptr(true), TryImportMissing: util.Ptr(false), UseDockerCLI: util.Ptr(false), UseBuildkit: nil, Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -128,7 +128,7 @@ profiles:
 		{
 			description:  "add to new profile",
 			profile:      "p2",
-			buildEnvOpts: inspect.BuildEnvOptions{Push: util.BoolPtr(true), TryImportMissing: util.BoolPtr(false), UseDockerCLI: util.BoolPtr(false), UseBuildkit: nil, Concurrency: 2},
+			buildEnvOpts: inspect.BuildEnvOptions{Push: util.Ptr(true), TryImportMissing: util.Ptr(false), UseDockerCLI: util.Ptr(false), UseBuildkit: nil, Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -185,7 +185,7 @@ profiles:
 			description:  "add to new profile in selected modules",
 			modules:      []string{"cfg1_1"},
 			profile:      "p2",
-			buildEnvOpts: inspect.BuildEnvOptions{Push: util.BoolPtr(true), TryImportMissing: util.BoolPtr(false), UseDockerCLI: util.BoolPtr(false), UseBuildkit: nil, Concurrency: 2},
+			buildEnvOpts: inspect.BuildEnvOptions{Push: util.Ptr(true), TryImportMissing: util.Ptr(false), UseDockerCLI: util.Ptr(false), UseBuildkit: nil, Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -237,7 +237,7 @@ profiles:
 			description:  "add to new profile in nested module",
 			modules:      []string{"cfg2"},
 			profile:      "p2",
-			buildEnvOpts: inspect.BuildEnvOptions{Push: util.BoolPtr(true), TryImportMissing: util.BoolPtr(false), UseDockerCLI: util.BoolPtr(false), UseBuildkit: nil, Concurrency: 2},
+			buildEnvOpts: inspect.BuildEnvOptions{Push: util.Ptr(true), TryImportMissing: util.Ptr(false), UseDockerCLI: util.Ptr(false), UseBuildkit: nil, Concurrency: 2},
 			expectedConfigs: []string{"",
 				`apiVersion: ""
 kind: ""

@@ -651,7 +651,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Auto: util.BoolPtr(true),
+					Auto: util.Ptr(true),
 				},
 				Workspace: ".",
 			},
@@ -691,7 +691,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Auto: util.BoolPtr(true),
+					Auto: util.Ptr(true),
 				},
 				Workspace: ".",
 			},
@@ -725,7 +725,7 @@ func TestNewSyncItem(t *testing.T) {
 				ImageName: "test",
 				Workspace: ".",
 				Sync: &latest.Sync{
-					Auto: util.BoolPtr(true),
+					Auto: util.Ptr(true),
 				},
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: &latest.JibArtifact{},
@@ -1108,18 +1108,18 @@ func TestInit(t *testing.T) {
 		},
 		{
 			description: "sync on, auto on, non-jib",
-			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
+			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: util.Ptr(true)}},
 			shouldInit:  false,
 		},
 		{
 			description: "sync on, auto on, jib",
-			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.Ptr(true)}},
 			shouldInit:  true,
 			initErrors:  false,
 		},
 		{
 			description: "sync on, auto on, jib, init fails",
-			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.Ptr(true)}},
 			shouldInit:  true,
 			initErrors:  true,
 		},

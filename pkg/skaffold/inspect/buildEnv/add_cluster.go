@@ -34,7 +34,7 @@ func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options
 		RepoCacheDir:        opts.RepoCacheDir,
 		ConfigurationFilter: opts.Modules,
 		SkipConfigDefaults:  true,
-		MakePathsAbsolute:   util.BoolPtr(false),
+		MakePathsAbsolute:   util.Ptr(false),
 	})
 	if err != nil {
 		formatter.WriteErr(err)

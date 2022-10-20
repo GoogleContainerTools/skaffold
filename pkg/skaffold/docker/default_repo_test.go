@@ -42,7 +42,7 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			description:    "basic GCR concatenation without multi-level",
 			image:          "gcr.io/some/registry",
 			defaultRepo:    "gcr.io/default",
-			multiLevelRepo: util.BoolPtr(false),
+			multiLevelRepo: util.Ptr(false),
 			expectedImage:  "gcr.io/default/gcr.io/some/registry",
 		},
 		{
@@ -55,7 +55,7 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			description:    "basic AR concatenation without multi-level",
 			image:          "github.com/org/app",
 			defaultRepo:    "us-central1-docker.pkg.dev/default",
-			multiLevelRepo: util.BoolPtr(false),
+			multiLevelRepo: util.Ptr(false),
 			expectedImage:  "us-central1-docker.pkg.dev/default/github.com/org/app",
 		},
 		{
@@ -91,7 +91,7 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			description:    "aws multi-level",
 			image:          "gcr.io/some/registry",
 			defaultRepo:    "aws_account_id.dkr.ecr.region.amazonaws.com",
-			multiLevelRepo: util.BoolPtr(true),
+			multiLevelRepo: util.Ptr(true),
 			expectedImage:  "aws_account_id.dkr.ecr.region.amazonaws.com/gcr.io/some/registry",
 		},
 		{
@@ -128,7 +128,7 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			description:    "ko multi-level not with GCR",
 			image:          "ko://example.com/cmd/app",
 			defaultRepo:    "myrepo",
-			multiLevelRepo: util.BoolPtr(true),
+			multiLevelRepo: util.Ptr(true),
 			expectedImage:  "myrepo/example.com/cmd/app",
 		},
 		{

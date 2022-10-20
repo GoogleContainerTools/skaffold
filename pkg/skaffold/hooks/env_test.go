@@ -29,11 +29,11 @@ func TestSetupStaticEnvOptions(t *testing.T) {
 	}()
 
 	cfg := mockCfg{
-		defaultRepo:    util.StringPtr("gcr.io/foo"),
-		multiLevelRepo: util.BoolPtr(true),
+		defaultRepo:    util.Ptr("gcr.io/foo"),
+		multiLevelRepo: util.Ptr(true),
 		workDir:        ".",
-		rpcPort:        util.IntPtr(8080),
-		httpPort:       util.IntPtr(8081),
+		rpcPort:        util.Ptr(8080),
+		httpPort:       util.Ptr(8081),
 	}
 	SetupStaticEnvOptions(cfg)
 	testutil.CheckDeepEqual(t, cfg.defaultRepo, staticEnvOpts.DefaultRepo)
@@ -52,10 +52,10 @@ func TestGetEnv(t *testing.T) {
 		{
 			description: "static env opts, all defined",
 			input: StaticEnvOpts{
-				DefaultRepo:    util.StringPtr("gcr.io/foo"),
-				MultiLevelRepo: util.BoolPtr(true),
-				RPCPort:        util.IntPtr(8080),
-				HTTPPort:       util.IntPtr(8081),
+				DefaultRepo:    util.Ptr("gcr.io/foo"),
+				MultiLevelRepo: util.Ptr(true),
+				RPCPort:        util.Ptr(8080),
+				HTTPPort:       util.Ptr(8081),
 				WorkDir:        "./foo",
 			},
 			expected: []string{
@@ -69,8 +69,8 @@ func TestGetEnv(t *testing.T) {
 		{
 			description: "static env opts, some missing",
 			input: StaticEnvOpts{
-				RPCPort:  util.IntPtr(8080),
-				HTTPPort: util.IntPtr(8081),
+				RPCPort:  util.Ptr(8080),
+				HTTPPort: util.Ptr(8081),
 				WorkDir:  "./foo",
 			},
 			expected: []string{
@@ -100,8 +100,8 @@ func TestGetEnv(t *testing.T) {
 			description: "sync env opts, all defined",
 			input: SyncEnvOpts{
 				Image:                "foo",
-				FilesAddedOrModified: util.StringPtr("./foo/1;./foo/2"),
-				FilesDeleted:         util.StringPtr("./foo/3;./foo/4"),
+				FilesAddedOrModified: util.Ptr("./foo/1;./foo/2"),
+				FilesDeleted:         util.Ptr("./foo/3;./foo/4"),
 				KubeContext:          "minikube",
 				Namespaces:           "np1,np2,np3",
 				BuildContext:         "./foo",

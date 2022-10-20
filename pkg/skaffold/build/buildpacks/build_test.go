@@ -255,7 +255,7 @@ include = [
 		},
 		{
 			description: "dev mode",
-			artifact:    withSync(&latest.Sync{Auto: util.BoolPtr(true)}, buildpacksArtifact("another/builder", "another/run")),
+			artifact:    withSync(&latest.Sync{Auto: util.Ptr(true)}, buildpacksArtifact("another/builder", "another/run")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{},

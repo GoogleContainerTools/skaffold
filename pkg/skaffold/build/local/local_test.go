@@ -240,7 +240,7 @@ func TestLocalRun(t *testing.T) {
 				}}})
 
 			builder, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latest.LocalBuild{
-				Push:        util.BoolPtr(test.pushImages),
+				Push:        util.Ptr(test.pushImages),
 				Concurrency: &constants.DefaultLocalConcurrency,
 			})
 			t.CheckNoError(err)
@@ -291,7 +291,7 @@ func TestNewBuilder(t *testing.T) {
 			},
 			cluster: config.Cluster{PushImages: true},
 			localBuild: latest.LocalBuild{
-				Push: util.BoolPtr(false),
+				Push: util.Ptr(false),
 			},
 			shouldErr:    false,
 			expectedPush: false,
@@ -302,7 +302,7 @@ func TestNewBuilder(t *testing.T) {
 				return dummyDaemon, nil
 			},
 			cluster:      config.Cluster{PushImages: true},
-			pushFlag:     config.NewBoolOrUndefined(util.BoolPtr(false)),
+			pushFlag:     config.NewBoolOrUndefined(util.Ptr(false)),
 			shouldErr:    false,
 			expectedPush: false,
 		},
@@ -311,9 +311,9 @@ func TestNewBuilder(t *testing.T) {
 			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			pushFlag: config.NewBoolOrUndefined(util.BoolPtr(false)),
+			pushFlag: config.NewBoolOrUndefined(util.Ptr(false)),
 			localBuild: latest.LocalBuild{
-				Push: util.BoolPtr(true),
+				Push: util.Ptr(true),
 			},
 			shouldErr:    false,
 			expectedPush: false,

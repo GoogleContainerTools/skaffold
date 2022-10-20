@@ -47,15 +47,15 @@ func TestList(t *testing.T) {
 					{
 						Kubecontext:        "another_context",
 						DefaultRepo:        "other-value",
-						MultiLevelRepo:     util.BoolPtr(false),
-						LocalCluster:       util.BoolPtr(false),
+						MultiLevelRepo:     util.Ptr(false),
+						LocalCluster:       util.Ptr(false),
 						InsecureRegistries: []string{"good.io", "better.io"},
 					},
 					{
 						Kubecontext:        "this_is_a_context",
 						DefaultRepo:        "value",
-						MultiLevelRepo:     util.BoolPtr(true),
-						LocalCluster:       util.BoolPtr(true),
+						MultiLevelRepo:     util.Ptr(true),
+						LocalCluster:       util.Ptr(true),
 						InsecureRegistries: []string{"bad.io", "worse.io"},
 					},
 				},
@@ -75,8 +75,8 @@ insecure-registries:
 			cfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo:        "default-repo-value",
-					MultiLevelRepo:     util.BoolPtr(true),
-					LocalCluster:       util.BoolPtr(true),
+					MultiLevelRepo:     util.Ptr(true),
+					LocalCluster:       util.Ptr(true),
 					InsecureRegistries: []string{"mediocre.io"},
 				},
 				ContextConfigs: []*config.ContextConfig{
@@ -99,8 +99,8 @@ insecure-registries:
 			cfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo:        "default-repo-value",
-					MultiLevelRepo:     util.BoolPtr(true),
-					LocalCluster:       util.BoolPtr(true),
+					MultiLevelRepo:     util.Ptr(true),
+					LocalCluster:       util.Ptr(true),
 					InsecureRegistries: []string{"mediocre.io"},
 				},
 				ContextConfigs: []*config.ContextConfig{
@@ -128,8 +128,8 @@ kubeContexts:
 			cfg: &config.GlobalConfig{
 				Global: &config.ContextConfig{
 					DefaultRepo:        "default-repo-value",
-					MultiLevelRepo:     util.BoolPtr(true),
-					LocalCluster:       util.BoolPtr(true),
+					MultiLevelRepo:     util.Ptr(true),
+					LocalCluster:       util.Ptr(true),
 					InsecureRegistries: []string{"mediocre.io"},
 				},
 			},
