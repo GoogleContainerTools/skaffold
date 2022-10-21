@@ -93,6 +93,10 @@ skaffold_version = "skaffold/v2beta29"
 # enabling local search https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
 offlineSearch = true
 
+# Menu title if your navbar has a versions selector to access old versions of your site.
+# This menu appears only if you have at least one [params.versions] set.
+version_menu = "Versions"
+
 # User interface configuration
 [params.ui]
 # Enable to show the side bar menu in its compact state.
@@ -143,3 +147,12 @@ breadcrumb_disable = false
                 url = "/docs/resources/#community"
 		icon = "fab fa-slack"
 		weight = -200
+
+# Add your release versions here
+[[params.versions]]
+  version = "v1.0"
+  url = "https://skaffold-v1.web.app"
+
+[[params.versions]]
+  version = "v2.0"
+  url = "https://skaffold-v2.web.app/"

@@ -3,7 +3,7 @@
     "k8s-skaffold": {
       "hosting": {
         "release": [
-          "skaffold-v2"
+          "k8s-skaffold"
         ],
         "head": [
           "skaffold-v2-latest"
