@@ -1,0 +1,40 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: go-guestbook
+build:
+  artifacts:
+  - image: go-guestbook-backend
+    context: backend/src
+    docker:
+      dockerfile: Dockerfile
+  - image: go-guestbook-frontend
+    context: frontend/src
+    docker:
+      dockerfile: Dockerfile
+manifests:
+  rawYaml:
+  - frontend/k8s/*.yaml
+  helm:
+    releases:
+    - name: backend
+      chartPath: backend
+      valuesFiles:
+      - backend/val.yaml
+      - backend/values.yaml
+      version: 0.1.0
+
+profiles:
+  - name: mix-deploy
+    patches:
+     - op: remove
+       path: /manifests/helm
+    deploy:
+      helm:
+        releases:
+        - name: backend
+          chartPath: backend
+          valuesFiles:
+          - backend/val.yaml
+          - backend/values.yaml
+          version: 0.1.0
