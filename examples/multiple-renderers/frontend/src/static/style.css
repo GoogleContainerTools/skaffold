@@ -1,0 +1,111 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background: #f8f9fa;
+}
+
+.container {
+    margin-top: 50px;
+    background: white;
+    border-radius: 10px;
+    z-index: 10;
+    position: relative;
+    padding: 50px 16px;
+}
+
+.next-logo {
+    position: absolute;
+    right: 0;
+    top: 0;
+    opacity: 0.5;
+    z-index: -1;
+    width: 30%
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+.header .container {
+    background: none;
+}
+
+.form-inline {
+    margin-bottom: 40px;
+}
+
+h1 {
+    margin-bottom: 2rem;
+    max-width: 1140px;
+    margin: auto;
+    padding-bottom: 16px;
+    position: relative;
+}
+
+.card-body {
+    margin: 10px;
+}
+  
+.posts:after {
+    background: linear-gradient(to right, #4285f4 25%,#db4437 25%, #db4437 50%, #f4b400 50%, #f4b400 75%, #0f9d58 75%);
+    position: absolute;
+    content: '';
+    height: 4px;
+    right: 0;
+    left: 0;
+    top: 0;
+}
+
+.card {
+    border: none;
+    box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+    display: inline-block;
+}
+
+.github {
+    max-width: 80px;
+    opacity: 0.5;
+}
+
+.github:hover {
+    opacity: 1;
+}
+
+h5 {
+    font-size: 24px;
+    float: left;
+}
+
+h6 {
+    font-size: 14px;
+    color: black;
+    float: right;
+}
+
+p {
+    font-size: 14px;
+    color: #646464;
+    margin-top: 1rem !important;
+}
+
+h1 a {
+    color: #202124;
+    font-size: 60px;
+}
+
+.header {
+    margin: 0;
+    position: relative;
+}
+
+@media (min-width: 1200px) {
+    .container {
+        max-width: 900px;
+        padding: 50px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 a {
+        font-size: 40px;
+    }
+}
