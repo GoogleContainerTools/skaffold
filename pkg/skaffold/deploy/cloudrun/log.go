@@ -16,6 +16,7 @@ limitations under the License.
 package cloudrun
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"golang.org/x/sync/singleflight"
 
@@ -42,6 +44,7 @@ type logTailerResource struct {
 	cancel    context.CancelFunc
 	isTailing bool
 	cmd       *exec.Cmd
+	formatter Formatter
 }
 
 type loggerTracker struct {
@@ -49,15 +52,14 @@ type loggerTracker struct {
 }
 
 type LogAggregator struct {
-	output       io.Writer
-	singleRun    singleflight.Group
-	resourceName string
-	resources    *loggerTracker
-	logTailers   []logTailer
-	muted        int32
-	colorPicker  output.ColorPicker
-	label        string
-	formatter    Formatter
+	output        io.Writer
+	singleRun     singleflight.Group
+	resourceName  string
+	resources     *loggerTracker
+	logTailers    []logTailer
+	muted         int32
+	label         string
+	serviceColors map[string]output.Color
 }
 
 func (r *LogAggregator) Mute() {
@@ -82,16 +84,13 @@ func (r *LogAggregator) SetSince(time time.Time) {
 }
 
 func (r *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
-	for _, artifact := range artifacts {
-		r.colorPicker.AddImage(artifact.Tag)
-	}
 }
 
 func NewLoggerAggregator(resourceName string, label string) *LogAggregator {
 	var logTailers []logTailer
 	resources := &loggerTracker{}
 	logTailers = append(logTailers, &runLogTailer{resources: resources})
-	a := &LogAggregator{resourceName: resourceName, logTailers: logTailers, resources: resources, label: label, singleRun: singleflight.Group{}}
+	a := &LogAggregator{resourceName: resourceName, logTailers: logTailers, resources: resources, label: label, singleRun: singleflight.Group{}, serviceColors: make(map[string]output.Color)}
 	return a
 }
 
@@ -100,11 +99,19 @@ func (r *LogAggregator) AddResource(resource RunResourceName) {
 		r.resources.resources = make(map[RunResourceName]*logTailerResource)
 	}
 	if _, present := r.resources.resources[resource]; !present {
-		r.resources.resources[resource] = &logTailerResource{name: resource}
+		r.addServiceColor(resource.Service)
+		r.resources.resources[resource] = &logTailerResource{name: resource, formatter: func(serviceName string) log.Formatter {
+			return newCloudRunFormatter(serviceName, r.serviceColors[serviceName])
+		}}
 	} else {
 		r.resources.resources[resource].isTailing = true
 	}
+}
 
+func (r *LogAggregator) addServiceColor(serviceName string) {
+	if _, present := r.serviceColors[serviceName]; !present {
+		r.serviceColors[serviceName] = output.DefaultColorCodes[(len(r.serviceColors))&len(output.DefaultColorCodes)]
+	}
 }
 
 func (r *LogAggregator) Start(ctx context.Context, out io.Writer) error {
@@ -144,34 +151,55 @@ func (r *runLogTailer) Start(ctx context.Context, out io.Writer) error {
 	if r.resources.resources == nil {
 		return nil
 	}
-	for _, resource := range r.resources.resources {
-		if !resource.isTailing {
-			cctx, cancel := context.WithCancel(ctx)
-			cmd := exec.CommandContext(cctx, "gcloud", getGcloudTailArgs(resource.name)...)
-			cmd.Env = os.Environ()
-			// gcloud uses buffered stream by default
-			cmd.Env = append(cmd.Env, "PYTHONUNBUFFERED=1") // gcloud defaults streaming output as buffered
-			r, w := io.Pipe()
-			cmd.Stderr = w
-			cmd.Stdout = w
-			resource.cancel = cancel
-			if err := cmd.Start(); err != nil {
-				output.Red.Fprintln(out, "failed to start log streaming on service %s", resource.name.Service)
-				return err
-			}
-			buf := make([]byte, 4*1024)
-			for {
-				n, err := r.Read(buf)
-				if err != nil {
-					break
+	go func() {
+		for _, resource := range r.resources.resources {
+			if !resource.isTailing {
+				cctx, cancel := context.WithCancel(ctx)
+				cmd := exec.CommandContext(cctx, "gcloud", getGcloudTailArgs(resource.name)...)
+				cmd.Env = os.Environ()
+				// gcloud uses buffered stream by default
+				cmd.Env = append(cmd.Env, "PYTHONUNBUFFERED=1") // gcloud defaults streaming output as buffered
+				r, w := io.Pipe()
+				cmd.Stderr = w
+				cmd.Stdout = w
+				resource.cancel = cancel
+				if err := cmd.Start(); err != nil {
+					output.Red.Fprintln(out, "failed to start log streaming on service %s", resource.name.Service)
 				}
-				output.Purple.Fprintf(out, "[%s]: %s", resource.name.Service, buf[:n])
+				if err := streamLog(ctx, out, r, resource.formatter(resource.name.Service)); err != nil {
+					output.Red.Fprintln(out, "log streaming failed: %s", err)
+				}
+				go func() {
+					if err := cmd.Wait(); err != nil {
+						output.Red.Fprintln(out, "terminated")
+					}
+				}()
+				resource.isTailing = true
+				resource.cmd = cmd
 			}
-			resource.isTailing = true
-			resource.cmd = cmd
+		}
+	}()
+	return nil
+}
+
+func streamLog(ctx context.Context, out io.Writer, rc io.Reader, formatter log.Formatter) error {
+	reader := bufio.NewReader(rc)
+	for {
+		select {
+		case <-ctx.Done():
+			output.Yellow.Fprintln(out, "log streaming was interrupted")
+			return nil
+		default:
+			line, err := reader.ReadString('\n')
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				output.Red.Fprintf(out, "error reading bytes form log streaming: %w", err)
+			}
+			formatter.PrintLine(out, line)
 		}
 	}
-	return nil
 }
 
 func (r *runLogTailer) Stop() {
