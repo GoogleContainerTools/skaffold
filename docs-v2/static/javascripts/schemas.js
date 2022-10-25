@@ -22,7 +22,17 @@ for (let s of schema_list) {
 }
 
 Object.keys(majors)
-    .sort().reverse()
+    .sort((a, b) => {
+        // v3 was released after v3alpha and doc site should show schema in reverse chronological order
+        // so we put v3 first.
+        if (a === "v3" && b === "v3alpha") {
+            return -1
+        }
+        if (a === "v3alpha" && b === "v3") {
+            return 1
+        }
+        return a > b ? -1 : 1
+    })
     .forEach(function(major) {
         majors[major].sort((a,b) => b-a);
         for (const minor of majors[major]) {
