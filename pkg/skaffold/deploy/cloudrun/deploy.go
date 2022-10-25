@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -53,7 +53,7 @@ type Config interface {
 // Deployer deploys code to Google Cloud Run.
 type Deployer struct {
 	configName string
-	logger     log.Logger
+	logger     *LogAggregator
 	accessor   *RunAccessor
 	monitor    *Monitor
 	labeller   *label.DefaultLabeller
@@ -73,7 +73,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 		Project:    crDeploy.ProjectID,
 		Region:     crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
-		logger:        &log.NoopLogger{},
+		logger:        NewLoggerAggregator("test", labeller.GetRunID()),
 		accessor:      NewAccessor(cfg, labeller.GetRunID()),
 		labeller:      labeller,
 		useGcpOptions: true,
@@ -201,6 +201,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 
 	d.getMonitor().Resources = append(d.getMonitor().Resources, ResourceName{path: sName, name: service.Metadata.Name})
 	d.accessor.AddResource(resName)
+	d.logger.AddResource(resName)
 	getCall := crclient.Projects.Locations.Services.Get(sName)
 	_, err = getCall.Do()
 
