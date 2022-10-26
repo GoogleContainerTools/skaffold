@@ -15,7 +15,7 @@ To use `helm` with Skaffold, the `helm` binary must be installed on your machine
 
 # Rendering with helm
 [`helm template`](https://helm.sh/docs/helm/helm_template/) allows Kubernetes
-developers to locally render templates. Skaffold relies on `helm temple --post-render` functionality to substitute the images
+developers to locally render templates. Skaffold relies on `helm template --post-renderer` functionality to substitute the images
 in the rendered charts with Skaffold built images.
 
 
