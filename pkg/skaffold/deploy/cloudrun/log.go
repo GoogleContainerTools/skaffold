@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cloudrun
 
 import (
@@ -25,13 +26,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"golang.org/x/sync/singleflight"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 type logTailer interface {
@@ -44,7 +44,7 @@ type logTailerResource struct {
 	cancel    context.CancelFunc
 	isTailing bool
 	cmd       *exec.Cmd
-	formatter Formatter
+	formatter LogFormatter
 }
 
 type loggerTracker struct {
@@ -52,7 +52,6 @@ type loggerTracker struct {
 }
 
 type LogAggregator struct {
-	output        io.Writer
 	singleRun     singleflight.Group
 	resources     *loggerTracker
 	logTailers    []logTailer
@@ -101,9 +100,7 @@ func (r *LogAggregator) AddResource(resource RunResourceName) {
 	}
 	if _, present := r.resources.resources[resource]; !present {
 		r.addServiceColor(resource.Service)
-		r.resources.resources[resource] = &logTailerResource{name: resource, formatter: func(serviceName string) log.Formatter {
-			return newCloudRunFormatter(serviceName, r.serviceColors[serviceName])
-		}}
+		r.resources.resources[resource] = &logTailerResource{name: resource, formatter: LogFormatter{resource.Service, r.serviceColors[resource.Service]}}
 	} else {
 		r.resources.resources[resource].isTailing = true
 	}
@@ -147,7 +144,7 @@ type runLogTailer struct {
 func (r *runLogTailer) Start(ctx context.Context, out io.Writer) error {
 	if !gcloudInstalled() {
 		output.Red.Fprintln(out, "gcloud not found on path. Unable to set up Cloud Run port forwarding")
-		return sErrors.NewError(fmt.Errorf("gcloud not found"), &proto.ActionableErr{ErrCode: proto.StatusCode_PORT_FORWARD_RUN_GCLOUD_NOT_FOUND})
+		return sErrors.NewError(fmt.Errorf("gcloud not found"), &proto.ActionableErr{ErrCode: proto.StatusCode_LOG_STREAMING_RUN_GCLOUD_NOT_FOUND})
 	}
 	if r.resources.resources == nil {
 		return nil
@@ -165,14 +162,14 @@ func (r *runLogTailer) Start(ctx context.Context, out io.Writer) error {
 				cmd.Stdout = w
 				resource.cancel = cancel
 				if err := cmd.Start(); err != nil {
-					output.Red.Fprintln(out, "failed to start log streaming on service %s", resource.name.Service)
+					output.Red.Fprintf(out, "failed to start log streaming on service %s\n", resource.name.Service)
 				}
-				if err := streamLog(ctx, out, r, resource.formatter(resource.name.Service)); err != nil {
-					output.Red.Fprintln(out, "log streaming failed: %s", err)
+				if err := streamLog(ctx, out, r, resource.formatter); err != nil {
+					output.Red.Fprintf(out, "log streaming failed: %s\n", err)
 				}
 				go func() {
 					if err := cmd.Wait(); err != nil {
-						output.Red.Fprintln(out, "terminated")
+						output.Red.Fprintf(out, "terminated\n")
 					}
 				}()
 				resource.isTailing = true
@@ -183,7 +180,7 @@ func (r *runLogTailer) Start(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func streamLog(ctx context.Context, out io.Writer, rc io.Reader, formatter log.Formatter) error {
+func streamLog(ctx context.Context, out io.Writer, rc io.Reader, formatter LogFormatter) error {
 	reader := bufio.NewReader(rc)
 	for {
 		select {
@@ -196,7 +193,8 @@ func streamLog(ctx context.Context, out io.Writer, rc io.Reader, formatter log.F
 				return nil
 			}
 			if err != nil {
-				output.Red.Fprintf(out, "error reading bytes form log streaming: %w", err)
+				output.Red.Fprintf(out, "error reading bytes form log streaming: %v", err)
+				return err
 			}
 			formatter.PrintLine(out, line)
 		}

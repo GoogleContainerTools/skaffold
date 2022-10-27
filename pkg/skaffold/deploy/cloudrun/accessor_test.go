@@ -39,6 +39,9 @@ func (t *testAccessConfig) PortForwardOptions() config.PortForwardOptions {
 func (t *testAccessConfig) Mode() config.RunMode {
 	return config.RunModes.Run
 }
+func (t *testAccessConfig) Tail() bool {
+	return true
+}
 func (t *testAccessConfig) PortForwardResources() []*latest.PortForwardResource {
 	return t.forwards
 }
@@ -232,6 +235,7 @@ func TestGcloudFoundServicesForwarder(t *testing.T) {
 			var b bytes.Buffer
 			writer := bufio.NewWriter(&b)
 			err := forwarder.Start(ctx, writer)
+			writer.Flush()
 			output := b.Bytes()
 			if test.expectStatus == proto.StatusCode_OK {
 				if err != nil {
