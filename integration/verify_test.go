@@ -29,6 +29,8 @@ import (
 
 func TestVerifyPassingTestsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	os.Setenv("FOO", "foo-var")
+	defer os.Unsetenv("FOO")
 	tmp := t.TempDir()
 	logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
@@ -39,6 +41,7 @@ func TestVerifyPassingTestsWithEnvVar(t *testing.T) {
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckContains(t, "Hello from Docker!", logs)
+	testutil.CheckContains(t, "foo-var", logs)
 	testutil.CheckContains(t, "alpine-1", logs)
 	testutil.CheckContains(t, "alpine-2", logs)
 
@@ -49,12 +52,15 @@ func TestVerifyPassingTestsWithEnvVar(t *testing.T) {
 	}
 	v2EventLogs := string(b)
 	testutil.CheckContains(t, "Hello from Docker!", v2EventLogs)
+	testutil.CheckContains(t, "foo-var", v2EventLogs)
 
 	// TODO(aaron-prindle) verify that SUCCEEDED event is found where expected
 }
 
 func TestVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	os.Setenv("FOO", "foo-var")
+	defer os.Unsetenv("FOO")
 	tmp := t.TempDir()
 	logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
@@ -65,6 +71,7 @@ func TestVerifyOneTestFailsWithEnvVar(t *testing.T) {
 
 	testutil.CheckError(t, true, err)
 	testutil.CheckContains(t, "Hello from Docker!", logs)
+	testutil.CheckContains(t, "foo-var", logs)
 
 	// verify logs are in the event output as well
 	b, err := os.ReadFile(logFile + ".v2")
@@ -73,6 +80,8 @@ func TestVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	}
 	v2EventLogs := string(b)
 	testutil.CheckContains(t, "Hello from Docker!", v2EventLogs)
+	testutil.CheckContains(t, "foo-var", v2EventLogs)
+
 	// TODO(aaron-prindle) verify that FAILED event is found where expected
 }
 
