@@ -712,16 +712,17 @@ func checkSameFile(t *testutil.T, expected, result string) {
 func TestGetDependenciesCached(t *testing.T) {
 	imageFetcher := fakeImageFetcher{}
 	tests := []struct {
-		description     string
-		retrieveImgMock func(context.Context, string, Config) (*v1.ConfigFile, error)
-		dependencyCache map[string]interface{}
-		expected        []string
-		shouldErr       bool
+		description        string
+		retrieveImgMock    func(context.Context, string, Config) (*v1.ConfigFile, error)
+		dependencyCache    map[string][]string
+		dependencyCacheErr map[string]error
+		expected           []string
+		shouldErr          bool
 	}{
 		{
 			description:     "with no cached results getDependencies will retrieve image",
 			retrieveImgMock: imageFetcher.fetch,
-			dependencyCache: map[string]interface{}{},
+			dependencyCache: map[string][]string{},
 			expected:        []string{"Dockerfile", "server.go"},
 		},
 		{
@@ -729,7 +730,7 @@ func TestGetDependenciesCached(t *testing.T) {
 			retrieveImgMock: func(context.Context, string, Config) (*v1.ConfigFile, error) {
 				return nil, fmt.Errorf("unexpected call")
 			},
-			dependencyCache: map[string]interface{}{"dummy": []string{"random.go"}},
+			dependencyCache: map[string][]string{"dummy": {"random.go"}},
 			expected:        []string{"random.go"},
 		},
 		{
@@ -737,13 +738,13 @@ func TestGetDependenciesCached(t *testing.T) {
 			retrieveImgMock: func(context.Context, string, Config) (*v1.ConfigFile, error) {
 				return &v1.ConfigFile{}, nil
 			},
-			dependencyCache: map[string]interface{}{"dummy": fmt.Errorf("remote manifest fetch")},
-			shouldErr:       true,
+			dependencyCacheErr: map[string]error{"dummy": fmt.Errorf("remote manifest fetch")},
+			shouldErr:          true,
 		},
 		{
 			description:     "with cached results for dockerfile in another app",
 			retrieveImgMock: imageFetcher.fetch,
-			dependencyCache: map[string]interface{}{"another": []string{"random.go"}},
+			dependencyCache: map[string][]string{"another": {"random.go"}},
 			expected:        []string{"Dockerfile", "server.go"},
 		},
 	}
@@ -752,14 +753,19 @@ func TestGetDependenciesCached(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&RetrieveImage, test.retrieveImgMock)
 			t.Override(&util.OSEnviron, func() []string { return []string{} })
-			t.Override(&dependencyCache, util.NewSyncStore())
+			t.Override(&dependencyCache, util.NewSyncStore[[]string]())
 
 			tmpDir := t.NewTempDir().Touch("server.go", "random.go")
 			tmpDir.Write("Dockerfile", copyServerGo)
 
 			for k, v := range test.dependencyCache {
-				dependencyCache.Exec(k, func() interface{} {
-					return v
+				dependencyCache.Exec(k, func() ([]string, error) {
+					return v, nil
+				})
+			}
+			for k, v := range test.dependencyCacheErr {
+				dependencyCache.Exec(k, func() ([]string, error) {
+					return nil, v
 				})
 			}
 			deps, err := GetDependenciesCached(context.Background(), NewBuildConfig(tmpDir.Root(), "dummy", "Dockerfile", map[string]*string{}), nil)

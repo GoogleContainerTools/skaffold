@@ -49,14 +49,14 @@ type SourceDependenciesCache interface {
 }
 
 func NewSourceDependenciesCache(cfg docker.Config, r docker.ArtifactResolver, g ArtifactGraph) SourceDependenciesCache {
-	return &dependencyResolverImpl{cfg: cfg, artifactResolver: r, artifactGraph: g, cache: util.NewSyncStore()}
+	return &dependencyResolverImpl{cfg: cfg, artifactResolver: r, artifactGraph: g, cache: util.NewSyncStore[[]string]()}
 }
 
 type dependencyResolverImpl struct {
 	cfg              docker.Config
 	artifactResolver docker.ArtifactResolver
 	artifactGraph    ArtifactGraph
-	cache            *util.SyncStore
+	cache            *util.SyncStore[[]string]
 }
 
 func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error) {
@@ -87,25 +87,21 @@ func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context,
 	})
 	defer endTrace()
 
-	res := r.cache.Exec(a.ImageName, func() interface{} {
-		d, e := getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver)
-		if e != nil {
-			return e
-		}
-		return d
+	res, err := r.cache.Exec(a.ImageName, func() ([]string, error) {
+		return getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver)
 	})
-	if err, ok := res.(error); ok {
+	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
 
-	deps := make([]string, len(res.([]string)))
-	copy(deps, res.([]string))
+	deps := make([]string, len(res))
+	copy(deps, res)
 	return deps, nil
 }
 
 func (r *dependencyResolverImpl) Reset() {
-	r.cache = util.NewSyncStore()
+	r.cache = util.NewSyncStore[[]string]()
 }
 
 // sourceDependenciesForArtifact returns the build dependencies for the current artifact.

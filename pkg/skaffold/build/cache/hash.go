@@ -54,7 +54,7 @@ type artifactHasherImpl struct {
 	artifacts graph.ArtifactGraph
 	lister    DependencyLister
 	mode      config.RunMode
-	syncStore *util.SyncStore
+	syncStore *util.SyncStore[string]
 }
 
 // newArtifactHasher returns a new instance of an artifactHasher. Use newArtifactHasherFunc instead of calling this function directly.
@@ -63,7 +63,7 @@ func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, m
 		artifacts: artifacts,
 		lister:    lister,
 		mode:      mode,
-		syncStore: util.NewSyncStore(),
+		syncStore: util.NewSyncStore[string](),
 	}
 }
 
@@ -95,22 +95,10 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact, platf
 }
 
 func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latest.Artifact, platforms platform.Matcher) (string, error) {
-	val := h.syncStore.Exec(a.ImageName,
-		func() interface{} {
-			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode, platforms)
-			if err != nil {
-				return err
-			}
-			return hash
+	return h.syncStore.Exec(a.ImageName,
+		func() (string, error) {
+			return singleArtifactHash(ctx, h.lister, a, h.mode, platforms)
 		})
-	switch t := val.(type) {
-	case error:
-		return "", t
-	case string:
-		return t, nil
-	default:
-		return "", fmt.Errorf("internal error when retrieving cache result of type %T", t)
-	}
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
