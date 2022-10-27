@@ -1,3 +1,37 @@
+# v2.0.1 Release - 10/27/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.1/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.1/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.0.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.0.1`
+
+Fixes:
+* fix: stderr of "helm template" not printed [#7986](https://github.com/GoogleContainerTools/skaffold/pull/7986)
+* fix: revert "fix: no longer pass os env vars through to verify as thiss can cause unexpected issues with PATH, GOPATH, etc (#7949)[#7998](https://github.com/GoogleContainerTools/skaffold/pull/7998)
+
+Updates and Refactors:
+* chore: bump examples/* to apiVersion: skaffold/v3 [#7970](https://github.com/GoogleContainerTools/skaffold/pull/7970)
+* chore: bump version deps [#7969](https://github.com/GoogleContainerTools/skaffold/pull/7969)
+* chore: set v3 schema as the first schema shown on v2 doc site [#7982](https://github.com/GoogleContainerTools/skaffold/pull/7982)
+* chore(deps): bump actions/upload-artifact from 3.1.0 to 3.1.1 [#7973](https://github.com/GoogleContainerTools/skaffold/pull/7973)
+* chore(deps): bump peter-evans/create-or-update-comment from 2.0.1 to 2.1.0 [#7974](https://github.com/GoogleContainerTools/skaffold/pull/7974)
+
+Docs, Test, and Release Updates:
+* docs: Add a copy of the buildpacks node tutorial without a skaffold.yaml [#7968](https://github.com/GoogleContainerTools/skaffold/pull/7968)
+* docs: Fix helm command [#7987](https://github.com/GoogleContainerTools/skaffold/pull/7987)
+
 # v2.0.0 Release - 10/20/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
