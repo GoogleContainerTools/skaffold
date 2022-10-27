@@ -172,6 +172,15 @@ release-lts: $(BUILD_DIR)/VERSION
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
 		.
 
+.PHONY: release-slim
+release-slim: $(BUILD_DIR)/VERSION
+	docker build \
+		-f deploy/skaffold/Dockerfile.slim \
+		--target release \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:slim \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT)-slim \
+		.
+
 .PHONY: release-lts-build
 release-lts-build:
 	docker build \
