@@ -31,8 +31,8 @@ jobs:
     # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
     - id: go-cache-paths
       run: |
-        echo "::set-output name=go-build::$(go env GOCACHE)"
-        echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+        echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+        echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
 
     - uses: actions/cache@v3
       with:
