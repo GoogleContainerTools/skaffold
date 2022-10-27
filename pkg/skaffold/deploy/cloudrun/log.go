@@ -54,7 +54,6 @@ type loggerTracker struct {
 type LogAggregator struct {
 	output        io.Writer
 	singleRun     singleflight.Group
-	resourceName  string
 	resources     *loggerTracker
 	logTailers    []logTailer
 	muted         int32
@@ -86,11 +85,13 @@ func (r *LogAggregator) SetSince(time time.Time) {
 func (r *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
 }
 
-func NewLoggerAggregator(resourceName string, label string) *LogAggregator {
+func NewLoggerAggregator(cfg Config, label string) *LogAggregator {
 	var logTailers []logTailer
 	resources := &loggerTracker{}
-	logTailers = append(logTailers, &runLogTailer{resources: resources})
-	a := &LogAggregator{resourceName: resourceName, logTailers: logTailers, resources: resources, label: label, singleRun: singleflight.Group{}, serviceColors: make(map[string]output.Color)}
+	if cfg.Tail() {
+		logTailers = append(logTailers, &runLogTailer{resources: resources})
+	}
+	a := &LogAggregator{logTailers: logTailers, resources: resources, label: label, singleRun: singleflight.Group{}, serviceColors: make(map[string]output.Color)}
 	return a
 }
 
@@ -220,5 +221,5 @@ func (r *runLogTailer) Stop() {
 }
 
 func getGcloudTailArgs(resource RunResourceName) []string {
-	return []string{"alpha", "run", "services", "logs", "tail", resource.Service, "--project", resource.Project}
+	return []string{"alpha", "run", "services", "logs", "tail", resource.Service, "--project", resource.Project, "--region", resource.Region}
 }

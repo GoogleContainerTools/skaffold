@@ -48,6 +48,7 @@ type Config interface {
 	PortForwardResources() []*latest.PortForwardResource
 	PortForwardOptions() config.PortForwardOptions
 	Mode() config.RunMode
+	Tail() bool
 }
 
 // Deployer deploys code to Google Cloud Run.
@@ -73,7 +74,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 		Project:    crDeploy.ProjectID,
 		Region:     crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
-		logger:        NewLoggerAggregator("test", labeller.GetRunID()),
+		logger:        NewLoggerAggregator(cfg, labeller.GetRunID()),
 		accessor:      NewAccessor(cfg, labeller.GetRunID()),
 		labeller:      labeller,
 		useGcpOptions: true,
