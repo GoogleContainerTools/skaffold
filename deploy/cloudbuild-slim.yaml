@@ -26,7 +26,7 @@ steps:
     - '-t'
     - 'gcr.io/$PROJECT_ID/skaffold-builder:slim'
     - '-f'
-    - 'deploy/skaffold/Dockerfile.slim'
+    - 'deploy/skaffold/Dockerfile'
     - '.'
 
 # Do the go build & push the results to GCS
