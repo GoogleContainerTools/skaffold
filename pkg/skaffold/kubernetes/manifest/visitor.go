@@ -172,7 +172,7 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 		Labels:    []string{".*"},
 	},
 	{Group: "run.googleapis.com", Kind: "Job"}: {
-		GroupKind: "job.run.googleapis.com",
+		GroupKind: "Job.run.googleapis.com",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
