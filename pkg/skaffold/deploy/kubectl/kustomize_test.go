@@ -157,7 +157,7 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, &label.DefaultLabeller{}, &test.kDeploy, "default")
+				}}}, &label.DefaultLabeller{}, &test.kDeploy, nil, "default")
 			t.RequireNoError(err)
 
 			err = k.Deploy(context.Background(), io.Discard, test.builds, m)
@@ -234,7 +234,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				k, err := NewDeployer(&kubectlConfig{
 					RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 						Namespace: TestNamespace}},
-				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, "default")
+				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, "default")
 				t.RequireNoError(err)
 				err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
 				t.CheckError(test.shouldErr, err)
