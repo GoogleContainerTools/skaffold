@@ -18,8 +18,8 @@ To use `helm` with Skaffold, the `helm` binary must be installed on your machine
 
 Skaffold supports projects set up to deploy with Helm, but certain aspects of the project need to be configured correctly in order for Skaffold to work properly. This guide should demystify some of the nuance around using Skaffold with Helm to help you get started quickly.
 
-{{< alert title="No more `artifactsOverride`" >}}
-Skaffold no longer requires the intricate configuring of `artifactsOverride` and image naming strategies.
+{{< alert title="No more `artifactOverrides`" >}}
+Skaffold no longer requires the intricate configuring of `artifactOverrides` and image naming strategies.
 {{< /alert >}}
 
 
