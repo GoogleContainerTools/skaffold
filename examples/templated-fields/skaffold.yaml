@@ -17,6 +17,8 @@ deploy:
     releases:
       - name: skaffold-templated
         chartPath: charts
+        setValues:
+          image: skaffold-templated
         setValueTemplates:
           imageRepo: "{{.IMAGE_REPO}}"
           imageTag: "{{.IMAGE_TAG}}"
