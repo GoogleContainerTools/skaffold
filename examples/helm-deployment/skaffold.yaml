@@ -8,3 +8,5 @@ manifests:
     releases:
     - name: skaffold-helm
       chartPath: charts
+      setValues:
+        image: skaffold-helm

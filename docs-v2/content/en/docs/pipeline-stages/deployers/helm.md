@@ -54,18 +54,18 @@ Associating the Helm image key allows Skaffold to track the image being built, a
 ```yaml
 build:
   artifacts:
-    - image: gcr.io/my-project/my-image # must match in artifactOverrides
+    - image: gcr.io/my-project/my-image # must match in setValues
 deploy:
   helm:
     releases:
     - name: my-release
-      artifactOverrides:
+      setValues:
         image: gcr.io/my-project/my-image # no tag present!
       imageStrategy:
         helm: {}
 ```
 
-The `artifactOverrides` binds a Helm value key to a build artifact.  The `imageStrategy` configures the image reference strategy for informing Helm of the image reference to a newly built artifact.
+The `setValues` configuration binds a Helm key to the specified value.  The `imageStrategy` configures the image reference strategy for informing Helm of the image reference to a newly built artifact.
 
 ### Multiple image overrides
 
@@ -89,7 +89,7 @@ deploy:
   helm:
     releases:
     - name: my-release
-      artifactOverrides:
+      setValues:
         firstContainerImage: gcr.io/my-project/first-image # no tag present!
         secondContainerImage: gcr.io/my-project/second-image # no tag present!
       imageStrategy:
