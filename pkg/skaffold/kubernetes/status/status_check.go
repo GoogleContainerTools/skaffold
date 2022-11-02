@@ -139,7 +139,7 @@ func (s *monitor) Check(ctx context.Context, out io.Writer) error {
 
 func (s *monitor) check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	eventV2.TaskInProgress(constants.StatusCheck, "")
+	eventV2.TaskInProgress(constants.StatusCheck, "Status Checking Deployed Artifacts")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
 
