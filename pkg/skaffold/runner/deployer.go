@@ -120,7 +120,8 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	var deployers []deploy.Deployer
 	localDeploy := false
 	remoteDeploy := false
-	for configName, pl := range pipelines.AllByConfigNames() {
+	for _, configName := range pipelines.AllOrderedConfigNames() {
+		pl := pipelines.GetForConfigName(configName)
 		d := pl.Deploy
 		r := pl.Render
 		dCtx := &deployerCtx{runCtx, d}

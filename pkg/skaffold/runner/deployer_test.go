@@ -99,7 +99,7 @@ func TestGetDeployer(tOuter *testing.T) {
 							map[string]latest.Pipeline{
 								"default": {},
 							},
-						),
+							[]string{"default"}),
 					}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 						Flags: latest.KubectlFlags{},
 					}, "default")).(deploy.Deployer),
@@ -143,7 +143,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							"default": {},
 						},
-					),
+						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
 				}, "default")).(deploy.Deployer),
@@ -164,7 +164,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							"default": {},
 						},
-					),
+						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
 				}, "default")).(deploy.Deployer),
@@ -258,7 +258,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							"default": {},
 						},
-					),
+						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
 				}, "default")).(deploy.Deployer),
@@ -307,7 +307,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							"default": test.cfg,
 						},
-					),
+						[]string{"default"}),
 				}, &label.DefaultLabeller{}, "", false)
 
 				t.CheckError(test.shouldErr, err)
@@ -369,7 +369,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							configNameForDefaultDeployer: {},
 						},
-					),
+						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
 				}, configNameForDefaultDeployer)).(*kubectl.Deployer),
@@ -391,7 +391,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							configNameForDefaultDeployer: {},
 						},
-					),
+						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{
 						Apply:  []string{"--foo"},
@@ -429,7 +429,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							configNameForDefaultDeployer: {},
 						},
-					),
+						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
 				}, configNameForDefaultDeployer)).(*kubectl.Deployer),
@@ -439,6 +439,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 		for _, test := range tests {
 			testutil.Run(tOuter, test.name, func(t *testutil.T) {
 				pipelines := map[string]latest.Pipeline{}
+				var orderedConfigNames []string
 				for configName, cfg := range test.cfgs {
 					pipeline := latest.Pipeline{
 						Deploy: latest.DeployConfig{
@@ -446,9 +447,10 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						},
 					}
 					pipelines[configName] = pipeline
+					orderedConfigNames = append(orderedConfigNames, configName)
 				}
 				deployer, err := getDefaultDeployer(&runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines(pipelines),
+					Pipelines: runcontext.NewPipelines(pipelines, orderedConfigNames),
 				}, &label.DefaultLabeller{})
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)
@@ -506,12 +508,14 @@ func TestGetCloudRunDeployer(tOuter *testing.T) {
 	for _, test := range tests {
 		testutil.Run(tOuter, test.name, func(t *testutil.T) {
 			pipelines := make(map[string]latest.Pipeline)
+			var orderedConfigNames []string
 			for name, config := range test.cfgs {
 				pipelines[name] = latest.Pipeline{Deploy: latest.DeployConfig{DeployType: config}}
+				orderedConfigNames = append(orderedConfigNames, name)
 			}
 			rctx := &runcontext.RunContext{
 				Opts:      test.opts,
-				Pipelines: runcontext.NewPipelines(pipelines),
+				Pipelines: runcontext.NewPipelines(pipelines, orderedConfigNames),
 			}
 			crDeployer, err := getCloudRunDeployer(rctx, &label.DefaultLabeller{}, rctx.DeployConfigs(), "")
 			t.CheckErrorAndFailNow(test.haveErr, err)

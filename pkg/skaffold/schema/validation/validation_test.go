@@ -768,7 +768,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 							},
 						},
 					},
-				),
+					[]string{"default"}),
 			})
 
 			t.CheckError(test.shouldErr, err)
@@ -1826,7 +1826,7 @@ func TestValidateCloudRunLocation(t *testing.T) {
 							Deploy: test.deploy,
 						},
 					},
-				),
+					[]string{"default"}),
 				Opts: config.SkaffoldOptions{
 					CloudRunProject:  test.cloudRunProject,
 					CloudRunLocation: test.cloudRunLocation,
