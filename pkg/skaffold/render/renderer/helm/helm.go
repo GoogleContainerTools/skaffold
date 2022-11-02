@@ -148,10 +148,18 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 
 		outBuffer := new(bytes.Buffer)
 		errBuffer := new(bytes.Buffer)
-		if err := helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, helmEnv, args...); err != nil {
-			return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), fmt.Errorf(errBuffer.String())))
+
+		err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, helmEnv, args...)
+		errorMsg := errBuffer.String()
+
+		if len(errorMsg) > 0 {
+			log.Entry(ctx).Errorf(errorMsg)
 		}
-		log.Entry(ctx).Errorf(errBuffer.String())
+
+		if err != nil {
+			return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), fmt.Errorf(errorMsg)))
+		}
+
 		renderedManifests.Append(outBuffer.Bytes())
 	}
 
