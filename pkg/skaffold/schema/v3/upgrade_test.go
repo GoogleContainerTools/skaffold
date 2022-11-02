@@ -72,7 +72,9 @@ manifests:
       - name: skaffold-helm
         chartPath: charts
 deploy:
-  kubectl: {}
+  kubectl:
+    remoteManifests:
+      - https://k8s.io/examples/controllers/nginx-deployment.yaml
   helm: {}
 portForward:
   - resourceType: deployment
@@ -101,7 +103,9 @@ profiles:
         paths:
         - kustomization-test
     deploy:
-      kubectl: {}
+      kubectl:
+        remoteManifests:
+        - https://k8s.io/examples/controllers/nginx-deployment.yaml
   - name: test local
     build:
       artifacts:
@@ -117,7 +121,9 @@ profiles:
         paths:
         - "."
     deploy:
-      kubectl: {}
+      kubectl:
+        remoteManifests:
+        - https://k8s.io/examples/controllers/nginx-deployment.yaml
 `
 	expected := `apiVersion: skaffold/v4beta1
 kind: Config
@@ -158,6 +164,7 @@ test:
 manifests:
   rawYaml:
     - k8s-*
+    - https://k8s.io/examples/controllers/nginx-deployment.yaml
   kustomize:
     paths:
     - kustomization-main
@@ -191,6 +198,7 @@ profiles:
     manifests:
       rawYaml:
       - k8s-*
+      - https://k8s.io/examples/controllers/nginx-deployment.yaml
       kustomize:
         paths:
         - kustomization-test
@@ -207,6 +215,7 @@ profiles:
     manifests:
       rawYaml:
       - k8s-*
+      - https://k8s.io/examples/controllers/nginx-deployment.yaml
       kustomize:
         paths:
         - "."
