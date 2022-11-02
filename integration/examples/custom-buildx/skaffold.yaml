@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v3beta1alpha1
 kind: Config
 build:
   platforms: ["linux/amd64", "linux/arm64"]

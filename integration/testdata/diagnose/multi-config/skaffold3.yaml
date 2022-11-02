@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3
+apiVersion: skaffold/v3beta1
 kind: Config
 metadata:
   name: cfg3
