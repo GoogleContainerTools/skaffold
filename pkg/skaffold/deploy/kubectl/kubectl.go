@@ -65,8 +65,8 @@ type Deployer struct {
 	statusMonitor      kstatus.Monitor
 	syncer             sync.Syncer
 	hookRunner         hooks.Runner
-	originalImages     []graph.Artifact // the set of images marked as "local" by the Runner
-	localImages        []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	originalImages     []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages        []graph.Artifact // the set of images marked as "local" by the Runner
 	podSelector        *kubernetes.ImageList
 	hydratedManifests  []string
 	workingDir         string
@@ -256,8 +256,9 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
 
-	k.TrackBuildArtifacts(builds)
+	k.TrackBuildArtifacts(deployedImages)
 	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 	k.trackNamespaces(namespaces)
