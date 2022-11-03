@@ -106,3 +106,11 @@ func UnknownValidatorError(validatorName string, allowListedValidators []string)
 			},
 		})
 }
+
+func ReadRemoteManifestErr(err error) error {
+	return sErrors.NewError(err,
+		&proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_READ_REMOTE_MANIFEST_ERR,
+		})
+}

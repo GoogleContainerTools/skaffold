@@ -192,16 +192,28 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 	return false, 0
 }
 
-type kCfg struct{}
+type kCfg struct {
+	context   string
+	config    string
+	namespace string
+}
+
+func NewKCfg(context, config, namespace string) kCfg {
+	return kCfg{
+		context:   context,
+		config:    config,
+		namespace: namespace,
+	}
+}
 
 func (k kCfg) GetKubeContext() string {
-	return ""
+	return k.context
 }
 func (k kCfg) GetKubeConfig() string {
-	return ""
+	return k.config
 }
 func (k kCfg) GetKubeNamespace() string {
-	return ""
+	return k.namespace
 }
 
 func kustomizeBinary() bool {

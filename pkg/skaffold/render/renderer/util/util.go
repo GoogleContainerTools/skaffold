@@ -53,13 +53,13 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 
 	// Update image labels.renderer_test.go
 	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setSkaffoldLabels")
-	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
+
 	manifests, err = manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
 	if err != nil {
 		return nil, err
 	}
 	rs := manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)
-	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
+
 	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)); err != nil {
 		return nil, err
 	}
