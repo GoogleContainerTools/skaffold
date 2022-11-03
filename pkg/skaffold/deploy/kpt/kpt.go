@@ -165,9 +165,9 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 }
 
 // TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
-func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, k.podSelector)
-	k.logger.RegisterArtifacts(artifacts)
+func (k *Deployer) TrackBuildArtifacts(builds, deployedImages []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(builds, deployedImages, k.podSelector)
+	k.logger.RegisterArtifacts(builds)
 }
 
 func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
@@ -350,7 +350,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return liveApplyErr(err, k.applyDir)
 	}
-	k.TrackBuildArtifacts(builds)
+	k.TrackBuildArtifacts(builds, builds)
 	k.trackNamespaces(namespaces)
 	endTrace()
 	return nil

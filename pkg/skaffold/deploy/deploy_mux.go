@@ -185,4 +185,4 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, mani
 }
 
 // TrackBuildArtifacts should *only* be called on individual deployers. This is a noop.
-func (m DeployerMux) TrackBuildArtifacts(_ []graph.Artifact) {}
+func (m DeployerMux) TrackBuildArtifacts(_, _ []graph.Artifact) {}

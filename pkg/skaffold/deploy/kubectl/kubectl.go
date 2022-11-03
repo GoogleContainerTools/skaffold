@@ -65,8 +65,8 @@ type Deployer struct {
 	statusMonitor      kstatus.Monitor
 	syncer             sync.Syncer
 	hookRunner         hooks.Runner
-	originalImages     []graph.Artifact // the set of images marked as "local" by the Runner
-	localImages        []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	originalImages     []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages        []graph.Artifact // the set of images marked as "local" by the Runner
 	podSelector        *kubernetes.ImageList
 	hydratedManifests  []string
 	workingDir         string
@@ -170,9 +170,11 @@ func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
 	k.localImages = images
 }
 
-func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, k.podSelector)
-	k.logger.RegisterArtifacts(artifacts)
+func (k *Deployer) TrackBuildArtifacts(builds, deployedImages []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(builds, deployedImages, k.podSelector)
+
+	// This is to register color for each image logging with a round-robin way.
+	k.logger.RegisterArtifacts(builds)
 }
 
 func (k *Deployer) trackNamespaces(namespaces []string) {
@@ -256,8 +258,9 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
 
-	k.TrackBuildArtifacts(builds)
+	k.TrackBuildArtifacts(builds, deployedImages)
 	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 	k.trackNamespaces(namespaces)

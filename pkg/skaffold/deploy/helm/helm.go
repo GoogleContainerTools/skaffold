@@ -218,9 +218,9 @@ func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
 	h.localImages = images
 }
 
-func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, h.podSelector)
-	h.logger.RegisterArtifacts(artifacts)
+func (h *Deployer) TrackBuildArtifacts(builds, deployedImages []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(builds, deployedImages, h.podSelector)
+	h.logger.RegisterArtifacts(builds)
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
@@ -290,8 +290,9 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}
+	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
 
-	h.TrackBuildArtifacts(builds)
+	h.TrackBuildArtifacts(builds, deployedImages)
 	h.trackNamespaces(namespaces)
 	return nil
 }

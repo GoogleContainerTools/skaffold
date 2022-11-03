@@ -83,7 +83,7 @@ func (m *MockDeployer) GetSyncer() sync.Syncer {
 
 func (m *MockDeployer) RegisterLocalImages(_ []graph.Artifact) {}
 
-func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}
+func (m *MockDeployer) TrackBuildArtifacts(_, _ []graph.Artifact) {}
 
 func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
