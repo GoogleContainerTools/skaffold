@@ -147,8 +147,8 @@ breadcrumb_disable = false
 # Add your release versions here
 [[params.versions]]
   version = "v1.0"
-  url = "https://skaffold.dev"
+  url = "https://skaffold-v1.web.app"
 
 [[params.versions]]
   version = "v2.0"
-  url = "https://skaffold-v2-latest.firebaseapp.com/"
+  url = "https://skaffold-v2.web.app/"
