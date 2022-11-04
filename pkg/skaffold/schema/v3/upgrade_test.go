@@ -72,7 +72,9 @@ manifests:
       - name: skaffold-helm
         chartPath: charts
 deploy:
-  kubectl: {}
+  kubectl:
+    remoteManifests:
+      - deploy/test
   helm: {}
 portForward:
   - resourceType: deployment
@@ -158,6 +160,8 @@ test:
 manifests:
   rawYaml:
     - k8s-*
+  remoteManifests:
+    - manifest: deploy/test
   kustomize:
     paths:
     - kustomization-main

@@ -34,5 +34,18 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldPL := oldPipeline.(*Pipeline)
+	newPL := newPipeline.(*next.Pipeline)
+
+	// Copy kubectl deploy remote config to render config
+	if oldPL.Deploy.KubectlDeploy != nil {
+		for _, m := range oldPL.Deploy.KubectlDeploy.RemoteManifests {
+			newPL.Render.RemoteManifests = append(newPL.Render.RemoteManifests, next.RemoteManifest{
+				Manifest:    m,
+				KubeContext: oldPL.Deploy.KubeContext,
+			})
+		}
+		newPL.Deploy.KubectlDeploy.RemoteManifests = nil
+	}
 	return nil
 }

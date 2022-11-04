@@ -594,6 +594,9 @@ type Generate struct {
 	// RawK8s defines the raw kubernetes resources.
 	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
 
+	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	RemoteManifests []RemoteManifest `yaml:"remoteManifests,omitempty"`
+
 	// Kustomize defines the paths to be modified with kustomize, along with extra
 	// flags to be passed to kustomize.
 	Kustomize *Kustomize `yaml:"kustomize,omitempty"`
@@ -609,6 +612,17 @@ type Generate struct {
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every render.
 	LifecycleHooks RenderHooks `yaml:"hooks,omitempty"`
+}
+
+// RemoteManifest defines the paths to be modified with kustomize, along with
+// extra flags to be passed to kustomize.
+type RemoteManifest struct {
+	// Manifest specifies the Kubernetes manifest in the remote cluster.
+	Manifest string `yaml:"manifest,omitempty"`
+
+	// KubeContext is the Kubernetes context that Skaffold should deploy to.
+	// For example: `minikube`.
+	KubeContext string `yaml:"kubeContext,omitempty"`
 }
 
 // Kustomize defines the paths to be modified with kustomize, along with

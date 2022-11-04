@@ -3370,6 +3370,31 @@
       "description": "describes a mapping from referenced config profiles to the current config profiles. If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles.",
       "x-intellij-html-description": "describes a mapping from referenced config profiles to the current config profiles. If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles."
     },
+    "RemoteManifest": {
+      "properties": {
+        "kubeContext": {
+          "type": "string",
+          "description": "Kubernetes context that Skaffold should deploy to.",
+          "x-intellij-html-description": "Kubernetes context that Skaffold should deploy to.",
+          "examples": [
+            "minikube"
+          ]
+        },
+        "manifest": {
+          "type": "string",
+          "description": "specifies the Kubernetes manifest in the remote cluster.",
+          "x-intellij-html-description": "specifies the Kubernetes manifest in the remote cluster."
+        }
+      },
+      "preferredOrder": [
+        "manifest",
+        "kubeContext"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize.",
+      "x-intellij-html-description": "defines the paths to be modified with kustomize, along with extra flags to be passed to kustomize."
+    },
     "RenderConfig": {
       "properties": {
         "helm": {
@@ -3410,6 +3435,14 @@
           "x-intellij-html-description": "defines the raw kubernetes resources.",
           "default": "[]"
         },
+        "remoteManifests": {
+          "items": {
+            "$ref": "#/definitions/RemoteManifest"
+          },
+          "type": "array",
+          "description": "Kubernetes manifests in remote clusters.",
+          "x-intellij-html-description": "Kubernetes manifests in remote clusters."
+        },
         "transform": {
           "description": "defines a set of transformation operations to run in series.",
           "x-intellij-html-description": "defines a set of transformation operations to run in series."
@@ -3421,6 +3454,7 @@
       },
       "preferredOrder": [
         "rawYaml",
+        "remoteManifests",
         "kustomize",
         "helm",
         "kpt",

@@ -17,6 +17,7 @@ limitations under the License.
 package generate
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	rErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -190,7 +192,37 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 		manifests.Append(manifestFileContent)
 	}
 
+	// Generate remote manifests
+	for _, m := range g.config.RemoteManifests {
+		manifest, err := g.readRemoteManifest(ctx, m)
+		if err != nil {
+			return nil, err
+		}
+		manifests.Append(manifest)
+	}
+
 	return manifests, nil
+}
+
+// readRemoteManifests will try to read manifests from the given kubernetes
+// context in the specified namespace and for the specified type
+func (g Generator) readRemoteManifest(ctx context.Context, rm latest.RemoteManifest) ([]byte, error) {
+	var args []string
+	ns := ""
+	name := rm.Manifest
+	if parts := strings.Split(name, ":"); len(parts) > 1 {
+		ns = parts[0]
+		name = parts[1]
+	}
+	args = append(args, name, "-o", "yaml")
+
+	var manifest bytes.Buffer
+	err := kubectl.NewCLI(NewKCfg(rm.KubeContext, "", ""), "").RunInNamespace(ctx, nil, &manifest, "get", ns, args...)
+	if err != nil {
+		return nil, rErrors.ReadRemoteManifestErr(fmt.Errorf("getting remote manifests: %w", err))
+	}
+
+	return manifest.Bytes(), nil
 }
 
 func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, error) {
