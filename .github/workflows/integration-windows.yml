@@ -33,6 +33,7 @@ jobs:
       run: |
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+      shell: bash
 
     - uses: actions/cache@v3
       with:
