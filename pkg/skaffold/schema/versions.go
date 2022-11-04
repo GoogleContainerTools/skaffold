@@ -88,6 +88,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta7"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta9"
+	v3 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3alpha1"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -95,7 +96,7 @@ import (
 var (
 	AllVersions = append(SchemaVersionsV1, SchemaVersionsV2...)
 	V1Pattern   = regexp.MustCompile(`skaffold/v[12]((alpha|beta)\d+)?`)
-	V2Pattern   = regexp.MustCompile(`skaffold/v3((alpha|beta)\d+)?`)
+	V2Pattern   = regexp.MustCompile(`skaffold/v[34]((alpha|beta)\d+)?`)
 )
 
 type APIVersion struct {
@@ -162,6 +163,7 @@ var SchemaVersionsV1 = Versions{
 	{v2beta28.Version, v2beta28.NewSkaffoldConfig},
 	{latestV1.Version, latestV1.NewSkaffoldConfig},
 	{v3alpha1.Version, v3alpha1.NewSkaffoldConfig},
+	{v3.Version, v3.NewSkaffoldConfig},
 }
 
 // SchemaVersionsV2 refers to all the supported API Schemas for skaffold v2 executables. The API schema versions are
