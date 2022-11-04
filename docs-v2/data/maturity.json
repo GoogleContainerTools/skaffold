@@ -355,6 +355,7 @@
   },
   "sync.infer": {
     "dev": "x",
+    "debug": "x",
     "area": "Filesync",
     "feature": "sync.infer",
     "maturity": "GA",
@@ -362,6 +363,7 @@
   },
   "sync": {
     "dev": "x",
+    "debug": "x",
     "area": "Filesync",
     "maturity": "GA",
     "description": "Instead of rebuilding, copy the changed files in the running container",
