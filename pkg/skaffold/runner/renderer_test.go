@@ -32,7 +32,7 @@ func TestGetRenderer(tOuter *testing.T) {
 		Pipelines: runcontext.NewPipelines(
 			map[string]latest.Pipeline{
 				"default": {},
-			})}
+			}, []string{"default"})}
 	labels := map[string]string{}
 	kubectlCfg := latest.RenderConfig{
 		Generate: latest.Generate{
@@ -148,7 +148,7 @@ func TestGetRenderer(tOuter *testing.T) {
 						map[string]latest.Pipeline{
 							"default": test.cfg,
 						},
-					),
+						[]string{"default"}),
 				}, "", map[string]string{}, false)
 
 				t.CheckError(test.shouldErr, err)

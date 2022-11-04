@@ -50,6 +50,7 @@ type Pipelines struct {
 	pipelines            []latest.Pipeline
 	pipelinesByConfig    map[string]latest.Pipeline
 	pipelinesByImageName map[string]latest.Pipeline
+	orderedConfigs       []string
 }
 
 // All returns all config pipelines.
@@ -57,8 +58,14 @@ func (ps Pipelines) All() []latest.Pipeline {
 	return ps.pipelines
 }
 
-func (ps Pipelines) AllByConfigNames() map[string]latest.Pipeline {
-	return ps.pipelinesByConfig
+// Returns the config names in the correct dependency order to be mapped against their proper pipeline.
+func (ps Pipelines) AllOrderedConfigNames() []string {
+	return ps.orderedConfigs
+}
+
+// Returns a pipeline given its associated config name.
+func (ps Pipelines) GetForConfigName(configName string) latest.Pipeline {
+	return ps.pipelinesByConfig[configName]
 }
 
 // Head returns the first `latest.Pipeline`.
@@ -158,18 +165,20 @@ func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	}
 	return c
 }
-func NewPipelines(pipelinesByConfig map[string]latest.Pipeline) Pipelines {
+func NewPipelines(pipelinesByConfig map[string]latest.Pipeline, orderedConfigs []string) Pipelines {
 	m := make(map[string]latest.Pipeline)
 	var pipelines []latest.Pipeline
 
-	for _, p := range pipelinesByConfig {
+	for _, cfgName := range orderedConfigs {
+		p := pipelinesByConfig[cfgName]
+
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = p
 		}
 		pipelines = append(pipelines, p)
 	}
 
-	return Pipelines{pipelines: pipelines, pipelinesByImageName: m, pipelinesByConfig: pipelinesByConfig}
+	return Pipelines{pipelines: pipelines, pipelinesByImageName: m, pipelinesByConfig: pipelinesByConfig, orderedConfigs: orderedConfigs}
 }
 
 func (rc *RunContext) PipelineForImage(imageName string) (latest.Pipeline, bool) {
@@ -323,11 +332,14 @@ func getConfigName(configName string) string {
 
 func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []schemaUtil.VersionedConfig) (*RunContext, error) {
 	pipelines := make(map[string]latest.Pipeline)
+	var orderedConfigs []string
+
 	for _, cfg := range configs {
 		if cfg != nil {
 			pipeline := cfg.(*latest.SkaffoldConfig).Pipeline
 			cfgName := getConfigName(cfg.(*latest.SkaffoldConfig).Metadata.Name)
 			pipelines[cfgName] = pipeline
+			orderedConfigs = append(orderedConfigs, cfgName)
 		}
 	}
 	kubeConfig, err := kubectx.CurrentConfig()
@@ -350,7 +362,8 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 	}
 	var regList []string
 	regList = append(regList, opts.InsecureRegistries...)
-	for _, cfg := range pipelines {
+	for _, cfgName := range orderedConfigs {
+		cfg := pipelines[cfgName]
 		regList = append(regList, cfg.Build.InsecureRegistries...)
 	}
 	regList = append(regList, cfgRegistries...)
@@ -358,7 +371,7 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 	for _, r := range regList {
 		insecureRegistries[r] = true
 	}
-	ps := NewPipelines(pipelines)
+	ps := NewPipelines(pipelines, orderedConfigs)
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the

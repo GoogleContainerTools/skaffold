@@ -1426,6 +1426,7 @@ func (c *helmConfig) ForceDeploy() bool                                   { retu
 func (c *helmConfig) GetKubeConfig() string                               { return kubectl.TestKubeConfig }
 func (c *helmConfig) GetKubeContext() string                              { return kubectl.TestKubeContext }
 func (c *helmConfig) GetKubeNamespace() string                            { return c.namespace }
+func (c *helmConfig) GetNamespace() string                                { return c.namespace }
 func (c *helmConfig) ConfigurationFile() string                           { return c.configFile }
 func (c *helmConfig) PortForwardResources() []*latest.PortForwardResource { return nil }
 

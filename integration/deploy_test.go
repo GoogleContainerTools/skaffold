@@ -19,6 +19,7 @@ package integration
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -188,6 +189,62 @@ func TestDeployWithoutWorkspaces(t *testing.T) {
 	// Run Deploy using the build output
 	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
 	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir(tmpDir.Root()).InNs(ns.Name).RunOrFail(t)
+}
+
+func TestDeployDependenciesOrder(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	tests := []struct {
+		description         string
+		dir                 string
+		moduleToDeploy      string
+		expectedDeployOrder []string
+	}{
+		{
+			description: "Deploy order of entire project",
+			dir:         "testdata/multi-config-dependencies-order",
+			expectedDeployOrder: []string{
+				"module4",
+				"module3",
+				"module2",
+				"module1",
+			},
+		},
+		{
+			description:    "Deploy order for just one part of the project",
+			dir:            "testdata/multi-config-dependencies-order",
+			moduleToDeploy: "module2",
+			expectedDeployOrder: []string{
+				"module4",
+				"module3",
+				"module2",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			targetModule := []string{}
+			if test.moduleToDeploy != "" {
+				targetModule = []string{"--module", test.moduleToDeploy}
+			}
+
+			expectedFormatedDeployOrder := []string{}
+			for _, module := range test.expectedDeployOrder {
+				expectedFormatedDeployOrder = append(expectedFormatedDeployOrder, fmt.Sprintf(" - pod/%v created", module))
+			}
+			expectedFormatedDeployOrder = append([]string{"Starting deploy..."}, expectedFormatedDeployOrder...)
+			expectedFormatedDeployOrder = append(expectedFormatedDeployOrder, "Waiting for deployments to stabilize...")
+			expectedOutput := strings.Join(expectedFormatedDeployOrder, "\n")
+
+			ns, _ := SetupNamespace(t)
+			outputBytes := skaffold.Run(targetModule...).InDir(test.dir).InNs(ns.Name).RunOrFailOutput(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+
+			output := string(outputBytes)
+			testutil.CheckContains(t, expectedOutput, output)
+		})
+	}
 }
 
 // Copies a file or directory tree.  There are 2x3 cases:

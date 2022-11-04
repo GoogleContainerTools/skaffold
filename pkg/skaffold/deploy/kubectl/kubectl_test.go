@@ -231,7 +231,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 						configName: {
 							Render: rc,
 						},
-					}),
+					}, []string{configName}),
 				},
 			}
 
@@ -326,7 +326,7 @@ func TestKubectlCleanup(t *testing.T) {
 						configName: {
 							Render: rc,
 						},
-					}),
+					}, []string{configName}),
 				},
 			}
 
@@ -531,7 +531,7 @@ func TestGCSManifests(t *testing.T) {
 						configName: {
 							Render: latest.RenderConfig{Generate: test.generate},
 						},
-					}),
+					}, []string{configName}),
 				},
 			}
 			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "")

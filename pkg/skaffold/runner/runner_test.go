@@ -314,7 +314,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			map[string]latest.Pipeline{
 				"default": cfg.Pipeline,
 			},
-		),
+			[]string{"default"}),
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
@@ -549,7 +549,7 @@ func TestNewForConfig(t *testing.T) {
 					map[string]latest.Pipeline{
 						"default": tt.pipeline,
 					},
-				),
+					[]string{"default"}),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
@@ -660,7 +660,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					map[string]latest.Pipeline{
 						"default": pipeline,
 					},
-				),
+					[]string{"default"}),
 				WorkingDir: tmpDir.Root(),
 			})
 

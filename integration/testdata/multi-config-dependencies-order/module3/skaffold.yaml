@@ -1,0 +1,15 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: module3
+build:
+  artifacts:
+  - image: multi-config-module3
+    context: .
+manifests:
+  rawYaml:
+  - k8s/k8s-pod.yaml
+deploy:
+  kubectl: {}
+requires:
+  - path: ../module4
