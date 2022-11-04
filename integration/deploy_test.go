@@ -224,7 +224,6 @@ func TestDeployDependenciesOrder(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-
 			targetModule := []string{}
 			if test.moduleToDeploy != "" {
 				targetModule = []string{"--module", test.moduleToDeploy}
@@ -246,7 +245,6 @@ func TestDeployDependenciesOrder(t *testing.T) {
 			testutil.CheckContains(t, expectedOutput, output)
 		})
 	}
-
 }
 
 // Copies a file or directory tree.  There are 2x3 cases:
