@@ -170,9 +170,11 @@ func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
 	k.localImages = images
 }
 
-func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, k.podSelector)
-	k.logger.RegisterArtifacts(artifacts)
+func (k *Deployer) TrackBuildArtifacts(builds, deployedImages []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(builds, deployedImages, k.podSelector)
+
+	// This is to register color for each image logging with a round-robin way.
+	k.logger.RegisterArtifacts(builds)
 }
 
 func (k *Deployer) trackNamespaces(namespaces []string) {
@@ -258,7 +260,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
 
-	k.TrackBuildArtifacts(deployedImages)
+	k.TrackBuildArtifacts(builds, deployedImages)
 	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 	k.trackNamespaces(namespaces)

@@ -127,7 +127,7 @@ func (d *Deployer) GetSyncer() sync.Syncer {
 }
 
 // TrackBuildArtifacts is not supported by this deployer.
-func (d *Deployer) TrackBuildArtifacts([]graph.Artifact) {
+func (d *Deployer) TrackBuildArtifacts(_, _ []graph.Artifact) {
 
 }
 

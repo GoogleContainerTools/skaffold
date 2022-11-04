@@ -207,7 +207,7 @@ func TestAddTagsToPodSelector(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			podSelector := kubernetes.NewImageList()
-			AddTagsToPodSelector(test.artifacts, podSelector)
+			AddTagsToPodSelector(test.artifacts, test.deployerArtifacts, podSelector)
 			for _, expectedImage := range test.expectedImages {
 				if exists := podSelector.Select(&v1.Pod{
 					Spec: v1.PodSpec{

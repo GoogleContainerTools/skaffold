@@ -66,10 +66,24 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 	return newTag, nil
 }
 
-// Update which images are logged.
-func AddTagsToPodSelector(artifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
-	for _, artifact := range artifacts {
-		podSelector.Add(artifact.Tag)
+// Update which images are logged, if the image is present in the provided deployer's artifacts.
+func AddTagsToPodSelector(runnerBuilds []graph.Artifact, deployerArtifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
+	// This implementation is picked from v1 for fixing log duplication issue when multiple deployers are used.
+	// According to the original author "Each Deployer will be directly responsible for adding its deployed artifacts to the PodSelector
+	// by cross-referencing them against the list of images parsed out of the set of manifests they each deploy". Each deploy should only
+	// add its own deployed artifacts to the PodSelector to avoid duplicate logging when multi-deployers are used.
+	// This implementation only streams logs for the intersection of runnerBuilds and deployerArtifacts images, not all images from a deployer
+	// probably because at that time the team didn't want to stream logs from images not built by Skaffold, e.g. images from docker hub, but this
+	// may change. Note that a deployer's podSelector is shared its debugger, logger, accessor, we should pay extra attention when making change on it.
+	m := map[string]bool{}
+	for _, a := range deployerArtifacts {
+		m[a.ImageName] = true
+	}
+	for _, artifact := range runnerBuilds {
+		imageName := docker.SanitizeImageName(artifact.ImageName)
+		if _, ok := m[imageName]; ok {
+			podSelector.Add(artifact.Tag)
+		}
 	}
 }
 
