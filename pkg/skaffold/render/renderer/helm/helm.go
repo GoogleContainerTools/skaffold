@@ -130,6 +130,10 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 			return nil, helm.UserErr("construct override args", err)
 		}
 
+		if release.SkipTests {
+			args = append(args, "--skip-tests")
+		}
+
 		namespace, err := helm.ReleaseNamespace(h.namespace, release)
 		if err != nil {
 			return nil, err
