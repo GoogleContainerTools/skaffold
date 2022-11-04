@@ -3,7 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-helm
-manifests:
+deploy:
   helm:
     releases:
     - name: skaffold-helm

@@ -1,9 +1,9 @@
-apiVersion: skaffold/v3
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
   - image: skaffold-helm
-deploy:
+manifests:
   helm:
     releases:
     - name: skaffold-helm
