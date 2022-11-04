@@ -856,6 +856,10 @@ type HelmRelease struct {
 	// Ignored for `remoteChart`.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
 
+	// SkipTests should ignore helm test during manifests generation.
+	// Defaults to `false`
+	SkipTests bool `yaml:"skipTests,omitempty"`
+
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
