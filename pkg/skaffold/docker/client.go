@@ -28,15 +28,16 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/docker/cli/cli/connhelper"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/tlsconfig"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/docker/cli/cli/connhelper"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/tlsconfig"
 )
 
 // minikube 1.13.0 renumbered exit codes
@@ -46,6 +47,7 @@ const oldMinikubeBadUsageExitCode = 64
 const minikubeExGuestError = 80
 
 const dockerDriver = "docker"
+const noneDriver = "none"
 
 // For testing
 var (
@@ -83,7 +85,7 @@ func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 func newAPIClient(ctx context.Context) ([]string, client.CommonAPIClient, error) {
 	cmd, err := cluster.GetClient().MinikubeExec(ctx, "profile", "list", "-o", "json")
 	if err != nil {
-		return nil, nil, fmt.Errorf("executing minikube command: %w", err)
+		return newEnvAPIClient()
 	}
 	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
@@ -133,6 +135,10 @@ type ExitCoder interface {
 // newMinikubeAPIClient returns a client using the environment variables
 // provided by minikube.
 func newMinikubeAPIClient(ctx context.Context, minikubeProfile string, minikubeDriver string) ([]string, client.CommonAPIClient, error) {
+	if minikubeDriver == noneDriver {
+		return newEnvAPIClient()
+	}
+
 	if minikubeDriver == dockerDriver {
 		return newMinikubeAPIClientWithDockerDriver(ctx, minikubeProfile)
 	}
