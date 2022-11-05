@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 
 	shell "github.com/kballard/go-shellquote"
 
@@ -31,11 +33,10 @@ import (
 )
 
 func Run(out, stderr io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGPIPE)
 	defer cancel()
 
 	catchStackdumpRequests()
-	catchCtrlC(cancel)
 
 	c := cmd.NewSkaffoldCommand(out, stderr)
 	if cmdLine := os.Getenv("SKAFFOLD_CMDLINE"); cmdLine != "" && len(os.Args) == 1 {
