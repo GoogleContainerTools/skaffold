@@ -67,7 +67,6 @@ func TestNewEnvClient(t *testing.T) {
 	}
 }
 
-// FIX: test should handle loading images locally.
 func TestNewMinikubeImageAPIClient(t *testing.T) {
 	tests := []struct {
 		description string
