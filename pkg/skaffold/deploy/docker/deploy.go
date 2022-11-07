@@ -106,8 +106,8 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 	}, nil
 }
 
-func (d *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	d.logger.RegisterArtifacts(artifacts)
+func (d *Deployer) TrackBuildArtifacts(builds, _ []graph.Artifact) {
+	d.logger.RegisterArtifacts(builds)
 }
 
 // TrackContainerFromBuild adds an artifact and its newly-associated container
@@ -133,7 +133,7 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 			return err
 		}
 	}
-	d.TrackBuildArtifacts(builds)
+	d.TrackBuildArtifacts(builds, nil)
 
 	return nil
 }

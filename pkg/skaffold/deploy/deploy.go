@@ -56,7 +56,7 @@ type Deployer interface {
 	GetSyncer() sync.Syncer
 
 	// TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
-	TrackBuildArtifacts([]graph.Artifact)
+	TrackBuildArtifacts(builds, deployedImages []graph.Artifact)
 
 	// RegisterLocalImages tracks all local images to be loaded by the Deployer
 	RegisterLocalImages([]graph.Artifact)

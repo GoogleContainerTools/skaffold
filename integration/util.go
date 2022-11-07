@@ -430,6 +430,7 @@ func WaitForLogs(t *testing.T, out io.Reader, firstMessage string, moreMessages 
 		case <-timer.C:
 			t.Fatal("timeout")
 		case line := <-lines:
+			t.Logf("Expecting %s, received %s \n", message, line)
 			if strings.Contains(line, message) {
 				if current >= len(moreMessages) {
 					return
