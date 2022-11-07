@@ -84,7 +84,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, configName string) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
 	defaultNamespace := ""
 	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
 	if err != nil {
@@ -114,7 +114,16 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 	if err != nil {
 		return nil, err
 	}
+
+	var ogImages []graph.Artifact
+	for _, artifact := range artifacts {
+		ogImages = append(ogImages, graph.Artifact{
+			ImageName: artifact.ImageName,
+		})
+	}
+
 	return &Deployer{
+		originalImages:     ogImages,
 		configName:         configName,
 		KubectlDeploy:      d,
 		podSelector:        podSelector,

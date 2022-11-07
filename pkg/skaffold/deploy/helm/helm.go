@@ -237,7 +237,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_LoadImages")
-	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, nil, builds); err != nil {
+	if err := h.imageLoader.LoadImages(childCtx, out, h.localImages, h.originalImages, builds); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}

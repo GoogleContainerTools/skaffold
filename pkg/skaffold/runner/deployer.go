@@ -158,10 +158,11 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, configName)
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, runCtx.Artifacts(), configName)
 			if err != nil {
 				return nil, err
 			}
+
 			deployers = append(deployers, deployer)
 		}
 
@@ -270,7 +271,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 		DefaultNamespace: defaultNamespace,
 	}
 	dCtx := &deployerCtx{runCtx, latest.DeployConfig{StatusCheck: statusCheck, KubeContext: kubeContext, DeployType: latest.DeployType{KubectlDeploy: k}}}
-	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, "")
+	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, runCtx.Artifacts(), "")
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}

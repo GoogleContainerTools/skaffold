@@ -102,7 +102,7 @@ func TestGetDeployer(tOuter *testing.T) {
 							[]string{"default"}),
 					}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 						Flags: latest.KubectlFlags{},
-					}, "default")).(deploy.Deployer),
+					}, nil, "default")).(deploy.Deployer),
 				}, false),
 			},
 			{
@@ -146,7 +146,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "default")).(deploy.Deployer),
+				}, nil, "default")).(deploy.Deployer),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
@@ -167,7 +167,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "default")).(deploy.Deployer),
+				}, nil, "default")).(deploy.Deployer),
 			},
 			{
 				description: "multiple deployers",
@@ -261,7 +261,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, "default")).(deploy.Deployer),
+				}, nil, "default")).(deploy.Deployer),
 			},
 			{
 				description: "apply works with Cloud Run",
@@ -372,7 +372,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kubectl deploy, with flags",
@@ -397,7 +397,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						Apply:  []string{"--foo"},
 						Global: []string{"--bar"},
 					},
-				}, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
 			},
 			{
 				name: "two kubectl configs with mismatched flags should fail",
@@ -432,7 +432,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
 			},
 		}
 
