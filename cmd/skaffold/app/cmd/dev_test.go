@@ -83,16 +83,16 @@ func TestDoDev(t *testing.T) {
 			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Cleanup", "Prune"},
 		},
 		{
-			description:       "hasn't deployed",
+			description:       "cleanup always gets called even without deployments",
 			hasBuilt:          true,
 			deployedManifests: manifest.ManifestList{},
-			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Prune"},
+			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Cleanup", "Prune"},
 		},
 		{
 			description:       "hasn't built",
 			hasBuilt:          false,
 			deployedManifests: manifest.ManifestList{},
-			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt"},
+			expectedCalls:     []string{"Dev", "DeployManifests", "HasBuilt", "Cleanup"},
 		},
 	}
 
