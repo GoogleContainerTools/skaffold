@@ -92,7 +92,7 @@ jobs:
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 
-    - uses: xt0rted/pull-request-comment-branch@f2f07162618551540507cbd00ddf16ffcaa0c72f
+    - uses: xt0rted/pull-request-comment-branch@653a7d5ca8bd91d3c5cb83286063314d0b063b8e
       id: comment-branch
 
     - name: Make and install Skaffold binary from current PR
