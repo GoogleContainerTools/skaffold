@@ -127,3 +127,4 @@ Besides the above steps, Skaffold also automatically manages the following utili
 
 * port-forwarding of deployed resources to your local machine using `kubectl port-forward`
 * log aggregation from the deployed pods
+hello world
