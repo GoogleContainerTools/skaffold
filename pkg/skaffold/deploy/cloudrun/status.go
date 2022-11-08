@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -42,7 +43,7 @@ var (
 )
 
 type Monitor struct {
-	Resources     []ResourceName
+	Resources     []RunResourceName
 	clientOptions []option.ClientOption
 	singleRun     singleflight.Group
 	labeller      *label.DefaultLabeller
@@ -50,11 +51,6 @@ type Monitor struct {
 	statusCheckDeadline time.Duration
 	pollPeriod          time.Duration
 	reportStatusTime    time.Duration
-}
-
-type ResourceName struct {
-	path string
-	name string
 }
 
 func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption) *Monitor {
@@ -80,7 +76,16 @@ func (s *Monitor) Check(ctx context.Context, out io.Writer) error {
 func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 	resources := make([]*runResource, len(s.Resources))
 	for i, resource := range s.Resources {
-		resources[i] = &runResource{path: resource.path, name: resource.name}
+		var sub runSubresource
+		switch resource.Type() {
+		case typeService:
+			sub = &runServiceResource{path: resource.String()}
+		case typeJob:
+			sub = &runJobResource{path: resource.String()}
+		default:
+			return fmt.Errorf("unable to monitor resource. Unknown type %s", resource.Type())
+		}
+		resources[i] = &runResource{resource: resource, sub: sub}
 	}
 	c := newCounter(len(resources))
 	cctx, cancel := context.WithCancel(ctx)
@@ -139,17 +144,20 @@ func (c *counter) remaining() string {
 }
 
 type runResource struct {
-	path      string
-	name      string
+	resource  RunResourceName
 	completed bool
 	status    Status
-	url       string
-	revision  string
+	sub       runSubresource
 }
 
 type Status struct {
 	ae       *proto.ActionableErr
 	reported bool
+}
+
+type runSubresource interface {
+	getTerminalStatus(*run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr)
+	reportSuccess()
 }
 
 func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Duration, pollPeriod time.Duration, clientOptions []option.ClientOption, useGcpOptions bool) {
@@ -159,6 +167,7 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 	defer cancel()
 	options := clientOptions
 	if useGcpOptions {
+		options = append(options, option.WithEndpoint(fmt.Sprintf("%s-run.googleapis.com", r.resource.Region)))
 		options = append(gcp.ClientOptions(ctx), options...)
 	}
 	crClient, err := run.NewService(ctx, options...)
@@ -211,37 +220,21 @@ func (r *runResource) ReportSinceLastUpdated() string {
 	if curStatus.ae == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s: %s", r.name, curStatus.ae.Message)
+	return fmt.Sprintf("%s: %s", r.resource.Name(), curStatus.ae.Message)
 }
 
 func (r *runResource) checkStatus(crClient *run.APIService) {
-	call := crClient.Projects.Locations.Services.Get(r.path)
-	res, err := call.Do()
+	ready, err := r.sub.getTerminalStatus(crClient)
 	if err != nil {
-		r.updateStatus(&proto.ActionableErr{
-			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR,
-			Message: fmt.Sprintf("Unable to check Cloud Run status: %v", err),
-		})
+		r.updateStatus(err)
 		return
 	}
-	// find the ready condition
-	var ready *run.GoogleCloudRunV1Condition
 
-	// If the status is still showing the old generation, treat it the
-	// same as no status being set.
-	if res.Status.ObservedGeneration == res.Metadata.Generation {
-		for _, cond := range res.Status.Conditions {
-			if cond.Type == "Ready" {
-				ready = cond
-				break
-			}
-		}
-	}
 	if ready == nil {
 		// No ready condition found, must not have started reconciliation yet
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN,
-			Message: "Waiting for service to start",
+			Message: fmt.Sprintf("Waiting for %s to start", strings.ToLower(string(r.resource.Type()))),
 		})
 		return
 	}
@@ -250,21 +243,20 @@ func (r *runResource) checkStatus(crClient *run.APIService) {
 		r.completed = true
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
-			Message: "Service started",
+			Message: fmt.Sprintf("%s started", r.resource.Type()),
 		})
-		r.url = res.Status.Url
-		r.revision = res.Status.LatestReadyRevisionName
+
 	case "False":
 		r.completed = true
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNHEALTHY,
-			Message: fmt.Sprintf("Service failed to start: %v", ready.Message),
+			Message: fmt.Sprintf("%s failed to start: %v", r.resource.Type(), ready.Message),
 		})
 	default:
 		// status is unknown
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
-			Message: fmt.Sprintf("Service starting: %v", ready.Message),
+			Message: fmt.Sprintf("%s starting: %v", r.resource.Type(), ready.Message),
 		})
 	}
 }
@@ -295,7 +287,7 @@ func (s *Monitor) printStatus(resources []*runResource, out io.Writer) bool {
 		}
 		allDone = false
 		if status := res.ReportSinceLastUpdated(); status != "" {
-			eventV2.ResourceStatusCheckEventUpdated(res.path, res.status.ae)
+			eventV2.ResourceStatusCheckEventUpdated(res.resource.String(), res.status.ae)
 			fmt.Fprintln(out, status)
 		}
 	}
@@ -309,13 +301,86 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, c *counter, r *runResou
 		// another deployment failed
 		return
 	}
-	eventV2.ResourceStatusCheckEventCompleted(r.path, curStatus.ae)
-	if r.url != "" {
-		eventV2.CloudRunServiceReady(r.path, r.url, r.revision)
-	}
+	eventV2.ResourceStatusCheckEventCompleted(r.resource.String(), curStatus.ae)
+	r.sub.reportSuccess()
 	if curStatus.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
-		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s failed with error: %s", r.name, curStatus.ae.Message))
+		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run %s %s failed with error: %s", r.resource.Type(), r.resource.Name(), curStatus.ae.Message))
 	} else {
-		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run Service %s finished: %s. %s", r.name, curStatus.ae.Message, c.remaining()))
+		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run %s %s finished: %s. %s", r.resource.Type(), r.resource.Name(), curStatus.ae.Message, c.remaining()))
 	}
+}
+
+type runServiceResource struct {
+	path string
+
+	url            string
+	latestRevision string
+}
+
+func (r *runServiceResource) getTerminalStatus(crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
+	call := crClient.Projects.Locations.Services.Get(r.path)
+	res, err := call.Do()
+	if err != nil {
+		return nil, &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR,
+			Message: fmt.Sprintf("Unable to check Cloud Run status: %v", err),
+		}
+	}
+	// find the ready condition
+	var ready *run.GoogleCloudRunV1Condition
+
+	// If the status is still showing the old generation, treat it the
+	// same as no status being set.
+	if res.Status.ObservedGeneration == res.Metadata.Generation {
+		for _, cond := range res.Status.Conditions {
+			if cond.Type == "Ready" {
+				ready = cond
+				break
+			}
+		}
+	}
+	r.latestRevision = res.Status.LatestCreatedRevisionName
+	r.url = res.Status.Url
+	return ready, nil
+}
+func (r *runServiceResource) reportSuccess() {
+	if r.url != "" {
+		eventV2.CloudRunServiceReady(r.path, r.url, r.latestRevision)
+	}
+}
+
+type runJobResource struct {
+	path            string
+	latestExecution string
+}
+
+func (r *runJobResource) getTerminalStatus(crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
+	call := crClient.Namespaces.Jobs.Get(r.path)
+	res, err := call.Do()
+	if err != nil {
+		return nil, &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR,
+			Message: fmt.Sprintf("Unable to check Cloud Run status: %v", err),
+		}
+	}
+	// find the ready condition
+	var ready *run.GoogleCloudRunV1Condition
+
+	// If the status is still showing the old generation, treat it the
+	// same as no status being set.
+	if res.Status.ObservedGeneration == res.Metadata.Generation {
+		for _, cond := range res.Status.Conditions {
+			if cond.Type == "Ready" {
+				ready = cond
+				break
+			}
+		}
+	}
+	if res.Status.LatestCreatedExecution != nil {
+		r.latestExecution = res.Status.LatestCreatedExecution.Name
+	}
+	return ready, nil
+}
+
+func (r *runJobResource) reportSuccess() {
 }

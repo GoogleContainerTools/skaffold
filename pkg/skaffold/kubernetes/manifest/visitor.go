@@ -171,6 +171,11 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 		Image:     []string{".spec.image.application", ".spec.image.init"},
 		Labels:    []string{".*"},
 	},
+	{Group: "run.googleapis.com", Kind: "Job"}: {
+		GroupKind: "Job.run.googleapis.com",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
 }
 
 // TransformDenylist is the default denylist on the set of kinds that can be transformed by Skaffold.
