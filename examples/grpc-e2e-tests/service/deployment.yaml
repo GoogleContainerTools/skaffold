@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: visitor-counter
+  labels:
+    app: visitor-counter
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: visitor-counter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-counter
+  labels:
+    app: visitor-counter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visitor-counter
+  template:
+    metadata:
+      labels:
+        app: visitor-counter
+    spec:
+      containers:
+      - name: visitor-counter
+        image: visitor-counter
+        ports:
+            - name: grpc
+              containerPort: 8080
+        env:
+          - name: PORT
+            value: "8080"
+          - name: SPANNER_EMULATOR_HOST
+            value: "cloud-spanner-emulator:9010"
+          - name: DATABASE
+            value: "projects/test-project/instances/test-instance/databases/visitordb"
+

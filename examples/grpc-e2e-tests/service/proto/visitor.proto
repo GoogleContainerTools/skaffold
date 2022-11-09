@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package skaffold.examples.e2e.visitor;
+
+option go_package = "github.com/GoogleContainerTools/skaffold/examples/grpc-e2e-tests";
+
+
+service VisitorCounter {
+    rpc GetVisitCount(VisitorCounterRequest) returns (VisitorCounterResponse) {}
+
+    rpc UpdateVisitor(UpdateVisitorRequest) returns (UpdateVisitorResponse) {}
+}
+
+message VisitorCounterRequest {
+    Visitor visitor = 1;
+}
+
+message UpdateVisitorRequest {
+    Visitor visitor = 1;
+}
+
+message UpdateVisitorResponse {
+    
+}
+
+message VisitorCounterResponse {
+    Visitor visitor = 1;
+    int64 count = 2;
+} 
+
+message Visitor {
+    string name = 1;
+}
