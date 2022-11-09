@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloud-spanner-bootstrap-image
+  labels:
+    app: cloud-spanner-bootstrap-image
+spec:
+  # Skaffold has a bug where if previous job is not cleaned 
+  # then it create conflict with next one 
+  ttlSecondsAfterFinished: 5
+  template:
+    metadata:
+      labels:
+        app: cloud-spanner-bootstrap-image
+    spec:
+      containers:
+      - name: cloud-spanner-bootstrap-image
+        image: cloud-spanner-bootstrap-image
+        imagePullPolicy: IfNotPresent
+      restartPolicy: Never

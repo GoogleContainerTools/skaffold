@@ -1,0 +1,20 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: visitor-counter-e2e
+build:
+  artifacts:
+  - image: spanner
+    docker:
+      dockerfile: cloud-spanner/Dockerfile
+  - image: cloud-spanner-bootstrap-image
+    context: cloud-spanner-bootstrap
+  - image: visitor-counter
+    context: service
+manifests:
+  rawYaml:
+  - service/deployment.yaml
+  - cloud-spanner-bootstrap/deployment.yaml
+  - cloud-spanner/deployment.yaml
+deploy:
+  kubectl: {}
