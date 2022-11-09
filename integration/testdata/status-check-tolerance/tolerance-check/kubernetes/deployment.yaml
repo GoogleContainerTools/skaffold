@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tolerance-check
+  labels:
+    app: tolerance-check
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tolerance-check
+  template:
+    metadata:
+      labels:
+        app: tolerance-check
+    spec:
+      containers:
+        - name: tolerance-check
+          image: tolerance-check

@@ -139,6 +139,7 @@ Options:
       --status-check=: Wait for deployed resources to stabilize
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --tail=false: Stream logs from deployed objects
+      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
       --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
@@ -168,6 +169,7 @@ Env vars:
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOLERATE_FAILURES_UNTIL_DEADLINE` (same as `--tolerate-failures-until-deadline`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
 
 ### skaffold build
@@ -453,6 +455,7 @@ Options:
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=true: Stream logs from deployed objects
+      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
       --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
@@ -516,6 +519,7 @@ Env vars:
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOLERATE_FAILURES_UNTIL_DEADLINE` (same as `--tolerate-failures-until-deadline`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
@@ -633,6 +637,7 @@ Options:
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
+      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
       --toot=false: Emit a terminal beep after the deploy is complete
       --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
@@ -681,6 +686,7 @@ Env vars:
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOLERATE_FAILURES_UNTIL_DEADLINE` (same as `--tolerate-failures-until-deadline`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
@@ -740,6 +746,7 @@ Options:
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=true: Stream logs from deployed objects
+      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
       --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
@@ -803,6 +810,7 @@ Env vars:
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOLERATE_FAILURES_UNTIL_DEADLINE` (same as `--tolerate-failures-until-deadline`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
@@ -1095,6 +1103,7 @@ Options:
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
+      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
       --toot=false: Emit a terminal beep after the deploy is complete
       --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
@@ -1153,6 +1162,7 @@ Env vars:
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOLERATE_FAILURES_UNTIL_DEADLINE` (same as `--tolerate-failures-until-deadline`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)

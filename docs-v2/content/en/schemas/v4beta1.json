@@ -1422,6 +1422,12 @@
           "type": "integer",
           "description": "*beta* deadline for deployments to stabilize in seconds.",
           "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
+        },
+        "tolerateFailuresUntilDeadline": {
+          "type": "boolean",
+          "description": "configures the Skaffold \"status-check\" to tolerate failures (flapping deployments, etc.) until the statusCheckDeadlineSeconds duration or k8s object timeouts such as progressDeadlineSeconds, etc.",
+          "x-intellij-html-description": "configures the Skaffold &quot;status-check&quot; to tolerate failures (flapping deployments, etc.) until the statusCheckDeadlineSeconds duration or k8s object timeouts such as progressDeadlineSeconds, etc.",
+          "default": "false"
         }
       },
       "preferredOrder": [
@@ -1432,6 +1438,7 @@
         "cloudrun",
         "statusCheck",
         "statusCheckDeadlineSeconds",
+        "tolerateFailuresUntilDeadline",
         "kubeContext",
         "logs"
       ],

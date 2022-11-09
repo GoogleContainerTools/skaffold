@@ -333,6 +333,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "tolerate-failures-until-deadline",
+		Usage:         "Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'",
+		Value:         &opts.TolerateFailuresStatusCheck,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "fast-fail-status-check",
 		Usage:         "Configures `status-check` to fail immediately if any error occurs.  Otherwise `status-check` will attempt to check all resources once and only then report errors and possibly exit.  Defaults to 'true'",
 		Value:         &opts.FastFailStatusCheck,
