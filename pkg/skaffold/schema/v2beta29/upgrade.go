@@ -119,15 +119,10 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 				// is 'helm' imageStrategy
 				for k, v := range aos {
 					if k == "image" {
-						if svts == nil {
-							svts = map[string]string{}
-						}
-						svts["image.tag"] = "{{.IMAGE_TAG}}@{{.IMAGE_DIGEST}}"
-						svts["image.repository"] = "{{.IMAGE_REPO}}"
+						svs["image.repository"] = v
+						svs["image.tag"] = v
 						if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig.ExplicitRegistry {
-							// is 'helm' imageStrategy + explicitRegistry
-							svts["image.registry"] = "{{.IMAGE_DOMAIN}}"
-							svts["image.repository"] = "{{.IMAGE_REPO_NO_DOMAIN}}"
+							svs["image.registry"] = v
 						}
 						continue
 					}

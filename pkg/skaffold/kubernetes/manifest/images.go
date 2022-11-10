@@ -200,6 +200,12 @@ func (r *imageReplacer) Visit(gk apimachinery.GroupKind, navpath string, o map[s
 		log.Entry(context.TODO()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
+	// this is a hack to properly support `imageStrategy=helm+explicitRegistry` from Skaffold v1.X.X
+	if parsed.Domain == parsed.Repo {
+		if _, present := r.tagsByImageName[parsed.Repo]; present {
+			parsed.BaseName = parsed.Repo
+		}
+	}
 	if imageName, tag, selected := r.selector(r.tagsByImageName, parsed); selected {
 		r.found[imageName] = true
 		o[k] = tag
