@@ -198,7 +198,8 @@ func TestGetDeployer(tOuter *testing.T) {
 
 				deployer, err := GetDeployer(context.Background(), &runcontext.RunContext{
 					Opts: config.SkaffoldOptions{
-						Apply: test.apply,
+						Apply:       test.apply,
+						StatusCheck: config.NewBoolOrUndefined(util.BoolPtr(true)),
 					},
 					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
 						Deploy: latest.DeployConfig{
