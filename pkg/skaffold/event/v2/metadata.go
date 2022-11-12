@@ -121,9 +121,6 @@ func getDeploy(d latest.DeployConfig) []*proto.DeployMetadata_Deployer {
 	if d.KubectlDeploy != nil {
 		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUBECTL, Count: 1})
 	}
-	if d.KustomizeDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
-	}
 	return deployers
 }
 

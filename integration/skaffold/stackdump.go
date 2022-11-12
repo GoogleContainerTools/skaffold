@@ -30,7 +30,7 @@ import (
 // trigger stacktrace dump when skaffold process runs too long
 func waitAndTriggerStacktrace(ctx context.Context, t *testing.T, process *os.Process) {
 	go func() {
-		var d time.Duration = 2 * time.Minute
+		var d = 2 * time.Minute
 		select {
 		case <-ctx.Done():
 			break

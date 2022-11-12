@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -90,6 +90,12 @@ func TestConsolidateNamespaces(t *testing.T) {
 			oldNamespaces: []string{},
 			newNamespaces: []string{""},
 		},
+		{
+			description:   "update namespace when namespace is empty string new namespace is nil",
+			oldNamespaces: []string{""},
+			newNamespaces: []string{},
+			expected:      []string{""},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -147,6 +153,7 @@ func TestAddTagsToPodSelector(t *testing.T) {
 			deployerArtifacts: []graph.Artifact{
 				{
 					ImageName: "not-my-image",
+					Tag:       "not-my-image:tag",
 				},
 			},
 		},
@@ -169,9 +176,11 @@ func TestAddTagsToPodSelector(t *testing.T) {
 			deployerArtifacts: []graph.Artifact{
 				{
 					ImageName: "my-image1",
+					Tag:       "registry.example.com/repo/my-image1:tag1",
 				},
 				{
 					ImageName: "my-image2",
+					Tag:       "registry.example.com/repo/my-image2:tag2",
 				},
 			},
 			expectedImages: []string{
@@ -180,28 +189,28 @@ func TestAddTagsToPodSelector(t *testing.T) {
 			},
 		},
 		{
-			description: "images from manifest files with ko:// scheme prefix are sanitized before matching",
+			description: "images from deployerManifests with default-repo",
 			artifacts: []graph.Artifact{
 				{
-					ImageName: "ko://git.example.com/Foo/bar",
-					Tag:       "registry.example.com/repo/git.example.com/foo/bar:tag",
+					ImageName: "bar",
+					Tag:       "registry.example.com/bar:tag",
 				},
 			},
 			deployerArtifacts: []graph.Artifact{
 				{
-					ImageName: "git.example.com/foo/bar",
-					Tag:       "ko://git.example.com/Foo/bar",
+					ImageName: "registry.example.com/bar",
+					Tag:       "registry.example.com/bar:tag",
 				},
 			},
 			expectedImages: []string{
-				"registry.example.com/repo/git.example.com/foo/bar:tag",
+				"registry.example.com/bar:tag",
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			podSelector := kubernetes.NewImageList()
-			AddTagsToPodSelector(test.artifacts, podSelector)
+			AddTagsToPodSelector(test.artifacts, test.deployerArtifacts, podSelector)
 			for _, expectedImage := range test.expectedImages {
 				if exists := podSelector.Select(&v1.Pod{
 					Spec: v1.PodSpec{

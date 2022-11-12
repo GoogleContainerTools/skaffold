@@ -24,45 +24,73 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
+// GroupRenderer maintains the slice of all `Renderer`s and their respective lifecycle hooks defined in a single Skaffold config.
+type GroupRenderer struct {
+	Renderers   []Renderer
+	HookRunners []hooks.Runner
+}
+
 // RenderMux forwards all method calls to the renderers it contains.
 // When encountering an error, it aborts and returns the error. Otherwise,
 // it collects the results and returns all the manifests.
 type RenderMux struct {
-	renderers []Renderer
+	gr GroupRenderer
 }
 
-func NewRenderMux(renderers []Renderer) Renderer {
-	return RenderMux{renderers: renderers}
+func NewRenderMux(renderers GroupRenderer) Renderer {
+	return RenderMux{gr: renderers}
 }
 
-func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestList, error) {
-	allManifests := manifest.ManifestList{}
-	for i, renderer := range r.renderers {
+func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
+	allManifests := manifest.NewManifestListByConfig()
+
+	w, ctx := output.WithEventContext(ctx, out, constants.Render, constants.SubtaskIDNone)
+	for i := range r.gr.HookRunners {
+		if err := r.gr.HookRunners[i].RunPreHooks(ctx, w); err != nil {
+			return manifest.ManifestListByConfig{}, err
+		}
+	}
+
+	for i, renderer := range r.gr.Renderers {
 		eventV2.RendererInProgress(i)
-		w, ctx := output.WithEventContext(ctx, out, constants.Render, strconv.Itoa(i))
+		w, ctx = output.WithEventContext(ctx, out, constants.Render, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
-		ms, err := renderer.Render(ctx, w, artifacts, offline)
+		manifestsByConfig, err := renderer.Render(ctx, w, artifacts, offline)
 		if err != nil {
 			eventV2.RendererFailed(i, err)
 			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
+			return manifest.NewManifestListByConfig(), err
 		}
-		allManifests = append(allManifests, ms...)
+
+		for _, configName := range manifestsByConfig.ConfigNames() {
+			manifests := manifestsByConfig.GetForConfig(configName)
+
+			if len(manifests) > 0 {
+				allManifests.Add(configName, manifests)
+			}
+		}
 		eventV2.RendererSucceeded(i)
 		endTrace()
+	}
+	w, ctx = output.WithEventContext(ctx, out, constants.Render, constants.SubtaskIDNone)
+	for i := range r.gr.HookRunners {
+		if err := r.gr.HookRunners[i].RunPostHooks(ctx, w); err != nil {
+			return manifest.ManifestListByConfig{}, err
+		}
 	}
 	return allManifests, nil
 }
 
 func (r RenderMux) ManifestDeps() ([]string, error) {
 	deps := stringset.New()
-	for _, renderer := range r.renderers {
+	for _, renderer := range r.gr.Renderers {
 		result, err := renderer.ManifestDeps()
 		if err != nil {
 			return nil, err

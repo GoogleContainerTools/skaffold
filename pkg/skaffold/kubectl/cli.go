@@ -105,6 +105,11 @@ func (c *CLI) CommandWithStrictCancellation(ctx context.Context, command string,
 	return CommandContext(ctx, "kubectl", args...)
 }
 
+// Kustomize runs `kubectl kustomize` with the provided args
+func (c *CLI) Kustomize(ctx context.Context, args []string) ([]byte, error) {
+	return c.RunOut(ctx, "kustomize", args...)
+}
+
 // args builds an argument list for calling kubectl and consistently
 // adds the `--context` and `--namespace` flags.
 func (c *CLI) args(command string, namespace string, arg ...string) []string {

@@ -19,7 +19,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -43,9 +42,11 @@ type changelogData struct {
 func main() {
 	data, err := getChangelogData(schema.IsReleased)
 	if err != nil {
+		fmt.Printf("error occurred: %v\n", err)
 		os.Exit(1)
 	}
 	if err = updateChangelog(path.Join("CHANGELOG.md"), path.Join("hack", "release", "changelog", "template.md"), data); err != nil {
+		fmt.Printf("error occurred: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -65,7 +66,7 @@ func getChangelogData(schemaIsReleased func(string) (bool, error)) (changelogDat
 	data.Date = currentTime.Format("01/02/2006")
 
 	// Add extra string if new schema version is being released
-	schema := path.Join("pkg", "skaffold", "schema", "latest", "v1", "config.go")
+	schema := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
 	released, err := schemaIsReleased(schema)
 	if err != nil {
 		return changelogData{}, fmt.Errorf("checking if schema is released: %w", err)
@@ -88,7 +89,7 @@ func updateChangelog(filepath, templatePath string, data changelogData) error {
 	if err = tmpl.Execute(&buf, data); err != nil {
 		return fmt.Errorf("executing changelog template: %w", err)
 	}
-	b, err := ioutil.ReadFile(filepath)
+	b, err := os.ReadFile(filepath)
 	if err != nil {
 		return fmt.Errorf("reading changelog file: %w", err)
 	}
@@ -96,7 +97,7 @@ func updateChangelog(filepath, templatePath string, data changelogData) error {
 	if err != nil {
 		return fmt.Errorf("writing to changelog buffer: %w", err)
 	}
-	if err = ioutil.WriteFile(filepath, buf.Bytes(), 0644); err != nil {
+	if err = os.WriteFile(filepath, buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("writing to changelog file: %w", err)
 	}
 

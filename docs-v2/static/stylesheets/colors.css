@@ -111,3 +111,7 @@ input.td-search-input::placeholder {
 a > code {
     color: #c97300;
 }
+
+.nav-link {
+    color: var(--header-footer-foreground);
+}

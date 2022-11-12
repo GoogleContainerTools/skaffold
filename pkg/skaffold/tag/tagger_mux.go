@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -85,7 +85,7 @@ func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, erro
 			return nil, fmt.Errorf("creating components: %w", err)
 		}
 
-		return NewCustomTemplateTagger(t.CustomTemplateTagger.Template, components)
+		return NewCustomTemplateTagger(runCtx, t.CustomTemplateTagger.Template, components)
 
 	default:
 		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)

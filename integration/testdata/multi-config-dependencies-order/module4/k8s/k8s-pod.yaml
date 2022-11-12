@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: module4
+spec:
+  containers:
+  - name: module4
+    image: multi-config-module4

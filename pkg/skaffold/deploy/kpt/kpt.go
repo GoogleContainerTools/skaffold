@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -64,6 +63,8 @@ var (
 
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
+	configName string
+
 	*latest.KptDeploy
 	applyDir string
 
@@ -91,7 +92,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy, opts config.SkaffoldOptions) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy, opts config.SkaffoldOptions, configName string) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -120,6 +121,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 	return &Deployer{
+		configName:         configName,
 		KptDeploy:          d,
 		applyDir:           d.Dir,
 		podSelector:        podSelector,
@@ -136,6 +138,10 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 		namespace:          cfg.GetKubeNamespace(),
 		namespaces:         &namespaces,
 	}, nil
+}
+
+func (k *Deployer) ConfigName() string {
+	return k.configName
 }
 
 func (k *Deployer) GetAccessor() access.Accessor {
@@ -159,9 +165,9 @@ func (k *Deployer) GetSyncer() sync.Syncer {
 }
 
 // TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
-func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	deployutil.AddTagsToPodSelector(artifacts, k.podSelector)
-	k.logger.RegisterArtifacts(artifacts)
+func (k *Deployer) TrackBuildArtifacts(builds, deployedImages []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(builds, deployedImages, k.podSelector)
+	k.logger.RegisterArtifacts(builds)
 }
 
 func (k *Deployer) RegisterLocalImages(images []graph.Artifact) {
@@ -293,14 +299,14 @@ func kptfileInitIfNot(ctx context.Context, out io.Writer, k *Deployer) error {
 		if err != nil {
 			return err
 		}
-		if err = ioutil.WriteFile(kptFilePath, configByte, 0644); err != nil {
+		if err = os.WriteFile(kptFilePath, configByte, 0644); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	if err := kptInitFunc(ctx, out, k); err != nil {
 		return err
 	}
@@ -344,7 +350,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return liveApplyErr(err, k.applyDir)
 	}
-	k.TrackBuildArtifacts(builds)
+	k.TrackBuildArtifacts(builds, builds)
 	k.trackNamespaces(namespaces)
 	endTrace()
 	return nil
@@ -361,7 +367,7 @@ func (k *Deployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
-func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ manifest.ManifestListByConfig) error {
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": deployerName,
 	})

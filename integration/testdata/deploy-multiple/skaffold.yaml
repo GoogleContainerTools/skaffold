@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -11,10 +11,4 @@ manifests:
     paths:
       - ./kustomize
 deploy:
-  kustomize:
-    paths:
-    - ./kustomize
-
-  kubectl:
-    manifests:
-      - kubectl/k8s-pod.yaml
+  kubectl: {}

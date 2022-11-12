@@ -28,6 +28,7 @@ import (
 //    Add EphemeralStorage and ResourceStorage to Kaniko Pod Resource Requirement.
 // 2. Removals:
 // 3. No updates
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

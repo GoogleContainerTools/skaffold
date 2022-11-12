@@ -1,4 +1,6 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3
 kind: Config
-deploy:
-  kustomize: {}
+manifests:
+  kustomize:
+    paths:
+      - .

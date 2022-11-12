@@ -18,7 +18,7 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -40,11 +40,11 @@ func TestPrintMan(t *testing.T) {
 	testutil.CheckContains(t, "Env vars", output)
 
 	// Compare to current man page
-	header, err := ioutil.ReadFile(filepath.Join("..", "..", "docs", "content", "en", "docs", "references", "cli", "index_header"))
+	header, err := os.ReadFile(filepath.Join("..", "..", "docs", "content", "en", "docs", "references", "cli", "index_header"))
 	testutil.CheckError(t, false, err)
 	header = bytes.ReplaceAll(header, []byte("\r\n"), []byte("\n"))
 
-	expected, err := ioutil.ReadFile(filepath.Join("..", "..", "docs", "content", "en", "docs", "references", "cli", "_index.md"))
+	expected, err := os.ReadFile(filepath.Join("..", "..", "docs", "content", "en", "docs", "references", "cli", "_index.md"))
 	testutil.CheckError(t, false, err)
 	expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
 

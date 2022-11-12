@@ -54,6 +54,7 @@ func (b *Builder) buildSpec(ctx context.Context, artifact *latest.Artifact, tag 
 	buildSpec.Options.Logging = b.Logging
 	buildSpec.Options.LogStreamingOption = b.LogStreamingOption
 	buildSpec.Timeout = b.Timeout
+	buildSpec.ServiceAccount = b.ServiceAccount
 
 	return buildSpec, nil
 }
@@ -75,6 +76,9 @@ func (b *Builder) buildSpecForArtifact(ctx context.Context, a *latest.Artifact, 
 			return cloudbuild.Build{}, fmt.Errorf("buildpacks builder doesn't support building for platforms %s. Cannot build gcb artifact:\n%s", platforms.String(), misc.FormatArtifact(a))
 		}
 		return b.buildpackBuildSpec(a.BuildpackArtifact, tag, a.Dependencies)
+
+	case a.KoArtifact != nil:
+		return b.koBuildSpec(ctx, a, tag, platforms)
 
 	default:
 		return cloudbuild.Build{}, fmt.Errorf("unexpected type %q for gcb artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

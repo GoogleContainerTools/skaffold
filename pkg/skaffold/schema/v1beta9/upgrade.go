@@ -43,6 +43,7 @@ var (
 // 2. No removals
 // 3. Updates:
 //    - sync map becomes a list of sync rules
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)

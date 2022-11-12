@@ -28,6 +28,7 @@ import (
 //    gitTagger/variant
 // 2. Removed all schemas associated with builder plugins
 // 3. No updates
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)

@@ -23,7 +23,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -31,7 +30,7 @@ import (
 	"strings"
 	"sync"
 
-	blackfriday "github.com/russross/blackfriday/v2"
+	"github.com/russross/blackfriday/v2"
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -102,7 +101,7 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 	}
 
 	var wg sync.WaitGroup
-	for i, version := range schema.SchemaVersionsV1 {
+	for i, version := range schema.AllVersions {
 		wg.Add(1)
 		go func(i int, version schema.Version) {
 			same, err := generateV1Schema(root, dryRun, version)
@@ -116,7 +115,7 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 	wg.Wait()
 
 	same := true
-	for i := range schema.SchemaVersionsV1 {
+	for i := range schema.AllVersions {
 		result := <-results[i]
 		if result.err != nil {
 			return false, result.err
@@ -133,12 +132,13 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 
 	folder := apiVersion
 	strict := false
-	if version.APIVersion == schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-1].APIVersion {
+	if version.APIVersion == schema.AllVersions[len(schema.AllVersions)-1].APIVersion {
+		folder = "latest/"
 		strict = true
 	}
 
 	input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
-	output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
+	output := filepath.Join(root, "docs-v2", "content", "en", "schemas", apiVersion+".json")
 
 	generator := schemaGenerator{
 		strict: strict,
@@ -152,7 +152,7 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 	var current []byte
 	if _, err := os.Stat(output); err == nil {
 		var err error
-		current, err = ioutil.ReadFile(output)
+		current, err = os.ReadFile(output)
 		if err != nil {
 			return false, fmt.Errorf("unable to read existing schema for version %q: %w", version.APIVersion, err)
 		}
@@ -163,7 +163,7 @@ func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, e
 	current = bytes.ReplaceAll(current, []byte("\r\n"), []byte("\n"))
 
 	if !dryRun {
-		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+		if err := os.WriteFile(output, buf, os.ModePerm); err != nil {
 			return false, fmt.Errorf("unable to write schema %q: %w", output, err)
 		}
 	}

@@ -28,10 +28,12 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -66,6 +68,59 @@ var (
 	}
 )
 
+func TestValidateArtifactTypes(t *testing.T) {
+	tests := []struct {
+		description  string
+		bc           latest.BuildConfig
+		expectedErrs int
+	}{
+		{
+			description: "gcb - builder not set",
+			bc: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName: "leeroy-web",
+						Workspace: "leeroy-web",
+					},
+				},
+			},
+		},
+		{
+			description: "gcb - custom builder  set",
+			bc: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName:    "leeroy-web",
+						Workspace:    "leeroy-web",
+						ArtifactType: latest.ArtifactType{CustomArtifact: &latest.CustomArtifact{}},
+					},
+				},
+			},
+			expectedErrs: 1,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			config := &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: test.bc,
+				},
+			}
+			defaults.Set(config)
+			cfg := &parser.SkaffoldConfigEntry{SkaffoldConfig: config,
+				YAMLInfos: configlocations.NewYAMLInfos()}
+			errs := validateArtifactTypes(cfg, test.bc)
+
+			t.CheckDeepEqual(test.expectedErrs, len(errs))
+		})
+	}
+}
 func TestValidateSchema(t *testing.T) {
 	tests := []struct {
 		description string
@@ -705,13 +760,15 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 			})
 
 			err := ProcessWithRunContext(context.Background(), &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{
-					{
-						Build: latest.BuildConfig{
-							Artifacts: test.artifacts,
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							Build: latest.BuildConfig{
+								Artifacts: test.artifacts,
+							},
 						},
 					},
-				}),
+					[]string{"default"}),
 			})
 
 			t.CheckError(test.shouldErr, err)
@@ -1099,6 +1156,82 @@ func TestValidateJibPluginType(t *testing.T) {
 	}
 }
 
+func TestValidateKoSync(t *testing.T) {
+	tests := []struct {
+		description string
+		artifacts   []*latest.Artifact
+		wantErr     bool
+	}{
+		{
+			description: "basic infer sync with no errors",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"kodata/**/*"},
+				},
+			}},
+		},
+		{
+			description: "no error for wildcard in Main when no infer sync set up",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
+						Main: "./...",
+					},
+				},
+				ImageName: "test",
+			}},
+		},
+		{
+			description: "error for wildcard in Main when infer sync is set up",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
+						Main: "./...",
+					},
+				},
+				Sync: &latest.Sync{
+					Infer: []string{"kodata/**/*"},
+				},
+			}},
+			wantErr: true,
+		},
+		{
+			description: "error for patterns outside kodata",
+			artifacts: []*latest.Artifact{{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{},
+				},
+				Sync: &latest.Sync{
+					Infer: []string{"**/*"},
+				},
+			}},
+			wantErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := &parser.SkaffoldConfigEntry{
+				SkaffoldConfig: &latest.SkaffoldConfig{
+					APIVersion: latest.Version,
+					Kind:       "Config",
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				},
+				YAMLInfos: configlocations.NewYAMLInfos(),
+			}
+			err := Process(parser.SkaffoldConfigSet{cfg}, Options{CheckDeploySource: false})
+			t.CheckError(test.wantErr, err)
+		})
+	}
+}
+
 func TestValidateLogsConfig(t *testing.T) {
 	tests := []struct {
 		prefix    string
@@ -1276,10 +1409,12 @@ func TestValidateAcyclicDependencies(t *testing.T) {
 
 // setDependencies constructs a graph of artifact dependencies using the map as an adjacency list representation of indices in the artifacts array.
 // For example:
-// m = {
-//    0 : {1, 2},
-//    2 : {3},
-//}
+//
+//	m = {
+//	   0 : {1, 2},
+//	   2 : {3},
+//	}
+//
 // implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
 func setDependencies(a []*latest.Artifact, d map[int][]int) {
 	for k, dep := range d {
@@ -1561,11 +1696,9 @@ func TestValidateKubectlManifests(t *testing.T) {
 			configs: []*latest.SkaffoldConfig{
 				{
 					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
-								KubectlDeploy: &latest.KubectlDeploy{
-									Manifests: []string{filepath.Join(tempDir, "validation-test-exists.yaml")},
-								},
+						Render: latest.RenderConfig{
+							Generate: latest.Generate{
+								RawK8s: []string{filepath.Join(tempDir, "validation-test-exists.yaml")},
 							},
 						},
 					},
@@ -1578,11 +1711,9 @@ func TestValidateKubectlManifests(t *testing.T) {
 			configs: []*latest.SkaffoldConfig{
 				{
 					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
-								KubectlDeploy: &latest.KubectlDeploy{
-									Manifests: []string{filepath.Join(tempDir, "validation-test-missing.yaml")},
-								},
+						Render: latest.RenderConfig{
+							Generate: latest.Generate{
+								RawK8s: []string{filepath.Join(tempDir, "validation-test-missing.yaml")},
 							},
 						},
 					},
@@ -1615,6 +1746,94 @@ func TestValidateKubectlManifests(t *testing.T) {
 			if len(errs) > 0 {
 				err = errs[0].Error
 			}
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateCloudRunLocation(t *testing.T) {
+	tests := []struct {
+		description      string
+		deploy           latest.DeployConfig
+		cloudRunLocation string
+		cloudRunProject  string
+		command          string
+		shouldErr        bool
+	}{
+		{
+			description: "location specified in config",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{
+						ProjectID: "test-project",
+						Region:    "test-region",
+					},
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "location not specified, config present",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "location not specified, command doesn't deploy",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{},
+				},
+			},
+			command:   "diagnose",
+			shouldErr: false,
+		},
+		{
+			description: "location specified via flag",
+			deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					CloudRunDeploy: &latest.CloudRunDeploy{},
+				},
+			},
+			cloudRunLocation: "test-region",
+			shouldErr:        false,
+		},
+		{
+			description:     "project specified via flag, no location",
+			cloudRunProject: "test-project",
+			shouldErr:       true,
+		},
+		{
+			description:      "project and location specified via flag",
+			cloudRunProject:  "test-project",
+			cloudRunLocation: "test-location",
+			shouldErr:        false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			command := test.command
+			if command == "" {
+				command = "run"
+			}
+			err := ProcessWithRunContext(context.Background(), &runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							Deploy: test.deploy,
+						},
+					},
+					[]string{"default"}),
+				Opts: config.SkaffoldOptions{
+					CloudRunProject:  test.cloudRunProject,
+					CloudRunLocation: test.cloudRunLocation,
+					Command:          command,
+				},
+			})
+
 			t.CheckError(test.shouldErr, err)
 		})
 	}

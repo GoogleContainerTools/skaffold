@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta14"
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta29"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -49,8 +49,6 @@ build:
     gitCommit: {}
   artifacts:
   - image: example
-deploy:
-  kubectl: {}
 `
 	// This config has two tag policies set.
 	invalidConfig = `
@@ -79,11 +77,31 @@ build:
       target: //:example.tar
   googleCloudBuild:
     projectId: ID
-deploy:
-  kubectl:
-   manifests:
+manifests:
+  rawYaml:
    - dep.yaml
    - svc.yaml
+`
+	completeV1Config = `
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    docker:
+      dockerfile: Dockerfile.dev
+  - image: image2
+    context: ./examples/app2
+    bazel:
+      target: //:example.tar
+  googleCloudBuild:
+    projectId: ID
+deploy:
+  kubectl:
+    manifests:
+    - dep.yaml
+    - svc.yaml
 `
 	minimalClusterConfig = `
 build:
@@ -111,6 +129,22 @@ build:
 `
 
 	completeClusterConfig = `
+build:
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    kaniko: {}
+  cluster:
+    pullSecretPath: /secret.json
+    pullSecretName: secret-name
+    namespace: nskaniko
+    timeout: 120m
+    dockerConfig:
+      secretName: config-name
+      path: /kaniko/.docker
+`
+
+	completeClusterConfigV1 = `
 build:
   artifacts:
   - image: image1
@@ -193,7 +227,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "Kaniko Volume Mount - ConfigMap",
 			config:      []string{kanikoConfigMap},
 			expected: []util.VersionedConfig{config(
@@ -211,19 +245,17 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 							},
 						},
 					})),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "Minimal config",
 			config:      []string{minimalConfig},
 			expected: []util.VersionedConfig{config(
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
@@ -235,26 +267,26 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "Simple config",
 			config:      []string{simpleConfig},
 			expected: []util.VersionedConfig{config(
 				withLocalBuild(
+					withLocalBuildConcurrency(&constants.DefaultLocalConcurrency),
 					withGitTagger(),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
+				withRawK8s(),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
-			description: "Complete config",
+			apiVersion:  []string{latest.Version},
+			description: "Complete config v1",
 			config:      []string{completeConfig},
 			expected: []util.VersionedConfig{config(
 				withGoogleCloudBuild("ID",
@@ -262,26 +294,27 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
 			apiVersion:  []string{v2beta8.Version},
 			description: "Old version complete config",
-			config:      []string{completeConfig},
+			config:      []string{completeV1Config},
 			expected: []util.VersionedConfig{config(
 				withGoogleCloudBuild("ID",
 					withShaTagger(),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
+				withKubectlDeployer(),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version, latestV1.Version},
+			apiVersion:  []string{latest.Version, latest.Version},
 			description: "Multiple complete config with same API versions",
 			config:      []string{completeConfig, completeClusterConfig},
 			expected: []util.VersionedConfig{config(
@@ -290,7 +323,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
 			), config(
 				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
@@ -298,21 +331,20 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version, v2beta8.Version},
+			apiVersion:  []string{latest.Version, v2beta8.Version},
 			description: "Multiple complete config with different API versions",
-			config:      []string{completeConfig, completeClusterConfig},
+			config:      []string{completeConfig, completeClusterConfigV1},
 			expected: []util.VersionedConfig{config(
 				withGoogleCloudBuild("ID",
 					withShaTagger(),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact(),
 				),
-				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withRawK8s("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
 			), config(
 				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
@@ -320,12 +352,11 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "Minimal Cluster config",
 			config:      []string{minimalClusterConfig},
 			expected: []util.VersionedConfig{config(
@@ -333,12 +364,11 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withGitTagger(),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "Complete Cluster config",
 			config:      []string{completeClusterConfig},
 			expected: []util.VersionedConfig{config(
@@ -347,18 +377,17 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "Bad config",
 			config:      []string{badConfig},
 			shouldErr:   true,
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "two taggers defined",
 			config:      []string{invalidConfig},
 			shouldErr:   true,
@@ -370,33 +399,31 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "invalid statusCheckDeadline",
 			config:      []string{invalidStatusCheckConfig},
 			shouldErr:   true,
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "valid statusCheckDeadline",
 			config:      []string{validStatusCheckConfig},
 			expected: []util.VersionedConfig{config(
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withStatusCheckDeadline(10),
 				withLogsPrefix("container"),
 			)},
 		},
 		{
-			apiVersion:  []string{latestV1.Version},
+			apiVersion:  []string{latest.Version},
 			description: "custom log prefix",
 			config:      []string{customLogPrefix},
 			expected: []util.VersionedConfig{config(
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("none"),
 			)},
 		},
@@ -410,11 +437,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 
 			cfgs, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"))
 			for _, cfg := range cfgs {
-				if _, ok := SchemaVersionsV2.Find(test.apiVersion[0]); !ok {
-					// TODO: the "defaults" package below only accept latestV2 schema.
-					t.SkipNow()
-				}
-
 				err := defaults.Set(cfg.(*latest.SkaffoldConfig))
 				t.CheckNoError(err)
 			}
@@ -447,7 +469,6 @@ func TestMarshalConfig(t *testing.T) {
 							},
 						},
 					})),
-				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
 			),
 		},
@@ -509,6 +530,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			GradleImage: "gcr.io/cloud-builders/gradle",
 			KanikoImage: kaniko.DefaultImage,
 			PackImage:   "gcr.io/k8s-skaffold/pack",
+			KoImage:     "gcr.io/k8s-skaffold/skaffold",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -542,11 +564,15 @@ func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) 
 	}
 }
 
-func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
+func withRawK8s(manifests ...string) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{
-			Manifests: manifests,
-		}
+		cfg.Render.RawK8s = manifests
+	}
+}
+
+func withKubectlDeployer() func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy.KubectlDeploy = &latest.KubectlDeploy{}
 	}
 }
 
@@ -630,6 +656,10 @@ func withVolume(v v1.Volume) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		cfg.Cluster.Volumes = append(cfg.Cluster.Volumes, v)
 	}
+}
+
+func withLocalBuildConcurrency(concurrency *int) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) { cfg.LocalBuild.Concurrency = concurrency }
 }
 
 func withTagPolicy(tagPolicy latest.TagPolicy) func(*latest.BuildConfig) {

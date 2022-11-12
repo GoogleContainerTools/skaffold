@@ -54,11 +54,11 @@ func TestShouldDisplayMetricsPrompt(t *testing.T) {
 		},
 		{
 			name:   "collect-metrics false",
-			config: &config.ContextConfig{CollectMetrics: util.BoolPtr(false)},
+			config: &config.ContextConfig{CollectMetrics: util.Ptr(false)},
 		},
 		{
 			name:   "collect-metrics true",
-			config: &config.ContextConfig{CollectMetrics: util.BoolPtr(true)},
+			config: &config.ContextConfig{CollectMetrics: util.Ptr(true)},
 		},
 	}
 	for _, test := range tests {

@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -42,7 +44,11 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	}
 	dateTimeExpected := "2015-03-07"
 
-	customTemplateExample, _ := NewCustomTemplateTagger("{{.DATE}}_{{.SHA}}", map[string]Tagger{"DATE": dateTimeExample})
+	ctx := context.Background()
+	runCtx, _ := runcontext.GetRunContext(ctx, config.SkaffoldOptions{}, nil)
+	customTemplateExample, _ := NewCustomTemplateTagger(runCtx, "{{.DATE}}_{{.SHA}}", map[string]Tagger{
+		"DATE": dateTimeExample,
+	})
 
 	tests := []struct {
 		description      string
@@ -121,7 +127,7 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 				ImageName: test.imageName,
 			}
 
-			tag, err := GenerateFullyQualifiedImageName(context.Background(), test.tagger, image)
+			tag, err := GenerateFullyQualifiedImageName(ctx, test.tagger, image)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

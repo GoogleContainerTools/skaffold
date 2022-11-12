@@ -23,7 +23,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.17.*
+        go-version: 1.19.*
       id: go
 
     # Skip changes not affecting examples or integration/examples
@@ -58,8 +58,10 @@ jobs:
       run: |
         for dir in $CHANGED_EXAMPLES; do
             (cd $dir && echo ">> $dir" && \
-                if [ $(expr "$($SKAFFOLD_BINARY inspect build-env list)" : '.*"type":"local".*') -gt 0 ]; then \
-                    $SKAFFOLD_BINARY build --push=false; \
+                if [[ $dir == 'integration/examples/custom-buildx' ]]; then \
+                    echo "skipping $dir: requires image pushing to succeed which is not done in these tests"; \
+                elif [ $(expr "$($SKAFFOLD_BINARY inspect build-env list)" : '.*"type":"local".*') -gt 0 ]; then \
+                    $SKAFFOLD_BINARY build --push=false --cache-artifacts=false; \
                 else \
                     echo "skipping $dir: not local build-env"; \
                 fi) \

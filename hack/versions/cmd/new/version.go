@@ -19,7 +19,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -54,7 +53,7 @@ func main() {
 	makeSchemaDir(current)
 
 	// Create a package for current version
-	walk.From(path("latest", "v1")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
+	walk.From(path("latest")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
 		cp(file, path(current, info.Name()))
 		sed(path(current, info.Name()), "package v1", "package "+current)
 		return nil
@@ -75,9 +74,9 @@ func main() {
 	sed(path(prev, "upgrade_test.go"), "latest", current)
 
 	// Latest uses the new version
-	sed(path("latest", "v1", "config.go"), current, next)
+	sed(path("latest", "config.go"), current, next)
 
-	hackschema.UpdateVersionComment(path("latest", "v1", "config.go"), false)
+	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
 
 	// Update skaffold.yaml in integration tests
 	walk.From("integration").WhenNameMatches("*skaffold*.yaml").MustDo(func(path string, _ walk.Dirent) error {
@@ -162,7 +161,7 @@ func template(file string) string {
 }
 
 func read(path string) []byte {
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		panic("unable to read " + path)
 	}
@@ -170,7 +169,7 @@ func read(path string) []byte {
 }
 
 func write(path string, buf []byte) {
-	if err := ioutil.WriteFile(path, buf, os.ModePerm); err != nil {
+	if err := os.WriteFile(path, buf, os.ModePerm); err != nil {
 		panic("unable to write " + path)
 	}
 }

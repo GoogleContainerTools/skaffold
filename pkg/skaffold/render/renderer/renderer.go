@@ -21,31 +21,49 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/noop"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type Renderer interface {
-	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestList, error)
+	Render(ctx context.Context, out io.Writer, artifacts []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error)
 	// ManifestDeps returns the user kubernetes manifests to file watcher. In dev mode, a "redeploy" will be triggered
 	// if any of the "Dependencies" manifest is changed.
 	ManifestDeps() ([]string, error)
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, usingLegacyHelmDeploy bool) (Renderer, error) {
-	if usingLegacyHelmDeploy {
-		return noop.New(renderCfg, cfg.GetWorkingDir(), hydrationDir, labels)
+func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string) (GroupRenderer, error) {
+	var rs GroupRenderer
+	rs.HookRunners = []hooks.Runner{hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))}
+
+	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
+		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace())
+		if err != nil {
+			return GroupRenderer{}, err
+		}
+		log.Entry(ctx).Infof("setting up kpt renderer")
+		rs.Renderers = append(rs.Renderers, r)
+	} else if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
+		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
+		if err != nil {
+			return GroupRenderer{}, err
+		}
+		rs.Renderers = append(rs.Renderers, r)
 	}
-	if renderCfg.Validate == nil && renderCfg.Transform == nil && renderCfg.Kpt == nil {
-		log.Entry(context.TODO()).Debug("setting up kubectl renderer")
-		return kubectl.New(cfg, renderCfg, labels)
+
+	if renderCfg.Helm != nil {
+		r, err := helm.New(cfg, renderCfg, labels, configName)
+		if err != nil {
+			return GroupRenderer{}, err
+		}
+		rs.Renderers = append(rs.Renderers, r)
 	}
-	log.Entry(context.TODO()).Infof("setting up kpt renderer")
-	return kpt.New(cfg, renderCfg, hydrationDir, labels)
+	return rs, nil
 }

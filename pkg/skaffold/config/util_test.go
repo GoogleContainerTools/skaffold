@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -41,15 +42,15 @@ func TestReadConfig(t *testing.T) {
 	baseConfig := &GlobalConfig{
 		Global: &ContextConfig{
 			DefaultRepo:    "test-repository",
-			MultiLevelRepo: util.BoolPtr(false),
+			MultiLevelRepo: util.Ptr(false),
 		},
 		ContextConfigs: []*ContextConfig{
 			{
 				Kubecontext:        "test-context",
 				InsecureRegistries: []string{"bad.io", "worse.io"},
-				LocalCluster:       util.BoolPtr(true),
+				LocalCluster:       util.Ptr(true),
 				DefaultRepo:        "context-local-repository",
-				MultiLevelRepo:     util.BoolPtr(true),
+				MultiLevelRepo:     util.Ptr(true),
 			},
 		},
 	}
@@ -112,15 +113,15 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 	sampleConfig1 := &ContextConfig{
 		Kubecontext:        someKubeContext,
 		InsecureRegistries: []string{"bad.io", "worse.io"},
-		LocalCluster:       util.BoolPtr(true),
+		LocalCluster:       util.Ptr(true),
 		DefaultRepo:        "my-private-registry",
-		MultiLevelRepo:     util.BoolPtr(true),
+		MultiLevelRepo:     util.Ptr(true),
 	}
 	sampleConfig2 := &ContextConfig{
 		Kubecontext:    "another_context",
-		LocalCluster:   util.BoolPtr(false),
+		LocalCluster:   util.Ptr(false),
 		DefaultRepo:    "my-public-registry",
-		MultiLevelRepo: util.BoolPtr(false),
+		MultiLevelRepo: util.Ptr(false),
 	}
 
 	tests := []struct {
@@ -134,9 +135,9 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			cfg: &GlobalConfig{
 				Global: &ContextConfig{
 					InsecureRegistries: []string{"mediocre.io"},
-					LocalCluster:       util.BoolPtr(true),
+					LocalCluster:       util.Ptr(true),
 					DefaultRepo:        "my-private-registry",
-					MultiLevelRepo:     util.BoolPtr(true),
+					MultiLevelRepo:     util.Ptr(true),
 				},
 				ContextConfigs: []*ContextConfig{
 					{
@@ -147,9 +148,9 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			},
 			expectedConfig: &ContextConfig{
 				InsecureRegistries: []string{"mediocre.io"},
-				LocalCluster:       util.BoolPtr(true),
+				LocalCluster:       util.Ptr(true),
 				DefaultRepo:        "my-private-registry",
-				MultiLevelRepo:     util.BoolPtr(true),
+				MultiLevelRepo:     util.Ptr(true),
 			},
 		},
 		{
@@ -195,9 +196,9 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			},
 			expectedConfig: &ContextConfig{
 				Kubecontext:    someKubeContext,
-				LocalCluster:   util.BoolPtr(false),
+				LocalCluster:   util.Ptr(false),
 				DefaultRepo:    "my-public-registry",
-				MultiLevelRepo: util.BoolPtr(false),
+				MultiLevelRepo: util.Ptr(false),
 			},
 		},
 		{
@@ -206,9 +207,9 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			cfg:         &GlobalConfig{Global: sampleConfig2},
 			expectedConfig: &ContextConfig{
 				Kubecontext:    someKubeContext,
-				LocalCluster:   util.BoolPtr(false),
+				LocalCluster:   util.Ptr(false),
 				DefaultRepo:    "my-public-registry",
-				MultiLevelRepo: util.BoolPtr(false),
+				MultiLevelRepo: util.Ptr(false),
 			},
 		},
 		{
@@ -252,12 +253,12 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 		},
 		{
 			description: "config update-check is true",
-			cfg:         &ContextConfig{UpdateCheck: util.BoolPtr(true)},
+			cfg:         &ContextConfig{UpdateCheck: util.Ptr(true)},
 			expected:    true,
 		},
 		{
 			description: "config update-check is false",
-			cfg:         &ContextConfig{UpdateCheck: util.BoolPtr(false)},
+			cfg:         &ContextConfig{UpdateCheck: util.Ptr(false)},
 		},
 		{
 			description: "config is nil",
@@ -317,12 +318,12 @@ func TestGetCluster(t *testing.T) {
 		},
 		{
 			description: "kind with local-cluster=false",
-			cfg:         &ContextConfig{Kubecontext: "kind-other", LocalCluster: util.BoolPtr(false)},
+			cfg:         &ContextConfig{Kubecontext: "kind-other", LocalCluster: util.Ptr(false)},
 			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
 			description: "kind with kind-disable-load=true",
-			cfg:         &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)},
+			cfg:         &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.Ptr(true)},
 			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
 		},
 		{
@@ -337,12 +338,12 @@ func TestGetCluster(t *testing.T) {
 		},
 		{
 			description: "k3d with local-cluster=false",
-			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", LocalCluster: util.BoolPtr(false)},
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", LocalCluster: util.Ptr(false)},
 			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
 			description: "k3d with disable-load=true",
-			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)},
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.Ptr(true)},
 			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
 		},
 		{
@@ -362,7 +363,7 @@ func TestGetCluster(t *testing.T) {
 		},
 		{
 			description: "generic cluster with local-cluster=true",
-			cfg:         &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.BoolPtr(true)},
+			cfg:         &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.Ptr(true)},
 			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
 		},
 		{
@@ -446,6 +447,56 @@ func TestIsKindCluster(t *testing.T) {
 	}
 }
 
+func TestIsMixedPlatformCluster(t *testing.T) {
+	type platform struct {
+		os   string
+		arch string
+	}
+	tests := []struct {
+		description string
+		nodes       []platform
+		expected    bool
+	}{
+		{
+			description: "no nodes",
+			expected:    false,
+		},
+		{
+			description: "single platform nodes",
+			nodes: []platform{
+				{os: "linux", arch: "amd64"},
+				{os: "linux", arch: "amd64"},
+			},
+			expected: false,
+		},
+		{
+			description: "mixed platform nodes",
+			nodes: []platform{
+				{os: "linux", arch: "amd64"},
+				{os: "linux", arch: "amd64"},
+				{os: "linux", arch: "arm64"},
+			},
+			expected: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			nodes := &v1.NodeList{}
+			for _, n := range test.nodes {
+				nodes.Items = append(nodes.Items, v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: uuid.New().String(),
+					},
+					Status: v1.NodeStatus{NodeInfo: v1.NodeSystemInfo{MachineID: uuid.New().String(), Architecture: n.arch, OperatingSystem: n.os}},
+				})
+			}
+			cl := fake.NewSimpleClientset(nodes)
+			t.Override(&kubeclient.Client, func(kubeContext string) (kubernetes.Interface, error) { return cl, nil })
+			t.CheckDeepEqual(test.expected, IsMixedPlatformCluster(context.Background(), ""))
+		})
+	}
+}
+
 func TestKindClusterName(t *testing.T) {
 	tests := []struct {
 		kubeCluster  string
@@ -520,7 +571,7 @@ func TestGetDefaultRepo(t *testing.T) {
 		{
 			description:  "from cli",
 			cfg:          &ContextConfig{},
-			cliValue:     util.StringPtr("default/repo"),
+			cliValue:     util.Ptr("default/repo"),
 			expectedRepo: "default/repo",
 		},
 		{
@@ -532,7 +583,7 @@ func TestGetDefaultRepo(t *testing.T) {
 		{
 			description:  "cancel global config with cli",
 			cfg:          &ContextConfig{DefaultRepo: "global/repo"},
-			cliValue:     util.StringPtr(""),
+			cliValue:     util.Ptr(""),
 			expectedRepo: "",
 		},
 	}
@@ -561,8 +612,8 @@ func TestGetMultiLevelRepo(t *testing.T) {
 		},
 		{
 			description:   "from global config",
-			cfg:           &ContextConfig{MultiLevelRepo: util.BoolPtr(true)},
-			expectedValue: util.BoolPtr(true),
+			cfg:           &ContextConfig{MultiLevelRepo: util.Ptr(true)},
+			expectedValue: util.Ptr(true),
 		},
 	}
 	for _, test := range tests {
@@ -805,7 +856,7 @@ global:
 kubeContexts: []`,
 			expectedCfg: &GlobalConfig{
 				Global: &ContextConfig{
-					UpdateCheck: util.BoolPtr(false),
+					UpdateCheck: util.Ptr(false),
 				},
 				ContextConfigs: []*ContextConfig{},
 			},
@@ -820,7 +871,7 @@ global:
 kubeContexts: []`,
 			expectedCfg: &GlobalConfig{
 				Global: &ContextConfig{
-					UpdateCheck: util.BoolPtr(false),
+					UpdateCheck: util.Ptr(false),
 					UpdateCheckConfig: &UpdateConfig{
 						LastPrompted: "some date"},
 				},
@@ -890,7 +941,7 @@ func TestUpdateUserSurveyTaken(t *testing.T) {
 			expectedCfg: &GlobalConfig{
 				Global: &ContextConfig{
 					Survey: &SurveyConfig{UserSurveys: []*UserSurvey{
-						{ID: "foo", Taken: util.BoolPtr(true)},
+						{ID: "foo", Taken: util.Ptr(true)},
 					}}},
 				ContextConfigs: []*ContextConfig{},
 			},
@@ -909,8 +960,8 @@ kubeContexts: []`,
 				Global: &ContextConfig{
 					Survey: &SurveyConfig{
 						UserSurveys: []*UserSurvey{
-							{ID: "foo1", Taken: util.BoolPtr(true)},
-							{ID: "foo2", Taken: util.BoolPtr(true)},
+							{ID: "foo1", Taken: util.Ptr(true)},
+							{ID: "foo2", Taken: util.Ptr(true)},
 						}}},
 				ContextConfigs: []*ContextConfig{},
 			},
@@ -929,7 +980,7 @@ kubeContexts: []`,
 				Global: &ContextConfig{
 					Survey: &SurveyConfig{
 						UserSurveys: []*UserSurvey{
-							{ID: "foo", Taken: util.BoolPtr(true)},
+							{ID: "foo", Taken: util.Ptr(true)},
 						}}},
 				ContextConfigs: []*ContextConfig{},
 			},

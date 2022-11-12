@@ -18,7 +18,7 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -33,8 +33,8 @@ func TestUpdateChangelog(t *testing.T) {
 	}
 
 	// Read original `testdata/changelog.md` and write it back after test
-	changelogB, _ := ioutil.ReadFile(path.Join("testdata", "changelog.md"))
-	defer ioutil.WriteFile(path.Join("testdata", "changelog.md"), changelogB, 0644)
+	changelogB, _ := os.ReadFile(path.Join("testdata", "changelog.md"))
+	defer os.WriteFile(path.Join("testdata", "changelog.md"), changelogB, 0644)
 
 	// function should only error on standard lib errors
 	err := updateChangelog(path.Join("testdata", "changelog.md"), path.Join("template.md"), data)
@@ -42,8 +42,8 @@ func TestUpdateChangelog(t *testing.T) {
 		t.Fatalf("%s", err)
 	}
 
-	gotB, _ := ioutil.ReadFile(path.Join("testdata", "changelog.md"))
-	wantB, _ := ioutil.ReadFile(path.Join("testdata", "expected.md"))
+	gotB, _ := os.ReadFile(path.Join("testdata", "changelog.md"))
+	wantB, _ := os.ReadFile(path.Join("testdata", "expected.md"))
 	gotB = bytes.ReplaceAll(gotB, []byte("\r\n"), []byte("\n"))
 	wantB = bytes.ReplaceAll(wantB, []byte("\r\n"), []byte("\n"))
 

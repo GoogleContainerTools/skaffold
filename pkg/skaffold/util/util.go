@@ -23,6 +23,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -108,21 +109,8 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	return set.Files(), nil
 }
 
-// BoolPtr returns a pointer to a bool
-func BoolPtr(b bool) *bool {
-	o := b
-	return &o
-}
-
-// StringPtr returns a pointer to a string
-func StringPtr(s string) *string {
-	o := s
-	return &o
-}
-
-// IntPtr returns a pointer to an int
-func IntPtr(i int) *int {
-	o := i
+func Ptr[T any](t T) *T {
+	o := t
 	return &o
 }
 
@@ -285,6 +273,19 @@ func IsDir(path string) bool {
 	info, err := os.Stat(path)
 	// err could be permission-related
 	return (err == nil || !os.IsNotExist(err)) && info.IsDir()
+}
+
+// IsEmptyDir returns true for empty directories otherwise false
+func IsEmptyDir(path string) bool {
+	d, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer d.Close()
+	if _, err := d.ReadDir(1); err == io.EOF {
+		return true
+	}
+	return false
 }
 
 // IsHiddenDir returns if a directory is hidden.

@@ -19,7 +19,7 @@ package util
 import (
 	"context"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
@@ -33,7 +33,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, transformAllowlist, transformDenylist map[apim.GroupKind]latest.ResourceFilter) (manifest.ManifestList, error) {
+type GenerateHydratedManifestsOptions struct {
+	TransformAllowList         map[apim.GroupKind]latest.ResourceFilter
+	TransformDenylist          map[apim.GroupKind]latest.ResourceFilter
+	EnablePlatformNodeAffinity bool
+	EnableGKEARMNodeToleration bool
+	Offline                    bool
+	KubeContext                string
+}
+
+func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, ns string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
 	// Generate manifests.
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateManifest")
 	manifests, err := g.Generate(rCtx, out)
@@ -44,13 +53,51 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 
 	// Update image labels.renderer_test.go
 	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setSkaffoldLabels")
-	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
-	manifests, err = manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(transformAllowlist, transformDenylist))
+
+	manifests, err = manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
 	if err != nil {
 		return nil, err
 	}
-	// TODO(aaron-prindle) wire proper transform allow/deny list args when going to V2
-	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(transformAllowlist, transformDenylist)); err != nil {
+	rs := manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)
+
+	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)); err != nil {
+		return nil, err
+	}
+	// TODO(tejaldesai) consult with cloud deploy team if namespaces can be set in offline mode
+	// in case namespace is set on the skaffold render cli command.
+	if !opts.Offline {
+		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
+			return nil, err
+		}
+		endTrace()
+	}
+	var platforms manifest.PodPlatforms
+
+	if opts.EnableGKEARMNodeToleration && isGKECluster(opts.KubeContext) {
+		rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setGKEARMToleration")
+		platforms, err = manifests.GetImagePlatforms(rCtx, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
+		if err != nil {
+			return nil, err
+		}
+		if manifests, err = manifests.SetGKEARMToleration(rCtx, manifest.NewResourceSelectorPodSpec(opts.TransformAllowList, opts.TransformDenylist), platforms); err != nil {
+			return nil, err
+		}
+		endTrace()
+	}
+
+	if !opts.EnablePlatformNodeAffinity {
+		// TODO (gaghosh): To support platform node affinity in offline mode, we'll need to save the image platform
+		// information in the build output file, and consume that here instead of looking up in the container registry.
+		return manifests, nil
+	}
+	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setPlatformNodeAffinity")
+	if platforms == nil {
+		platforms, err = manifests.GetImagePlatforms(rCtx, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if manifests, err = manifests.SetPlatformNodeAffinity(rCtx, manifest.NewResourceSelectorPodSpec(opts.TransformAllowList, opts.TransformDenylist), platforms); err != nil {
 		return nil, err
 	}
 	endTrace()
@@ -90,7 +137,7 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 	// add user flag values, override user schema values and defaults
 	// TODO(aaron-prindle) see if workdir needs to be considered in this read
 	if cfg.TransformRulesFile() != "" {
-		transformRulesFromFile, err := ioutil.ReadFile(cfg.TransformRulesFile())
+		transformRulesFromFile, err := os.ReadFile(cfg.TransformRulesFile())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -120,6 +167,18 @@ func ConsolidateTransformConfiguration(cfg render.Config) (map[apim.GroupKind]la
 func ConvertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
 	nrf := latest.ResourceFilter{}
 	nrf.GroupKind = rf.GroupKind
+	if len(rf.PodSpec) > 0 {
+		nspec := []string{}
+		for _, str := range rf.PodSpec {
+			if str == ".*" {
+				nspec = append(nspec, str)
+				continue
+			}
+			nstr := strings.ReplaceAll(str, ".*", "")
+			nspec = append(nspec, nstr)
+		}
+		nrf.PodSpec = nspec
+	}
 
 	if len(rf.Labels) > 0 {
 		nlabels := []string{}
@@ -149,3 +208,5 @@ func ConvertJSONPathIndex(rf latest.ResourceFilter) latest.ResourceFilter {
 
 	return nrf
 }
+
+func isGKECluster(kubeContext string) bool { return strings.HasPrefix(kubeContext, "gke") }

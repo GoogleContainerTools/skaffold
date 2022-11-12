@@ -57,6 +57,14 @@ func (m DeployerMux) GetDeployers() []Deployer {
 	return m.deployers
 }
 
+func (m DeployerMux) GetDeployersInverse() []Deployer {
+	inverse := m.deployers
+	for i, j := 0, len(inverse)-1; i < j; i, j = i+1, j-1 {
+		inverse[i], inverse[j] = inverse[j], inverse[i]
+	}
+	return inverse
+}
+
 func (m DeployerMux) GetAccessor() access.Accessor {
 	var accessors access.AccessorMux
 	for _, deployer := range m.deployers {
@@ -103,7 +111,11 @@ func (m DeployerMux) RegisterLocalImages(images []graph.Artifact) {
 	}
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l manifest.ManifestList) error {
+func (m DeployerMux) ConfigName() string {
+	return ""
+}
+
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact, l manifest.ManifestListByConfig) error {
 	for i, deployer := range m.deployers {
 		eventV2.DeployInProgress(i)
 		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))
@@ -156,13 +168,15 @@ func (m DeployerMux) Dependencies() ([]string, error) {
 	return deps.ToList(), nil
 }
 
-func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, list manifest.ManifestList) error {
-	for _, deployer := range m.deployers {
+func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, manifestsByConfig manifest.ManifestListByConfig) error {
+	// Reverse order of deployers for cleanup to ensure resources
+	// are removed before their definitions are removed.
+	for _, deployer := range m.GetDeployersInverse() {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Cleanup")
 		if dryRun {
 			output.Yellow.Fprintln(w, "Following resources would be deleted:")
 		}
-		if err := deployer.Cleanup(ctx, w, dryRun, nil); err != nil {
+		if err := deployer.Cleanup(ctx, w, dryRun, manifestsByConfig); err != nil {
 			return err
 		}
 		endTrace()
@@ -171,4 +185,4 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, list
 }
 
 // TrackBuildArtifacts should *only* be called on individual deployers. This is a noop.
-func (m DeployerMux) TrackBuildArtifacts(_ []graph.Artifact) {}
+func (m DeployerMux) TrackBuildArtifacts(_, _ []graph.Artifact) {}

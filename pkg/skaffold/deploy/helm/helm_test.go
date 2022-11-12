@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -33,12 +33,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
 	ctl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	rhelm "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -349,32 +352,6 @@ var (
 	version35   = `version.BuildInfo{Version:"3.5.2", GitCommit:"c4e74854886b2efe3321e185578e6db9be0a6e29", GitTreeState:"clean", GoVersion:"go1.14.15"}`
 )
 
-func TestBinVer(t *testing.T) {
-	tests := []struct {
-		description string
-		helmVersion string
-		expected    string
-		shouldErr   bool
-	}{
-		{"Helm 2.0RC1", version20rc, "2.0.0-rc.1", false},
-		{"Helm 2.15.1", version21, "2.15.1", false},
-		{"Helm 3.0b3", version30b, "3.0.0-beta.3", false},
-		{"Helm 3.0", version30, "3.0.0", false},
-		{"Helm 3.1.1", version31, "3.1.1", false},
-		{"Helm 3.5.2 without leading 'v'", version35, "3.5.2", false},
-		{"Custom Helm 3.3 build from Manjaro", "v3.3", "3.3.0", false}, // not semver compliant
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
-			ver, err := binVer(context.Background())
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, ver.String())
-		})
-	}
-}
-
 func TestNewDeployer(t *testing.T) {
 	tests := []struct {
 		description string
@@ -393,14 +370,14 @@ func TestNewDeployer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
+			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default")
 			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
 
 func TestHelmDeploy(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
+	tmpDir, err := os.MkdirTemp("", "TestHelmDeploy")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
@@ -942,7 +919,7 @@ func TestHelmDeploy(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&writeBuildArtifactsFunc, func([]graph.Artifact) (string, func(), error) { return "TMPFILE", func() {}, nil })
+			t.Override(&helm.WriteBuildArtifacts, func([]graph.Artifact) (string, func(), error) { return "TMPFILE", func() {}, nil })
 			t.Override(&client.Client, deployutil.MockK8sClient)
 			fakeWarner := &warnings.Collect{}
 			env := test.env
@@ -952,7 +929,7 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return env })
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
+			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 				return api.Config{CurrentContext: ""}, nil
 			})
@@ -961,7 +938,7 @@ func TestHelmDeploy(t *testing.T) {
 				namespace:  test.namespace,
 				force:      test.force,
 				configFile: "test.yaml",
-			}, &label.DefaultLabeller{}, &test.helm, nil)
+			}, &label.DefaultLabeller{}, &test.helm, nil, "default")
 			t.RequireNoError(err)
 
 			if test.configure != nil {
@@ -969,7 +946,7 @@ func TestHelmDeploy(t *testing.T) {
 			}
 			deployer.pkgTmpDir = tmpDir
 			// Deploy returns nil unless `helm get all <release>` is set up to return actual release info
-			err = deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err = deployer.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, *deployer.namespaces)
@@ -1048,10 +1025,10 @@ func TestHelmCleanup(t *testing.T) {
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
-			}, &label.DefaultLabeller{}, &test.helm, nil)
+			}, &label.DefaultLabeller{}, &test.helm, nil, "default")
 			t.RequireNoError(err)
 
-			deployer.Cleanup(context.Background(), ioutil.Discard, test.dryRun, nil)
+			deployer.Cleanup(context.Background(), io.Discard, test.dryRun, manifest.ManifestListByConfig{})
 
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
@@ -1161,7 +1138,7 @@ func TestHelmDependencies(t *testing.T) {
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
 				}},
-			}, nil)
+			}, nil, "default")
 			t.RequireNoError(err)
 			deps, err := deployer.Dependencies()
 
@@ -1249,8 +1226,6 @@ func TestHelmRender(t *testing.T) {
 		commands    util.Command
 		helm        latest.LegacyHelmDeploy
 		env         []string
-		outputFile  string
-		expected    string
 		builds      []graph.Artifact
 		namespace   string
 	}{
@@ -1258,25 +1233,8 @@ func TestHelmRender(t *testing.T) {
 			description: "normal render v3",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render to a file",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRunWithOutput("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig",
-					"Dummy Output"),
-			helm:       testDeployConfig,
-			outputFile: "dummy.yaml",
-			expected:   "Dummy Output\n",
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1287,8 +1245,7 @@ func TestHelmRender(t *testing.T) {
 			description: "render with templated config",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfigTemplated,
 			builds: []graph.Artifact{
 				{
@@ -1299,10 +1256,8 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with templated values file",
 			shouldErr:   false,
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
-			helm: testDeployConfigValuesFilesTemplated,
+			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
+			helm:        testDeployConfigValuesFilesTemplated,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1312,7 +1267,6 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with missing templated release name should fail",
 			shouldErr:   true,
-			commands:    testutil.CmdRunWithOutput("helm version --client", version31),
 			helm:        testDeployWithTemplatedName,
 			builds:      testBuilds,
 		},
@@ -1320,17 +1274,15 @@ func TestHelmRender(t *testing.T) {
 			description: "render with templated release name",
 			env:         []string{"USER=user"},
 			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedName,
 			builds: testBuilds,
 		},
 		{
 			description: "render with namespace",
 			shouldErr:   false,
-			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
-			helm: testDeployNamespacedConfig,
+			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
+			helm:        testDeployNamespacedConfig,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1340,9 +1292,8 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with namespace",
 			shouldErr:   false,
-			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
-			helm: testDeployEnvTemplateNamespacedConfig,
+			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
+			helm:        testDeployEnvTemplateNamespacedConfig,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1352,9 +1303,8 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with remote repo",
 			shouldErr:   false,
-			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm: testDeployConfigRemoteRepo,
+			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm:        testDeployConfigRemoteRepo,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1364,138 +1314,56 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with remote chart",
 			shouldErr:   false,
-			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm: testDeployRemoteChart,
+			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm:        testDeployRemoteChart,
 		},
 		{
 			description: "render with remote chart with version",
 			shouldErr:   false,
-			commands: testutil.CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm: testDeployRemoteChartVersion,
+			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm:        testDeployRemoteChartVersion,
 		},
-		{
-			description: "render with cli namespace",
-			shouldErr:   false,
-			namespace:   "clinamespace",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
-			helm: testDeployConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render with HelmRelease.Namespace and cli namespace",
-			shouldErr:   false,
-			namespace:   "clinamespace",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
-			helm: testDeployNamespacedConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
+		// https://github.com/GoogleContainerTools/skaffold/issues/7595
+		// {
+		//	description: "render with cli namespace",
+		//	shouldErr:   false,
+		//	namespace:   "clinamespace",
+		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+		//	helm:        testDeployConfig,
+		//	builds: []graph.Artifact{
+		//		{
+		//			ImageName: "skaffold-helm",
+		//			Tag:       "skaffold-helm:tag1",
+		//		}},
+		// },
+		// {
+		//	description: "render with HelmRelease.Namespace and cli namespace",
+		//	shouldErr:   false,
+		//	namespace:   "clinamespace",
+		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+		//	helm:        testDeployNamespacedConfig,
+		//	builds: []graph.Artifact{
+		//		{
+		//			ImageName: "skaffold-helm",
+		//			Tag:       "skaffold-helm:tag1",
+		//		}},
+		// },
 	}
+	labeller := label.DefaultLabeller{}
+	labels := labeller.Labels()
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			file := ""
-			if test.outputFile != "" {
-				file = t.NewTempDir().Path(test.outputFile)
-			}
-
 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
-			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
+			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&util.DefaultExecCommand, test.commands)
-			deployer, err := NewDeployer(context.Background(), &helmConfig{
+			helmRenderer, err := rhelm.New(&helmConfig{
 				namespace: test.namespace,
-			}, &label.DefaultLabeller{}, &test.helm, nil)
+			}, latest.RenderConfig{
+				Generate: latest.Generate{Helm: &latest.Helm{Flags: test.helm.Flags, Releases: test.helm.Releases}},
+			}, labels, "default")
 			t.RequireNoError(err)
-			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
+			_, err = helmRenderer.Render(context.Background(), io.Discard, test.builds, true)
 			t.CheckError(test.shouldErr, err)
-
-			if file != "" {
-				dat, _ := ioutil.ReadFile(file)
-				t.CheckDeepEqual(test.expected, string(dat))
-			}
-		})
-	}
-}
-
-func TestWriteBuildArtifacts(t *testing.T) {
-	tests := []struct {
-		description string
-		builds      []graph.Artifact
-		result      string
-	}{
-		{
-			description: "nil",
-			builds:      nil,
-			result:      `{"builds":null}`,
-		},
-		{
-			description: "empty",
-			builds:      []graph.Artifact{},
-			result:      `{"builds":[]}`,
-		},
-		{
-			description: "multiple images with tags",
-			builds:      []graph.Artifact{{ImageName: "name", Tag: "name:tag"}, {ImageName: "name2", Tag: "name2:tag"}},
-			result:      `{"builds":[{"imageName":"name","tag":"name:tag"},{"imageName":"name2","tag":"name2:tag"}]}`,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			file, cleanup, err := writeBuildArtifacts(test.builds)
-			t.CheckError(false, err)
-			if content, err := ioutil.ReadFile(file); err != nil {
-				t.Errorf("error reading file %q: %v", file, err)
-			} else {
-				t.CheckDeepEqual(test.result, string(content))
-			}
-			cleanup()
-		})
-	}
-}
-
-func TestGenerateSkaffoldFilter(t *testing.T) {
-	tests := []struct {
-		description string
-		enableDebug bool
-		buildFile   string
-		result      []string
-	}{
-		{
-			description: "empty buildfile is skipped",
-			buildFile:   "",
-			result:      []string{"filter", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
-		},
-		{
-			description: "buildfile is added",
-			buildFile:   "buildfile",
-			result:      []string{"filter", "--kube-context", "kubecontext", "--build-artifacts", "buildfile", "--kubeconfig", "kubeconfig"},
-		},
-		{
-			description: "debugging brings --debugging",
-			enableDebug: true,
-			result:      []string{"filter", "--kube-context", "kubecontext", "--debugging", "--kubeconfig", "kubeconfig"},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			h, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
-			h.enableDebug = test.enableDebug
-			t.RequireNoError(err)
-			result := h.generateSkaffoldFilter(test.buildFile)
-			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -1537,11 +1405,11 @@ func TestHelmHooks(t *testing.T) {
 				return test.runner
 			})
 
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil)
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default")
 			t.RequireNoError(err)
-			err = k.PreDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PreDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
-			err = k.PostDeployHooks(context.Background(), ioutil.Discard)
+			err = k.PostDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -1558,6 +1426,7 @@ func (c *helmConfig) ForceDeploy() bool                                   { retu
 func (c *helmConfig) GetKubeConfig() string                               { return kubectl.TestKubeConfig }
 func (c *helmConfig) GetKubeContext() string                              { return kubectl.TestKubeContext }
 func (c *helmConfig) GetKubeNamespace() string                            { return c.namespace }
+func (c *helmConfig) GetNamespace() string                                { return c.namespace }
 func (c *helmConfig) ConfigurationFile() string                           { return c.configFile }
 func (c *helmConfig) PortForwardResources() []*latest.PortForwardResource { return nil }
 
@@ -1589,7 +1458,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil)
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil, "default")
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)

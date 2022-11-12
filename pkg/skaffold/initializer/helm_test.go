@@ -109,8 +109,8 @@ spec:
 			a := analyze.NewAnalyzer(config)
 			err := a.Analyze(".")
 			t.CheckError(test.shouldErr, err)
-			d := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), a.HelmChartInfo(), config)
-			dc, _ := d.DeployConfig()
+			d := deploy.NewInitializer(a.HelmChartInfo(), config)
+			dc := d.DeployConfig()
 			deploy.CheckHelmInitStruct(t, test.expected, dc.LegacyHelmDeploy.Releases)
 		})
 	}

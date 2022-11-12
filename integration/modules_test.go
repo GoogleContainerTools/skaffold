@@ -41,10 +41,10 @@ func TestModules_BuildDependency(t *testing.T) {
 		// since app2 depends on app3 and app1 depends on app2
 		Run(t, "testdata/modules/app3", "sh", "-c", "echo bar > foo")
 		defer Run(t, "testdata/modules/app3", "sh", "-c", "> foo")
+		client.waitForDeploymentsToStabilizeWithTimeout(3*time.Minute, "app1", "app2", "app3")
 
 		// Make sure the old Deployment and the new Deployment are different
-		err := wait.PollImmediate(500*time.Millisecond, 10*time.Minute, func() (bool, error) {
-			client.waitForDeploymentsToStabilizeWithTimeout(3*time.Minute, "app1", "app2", "app3")
+		err := wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 			newDep1 := client.GetDeployment("app1")
 			newDep2 := client.GetDeployment("app2")
 			newDep3 := client.GetDeployment("app3")

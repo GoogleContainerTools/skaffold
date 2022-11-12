@@ -38,57 +38,69 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 		GroupKind: "Pod",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "", Kind: "Service"}: {
 		GroupKind: "Service",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "apps", Kind: "DaemonSet"}: {
 		GroupKind: "DaemonSet.apps",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "apps", Kind: "Deployment"}: {
 		GroupKind: "Deployment.apps",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "apps", Kind: "ReplicaSet"}: {
 		GroupKind: "ReplicaSet.apps",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "apps", Kind: "StatefulSet"}: {
 		GroupKind: "StatefulSet.apps",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "batch", Kind: "CronJob"}: {
 		GroupKind: "CronJob.batch",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "batch", Kind: "Job"}: {
 		GroupKind: "Job.batch",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "extensions", Kind: "DaemonSet"}: {
 		GroupKind: "DaemonSet.extensions",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "extensions", Kind: "Deployment"}: {
 		GroupKind: "Deployment.extensions",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
 	{Group: "extensions", Kind: "ReplicaSet"}: {
 		GroupKind: "ReplicaSet.extensions",
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
+		PodSpec:   []string{".*"},
 	},
+	// TODO: Investigate exact requirements for adding `affinity` definitions for the following custom resource kinds
 	{Group: "serving.knative.dev", Kind: "Service"}: {
 		GroupKind: "Service.serving.knative.dev",
 		Image:     []string{".*"},
@@ -157,6 +169,11 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 	{Group: "platform.confluent.io", Kind: "Zookeeper"}: {
 		GroupKind: "Zookeeper.platform.confluent.io",
 		Image:     []string{".spec.image.application", ".spec.image.init"},
+		Labels:    []string{".*"},
+	},
+	{Group: "run.googleapis.com", Kind: "Job"}: {
+		GroupKind: "Job.run.googleapis.com",
+		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
 }

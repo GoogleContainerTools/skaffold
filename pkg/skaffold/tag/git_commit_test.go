@@ -21,17 +21,18 @@ package tag
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -417,7 +418,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 		{
 			description: "non git repo",
 			createGitRepo: func(dir string) {
-				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
+				os.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
 			shouldErr: true,
 		},
@@ -496,7 +497,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			description: "non git repo",
 			createGitRepo: func(dir string) {
-				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
+				os.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
 			shouldErr: true,
 		},
@@ -531,6 +532,9 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 }
 
 func TestGitCommit_CustomTemplate(t *testing.T) {
+	ctx := context.Background()
+	runCtx, _ := runcontext.GetRunContext(ctx, config.SkaffoldOptions{}, nil)
+
 	gitCommitExample, _ := NewGitCommit("", "CommitSha", false)
 	tests := []struct {
 		description   string
@@ -574,11 +578,11 @@ func TestGitCommit_CustomTemplate(t *testing.T) {
 				Workspace: tmpDir.Path(test.subDir),
 			}
 
-			c, err := NewCustomTemplateTagger(test.template, test.customMap)
+			c, err := NewCustomTemplateTagger(runCtx, test.template, test.customMap)
 
 			t.CheckNoError(err)
 
-			tag, err := c.GenerateTag(context.Background(), image)
+			tag, err := c.GenerateTag(ctx, image)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, tag)
@@ -703,7 +707,7 @@ func (g *gitRepo) mkdir(folder string) *gitRepo {
 }
 
 func (g *gitRepo) write(file string, content string) *gitRepo {
-	err := ioutil.WriteFile(filepath.Join(g.dir, file), []byte(content), os.ModePerm)
+	err := os.WriteFile(filepath.Join(g.dir, file), []byte(content), os.ModePerm)
 	failNowIfError(g.t, err)
 	return g
 }

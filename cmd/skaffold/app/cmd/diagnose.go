@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -55,7 +55,7 @@ func NewCmdDiagnose() *cobra.Command {
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
 	// force absolute path resolution during diagnose
-	opts.MakePathsAbsolute = util.BoolPtr(true)
+	opts.MakePathsAbsolute = util.Ptr(true)
 	configs, err := getCfgs(ctx, opts)
 	if err != nil {
 		return err

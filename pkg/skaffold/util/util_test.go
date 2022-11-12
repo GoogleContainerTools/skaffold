@@ -322,15 +322,15 @@ func TestMapPtrToSlice(t *testing.T) {
 		{
 			description: "regular key:value",
 			args: map[string]*string{
-				"one": stringPointer("1"),
-				"two": stringPointer("2"),
+				"one": Ptr("1"),
+				"two": Ptr("2"),
 			},
 			expected: []string{"one=1", "two=2"},
 		}, {
 			description: "empty key:value",
 			args: map[string]*string{
-				"one": stringPointer(""),
-				"two": stringPointer(""),
+				"one": Ptr(""),
+				"two": Ptr(""),
 			},
 			expected: []string{"one=", "two="},
 		}, {
@@ -446,6 +446,11 @@ func TestIsURL(t *testing.T) {
 	testutil.CheckDeepEqual(t, true, IsURL("https://bar"))
 }
 
-func stringPointer(s string) *string {
-	return &s
+func TestIsEmptyDir(t *testing.T) {
+	tmpDir := testutil.NewTempDir(t).Touch("file")
+	emptyTmpDir := testutil.NewTempDir(t)
+
+	testutil.CheckDeepEqual(t, true, IsEmptyDir(emptyTmpDir.Root()))
+	testutil.CheckDeepEqual(t, false, IsEmptyDir(tmpDir.Root()))
+	testutil.CheckDeepEqual(t, false, IsEmptyDir(filepath.Join(tmpDir.Root(), "file")))
 }

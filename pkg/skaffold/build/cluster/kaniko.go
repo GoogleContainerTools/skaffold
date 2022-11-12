@@ -21,9 +21,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
@@ -36,7 +38,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const initContainer = "kaniko-init-container"
+const (
+	initContainer = "kaniko-init-container"
+)
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
 	// TODO: Implement building multi-platform images for cluster builder
@@ -79,7 +83,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		if err := pods.Delete(ctx, pod.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
-			log.Entry(ctx).Fatalf("deleting pod: %s", err)
+			log.Entry(ctx).Errorf("deleting pod: %s", err)
 		}
 	}()
 
@@ -122,10 +126,19 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	}()
 
 	// Send context by piping into `tar`.
-	// In case of an error, print the command's output. (The `err` itself is useless: exit status 1).
+	// In case of an error, retry and print the command's output. (The `err` itself is useless: exit status 1).
 	var out bytes.Buffer
-	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
-		errRun := fmt.Errorf("uploading build context: %s", out.String())
+	var errRun error
+
+	// poll up to 10 seconds
+	err := wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
+		if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+	if err != nil {
+		errRun = fmt.Errorf("uploading build context: %s", out.String())
 		errTar := <-errs
 		if errTar != nil {
 			errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)

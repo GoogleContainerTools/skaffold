@@ -62,6 +62,35 @@ deploy:
 
 The `artifactOverrides` binds a Helm value key to a build artifact.  The `imageStrategy` configures the image reference strategy for informing Helm of the image reference to a newly built artifact.
 
+### Multiple image overrides
+
+To override multiple images (ie a Pod with a side car) you can simply add additional variables. For example, the following helm template:
+
+```yaml
+spec:
+  containers:
+    - name: firstContainer
+      image: "{{.Values.firstContainerImage}}"
+      ....
+    - name: secondContainer
+      image: "{{.Values.secondContainerImage}}"
+      ...
+```
+
+can be overriden with:
+
+```
+deploy:
+  helm:
+    releases:
+    - name: my-release
+      artifactOverrides:
+        firstContainerImage: gcr.io/my-project/first-image # no tag present!
+        secondContainerImage: gcr.io/my-project/second-image # no tag present!
+      imageStrategy:
+        helm: {}
+```
+
 ### Image reference strategies
 
 Skaffold supports three _image reference strategies_ for Helm:

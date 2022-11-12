@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -114,7 +113,8 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		if p := platforms.Intersect(supported); p.IsNotEmpty() {
 			platforms = p
 		} else {
-			return "", fmt.Errorf("builder for artifact %q doesn't support building for target platforms: %q. Supported platforms are %q", a.ImageName, platforms, supported)
+			log.Entry(ctx).Warnf("builder for artifact %q doesn't support building for target platforms: %q. Building for supported platforms %q instead.", a.ImageName, platforms, supported)
+			platforms = supported
 		}
 	}
 	return builder.Build(ctx, out, a, tag, platforms)

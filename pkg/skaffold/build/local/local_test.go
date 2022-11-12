@@ -19,7 +19,7 @@ package local
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -186,7 +186,7 @@ func TestLocalRun(t *testing.T) {
 			}).Add("pull1", ""),
 			tag:              "gcr.io/test/image:tag",
 			expected:         "gcr.io/test/image:1",
-			expectedWarnings: []string{"cacheFrom image couldn't be pulled: pull1\n"},
+			expectedWarnings: []string{"cacheFrom image \"pull1\" couldn't be pulled for platform \"\"\n"},
 		},
 		{
 			description: "error checking cache-from image",
@@ -228,7 +228,7 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemon(test.api), nil
 			})
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 			testEvent.InitializeState([]latest.Pipeline{{
@@ -240,12 +240,12 @@ func TestLocalRun(t *testing.T) {
 				}}})
 
 			builder, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latest.LocalBuild{
-				Push:        util.BoolPtr(test.pushImages),
+				Push:        util.Ptr(test.pushImages),
 				Concurrency: &constants.DefaultLocalConcurrency,
 			})
 			t.CheckNoError(err)
-			ab := builder.Build(context.Background(), ioutil.Discard, test.artifact)
-			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag, platform.Matcher{})
+			ab := builder.Build(context.Background(), io.Discard, test.artifact)
+			res, err := ab(context.Background(), io.Discard, test.artifact, test.tag, platform.Matcher{})
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())
@@ -291,7 +291,7 @@ func TestNewBuilder(t *testing.T) {
 			},
 			cluster: config.Cluster{PushImages: true},
 			localBuild: latest.LocalBuild{
-				Push: util.BoolPtr(false),
+				Push: util.Ptr(false),
 			},
 			shouldErr:    false,
 			expectedPush: false,
@@ -302,7 +302,7 @@ func TestNewBuilder(t *testing.T) {
 				return dummyDaemon, nil
 			},
 			cluster:      config.Cluster{PushImages: true},
-			pushFlag:     config.NewBoolOrUndefined(util.BoolPtr(false)),
+			pushFlag:     config.NewBoolOrUndefined(util.Ptr(false)),
 			shouldErr:    false,
 			expectedPush: false,
 		},
@@ -311,9 +311,9 @@ func TestNewBuilder(t *testing.T) {
 			localDockerFn: func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			pushFlag: config.NewBoolOrUndefined(util.BoolPtr(false)),
+			pushFlag: config.NewBoolOrUndefined(util.Ptr(false)),
 			localBuild: latest.LocalBuild{
-				Push: util.BoolPtr(true),
+				Push: util.Ptr(true),
 			},
 			shouldErr:    false,
 			expectedPush: false,
@@ -402,7 +402,7 @@ func TestGetArtifactBuilder(t *testing.T) {
 			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemon(&testutil.FakeAPIClient{}), nil
 			})
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 

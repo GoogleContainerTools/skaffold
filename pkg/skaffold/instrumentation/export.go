@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -44,7 +43,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/option"
 
-	fs "github.com/GoogleContainerTools/skaffold/fs"
+	"github.com/GoogleContainerTools/skaffold/fs"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/user"
@@ -73,7 +72,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		return err
 	}
 
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	fileExists := err == nil
 	if err != nil && !os.IsNotExist(err) {
 		return err
@@ -86,7 +85,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	meters = append(meters, meter)
 	if !isOnline {
 		b, _ = json.Marshal(meters)
-		return ioutil.WriteFile(filename, b, 0666)
+		return os.WriteFile(filename, b, 0666)
 	}
 
 	start := time.Now()
@@ -98,7 +97,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		log.Entry(ctx).Debugf("error uploading metrics: %s", err)
 		log.Entry(ctx).Debugf("writing to file %s instead", filename)
 		b, _ = json.Marshal(meters)
-		return ioutil.WriteFile(filename, b, 0666)
+		return os.WriteFile(filename, b, 0666)
 	}
 	log.Entry(ctx).Debugf("metrics uploading complete in %s", time.Since(start).String())
 
@@ -183,7 +182,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
 	}
 	labels = append(labels, sharedLabels...)
-
+	platformLabel := attribute.String("host_os_arch", fmt.Sprintf("%s/%s", meter.OS, meter.Arch))
 	runCounter := metric.Must(m).NewInt64ValueRecorder("launches", metric.WithDescription("Skaffold Invocations"))
 	runCounter.Record(ctx, 1, labels...)
 
@@ -195,7 +194,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		flagMetrics(ctx, meter, m, randLabel)
 		hooksMetrics(ctx, meter, m, labels...)
 		if doesBuild.Contains(meter.Command) {
-			builderMetrics(ctx, meter, m, sharedLabels...)
+			builderMetrics(ctx, meter, m, platformLabel, sharedLabels...)
 		}
 		if doesDeploy.Contains(meter.Command) {
 			deployerMetrics(ctx, meter, m, sharedLabels...)
@@ -206,7 +205,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	}
 
 	if meter.ErrorCode != 0 {
-		errorMetrics(ctx, meter, m, sharedLabels...)
+		errorMetrics(ctx, meter, m, append(sharedLabels, platformLabel)...)
 	}
 }
 
@@ -275,7 +274,7 @@ func resourceSelectorMetrics(ctx context.Context, meter skaffoldMeter, m metric.
 	}
 }
 
-func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
+func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, platformLabel attribute.KeyValue, labels ...attribute.KeyValue) {
 	builderCounter := metric.Must(m).NewInt64ValueRecorder("builders", metric.WithDescription("Builders used"))
 	artifactCounter := metric.Must(m).NewInt64ValueRecorder("artifacts", metric.WithDescription("Number of artifacts used"))
 	dependenciesCounter := metric.Must(m).NewInt64ValueRecorder("artifact-dependencies", metric.WithDescription("Number of artifacts with dependencies"))
@@ -285,24 +284,24 @@ func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, la
 		builderCounter.Record(ctx, 1, append(labels, bLabel)...)
 		artifactCounter.Record(ctx, int64(count), append(labels, bLabel)...)
 		dependenciesCounter.Record(ctx, int64(meter.BuildDependencies[builder]), append(labels, bLabel)...)
-		platformsCounter.Record(ctx, int64(meter.BuildWithPlatforms[builder]), append(labels, bLabel)...)
+		platformsCounter.Record(ctx, int64(meter.BuildWithPlatforms[builder]), append(labels, platformLabel, bLabel)...)
 	}
 
 	if len(meter.ResolvedBuildTargetPlatforms) > 0 {
 		platforms := metric.Must(m).NewInt64ValueRecorder("build-platforms", metric.WithDescription("The resolved build target platforms for each run"))
 		for _, buildPlatform := range meter.ResolvedBuildTargetPlatforms {
-			platforms.Record(ctx, 1, append(labels, attribute.String("os_arch", buildPlatform))...)
+			platforms.Record(ctx, 1, append(labels, platformLabel, attribute.String("os_arch", buildPlatform))...)
 		}
 	}
 
 	if len(meter.CliBuildTargetPlatforms) > 0 {
 		platforms := metric.Must(m).NewInt64ValueRecorder("cli-platforms", metric.WithDescription("The build target platforms specified via CLI flag --platform"))
-		platforms.Record(ctx, 1, append(labels, attribute.String("os_arch", meter.CliBuildTargetPlatforms))...)
+		platforms.Record(ctx, 1, append(labels, platformLabel, attribute.String("os_arch", meter.CliBuildTargetPlatforms))...)
 	}
 
 	if len(meter.DeployNodePlatforms) > 0 {
 		platforms := metric.Must(m).NewInt64ValueRecorder("node-platforms", metric.WithDescription("The kubernetes cluster node platforms"))
-		platforms.Record(ctx, 1, append(labels, attribute.String("os_arch", meter.DeployNodePlatforms))...)
+		platforms.Record(ctx, 1, append(labels, platformLabel, attribute.String("os_arch", meter.DeployNodePlatforms))...)
 	}
 }
 

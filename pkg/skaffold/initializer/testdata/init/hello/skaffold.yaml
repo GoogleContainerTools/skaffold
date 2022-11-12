@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 metadata:
   name: hello
@@ -7,7 +7,6 @@ build:
   - image: skaffold-example
     docker:
       dockerfile: Dockerfile
-deploy:
-  kubectl:
-    manifests:
-    - k8s-pod.yaml
+manifests:
+  rawYaml:
+  - k8s-pod.yaml

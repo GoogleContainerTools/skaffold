@@ -18,6 +18,7 @@ package util
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -35,7 +36,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
@@ -63,10 +66,28 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 	return newTag, nil
 }
 
-// Update which images are logged.
-func AddTagsToPodSelector(artifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
-	for _, artifact := range artifacts {
-		podSelector.Add(artifact.Tag)
+// Update which images are logged, if the image is present in the provided deployer's artifacts.
+func AddTagsToPodSelector(runnerBuilds []graph.Artifact, deployerArtifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
+	// This implementation is mostly picked from v1 for fixing log duplication issue when multiple deployers are used.
+	// According to the original author "Each Deployer will be directly responsible for adding its deployed artifacts to the PodSelector
+	// by cross-referencing them against the list of images parsed out of the set of manifests they each deploy". Each deploy should only
+	// add its own deployed artifacts to the PodSelector to avoid duplicate logging when multi-deployers are used.
+	// This implementation only streams logs for the intersection of runnerBuilds and deployerArtifacts images, not all images from a deployer
+	// probably because at that time the team didn't want to stream logs from images not built by Skaffold, e.g. images from docker hub, but this
+	// may change. The initial implementation was using imageName as map key for getting shared elements, this was ok as deployerArtifacts were
+	// parsed out from skaffold config files in v1 and tag was not available if not specified. Now deployers don't own render responsibilities
+	// anymore, instead callers pass rendered manifests to deployers, we can only parse artifacts from these rendered manifests. The imageName
+	// from deployerArtifacts here has the default-repo value as prefix while the one from runnerBuilds doesn't. This discrepancy causes artifact.Tag
+	// fail to add into podSelector, which leads to podWatchers fail to get events from pods. As tags are available in deployerArtifacts now, so using
+	// tag as map key to get the shared elements.
+	m := map[string]bool{}
+	for _, a := range deployerArtifacts {
+		m[a.Tag] = true
+	}
+	for _, artifact := range runnerBuilds {
+		if _, ok := m[artifact.Tag]; ok {
+			podSelector.Add(artifact.Tag)
+		}
 	}
 }
 
@@ -85,15 +106,15 @@ func ConsolidateNamespaces(original, new []string) []string {
 }
 
 // GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
-func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
+func GetHydrationDir(opts config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
 	var hydratedDir string
 	var err error
 
-	if ops.HydrationDir == constants.DefaultHydrationDir {
+	if opts.HydrationDir == constants.DefaultHydrationDir {
 		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
 		promptIfNeeded = false
 	} else {
-		hydratedDir = ops.HydrationDir
+		hydratedDir = opts.HydrationDir
 	}
 	if hydratedDir, err = filepath.Abs(hydratedDir); err != nil {
 		return "", err
@@ -105,7 +126,7 @@ func GetHydrationDir(ops config.SkaffoldOptions, workingDir string, promptIfNeed
 			return "", err
 		}
 	} else if !isDirEmpty(hydratedDir) {
-		if promptIfNeeded && !ops.AssumeYes {
+		if promptIfNeeded && !opts.AssumeYes {
 			fmt.Println("you can skip this promp message with flag \"--assume-yes=true\"")
 			if ok := confirmHydrationDirOverride(os.Stdin); !ok {
 				cmd.Exit(nil)
@@ -141,4 +162,53 @@ func GroupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 	}
 
 	return false, schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
+}
+
+func GetManifestsFromHydrationDir(ctx context.Context, opts config.SkaffoldOptions) (manifest.ManifestList, error) {
+	workDir, err := util.RealWorkDir()
+	if err != nil {
+		return nil, fmt.Errorf("getting working directory: %w", err)
+	}
+	hydrationDir, err := GetHydrationDir(config.SkaffoldOptions{HydrationDir: opts.HydrationDir, AssumeYes: opts.AssumeYes},
+		workDir,
+		true)
+	if err != nil {
+		return nil, fmt.Errorf("getting render output path: %w", err)
+	}
+	// TODO(aaron-prindle) verify that using manifests.yaml here will work in all cases
+	hydratedManifestPath := filepath.Join(hydrationDir, "manifests.yaml")
+	if _, err := os.Stat(hydratedManifestPath); errors.Is(err, os.ErrNotExist) {
+		log.Entry(ctx).Warn(fmt.Errorf("unable to find manifests, attempted location %s: %w", hydratedManifestPath, err))
+		return nil, nil
+	}
+
+	f, err := os.Open(hydratedManifestPath)
+	if err != nil {
+		return nil, fmt.Errorf("opening hydrated manifest at %s: %w", hydratedManifestPath, err)
+	}
+	defer f.Close()
+
+	manifests, err := manifest.Load(f)
+	if err != nil {
+		return nil, fmt.Errorf("parsing manifests file into manifest list object: %w", err)
+	}
+	return manifests, nil
+}
+
+func GetManifestsFromHydratedManifests(ctx context.Context, hydratedManifests []string) (manifest.ManifestList, error) {
+	var manifests manifest.ManifestList
+	for _, path := range hydratedManifests {
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("opening hydrated manifest at %s: %w", path, err)
+		}
+		defer f.Close()
+		ms, err := manifest.Load(f)
+		if err != nil {
+			return nil, fmt.Errorf("parsing manifests file into manifest list object: %w", err)
+		}
+		manifests = append(manifests, ms...)
+	}
+
+	return manifests, nil
 }

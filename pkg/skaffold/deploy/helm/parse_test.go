@@ -108,7 +108,7 @@ spec:
    release: skaffold-helm
 ---
 # Source: skaffold-helm/templates/ingress.yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
  name: skaffold-helm-skaffold-helm
@@ -124,9 +124,12 @@ spec:
    - http:
        paths:
          - path: /
+           pathType: ImplementationSpecific
            backend:
-             serviceName: skaffold-helm-skaffold-helm
-             servicePort: 80`),
+           service:
+             name: skaffold-helm-skaffold-helm
+             port:
+               number: 80`),
 			expected: []types.Artifact{{Namespace: "testNamespace"}, {Namespace: "test"}},
 		},
 		{

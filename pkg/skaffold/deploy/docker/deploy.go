@@ -25,6 +25,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -49,6 +50,8 @@ import (
 )
 
 type Deployer struct {
+	configName string
+
 	debugger *debugger.DebugManager
 	logger   log.Logger
 	monitor  status.Monitor
@@ -65,7 +68,7 @@ type Deployer struct {
 	once               sync.Once
 }
 
-func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *latest.DockerDeploy, resources []*latest.PortForwardResource) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *latest.DockerDeploy, resources []*latest.PortForwardResource, configName string) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -87,6 +90,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 	}
 
 	return &Deployer{
+		configName:         configName,
 		cfg:                d,
 		client:             client,
 		network:            fmt.Sprintf("skaffold-network-%s", labeller.GetRunID()),
@@ -102,8 +106,8 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 	}, nil
 }
 
-func (d *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
-	d.logger.RegisterArtifacts(artifacts)
+func (d *Deployer) TrackBuildArtifacts(builds, _ []graph.Artifact) {
+	d.logger.RegisterArtifacts(builds)
 }
 
 // TrackContainerFromBuild adds an artifact and its newly-associated container
@@ -114,7 +118,7 @@ func (d *Deployer) TrackContainerFromBuild(artifact graph.Artifact, container tr
 
 // Deploy deploys built artifacts by creating containers in the local docker daemon
 // from each artifact's image.
-func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestList) error {
+func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network)
@@ -129,9 +133,13 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 			return err
 		}
 	}
-	d.TrackBuildArtifacts(builds)
+	d.TrackBuildArtifacts(builds, nil)
 
 	return nil
+}
+
+func (d *Deployer) ConfigName() string {
+	return d.configName
 }
 
 // deploy creates a container in the local docker daemon from a build artifact's image.
@@ -222,7 +230,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 			continue
 		}
 		// pull the debug support image into the local daemon
-		if err := d.client.Pull(ctx, out, c.Image); err != nil {
+		if err := d.client.Pull(ctx, out, c.Image, v1.Platform{}); err != nil {
 			return nil, errors.Wrap(err, "pulling init container image")
 		}
 		// create the init container
@@ -288,7 +296,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list manifest.ManifestList) error {
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ manifest.ManifestListByConfig) error {
 	if dryRun {
 		for _, container := range d.tracker.DeployedContainers() {
 			output.Yellow.Fprintln(out, container.ID)
@@ -311,10 +319,6 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, list
 
 	err := d.client.NetworkRemove(ctx, d.network)
 	return errors.Wrap(err, "cleaning up skaffold created network")
-}
-
-func (d *Deployer) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
-	return errors.New("render not implemented for docker deployer")
 }
 
 func (d *Deployer) GetAccessor() access.Accessor {

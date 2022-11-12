@@ -9,7 +9,7 @@ This doc explains the development workflow so you can get started
 You must install these tools:
 
 1. [`go`](https://golang.org/doc/install): The language skaffold is
-   built in (version >= go 1.17)
+   built in (version >= go 1.19)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
 

@@ -75,6 +75,10 @@ languageName ="English"
 # Weight used for sorting.
 weight = 1
 
+# Configuration for displaying a banner on archived doc sites
+archived_version = true
+version = "v1.39"
+url_latest_version = "https://skaffold-v2.web.app/docs/"
 
 # Everything below this are Site Params
 
@@ -82,12 +86,16 @@ weight = 1
 copyright = "Skaffold Authors"
 privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v2beta28"
+skaffold_version = "skaffold/v2beta29"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 # gcs_engine_id = "013756393218025596041:3nojel67sum"
 # enabling local search https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
 offlineSearch = true
+
+# Menu title if your navbar has a versions selector to access old versions of your site.
+# This menu appears only if you have at least one [params.versions] set.
+version_menu = "Versions"
 
 # User interface configuration
 [params.ui]
@@ -139,3 +147,12 @@ breadcrumb_disable = false
                 url = "/docs/resources/#community"
 		icon = "fab fa-slack"
 		weight = -200
+
+# Add your release versions here
+[[params.versions]]
+  version = "v1.0"
+  url = "https://skaffold-v1.web.app"
+
+[[params.versions]]
+  version = "v2.0"
+  url = "https://skaffold-v2.web.app/"

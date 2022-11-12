@@ -19,7 +19,7 @@ package structure
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/blang/semver"
@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -54,7 +54,7 @@ func TestNewRunner(t *testing.T) {
 
 		testRunner, err := New(context.Background(), cfg, testCase, true)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+		err = testRunner.Test(context.Background(), io.Discard, "image:tag")
 		t.CheckNoError(err)
 	})
 }
@@ -123,7 +123,7 @@ func TestCustomParams(t *testing.T) {
 
 			testRunner, err := New(context.Background(), cfg, testCase, true)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
+			err = testRunner.Test(context.Background(), io.Discard, "image:tag")
 			t.CheckNoError(err)
 		})
 	}

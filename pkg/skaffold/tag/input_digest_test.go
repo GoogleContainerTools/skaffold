@@ -17,7 +17,6 @@ limitations under the License.
 package tag
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,7 +35,7 @@ func TestInputDigest(t *testing.T) {
 		defer func() { t.RequireNoError(os.Chdir(cwdBackup)) }()
 
 		file := "temp.file"
-		t.RequireNoError(ioutil.WriteFile(file, fileContents1, 0644))
+		t.RequireNoError(os.WriteFile(file, fileContents1, 0644))
 
 		relPathHash, err := fileHasher(file, ".")
 		t.CheckErrorAndDeepEqual(false, err, "3cced2dec96a8b41b22875686d8941a9", relPathHash)
@@ -47,8 +46,8 @@ func TestInputDigest(t *testing.T) {
 	testutil.Run(t, "SameDigestForTwoDifferentAbsPaths", func(t *testutil.T) {
 		dir1, dir2 := t.TempDir(), t.TempDir()
 		file1, file2 := filepath.Join(dir1, "temp.file"), filepath.Join(dir2, "temp.file")
-		t.RequireNoError(ioutil.WriteFile(file1, fileContents1, 0644))
-		t.RequireNoError(ioutil.WriteFile(file2, fileContents1, 0644))
+		t.RequireNoError(os.WriteFile(file1, fileContents1, 0644))
+		t.RequireNoError(os.WriteFile(file2, fileContents1, 0644))
 
 		hash1, err := fileHasher(file1, dir1)
 		t.CheckErrorAndDeepEqual(false, err, "3cced2dec96a8b41b22875686d8941a9", hash1)
@@ -59,8 +58,8 @@ func TestInputDigest(t *testing.T) {
 	testutil.Run(t, "DifferentDigestForDifferentFilenames", func(t *testutil.T) {
 		dir1, dir2 := t.TempDir(), t.TempDir()
 		file1, file2 := filepath.Join(dir1, "temp1.file"), filepath.Join(dir2, "temp2.file")
-		t.RequireNoError(ioutil.WriteFile(file1, fileContents1, 0644))
-		t.RequireNoError(ioutil.WriteFile(file2, fileContents1, 0644))
+		t.RequireNoError(os.WriteFile(file1, fileContents1, 0644))
+		t.RequireNoError(os.WriteFile(file2, fileContents1, 0644))
 
 		hash1, err := fileHasher(file1, dir1)
 		t.CheckNoError(err)
@@ -72,8 +71,8 @@ func TestInputDigest(t *testing.T) {
 	testutil.Run(t, "DifferentDigestForDifferentContent", func(t *testutil.T) {
 		dir1, dir2 := t.TempDir(), t.TempDir()
 		file1, file2 := filepath.Join(dir1, "temp.file"), filepath.Join(dir2, "temp.file")
-		t.RequireNoError(ioutil.WriteFile(file1, fileContents1, 0644))
-		t.RequireNoError(ioutil.WriteFile(file2, fileContents2, 0644))
+		t.RequireNoError(os.WriteFile(file1, fileContents1, 0644))
+		t.RequireNoError(os.WriteFile(file2, fileContents2, 0644))
 
 		hash1, err := fileHasher(file1, dir1)
 		t.CheckNoError(err)

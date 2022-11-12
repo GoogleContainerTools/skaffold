@@ -18,7 +18,7 @@ package cluster
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -48,7 +48,7 @@ func TestCreateSecret(t *testing.T) {
 		t.CheckNoError(err)
 
 		// Should create a secret
-		cleanup, err := builder.setupPullSecret(context.Background(), ioutil.Discard)
+		cleanup, err := builder.setupPullSecret(context.Background(), io.Discard)
 		t.CheckNoError(err)
 
 		// Check that the secret was created
@@ -77,7 +77,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 		t.CheckNoError(err)
 
 		// should fail to retrieve an existing secret
-		_, err = builder.setupPullSecret(context.Background(), ioutil.Discard)
+		_, err = builder.setupPullSecret(context.Background(), io.Discard)
 
 		t.CheckErrorContains("secret kaniko-secret does not exist. No path specified to create it", err)
 	})
@@ -100,7 +100,7 @@ func TestExistingSecret(t *testing.T) {
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret
-		cleanup, err := builder.setupPullSecret(context.Background(), ioutil.Discard)
+		cleanup, err := builder.setupPullSecret(context.Background(), io.Discard)
 		cleanup()
 
 		t.CheckNoError(err)
@@ -119,7 +119,7 @@ func TestSkipSecretCreation(t *testing.T) {
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret
-		cleanup, err := builder.setupPullSecret(context.Background(), ioutil.Discard)
+		cleanup, err := builder.setupPullSecret(context.Background(), io.Discard)
 		cleanup()
 
 		t.CheckNoError(err)

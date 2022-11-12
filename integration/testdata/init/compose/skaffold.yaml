@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 metadata:
   name: compose
@@ -7,8 +7,7 @@ build:
   - image: gcr.io/k8s-skaffold/compose
     docker:
       dockerfile: Dockerfile
-deploy:
-  kubectl:
-    manifests:
-    - compose-deployment.yaml
-    - compose-service.yaml
+manifests:
+  rawYaml:
+  - compose-deployment.yaml
+  - compose-service.yaml

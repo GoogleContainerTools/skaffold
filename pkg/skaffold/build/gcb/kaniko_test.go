@@ -52,7 +52,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
-					"arg1": util.StringPtr("value1"),
+					"arg1": util.Ptr("value1"),
 					"arg2": nil,
 				},
 			},
@@ -219,8 +219,8 @@ func TestKanikoBuildSpec(t *testing.T) {
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				RegistryCertificate: map[string]*string{
-					"s1.registry.url": util.StringPtr("/etc/certs/certificate1.cert"),
-					"s2.registry.url": util.StringPtr("/etc/certs/certificate2.cert"),
+					"s1.registry.url": util.Ptr("/etc/certs/certificate1.cert"),
+					"s2.registry.url": util.Ptr("/etc/certs/certificate2.cert"),
 				},
 			},
 			expectedArgs: []string{
@@ -388,7 +388,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Label: map[string]*string{
-					"label1": util.StringPtr("value1"),
+					"label1": util.Ptr("value1"),
 					"label2": nil,
 				},
 			},

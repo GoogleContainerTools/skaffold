@@ -18,7 +18,6 @@ package integration
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -175,20 +174,20 @@ func TestInitWithCLIArtifactAndManifestGeneration(t *testing.T) {
 }
 
 func checkGeneratedConfig(t *testutil.T, dir string) {
-	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
+	expectedOutput, err := os.ReadFile(filepath.Join(dir, "skaffold.yaml"))
 	t.CheckNoError(err)
 
-	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
+	output, err := os.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
 	t.CheckNoError(err)
 	t.CheckDeepEqual(string(expectedOutput), string(output))
 }
 
 func checkGeneratedManifests(t *testutil.T, dir string, manifestPaths []string) {
 	for _, path := range manifestPaths {
-		expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, strings.Join([]string{".", path, ".expected"}, "")))
+		expectedOutput, err := os.ReadFile(filepath.Join(dir, strings.Join([]string{".", path, ".expected"}, "")))
 		t.CheckNoError(err)
 
-		output, err := ioutil.ReadFile(filepath.Join(dir, path))
+		output, err := os.ReadFile(filepath.Join(dir, path))
 		t.CheckNoError(err)
 		t.CheckDeepEqual(string(expectedOutput), string(output))
 	}

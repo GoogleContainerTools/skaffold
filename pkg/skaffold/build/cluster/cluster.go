@@ -77,7 +77,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 }
 
 func (b *Builder) Concurrency() *int {
-	return util.IntPtr(b.ClusterDetails.Concurrency)
+	return util.Ptr(b.ClusterDetails.Concurrency)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {

@@ -85,13 +85,15 @@ func builderRank(builder InitBuilder) int {
 		return 1
 	case a.JibArtifact != nil:
 		return 2
-	case a.BazelArtifact != nil:
+	case a.KoArtifact != nil:
 		return 3
-	case a.BuildpackArtifact != nil:
+	case a.BazelArtifact != nil:
 		return 4
+	case a.BuildpackArtifact != nil:
+		return 5
 	}
 
-	return 5
+	return 6
 }
 
 func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {

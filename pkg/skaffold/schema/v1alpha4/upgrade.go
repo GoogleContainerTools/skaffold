@@ -29,6 +29,7 @@ import (
 // 2. No removal
 // 3. Updates
 //    - minor - []TestCase type aliased to TestConfig
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

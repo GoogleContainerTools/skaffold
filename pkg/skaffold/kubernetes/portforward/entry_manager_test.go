@@ -19,7 +19,7 @@ package portforward
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -47,8 +47,8 @@ func TestStop(t *testing.T) {
 
 	fakeForwarder := newTestForwarder()
 	em := NewEntryManager(fakeForwarder)
-	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe1)
-	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe2)
+	em.forwardPortForwardEntry(context.Background(), io.Discard, pfe1)
+	em.forwardPortForwardEntry(context.Background(), io.Discard, pfe2)
 
 	testutil.CheckDeepEqual(t, 2, length(&fakeForwarder.forwardedResources))
 	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedPorts.Length())

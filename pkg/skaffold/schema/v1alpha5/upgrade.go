@@ -32,6 +32,7 @@ import (
 // 2. Removals:
 //   - AzureContainerBuilder
 // 3. No updates
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	if c.Build.AzureContainerBuild != nil {
 		return nil, fmt.Errorf("can't upgrade to %s, build.acr is not supported anymore, please remove it manually", next.Version)

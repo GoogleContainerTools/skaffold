@@ -17,8 +17,9 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -29,9 +30,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const (
+	emptydir = "testdata/empty-dir"
+)
+
 // Note: `custom-buildx` is not included as it depends on having a
 // `skaffold-builder` builder configured and a registry to push to.
 // TODO: remove nolint once we've reenabled integration tests
+//
 //nolint:golint,unused
 var tests = []struct {
 	description string
@@ -43,14 +49,14 @@ var tests = []struct {
 	targetLog   string
 }{
 	{
-		description: "copying directory",
-		dir:         "examples/getting-started",
-		pods:        []string{"getting-started"},
+		description: "copying-empty-directory",
+		dir:         emptydir,
+		pods:        []string{"empty-dir"},
 		targetLog:   "Hello world!",
 	},
 	{
 		description: "getting-started",
-		dir:         "testdata/getting-started",
+		dir:         "examples/getting-started",
 		pods:        []string{"getting-started"},
 		targetLog:   "Hello world!",
 	},
@@ -155,6 +161,17 @@ var tests = []struct {
 		deployments: []string{"skaffold-helm"},
 		targetLog:   "Hello world!",
 	},
+	{
+		description: "multiple renderers mixed in",
+		dir:         "examples/multiple-renderers",
+		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
+	},
+	{
+		description: "multiple renderers mixed in",
+		dir:         "examples/multiple-renderers",
+		args:        []string{"-p", "mix-deploy"},
+		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
+	},
 }
 
 func TestRun(t *testing.T) {
@@ -162,8 +179,14 @@ func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
-
 			args := append(test.args, "--cache-artifacts=false")
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
+			}
 			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
@@ -181,6 +204,13 @@ func TestRunTail(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
+			}
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
 			}
 			ns, _ := SetupNamespace(t)
 
@@ -202,11 +232,56 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
+			}
 
 			args := append(test.args, "--tail")
 			out := skaffold.Run(args...).InDir(test.dir).WithEnv(test.env).RunLive(t)
 			defer skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
 			WaitForLogs(t, out, test.targetLog)
+		})
+	}
+}
+
+func TestRunTailTolerateFailuresUntilDeadline(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	var tsts = []struct {
+		description  string
+		dir          string
+		args         []string
+		deployments  []string
+		env          []string
+		targetLogOne string
+		targetLogTwo string
+	}{
+		{
+			description:  "status-check-tolerance",
+			dir:          "testdata/status-check-tolerance",
+			args:         []string{"--tolerate-failures-until-deadline"},
+			deployments:  []string{"tolerance-check"},
+			targetLogOne: "container will exit with error",
+			targetLogTwo: "Hello world!",
+			env:          []string{fmt.Sprintf("STOP_FAILING_TIME=%d", time.Now().Unix()+10)},
+		},
+	}
+
+	for _, test := range tsts {
+		t.Run(test.description, func(t *testing.T) {
+			if test.targetLogOne == "" || test.targetLogTwo == "" {
+				t.SkipNow()
+			}
+			ns, _ := SetupNamespace(t)
+
+			args := append(test.args, "--tail")
+			out := skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunLive(t)
+			defer skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
+			WaitForLogs(t, out, test.targetLogOne)
+			WaitForLogs(t, out, test.targetLogTwo)
 		})
 	}
 }
@@ -232,7 +307,7 @@ func TestRunRenderOnly(t *testing.T) {
 
 		skaffold.Run(test.args...).InDir(test.dir).RunOrFail(t)
 
-		dat, err := ioutil.ReadFile(renderPath)
+		dat, err := os.ReadFile(renderPath)
 		tu.CheckNoError(err)
 
 		tu.CheckMatches("name: getting-started", string(dat))
@@ -315,6 +390,9 @@ func TestRunGCPOnly(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		if (os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid") && strings.Contains(test.description, "buildpacks") {
+			continue // buildpacks doesn't support arm64 builds, so skip run on these clusters
+		}
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
 
@@ -445,7 +523,7 @@ func TestRunTest(t *testing.T) {
 			skaffold.Build().InDir(test.testDir).RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
-			skaffold.Run(test.args...).InDir(test.testDir).InNs(ns.Name).RunLive(t)
+			skaffold.Run(test.args...).InDir(test.testDir).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady("custom-test-example")
 
@@ -457,7 +535,7 @@ func TestRunTest(t *testing.T) {
 					}
 					return true, nil
 				}
-				out, e := ioutil.ReadFile(test.testFile)
+				out, e := os.ReadFile(test.testFile)
 				failNowIfError(t, e)
 				return string(out) == test.expectedText, nil
 			})

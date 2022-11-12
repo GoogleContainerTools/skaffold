@@ -19,27 +19,25 @@ package integration
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path"
 	"regexp"
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestKubectlRenderOutput(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-
+	ns, _ := SetupNamespace(t)
 	test := struct {
 		description string
 		builds      []graph.Artifact
@@ -60,12 +58,14 @@ spec:
   - image: gcr.io/k8s-skaffold/skaffold
     name: skaffold
 `,
-		expectedOut: `apiVersion: v1
+		expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
+metadata:
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`}
+    name: skaffold`, ns.Name)}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
@@ -75,8 +75,8 @@ spec:
 			Generate: latest.Generate{
 				RawK8s: []string{"deployment.yaml"}},
 		}
-		mockCfg := mockConfig{workingDir: tmpDir.Root()}
-		r, err := kubectl.New(mockCfg, rc, map[string]string{})
+		mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
+		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name)
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		l, err := r.Render(context.Background(), &b, test.builds, false)
@@ -89,7 +89,7 @@ spec:
 
 func TestKubectlRender(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-
+	ns, _ := SetupNamespace(t)
 	tests := []struct {
 		description string
 		builds      []graph.Artifact
@@ -113,14 +113,15 @@ spec:
   - image: gcr.io/k8s-skaffold/skaffold
     name: skaffold
 `,
-			expectedOut: `apiVersion: v1
+			expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold:test
-    name: skaffold`,
+    name: skaffold`, ns.Name),
 		},
 		{
 			description: "two artifacts",
@@ -145,16 +146,17 @@ spec:
   - image: gcr.io/project/image2
     name: image2
 `,
-			expectedOut: `apiVersion: v1
+			expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
     name: image1
   - image: gcr.io/project/image2:tag2
-    name: image2`,
+    name: image2`, ns.Name),
 		},
 		{
 			description: "two artifacts, combined manifests",
@@ -186,10 +188,11 @@ spec:
   - image: gcr.io/project/image2
     name: image2
 `,
-			expectedOut: `apiVersion: v1
+			expectedOut: fmt.Sprintf(`apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
@@ -199,10 +202,11 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-456
+  namespace: %s
 spec:
   containers:
   - image: gcr.io/project/image2:tag2
-    name: image2`,
+    name: image2`, ns.Name, ns.Name),
 		},
 	}
 	for _, test := range tests {
@@ -214,8 +218,8 @@ spec:
 				Generate: latest.Generate{
 					RawK8s: []string{"deployment.yaml"}},
 			}
-			mockCfg := mockConfig{workingDir: tmpDir.Root()}
-			r, err := kubectl.New(mockCfg, rc, map[string]string{})
+			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
+			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name)
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			l, err := r.Render(context.Background(), &b, test.builds, false)
@@ -228,52 +232,42 @@ spec:
 
 func TestHelmRender(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	// TODO Fix test https://github.com/GoogleContainerTools/skaffold/issues/7285
-	t.Skipf("Fix todo https://github.com/GoogleContainerTools/skaffold/issues/7285")
 
 	tests := []struct {
 		description  string
+		dir          string
+		args         []string
 		builds       []graph.Artifact
 		helmReleases []latest.HelmRelease
 		expectedOut  string
 	}{
 		{
 			description: "Bare bones render",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gke-loadbalancer",
-					Tag:       "gke-loadbalancer:test",
-				},
-			},
-			helmReleases: []latest.HelmRelease{{
-				Name:      "gke-loadbalancer",
-				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
-			}},
-			expectedOut: `---
-# Source: loadbalancer-helm/templates/k8s.yaml
-apiVersion: v1
+			dir:         "testdata/gke_loadbalancer-render",
+			expectedOut: `apiVersion: v1
 kind: Service
 metadata:
-  name: gke-loadbalancer
   labels:
     app: gke-loadbalancer
+    skaffold.dev/run-id: phony-run-id
+  name: gke-loadbalancer
 spec:
-  type: LoadBalancer
   ports:
-    - port: 80
-      targetPort: 3000
-      protocol: TCP
-      name: http
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 3000
   selector:
-    app: "gke-loadbalancer"
+    app: gke-loadbalancer
+  type: LoadBalancer
 ---
-# Source: loadbalancer-helm/templates/k8s.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gke-loadbalancer
   labels:
     app: gke-loadbalancer
+    skaffold.dev/run-id: phony-run-id
+  name: gke-loadbalancer
 spec:
   replicas: 1
   selector:
@@ -283,62 +277,50 @@ spec:
     metadata:
       labels:
         app: gke-loadbalancer
+        skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-        - name: gke-container
-          image: gke-loadbalancer:test
-          ports:
-            - containerPort: 3000
-
+      - image: gke-loadbalancer:test
+        name: gke-container
+        ports:
+        - containerPort: 3000
 `,
 		},
 		{
 			description: "A more complex template",
-			builds: []graph.Artifact{
-				{
-					ImageName: "gcr.io/k8s-skaffold/skaffold-helm",
-					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",
-				},
-			},
-			helmReleases: []latest.HelmRelease{{
-				Name:      "skaffold-helm",
-				ChartPath: "testdata/helm/skaffold-helm",
-				SetValues: map[string]string{
-					"pullPolicy": "Always",
-				},
-			}},
-			expectedOut: `---
-# Source: skaffold-helm/templates/service.yaml
-apiVersion: v1
+			dir:         "testdata/helm-render",
+			args:        []string{"--profile=helm-render"},
+			expectedOut: `apiVersion: v1
 kind: Service
 metadata:
-  name: skaffold-helm-skaffold-helm
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
-    release: skaffold-helm
     heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm-skaffold-helm
 spec:
-  type: ClusterIP
   ports:
-    - port: 80
-      targetPort: 80
-      protocol: TCP
-      name: nginx
+  - name: nginx
+    port: 80
+    protocol: TCP
+    targetPort: 80
   selector:
     app: skaffold-helm
     release: skaffold-helm
+  type: ClusterIP
 ---
-# Source: skaffold-helm/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skaffold-helm
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
-    release: skaffold-helm
     heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
 spec:
   replicas: 1
   selector:
@@ -350,68 +332,50 @@ spec:
       labels:
         app: skaffold-helm
         release: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-        - name: skaffold-helm
-          image: gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 80
-          resources:
-            {}
+      - image: gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenselettersandnumbers
+        imagePullPolicy: always
+        name: skaffold-helm
+        ports:
+        - containerPort: 80
+        resources: {}
 ---
-# Source: skaffold-helm/templates/ingress.yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: skaffold-helm-skaffold-helm
+  annotations: null
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
-    release: skaffold-helm
     heritage: Helm
-  annotations:
+    release: skaffold-helm
+  name: skaffold-helm-skaffold-helm
 spec:
   rules:
-    - http:
-        paths:
-          - path: /
-            backend:
-              serviceName: skaffold-helm-skaffold-helm
-              servicePort: 80
-
+  - http:
+      paths:
+      - backend:
+          service:
+            name: skaffold-helm-skaffold-helm
+            port:
+              number: 80
+        path: /
+        pathType: ImplementationSpecific
 `,
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer, err := helm.NewDeployer(context.Background(), &runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
-								Releases: test.helmReleases,
-							},
-						},
-					},
-				}}),
-			}, &label.DefaultLabeller{}, &latest.LegacyHelmDeploy{
-				Releases: test.helmReleases,
-			}, nil)
-			t.RequireNoError(err)
-			var b bytes.Buffer
-			err = deployer.Render(context.Background(), &b, test.builds, true, "")
+		t.Run(test.description, func(t *testing.T) {
+			out := skaffold.Render(append([]string{"--build-artifacts=builds.out.json", "--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, b.String())
+			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
 		})
 	}
 }
 
 func TestRenderWithBuilds(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -466,7 +430,6 @@ spec:
     name: b
 `,
 		},
-
 		{
 			description: "kubectl render from build output, offline, no labels",
 			config: `
@@ -723,13 +686,13 @@ spec:
 
 			if test.offline {
 				env := []string{"KUBECONFIG=not-supposed-to-be-used-in-offline-mode"}
-				args = append(args, "--offline")
+				args = append(args, "--offline=true")
 				skaffold.Render(args...).WithEnv(env).RunOrFail(t.T)
 			} else {
 				skaffold.Render(args...).RunOrFail(t.T)
 			}
 
-			fileContent, err := ioutil.ReadFile("rendered.yaml")
+			fileContent, err := os.ReadFile("rendered.yaml")
 			t.RequireNoError(err)
 
 			// Tests are written in a way that actual output is valid YAML
@@ -744,12 +707,3 @@ spec:
 		})
 	}
 }
-
-type mockConfig struct {
-	workingDir string
-}
-
-func (mc mockConfig) GetWorkingDir() string                       { return mc.workingDir }
-func (mc mockConfig) TransformAllowList() []latest.ResourceFilter { return nil }
-func (mc mockConfig) TransformDenyList() []latest.ResourceFilter  { return nil }
-func (mc mockConfig) TransformRulesFile() string                  { return "" }

@@ -21,7 +21,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -75,7 +74,7 @@ func main() {
 
 	// if yamlInputFile set, update values from yaml file to override flag opts
 	if yamlInputFile != "" {
-		yamlFile, err := ioutil.ReadFile(yamlInputFile)
+		yamlFile, err := os.ReadFile(yamlInputFile)
 		if err != nil {
 			logrus.Fatalf("error reading yaml input file: %v ", err)
 		}
@@ -139,7 +138,7 @@ func main() {
 	}
 	if summaryOutputPath != "" {
 		logrus.Infof("writing summary information to path %v", summaryOutputPath)
-		if err := ioutil.WriteFile(filepath.Join(workDir, summaryOutputPath), b.Bytes(), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(workDir, summaryOutputPath), b.Bytes(), 0644); err != nil {
 			logrus.Fatal(err)
 		}
 	}

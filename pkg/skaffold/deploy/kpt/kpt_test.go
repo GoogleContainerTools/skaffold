@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,7 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -143,8 +143,8 @@ func TestKptfileInitIfNot(t *testing.T) {
 			tmpDir.Chdir()
 
 			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latest.KptDeploy{Dir: "."},
-				config.SkaffoldOptions{})
-			err := kptfileInitIfNot(context.Background(), ioutil.Discard, k)
+				config.SkaffoldOptions{}, "default")
+			err := kptfileInitIfNot(context.Background(), io.Discard, k)
 			if !test.shouldErr {
 				t.CheckNoError(err)
 			} else {
@@ -174,9 +174,9 @@ func TestDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			kptInitFunc = func(context.Context, io.Writer, *Deployer) error { return nil }
 
-			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{})
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{}, "default")
 			t.CheckNoError(err)
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err = k.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
 			t.CheckNoError(err)
 			fmt.Fprintf(os.Stdout, "deployer namespaces: %+v\n", *k.namespaces)
 			t.CheckDeepEqual(*k.namespaces, []string{"test-kptv2"})

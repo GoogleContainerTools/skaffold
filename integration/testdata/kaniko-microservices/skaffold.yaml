@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -23,8 +23,7 @@ build:
         cache: {}
   cluster:
     pullSecretName: e2esecret
-deploy:
-  kubectl:
-    manifests:
-      - ./leeroy-web/kubernetes/*
-      - ./leeroy-app/kubernetes/*
+manifests:
+  rawYaml:
+  - ./leeroy-web/kubernetes/*
+  - ./leeroy-app/kubernetes/*

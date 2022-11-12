@@ -19,7 +19,7 @@ package lint
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -87,7 +87,7 @@ func TestLintOutput(t *testing.T) {
 			})
 			resultList := test.results.([]Result)
 			tmpdir := t.TempDir()
-			f, err := ioutil.TempFile(tmpdir, "TestLintOutput-tmpfile")
+			f, err := os.CreateTemp(tmpdir, "TestLintOutput-tmpfile")
 			if err != nil {
 				t.Fatalf("error creating dockerfile: %v", err)
 			}

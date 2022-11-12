@@ -1,0 +1,11 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+build:
+  artifacts:
+    - image: gke-loadbalancer
+      context: ./
+manifests:
+  helm:
+    releases:
+    - name: skaffold-helm
+      chartPath: loadbalancer-helm

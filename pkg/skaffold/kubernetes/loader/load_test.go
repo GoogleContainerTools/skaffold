@@ -19,13 +19,13 @@ package loader
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -89,7 +89,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 	}
 
 	runImageLoadingTests(t, tests, func(i *ImageLoader, test ImageLoadingTest) error {
-		return i.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+		return i.loadImagesInKindNodes(context.Background(), io.Discard, test.cluster, test.deployed)
 	})
 }
 
@@ -143,7 +143,7 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 	}
 
 	runImageLoadingTests(t, tests, func(i *ImageLoader, test ImageLoadingTest) error {
-		return i.loadImagesInK3dNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+		return i.loadImagesInK3dNodes(context.Background(), io.Discard, test.cluster, test.deployed)
 	})
 }
 

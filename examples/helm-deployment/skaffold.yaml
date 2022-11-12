@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3
 kind: Config
 build:
   artifacts:
@@ -8,3 +8,5 @@ deploy:
     releases:
     - name: skaffold-helm
       chartPath: charts
+      setValues:
+        image: skaffold-helm

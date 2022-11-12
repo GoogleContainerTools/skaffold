@@ -38,6 +38,8 @@ func (m mockStatusConfig) GetKubeContext() string { return "" }
 
 func (m mockStatusConfig) StatusCheckDeadlineSeconds() int { return 0 }
 
+func (m mockStatusConfig) StatusCheckTolerateFailures() bool { return false }
+
 func (m mockStatusConfig) FastFailStatusCheck() bool { return true }
 
 func (m mockStatusConfig) Muted() config.Muted { return config.Muted{} }
@@ -53,11 +55,11 @@ func TestGetMonitor(t *testing.T) {
 		},
 		{
 			description: "statusCheck parameter set to true",
-			statusCheck: util.BoolPtr(true),
+			statusCheck: util.Ptr(true),
 		},
 		{
 			description: "statusCheck parameter set to false",
-			statusCheck: util.BoolPtr(false),
+			statusCheck: util.Ptr(false),
 			isNoop:      true,
 		},
 	}

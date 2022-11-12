@@ -14,11 +14,12 @@ This tar file is sent to and extracted on the corresponding containers.
 Multiple types of sync are supported by Skaffold:
 
  + `manual`: The user must specify both the files in their local workspace and the destination in the running container.
-   This is supported by every type of artifact.
+   This sync mode is supported by every type of artifact.
 
  + `infer`: The destinations for each changed file is inferred from the builder.
    The docker and kaniko builders examine instructions in a Dockerfile.
    This inference is also supported for custom artifacts that **explicitly declare a dependency on a Dockerfile.**
+   The ko builder can sync static content using this sync mode.
 
 + `auto`: Skaffold automatically configures the sync.  This mode is only supported by Jib and Buildpacks artifacts.
    Auto sync mode is enabled by default for Buildpacks artifacts.
@@ -46,13 +47,18 @@ The following example showcases manual filesync:
 
 ### Inferred sync mode
 
-For docker artifacts, Skaffold knows how to infer the desired destination from the artifact's `Dockerfile`
+For Docker artifacts, Skaffold knows how to infer the desired destination from the artifact's `Dockerfile`
 by examining the `ADD` and `COPY` instructions.
-To enable syncing, you only need to specify which files are eligible for syncing in the sync rules.
-The sync rules for inferred sync mode is just a list of glob patterns.
-The following example showcases this filesync mode:
 
-Given a Dockerfile such as
+For Ko artifacts, Skaffold infers the destination from the structure of your
+codebase.
+
+To enable syncing, you specify which files are eligible for syncing in the sync rules.
+The sync rules for inferred sync mode is a list of glob patterns.
+
+The following example showcases this filesync mode for Docker artifacts:
+
+Given this Dockerfile:
 
 ```Dockerfile
 FROM hugo
@@ -74,11 +80,14 @@ And a `skaffold.yaml` with the following sync configuration:
 - The last rule enables synchronization for all `md` files below the `content/en`.
   For example, `content/en/sub/index.md` ↷ `content/sub/index.md` but _not_ `content/en_GB/index.md`.
   
-Inferred sync mode only applies to modified and added files.
-File deletion will always cause a complete rebuild.
+For Docker artifacts, inferred sync mode only applies to modified and added
+files; file deletion will cause a complete rebuild.
 
 For multi-stage Dockerfiles, Skaffold only examines the last stage.
 Use manual sync rules to sync file copies from other stages.
+
+[Ko artifacts supports syncing static content]({{<relref "/docs/pipeline-stages/builders/ko#file-sync">}}),
+and the sync rules apply to added, modified, and deleted files.
 
 ### Auto sync mode
 

@@ -196,7 +196,7 @@ e.g.:
 
 These templates are evaluated by Skaffold. Note that the syntax is slightly
 different to
-[`ko`'s template expansion](https://github.com/google/ko/blob/v0.9.3/pkg/build/gobuild.go#L632-L660),
+[`ko`'s template expansion](https://github.com/google/ko/blob/v0.12.0/pkg/build/gobuild.go#L632-L660),
 specifically, there's no `.Env` prefix.
 
 ### Source file locations
@@ -254,30 +254,10 @@ Useful tips for existing `ko` users:
   specify these fields in `.ko.yaml`, you do not need to repeat them in
   `skaffold.yaml`.
 
-- Future Skaffold releases will include support for generating `skaffold.yaml`
-  files by examining an existing code base. For now, you can generate a starter
-  `skaffold.yaml` file by searching your existing manifests for image
-  references starting with `ko://` by using this snippet:
-
-  ```shell
-  cat << EOF > skaffold.yaml
-  apiVersion: skaffold/v2beta26
-  kind: Config
-  build:
-    artifacts:
-  EOF
-  grep -rho "ko://$(go list -m)[^\"]*" ./config/ | sort | uniq | xargs -Iimg echo -e "  - image: img\n    ko: {}" >> skaffold.yaml
-  cat << EOF >> skaffold.yaml
-    local:
-      concurrency: 0
-  deploy:
-    kubectl:
-      manifests:
-      - ./config/**
-  EOF
-  ```
-
-  Replace `./config/` with the path to your Kubernetes manifest files.
+- You can generate `skaffold.yaml` files by examining an existing code base,
+  using the command
+  [`skaffold init --XXenableKoInit=true`]({{< relref "/docs/pipeline-stages/init" >}}).
+  Select the Ko builder for your images when prompted.
 
 ### `ko` commands and workflows in Skaffold
 
@@ -409,11 +389,51 @@ To learn more about how Skaffold debugs Go applications, read the
 
 ### File sync
 
-File `sync` is not supported while the ko builder feature is in Alpha.
+The `ko` builder can
+[sync files to a running container]({{< relref "/docs/pipeline-stages/filesync" >}})
+when you run `skaffold dev`.
 
-### Remote builders
+The sync feature for the `ko` builder only works for 
+[static assets bundled with the container image](https://github.com/google/ko#static-assets).
 
-Only `local` builds are supported while the ko builder feature is in Alpha.
+Use `infer` mode to specify patterns for the files you want to sync. The
+infer patterns are relative to the `context` directory.
+
+For instance, if your main package is in the `context` directory, you can use
+this configuration to sync all the static files bundled with the container
+image:
+
+```yaml
+    sync:
+      infer:
+      - kodata/**/*
+```
+
+Note that the file sync feature requires the `tar` command to be available in
+the container. The default `ko` builder base image does not include the `tar`
+command. Use the `fromImage` field in the `ko` builder configuration in your
+`skaffold.yaml` file to specify a base image that contains the `tar` command,
+such as `gcr.io/distroless/base:debug`.
+
+You can use [profiles]({{< relref "/docs/environment/profiles" >}}) with
+activation by command to override the `fromImage` value only when running
+`skaffold dev`, such as in this example:
+
+```yaml
+profiles:
+- name: sync
+  activation:
+  - command: dev
+  patches:
+  - op: add
+    path: /build/artifacts/0/ko/fromImage
+    value: gcr.io/distroless/base:debug
+```
+
+### Remote builds
+
+The `ko` builder supports remote builds on Google Cloud Build. See the
+[example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/ko).
 
 ### Using the `custom` builder
 

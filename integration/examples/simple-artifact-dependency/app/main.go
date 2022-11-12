@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 )
 
 func main() {
-	dat, err := ioutil.ReadFile("hello.txt")
+	dat, err := os.ReadFile("hello.txt")
 	if err != nil {
 		panic(err)
 	}

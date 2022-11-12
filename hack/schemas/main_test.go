@@ -18,7 +18,7 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -60,7 +60,7 @@ func TestGenerators(t *testing.T) {
 			actual, err := generator.Apply(input)
 			t.CheckNoError(err)
 
-			expected, err := ioutil.ReadFile(expectedOutput)
+			expected, err := os.ReadFile(expectedOutput)
 			t.CheckNoError(err)
 
 			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))

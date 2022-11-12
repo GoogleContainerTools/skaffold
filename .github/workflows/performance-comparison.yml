@@ -33,7 +33,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Add reaction
-      uses: peter-evans/create-or-update-comment@c9fcb64660bc90ec1cc535646af190c992007c32
+      uses: peter-evans/create-or-update-comment@5adcb0bb0f9fb3f95ef05400558bdb3f329ee808
       with:
         comment-id: ${{ github.event.comment.id }}
         reactions: rocket
@@ -41,7 +41,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.17.*
+        go-version: 1.19.*
       id: go
 
     - name: Check out code into the Go module directory
@@ -92,7 +92,7 @@ jobs:
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 
-    - uses: xt0rted/pull-request-comment-branch@f2f07162618551540507cbd00ddf16ffcaa0c72f
+    - uses: xt0rted/pull-request-comment-branch@653a7d5ca8bd91d3c5cb83286063314d0b063b8e
       id: comment-branch
 
     - name: Make and install Skaffold binary from current PR
@@ -120,10 +120,10 @@ jobs:
         body="${body//'%'/'%25'}"
         body="${body//$'\n'/'%0A'}"
         body="${body//$'\r'/'%0D'}" 
-        echo ::set-output name=body::$body
+        echo "body=$body" >> $GITHUB_OUTPUT
 
     - name: Create comment
-      uses: peter-evans/create-or-update-comment@c9fcb64660bc90ec1cc535646af190c992007c32
+      uses: peter-evans/create-or-update-comment@5adcb0bb0f9fb3f95ef05400558bdb3f329ee808
       with:
         issue-number: ${{ github.event.issue.number }}
         body: "${{ steps.run-performance-comparison-benchmarks.outputs.body }}"

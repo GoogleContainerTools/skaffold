@@ -138,7 +138,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: integration
 integration: install integration-tests
@@ -170,6 +170,15 @@ release-lts: $(BUILD_DIR)/VERSION
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
+		.
+
+.PHONY: release-slim
+release-slim: $(BUILD_DIR)/VERSION
+	docker build \
+		-f deploy/skaffold/Dockerfile.slim \
+		--target release \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:slim \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT)-slim \
 		.
 
 .PHONY: release-lts-build

@@ -37,6 +37,11 @@ type BuilderMux struct {
 	byImageName map[string]PipelineBuilder
 	store       ArtifactStore
 	concurrency int
+	cache       Cache
+}
+
+type Cache interface {
+	AddArtifact(ctx context.Context, a graph.Artifact) error
 }
 
 // Config represents an interface for getting all config pipelines.
@@ -49,7 +54,7 @@ type Config interface {
 }
 
 // NewBuilderMux returns an implementation of `build.BuilderMux`.
-func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
+func NewBuilderMux(cfg Config, store ArtifactStore, cache Cache, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
 	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
 	var pbs []PipelineBuilder
@@ -64,7 +69,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 		}
 	}
 	concurrency := getConcurrency(pbs, cfg.BuildConcurrency())
-	return &BuilderMux{builders: pbs, byImageName: m, store: store, concurrency: concurrency}, nil
+	return &BuilderMux{builders: pbs, byImageName: m, store: store, concurrency: concurrency, cache: cache}, nil
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
@@ -94,18 +99,40 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 			return "", err
 		}
 		r := hooks.BuildRunner(artifact.LifecycleHooks, hooksOpts)
-		var built string
 		if err = r.RunPreHooks(ctx, out); err != nil {
 			return "", err
 		}
-		if built, err = artifactBuilder(ctx, out, artifact, tag, platforms); err != nil {
+		var built string
+
+		if platforms.IsMultiPlatform() && !SupportsMultiPlatformBuild(*artifact) {
+			built, err = CreateMultiPlatformImage(ctx, out, artifact, tag, platforms, artifactBuilder)
+		} else {
+			built, err = artifactBuilder(ctx, out, artifact, tag, platforms)
+		}
+
+		if err != nil {
 			return "", err
 		}
+
+		if err := b.cache.AddArtifact(ctx, graph.Artifact{
+			ImageName: artifact.ImageName,
+			Tag:       built,
+		}); err != nil {
+			log.Entry(ctx).Warnf("error adding artifact to cache; caching may not work as expected: %v", err)
+		}
+
 		if err = r.RunPostHooks(ctx, out); err != nil {
 			return "", err
 		}
+
 		return built, nil
 	}
+
+	err := checkMultiplatformHaveRegistry(b, artifacts, resolver)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err) // TODO: remove error wrapping after fixing #7790
+	}
+
 	ar, err := InOrder(ctx, out, tags, resolver, artifacts, builderF, b.concurrency, b.store)
 	if err != nil {
 		return nil, err
@@ -174,4 +201,21 @@ func getConcurrency(pbs []PipelineBuilder, cliConcurrency int) int {
 	}
 	log.Entry(ctx).Infof("final build concurrency value is %d", minConcurrency)
 	return minConcurrency
+}
+
+func checkMultiplatformHaveRegistry(b *BuilderMux, artifacts []*latest.Artifact, platforms platform.Resolver) error {
+	for _, artifact := range artifacts {
+		pb := b.byImageName[artifact.ImageName]
+		hasExternalRegistry := pb.PushImages()
+		pl, err := filterBuildEnvSupportedPlatforms(pb.SupportedPlatforms(), platforms.GetPlatforms(artifact.ImageName))
+		if err != nil {
+			return err
+		}
+
+		if pl.IsMultiPlatform() && !hasExternalRegistry {
+			return noRegistryForMultiplatformBuildErr(fmt.Errorf("multi-platform build requires pushing images to a valid container registry"))
+		}
+	}
+
+	return nil
 }

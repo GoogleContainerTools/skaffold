@@ -17,12 +17,21 @@ limitations under the License.
 package manifest
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
+
+const namespaceField = "namespace"
+
+const defaultNamespace = "default"
 
 // CollectNamespaces returns all the namespaces in the manifests.
 func (l *ManifestList) CollectNamespaces() ([]string, error) {
@@ -63,7 +72,7 @@ func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[st
 	if !ok {
 		return true
 	}
-	if nsValue, present := metadata["namespace"]; present {
+	if nsValue, present := metadata[namespaceField]; present {
 		nsString, ok := nsValue.(string)
 		if !ok || nsString == "" {
 			return true
@@ -73,4 +82,72 @@ func (r *namespaceCollector) Visit(gk schema.GroupKind, navpath string, o map[st
 		}
 	}
 	return false
+}
+
+// SetNamespace sets labels to a list of Kubernetes manifests if they are not set.
+// Returns error if any manifest in the list has namespace set.
+func (l *ManifestList) SetNamespace(namespace string, rs ResourceSelector) (ManifestList, error) {
+	if namespace == "" {
+		namespace = defaultNamespace
+	}
+	var updated ManifestList
+	for _, item := range *l {
+		updatedManifest := item
+		m := make(map[string]interface{})
+		if err := yaml.Unmarshal(item, &m); err != nil {
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
+		}
+		if shouldTransformManifest(m, rs) {
+			var errU error
+			if errU = addOrUpdateNamespace(m, namespace); errU != nil {
+				return nil, errU
+			}
+			updatedManifest, errU = yaml.Marshal(m)
+			if errU != nil {
+				return nil, nsSettingErr(errU)
+			}
+		}
+		updated = append(updated, updatedManifest)
+	}
+
+	log.Entry(context.TODO()).Debugln("manifests set with namespace", updated.String())
+	return updated, nil
+}
+
+func addOrUpdateNamespace(manifest map[string]interface{}, ns string) error {
+	originalMetadata, ok := manifest[metadataField]
+	if !ok {
+		metadataAdded := make(map[string]interface{})
+		metadataAdded[namespaceField] = ns
+		manifest[metadataField] = metadataAdded
+		return nil
+	}
+	metadata, ok := originalMetadata.(map[string]interface{})
+	if !ok {
+		return nsSettingErr(fmt.Errorf("error converting %s to map[string]interface{}", originalMetadata))
+	}
+	nsValue, present := metadata[namespaceField]
+	if !present || isEmptyOrEqual(nsValue, ns) {
+		metadata[namespaceField] = ns
+		return nil
+	}
+
+	if present && isEmptyOrEqual(ns, defaultNamespace) {
+		return nil
+	}
+
+	warnings.Printf("a manifest already has namespace set \"%s\" which conflicts with namespace on the CLI \"%s\"", nsValue, ns)
+	return nil
+}
+
+func isEmptyOrEqual(v interface{}, s string) bool {
+	// check if namespace is set to empty string
+	if v == nil {
+		return true
+	}
+	nsString, ok := v.(string)
+	if !ok {
+		return false
+	}
+	return nsString == "" || nsString == s
 }

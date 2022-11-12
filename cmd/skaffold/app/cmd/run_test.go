@@ -19,14 +19,13 @@ package cmd
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -73,14 +72,15 @@ func (r *mockRunRunner) Test(context.Context, io.Writer, []graph.Artifact) error
 	return nil
 }
 
-func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
+func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error {
 	r.deployRan = true
 	return nil
 }
 
-func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestList, error) {
+func (r *mockRunRunner) Render(context.Context, io.Writer, []graph.Artifact, bool) (manifest.ManifestListByConfig, error) {
 	r.renderRan = true
-	return manifest.ManifestList{}, nil
+	manifestListByConfig := manifest.NewManifestListByConfig()
+	return manifestListByConfig, nil
 }
 
 func TestDoRun(t *testing.T) {
@@ -120,7 +120,7 @@ func TestDoRun(t *testing.T) {
 				SkipTests:    test.skipTests,
 			})
 
-			err := doRun(context.Background(), ioutil.Discard)
+			err := doRun(context.Background(), io.Discard)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.skipTests, !mockRunner.testRan)
 			t.CheckDeepEqual([]string{"second-test", "test"}, mockRunner.artifactImageNames)

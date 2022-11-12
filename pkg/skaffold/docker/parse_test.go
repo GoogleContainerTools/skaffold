@@ -51,8 +51,8 @@ func TestRemoveExtraBuildArgs(t *testing.T) {
 			description: "no args in dockerfile",
 			dockerfile:  `FROM nginx:stable`,
 			buildArgs: map[string]*string{
-				"foo": util.StringPtr("FOO"),
-				"bar": util.StringPtr("BAR"),
+				"foo": util.Ptr("FOO"),
+				"bar": util.Ptr("BAR"),
 			},
 			expected: map[string]*string{},
 		},
@@ -62,12 +62,12 @@ func TestRemoveExtraBuildArgs(t *testing.T) {
 ARG bar
 FROM nginx:stable`,
 			buildArgs: map[string]*string{
-				"foo": util.StringPtr("FOO"),
-				"bar": util.StringPtr("BAR"),
+				"foo": util.Ptr("FOO"),
+				"bar": util.Ptr("BAR"),
 			},
 			expected: map[string]*string{
-				"foo": util.StringPtr("FOO"),
-				"bar": util.StringPtr("BAR"),
+				"foo": util.Ptr("FOO"),
+				"bar": util.Ptr("BAR"),
 			},
 		},
 		{
@@ -76,14 +76,14 @@ FROM nginx:stable`,
 ARG bar
 FROM nginx:stable`,
 			buildArgs: map[string]*string{
-				"foo":    util.StringPtr("FOO"),
-				"bar":    util.StringPtr("BAR"),
-				"foobar": util.StringPtr("FOOBAR"),
-				"gopher": util.StringPtr("GOPHER"),
+				"foo":    util.Ptr("FOO"),
+				"bar":    util.Ptr("BAR"),
+				"foobar": util.Ptr("FOOBAR"),
+				"gopher": util.Ptr("GOPHER"),
 			},
 			expected: map[string]*string{
-				"foo": util.StringPtr("FOO"),
-				"bar": util.StringPtr("BAR"),
+				"foo": util.Ptr("FOO"),
+				"bar": util.Ptr("BAR"),
 			},
 		},
 		{
@@ -94,14 +94,14 @@ ARG bar1
 FROM golang:stable
 ARG bar2`,
 			buildArgs: map[string]*string{
-				"foo":  util.StringPtr("FOO"),
-				"bar1": util.StringPtr("BAR"),
-				"bar2": util.StringPtr("BAR2"),
+				"foo":  util.Ptr("FOO"),
+				"bar1": util.Ptr("BAR"),
+				"bar2": util.Ptr("BAR2"),
 			},
 			expected: map[string]*string{
-				"foo":  util.StringPtr("FOO"),
-				"bar1": util.StringPtr("BAR"),
-				"bar2": util.StringPtr("BAR2"),
+				"foo":  util.Ptr("FOO"),
+				"bar1": util.Ptr("BAR"),
+				"bar2": util.Ptr("BAR2"),
 			},
 		},
 	}

@@ -39,6 +39,7 @@ import (
 //    - Artifact.imageName -> image, workspace -> context in yaml
 //		- DockerArtifact.dockerfilePath -> dockerfile in yaml
 //    - BazelArtifact.BuildTarget is optional in yaml
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig

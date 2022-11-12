@@ -18,7 +18,7 @@ package docker
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -70,7 +70,7 @@ func TestPush(t *testing.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			digest, err := localDocker.Push(context.Background(), ioutil.Discard, test.imageName)
+			digest, err := localDocker.Push(context.Background(), io.Discard, test.imageName)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})
@@ -85,14 +85,14 @@ func TestDoNotPushAlreadyPushed(t *testing.T) {
 		api.Add("image", "sha256:imageIDabcab")
 		localDocker := NewLocalDaemon(api, nil, false, nil)
 
-		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
+		digest, err := localDocker.Push(context.Background(), io.Discard, "image")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 
 		// Images already pushed don't need being pushed.
 		api.ErrImagePush = true
 
-		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
+		digest, err = localDocker.Push(context.Background(), io.Discard, "image")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 	})
@@ -132,8 +132,8 @@ func TestBuild(t *testing.T) {
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"k1": nil,
-					"k2": util.StringPtr("value2"),
-					"k3": util.StringPtr("{{.VALUE3}}"),
+					"k2": util.Ptr("value2"),
+					"k3": util.Ptr("{{.VALUE3}}"),
 				},
 				CacheFrom:   []string{"from-1"},
 				Target:      "target",
@@ -147,8 +147,8 @@ func TestBuild(t *testing.T) {
 				Dockerfile: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"k1": nil,
-					"k2": util.StringPtr("value2"),
-					"k3": util.StringPtr("value3"),
+					"k2": util.Ptr("value2"),
+					"k3": util.Ptr("value3"),
 				},
 				CacheFrom:   []string{"from-1"},
 				AuthConfigs: allAuthConfig,
@@ -184,7 +184,7 @@ func TestBuild(t *testing.T) {
 			description: "bad build arg template",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key": util.StringPtr("{{INVALID"),
+					"key": util.Ptr("{{INVALID"),
 				},
 			},
 			mode:          config.RunModes.Dev,
@@ -195,14 +195,14 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
-			t.Override(&EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return util.EvaluateEnvTemplateMap(args)
 			})
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
 			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, "final-image", test.artifact, opts)
+			_, err := localDocker.Build(context.Background(), io.Discard, test.workspace, "final-image", test.artifact, opts)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -279,9 +279,9 @@ func TestGetBuildArgs(t *testing.T) {
 			description: "build args",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key1": util.StringPtr("value1"),
+					"key1": util.Ptr("value1"),
 					"key2": nil,
-					"key3": util.StringPtr("{{.FOO}}"),
+					"key3": util.Ptr("{{.FOO}}"),
 				},
 			},
 			env:  []string{"FOO=bar"},
@@ -291,7 +291,7 @@ func TestGetBuildArgs(t *testing.T) {
 			description: "invalid build arg",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key": util.StringPtr("{{INVALID"),
+					"key": util.Ptr("{{INVALID"),
 				},
 			},
 			shouldErr: true,
@@ -400,7 +400,7 @@ func TestGetBuildArgs(t *testing.T) {
 			description: "all",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key1": util.StringPtr("value1"),
+					"key1": util.Ptr("value1"),
 				},
 				CacheFrom:   []string{"foo"},
 				Target:      "stage1",

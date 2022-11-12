@@ -19,8 +19,10 @@ package cache
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"sync"
+
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -28,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latest.Artifact) []cacheDetails {
@@ -67,8 +70,16 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 	c.cacheMutex.RLock()
 	entry, cacheHit := c.artifactCache[hash]
 	c.cacheMutex.RUnlock()
-	if !cacheHit {
-		if entry, err = c.tryImport(ctx, a, tag, hash); err != nil {
+
+	pls := platforms.GetPlatforms(a.ImageName)
+	// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
+	// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
+	if !cacheHit && !pls.IsMultiPlatform() {
+		var pl v1.Platform
+		if len(pls.Platforms) == 1 {
+			pl = util.ConvertToV1Platform(pls.Platforms[0])
+		}
+		if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
 			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
 			return needsBuilding{hash: hash}
 		}
@@ -131,7 +142,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	return needsBuilding{hash: hash}
 }
 
-func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string) (ImageDetails, error) {
+func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string, pl v1.Platform) (ImageDetails, error) {
 	entry := ImageDetails{}
 
 	if importMissing, err := c.importMissingImage(a.ImageName); err != nil {
@@ -142,7 +153,7 @@ func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, h
 
 	if !c.client.ImageExists(ctx, tag) {
 		log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
-		err := c.client.Pull(ctx, ioutil.Discard, tag)
+		err := c.client.Pull(ctx, io.Discard, tag, pl)
 		if err != nil {
 			return entry, err
 		}

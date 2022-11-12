@@ -38,6 +38,7 @@ const (
 	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 	defaultCloudBuildKanikoImage = kaniko.DefaultImage
 	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
+	defaultCloudBuildKoImage     = "gcr.io/k8s-skaffold/skaffold"
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
@@ -88,6 +89,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultCloudBuildGradleImage,
 		setDefaultCloudBuildKanikoImage,
 		setDefaultCloudBuildPackImage,
+		setDefaultCloudBuildKoImage,
 	)
 
 	if err := withClusterConfig(c,
@@ -117,6 +119,10 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 		return
 	}
 	if len(c.Render.Generate.RawK8s) > 0 {
+		if c.Deploy.KubectlDeploy == nil && c.Deploy.CloudRunDeploy == nil {
+			log.Entry(context.TODO()).Debug("Found raw k8s manifests without cloud run deploy, adding kubectl deployer")
+			c.Deploy.KubectlDeploy = &latest.KubectlDeploy{}
+		}
 		return
 	}
 	if c.Render.Generate.Kustomize != nil {
@@ -126,6 +132,12 @@ func SetDefaultRenderer(c *latest.SkaffoldConfig) {
 		return
 	}
 	if c.Deploy.LegacyHelmDeploy != nil {
+		return
+	}
+	if c.Deploy.DockerDeploy != nil {
+		return
+	}
+	if c.Deploy.CloudRunDeploy != nil {
 		return
 	}
 	// Set default manifests to "k8s/*.yaml", same as v1.
@@ -193,6 +205,10 @@ func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
 	gcb.PackImage = valueOrDefault(gcb.PackImage, defaultCloudBuildPackImage)
 }
 
+func setDefaultCloudBuildKoImage(gcb *latest.GoogleCloudBuild) {
+	gcb.KoImage = valueOrDefault(gcb.KoImage, defaultCloudBuildKoImage)
+}
+
 func setDefaultTagger(c *latest.SkaffoldConfig) {
 	if c.Build.TagPolicy != (latest.TagPolicy{}) {
 		return
@@ -232,6 +248,10 @@ func setBuildpackArtifactDefaults(a *latest.BuildpackArtifact) {
 			Paths: []string{"."},
 		}
 	}
+	if a.Builder == "" && len(a.Buildpacks) == 0 {
+		a.Builder = constants.DefaultBuildpacksBuilderImage
+		a.TrustBuilder = true
+	}
 }
 
 func setDockerArtifactDefaults(a *latest.DockerArtifact) {
@@ -247,13 +267,13 @@ func setDefaultSync(a *latest.Artifact) {
 		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
 			switch {
 			case a.JibArtifact != nil || a.BuildpackArtifact != nil:
-				a.Sync.Auto = util.BoolPtr(true)
+				a.Sync.Auto = util.Ptr(true)
 			default:
 				a.Sync.Infer = []string{"**/*"}
 			}
 		}
 	} else if a.BuildpackArtifact != nil {
-		a.Sync = &latest.Sync{Auto: util.BoolPtr(true)}
+		a.Sync = &latest.Sync{Auto: util.Ptr(true)}
 	}
 }
 

@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"regexp"
@@ -31,12 +32,16 @@ import (
 )
 
 var (
-	noSpaceLeft = regexp.MustCompile(".*no space left.*")
+	noSpaceLeft   = regexp.MustCompile(".*no space left.*")
+	execFormatErr = regexp.MustCompile(".*exec format error.*")
 )
 
 // newBuildError turns Docker-specific errors into actionable errors.
 // The input errors are assumed to be from the Skaffold docker invocation.
 func newBuildError(err error, cfg docker.Config) error {
+	if sErrors.IsSkaffoldErr(err) {
+		return err
+	}
 	errU := errors.Unwrap(err)
 	if errU == nil {
 		return err
@@ -144,6 +149,23 @@ func cacheFromPullErr(err error, artifact string) error {
 					SuggestionCode: proto.SuggestionCode_FIX_CACHE_FROM_ARTIFACT_CONFIG,
 					Action: fmt.Sprintf("Fix `cacheFrom` config for artifact %s."+
 						"\nRefer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for details.", artifact),
+				},
+			},
+		})
+}
+
+func tryExecFormatErr(err error, stdErr bytes.Buffer) error {
+	if !execFormatErr.MatchString(stdErr.String()) {
+		return err
+	}
+	return sErrors.NewError(err,
+		&proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_BUILD_CROSS_PLATFORM_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_BUILD_INSTALL_PLATFORM_EMULATORS,
+					Action:         "To run cross-platform builds, check that QEMU platform emulators are installed correctly. To install, run:\n\n\tdocker run --privileged --rm tonistiigi/binfmt --install all\n\nFor more details, see https://registry.hub.docker.com/r/tonistiigi/binfmt",
 				},
 			},
 		})

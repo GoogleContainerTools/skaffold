@@ -8,7 +8,8 @@
 #  (1) delete the buildx builder named `skaffold-builder`, and
 #  (2) update the corresponding node-affinities in k8s/pod.yaml.
 
-# The platforms to build.
+# The platforms to build. Default to linux/amd64.
+$PLATFORMS=${PLATFORMS:=linux/amd64}
 
 # `buildx` uses named _builder_ instances configured for specific platforms.
 # This script creates a `skaffold-builder` as required.

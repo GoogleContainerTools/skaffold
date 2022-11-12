@@ -23,6 +23,8 @@ import (
 	"os"
 	"os/exec"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
@@ -71,7 +73,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 		// The image is remote so we have to pull it locally.
 		// `container-structure-test` currently can't do it:
 		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
-		if err := cst.localDaemon.Pull(ctx, out, imageTag); err != nil {
+		if err := cst.localDaemon.Pull(ctx, out, imageTag, v1.Platform{}); err != nil {
 			return dockerPullImageErr(imageTag, err)
 		}
 	}

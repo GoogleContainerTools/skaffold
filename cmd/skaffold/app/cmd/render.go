@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/spf13/cobra"
 
@@ -38,7 +37,7 @@ var (
 // NewCmdRender describes the CLI command to build artifacts render Kubernetes manifests.
 func NewCmdRender() *cobra.Command {
 	return NewCmd("render").
-		WithDescription("Perform all image builds, and output rendered Kubernetes manifests").
+		WithDescription("Generate rendered Kubernetes manifests").
 		WithExample("Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry ", "render --digest-source=remote").
 		WithCommonFlags().
 		WithFlags([]*Flag{
@@ -53,7 +52,7 @@ func NewCmdRender() *cobra.Command {
 func doRender(ctx context.Context, out io.Writer) error {
 	// TODO(nkubala): remove this from opts in favor of a param to Build()
 	opts.RenderOnly = true
-	buildOut := ioutil.Discard
+	buildOut := io.Discard
 	if showBuild {
 		buildOut = out
 	}

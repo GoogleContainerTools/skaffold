@@ -28,7 +28,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -203,6 +203,14 @@ func TestIsErrAndNotRetriable(t *testing.T) {
 			description: "rollout status parent context timed out",
 			statusCode:  proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
 			expected:    true,
+		},
+		{
+			description: "unschedule error code",
+			statusCode:  proto.StatusCode_STATUSCHECK_NODE_UNSCHEDULABLE,
+		},
+		{
+			description: "unschedule unknown error",
+			statusCode:  proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE,
 		},
 		{
 			description: "rollout status nil error",

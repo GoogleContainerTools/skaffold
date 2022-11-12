@@ -19,7 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	stdlog "log"
 	"net/http/httptest"
 	"path/filepath"
@@ -78,7 +78,7 @@ func TestBuildAndPushKoImageProgrammatically(t *testing.T) {
 // The registry uses a NOP logger to avoid spamming test logs.
 // Remember to call `defer Close()` on the returned `httptest.Server`.
 func registryServerWithImage(namespace string) (*httptest.Server, error) {
-	nopLog := stdlog.New(ioutil.Discard, "", 0)
+	nopLog := stdlog.New(io.Discard, "", 0)
 	r := registry.New(registry.Logger(nopLog))
 	s := httptest.NewServer(r)
 	imageName := fmt.Sprintf("%s/%s", s.Listener.Addr().String(), namespace)

@@ -1,5 +1,5 @@
 ---
-title: "Skaffold Documentation"
+title: "Skaffold 2.0 Documentation"
 linkTitle: "Documentation"
 weight: 20
 menu:
@@ -8,12 +8,19 @@ menu:
 no_list: true
 ---
 
-Skaffold is a command line tool that facilitates continuous development for
-Kubernetes-native applications. Skaffold handles the workflow for building,
+<div class="pageinfo pageinfo-primary">
+    <p class="banner-title">Skaffold v2 has been released!</p>
+    <p>You are viewing the Skaffold v2 documentation. View the archived v1 documentation
+      <a href="https://skaffold-v1.web.app/docs/" target="_blank">here.</a>
+    </p>
+</div>
+
+Skaffold is a command line tool that facilitates continuous development for container based &
+Kubernetes applications. Skaffold handles the workflow for building,
 pushing, and deploying your application, and provides building blocks for
 creating CI/CD pipelines. This enables you to focus on iterating on your
 application locally while Skaffold continuously deploys to your local or remote
-Kubernetes cluster.
+Kubernetes cluster, local Docker environment or Cloud Run project.
 
 ## Features
 
@@ -24,6 +31,7 @@ Kubernetes cluster.
 * Skaffold projects work everywhere
   * **share with other developers** - Skaffold is the easiest way to **share your project** with the world: `git clone` and `skaffold run`
   * **context aware** - use Skaffold profiles, local user config, environment variables, and flags to easily incorporate differences across environments
+  * **platform aware** - use cross-platform and multi-platform **build** support, with automatic platform detection, to easily handle operating system and architecture differences between the development machine and Kubernetes cluster nodes.
   * **CI/CD building blocks** - use `skaffold build`, `skaffold test` and `skaffold deploy` as part of your CI/CD pipeline, or simply `skaffold run` end-to-end
   * **GitOps integration** - use `skaffold render` to build your images and render templated Kubernetes manifests for use in GitOps workflows
 * skaffold.yaml - a single pluggable, declarative configuration for your project

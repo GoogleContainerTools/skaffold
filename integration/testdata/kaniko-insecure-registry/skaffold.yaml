@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 profiles:
   - name: build-artifact
@@ -16,7 +16,6 @@ profiles:
         - image: devreg
           context: insecure-registry
           docker: {}
-    deploy:
-      kubectl:
-        manifests:
-          - insecure-registry/reg.yaml
+    manifests:
+      rawYaml:
+      - insecure-registry/reg.yaml

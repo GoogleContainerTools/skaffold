@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 metadata:
   name: ignore-tags
@@ -7,7 +7,6 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: Dockerfile
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - k8s-pod.yaml

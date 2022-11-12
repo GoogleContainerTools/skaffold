@@ -15,7 +15,7 @@ Skaffold supports different tools for building images:
 | **Jib Maven and Gradle** | [Yes]({{< relref "/docs/pipeline-stages/builders/jib#jib-maven-and-gradle-locally" >}}) | - | [Yes]({{< relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build" >}}) |
 | **Cloud Native Buildpacks** | [Yes]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) | - | [Yes]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) |
 | **Bazel** | [Yes]({{< relref "/docs/pipeline-stages/builders/bazel" >}}) | - | - |
-| **ko** | [Yes]({{< relref "/docs/pipeline-stages/builders/ko" >}}) | - | - |
+| **ko** | [Yes]({{< relref "/docs/pipeline-stages/builders/ko" >}}) | - | [Yes]({{< relref "/docs/pipeline-stages/builders/ko#remote-builds" >}}) |
 | **Custom Script** | [Yes]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-locally" >}}) | [Yes]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}) | - |
 
 **Configuration**
@@ -184,13 +184,13 @@ The final list of target platforms need to ultimately be supported by the target
 
 |    | Local Build | In Cluster Build | Remote on Google Cloud Build |
 |----|:-----------:|:----------------:|:----------------------------:|
-| **Dockerfile** | Cross platform supported | Cross platform supported but platform should match cluster node running the pod. | Cross platform supported |
-| **Jib Maven and Gradle** | Cross platform supported | - | Cross platform supported |
+| **Dockerfile** | Cross-platform supported | Cross-platform supported but platform should match cluster node running the pod. | Cross-platform supported |
+| **Jib Maven and Gradle** | Cross-platform and multi-platform supported | - | Cross-platform and multi-platform supported |
 | **Cloud Native Buildpacks** | Only supports `linux/amd64` | - | Only supports `linux/amd64` |
-| **Bazel** | Cross platform supported but requires explicit platform specific rules. Not yet implemented | - | - |
-| **ko** | Cross platform supported | - | - |
-| **Custom Script** | Cross platform supported but requires user to implement it in the build script | Cross platform supported but requires user to implement it in the build script | - |
+| **Bazel** | Cross-platform supported but requires explicit platform specific rules. Not yet implemented | - | - |
+| **ko** | Cross-platform and multi-platform supported | - | Cross-platform and multi-platform supported |
+| **Custom Script** | Cross-platform and multi-platform supported but requires user to implement it in the build script | Cross-platform and multi-platform supported but requires user to implement it in the build script | - |
 
 {{< alert title="Note" >}}
-Multi-arch image build is not yet supported for any builders other than the [jib builder]({{<relref "/docs/pipeline-stages/builders/jib" >}}), the [ko builder]({{<relref "/docs/pipeline-stages/builders/ko">}}) and the [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}) in Skaffold. 
+Skaffold supports multi-platform image builds using the [jib builder]({{<relref "/docs/pipeline-stages/builders/jib" >}}), the [ko builder]({{<relref "/docs/pipeline-stages/builders/ko">}}) and the [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}).
 {{< /alert >}}

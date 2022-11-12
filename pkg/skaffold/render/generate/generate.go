@@ -17,33 +17,38 @@ limitations under the License.
 package generate
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	rErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // NewGenerator instantiates a Generator object.
-func NewGenerator(workingDir string, config latest.Generate) Generator {
+func NewGenerator(workingDir string, config latest.Generate, hydrationDir string) Generator {
 	return Generator{
-		workingDir: workingDir,
-		config:     config,
+		workingDir:   workingDir,
+		config:       config,
+		hydrationDir: hydrationDir,
 	}
 }
 
@@ -54,15 +59,35 @@ type Generator struct {
 	config       latest.Generate
 }
 
-func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
+func localManifests(paths []string, workdir string) ([]string, error) {
 	var localPaths []string
-	var gcsManifests []string
 	for _, path := range paths {
 		switch {
 		case util.IsURL(path):
 		case strings.HasPrefix(path, "gs://"):
+		default:
+			localPaths = append(localPaths, path)
+		}
+	}
+	return util.ExpandPathsGlob(workdir, localPaths)
+}
+
+func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
+	var localPaths []string
+	var gcsManifests []string
+	var urlManifests []string
+	for _, path := range paths {
+		switch {
+		case util.IsURL(path):
+			urlManifests = append(urlManifests, path)
+		case strings.HasPrefix(path, "gs://"):
 			gcsManifests = append(gcsManifests, path)
 		default:
+			// expand paths
+			path, err := util.ExpandEnvTemplate(path, nil)
+			if err != nil {
+				return nil, err
+			}
 			localPaths = append(localPaths, path)
 		}
 	}
@@ -82,6 +107,13 @@ func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 		}
 		list = append(list, l...)
 	}
+	if len(urlManifests) != 0 {
+		paths, err := manifest.DownloadFromURL(urlManifests)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, paths...)
+	}
 	return list, nil
 }
 
@@ -91,7 +123,9 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 	var manifests manifest.ManifestList
 
 	// Generate kustomize Manifests
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_kustomize")
 	if g.config.Kustomize != nil && len(g.config.Kustomize.Paths) != 0 {
+		log.Entry(ctx).Infof("rendering using kustomize")
 		kustomizeManifests, err := g.generateKustomizeManifests(ctx)
 		if err != nil {
 			return nil, err
@@ -100,9 +134,10 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 			manifests.Append(m)
 		}
 	}
+	endTrace()
 
 	// Generate in-place hydrated kpt Manifests
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
 	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
@@ -116,6 +151,9 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 		}
 	}
 	var kptManifests []string
+	if len(kptPathMap) != 0 {
+		log.Entry(ctx).Infof("rendering using kpt")
+	}
 	for kPath := range kptPathMap {
 		// kpt manifests will be hydrated and stored in the subdir of the hydrated dir, where the subdir name
 		// matches the kPath dir name.
@@ -147,15 +185,44 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 				continue
 			}
 		}
-		manifestFileContent, err := ioutil.ReadFile(nkPath)
+		manifestFileContent, err := os.ReadFile(nkPath)
 		if err != nil {
 			return nil, err
 		}
 		manifests.Append(manifestFileContent)
 	}
 
-	// TODO(yuwenma): helm resources. `render.generate.helmCharts`
+	// Generate remote manifests
+	for _, m := range g.config.RemoteManifests {
+		manifest, err := g.readRemoteManifest(ctx, m)
+		if err != nil {
+			return nil, err
+		}
+		manifests.Append(manifest)
+	}
+
 	return manifests, nil
+}
+
+// readRemoteManifests will try to read manifests from the given kubernetes
+// context in the specified namespace and for the specified type
+func (g Generator) readRemoteManifest(ctx context.Context, rm latest.RemoteManifest) ([]byte, error) {
+	var args []string
+	ns := ""
+	name := rm.Manifest
+	if parts := strings.Split(name, ":"); len(parts) > 1 {
+		ns = parts[0]
+		name = parts[1]
+	}
+	args = append(args, name, "-o", "yaml")
+
+	var manifest bytes.Buffer
+	err := kubectl.NewCLI(NewKCfg(rm.KubeContext, "", ""), "").RunInNamespace(ctx, nil, &manifest, "get", ns, args...)
+	if err != nil {
+		return nil, rErrors.ReadRemoteManifestErr(fmt.Errorf("getting remote manifests: %w", err))
+	}
+
+	return manifest.Bytes(), nil
 }
 
 func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, error) {
@@ -174,10 +241,19 @@ func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, er
 			kustomizePathMap[dir] = true
 		}
 	}
+
+	kCLI := kubectl.NewCLI(kCfg{}, "")
+	useKubectlKustomize := !KustomizeBinaryCheck() && KubectlVersionCheck(kCLI)
+
 	for kPath := range kustomizePathMap {
-		// TODO: kustomize kpt-fn not available yet. See https://github.com/GoogleContainerTools/kpt/issues/1447
-		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
-		out, err := util.RunCmdOut(ctx, cmd)
+		var out []byte
+		var err error
+		if useKubectlKustomize {
+			out, err = kCLI.Kustomize(ctx, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath))
+		} else {
+			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
+			out, err = util.RunCmdOut(ctx, cmd)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -252,34 +328,23 @@ func isKptDir(path string) (string, bool) {
 	return dir, true
 }
 
-// walkManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
+// walkLocalManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
 // Note: the logic about manifest dependencies shall separate from the "Generate" function, which requires "context" and
 // only be called when a rendering action is needed (normally happens after the file watcher registration).
-func (g Generator) walkManifests() ([]string, error) {
+func (g Generator) walkLocalManifests() ([]string, error) {
 	var dependencyPaths []string
-
-	// Generate kustomize Manifests
-	if g.config.Kustomize != nil {
-		kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
-		if err != nil {
-			event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
-			return nil, err
-		}
-		dependencyPaths = append(dependencyPaths, kustomizePaths...)
-	}
+	var err error
 
 	// Generate in-place hydrated kpt Manifests
-	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
+	kptPaths, err := localManifests(g.config.Kpt, g.workingDir)
 	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
 		return nil, err
 	}
 	dependencyPaths = append(dependencyPaths, kptPaths...)
 
 	// Generate Raw Manifests
-	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
+	sourceManifests, err := localManifests(g.config.RawK8s, g.workingDir)
 	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob raw manifests: %w", err))
 		return nil, err
 	}
 	dependencyPaths = append(dependencyPaths, sourceManifests...)
@@ -287,9 +352,9 @@ func (g Generator) walkManifests() ([]string, error) {
 }
 
 func (g Generator) ManifestDeps() ([]string, error) {
-	deps := stringset.New()
+	var deps []string
 
-	dependencyPaths, err := g.walkManifests()
+	dependencyPaths, err := g.walkLocalManifests()
 	if err != nil {
 		return nil, err
 	}
@@ -301,13 +366,46 @@ func (g Generator) ManifestDeps() ([]string, error) {
 				}
 				fname := filepath.Base(p)
 				if strings.HasSuffix(fname, ".yaml") || strings.HasSuffix(fname, ".yml") || fname == kptfile.KptFileName {
-					deps.Insert(p)
+					deps = append(deps, p)
 				}
 				return nil
 			})
 		if err != nil {
 			return nil, err
 		}
+	}
+	// kustomize deps
+	if g.config.Kustomize != nil {
+		kDeps, err := kustomizeDependencies(g.workingDir, g.config.Kustomize.Paths)
+		if err != nil {
+			return nil, err
+		}
+		deps = append(deps, kDeps...)
+	}
+
+	return deps, nil
+}
+
+func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
+	deps := stringset.New()
+	for _, kustomizePath := range paths {
+		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+
+		if !filepath.IsAbs(expandedKustomizePath) {
+			expandedKustomizePath = filepath.Join(workdir, expandedKustomizePath)
+		}
+		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
+		if err != nil {
+			return nil, sErrors.NewError(err,
+				&proto.ActionableErr{
+					Message: err.Error(),
+					ErrCode: proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
+				})
+		}
+		deps.Insert(depsForKustomization...)
 	}
 	return deps.ToList(), nil
 }

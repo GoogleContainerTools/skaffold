@@ -19,6 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
@@ -33,12 +34,13 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	event "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 var (
-	connectionRetries = 2
+	connectionRetries = 5
 	readRetries       = 20
 	numLogEntries     = 7
 	waitTime          = 1 * time.Second
@@ -58,9 +60,6 @@ func TestEnableRPCFlagDeprecation(t *testing.T) {
 }
 
 func TestEventsRPC(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	rpcAddr := randomPort()
@@ -98,11 +97,11 @@ func TestEventsRPC(t *testing.T) {
 	var stream proto.SkaffoldService_EventsClient
 	for i := 0; i < readRetries; i++ {
 		stream, err = client.Events(ctx, &empty.Empty{})
-		if err != nil {
-			t.Logf("waiting for connection...")
-			time.Sleep(waitTime)
-			continue
+		if err == nil {
+			break
 		}
+		t.Logf("waiting for connection...")
+		time.Sleep(waitTime)
 	}
 	if stream == nil {
 		t.Fatalf("error retrieving event log: %v\n", err)
@@ -152,9 +151,6 @@ func TestEventsRPC(t *testing.T) {
 }
 
 func TestEventLogHTTP(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -245,9 +241,6 @@ func TestEventLogHTTP(t *testing.T) {
 }
 
 func TestGetStateRPC(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	rpcAddr := randomPort()
@@ -277,32 +270,26 @@ func TestGetStateRPC(t *testing.T) {
 	if client == nil {
 		t.Fatalf("error establishing skaffold grpc connection")
 	}
-	/*
-		ctx, ctxCancel := context.WithCancel(context.Background())
-		defer ctxCancel()
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
 
-			// try a few times and wait around until we see the build is complete, or fail.
-			success := false
-			var grpcState *proto.State
-			for i := 0; i < readRetries; i++ {
-				grpcState = retrieveRPCState(ctx, t, client)
-				if grpcState != nil && checkBuildAndDeployComplete(*grpcState) {
-					success = true
-					break
-				}
-				time.Sleep(waitTime)
-			}
-			if !success {
-				t.Errorf("skaffold build or deploy not complete. state: %+v\n", grpcState)
-			}
-	*/
+	// try a few times and wait around until we see the build is complete, or fail.
+	success := false
+	var grpcState *proto.State
+	for i := 0; i < readRetries; i++ {
+		grpcState = retrieveRPCState(ctx, t, client)
+		if grpcState != nil && checkBuildAndDeployComplete(grpcState) {
+			success = true
+			break
+		}
+		time.Sleep(waitTime)
+	}
+	if !success {
+		t.Errorf("skaffold build or deploy not complete. state: %+v\n", grpcState)
+	}
 }
 
-/*
 func TestGetStateHTTP(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	httpAddr := randomPort()
@@ -324,23 +311,18 @@ func TestGetStateHTTP(t *testing.T) {
 	}
 }
 
-func retrieveRPCState(ctx context.Context, t *testing.T, client proto.SkaffoldServiceClient) *proto.State {
-	attempts := 0
-	for {
-		grpcState, err := client.GetState(ctx, &empty.Empty{})
-		if err != nil {
-			if attempts >= connectionRetries {
-				t.Fatalf("error retrieving state: %v\n", err)
-			}
-
-			t.Logf("waiting for connection...")
-			attempts++
-			time.Sleep(waitTime)
-			continue
+func retrieveRPCState(ctx context.Context, t *testing.T, client proto.SkaffoldServiceClient) (state *proto.State) {
+	var err error
+	for attempts := 0; attempts < connectionRetries; attempts++ {
+		state, err = client.GetState(ctx, &empty.Empty{})
+		if err == nil {
+			return
 		}
-
-		return grpcState
+		t.Logf("waiting for connection...")
+		time.Sleep(waitTime)
 	}
+	t.Fatalf("error retrieving state: %v\n", err)
+	return
 }
 
 func retrieveHTTPState(t *testing.T, httpAddr string) *proto.State {
@@ -353,7 +335,7 @@ func retrieveHTTPState(t *testing.T, httpAddr string) *proto.State {
 	}
 	defer httpResponse.Body.Close()
 
-	b, err := ioutil.ReadAll(httpResponse.Body)
+	b, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
 		t.Errorf("error reading body from http response: %s", err.Error())
 	}
@@ -362,7 +344,6 @@ func retrieveHTTPState(t *testing.T, httpAddr string) *proto.State {
 	}
 	return httpState
 }
-*/
 
 func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
@@ -393,8 +374,7 @@ func randomPort() string {
 	return strconv.Itoa(p)
 }
 
-/*
-func checkBuildAndDeployComplete(state proto.State) bool {
+func checkBuildAndDeployComplete(state *proto.State) bool {
 	if state.BuildState == nil || state.DeployState == nil {
 		return false
 	}
@@ -407,9 +387,8 @@ func checkBuildAndDeployComplete(state proto.State) bool {
 
 	return state.DeployState.Status == event.Complete
 }
-*/
 
-func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry) { //nolint
+func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry) { // nolint
 	client := setupRPCClient(t, rpcAddr)
 
 	stream, err := readEventAPIStream(client, t, readRetries)
@@ -437,12 +416,12 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 	var stream proto.SkaffoldService_EventLogClient
 	var err error
 	for i := 0; i < retries; i++ {
-		stream, err = client.EventLog(context.Background())
-		if err != nil {
-			t.Logf("waiting for connection...")
-			time.Sleep(waitTime)
-			continue
+		stream, err = client.EventLog(context.Background(), grpc.WaitForReady(true))
+		if err == nil {
+			break
 		}
+		t.Logf("waiting for connection...")
+		time.Sleep(waitTime)
 	}
 	return stream, err
 }
@@ -457,7 +436,7 @@ func setupRPCClient(t *testing.T, port string) proto.SkaffoldServiceClient {
 
 	// connect to the skaffold grpc server
 	for i := 0; i < connectionRetries; i++ {
-		conn, err = grpc.Dial(fmt.Sprintf(":%s", port), grpc.WithInsecure())
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", port), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(10*time.Second))
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			time.Sleep(waitTime)

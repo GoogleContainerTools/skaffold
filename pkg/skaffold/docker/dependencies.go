@@ -21,16 +21,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 
 	"github.com/docker/docker/builder/dockerignore"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 var (
-	dependencyCache = util.NewSyncStore()
+	dependencyCache = util.NewSyncStore[[]string]()
 )
 
 // BuildConfig encapsulates all the build configuration required for performing a dockerbuild.
@@ -62,6 +64,9 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 			return filepath.Abs(dockerfile)
 		}
 	}
+	if runtime.GOOS == constants.Windows && (filepath.VolumeName(dockerfile) != "" || filepath.IsAbs(dockerfile)) {
+		return dockerfile, nil
+	}
 	return filepath.Abs(rel)
 }
 
@@ -73,9 +78,9 @@ func GetDependencies(ctx context.Context, buildCfg BuildConfig, cfg Config) ([]s
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
 	}
-	result := getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
-	dependencyCache.Store(buildCfg.artifact, result)
-	return resultPair(result)
+	result, err := getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
+	dependencyCache.Store(buildCfg.artifact, result, err)
+	return result, err
 }
 
 // GetDependencies finds the sources dependency for the given docker artifact.
@@ -98,21 +103,9 @@ func GetDependenciesCached(ctx context.Context, buildCfg BuildConfig, cfg Config
 		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
 	}
 
-	deps := dependencyCache.Exec(buildCfg.artifact, func() interface{} {
+	return dependencyCache.Exec(buildCfg.artifact, func() ([]string, error) {
 		return getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
 	})
-	return resultPair(deps)
-}
-
-func resultPair(deps interface{}) ([]string, error) {
-	switch t := deps.(type) {
-	case error:
-		return nil, t
-	case []string:
-		return t, nil
-	default:
-		return nil, fmt.Errorf("internal error when retrieving cache result of type %T", t)
-	}
 }
 
 func resultPairForDockerCopyFromTo(deps interface{}) (map[string][]string, error) {
@@ -126,23 +119,23 @@ func resultPairForDockerCopyFromTo(deps interface{}) (map[string][]string, error
 	}
 }
 
-func getDependencies(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
+func getDependencies(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
 	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
 	// than returning an error now.
 	if _, err := os.Stat(absDockerfilePath); os.IsNotExist(err) {
-		return []string{dockerfilePath}
+		return []string{dockerfilePath}, nil
 	}
 
 	fts, err := ReadCopyCmdsFromDockerfile(ctx, false, absDockerfilePath, workspace, buildArgs, cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	excludes, err := readDockerignore(workspace, absDockerfilePath)
 	if err != nil {
-		return fmt.Errorf("reading .dockerignore: %w", err)
+		return nil, fmt.Errorf("reading .dockerignore: %w", err)
 	}
 
 	deps := make([]string, 0, len(fts))
@@ -152,7 +145,7 @@ func getDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	files, err := WalkWorkspace(workspace, excludes, deps)
 	if err != nil {
-		return fmt.Errorf("walking workspace: %w", err)
+		return nil, fmt.Errorf("walking workspace: %w", err)
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
@@ -171,7 +164,7 @@ func getDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	}
 	sort.Strings(dependencies)
 
-	return dependencies
+	return dependencies, nil
 }
 
 func getDependenciesByDockerCopyFromTo(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
@@ -246,7 +239,7 @@ func readDockerignore(workspace string, absDockerfilePath string) ([]string, err
 }
 
 // WalkWorkspace walks the given host directories and records all files found.
-// Note: if you change this function, you might also want to modify `walkWorkspaceWithDestinations`.
+// Note: if you change this function, you might also want to modify walkWorkspaceWithDestinations.
 func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
 	dockerIgnored, err := NewDockerIgnorePredicate(workspace, excludes)
 	if err != nil {
@@ -259,9 +252,9 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 		absFrom := filepath.Join(workspace, dep)
 
 		keepFile := func(path string, info walk.Dirent) (bool, error) {
-			// Always keep root folders.
-			if info.IsDir() && path == absFrom {
-				return true, nil
+			// Ignore non empty dirs
+			if info.IsDir() && !util.IsEmptyDir(path) {
+				return false, nil
 			}
 
 			ignored, err := dockerIgnored(path, info)
@@ -272,7 +265,7 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 			return !ignored, nil
 		}
 
-		if err := walk.From(absFrom).Unsorted().When(keepFile).WhenIsFile().Do(func(path string, info walk.Dirent) error {
+		if err := walk.From(absFrom).Unsorted().When(keepFile).Do(func(path string, info walk.Dirent) error {
 			relPath, err := filepath.Rel(workspace, path)
 			if err != nil {
 				return err
@@ -284,6 +277,5 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 			return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 		}
 	}
-
 	return files, nil
 }

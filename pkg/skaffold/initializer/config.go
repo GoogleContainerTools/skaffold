@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/render"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -35,7 +36,7 @@ var (
 	getWd = os.Getwd
 )
 
-func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.SkaffoldConfig {
+func generateSkaffoldConfig(b build.Initializer, r render.Initializer, d deploy.Initializer) *latest.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	log.Entry(context.TODO()).Info("generating skaffold config")
@@ -45,8 +46,9 @@ func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.S
 		warnings.Printf("Couldn't generate default config name: %s", err.Error())
 	}
 
-	deploy, profiles := d.DeployConfig()
-	build, portForward := b.BuildConfig()
+	renderConfig, profiles := r.RenderConfig()
+	deployConfig := d.DeployConfig()
+	buildConfig, portForward := b.BuildConfig()
 
 	return &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
@@ -55,8 +57,9 @@ func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.S
 			Name: name,
 		},
 		Pipeline: latest.Pipeline{
-			Build:       build,
-			Deploy:      deploy,
+			Build:       buildConfig,
+			Render:      renderConfig,
+			Deploy:      deployConfig,
 			PortForward: portForward,
 		},
 		Profiles: profiles,

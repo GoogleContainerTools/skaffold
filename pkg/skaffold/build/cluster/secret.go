@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +65,7 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 }
 
 func (b *Builder) createSecretFromFile(ctx context.Context, secrets typedV1.SecretInterface) (func(), error) {
-	secretData, err := ioutil.ReadFile(b.PullSecretPath)
+	secretData, err := os.ReadFile(b.PullSecretPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create secret %s from path %s. reading pull secret: %w", b.PullSecretName, b.PullSecretPath, err)
 	}
@@ -114,7 +114,7 @@ func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (f
 		return func() {}, nil
 	}
 
-	secretData, err := ioutil.ReadFile(b.DockerConfig.Path)
+	secretData, err := os.ReadFile(b.DockerConfig.Path)
 	if err != nil {
 		return nil, fmt.Errorf("reading docker config: %w", err)
 	}

@@ -18,7 +18,7 @@ package app
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -48,7 +48,7 @@ func TestMainUnknownCommand(t *testing.T) {
 		// --interactive=false removes the update check and survey prompt.
 		t.Override(&os.Args, []string{"skaffold", "unknown", "--interactive=false"})
 
-		err := Run(ioutil.Discard, ioutil.Discard)
+		err := Run(io.Discard, io.Discard)
 
 		t.CheckError(true, err)
 	})
@@ -78,7 +78,7 @@ func TestSkaffoldCmdline_MainUnknownCommand(t *testing.T) {
 		t.Override(&os.Args, []string{"skaffold"})
 		t.SetEnvs(map[string]string{"SKAFFOLD_CMDLINE": "unknown"})
 
-		err := Run(ioutil.Discard, ioutil.Discard)
+		err := Run(io.Discard, io.Discard)
 
 		t.CheckError(true, err)
 	})
@@ -88,19 +88,19 @@ func TestMain_InvalidUsageExitCode(t *testing.T) {
 	testutil.Run(t, "unknown command", func(t *testutil.T) {
 		// --interactive=false removes the update check and survey prompt.
 		t.Override(&os.Args, []string{"skaffold", "unknown", "--interactive=false"})
-		err := Run(ioutil.Discard, ioutil.Discard)
+		err := Run(io.Discard, io.Discard)
 		t.CheckErrorAndExitCode(127, err)
 	})
 	testutil.Run(t, "unknown flag", func(t *testutil.T) {
 		// --interactive=false removes the update check and survey prompt.
 		t.Override(&os.Args, []string{"skaffold", "--help2", "--interactive=false"})
-		err := Run(ioutil.Discard, ioutil.Discard)
+		err := Run(io.Discard, io.Discard)
 		t.CheckErrorAndExitCode(127, err)
 	})
 	testutil.Run(t, "exactargs error", func(t *testutil.T) {
 		// --interactive=false removes the update check and survey prompt.
 		t.Override(&os.Args, []string{"skaffold", "config", "set", "a", "b", "c"})
-		err := Run(ioutil.Discard, ioutil.Discard)
+		err := Run(io.Discard, io.Discard)
 		t.CheckErrorAndExitCode(127, err)
 	})
 }

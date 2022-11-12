@@ -87,10 +87,9 @@ COPY --from=builder /app .
 In the deploy stanza, we use the glob matching pattern to deploy all YAML and JSON files in the respective Kubernetes manifest directories.
 
 ```yaml
-deploy:
-  kubectl:
-    manifests:
-    - ./leeroy-web/kubernetes/*
-    - ./leeroy-app/kubernetes/*
+manifests:
+  rawYaml:
+  - ./leeroy-web/kubernetes/*
+  - ./leeroy-app/kubernetes/*
 ```
 

@@ -28,7 +28,7 @@ import (
 
 func AddLocalBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.BoolPtr(false)})
+	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.Ptr(false)})
 	if err != nil {
 		formatter.WriteErr(err)
 		return err
@@ -77,7 +77,7 @@ func constructLocalDefinition(existing *latest.LocalBuild, opts inspect.BuildEnv
 		b = *existing
 	}
 	if opts.Concurrency >= 0 {
-		b.Concurrency = util.IntPtr(opts.Concurrency)
+		b.Concurrency = util.Ptr(opts.Concurrency)
 	}
 	if opts.Push != nil {
 		b.Push = opts.Push

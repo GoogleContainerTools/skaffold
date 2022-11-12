@@ -46,7 +46,7 @@ COPY --from=download-docsy /docsy ./themes/docsy
 COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/
 
-FROM golang:1.17 as webhook
+FROM golang:1.19 as webhook
 WORKDIR /skaffold
 COPY . .
 # TODO(aaron-prindle) pass ldflags for -v2

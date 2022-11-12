@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	cv1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -88,7 +87,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			localDocker := fakeLocalDaemon(api)
 
 			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false, mockArtifactResolver{})
-			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
+			result, err := builder.Build(context.Background(), io.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
 				},
@@ -144,7 +143,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			t.Override(&mavenBuildArgsFunc, getMavenBuildArgsFuncFake(t, MinimumJibMavenVersion))
 			t.NewTempDir().Touch("pom.xml").Chdir()
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config, _ *cv1.Platform) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config, _ []v1.Platform) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil
 				}
@@ -153,7 +152,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
 			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false, mockArtifactResolver{})
-			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
+			result, err := builder.Build(context.Background(), io.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
 				},

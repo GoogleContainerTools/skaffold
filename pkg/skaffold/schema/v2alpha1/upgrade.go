@@ -28,6 +28,7 @@ import (
 // 2. Removals:
 //    kaniko.buildContext
 // 3. No updates
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)

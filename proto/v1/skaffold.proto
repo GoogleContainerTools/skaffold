@@ -175,7 +175,8 @@ message BuildEvent {
     string err = 3; // Deprecated. Use actionableErr.message. error when build status is Failed.
     enums.StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
     ActionableErr actionableErr = 5; // actionable error message
-
+    string hostPlatform = 6; // architecture of the host machine. For example `linux/amd64`
+    string targetPlatforms = 7; // comma-delimited list of build target architectures. For example `linux/amd64,linux/arm64`
 }
 
 // `TestEvent` represents the status of a test, and is emitted by Skaffold

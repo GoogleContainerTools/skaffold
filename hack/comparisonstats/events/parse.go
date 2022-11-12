@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -120,7 +120,7 @@ func get(contents []byte) ([]*v1.LogEntry, error) {
 }
 
 func getFromFile(fp string) ([]*v1.LogEntry, error) {
-	contents, err := ioutil.ReadFile(fp)
+	contents, err := os.ReadFile(fp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading %s", fp)
 	}

@@ -19,7 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -40,9 +40,6 @@ import (
 )
 
 func TestDevNotification(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -87,8 +84,7 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevGracefulCancel(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	if runtime.GOOS == "windows" {
 		t.Skip("graceful cancel doesn't work on windows")
@@ -141,12 +137,9 @@ func TestDevGracefulCancel(t *testing.T) {
 	}
 }
 
-/*
 func TestDevAPITriggers(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	t.Skip("failing since go 1.19.1")
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
@@ -160,12 +153,6 @@ func TestDevAPITriggers(t *testing.T) {
 	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
-
-	// throw away first 5 entries of log (from first run of dev loop)
-	for i := 0; i < 5; i++ {
-		<-entries
-	}
-
 	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
@@ -179,9 +166,8 @@ func TestDevAPITriggers(t *testing.T) {
 	})
 
 	// Ensure we see a build triggered in the event log
-	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev
 	})
 	failNowIfError(t, err)
 
@@ -196,9 +182,6 @@ func TestDevAPITriggers(t *testing.T) {
 }
 
 func TestDevAPIAutoTriggers(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
@@ -213,12 +196,6 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
-
-	// throw away first 5 entries of log (from first run of dev loop)
-	for i := 0; i < 5; i++ {
-		<-entries
-	}
-
 	dep := client.GetDeployment(testDev)
 
 	// Make a change to foo
@@ -233,9 +210,8 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 		},
 	})
 	// Ensure we see a build triggered in the event log
-	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev, nil
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev
 	})
 	failNowIfError(t, err)
 
@@ -249,20 +225,15 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	verifyDeployment(t, entries, client, dep)
 }
 
-*/
-
-// TODO: remove nolint once we've reenabled integration tests
-//nolint:golint,unused
 func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
-	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetDeployEvent().GetStatus() == InProgress, nil
+	err := waitForEvent(2*time.Minute, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetDeployEvent().GetStatus() == InProgress
 	})
 	failNowIfError(t, err)
 
 	// Make sure the old Deployment and the new Deployment are different
-	err = wait.Poll(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+	err = wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
 		newDep := client.GetDeployment(testDev)
 		t.Logf("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
@@ -270,12 +241,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 	failNowIfError(t, err)
 }
 
-/*
-
 func TestDevPortForward(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
 		dir string
@@ -284,30 +250,31 @@ func TestDevPortForward(t *testing.T) {
 		{dir: "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-		// Run skaffold build first to fail quickly on a build failure
-		skaffold.Build().InDir(test.dir).RunOrFail(t)
+		func() {
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir(test.dir).RunOrFail(t)
 
-		ns, _ := SetupNamespace(t)
+			ns, _ := SetupNamespace(t)
 
-		rpcAddr := randomPort()
-		skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+			rpcAddr := randomPort()
+			skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
-		_, entries := apiEvents(t, rpcAddr)
+			_, entries := apiEvents(t, rpcAddr)
 
-		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
 
-		original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
-		failNowIfError(t, fErr)
-		defer func() {
-			if original != nil {
-				ioutil.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
-			}
+			original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
+			failNowIfError(t, fErr)
+			defer func() {
+				if original != nil {
+					os.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
+				}
+			}()
+
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
 		}()
-
-		waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
 	}
 }
-*/
 
 func TestDevPortForwardDefaultNamespace(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
@@ -327,7 +294,7 @@ func TestDevPortForwardDefaultNamespace(t *testing.T) {
 	failNowIfError(t, fErr)
 	defer func() {
 		if original != nil {
-			ioutil.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
+			os.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
 		}
 	}()
 
@@ -353,7 +320,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 }
 
 func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) (string, int) {
-	timeout := time.After(1 * time.Minute)
+	timeout := time.After(2 * time.Minute)
 	for {
 		select {
 		case <-timeout:
@@ -387,7 +354,7 @@ func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourc
 func assertResponseFromPort(t *testing.T, address string, port int, expected string) {
 	url := fmt.Sprintf("http://%s:%d", address, port)
 	t.Logf("Waiting on %s to return: %s", url, expected)
-	ctx, cancelTimeout := context.WithTimeout(context.Background(), 4*time.Minute)
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
 	for {
@@ -402,7 +369,7 @@ func assertResponseFromPort(t *testing.T, address string, port int, expected str
 				continue
 			}
 			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Logf("[retriable error] reading response: %v", err)
 				continue
@@ -415,29 +382,24 @@ func assertResponseFromPort(t *testing.T, address string, port int, expected str
 	}
 }
 
-// TODO: remove nolint once we've reenabled integration tests
-//nolint:golint,unused
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
 	fInfo, err := os.Stat(filepath)
 	if err != nil {
 		return nil, 0, err
 	}
-	original, err := ioutil.ReadFile(filepath)
+	original, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	newContents := strings.ReplaceAll(string(original), target, replacement)
 
-	err = ioutil.WriteFile(filepath, []byte(newContents), 0)
+	err = os.WriteFile(filepath, []byte(newContents), 0)
 
 	return original, fInfo.Mode(), err
 }
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
@@ -452,7 +414,7 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
 
 		// n.b. for the sake of this test the namespace must not be given explicitly
-		skaffold.Run("--kube-context", kubecontext).InDir("examples/getting-started").WithEnv(env).RunOrFail(t.T)
+		skaffold.Run("--kube-context", kubecontext).InDir("examples/getting-started").WithEnv(env).InNs(ns.Name).RunOrFail(t.T)
 
 		client.WaitForPodsReady("getting-started")
 	})

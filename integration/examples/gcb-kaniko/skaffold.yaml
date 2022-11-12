@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   googleCloudBuild:
@@ -7,7 +7,6 @@ build:
   - image: skaffold-example
     kaniko:
       cache: {}
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+manifests:
+  rawYaml:
+  - k8s-*

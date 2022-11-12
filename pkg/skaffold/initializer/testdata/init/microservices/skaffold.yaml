@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 metadata:
   name: microservices
@@ -12,8 +12,7 @@ build:
     context: leeroy-web
     docker:
       dockerfile: Dockerfile
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - leeroy-app/kubernetes/deployment.yaml
     - leeroy-web/kubernetes/deployment.yaml

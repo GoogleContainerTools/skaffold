@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -10,9 +10,9 @@ build:
     gitCommit: {}
   local:
     concurrency: 1
+manifests:
+  rawYaml:
+  - {{.Root}}/k8s-*
 deploy:
-  kubectl:
-    manifests:
-    - {{.Root}}/k8s-*
   logs:
     prefix: container

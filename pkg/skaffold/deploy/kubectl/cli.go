@@ -57,10 +57,13 @@ type Config interface {
 	WaitForDeletions() config.WaitForDeletions
 	Mode() config.RunMode
 	HydratedManifests() []string
+	GetNamespace() string
 	DefaultPipeline() latest.Pipeline
 	Tail() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	JSONParseConfig() latest.JSONParseConfig
+	EnablePlatformNodeAffinityInRenderedManifests() bool
+	EnableGKEARMNodeTolerationInRenderedManifests() bool
 }
 
 func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNamespace string) CLI {
@@ -112,11 +115,6 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 	}
 
 	return nil
-}
-
-// Kustomize runs `kubectl kustomize` with the provided args
-func (c *CLI) Kustomize(ctx context.Context, args []string) ([]byte, error) {
-	return c.RunOut(ctx, "kustomize", c.args(nil, args...)...)
 }
 
 type getResult struct {

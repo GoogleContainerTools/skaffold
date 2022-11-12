@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -37,13 +38,13 @@ func TestSyncStore(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(10)
 
-		s := NewSyncStore()
+		s := NewSyncStore[int]()
 		for i := 0; i < 5; i++ {
 			for j := 0; j < 2; j++ {
 				go func(i int) {
 					k := strconv.Itoa(i)
-					val := s.Exec(k, func() interface{} {
-						return f(i)
+					val, _ := s.Exec(k, func() (int, error) {
+						return f(i), nil
 					})
 					t.CheckDeepEqual(i, val)
 					wg.Done()
@@ -59,16 +60,16 @@ func TestSyncStore(t *testing.T) {
 	})
 
 	testutil.Run(t, "test panic handled correctly", func(t *testutil.T) {
-		s := NewSyncStore()
-		val := s.Exec("panic", func() interface{} {
+		s := NewSyncStore[int]()
+		_, err := s.Exec("panic", func() (int, error) {
 			panic(fmt.Errorf("message"))
 		})
 		// make sure val is of type StoreError
-		switch tv := val.(type) {
-		case StoreError:
-			t.CheckDeepEqual("internal error retrieving cached results for key panic: message", tv.Error())
-		default:
-			t.Fatalf("expected to retrieve result of type StoreError but found %T", tv)
+		var e StoreError
+		if errors.As(err, &e) {
+			t.CheckDeepEqual("internal error retrieving cached results for key panic: message", e.Error())
+		} else {
+			t.Fatalf("expected to retrieve result of type StoreError but found %T", err)
 		}
 	})
 }

@@ -17,11 +17,14 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -39,6 +42,10 @@ func (b *Builder) SupportedPlatforms() platform.Matcher {
 }
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, matcher platform.Matcher) (string, error) {
+	var pl v1.Platform
+	if len(matcher.Platforms) == 1 {
+		pl = util.ConvertToV1Platform(matcher.Platforms[0])
+	}
 	a = adjustCacheFrom(a, tag)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "docker",
@@ -55,7 +62,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", dockerfileNotFound(err, a.ImageName)
 	}
 
-	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
+	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact, pl); err != nil {
 		return "", cacheFromPullErr(err, a.ImageName)
 	}
 	opts := docker.BuildOptions{Tag: tag, Mode: b.cfg.Mode(), ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
@@ -66,7 +73,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// we might consider a different approach in the future.
 	// use CLI for cross-platform builds
 	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 || matcher.IsNotEmpty() {
-		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, matcher)
+		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, pl)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
 	}
@@ -84,14 +91,18 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, matcher platform.Matcher) (string, error) {
-	if matcher.IsMultiPlatform() {
-		// TODO: implement multi platform build
-		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the docker builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", matcher.String(), name)
-	}
-
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, pl v1.Platform) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
-	ba, err := docker.EvalBuildArgs(b.cfg.Mode(), workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
+	imgRef, err := docker.ParseReference(opts.Tag)
+	if err != nil {
+		return "", fmt.Errorf("couldn't parse image tag: %w", err)
+	}
+	imageInfoEnv := map[string]string{
+		"IMAGE_REPO": imgRef.Repo,
+		"IMAGE_NAME": imgRef.Name,
+		"IMAGE_TAG":  imgRef.Tag,
+	}
+	ba, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs, imageInfoEnv)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -105,8 +116,8 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		args = append(args, "--force-rm")
 	}
 
-	if len(matcher.Platforms) == 1 {
-		args = append(args, "--platform", platform.Format(matcher.Platforms[0]))
+	if pl.String() != "" {
+		args = append(args, "--platform", pl.String())
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
@@ -117,21 +128,24 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		} else {
 			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=0")
 		}
-	} else if len(matcher.Platforms) == 1 { // cross-platform builds require buildkit
-		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, matcher.Platforms[0])
+	} else if pl.String() != "" { // cross-platform builds require buildkit
+		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, pl.String())
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
-	cmd.Stderr = out
+
+	var errBuffer bytes.Buffer
+	stderr := io.MultiWriter(out, &errBuffer)
+	cmd.Stderr = stderr
 
 	if err := util.RunCmd(ctx, cmd); err != nil {
-		return "", fmt.Errorf("running build: %w", err)
+		return "", tryExecFormatErr(fmt.Errorf("running build: %w", err), errBuffer)
 	}
 
 	return b.localDocker.ImageID(ctx, opts.Tag)
 }
 
-func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact) error {
+func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact, pl v1.Platform) error {
 	if len(a.CacheFrom) == 0 {
 		return nil
 	}
@@ -146,8 +160,8 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 			continue
 		}
 
-		if err := b.localDocker.Pull(ctx, out, image); err != nil {
-			warnings.Printf("cacheFrom image couldn't be pulled: %s\n", image)
+		if err := b.localDocker.Pull(ctx, out, image, pl); err != nil {
+			warnings.Printf("cacheFrom image %q couldn't be pulled for platform %q\n", image, pl)
 		}
 	}
 

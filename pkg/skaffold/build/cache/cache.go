@@ -19,7 +19,7 @@ package cache
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -48,6 +48,7 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache      ArtifactCache
+	hashByName         map[string]string
 	artifactGraph      graph.ArtifactGraph
 	artifactStore      build.ArtifactStore
 	cacheMutex         sync.RWMutex
@@ -91,6 +92,8 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		return &noCache{}, nil
 	}
 
+	hashByName := make(map[string]string)
+
 	client, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		// error only if any pipeline is local.
@@ -117,6 +120,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 
 	return &cache{
 		artifactCache:      artifactCache,
+		hashByName:         hashByName,
 		artifactGraph:      graph,
 		artifactStore:      store,
 		client:             client,
@@ -143,7 +147,7 @@ func resolveCacheFile(cacheFile string) (string, error) {
 
 func retrieveArtifactCache(cacheFile string) (ArtifactCache, error) {
 	cache := ArtifactCache{}
-	contents, err := ioutil.ReadFile(cacheFile)
+	contents, err := os.ReadFile(cacheFile)
 	if err != nil {
 		return nil, err
 	}
@@ -159,5 +163,5 @@ func saveArtifactCache(cacheFile string, contents ArtifactCache) error {
 		return err
 	}
 
-	return ioutil.WriteFile(cacheFile, data, 0755)
+	return os.WriteFile(cacheFile, data, 0755)
 }

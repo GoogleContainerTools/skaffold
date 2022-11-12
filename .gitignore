@@ -1,12 +1,15 @@
 bin/
 out/
 examples/bazel/bazel-*
+examples/**/.mvn/wrapper/maven-wrapper.jar
 integration/examples/bazel/bazel-*
+integration/**/.mvn/wrapper/maven-wrapper.jar
 integration/testdata/custom/bazel-*
 integration/testdata/plugin/local/bazel/bazel-*
 *.new
 *.iml
 .idea/
+.tool-versions
 .vscode/
 docs/.firebase
 docs/firebase-debug*
@@ -19,3 +22,5 @@ pkg/skaffold/output/debug.test
 fs/assets/*_generated
 fs/assets/check.txt
 secrets/keys.json
+integration/testdata/dev/foo
+pkg/skaffold/build/app.tar

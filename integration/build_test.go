@@ -25,13 +25,18 @@ import (
 	"time"
 
 	"4d63.com/tz"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 const imageName = "gcr.io/k8s-skaffold/simple-build:"
@@ -109,9 +114,79 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestBuildWithWithPlatform(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	tests := []struct {
+		description       string
+		dir               string
+		args              []string
+		image             string
+		expectedPlatforms []v1.Platform
+	}{
+		{
+			description:       "docker build linux/amd64",
+			dir:               "testdata/build/docker-with-platform-amd",
+			args:              []string{"--platform", "linux/amd64"},
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}},
+		},
+		{
+			description:       "docker build linux/arm64",
+			dir:               "testdata/build/docker-with-platform-arm",
+			args:              []string{"--platform", "linux/arm64"},
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			tmpfile := testutil.TempFile(t, "", []byte{})
+			args := append(test.args, "--file-output", tmpfile)
+			skaffold.Build(args...).InDir(test.dir).RunOrFail(t)
+			bytes, err := os.ReadFile(tmpfile)
+			failNowIfError(t, err)
+			buildArtifacts, err := flags.ParseBuildOutput(bytes)
+			failNowIfError(t, err)
+			checkLocalImagePlatforms(t, buildArtifacts.Builds[0].Tag, test.expectedPlatforms)
+		})
+	}
+}
+
+func TestBuildWithMultiPlatforms(t *testing.T) {
+	MarkIntegrationTest(t, NeedsGcp)
+
+	tests := []struct {
+		description       string
+		dir               string
+		args              []string
+		image             string
+		expectedPlatforms []v1.Platform
+	}{
+		{
+			description:       "build cross platform images with gcb",
+			dir:               "testdata/build/gcb-with-platform",
+			args:              []string{"--platform", "linux/arm64,linux/amd64"},
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}, {OS: "linux", Architecture: "amd64"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			tmpfile := testutil.TempFile(t, "", []byte{})
+			args := append(test.args, "--file-output", tmpfile)
+			skaffold.Build(args...).InDir(test.dir).RunOrFail(t)
+			bytes, err := os.ReadFile(tmpfile)
+			failNowIfError(t, err)
+			buildArtifacts, err := flags.ParseBuildOutput(bytes)
+			failNowIfError(t, err)
+			checkRemoteImagePlatforms(t, buildArtifacts.Builds[0].Tag, test.expectedPlatforms)
+		})
+	}
+}
+
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
+	MarkIntegrationTest(t, NeedsGcp)
 	if !jib.JVMFound(context.Background()) {
 		t.Fatal("test requires Java VM")
 	}
@@ -139,6 +214,47 @@ func TestExpectedBuildFailures(t *testing.T) {
 				t.Fatalf("build failed but for wrong reason")
 			}
 		})
+	}
+}
+
+func checkLocalImagePlatforms(t *testing.T, image string, expected []v1.Platform) {
+	if expected == nil {
+		return
+	}
+	t.Helper()
+
+	cfg, err := kubectx.CurrentConfig()
+	failNowIfError(t, err)
+
+	client, err := docker.NewAPIClient(context.Background(), &runcontext.RunContext{
+		KubeContext: cfg.CurrentContext,
+	})
+	failNowIfError(t, err)
+	inspect, _, err := client.ImageInspectWithRaw(context.Background(), image)
+	failNowIfError(t, err)
+
+	actual := []v1.Platform{{Architecture: inspect.Architecture, OS: inspect.Os}}
+	checkPlatformsEqual(t, actual, expected)
+}
+
+func checkRemoteImagePlatforms(t *testing.T, image string, expected []v1.Platform) {
+	if expected == nil {
+		return
+	}
+	t.Helper()
+	actual, err := docker.GetPlatforms(image)
+	if err != nil {
+		t.Error(err)
+	}
+	checkPlatformsEqual(t, actual, expected)
+}
+
+func checkPlatformsEqual(t *testing.T, actual, expected []v1.Platform) {
+	platLess := func(a, b v1.Platform) bool {
+		return a.OS < b.OS || (a.OS == b.OS && a.Architecture < b.Architecture)
+	}
+	if diff := cmp.Diff(expected, actual, cmpopts.SortSlices(platLess)); diff != "" {
+		t.Fatalf("Platforms differ (-got,+want):\n%s", diff)
 	}
 }
 

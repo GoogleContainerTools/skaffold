@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v3alpha1"
+const Version string = "skaffold/v4beta1"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -384,6 +384,12 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/k8s-skaffold/pack`.
 	PackImage string `yaml:"packImage,omitempty"`
 
+	// KoImage is the image that runs a ko build.
+	// The image must contain Skaffold, Go, and a shell (runnable as `sh`) that supports here documents.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/k8s-skaffold/skaffold`.
+	KoImage string `yaml:"koImage,omitempty"`
+
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
@@ -394,8 +400,27 @@ type GoogleCloudBuild struct {
 	// Region configures the region to run the build. If WorkerPool is configured, the region will
 	// be deduced from the WorkerPool configuration. If neither WorkerPool nor Region is configured,
 	// the build will be run in global(non-regional).
-	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations)
+	// See [Cloud Build locations](https://cloud.google.com/build/docs/locations).
 	Region string `yaml:"region,omitempty"`
+
+	// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
+	// If unspecified, Skaffold uses the `docker/binfmt` image by default.
+	PlatformEmulatorInstallStep *PlatformEmulatorInstallStep `yaml:"platformEmulatorInstallStep,omitempty"`
+
+	// ServiceAccount is the Google Cloud platform service account used by Cloud Build.
+	// If unspecified, it defaults to the Cloud Build service account generated when
+	// the Cloud Build API is enabled.
+	ServiceAccount string `yaml:"serviceAccount,omitempty"`
+}
+
+// PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.
+type PlatformEmulatorInstallStep struct {
+	// Image specifies the image that will install the required tooling for QEMU emulation on the GoogleCloudBuild containers.
+	Image string `yaml:"image" yamltags:"required"`
+	// Args specifies arguments passed to the emulator installer image.
+	Args []string `yaml:"args,omitempty"`
+	// Entrypoint specifies the ENTRYPOINT argument to the emulator installer image.
+	Entrypoint string `yaml:"entrypoint,omitempty"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -566,22 +591,42 @@ type RenderConfig struct {
 
 // Generate defines the dry manifests from a variety of sources.
 type Generate struct {
-	// RawK8s TODO: add description.
+	// RawK8s defines the raw kubernetes resources.
 	RawK8s []string `yaml:"rawYaml,omitempty" skaffold:"filepath"`
 
+	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	RemoteManifests []RemoteManifest `yaml:"remoteManifests,omitempty"`
+
 	// Kustomize defines the paths to be modified with kustomize, along with extra
-	// flags to be passed to kustomize
+	// flags to be passed to kustomize.
 	Kustomize *Kustomize `yaml:"kustomize,omitempty"`
 
-	// Helm TODO: add description.
+	// Helm defines the helm charts used in the application.
+	// NOTE: Defines cherts in this section to render via helm but
+	// deployed via kubectl or kpt deployer.
+	// To use helm to deploy, please see deploy.helm section.
 	Helm *Helm `yaml:"helm,omitempty"`
 
-	// Kpt TODO: add description.
+	// Kpt defines the kpt resources in the application.
 	Kpt []string `yaml:"kpt,omitempty" skaffold:"filepath"`
+
+	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every render.
+	LifecycleHooks RenderHooks `yaml:"hooks,omitempty"`
+}
+
+// RemoteManifest defines the paths to be modified with kustomize, along with
+// extra flags to be passed to kustomize.
+type RemoteManifest struct {
+	// Manifest specifies the Kubernetes manifest in the remote cluster.
+	Manifest string `yaml:"manifest,omitempty"`
+
+	// KubeContext is the Kubernetes context that Skaffold should deploy to.
+	// For example: `minikube`.
+	KubeContext string `yaml:"kubeContext,omitempty"`
 }
 
 // Kustomize defines the paths to be modified with kustomize, along with
-// extra flags to be passed to kustomize
+// extra flags to be passed to kustomize.
 type Kustomize struct {
 	// Paths is the path to Kustomization files.
 	// Defaults to `["."]`.
@@ -658,6 +703,11 @@ type DeployConfig struct {
 	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
 	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`
 
+	// TolerateFailuresUntilDeadline configures the Skaffold "status-check" to tolerate failures
+	// (flapping deployments, etc.) until the statusCheckDeadlineSeconds duration or k8s object
+	// timeouts such as progressDeadlineSeconds, etc.
+	TolerateFailuresUntilDeadline bool `yaml:"tolerateFailuresUntilDeadline,omitempty"`
+
 	// KubeContext is the Kubernetes context that Skaffold should deploy to.
 	// For example: `minikube`.
 	KubeContext string `yaml:"kubeContext,omitempty"`
@@ -686,19 +736,19 @@ type DeployType struct {
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
-	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
-	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
-
-	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API
+	// CloudRunDeploy *alpha* deploys to Google Cloud Run using the Cloud Run v1 API.
 	CloudRunDeploy *CloudRunDeploy `yaml:"cloudrun,omitempty"`
 }
 
 // CloudRunDeploy *alpha* deploys the container to Google Cloud Run.
 type CloudRunDeploy struct {
-	// ProjectID of the GCP Project to use for Cloud Run.
-	DefaultProjectID string `yaml:"defaultprojectid,omitempty"`
+	// ProjectID the GCP Project to use for Cloud Run.
+	// If specified, all Services will be deployed to this project. If not specified,
+	// each Service will be deployed to the project specified in `metadata.namespace` of
+	// the Cloud Run manifest.
+	ProjectID string `yaml:"projectid,omitempty"`
 
-	// Region in GCP to use for the Cloud Run Deploy.
+	// Region GCP location to use for the Cloud Run Deploy.
 	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
 	Region string `yaml:"region,omitempty"`
 }
@@ -715,17 +765,11 @@ type DockerDeploy struct {
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 // You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 type KubectlDeploy struct {
-	// Manifests lists the Kubernetes yaml or json manifests.
-	// Defaults to `["k8s/*.yaml"]`.
-	// This field is no longer needed in render v2. If given, the v1 kubectl deployer will be triggered.
-	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
-
-	// RemoteManifests lists Kubernetes manifests in remote clusters.
-	// This field is only used by v1 kubectl deployer.
-	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
-
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// RemoteManifests lists Kubernetes manifests in remote clusters.
+	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
 	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
@@ -830,6 +874,10 @@ type HelmRelease struct {
 	// SkipBuildDependencies should build dependencies be skipped.
 	// Ignored for `remoteChart`.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
+
+	// SkipTests should ignore helm test during manifests generation.
+	// Defaults to `false`
+	SkipTests bool `yaml:"skipTests,omitempty"`
 
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
@@ -987,6 +1035,11 @@ type Profile struct {
 	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
 	Activation []Activation `yaml:"activation,omitempty"`
 
+	// RequiresAllActivations is the activation strategy of the profile.
+	// When true, the profile is auto-activated only when all of its activations are triggered.
+	// When false, the profile is auto-activated when any one of its activations is triggered.
+	RequiresAllActivations bool `yaml:"requiresAllActivations,omitempty"`
+
 	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.
 	Patches []JSONPatch `yaml:"patches,omitempty"`
@@ -1073,7 +1126,7 @@ type ArtifactDependency struct {
 // It can be used to build images out of project's sources without any additional configuration.
 type BuildpackArtifact struct {
 	// Builder is the builder image used.
-	Builder string `yaml:"builder" yamltags:"required"`
+	Builder string `yaml:"builder,omitempty"`
 
 	// RunImage overrides the stack's default run image.
 	RunImage string `yaml:"runImage,omitempty"`
@@ -1090,6 +1143,10 @@ type BuildpackArtifact struct {
 
 	// TrustBuilder indicates that the builder should be trusted.
 	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
+
+	// ClearCache removes old cache volume associated with the specific image
+	// and supplies a clean cache volume for build.
+	ClearCache bool `yaml:"clearCache,omitempty"`
 
 	// ProjectDescriptor is the path to the project descriptor file.
 	// Defaults to `project.toml` if it exists.
@@ -1496,6 +1553,20 @@ type SyncHooks struct {
 	PostHooks []SyncHookItem `yaml:"after,omitempty"`
 }
 
+// RenderHookItem describes a single lifecycle hook to execute before or after each deployer step.
+type RenderHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
+}
+
+// RenderHooks describes the list of lifecycle hooks to execute before and after each render step.
+type RenderHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
+	PreHooks []RenderHookItem `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
+	PostHooks []RenderHookItem `yaml:"after,omitempty"`
+}
+
 // DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.
 type DeployHookItem struct {
 	// HostHook describes a single lifecycle hook to run on the host machine.
@@ -1545,8 +1616,10 @@ type ResourceFilter struct {
 	GroupKind string `yaml:"groupKind" yamltags:"required"`
 	// Image is an optional slice of JSON-path-like paths of where to rewrite images.
 	Image []string `yaml:"image,omitempty"`
-	// Labels is an optional slide of JSON-path-like paths of where to add a labels block if missing.
+	// Labels is an optional slice of JSON-path-like paths of where to add a labels block if missing.
 	Labels []string `yaml:"labels,omitempty"`
+	// PodSpec is an optional slice of JSON-path-like paths of where pod spec properties can be overwritten.
+	PodSpec []string `yaml:"podSpec,omitempty"`
 }
 
 // UnmarshalYAML provides a custom unmarshaller to deal with
@@ -1722,25 +1795,4 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 		m["volumeMounts"] = vList
 	}
 	return m, err
-}
-
-// TODO (yuwenma): KustomizeDeploy shall be deprecated.
-
-// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
-type KustomizeDeploy struct {
-	// KustomizePaths is the path to Kustomization files.
-	// Defaults to `["."]`.
-	KustomizePaths []string `yaml:"paths,omitempty" skaffold:"filepath"`
-
-	// Flags are additional flags passed to `kubectl`.
-	Flags KubectlFlags `yaml:"flags,omitempty"`
-
-	// BuildArgs are additional args passed to `kustomize build`.
-	BuildArgs []string `yaml:"buildArgs,omitempty"`
-
-	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
-	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
-
-	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
-	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
 }

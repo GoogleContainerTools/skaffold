@@ -19,7 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -65,7 +65,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description:   "buildkit",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
 			wantDockerCLI: true,
 			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
@@ -78,14 +78,14 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description:   "buildkit and extra env",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
 			wantDockerCLI: true,
 			extraEnv:      []string{"OTHER=VALUE"},
 			expectedEnv:   []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description:   "env var collisions",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.BoolPtr(true)},
+			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
 			wantDockerCLI: true,
 			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// DOCKER_BUILDKIT should be overridden
@@ -134,7 +134,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
@@ -173,7 +173,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag", platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", platform.Matcher{})
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
@@ -233,7 +233,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			a.Workspace = "."
 			a.DockerArtifact.DockerfilePath = dockerfilePath
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 
@@ -242,8 +242,8 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			)
 			t.Override(&util.DefaultExecCommand, mockCmd)
 
-			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.BoolPtr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
-			_, err := builder.Build(context.Background(), ioutil.Discard, &a, test.tag, platform.Matcher{})
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.Ptr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
+			_, err := builder.Build(context.Background(), io.Discard, &a, test.tag, platform.Matcher{})
 			t.CheckNoError(err)
 		})
 	}

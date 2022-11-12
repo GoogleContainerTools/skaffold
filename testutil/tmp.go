@@ -17,7 +17,6 @@ limitations under the License.
 package testutil
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,14 +29,14 @@ import (
 
 // TempFile creates a temporary file with a given content. Returns the file name.
 func TempFile(t *testing.T, prefix string, content []byte) string {
-	file, err := ioutil.TempFile("", prefix)
+	file, err := os.CreateTemp("", prefix)
 	if err != nil {
 		t.Error(err)
 	}
 
 	t.Cleanup(func() { syscall.Unlink(file.Name()) })
 
-	if err = ioutil.WriteFile(file.Name(), content, 0644); err != nil {
+	if err = os.WriteFile(file.Name(), content, 0644); err != nil {
 		t.Error(err)
 	}
 
@@ -53,7 +52,7 @@ type TempDir struct {
 // NewTempDir creates a temporary directory and a teardown function
 // that should be called to properly delete the directory content.
 func NewTempDir(t *testing.T) *TempDir {
-	root, err := ioutil.TempDir("", "skaffold")
+	root, err := os.MkdirTemp("", "skaffold")
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,7 +88,7 @@ func (h *TempDir) Mkdir(dir string) *TempDir {
 // Write write content to a file in the temp directory.
 func (h *TempDir) Write(file, content string) *TempDir {
 	h.failIfErr(os.MkdirAll(filepath.Dir(h.Path(file)), os.ModePerm))
-	return h.failIfErr(ioutil.WriteFile(h.Path(file), []byte(content), os.ModePerm))
+	return h.failIfErr(os.WriteFile(h.Path(file), []byte(content), os.ModePerm))
 }
 
 // WriteFiles write a list of files (path->content) in the temp directory.

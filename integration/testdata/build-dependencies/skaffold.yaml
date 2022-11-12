@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   tagPolicy:
@@ -42,10 +42,9 @@ build:
         SLEEP: "3"
         FAIL: "0"
 
-deploy:
-  kubectl:
-    manifests:
-    - 'kubernetes/*.yaml'
+manifests:
+   rawYaml:
+      - 'kubernetes/*.yaml'
 
 profiles:
 - name: concurrency-0

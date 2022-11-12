@@ -105,6 +105,7 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
 			enableJibGradleInit:  c.EnableJibGradleInit,
+			enableKoInit:         c.EnableKoInit,
 			enableBuildpacksInit: c.EnableBuildpacksInit,
 			buildpacksBuilder:    c.BuildpacksBuilder,
 		},

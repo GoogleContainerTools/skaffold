@@ -1,9 +1,8 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3
 kind: Config
 build:
   artifacts:
   - image: skaffold-example
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+manifests:
+  rawYaml:
+  - k8s-pod.yaml

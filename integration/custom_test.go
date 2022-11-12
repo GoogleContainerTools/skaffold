@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -28,8 +27,6 @@ import (
 )
 
 func TestCustomTest(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	config := "skaffold.yaml"
@@ -47,13 +44,13 @@ func TestCustomTest(t *testing.T) {
 
 	ns, client := SetupNamespace(t)
 
-	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunLive(t)
+	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunBackground(t)
 
 	client.WaitForPodsReady("custom-test-example")
-	ioutil.WriteFile(depFile, []byte("foo"), 0644)
+	os.WriteFile(depFile, []byte("foo"), 0644)
 
 	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		out, e := ioutil.ReadFile(testFile)
+		out, e := os.ReadFile(testFile)
 		failNowIfError(t, e)
 		return string(out) == expectedText, nil
 	})

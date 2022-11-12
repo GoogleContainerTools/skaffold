@@ -12,9 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v3
 kind: Config
 build:
   artifacts:
   - image: skaffold-ko
-    ko: {}
+    ko:
+      dependencies:
+        paths:
+        - "**/*.go"
+        - go.*
+profiles:
+- name: gcb
+  build:
+    googleCloudBuild:
+      koImage: gcr.io/k8s-skaffold/skaffold:v1.37.2-lts

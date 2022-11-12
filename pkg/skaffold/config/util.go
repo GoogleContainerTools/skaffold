@@ -20,8 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -105,7 +105,7 @@ func ResolveConfigFile(configFile string) (string, error) {
 // ReadConfigFileNoCache reads the given config yaml file and unmarshals the contents.
 // Only visible for testing, use ReadConfigFile instead.
 func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
-	contents, err := ioutil.ReadFile(configFile)
+	contents, err := os.ReadFile(configFile)
 	if err != nil {
 		log.Entry(context.TODO()).Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
 		return nil, fmt.Errorf("reading global config: %w", err)
@@ -232,6 +232,7 @@ func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
 
 	kubeContext := cfg.Kubecontext
 	isKindCluster, isK3dCluster := IsKindCluster(kubeContext), IsK3dCluster(kubeContext)
+	isMixedPlatform := IsMixedPlatformCluster(ctx, kubeContext)
 
 	var local bool
 	switch {
@@ -254,7 +255,6 @@ func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
 	default:
 		local = false
 	}
-
 	var defaultRepo = opts.DefaultRepo
 
 	if local && defaultRepo.Value() == nil {
@@ -265,10 +265,11 @@ func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
 		case registry != nil:
 			log.Entry(context.TODO()).Infof("using default-repo=%s from cluster configmap", *registry)
 			return Cluster{
-				Local:       local,
-				LoadImages:  false,
-				PushImages:  true,
-				DefaultRepo: NewStringOrUndefined(registry),
+				Local:           local,
+				LoadImages:      false,
+				PushImages:      true,
+				DefaultRepo:     NewStringOrUndefined(registry),
+				IsMixedPlatform: isMixedPlatform,
 			}, nil
 		}
 	}
@@ -283,11 +284,28 @@ func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
 	pushImages := !local || (isKindCluster && kindDisableLoad) || (isK3dCluster && k3dDisableLoad)
 
 	return Cluster{
-		Local:       local,
-		LoadImages:  loadImages,
-		PushImages:  pushImages,
-		DefaultRepo: defaultRepo,
+		Local:           local,
+		LoadImages:      loadImages,
+		PushImages:      pushImages,
+		DefaultRepo:     defaultRepo,
+		IsMixedPlatform: isMixedPlatform,
 	}, nil
+}
+
+func IsMixedPlatformCluster(ctx context.Context, kubeContext string) bool {
+	client, err := kubeclient.Client(kubeContext)
+	if err != nil {
+		return false
+	}
+	nodes, err := client.CoreV1().Nodes().List(ctx, api_v1.ListOptions{})
+	if err != nil || nodes == nil {
+		return false
+	}
+	set := make(map[string]interface{})
+	for _, n := range nodes.Items {
+		set[fmt.Sprintf("%s/%s", n.Status.NodeInfo.OperatingSystem, n.Status.NodeInfo.Architecture)] = struct{}{}
+	}
+	return len(set) > 1
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
@@ -514,7 +532,7 @@ func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(configFileOrDefault, contents, 0644); err != nil {
+	if err := os.WriteFile(configFileOrDefault, contents, 0644); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 	return nil
@@ -548,9 +566,9 @@ func UpdateUserSurveyTaken(configFile string, id string) error {
 func updatedUserSurveys(us []*UserSurvey, id string) []*UserSurvey {
 	for _, s := range us {
 		if s.ID == id {
-			s.Taken = util.BoolPtr(true)
+			s.Taken = util.Ptr(true)
 			return us
 		}
 	}
-	return append(us, &UserSurvey{ID: id, Taken: util.BoolPtr(true)})
+	return append(us, &UserSurvey{ID: id, Taken: util.Ptr(true)})
 }

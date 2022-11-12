@@ -56,7 +56,7 @@ func doRun(ctx context.Context, out io.Writer) error {
 		}
 
 		// Render
-		manifestList, err := r.Render(ctx, out, bRes, true)
+		manifestList, err := r.Render(ctx, out, bRes, false)
 		if err != nil {
 			return fmt.Errorf("rendering manifests: %w", err)
 		}

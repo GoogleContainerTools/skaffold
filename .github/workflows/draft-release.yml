@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - main
+    - v1
 
 permissions: read-all
 
@@ -33,7 +34,7 @@ jobs:
       id: check-commit-message
       if: steps.regex-match.outputs.group1 != ''
       run: |
-        echo "::set-output name=applicable::true"
+        echo "applicable=true" >> $GITHUB_OUTPUT
         echo "This is a release commit: ${{ steps.regex-match.outputs.group1 }}"
     outputs:
       applicable: ${{ steps.check-commit-message.outputs.applicable }}

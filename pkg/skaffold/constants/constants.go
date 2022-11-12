@@ -61,6 +61,8 @@ const (
 
 	DefaultProjectDescriptor = "project.toml"
 
+	DefaultBuildpacksBuilderImage = "gcr.io/buildpacks/builder:v1"
+
 	LeeroyAppResponse = "leeroooooy app!!\n"
 
 	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
@@ -124,6 +126,8 @@ var (
 	}
 
 	AllowedUserPattern = `^%v(\/.+)?$`
+
+	KustomizeFilePaths = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
 )
 
 var ImageRef = struct {

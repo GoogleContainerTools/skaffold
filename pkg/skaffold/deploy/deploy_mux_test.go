@@ -22,6 +22,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -34,16 +36,17 @@ import (
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
-func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
+func NewMockDeployer() *MockDeployer {
+	return &MockDeployer{labels: make(map[string]string), configName: "default"}
+}
 
 type MockDeployer struct {
+	configName      string
 	labels          map[string]string
 	deployErr       error
 	dependencies    []string
 	dependenciesErr error
 	cleanupErr      error
-	renderResult    string
-	renderErr       error
 }
 
 func (m *MockDeployer) HasRunnableHooks() bool {
@@ -80,13 +83,13 @@ func (m *MockDeployer) GetSyncer() sync.Syncer {
 
 func (m *MockDeployer) RegisterLocalImages(_ []graph.Artifact) {}
 
-func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}
+func (m *MockDeployer) TrackBuildArtifacts(_, _ []graph.Artifact) {}
 
 func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
 
-func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestList) error {
+func (m *MockDeployer) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
 	return m.cleanupErr
 }
 
@@ -110,18 +113,8 @@ func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
-	m.renderErr = err
-	return m
-}
-
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestList) error {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error {
 	return m.deployErr
-}
-
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []graph.Artifact, _ bool, _ string) error {
-	w.Write([]byte(m.renderResult))
-	return m.renderErr
 }
 
 func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
@@ -129,9 +122,8 @@ func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) WithRenderResult(renderResult string) *MockDeployer {
-	m.renderResult = renderResult
-	return m
+func (m *MockDeployer) ConfigName() string {
+	return m.configName
 }
 
 func TestDeployerMux_Deploy(t *testing.T) {
@@ -171,7 +163,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				NewMockDeployer().WithDeployErr(test.err2),
 			}, false)
 
-			err := deployerMux.Deploy(context.Background(), nil, nil, nil)
+			err := deployerMux.Deploy(context.Background(), nil, nil, manifest.NewManifestListByConfig())
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -225,6 +217,48 @@ func TestDeployerMux_Dependencies(t *testing.T) {
 
 			dependencies, err := deployerMux.Dependencies()
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDeps, dependencies)
+		})
+	}
+}
+
+func TestDeployerMux_GetDeployersInverse(t *testing.T) {
+	d1 := NewMockDeployer()
+	d2 := NewMockDeployer()
+	d3 := NewMockDeployer()
+	d4 := NewMockDeployer()
+	d5 := NewMockDeployer()
+
+	tests := []struct {
+		name     string
+		args     []Deployer
+		expected []Deployer
+	}{
+		{
+			name:     "uneven slice",
+			args:     []Deployer{d1, d2, d3, d4, d5},
+			expected: []Deployer{d5, d4, d3, d2, d1},
+		},
+		{
+			name:     "even slice",
+			args:     []Deployer{d1, d2, d3, d4},
+			expected: []Deployer{d4, d3, d2, d1},
+		},
+		{
+			name:     "slice of one",
+			args:     []Deployer{d1},
+			expected: []Deployer{d1},
+		},
+		{
+			name:     "slice of zero",
+			args:     []Deployer{},
+			expected: []Deployer{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			deployerMux := DeployerMux{deployers: test.args, iterativeStatusCheck: false}
+			testutil.CheckDeepEqual(t, test.expected, deployerMux.GetDeployersInverse(), cmp.AllowUnexported(MockDeployer{}))
 		})
 	}
 }

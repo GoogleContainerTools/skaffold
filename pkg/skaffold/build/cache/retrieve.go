@@ -57,11 +57,10 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	case results = <-lookup:
 	}
 
-	hashByName := make(map[string]string)
 	var needToBuild []*latest.Artifact
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
-		eventV2.CacheCheckInProgress(artifact.ImageName)
+		eventV2.CacheCheckInProgress(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 		out, ctx := output.WithEventContext(ctx, out, constants.Build, artifact.ImageName)
 		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
@@ -73,14 +72,14 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			return nil, result.err
 
 		case needsBuilding:
-			eventV2.CacheCheckMiss(artifact.ImageName)
+			eventV2.CacheCheckMiss(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			output.Yellow.Fprintln(out, "Not found. Building")
-			hashByName[artifact.ImageName] = result.Hash()
+			c.hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 
 		case needsTagging:
-			eventV2.CacheCheckHit(artifact.ImageName)
+			eventV2.CacheCheckHit(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			output.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c, platforms); err != nil {
 				endTrace(instrumentation.TraceEndError(err))
@@ -88,7 +87,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			}
 
 		case needsPushing:
-			eventV2.CacheCheckHit(artifact.ImageName)
+			eventV2.CacheCheckHit(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			output.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
 				endTrace(instrumentation.TraceEndError(err))
@@ -97,7 +96,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			}
 
 		default:
-			eventV2.CacheCheckHit(artifact.ImageName)
+			eventV2.CacheCheckHit(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
 			isLocal, err := c.isLocalImage(artifact.ImageName)
 			if err != nil {
 				endTrace(instrumentation.TraceEndError(err))
@@ -141,20 +140,17 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	log.Entry(ctx).Infoln("Cache check completed in", timeutil.Humanize(time.Since(start)))
 
+	defer func() {
+		if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
+			log.Entry(ctx).Warnf("error saving cache file; caching may not work as expected: %v", err)
+		}
+	}()
+
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild, platforms)
+
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
-	}
-
-	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {
-		log.Entry(ctx).Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
-		return append(bRes, alreadyBuilt...), nil
-	}
-
-	if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
-		log.Entry(ctx).Warnf("error saving cache file; caching may not work as expected: %v", err)
-		return append(bRes, alreadyBuilt...), nil
 	}
 
 	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
@@ -175,32 +171,31 @@ func maintainArtifactOrder(built []graph.Artifact, artifacts []*latest.Artifact)
 	return ordered
 }
 
-func (c *cache) addArtifacts(ctx context.Context, bRes []graph.Artifact, hashByName map[string]string) error {
-	for _, a := range bRes {
-		entry := ImageDetails{}
-		isLocal, err := c.isLocalImage(a.ImageName)
+func (c *cache) AddArtifact(ctx context.Context, a graph.Artifact) error {
+	entry := ImageDetails{}
+	isLocal, err := c.isLocalImage(a.ImageName)
+	if err != nil {
+		return err
+	}
+	if isLocal {
+		imageID, err := c.client.ImageID(ctx, a.Tag)
 		if err != nil {
 			return err
 		}
-		if isLocal {
-			imageID, err := c.client.ImageID(ctx, a.Tag)
-			if err != nil {
-				return err
-			}
 
-			if imageID != "" {
-				entry.ID = imageID
-			}
-		} else {
-			ref, err := docker.ParseReference(a.Tag)
-			if err != nil {
-				return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
-			}
-			entry.Digest = ref.Digest
+		if imageID != "" {
+			entry.ID = imageID
 		}
-		c.cacheMutex.Lock()
-		c.artifactCache[hashByName[a.ImageName]] = entry
-		c.cacheMutex.Unlock()
+	} else {
+		ref, err := docker.ParseReference(a.Tag)
+		if err != nil {
+			return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
+		}
+		entry.Digest = ref.Digest
 	}
+	c.cacheMutex.Lock()
+	c.artifactCache[c.hashByName[a.ImageName]] = entry
+	c.cacheMutex.Unlock()
+
 	return nil
 }

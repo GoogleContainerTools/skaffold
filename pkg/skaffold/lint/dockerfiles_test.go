@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"text/template"
@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -187,7 +187,7 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 				module := fmt.Sprintf("cfg%d", i)
 				skaffoldyamlText := test.moduleAndSkaffoldYamls[module]
 				fp := filepath.Join(tmpdir, fmt.Sprintf("%s.yaml", module))
-				err := ioutil.WriteFile(fp, []byte(skaffoldyamlText), 0644)
+				err := os.WriteFile(fp, []byte(skaffoldyamlText), 0644)
 				if err != nil {
 					t.Fatalf("error creating skaffold.yaml file with name %s: %v", fp, err)
 				}
@@ -201,7 +201,7 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 				if err != nil {
 					t.Fatalf("error executing dockerfileText go template: %v", err)
 				}
-				err = ioutil.WriteFile(dfp, b.Bytes(), 0644)
+				err = os.WriteFile(dfp, b.Bytes(), 0644)
 				if err != nil {
 					t.Fatalf("error creating Dockerfile %s: %v", dfp, err)
 				}
