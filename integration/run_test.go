@@ -316,8 +316,6 @@ func TestRunRenderOnly(t *testing.T) {
 }
 
 func TestRunGCPOnly(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
-
 	tests := []struct {
 		description string
 		dir         string
@@ -342,9 +340,9 @@ func TestRunGCPOnly(t *testing.T) {
 		},
 		{
 			description: "Google Cloud Build with source artifact dependencies",
-			dir:         "examples/microservices",
+			dir:         "testdata/multi-config-pods",
 			args:        []string{"-p", "gcb"},
-			deployments: []string{"leeroy-app", "leeroy-web"},
+			pods:        []string{"module1", "module2"},
 		},
 		// {
 		//	description: "Google Cloud Build with Kaniko",
@@ -395,6 +393,7 @@ func TestRunGCPOnly(t *testing.T) {
 			continue // buildpacks doesn't support arm64 builds, so skip run on these clusters
 		}
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			ns, client := SetupNamespace(t)
 
 			test.args = append(test.args, "--tag", uuid.New().String())

@@ -153,8 +153,6 @@ func TestBuildWithWithPlatform(t *testing.T) {
 }
 
 func TestBuildWithMultiPlatforms(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
-
 	tests := []struct {
 		description       string
 		dir               string
@@ -172,6 +170,7 @@ func TestBuildWithMultiPlatforms(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			tmpfile := testutil.TempFile(t, "", []byte{})
 			args := append(test.args, "--file-output", tmpfile)
 			skaffold.Build(args...).InDir(test.dir).RunOrFail(t)
@@ -186,7 +185,6 @@ func TestBuildWithMultiPlatforms(t *testing.T) {
 
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
 	if !jib.JVMFound(context.Background()) {
 		t.Fatal("test requires Java VM")
 	}
@@ -207,6 +205,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			if out, err := skaffold.Build(test.args...).InDir(test.dir).RunWithCombinedOutput(t); err == nil {
 				t.Fatal("expected build to fail")
 			} else if !strings.Contains(string(out), test.expected) {
