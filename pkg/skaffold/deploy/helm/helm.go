@@ -104,9 +104,10 @@ type Deployer struct {
 
 	labels map[string]string
 
-	forceDeploy   bool
-	enableDebug   bool
-	isMultiConfig bool
+	forceDeploy       bool
+	enableDebug       bool
+	overrideProtocols []string
+	isMultiConfig     bool
 	// bV is the helm binary version
 	bV semver.Version
 
@@ -114,12 +115,13 @@ type Deployer struct {
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func (h Deployer) EnableDebug() bool         { return h.enableDebug }
-func (h Deployer) ConfigFile() string        { return h.configFile }
-func (h Deployer) KubeContext() string       { return h.kubeContext }
-func (h Deployer) KubeConfig() string        { return h.kubeConfig }
-func (h Deployer) Labels() map[string]string { return h.labels }
-func (h Deployer) GlobalFlags() []string     { return h.LegacyHelmDeploy.Flags.Global }
+func (h Deployer) EnableDebug() bool           { return h.enableDebug }
+func (h Deployer) OverrideProtocols() []string { return h.overrideProtocols }
+func (h Deployer) ConfigFile() string          { return h.configFile }
+func (h Deployer) KubeContext() string         { return h.kubeContext }
+func (h Deployer) KubeConfig() string          { return h.kubeConfig }
+func (h Deployer) Labels() map[string]string   { return h.labels }
+func (h Deployer) GlobalFlags() []string       { return h.LegacyHelmDeploy.Flags.Global }
 
 type Config interface {
 	kubectl.Config
@@ -180,6 +182,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		labels:                 labeller.Labels(),
 		bV:                     hv,
 		enableDebug:            cfg.Mode() == config.RunModes.Debug,
+		overrideProtocols:      debug.Protocols,
 		isMultiConfig:          cfg.IsMultiConfig(),
 		transformableAllowlist: transformableAllowlist,
 		transformableDenylist:  transformableDenylist,

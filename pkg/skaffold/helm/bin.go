@@ -44,6 +44,7 @@ var (
 
 type Client interface {
 	EnableDebug() bool
+	OverrideProtocols() []string
 	ConfigFile() string
 	KubeConfig() string
 	KubeContext() string
@@ -91,6 +92,9 @@ func generateSkaffoldFilter(h Client, buildsFile string) []string {
 	args := []string{"filter", "--kube-context", h.KubeContext()}
 	if h.EnableDebug() {
 		args = append(args, "--debugging")
+		for _, overrideProtocol := range h.OverrideProtocols() {
+			args = append(args, fmt.Sprintf("--protocols=%s", overrideProtocol))
+		}
 	}
 	for k, v := range h.Labels() {
 		args = append(args, fmt.Sprintf("--label=%s=%s", k, v))

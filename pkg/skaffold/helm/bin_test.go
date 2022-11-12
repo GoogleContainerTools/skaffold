@@ -35,20 +35,22 @@ var (
 )
 
 type mockClient struct {
-	enableDebug bool
-	configFile  string
-	kubeContext string
-	kubeConfig  string
-	labels      map[string]string
-	globalFlags []string
+	enableDebug       bool
+	overrideProtocols []string
+	configFile        string
+	kubeContext       string
+	kubeConfig        string
+	labels            map[string]string
+	globalFlags       []string
 }
 
-func (h mockClient) EnableDebug() bool         { return h.enableDebug }
-func (h mockClient) ConfigFile() string        { return h.configFile }
-func (h mockClient) KubeContext() string       { return h.kubeContext }
-func (h mockClient) KubeConfig() string        { return h.kubeConfig }
-func (h mockClient) Labels() map[string]string { return h.labels }
-func (h mockClient) GlobalFlags() []string     { return h.globalFlags }
+func (h mockClient) EnableDebug() bool           { return h.enableDebug }
+func (h mockClient) OverrideProtocols() []string { return h.overrideProtocols }
+func (h mockClient) ConfigFile() string          { return h.configFile }
+func (h mockClient) KubeContext() string         { return h.kubeContext }
+func (h mockClient) KubeConfig() string          { return h.kubeConfig }
+func (h mockClient) Labels() map[string]string   { return h.labels }
+func (h mockClient) GlobalFlags() []string       { return h.globalFlags }
 
 func TestBinVer(t *testing.T) {
 	tests := []struct {

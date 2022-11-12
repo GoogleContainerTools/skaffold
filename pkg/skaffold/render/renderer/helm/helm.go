@@ -25,6 +25,7 @@ import (
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -42,23 +43,25 @@ type Helm struct {
 	generate.Generator
 	config *latest.Helm
 
-	kubeContext string
-	kubeConfig  string
-	namespace   string
-	configFile  string
-	labels      map[string]string
-	enableDebug bool
+	kubeContext       string
+	kubeConfig        string
+	namespace         string
+	configFile        string
+	labels            map[string]string
+	enableDebug       bool
+	overrideProtocols []string
 
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func (h Helm) EnableDebug() bool         { return h.enableDebug }
-func (h Helm) ConfigFile() string        { return h.configFile }
-func (h Helm) KubeContext() string       { return h.kubeContext }
-func (h Helm) KubeConfig() string        { return h.kubeConfig }
-func (h Helm) Labels() map[string]string { return h.labels }
-func (h Helm) GlobalFlags() []string     { return h.config.Flags.Global }
+func (h Helm) EnableDebug() bool           { return h.enableDebug }
+func (h Helm) OverrideProtocols() []string { return h.overrideProtocols }
+func (h Helm) ConfigFile() string          { return h.configFile }
+func (h Helm) KubeContext() string         { return h.kubeContext }
+func (h Helm) KubeConfig() string          { return h.kubeConfig }
+func (h Helm) Labels() map[string]string   { return h.labels }
+func (h Helm) GlobalFlags() []string       { return h.config.Flags.Global }
 
 func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string) (Helm, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
@@ -71,12 +74,13 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		Generator:  generator,
 		config:     rCfg.Helm,
 
-		enableDebug: cfg.Mode() == config.RunModes.Debug,
-		configFile:  cfg.ConfigurationFile(),
-		kubeContext: cfg.GetKubeContext(),
-		kubeConfig:  cfg.GetKubeConfig(),
-		labels:      labels,
-		namespace:   cfg.GetNamespace(),
+		enableDebug:       cfg.Mode() == config.RunModes.Debug,
+		overrideProtocols: debug.Protocols,
+		configFile:        cfg.ConfigurationFile(),
+		kubeContext:       cfg.GetKubeContext(),
+		kubeConfig:        cfg.GetKubeConfig(),
+		labels:            labels,
+		namespace:         cfg.GetNamespace(),
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
