@@ -47,7 +47,7 @@ func doDelete(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		manifestListByConfig, err := r.Render(ctx, io.Discard, []graph.Artifact{}, false)
 		if err != nil {
-			return err
+		    log.Entry(ctx).Debugf("skip render error: %v", err)
 		}
 		return r.Cleanup(ctx, out, dryRun, manifestListByConfig)
 	})
