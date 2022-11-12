@@ -21,15 +21,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/cenkalti/backoff/v4"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
@@ -539,7 +540,14 @@ func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, n
 
 	olog.Entry(ctx).Debug(b.String())
 
-	return b.Bytes(), err
+	grepCmd := exec.Command("grep", "-v", "This is insecure")
+	if err != nil {
+		return b.Bytes(), err
+	}
+
+	grepCmd.Stdin = &b
+
+	return grepCmd.Output()
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive
