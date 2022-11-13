@@ -118,7 +118,7 @@ func getTransformList(configs []util.VersionedConfig) (map[apim.GroupKind]latest
 	}
 	for _, rf := range manifest.TransformDenylist {
 		groupKind := apim.ParseGroupKind(rf.GroupKind)
-		allow[groupKind] = rUtil.ConvertJSONPathIndex(rf)
+		deny[groupKind] = rUtil.ConvertJSONPathIndex(rf)
 	}
 
 	for _, cfg := range configs {
