@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -395,6 +396,8 @@ func TestRunGCPOnly(t *testing.T) {
 		}
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
+
+			test.args = append(test.args, "--tag", uuid.New().String())
 
 			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
