@@ -18,6 +18,8 @@ package integration
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -37,4 +39,49 @@ func TestHelmDeploy(t *testing.T) {
 	testutil.CheckDeepEqual(t, dep.Name, dep.ObjectMeta.Labels["release"])
 
 	skaffold.Delete().InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+}
+
+func TestDevHelmMultiConfig(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	var tests = []struct {
+		description  string
+		dir          string
+		args         []string
+		deployments  []string
+		pods         []string
+		env          []string
+		targetLogOne string
+		targetLogTwo string
+	}{
+		{
+			description:  "helm-multi-config",
+			dir:          "testdata/helm-multi-config/skaffold",
+			deployments:  []string{"app1", "app2"},
+			targetLogOne: "app1",
+			targetLogTwo: "app2",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if test.targetLogOne == "" || test.targetLogTwo == "" {
+				t.SkipNow()
+			}
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
+			}
+
+			ns, _ := SetupNamespace(t)
+
+			out := skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunLive(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).Run(t)
+
+			WaitForLogs(t, out, test.targetLogOne)
+			WaitForLogs(t, out, test.targetLogTwo)
+		})
+	}
 }

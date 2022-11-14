@@ -1,0 +1,5 @@
+apiVersion: skaffold/v3
+kind: Config
+requires:
+  - path: ./app1/skaffold.yml
+  - path: ./app2/skaffold.yml
