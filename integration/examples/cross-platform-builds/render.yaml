@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example:13cd8a388b272dbd25eaf97f208de4ba9f358cb57d63c0a82e846f9044600e82
+    name: getting-started

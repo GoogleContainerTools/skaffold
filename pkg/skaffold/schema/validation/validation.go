@@ -158,14 +158,24 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 func validateTaggingPolicy(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfig) (cfgErrs []ErrorWithLocation) {
 	if bc.LocalBuild != nil {
 		// sha256 just uses `latest` tag, so tryImportMissing will virtually always succeed (#4889)
-		if bc.LocalBuild.TryImportMissing && bc.TagPolicy.ShaTagger != nil {
+		if bc.LocalBuild.TryImportMissing && isThereAShaTagger(&bc.TagPolicies) {
 			cfgErrs = append(cfgErrs, ErrorWithLocation{
 				Error:    fmt.Errorf("tagging policy 'sha256' can not be used when 'tryImportMissing' is enabled"),
-				Location: cfg.YAMLInfos.Locate(cfg.Build.TagPolicy.ShaTagger),
+				Location: cfg.YAMLInfos.Locate(cfg.Build.TagPolicies),
 			})
 		}
 	}
 	return
+}
+
+func isThereAShaTagger(tagPolicies *[]latest.TagPolicy) bool {
+	for _, tagger := range *tagPolicies {
+		if tagger.ShaTagger != nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 // validateImageNames makes sure the artifact image names are unique and valid base names,

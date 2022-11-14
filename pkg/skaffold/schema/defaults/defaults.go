@@ -210,11 +210,11 @@ func setDefaultCloudBuildKoImage(gcb *latest.GoogleCloudBuild) {
 }
 
 func setDefaultTagger(c *latest.SkaffoldConfig) {
-	if c.Build.TagPolicy != (latest.TagPolicy{}) {
+	if len(c.Build.TagPolicies) > 0 {
 		return
 	}
-
-	c.Build.TagPolicy = latest.TagPolicy{GitTagger: &latest.GitTagger{}}
+	c.Build.TagPolicies = append(c.Build.TagPolicies, latest.TagPolicy{GitTagger: &latest.GitTagger{}})
+	//c.Build.TagPolicy = latest.TagPolicy{GitTagger: &latest.GitTagger{}} //Sets default TagPolicy to GitTagger
 }
 
 func setDefaultLogsConfig(c *latest.SkaffoldConfig) {

@@ -181,7 +181,7 @@ type BuildConfig struct {
 	// TagPolicy *beta* determines how images are tagged.
 	// A few strategies are provided here, although you most likely won't need to care!
 	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
-	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
+	TagPolicies []TagPolicy `yaml:"tagPolicy,omitempty"`
 
 	// Platforms is the list of platforms to build all artifact images for.
 	// It can be overridden by the individual artifact's `platforms` property.

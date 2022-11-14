@@ -43,16 +43,33 @@ func NewTaggerMux(runCtx *runcontext.RunContext) (Tagger, error) {
 	m := make(map[string]Tagger)
 	sl := make([]Tagger, len(pipelines))
 	for _, p := range pipelines {
-		t, err := getTagger(runCtx, &p.Build.TagPolicy)
+		taggers, err := getTaggers(runCtx, &p.Build.TagPolicies)
 		if err != nil {
 			return nil, fmt.Errorf("creating tagger: %w", err)
 		}
+		t := taggers[0]
 		sl = append(sl, t)
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = t
 		}
 	}
 	return &TaggerMux{taggers: sl, byImageName: m}, nil
+}
+
+func getTaggers(runCtx *runcontext.RunContext, t *[]latest.TagPolicy) ([]Tagger, error) {
+	var taggers []Tagger
+
+	for _, tagPolicy := range *t {
+		tagger, err := getTagger(runCtx, &tagPolicy)
+
+		if err != nil {
+			return nil, err
+		}
+
+		taggers = append(taggers, tagger)
+	}
+
+	return taggers, nil
 }
 
 func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, error) {
