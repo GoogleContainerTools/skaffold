@@ -50,6 +50,7 @@ const (
 	CanRunWithoutGcp TestType = iota
 	NeedsGcp
 )
+const numberOfPartition = 4
 
 func MarkIntegrationTest(t *testing.T, testType TestType) {
 	t.Helper()
@@ -85,7 +86,7 @@ func getPartition() string {
 }
 
 func matchesPartition(t *testing.T) bool {
-	partition := hash(t.Name()) % 4
+	partition := hash(t.Name()) % numberOfPartition
 	t.Logf("Assinged test %s to partition: %d", t.Name(), partition)
 
 	return strconv.FormatUint(partition, 10) == getPartition()
