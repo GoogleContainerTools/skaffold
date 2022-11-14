@@ -104,7 +104,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 
 // Cleanup deletes the created Cloud Run services
 func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, byConfig manifest.ManifestListByConfig) error {
-	return d.deleteRunService(ctx, out, dryRun, byConfig.GetForConfig(d.configName))
+	return d.cleanupRun(ctx, out, dryRun, byConfig.GetForConfig(d.configName))
 }
 
 // GetDebugger Get the Debugger for Cloud Run. Not supported by this deployer.
@@ -325,16 +325,47 @@ func (d *Deployer) deployJob(crclient *run.APIService, manifest []byte, out io.W
 	return &resName, nil
 }
 
-func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
-	if len(manifests) != 1 {
-		return sErrors.NewError(fmt.Errorf("unexpected manifest for Cloud Run"),
-			&proto.ActionableErr{
-				Message: "Cloud Run expected a single Service manifest.",
-				ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
-			})
+func (d *Deployer) cleanupRun(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
+	var errors []error
+	cOptions := d.clientOptions
+	if d.useGcpOptions {
+		cOptions = append(cOptions, option.WithEndpoint(fmt.Sprintf("%s-run.googleapis.com", d.Region)))
+		cOptions = append(gcp.ClientOptions(ctx), cOptions...)
 	}
+	crclient, err := run.NewService(ctx, cOptions...)
+	if err != nil {
+		return sErrors.NewError(fmt.Errorf("unable to create Cloud Run Client"), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_GET_CLOUD_RUN_CLIENT_ERR,
+		})
+	}
+	for _, manifest := range manifests {
+		tpe, err := getTypeFromManifest(manifest)
+		switch {
+		case err != nil:
+			errors = append(errors, err)
+		case tpe == typeService:
+			err := d.deleteRunService(crclient, out, dryRun, manifest)
+			if err != nil {
+				errors = append(errors, err)
+			}
+		case tpe == typeJob:
+			err := d.deleteRunJob(crclient, out, dryRun, manifest)
+			if err != nil {
+				errors = append(errors, err)
+			}
+		}
+	}
+	if len(errors) != 0 {
+		// TODO: is there a good way to report all of the errors?
+		return errors[0]
+	}
+	return nil
+}
+
+func (d *Deployer) deleteRunService(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	service := &run.Service{}
-	if err := k8syaml.Unmarshal(manifests[0], service); err != nil {
+	if err := k8syaml.Unmarshal(manifest, service); err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
@@ -360,15 +391,9 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 		output.Yellow.Fprintln(out, sName)
 		return nil
 	}
-	crclient, err := run.NewService(ctx, append(gcp.ClientOptions(ctx), d.clientOptions...)...)
-	if err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to create Cloud Run Client"), &proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_GET_CLOUD_RUN_CLIENT_ERR,
-		})
-	}
+
 	delCall := crclient.Projects.Locations.Services.Delete(sName)
-	_, err = delCall.Do()
+	_, err := delCall.Do()
 	if err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run Service"), &proto.ActionableErr{
 			Message: err.Error(),
@@ -376,4 +401,66 @@ func (d *Deployer) deleteRunService(ctx context.Context, out io.Writer, dryRun b
 		})
 	}
 	return nil
+}
+
+func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
+	job := &run.Job{}
+	if err := k8syaml.Unmarshal(manifest, job); err != nil {
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	var projectID string
+	switch {
+	case d.Project != "":
+		projectID = d.Project
+	case job.Metadata.Namespace != "":
+		projectID = job.Metadata.Namespace
+	default:
+		// no project specified, we don't know what to delete.
+		return sErrors.NewError(fmt.Errorf("unable to determine Google Cloud Project"), &proto.ActionableErr{
+			Message: "No Google Cloud Project found in Cloud Run manifest or Skaffold Manifest.",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	parent := fmt.Sprintf("namespaces/%s", projectID)
+	sName := fmt.Sprintf("%s/jobs/%s", parent, job.Metadata.Name)
+	if dryRun {
+		output.Yellow.Fprintln(out, sName)
+		return nil
+	}
+
+	delCall := crclient.Namespaces.Jobs.Delete(sName)
+	_, err := delCall.Do()
+	if err != nil {
+		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run Job"), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR,
+		})
+	}
+	return nil
+}
+
+func getTypeFromManifest(manifest []byte) (string, error) {
+	resource := &unstructured.Unstructured{}
+	if err := k8syaml.Unmarshal(manifest, resource); err != nil {
+		return "", sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	switch {
+	case resource.GetAPIVersion() == "serving.knative.dev/v1" && resource.GetKind() == "Service":
+		return typeService, nil
+	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "Job":
+		return typeJob, nil
+	default:
+		err := sErrors.NewError(fmt.Errorf("unsupported Kind for Cloud Run Deployer: %s/%s", resource.GetAPIVersion(), resource.GetKind()),
+			&proto.ActionableErr{
+				Message: "Kind is not supported",
+				ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+			})
+		return "", err
+	}
 }

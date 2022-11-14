@@ -393,7 +393,7 @@ func TestDeployRewrites(tOuter *testing.T) {
 	}
 }
 
-func TestCleanup(tOuter *testing.T) {
+func TestCleanupService(tOuter *testing.T) {
 	tests := []struct {
 		description    string
 		toDelete       *run.Service
@@ -476,6 +476,153 @@ func TestCleanup(tOuter *testing.T) {
 				t.Fatalf("Expected success but got err: %v", err)
 			} else if test.httpErr != 0 && err == nil {
 				t.Fatalf("Expected HTTP Error %s but got success", http.StatusText(test.httpErr))
+			}
+		})
+	}
+}
+
+func TestCleanupJob(tOuter *testing.T) {
+	tests := []struct {
+		description    string
+		toDelete       *run.Job
+		defaultProject string
+		region         string
+		expectedPath   string
+		httpErr        int
+	}{
+		{
+			description:    "test cleanup",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   "/apis/run.googleapis.com/v1/namespaces/testProject/jobs/test-job",
+			toDelete: &run.Job{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "Job",
+				Metadata: &run.ObjectMeta{
+					Name: "test-job",
+				},
+			},
+		},
+		{
+			description:    "test cleanup fails",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   "/apis/run.googleapis.com/v1/namespaces/testProject/jobs/test-job",
+			toDelete: &run.Job{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "Job",
+				Metadata: &run.ObjectMeta{
+					Name: "test-job",
+				},
+			},
+			httpErr: http.StatusUnauthorized,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(tOuter, test.description, func(t *testutil.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if test.httpErr != 0 {
+					http.Error(w, "Expected http error", test.httpErr)
+					return
+				}
+				if r.URL.Path != test.expectedPath {
+					http.Error(w, "unexpected path: "+r.URL.Path, http.StatusNotFound)
+					return
+				}
+				response := &run.Status{}
+				b, err := json.Marshal(response)
+				if err != nil {
+					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(b)
+			}))
+			defer ts.Close()
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
+			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
+			deployer.useGcpOptions = false
+			manifestListByConfig := manifest.NewManifestListByConfig()
+			manifest, _ := json.Marshal(test.toDelete)
+			manifests := [][]byte{manifest}
+			manifestListByConfig.Add(configName, manifests)
+			err := deployer.Cleanup(context.Background(), os.Stderr, false, manifestListByConfig)
+			if test.httpErr == 0 && err != nil {
+				t.Fatalf("Expected success but got err: %v", err)
+			} else if test.httpErr != 0 && err == nil {
+				t.Fatalf("Expected HTTP Error %s but got success", http.StatusText(test.httpErr))
+			}
+		})
+	}
+}
+
+func TestCleanupMultipleResources(tOuter *testing.T) {
+	tests := []struct {
+		description    string
+		toDelete       []interface{}
+		defaultProject string
+		region         string
+		expectedPath   map[string]int
+	}{
+		{
+			description:    "test cleanup",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   map[string]int{"/apis/run.googleapis.com/v1/namespaces/testProject/jobs/test-job": 1, "/v1/projects/testProject/locations/us-central1/services/test-service": 1},
+			toDelete: []interface{}{&run.Job{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "Job",
+				Metadata: &run.ObjectMeta{
+					Name: "test-job",
+				},
+			},
+				&run.Service{
+					ApiVersion: "serving.knative.dev/v1",
+					Kind:       "Service",
+					Metadata: &run.ObjectMeta{
+						Name: "test-service",
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(tOuter, test.description, func(t *testutil.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if count, ok := test.expectedPath[r.URL.Path]; !ok || count <= 0 {
+					http.Error(w, "unexpected path: "+r.URL.Path, http.StatusNotFound)
+					return
+				}
+				test.expectedPath[r.URL.Path]--
+				response := &run.Status{}
+				b, err := json.Marshal(response)
+				if err != nil {
+					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(b)
+			}))
+			defer ts.Close()
+			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
+			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
+			deployer.useGcpOptions = false
+			manifestListByConfig := manifest.NewManifestListByConfig()
+			var manifests [][]byte
+			for _, res := range test.toDelete {
+				manifest, err := json.Marshal(res)
+				if err != nil {
+					t.Fatalf("error marshaling manifest: %v", err)
+				}
+				manifests = append(manifests, manifest)
+			}
+			manifestListByConfig.Add(configName, manifests)
+			err := deployer.Cleanup(context.Background(), os.Stderr, false, manifestListByConfig)
+			if err != nil {
+				t.Fatalf("Expected success but got err: %v", err)
+			}
+			for key, val := range test.expectedPath {
+				if val > 0 {
+					t.Fatalf("Missing expected call for path " + key)
+				}
 			}
 		})
 	}
