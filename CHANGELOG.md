@@ -1,29 +1,4 @@
-# v1.39.4 Release - 11/11/2022
-**Linux amd64**
-`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
-
-**Linux arm64**
-`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
-
-**macOS amd64**
-`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
-
-**macOS arm64**
-`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
-
-**Windows**
-https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-windows-amd64.exe
-
-**Docker image**
-`gcr.io/k8s-skaffold/skaffold:v1.39.4`
-
-Fixes:
-* fix: resolve issue where skaffold apply didn't respect config - statusCheck:false (#8077)
-
-Updates and Refactors:
-* chore: update skaffold deps image dependencies (#8067)
-
-# v2.0.2 Release - 11/09/2022
+# v2.0.2 Release - 11/15/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
 
@@ -52,6 +27,7 @@ New Features and Additions:
 * feat: context copy retry. If we add a for loop and execute the kubectlcli.Run method for copying context to kaniko pod , this makes more reliable and less prune to network failures [#7887](https://github.com/GoogleContainerTools/skaffold/pull/7887)
 * feat: new cloudbuild slim [#8004](https://github.com/GoogleContainerTools/skaffold/pull/8004)
 * feat: new dockerfiles and cloudbuild config for slim image [#7996](https://github.com/GoogleContainerTools/skaffold/pull/7996)
+* feat: completion for the Fish shell [#8097](https://github.com/GoogleContainerTools/skaffold/pull/8097)
 
 Fixes:
 * fix: add description to StatusCheck TaskEvent [#8017](https://github.com/GoogleContainerTools/skaffold/pull/8017)
@@ -64,6 +40,10 @@ Fixes:
 * fix: properly add RemoteManifests support to skaffold v2 [#8036](https://github.com/GoogleContainerTools/skaffold/pull/8036)
 * fix: use std lib signal handling [#8046](https://github.com/GoogleContainerTools/skaffold/pull/8046)
 * fix(sec): upgrade runc version v1.0.2 -> v1.1.2 [#8050](https://github.com/GoogleContainerTools/skaffold/pull/8050)
+* fix: add unique tag to test image to avoid collisions with other tests [#8087](https://github.com/GoogleContainerTools/skaffold/pull/8087)
+* fix: correct issues with current upgrade logic for artifactOverrides with helm imageStrategy [#8066](https://github.com/GoogleContainerTools/skaffold/pull/8066)
+* fix: override protocols argument pass to helm post-renderer [#8083](https://github.com/GoogleContainerTools/skaffold/pull/8083)
+* fix: resolve issue where skaffold filter command did not properly configure the filter allow & deny lists [#8085](https://github.com/GoogleContainerTools/skaffold/pull/8085)
 
 Updates and Refactors:
 * chore: add v1.39.3 release CHANGELOG.md entry [#7991](https://github.com/GoogleContainerTools/skaffold/pull/7991)
@@ -74,6 +54,9 @@ Updates and Refactors:
 * chore: upgrade jib plugin versions to 3.3.1 [#8003](https://github.com/GoogleContainerTools/skaffold/pull/8003)
 * chore(deps): bump some .github/workflows deps [#8051](https://github.com/GoogleContainerTools/skaffold/pull/8051)
 * chore(doc): note that filesync works for debug [#8044](https://github.com/GoogleContainerTools/skaffold/pull/8044)
+* chore: reduce gcp integration test time [#8080](https://github.com/GoogleContainerTools/skaffold/pull/8080)
+* chore: remove uncessary server bins [#8092](https://github.com/GoogleContainerTools/skaffold/pull/8092)
+* refactor: use exclude directives instead of replace directives for pinning [#8056](https://github.com/GoogleContainerTools/skaffold/pull/8056)
 
 Docs, Test, and Release Updates:
 * docs: Linked to the Google Cloud Solutions Template [#8054](https://github.com/GoogleContainerTools/skaffold/pull/8054)
@@ -81,13 +64,16 @@ Docs, Test, and Release Updates:
 * docs: update skaffold examples and documentation to properly reflect v1 ->v2 artifactOverrides changes - 2nd attempt [#8019](https://github.com/GoogleContainerTools/skaffold/pull/8019)
 * docs: update skaffold examples and documentation to properly reflect v1 ->v2 artifactOverrides changes [#8013](https://github.com/GoogleContainerTools/skaffold/pull/8013)
 * docs: update skaffold.gliffy diagram with updated information for skaffold v2 [#8035](https://github.com/GoogleContainerTools/skaffold/pull/8035)
+* docs: add detailed information on how to use helm rendering with v2.X.Y as well as how post-renderer usage works [#8093](https://github.com/GoogleContainerTools/skaffold/pull/8093)
 
 Huge thanks goes out to all of our contributors for this release:
 
 - Aaron Prindle
 - agarwalnit
+- b4nks
 - Benjamin Kaplan
 - Brian de Alwis
+- Bryan C. Mills
 - dependabot[bot]
 - Emily Wang
 - ericzzzzzzz
@@ -101,9 +87,35 @@ Huge thanks goes out to all of our contributors for this release:
 - Renzo Rojas
 - Santiago Nuñez-Cacho
 - Sergei Kononov
+- Sergei Morozov
 - Steven Powell
 - techchickk
 - Tomás Mota
+
+# v1.39.4 Release - 11/11/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.39.4/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.39.4`
+
+Fixes:
+* fix: resolve issue where skaffold apply didn't respect config - statusCheck:false (#8077)
+
+Updates and Refactors:
+* chore: update skaffold deps image dependencies (#8067)
 
 # v2.0.1 Release - 10/27/2022
 **Linux amd64**
