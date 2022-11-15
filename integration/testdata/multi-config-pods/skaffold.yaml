@@ -3,3 +3,7 @@ kind: Config
 requires:
   - path: ./module1
   - path: ./module2
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild: {}

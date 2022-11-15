@@ -38,29 +38,10 @@ func TestBuildDeploy(t *testing.T) {
 
 	ns, client := SetupNamespace(t)
 
-	outputBytes := skaffold.Build("--quiet", "--platform=linux/arm64,linux/amd64").InDir("examples/microservices").InNs(ns.Name).RunOrFailOutput(t)
+	outputBytes := skaffold.Build("--quiet", "--platform=linux/arm64,linux/amd64").InDir("examples/nodejs").InNs(ns.Name).RunOrFailOutput(t)
 	// Parse the Build Output
 	buildArtifacts, err := flags.ParseBuildOutput(outputBytes)
 	failNowIfError(t, err)
-	if len(buildArtifacts.Builds) != 3 {
-		t.Fatalf("expected 3 artifacts to be built, but found %d", len(buildArtifacts.Builds))
-	}
-
-	var webTag, appTag string
-	for _, a := range buildArtifacts.Builds {
-		if a.ImageName == "leeroy-web" {
-			webTag = a.Tag
-		}
-		if a.ImageName == "leeroy-app" {
-			appTag = a.Tag
-		}
-	}
-	if webTag == "" {
-		t.Fatalf("expected to find a tag for leeroy-web but found none %s", webTag)
-	}
-	if appTag == "" {
-		t.Fatalf("expected to find a tag for leeroy-app but found none %s", appTag)
-	}
 
 	tmpDir := testutil.NewTempDir(t)
 	buildOutputFile := tmpDir.Path("build.out")
@@ -68,13 +49,10 @@ func TestBuildDeploy(t *testing.T) {
 
 	// Run Deploy using the build output
 	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
-	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
+	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir("examples/nodejs").InNs(ns.Name).RunOrFail(t)
 
-	depApp := client.GetDeployment("leeroy-app")
-	testutil.CheckDeepEqual(t, appTag, depApp.Spec.Template.Spec.Containers[0].Image)
-
-	depWeb := client.GetDeployment("leeroy-web")
-	testutil.CheckDeepEqual(t, webTag, depWeb.Spec.Template.Spec.Containers[0].Image)
+	depApp := client.GetDeployment("node")
+	testutil.CheckDeepEqual(t, buildArtifacts.Builds[0].Tag, depApp.Spec.Template.Spec.Containers[0].Image)
 }
 
 func TestDeploy(t *testing.T) {

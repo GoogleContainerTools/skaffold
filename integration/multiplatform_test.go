@@ -38,7 +38,6 @@ const (
 )
 
 func TestMultiPlatformWithRun(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
 	type image struct {
 		name string
@@ -73,6 +72,7 @@ func TestMultiPlatformWithRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			platforms := platformsCliValue(test.expectedPlatforms)
 			ns, client := SetupNamespace(t)
 			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
@@ -95,7 +95,6 @@ func TestMultiPlatformWithRun(t *testing.T) {
 }
 
 func TestMultiplatformWithDevAndDebug(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
 	const platformsExpectedInNodeAffinity = 1
 	const platformsExpectedInCreatedImage = 1
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
@@ -155,6 +154,7 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			platforms := platformsCliValue(test.expectedPlatforms)
 			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
 			ns, client := SetupNamespace(t)
@@ -193,7 +193,6 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 }
 
 func TestMultiplatformWithDeploy(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
 	type image struct {
 		name string
@@ -228,6 +227,7 @@ func TestMultiplatformWithDeploy(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			tmpfile := testutil.TempFile(t, "", []byte{})
 			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
 			platforms := platformsCliValue(test.expectedPlatforms)

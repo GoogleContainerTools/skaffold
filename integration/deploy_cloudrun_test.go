@@ -29,7 +29,6 @@ import (
 
 func TestDeployCloudRun(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
-
 	// Other integration tests run with the --default-repo option.
 	// This one explicitly specifies the full image name.
 	skaffold.Deploy().InDir("testdata/deploy-cloudrun").RunOrFail(t)
