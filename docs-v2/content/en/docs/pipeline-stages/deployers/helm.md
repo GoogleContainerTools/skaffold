@@ -22,14 +22,15 @@ Skaffold supports projects set up to render and/or deploy with Helm, but certain
 Skaffold no longer requires the intricate configuring of `artifactOverrides` or `imageStrategy` fields. See docs [here]({{< relref "#image-reference-strategies" >}}) on how old `artifactOverrides` and `imageStrategy` values translate to `setValues` entires in the latest Skaffold schemas (`apiVersion: skaffold/v3alpha1` or skaffold binary version `v2.0.0` onwards)
 {{< /alert >}}
 
-{{< alert title="In Skaffold `v2` the primary difference between the helm renderer (`manifest.helm.*`) and the helm deployer `deploy.helm.*` is the use of `helm install` vs `helm install`" >}}
+{{< alert title="Note" >}}
+In Skaffold `v2` the primary difference between the helm renderer (`manifest.helm.*`) and the helm deployer (`deploy.helm.*`) is the use of `helm template` vs `helm install`
 {{< /alert >}}
 
 ## How `helm` render support works in Skaffold
 In the latest version of Skaffold, the primary methods of using `helm` templating with Skaffold involve the `deploy.helm.setValues` and the `deploy.helm.setValueTemplates` fields.  `deploy.helm.setValues` supplies the key:value pair to substitute from a users `values.yaml` file (a standard `helm` file for rendering).  `deploy.helm.setValueTemplates` does a similar thing only the key:value value comes from an environment variable instead of a given value.  The thing to note here is that when using a value that is the same name as an artifact name, that value will be replaced by the fully qualified artifact name (eg: `image: gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>`) for the current build (or the specified value from additional configuration eg: CLI flags or config from `skaffold.yaml`).  Depending on how a user's `values.yaml` and charts specify `image: $IMAGE_TEMPLATE`, the docs [here]({{< relref "#image-reference-strategies" >}})  explain the proper `setValues` to use.  When migrating from schema version `v2beta29` or less, Skaffold will automatically configure these values to continue to work.
 
 
-`helm` render support in Skaffold is accomplished by calling `helm install ...` and using the `skaffold` binary as a `helm` `--post-renderer`.  This works by having Skaffold run `helm install ...` taking into consideration all of the supplied flags, skaffold.yaml configuration, etc. and creating an intermediate yaml manifest with all helm replacements except that the fully qualified image from the current run is NOT added but instead a placeholder with the artifact name - eg: `skaffold-helm-image`.  Then the skaffold post-renderer is called to convert `image: skaffold-helm-image` -> `image: gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>` in specified locations (specific allowlisted k8s objects and/or k8s object fields).  This above replacement is nearly identical to how it works for values.yaml files using only the `image` key in `values.yaml` - eg:
+`helm` deploy support in Skaffold is accomplished by calling `helm install ...` and using the `skaffold` binary as a `helm` `--post-renderer`.  This works by having Skaffold run `helm install ...` taking into consideration all of the supplied flags, skaffold.yaml configuration, etc. and creating an intermediate yaml manifest with all helm replacements except that the fully qualified image from the current run is NOT added but instead a placeholder with the artifact name - eg: `skaffold-helm-image`.  Then the skaffold post-renderer is called to convert `image: skaffold-helm-image` -> `image: gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>` in specified locations (specific allowlisted k8s objects and/or k8s object fields).  This above replacement is nearly identical to how it works for values.yaml files using only the `image` key in `values.yaml` - eg:
 `image: "{{.Values.image}}"`
 
 When using `image.repoistory` + `image.tag` or `image.registry` + `image.repository` + `image.tag` - eg:
@@ -249,7 +250,7 @@ spec:
 
 Skaffold will invoke
 ```
-helm install <chart> <chart-path> --set-string image.registry=<artifact-name>,image.repository=<artifact-name>,tag=<artifcact-name> --post-renderer=<path-to-skaffold-binary-from-original-invocation>
+helm install <chart> <chart-path> --set-string image.registry=<artifact-name>,image.repository=<artifact-name>,image.tag=<artifact-name>,image2.registry=<artifact-name>,image2.repository=<artifact-name>,image2.tag=<artifcact-name>  --post-renderer=<path-to-skaffold-binary-from-original-invocation>
 ```
 
 ### Helm Build Dependencies
