@@ -65,6 +65,10 @@ func (t *customTemplateTagger) GenerateTag(ctx context.Context, image latest.Art
 	return tag, nil
 }
 
+func (t *customTemplateTagger) GenerateTags(ctx context.Context, image latest.Artifact) ([]string, error) {
+	return nil, nil
+}
+
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
 func (t *customTemplateTagger) EvaluateComponents(ctx context.Context, image latest.Artifact) (map[string]string, error) {
 	taggers := map[string]Tagger{}

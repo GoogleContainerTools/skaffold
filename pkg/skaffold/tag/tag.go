@@ -27,10 +27,14 @@ import (
 // ImageTags maps image names to tags
 type ImageTags map[string]string
 
+type ImageTagsList map[string][]string
+
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
 	// GenerateTag generates a tag for an artifact.
 	GenerateTag(ctx context.Context, image latest.Artifact) (string, error)
+
+	GenerateTags(ctx context.Context, image latest.Artifact) ([]string, error)
 }
 
 // GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
@@ -57,4 +61,26 @@ func GenerateFullyQualifiedImageName(ctx context.Context, t Tagger, image latest
 		return "", fmt.Errorf("parsing image name: %w", err)
 	}
 	return fullImageName, nil
+}
+
+func GenerateFullyQualifiedImageNames(ctx context.Context, t Tagger, image latest.Artifact) ([]string, error) {
+	tags, err := t.GenerateTags(ctx, image)
+	if err != nil {
+		return nil, fmt.Errorf("generating tags: %w", err)
+	}
+
+	// TODO(renzor): Check if Tag is already set in imageName
+
+	fullImageNames := []string{}
+	for _, tag := range tags {
+		fullImageName := fmt.Sprintf("%v:%v", image.ImageName, tag)
+		_, err = docker.ParseReference(fullImageName)
+		if err != nil {
+			return nil, fmt.Errorf("parsing image name: %w", err)
+		}
+
+		fullImageNames = append(fullImageNames, fullImageName)
+	}
+
+	return fullImageNames, nil
 }

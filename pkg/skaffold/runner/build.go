@@ -89,20 +89,27 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	}
 
 	// In dry-run mode or with --digest-source set to 'remote' or 'tag' in render, we don't build anything, just return the tag for each artifact.
-	switch {
-	case r.runCtx.DryRun():
-		output.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
-		return artifactsWithTags(tags, artifacts), nil
-	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == constants.RemoteDigestSource:
-		output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
-		return artifactsWithTags(tags, artifacts), nil
-	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == constants.TagDigestSource:
-		output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
-		return artifactsWithTags(tags, artifacts), nil
-	default:
-	}
+	// switch {
+	// case r.runCtx.DryRun():
+	// 	output.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
+	// 	return artifactsWithTags(tags, artifacts), nil
+	// case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == constants.RemoteDigestSource:
+	// 	output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
+	// 	return artifactsWithTags(tags, artifacts), nil
+	// case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == constants.TagDigestSource:
+	// 	output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
+	// 	return artifactsWithTags(tags, artifacts), nil
+	// default:
+	// }
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, r.platforms, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, platforms platform.Resolver) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build2(ctx, out, tags, artifacts, r.platforms, func(ctx context.Context, out io.Writer, tags tag.ImageTagsList, artifacts []*latest.Artifact, platforms platform.Resolver) ([]graph.Artifact, error) {
+
+		tmpTags := make(map[string]string, len(tags))
+
+		for key, tags := range tags {
+			tmpTags[key] = tags[0]
+		}
+
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
@@ -111,7 +118,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 		if err != nil {
 			return nil, err
 		}
-		bRes, err := r.Builder.Build(ctx, out, tags, platforms, artifacts)
+		bRes, err := r.Builder.Build(ctx, out, tmpTags, platforms, artifacts)
 		if err != nil {
 			return nil, err
 		}
@@ -148,17 +155,32 @@ func artifactsWithTags(tags tag.ImageTags, artifacts []*latest.Artifact) []graph
 }
 
 type tagErr struct {
-	tag string
-	err error
+	tag  string
+	tags []string
+	err  error
 }
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
+func (r *Builder) ApplyDefaultRepo2(tags []string) ([]string, error) {
+	imageTagsWithRepo := []string{}
+	for _, tag := range tags {
+		imageTagWithRepo, err := deployutil.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
+		if err != nil {
+			return nil, err
+		}
+
+		imageTagsWithRepo = append(imageTagsWithRepo, imageTagWithRepo)
+	}
+
+	return imageTagsWithRepo, nil
+}
+
 func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 	return deployutil.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTagsList, error) {
 	start := time.Now()
 	maxWorkers := runtime.GOMAXPROCS(0)
 	output.Default.Fprintln(out, "Generating tags...")
@@ -177,12 +199,13 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 		i := i
 		go func() {
 			defer sem.Release(1)
-			_tag, err := tag.GenerateFullyQualifiedImageName(ctx, r.tagger, *artifacts[i])
-			tagErrs[i] <- tagErr{tag: _tag, err: err}
+			//_tag, err := tag.GenerateFullyQualifiedImageName(ctx, r.tagger, *artifacts[i])
+			tags, err := tag.GenerateFullyQualifiedImageNames(ctx, r.tagger, *artifacts[i])
+			tagErrs[i] <- tagErr{tag: tags[0], err: err, tags: tags}
 		}()
 	}
 
-	imageTags := make(tag.ImageTags, len(artifacts))
+	imageTags := make(tag.ImageTagsList, len(artifacts))
 	showWarning := false
 
 	for i, artifact := range artifacts {
@@ -208,13 +231,13 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 				showWarning = true
 			}
 
-			_tag, err := r.ApplyDefaultRepo(t.tag)
+			_tags, err := r.ApplyDefaultRepo2(t.tags)
 			if err != nil {
 				return nil, err
 			}
 
-			fmt.Fprintln(out, _tag)
-			imageTags[imageName] = _tag
+			fmt.Fprintln(out, _tags)
+			imageTags[imageName] = _tags
 		}
 	}
 

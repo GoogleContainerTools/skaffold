@@ -37,6 +37,10 @@ import (
 	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
 )
 
+func (c *cache) Build2(ctx context.Context, out io.Writer, tags tag.ImageTagsList, artifacts []*latest.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn2) ([]graph.Artifact, error) {
+	return nil, nil
+}
+
 func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

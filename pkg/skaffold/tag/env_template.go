@@ -54,3 +54,7 @@ func (t *envTemplateTagger) GenerateTag(ctx context.Context, image latest.Artifa
 
 	return tag, nil
 }
+
+func (t *envTemplateTagger) GenerateTags(ctx context.Context, image latest.Artifact) ([]string, error) {
+	return nil, nil
+}

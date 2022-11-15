@@ -35,3 +35,7 @@ func (t *CustomTag) GenerateTag(ctx context.Context, _ latest.Artifact) (string,
 	}
 	return tag, nil
 }
+
+func (t *CustomTag) GenerateTags(ctx context.Context, _ latest.Artifact) ([]string, error) {
+	return nil, nil
+}

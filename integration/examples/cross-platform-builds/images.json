@@ -1,1 +1,1 @@
-{"builds":[{"imageName":"skaffold-example","tag":"gcr.io/k8s-skaffold/skaffold-example:13cd8a388b272dbd25eaf97f208de4ba9f358cb57d63c0a82e846f9044600e82@sha256:c0588dd55cc2c3a8ecaae89b080d6a6c9b3277027947c5d9d6d88938a257f929"}]}
+{"builds":[{"imageName":"skaffold-example","tag":"skaffold-example:766a8c2475999031b0fce4eef62c50aa984f6aaf32e7c8a26d4734adc1cdd7ce"}]}

@@ -75,6 +75,10 @@ func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latest.Artifa
 	return encode(inputs)
 }
 
+func (t *inputDigestTagger) GenerateTags(ctx context.Context, image latest.Artifact) ([]string, error) {
+	return nil, nil
+}
+
 func encode(inputs []string) (string, error) {
 	// get a key for the hashes
 	hasher := sha256.New()

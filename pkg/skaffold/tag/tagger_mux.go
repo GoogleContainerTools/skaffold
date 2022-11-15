@@ -26,8 +26,10 @@ import (
 )
 
 type TaggerMux struct {
-	taggers     []Tagger
-	byImageName map[string]Tagger
+	taggers               []Tagger
+	byImageName           map[string]Tagger
+	allTaggers            [][]Tagger
+	allTaggersByImageName map[string][]Tagger
 }
 
 func (t *TaggerMux) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
@@ -38,22 +40,47 @@ func (t *TaggerMux) GenerateTag(ctx context.Context, image latest.Artifact) (str
 	return tagger.GenerateTag(ctx, image)
 }
 
+func (t *TaggerMux) GenerateTags(ctx context.Context, image latest.Artifact) ([]string, error) {
+	taggers, found := t.allTaggersByImageName[image.ImageName]
+	tags := []string{}
+	if !found {
+		return nil, fmt.Errorf("no valid taggers found for artifact: %q", image.ImageName)
+	}
+
+	for _, tagger := range taggers {
+		tag, err := tagger.GenerateTag(ctx, image)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+
+	return tags, nil
+}
+
 func NewTaggerMux(runCtx *runcontext.RunContext) (Tagger, error) {
 	pipelines := runCtx.GetPipelines()
 	m := make(map[string]Tagger)
 	sl := make([]Tagger, len(pipelines))
+
+	allTaggers := make([][]Tagger, len(pipelines))
+	mAllTaggers := make(map[string][]Tagger)
+
 	for _, p := range pipelines {
 		taggers, err := getTaggers(runCtx, &p.Build.TagPolicies)
 		if err != nil {
 			return nil, fmt.Errorf("creating tagger: %w", err)
 		}
-		t := taggers[0]
+		t := taggers[0] // Default tagger used for most of the operations
 		sl = append(sl, t)
+		allTaggers = append(allTaggers, taggers)
+
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = t
+			mAllTaggers[a.ImageName] = taggers
 		}
 	}
-	return &TaggerMux{taggers: sl, byImageName: m}, nil
+	return &TaggerMux{taggers: sl, byImageName: m, allTaggers: allTaggers, allTaggersByImageName: mAllTaggers}, nil
 }
 
 func getTaggers(runCtx *runcontext.RunContext, t *[]latest.TagPolicy) ([]Tagger, error) {

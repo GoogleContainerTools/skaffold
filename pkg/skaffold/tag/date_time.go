@@ -64,3 +64,7 @@ func (t *dateTimeTagger) GenerateTag(ctx context.Context, image latest.Artifact)
 
 	return t.timeFn().In(loc).Format(format), nil
 }
+
+func (t *dateTimeTagger) GenerateTags(ctx context.Context, image latest.Artifact) ([]string, error) {
+	return nil, nil
+}

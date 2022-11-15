@@ -27,9 +27,11 @@ import (
 )
 
 type BuildAndTestFn func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, platform.Resolver) ([]graph.Artifact, error)
+type BuildAndTestFn2 func(context.Context, io.Writer, tag.ImageTagsList, []*latest.Artifact, platform.Resolver) ([]graph.Artifact, error)
 
 type Cache interface {
 	Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, platform.Resolver, BuildAndTestFn) ([]graph.Artifact, error)
+	Build2(ctx context.Context, out io.Writer, tags tag.ImageTagsList, artifacts []*latest.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn2) ([]graph.Artifact, error)
 	AddArtifact(ctx context.Context, a graph.Artifact) error
 }
 
@@ -42,4 +44,8 @@ func (n *noCache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 func (n *noCache) AddArtifact(ctx context.Context, a graph.Artifact) error {
 	// noop
 	return nil
+}
+
+func (n *noCache) Build2(ctx context.Context, out io.Writer, tags tag.ImageTagsList, artifacts []*latest.Artifact, platforms platform.Resolver, buildAndTest BuildAndTestFn2) ([]graph.Artifact, error) {
+	return buildAndTest(ctx, out, tags, artifacts, platforms)
 }

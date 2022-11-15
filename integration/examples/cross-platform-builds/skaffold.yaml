@@ -8,9 +8,9 @@ build:
       dockerfile: Dockerfile
       noCache: true
   tagPolicy:
-    # - gitCommit:
-    #     variant: CommitSha
-    #     prefix: "renzor-"
+    - gitCommit:
+        variant: CommitSha
+        prefix: "renzor-"
     - inputDigest: {}
   local:
     concurrency: 1

@@ -84,6 +84,10 @@ func (t *GitCommit) GenerateTag(ctx context.Context, image latest.Artifact) (str
 	return t.prefix + ref, nil
 }
 
+func (t *GitCommit) GenerateTags(ctx context.Context, _ latest.Artifact) ([]string, error) {
+	return nil, nil
+}
+
 // sanitizeTag takes a git tag and converts it to a docker tag by removing
 // all the characters that are not allowed by docker.
 func sanitizeTag(tag string) string {

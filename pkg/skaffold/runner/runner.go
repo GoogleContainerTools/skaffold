@@ -44,6 +44,7 @@ var ErrorConfigurationChanged = errors.New("configuration changed")
 type Runner interface {
 	Apply(context.Context, io.Writer) error
 	ApplyDefaultRepo(tag string) (string, error)
+	ApplyDefaultRepo2(tags []string) ([]string, error)
 	Build(context.Context, io.Writer, []*latest.Artifact) ([]graph.Artifact, error)
 	Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error

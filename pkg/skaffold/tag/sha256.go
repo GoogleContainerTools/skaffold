@@ -41,3 +41,7 @@ func (t *ChecksumTagger) GenerateTag(ctx context.Context, image latest.Artifact)
 	// imageName already has a tag
 	return "", nil
 }
+
+func (t *ChecksumTagger) GenerateTags(ctx context.Context, image latest.Artifact) ([]string, error) {
+	return nil, nil
+}
