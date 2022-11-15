@@ -85,7 +85,7 @@ Getting Started With a New Project:
   init              Generate configuration for deploying an application
 
 Other Commands:
-  completion        Output shell completion for the given shell (bash or zsh)
+  completion        Output shell completion for the given shell (bash, fish or zsh)
   config            Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/config`)
   diagnose          Run a diagnostic on Skaffold
   fix               Update old configuration to a newer schema version
@@ -280,7 +280,7 @@ Env vars:
 
 ### skaffold completion
 
-Output shell completion for the given shell (bash or zsh)
+Output shell completion for the given shell (bash, fish or zsh)
 
 ```
 
