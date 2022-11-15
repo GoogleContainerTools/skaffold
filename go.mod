@@ -2,19 +2,28 @@ module github.com/GoogleContainerTools/skaffold
 
 go 1.19
 
-replace (
-	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
+// gnostic was replaced with v0.4.1 in
+// https://github.com/GoogleContainerTools/skaffold/pull/5038, but why..?
+exclude github.com/googleapis/gnostic v0.5.1
 
-	github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2-0.20210730191737-8e42a01fb1b7
-	github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
-
-	// pin yamlv3 to parent of https://github.com/go-yaml/yaml/commit/ae27a744346343ea814bd6f3bdd41d8669b172d0
-	// Avoid indenting sequences.
-	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
-
-	// TODO(halvards) Pin to match other k8s.io modules. Necessary since ko is on a later version.
-	k8s.io/apimachinery => k8s.io/apimachinery v0.21.6
+// image-spec was replaced with an older version in
+// https://github.com/GoogleContainerTools/skaffold/pull/6979, but why..?
+exclude (
+	github.com/opencontainers/image-spec v1.0.2
+	github.com/opencontainers/image-spec v1.0.2-0.20211117181255-693428a734f5
+	github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198
 )
+
+// pin yamlv3 to parent of https://github.com/go-yaml/yaml/commit/ae27a744346343ea814bd6f3bdd41d8669b172d0
+// Avoid indenting sequences.
+exclude (
+	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+)
+
+// TODO(halvards) Pin to match other k8s.io modules. Necessary since ko is on a later version.
+exclude k8s.io/apimachinery v0.23.5
 
 // TODO(bdealwis)[10/07/2021] CVE-2021-30465: pin github.com/opencontainers/runc v1.0.2
 // TODO(bdealwis)[10/07/2021] GO-2021-0113: pin golang.org/x/text v0.3.7
@@ -62,7 +71,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.8.0
 	github.com/opencontainers/go-digest v1.0.0
-	github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198
+	github.com/opencontainers/image-spec v1.0.2-0.20210730191737-8e42a01fb1b7
 	github.com/otiai10/copy v1.6.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
@@ -95,9 +104,9 @@ require (
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	k8s.io/api v0.21.6
-	k8s.io/apimachinery v0.23.5
+	k8s.io/apimachinery v0.21.6
 	k8s.io/client-go v0.21.6
 	k8s.io/kubectl v0.21.6
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
