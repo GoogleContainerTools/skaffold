@@ -280,7 +280,7 @@ func TestRunTailTolerateFailuresUntilDeadline(t *testing.T) {
 
 			args := append(test.args, "--tail")
 			out := skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunLive(t)
-			defer skaffold.Delete().InDir(test.dir).WithEnv(test.env).RunOrFail(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).Run(t)
 			WaitForLogs(t, out, test.targetLogOne)
 			WaitForLogs(t, out, test.targetLogTwo)
 		})
