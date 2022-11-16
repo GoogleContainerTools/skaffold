@@ -62,7 +62,8 @@ func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
 	return nil
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, m platform.Matcher) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tags []string, m platform.Matcher) (string, error) {
+	tag := tags[0]
 	// TODO: Implement building multiplatform images for cluster builder
 	if m.IsMultiPlatform() {
 		log.Entry(ctx).Println("skaffold doesn't yet support multi platform builds for the cluster builder")

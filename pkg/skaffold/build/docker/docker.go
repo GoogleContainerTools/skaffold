@@ -41,7 +41,8 @@ func (b *Builder) SupportedPlatforms() platform.Matcher {
 	return platform.All
 }
 
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, matcher platform.Matcher) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tags []string, matcher platform.Matcher) (string, error) {
+	tag := tags[0]
 	var pl v1.Platform
 	if len(matcher.Platforms) == 1 {
 		pl = util.ConvertToV1Platform(matcher.Platforms[0])
@@ -65,7 +66,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact, pl); err != nil {
 		return "", cacheFromPullErr(err, a.ImageName)
 	}
-	opts := docker.BuildOptions{Tag: tag, Mode: b.cfg.Mode(), ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
+	opts := docker.BuildOptions{Tag: tag, Tags: tags, Mode: b.cfg.Mode(), ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
 
 	var imageID string
 

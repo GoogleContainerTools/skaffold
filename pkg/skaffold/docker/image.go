@@ -109,6 +109,7 @@ type LocalDaemon interface {
 // BuildOptions provides parameters related to the LocalDaemon build.
 type BuildOptions struct {
 	Tag            string
+	Tags           []string
 	Mode           config.RunMode
 	ExtraBuildArgs map[string]*string
 }
@@ -345,7 +346,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
 	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
-		Tags:        []string{opts.Tag},
+		Tags:        opts.Tags,
 		Dockerfile:  a.DockerfilePath,
 		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,

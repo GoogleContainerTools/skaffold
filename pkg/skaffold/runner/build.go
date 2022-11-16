@@ -103,13 +103,6 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	// }
 
 	bRes, err := r.cache.Build2(ctx, out, tags, artifacts, r.platforms, func(ctx context.Context, out io.Writer, tags tag.ImageTagsList, artifacts []*latest.Artifact, platforms platform.Resolver) ([]graph.Artifact, error) {
-
-		tmpTags := make(map[string]string, len(tags))
-
-		for key, tags := range tags {
-			tmpTags[key] = tags[0]
-		}
-
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
@@ -118,7 +111,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 		if err != nil {
 			return nil, err
 		}
-		bRes, err := r.Builder.Build(ctx, out, tmpTags, platforms, artifacts)
+		bRes, err := r.Builder.Build(ctx, out, tags, platforms, artifacts)
 		if err != nil {
 			return nil, err
 		}

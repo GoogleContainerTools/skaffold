@@ -33,10 +33,10 @@ func BuildRunner(d latest.BuildHooks, opts BuildEnvOpts) Runner {
 }
 
 // NewBuildEnvOpts returns `BuildEnvOpts` required to create a `Runner` for build lifecycle hooks
-func NewBuildEnvOpts(a *latest.Artifact, image string, pushImage bool) (BuildEnvOpts, error) {
-	ref, err := docker.ParseReference(image)
+func NewBuildEnvOpts(a *latest.Artifact, images []string, pushImage bool) (BuildEnvOpts, error) {
+	ref, err := docker.ParseReference(images[0])
 	if err != nil {
-		return BuildEnvOpts{}, fmt.Errorf("parsing image %v: %w", image, err)
+		return BuildEnvOpts{}, fmt.Errorf("parsing image %v: %w", images, err)
 	}
 
 	w, err := filepath.Abs(a.Workspace)
@@ -44,7 +44,7 @@ func NewBuildEnvOpts(a *latest.Artifact, image string, pushImage bool) (BuildEnv
 		return BuildEnvOpts{}, fmt.Errorf("determining build workspace directory for image %v: %w", a.ImageName, err)
 	}
 	return BuildEnvOpts{
-		Image:        image,
+		Image:        images[0],
 		PushImage:    pushImage,
 		ImageRepo:    ref.Repo,
 		ImageTag:     ref.Tag,

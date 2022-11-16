@@ -10,7 +10,7 @@ build:
   tagPolicy:
     - gitCommit:
         variant: CommitSha
-        prefix: "renzor-"
+        prefix: "shatest-"
     - inputDigest: {}
   local:
     concurrency: 1

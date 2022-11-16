@@ -59,7 +59,7 @@ func buildImageForPlatforms(ctx context.Context, out io.Writer, a *latest.Artifa
 			Platforms: []specs.Platform{p},
 		}
 		tagWithPlatform := fmt.Sprintf("%s_%s", tag, strings.ReplaceAll(platform.Format(p), "/", "_"))
-		imageID, err := ab(ctx, out, a, tagWithPlatform, m)
+		imageID, err := ab(ctx, out, a, []string{tagWithPlatform}, m)
 
 		if err != nil {
 			return nil, err

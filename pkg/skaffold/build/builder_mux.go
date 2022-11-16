@@ -73,7 +73,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, cache Cache, builder func(p 
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
-func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, resolver platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTagsList, resolver platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	m := make(map[PipelineBuilder]bool)
 	for _, a := range artifacts {
 		m[b.byImageName[a.ImageName]] = true
@@ -85,7 +85,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 	}
 
-	builderF := func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
+	builderF := func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tags []string, platforms platform.Matcher) (string, error) {
 		p := b.byImageName[artifact.ImageName]
 		pl, err := filterBuildEnvSupportedPlatforms(p.SupportedPlatforms(), platforms)
 		if err != nil {
@@ -94,7 +94,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		platforms = pl
 
 		artifactBuilder := p.Build(ctx, out, artifact)
-		hooksOpts, err := hooks.NewBuildEnvOpts(artifact, tag, p.PushImages())
+		hooksOpts, err := hooks.NewBuildEnvOpts(artifact, tags, p.PushImages())
 		if err != nil {
 			return "", err
 		}
@@ -104,11 +104,12 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 		var built string
 
-		if platforms.IsMultiPlatform() && !SupportsMultiPlatformBuild(*artifact) {
-			built, err = CreateMultiPlatformImage(ctx, out, artifact, tag, platforms, artifactBuilder)
-		} else {
-			built, err = artifactBuilder(ctx, out, artifact, tag, platforms)
-		}
+		// if platforms.IsMultiPlatform() && !SupportsMultiPlatformBuild(*artifact) {
+		// 	built, err = CreateMultiPlatformImage(ctx, out, artifact, tag, platforms, artifactBuilder)
+		// } else {
+		// 	built, err = artifactBuilder(ctx, out, artifact, tag, platforms)
+		// }
+		built, err = artifactBuilder(ctx, out, artifact, tags, platforms)
 
 		if err != nil {
 			return "", err

@@ -65,7 +65,7 @@ func (b *Builder) PushImages() bool {
 
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag []string, platforms platform.Matcher) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag, platforms)
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 		// only track images for pruning when building with docker
 		// if we're pushing a bazel image, it was built directly to the registry
 		if a.DockerArtifact != nil {
-			imageID, err := b.getImageIDForTag(ctx, tag)
+			imageID, err := b.getImageIDForTag(ctx, tag[0])
 			if err != nil {
 				log.Entry(ctx).Warn("unable to inspect image: built images may not be cleaned up correctly by skaffold")
 			}
@@ -85,15 +85,15 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 		}
 
 		digest := digestOrImageID
-		return build.TagWithDigest(tag, digest), nil
+		return build.TagWithDigest(tag[0], digest), nil
 	}
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
+	return build.TagWithImageID(ctx, tag[0], imageID, b.localDocker)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag []string, platforms platform.Matcher) (string, error) {
 	if !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,

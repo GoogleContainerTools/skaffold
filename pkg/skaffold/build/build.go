@@ -31,7 +31,9 @@ import (
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTagsList, platforms platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error)
+
+	//Build2(ctx context.Context, out io.Writer, tags tag.ImageTagsList, platforms platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error)
 
 	// Prune removes images built with Skaffold
 	Prune(context.Context, io.Writer) error
