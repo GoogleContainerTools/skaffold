@@ -32,8 +32,6 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description   string
 		dir           string
@@ -78,6 +76,7 @@ func TestDebug(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 
@@ -121,9 +120,8 @@ func TestDebug(t *testing.T) {
 }
 
 func TestDockerDebug(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	t.Run("debug docker deployment", func(t *testing.T) {
+		MarkIntegrationTest(t, CanRunWithoutGcp)
 		skaffold.Build("-p", "docker").InDir("testdata/debug").RunOrFail(t)
 
 		skaffold.Debug("-p", "docker").InDir("testdata/debug").RunBackground(t)

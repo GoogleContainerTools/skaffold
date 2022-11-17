@@ -29,7 +29,6 @@ import (
 )
 
 func TestDiagnose(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	examples, err := folders("examples")
 	failNowIfError(t, err)
 	if len(examples) == 0 {
@@ -38,6 +37,7 @@ func TestDiagnose(t *testing.T) {
 
 	for _, example := range examples {
 		t.Run(example, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			dir := filepath.Join("examples", example)
 
 			if _, err := os.Stat(filepath.Join(dir, "skaffold.yaml")); os.IsNotExist(err) {
@@ -67,7 +67,6 @@ func folders(root string) ([]string, error) {
 }
 
 func TestMultiConfigDiagnose(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
 		description string
 		dir         string
@@ -91,6 +90,7 @@ func TestMultiConfigDiagnose(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			args := []string{}
 			if test.cpSkaffold {
 				tmpDir := t.NewTempDir()

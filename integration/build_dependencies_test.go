@@ -27,8 +27,6 @@ import (
 )
 
 func TestBuildDependenciesOrder(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description  string
 		args         []string
@@ -70,6 +68,7 @@ func TestBuildDependenciesOrder(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			if test.cacheEnabled {
 				test.args = append(test.args, "--cache-artifacts=true")
 			} else {
@@ -93,8 +92,6 @@ func TestBuildDependenciesOrder(t *testing.T) {
 }
 
 func TestBuildDependenciesCache(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	// These tests build 4 images and then make a file change to the images in `change`.
 	// The test then triggers another build and verifies that the images in `rebuilt` were built
 	// (e.g., the changed images and their dependents), and that the other images were found in the artifact cache.
@@ -139,6 +136,7 @@ func TestBuildDependenciesCache(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// modify file `foo` to invalidate cache for target artifacts
 			for _, i := range test.change {
 				Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", fmt.Sprintf("echo %s > foo", uuid.New().String()))

@@ -170,8 +170,6 @@ func TestDeployWithoutWorkspaces(t *testing.T) {
 }
 
 func TestDeployDependenciesOrder(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description         string
 		dir                 string
@@ -202,6 +200,7 @@ func TestDeployDependenciesOrder(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			targetModule := []string{}
 			if test.moduleToDeploy != "" {
 				targetModule = []string{"--module", test.moduleToDeploy}

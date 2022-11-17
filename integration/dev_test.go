@@ -40,8 +40,6 @@ import (
 )
 
 func TestDevNotification(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		trigger     string
@@ -57,6 +55,7 @@ func TestDevNotification(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 			defer Run(t, "testdata/dev", "rm", "foo")
 

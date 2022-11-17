@@ -42,7 +42,6 @@ func TestHelmDeploy(t *testing.T) {
 }
 
 func TestDevHelmMultiConfig(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	var tests = []struct {
 		description  string
 		dir          string
@@ -64,6 +63,7 @@ func TestDevHelmMultiConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			if test.targetLogOne == "" || test.targetLogTwo == "" {
 				t.SkipNow()
 			}

@@ -26,8 +26,8 @@ import (
 )
 
 func TestModules_BuildDependency(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	t.Run("build dependency between artifacts of different modules", func(t *testing.T) {
+		MarkIntegrationTest(t, CanRunWithoutGcp)
 		ns, client := SetupNamespace(t)
 
 		skaffold.Dev().InDir("testdata/modules").InNs(ns.Name).RunBackground(t)

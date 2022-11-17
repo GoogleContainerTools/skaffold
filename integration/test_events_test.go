@@ -25,8 +25,6 @@ import (
 )
 
 func TestTestEvents(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		podName     string
@@ -62,6 +60,8 @@ func TestTestEvents(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build(test.args...).InDir(test.testDir).WithConfig(test.config).RunOrFail(t)
 
