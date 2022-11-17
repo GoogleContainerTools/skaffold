@@ -56,7 +56,7 @@ jobs:
     - name: Build changed examples
       uses: actions/setup-java@v3
       with:
-        distribution: 'temurin' # See 'Supported distributions' for available options
+        distribution: 'temurin'
         java-version: '17'
       if: ${{ env.CHANGED_EXAMPLES_COUNT > 0 }}
       run: |
