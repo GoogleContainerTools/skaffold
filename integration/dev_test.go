@@ -242,13 +242,18 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 
 func TestDevPortForward(t *testing.T) {
 	tests := []struct {
-		dir string
+		name string
+		dir  string
 	}{
-		{dir: "examples/microservices"},
-		{dir: "examples/multi-config-microservices"},
+		{
+			name: "microservices",
+			dir:  "examples/microservices"},
+		{
+			name: "multi-config-microservices",
+			dir:  "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-		func() {
+		t.Run(test.name, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir(test.dir).RunOrFail(t)
@@ -271,7 +276,7 @@ func TestDevPortForward(t *testing.T) {
 			}()
 
 			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
-		}()
+		})
 	}
 }
 
