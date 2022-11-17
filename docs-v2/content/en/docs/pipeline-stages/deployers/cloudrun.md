@@ -15,6 +15,7 @@ Cloud Run is a managed compute platform on Google Cloud that allows you to run c
 ## Deploying applications to Cloud Run
 
 Skaffold can deploy services to Cloud Run. If this deployer is used, all provided manifests must be valid Cloud Run services, using the serving.knative.dev/v1 schema.
+See the [Cloud Run YAML reference](https://cloud.google.com/run/docs/reference/yaml/v1) for supported fields.
 
 This deployer will use the [application default credentials](https://cloud.google.com/docs/authentication/production#automatically) to deploy.  You can configure this to use your user credentials by running `gcloud auth application-default login`.
 
