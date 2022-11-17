@@ -83,8 +83,6 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevGracefulCancel(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	if runtime.GOOS == "windows" {
 		t.Skip("graceful cancel doesn't work on windows")
 	}
@@ -114,6 +112,8 @@ func TestDevGracefulCancel(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			ns, client := SetupNamespace(t)
 			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
@@ -241,7 +241,6 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 }
 
 func TestDevPortForward(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
 		dir string
 	}{
@@ -250,6 +249,7 @@ func TestDevPortForward(t *testing.T) {
 	}
 	for _, test := range tests {
 		func() {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir(test.dir).RunOrFail(t)
 
