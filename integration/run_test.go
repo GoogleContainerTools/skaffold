@@ -176,9 +176,10 @@ var tests = []struct {
 }
 
 func TestRun(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			ns, client := SetupNamespace(t)
 			args := append(test.args, "--cache-artifacts=false")
 			if test.dir == emptydir {
@@ -199,10 +200,10 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunTail(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
@@ -226,10 +227,10 @@ func TestRunTail(t *testing.T) {
 }
 
 func TestRunTailDefaultNamespace(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			if test.targetLog == "" {
 				t.SkipNow()
 			}
@@ -250,7 +251,6 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 }
 
 func TestRunTailTolerateFailuresUntilDeadline(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	var tsts = []struct {
 		description  string
 		dir          string
@@ -273,6 +273,7 @@ func TestRunTailTolerateFailuresUntilDeadline(t *testing.T) {
 
 	for _, test := range tsts {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			if test.targetLogOne == "" || test.targetLogTwo == "" {
 				t.SkipNow()
 			}
@@ -483,8 +484,6 @@ func TestRunTailDeployment(t *testing.T) {
 }
 
 func TestRunTest(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description  string
 		testDir      string
@@ -519,6 +518,8 @@ func TestRunTest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			defer os.Remove(test.testFile)
 
 			// Run skaffold build first to fail quickly on a build failure
@@ -565,8 +566,8 @@ func TestRunNoOptFlags(t *testing.T) {
 		},
 	}
 
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	t.Run(test.description, func(t *testing.T) {
+		MarkIntegrationTest(t, CanRunWithoutGcp)
 		ns, _ := SetupNamespace(t)
 
 		args := append(test.args, "--tail")
