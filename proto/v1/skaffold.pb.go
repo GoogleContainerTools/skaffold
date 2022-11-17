@@ -307,6 +307,7 @@ const StatusCode_INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR = enums.StatusCode_INSPECT
 const StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR = enums.StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR
 const StatusCode_PORT_FORWARD_RUN_GCLOUD_NOT_FOUND = enums.StatusCode_PORT_FORWARD_RUN_GCLOUD_NOT_FOUND
 const StatusCode_PORT_FORWARD_RUN_PROXY_START_ERROR = enums.StatusCode_PORT_FORWARD_RUN_PROXY_START_ERROR
+const StatusCode_LOG_STREAMING_RUN_GCLOUD_NOT_FOUND = enums.StatusCode_LOG_STREAM_RUN_GCLOUD_NOT_FOUND
 
 var StatusCode_name = enums.StatusCode_name
 var StatusCode_value = enums.StatusCode_value

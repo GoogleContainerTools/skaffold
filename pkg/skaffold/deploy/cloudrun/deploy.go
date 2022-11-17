@@ -49,12 +49,13 @@ type Config interface {
 	PortForwardResources() []*latest.PortForwardResource
 	PortForwardOptions() config.PortForwardOptions
 	Mode() config.RunMode
+	Tail() bool
 }
 
 // Deployer deploys code to Google Cloud Run.
 type Deployer struct {
 	configName string
-	logger     log.Logger
+	logger     *LogAggregator
 	accessor   *RunAccessor
 	monitor    *Monitor
 	labeller   *label.DefaultLabeller
@@ -74,7 +75,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 		Project:    crDeploy.ProjectID,
 		Region:     crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
-		logger:        &log.NoopLogger{},
+		logger:        NewLoggerAggregator(cfg, labeller.GetRunID()),
 		accessor:      NewAccessor(cfg, labeller.GetRunID()),
 		labeller:      labeller,
 		useGcpOptions: true,
@@ -233,6 +234,7 @@ func (d *Deployer) deployService(crclient *run.APIService, manifest []byte, out 
 	parent := fmt.Sprintf("projects/%s/locations/%s", service.Metadata.Namespace, d.Region)
 
 	sName := resName.String()
+	d.logger.AddResource(resName)
 	getCall := crclient.Projects.Locations.Services.Get(sName)
 	_, err := getCall.Do()
 

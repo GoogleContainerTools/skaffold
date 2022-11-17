@@ -886,6 +886,7 @@ const (
 	StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR      StatusCode = 1304
 	StatusCode_PORT_FORWARD_RUN_GCLOUD_NOT_FOUND  StatusCode = 1601
 	StatusCode_PORT_FORWARD_RUN_PROXY_START_ERROR StatusCode = 1602
+	StatusCode_LOG_STREAM_RUN_GCLOUD_NOT_FOUND    StatusCode = 1603
 )
 
 // Enum value maps for StatusCode.
