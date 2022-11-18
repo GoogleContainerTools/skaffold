@@ -19,7 +19,7 @@ FROM alpine:3.10 as download-kubectl
 ARG ARCH
 # Track default version installed by Google Cloud SDK: 406.0.0 moved to 1.22(.14)
 # https://cloud.google.com/sdk/docs/release-notes
-ENV KUBECTL_VERSION v1.22.14
+ENV KUBECTL_VERSION v1.23.12
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
 # SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
 COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
@@ -30,7 +30,7 @@ RUN chmod +x kubectl
 FROM alpine:3.10 as download-helm
 ARG ARCH
 RUN echo arch=$ARCH
-ENV HELM_VERSION v3.10.1
+ENV HELM_VERSION v3.10.2
 ENV HELM_URL https://storage.googleapis.com/skaffold/deps/helm/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
 COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
 RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
@@ -93,7 +93,7 @@ RUN chmod +x k3d
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ARG ARCH
-ENV GCLOUD_VERSION 406.0.0
+ENV GCLOUD_VERSION 410.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
 COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
