@@ -22,4 +22,4 @@ dependencies {
   testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
 
-jib.from.image = 'openjdk:8'
+jib.from.image = 'openjdk:17'
