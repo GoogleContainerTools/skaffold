@@ -19,7 +19,25 @@
     "area": "Build",
     "feature": "Cloud Native Buildpacks support",
     "maturity": "GA",
-    "description": "Skaffold natively support for artifacts built with Cloud Native Buildpacks"
+    "description": "Skaffold natively support for artifacts built with Cloud Native Buildpacks",
+    "examples": [
+      {
+        "name": "go buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks"
+      },
+      {
+        "name": "java buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks-java"
+      },
+      {
+        "name": "node buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks-node"
+      },
+      {
+        "name": "python buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks-python"
+      }
+    ]
   },
   "build.custom": {
     "dev": "x",
@@ -29,7 +47,17 @@
     "area": "Build",
     "feature": "custom artifact Builder",
     "maturity": "GA",
-    "description": "build locally using a custom build script "
+    "description": "build locally using a custom build script",
+    "examples": [
+      {
+        "name": "buildx",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom-buildx"
+      },
+      {
+        "name": "ko",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom"
+      }
+    ]
   },
   "build.dependencies": {
     "dev": "x",
@@ -61,7 +89,13 @@
     "area": "Build",
     "feature": "ko builder",
     "maturity": "alpha",
-    "description": "Build Go apps using ko"
+    "description": "Build Go apps using ko",
+    "examples": [
+      {
+        "name": "ko",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/ko"
+      }
+    ]
   },
   "build": {
     "dev": "x",
@@ -71,7 +105,49 @@
     "area": "Build",
     "maturity": "GA",
     "description": "Build images based on multiple build tools in a configurable way",
-    "url": "/docs/pipeline-stages/builders/"
+    "url": "/docs/pipeline-stages/builders/",
+    "examples": [
+      {
+        "name": "docker",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/docker-deploy"
+      },
+      {
+        "name": "jib/maven",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/jib"
+      },
+      {
+        "name": "jib/gradle",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/jib-gradle"
+      },
+      {
+        "name": "go buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks"
+      },
+      {
+        "name": "java buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks-java"
+      },
+      {
+        "name": "node buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks-node"
+      },
+      {
+        "name": "python buildpacks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/buildpacks-python"
+      },
+      {
+        "name": "bazel",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/bazel"
+      },
+      {
+        "name": "ko",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/ko"
+      },
+      {
+        "name": "buildx",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom-buildx"
+      }
+    ]
   },
   "completion": {
     "area": "Completion",
@@ -172,7 +248,25 @@
     "area": "Deploy",
     "maturity": "beta",
     "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
-    "url": "/docs/pipeline-stages/deployers"
+    "url": "/docs/pipeline-stages/deployers",
+    "examples": [
+      {
+        "name": "kubectl",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/getting-started"
+      },
+      {
+        "name": "helm",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/helm-deployment"
+      },
+      {
+        "name": "kustomize",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/kustomize"
+      },
+      {
+        "name": "docker",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/docker-deploy"
+      }
+    ]
   },
     "deploy.cloudrun": {
     "dev": "x",
@@ -191,7 +285,13 @@
     "area": "Deploy",
     "feature": "Docker Deployer",
     "maturity": "beta",
-    "description": "Deploy applications to the local Docker daemon"
+    "description": "Deploy applications to the local Docker daemon",
+    "examples": [
+      {
+        "name": "docker",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/docker-deploy"
+      }
+    ]
   },
   "deploy.cloudrun": {
     "dev": "x",
@@ -314,7 +414,13 @@
     "area": "Lifecycle Hooks",
     "maturity": "beta",
     "description": "Run code triggered by different events during the skaffold process lifecycle.",
-    "url": "/docs/pipeline-stages/lifecycle-hooks/"
+    "url": "/docs/pipeline-stages/lifecycle-hooks/",
+    "examples": [
+      {
+        "name": "hooks",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/lifecycle-hooks"
+      }
+    ]
   },
   "logging": {
     "dev": "x",
@@ -344,7 +450,17 @@
     "area": "Profiles",
     "maturity": "GA",
     "description": "Create different pipeline configurations based on overrides and patches defined in one or more profiles",
-    "url": "/docs/environment/profiles/"
+    "url": "/docs/environment/profiles/",
+    "examples": [
+      {
+        "name": "profiles",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/profiles"
+      },
+      {
+        "name": "profile patches",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/profile-patches"
+      }
+    ]
   },
   "run.cmd": {
     "run": "x",
@@ -387,14 +503,26 @@
     "area": "Tagpolicy",
     "maturity": "GA",
     "description": "Automated tagging",
-    "url": "/docs/pipeline-stages/taggers"
+    "url": "/docs/pipeline-stages/taggers",
+    "examples": [
+      {
+        "name": "envTemplate",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/tagging-with-environment-variables"
+      }
+    ]
   },
   "templating": {
     "deploy": "x",
     "area": "Templating",
     "maturity": "GA",
     "description": "certain fields of skaffold.yaml can be parametrized with environment and built-in variables",
-    "url": "/docs/environment/templating/"
+    "url": "/docs/environment/templating/",
+    "examples": [
+      {
+        "name": "templated fields",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/templated-fields"
+      }
+    ]
   },
   "test": {
     "dev": "x",
@@ -403,7 +531,17 @@
     "area": "Test",
     "maturity": "GA",
     "description": "Run tests as part of your pipeline",
-    "url": "/docs/pipeline-stages/testers"
+    "url": "/docs/pipeline-stages/testers",
+    "examples": [
+      {
+        "name": "custom test",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom-tests"
+      },
+      {
+        "name": "structure test",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/structure-tests"
+      }
+    ]
   },
   "test.structure": {
     "dev": "x",
@@ -412,7 +550,13 @@
     "area": "Test",
     "maturity": "GA",
     "description": "Run structure tests as part of your pipeline",
-    "url": "/docs/pipeline-stages/testers/structure"
+    "url": "/docs/pipeline-stages/testers/structure",
+    "examples": [
+      {
+        "name": "structure test",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/structure-tests"
+      }
+    ]
   },
   "test.custom": {
     "dev": "x",
@@ -422,7 +566,13 @@
     "feature": "custom tester",
     "maturity": "beta",
     "description": "Run custom test command locally",
-    "url": "/docs/pipeline-stages/testers/custom"
+    "url": "/docs/pipeline-stages/testers/custom",
+    "examples": [
+      {
+        "name": "custom test",
+        "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom-tests"
+      }
+    ]
   },
   "triggers": {
     "dev": "x",
