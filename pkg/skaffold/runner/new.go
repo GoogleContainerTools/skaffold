@@ -74,7 +74,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 
 	var deployer deploy.Deployer
 
-	hydrationDir, err := util.GetHydrationDir(runCtx.Opts, runCtx.WorkingDir, true)
+	hydrationDir, err := util.GetHydrationDir(runCtx.Opts, runCtx.WorkingDir, true, isKptRendererOrDeployerUsed(runCtx.Pipelines))
 
 	if err != nil {
 		return nil, fmt.Errorf("getting render output path: %w", err)
@@ -252,4 +252,22 @@ func getTester(ctx context.Context, cfg test.Config, isLocalImage func(imageName
 	}
 
 	return tester, nil
+}
+
+func isKptRendererOrDeployerUsed(pipelines runcontext.Pipelines) bool {
+	for _, configName := range pipelines.AllOrderedConfigNames() {
+		pipeline := pipelines.GetForConfigName(configName)
+		renderConfig := pipeline.Render
+		deployConfig := pipeline.Deploy
+
+		if renderConfig.Validate != nil || renderConfig.Transform != nil || renderConfig.Kpt != nil {
+			return true
+		}
+
+		if deployConfig.KptDeploy != nil {
+			return true
+		}
+	}
+
+	return false
 }
