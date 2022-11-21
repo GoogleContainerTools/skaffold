@@ -1,6 +1,9 @@
 apiVersion: skaffold/v4beta1
 kind: Config
 build:
+  tagPolicy:
+    envTemplate:
+      template: "{{.FOO}}"
   artifacts:
   - image: skaffold-example
 manifests:
