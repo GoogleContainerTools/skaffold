@@ -119,6 +119,6 @@ jobs:
         sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
     - name: Run build getting-started
       run: |
-        cd examples/getting_started
+        cd examples/getting-started
         skaffold build
 
