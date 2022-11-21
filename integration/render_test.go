@@ -708,6 +708,7 @@ spec:
 }
 
 func TestRenderHydrationDirCreation(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 	const hydrationDir = "hydration-dir"
 
 	tests := []struct {
@@ -773,7 +774,7 @@ build:
   artifacts: []
 manifests:
   rawYaml:
-    - k8s-pod.yaml
+    - k8s/k8s-pod.yaml
   transform:
     - name: set-annotations
       configMap:
@@ -800,7 +801,7 @@ build:
   artifacts: []
 manifests:
   rawYaml:
-    - k8s-pod.yaml
+    - k8s/k8s-pod.yaml
 `,
 			manifest: `
 apiVersion: v1
@@ -816,11 +817,10 @@ spec:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, NeedsGcp)
-
 			tmpDir := t.NewTempDir()
+			tmpDir.Mkdir("k8s")
 			tmpDir.Write("skaffold.yaml", test.config)
-			tmpDir.Write("k8s-pod.yaml", test.manifest)
+			tmpDir.Write("k8s/k8s-pod.yaml", test.manifest)
 			tmpDir.Chdir()
 
 			args := []string{"--hydration-dir", hydrationDir}
