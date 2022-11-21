@@ -41,6 +41,7 @@ jobs:
       run: |
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+        echo "$PATH"
 
     - uses: actions/cache@v3
       with:
@@ -116,9 +117,8 @@ jobs:
       run: |
         make
         sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
+    - name: Run build getting-started
+      ruN: |
+        cd examples/getting_started
+        skaffold build
 
-    - name: Run integration tests
-      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
-      run: |
-        skaffold config set --global collect-metrics false
-        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
