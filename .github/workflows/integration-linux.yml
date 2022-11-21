@@ -21,7 +21,7 @@ jobs:
         kompose_version: [1.21.0]
         gcloud_sdk_version: [335.0.0]
         container_structure_tests_version: [1.8.0]
-        integration_test_partitions: [0, 1, 2, 3]
+        integration_test_partitions: [0]
     steps:
 
     - name: Check out code into the Go module directory
@@ -41,7 +41,7 @@ jobs:
       run: |
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-        echo "$PATH"
+        printenv
 
     - uses: actions/cache@v3
       with:
@@ -115,7 +115,7 @@ jobs:
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
       run: |
-        make
+        make LOCAL=true
         sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
     - name: Run build getting-started
       run: |

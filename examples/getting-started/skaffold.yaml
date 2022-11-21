@@ -3,7 +3,7 @@ kind: Config
 build:
   tagPolicy:
     envTemplate:
-      template: "{{.HOME}}"
+      template: "{{.PAGER}}"
   artifacts:
   - image: skaffold-example
 manifests:
