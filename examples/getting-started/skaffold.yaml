@@ -3,7 +3,7 @@ kind: Config
 build:
   tagPolicy:
     envTemplate:
-      template: "{{.PAGER}}"
+      template: "{{.GITHUB_RUN_ID}}"
   artifacts:
   - image: skaffold-example
 manifests:
