@@ -6,8 +6,11 @@ on: [push, pull_request]
 permissions: read-all
 
 concurrency:
-  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
-  cancel-in-progress: true
+  # On master/release, we don't want any jobs cancelled
+  # On PR branches, we cancel the job if new commits are pushed
+  # More info: https://stackoverflow.com/a/70972844/1261287
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
