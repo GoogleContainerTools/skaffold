@@ -8,7 +8,13 @@ weight: 20
 {{% tab "STANDALONE" %}}
 
 Follow this tutorial if you're using the Skaffold [standalone binary]({{< relref "../install/#standalone-binary" >}}). It walks through running Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
-and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)! To learn how to generate a new project with previously built-in structure and features, see the [Google Cloud Solutions Template](https://github.com/GoogleCloudPlatform/solutions-template).
+and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)!  
+
+{{< alert title="Note" >}}
+If you are looking to generate a new project templated to use Skaffold best-practicees and features, see the [Google Cloud Solutions Template](https://github.com/GoogleCloudPlatform/solutions-template).
+{{< /alert >}}
+
+
 
 This tutorial uses minikube as Skaffold knows how to build the app using the Docker daemon hosted
 inside minikube and thus avoiding any need for a registry to host the app's container images.
