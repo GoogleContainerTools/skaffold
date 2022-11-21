@@ -708,8 +708,6 @@ spec:
 }
 
 func TestRenderHydrationDirCreation(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	const hydrationDir = "hydration-dir"
 
 	tests := []struct {
@@ -818,6 +816,8 @@ spec:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, NeedsGcp)
+
 			tmpDir := t.NewTempDir()
 			tmpDir.Write("skaffold.yaml", test.config)
 			tmpDir.Write("k8s-pod.yaml", test.manifest)
