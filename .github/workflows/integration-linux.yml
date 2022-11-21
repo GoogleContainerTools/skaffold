@@ -82,9 +82,8 @@ jobs:
     - name: Install Kpt
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        wget -O kpt https://github.com/GoogleContainerTools/kpt/releases/download/v{{ matrix.kpt_version }}/kpt_linux_amd64 && chmod +x kpt
+        wget -O kpt https://github.com/GoogleContainerTools/kpt/releases/download/v${{ matrix.kpt_version }}/kpt_linux_amd64 && chmod +x kpt
         sudo mv kpt /usr/local/bin/
-
 
     - name: Install GCloud
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
