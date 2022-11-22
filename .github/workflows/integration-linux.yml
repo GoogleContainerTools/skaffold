@@ -10,10 +10,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   build:
     name: PR integration tests (linux)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         kustomize_version: [3.5.4]
