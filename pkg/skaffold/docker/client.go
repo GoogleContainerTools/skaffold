@@ -73,7 +73,7 @@ type Config interface {
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
 func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(ctx)
+		env, apiClient, err := newAPIClient(ctx, cfg.GetKubeContext())
 		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg)
 		dockerAPIClientErr = err
 	})
@@ -82,22 +82,35 @@ func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 }
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
-func newAPIClient(ctx context.Context) ([]string, client.CommonAPIClient, error) {
+func newAPIClient(ctx context.Context, kubecontext string) ([]string, client.CommonAPIClient, error) {
+	if cluster.GetClient().IsMinikube(ctx, kubecontext) {
+		profile, driver, err := getMinikubeProfile(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		return newMinikubeAPIClient(ctx, profile, driver)
+	}
+
+	return newEnvAPIClient()
+}
+
+func getMinikubeProfile(ctx context.Context) (string, string, error) {
 	cmd, err := cluster.GetClient().MinikubeExec(ctx, "profile", "list", "-o", "json")
 	if err != nil {
-		return newEnvAPIClient()
+		return "", "", fmt.Errorf("getting minikube profile: %w", err)
 	}
 	out, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
-		return nil, nil, fmt.Errorf("getting minikube profile: %w", err)
+		return "", "", fmt.Errorf("getting minikube profile: %w", err)
 	}
 	var data cluster.ProfileList
 	if err = json.Unmarshal(out, &data); err != nil {
-		return nil, nil, fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
+		return "", "", fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
 	}
 	profile := data.Valid[0].Config.Name
 	driver := data.Valid[0].Config.Driver
-	return newMinikubeAPIClient(ctx, profile, driver)
+
+	return profile, driver, nil
 }
 
 // newEnvAPIClient returns a docker client based on the environment variables set.
