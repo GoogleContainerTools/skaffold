@@ -275,7 +275,6 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 		return err
 	}
 
-	var patches []yamlpatch.Operation
 	for i, patch := range profile.Patches {
 		// Default patch operation to `replace`
 		op := patch.Op
@@ -301,7 +300,6 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 			return fmt.Errorf("invalid path: %s", patch.Path)
 		}
 
-		patches = append(patches, patch)
 		// TODO(aaron-prindle) we can ignore - op:'remove' - patch profiles as there is no corresponding schema object for them (it is removed already)
 		yamlOverrideInfo := configlocations.YAMLOverrideInfo{
 			ProfileName:    profile.Name,
