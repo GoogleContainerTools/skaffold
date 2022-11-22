@@ -55,10 +55,9 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			ns, client := SetupNamespace(t)
 
 			args := append(test.args, "--cache-artifacts=false")

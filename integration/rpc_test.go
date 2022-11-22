@@ -151,8 +151,6 @@ func TestEventsRPC(t *testing.T) {
 }
 
 func TestEventLogHTTP(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		endpoint    string
@@ -169,6 +167,7 @@ func TestEventLogHTTP(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			httpAddr := randomPort()
 			setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr, "--status-check=false")
 			time.Sleep(500 * time.Millisecond) // give skaffold time to process all events

@@ -29,8 +29,6 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		name string
 		dir  string
@@ -52,6 +50,7 @@ func TestInit(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			ns, _ := SetupNamespace(t.T)
 
 			initArgs := append([]string{"--force"}, test.args...)

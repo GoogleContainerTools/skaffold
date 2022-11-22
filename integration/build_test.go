@@ -42,8 +42,6 @@ import (
 const imageName = "gcr.io/k8s-skaffold/simple-build:"
 
 func TestBuild(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		dir         string
@@ -94,6 +92,7 @@ func TestBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			if test.setup != nil {
 				test.setup(t, test.dir)
 			}
@@ -115,8 +114,6 @@ func TestBuild(t *testing.T) {
 }
 
 func TestBuildWithWithPlatform(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description       string
 		dir               string
@@ -140,6 +137,7 @@ func TestBuildWithWithPlatform(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			tmpfile := testutil.TempFile(t, "", []byte{})
 			args := append(test.args, "--file-output", tmpfile)
 			skaffold.Build(args...).InDir(test.dir).RunOrFail(t)

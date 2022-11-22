@@ -30,7 +30,6 @@ import (
 )
 
 func TestPortForward(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
 		dir string
 	}{
@@ -38,6 +37,7 @@ func TestPortForward(t *testing.T) {
 		{dir: "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
+		MarkIntegrationTest(t, CanRunWithoutGcp)
 		ns, _ := SetupNamespace(t)
 
 		skaffold.Run().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
