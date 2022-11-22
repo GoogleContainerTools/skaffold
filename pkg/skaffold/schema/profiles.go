@@ -295,7 +295,9 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 			Value: value,
 		}
 
-		if !tryPatch(patch, buf) {
+		updated, valid := tryPatch(patch, buf)
+		buf = updated
+		if !valid {
 			return fmt.Errorf("invalid path: %s", patch.Path)
 		}
 
@@ -314,7 +316,6 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 		}
 	}
 
-	buf, err = yamlpatch.Patch(patches).Apply(buf)
 	if err != nil {
 		return err
 	}
@@ -326,15 +327,15 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 // tryPatch is here to verify patches one by one before we
 // apply them because yamlpatch.Patch is known to panic when a path
 // is not valid.
-func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
+func tryPatch(patch yamlpatch.Operation, buf []byte) (patched []byte, valid bool) {
 	defer func() {
 		if errPanic := recover(); errPanic != nil {
 			valid = false
 		}
 	}()
 
-	_, err := yamlpatch.Patch([]yamlpatch.Operation{patch}).Apply(buf)
-	return err == nil
+	updated, err := yamlpatch.Patch([]yamlpatch.Operation{patch}).Apply(buf)
+	return updated, err == nil
 }
 
 func profilesByName(profiles []latest.Profile) map[string]latest.Profile {
