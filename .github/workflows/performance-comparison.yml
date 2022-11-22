@@ -16,7 +16,7 @@ jobs:
   build:
     if: ${{ startsWith(github.event.comment.body, '/run-comparisonstats') }}
     name: Performance comparison (on comment)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         kustomize_version: [3.5.4]
