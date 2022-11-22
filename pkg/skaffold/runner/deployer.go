@@ -75,7 +75,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		for _, d := range deployerCfg {
 			// runcontext StatusCheck method returns the value set by the cli flag `--status-check`
 			// which overrides the value set in the individual configs.
-			if runCtx.Opts.StatusCheck.String() == "" && !*d.StatusCheck {
+			if runCtx.Opts.StatusCheck.String() == "" && d.StatusCheck != nil && !*d.StatusCheck {
 				runCtx.Opts.StatusCheck = config.NewBoolOrUndefined(d.StatusCheck)
 			}
 			if d.DockerDeploy != nil || d.KptDeploy != nil || d.KubectlDeploy != nil || d.KustomizeDeploy != nil {
