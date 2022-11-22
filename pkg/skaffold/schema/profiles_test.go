@@ -54,6 +54,14 @@ profiles:
       image: second
       docker:
         dockerfile: Dockerfile.second
+  - op: add
+    path: /build/artifacts/-
+    value:
+      image: third
+  - op: replace
+    path: /build/artifacts/2
+    value:
+      image: third-replaced
   - op: remove
     path: /manifests
 `
@@ -74,6 +82,7 @@ profiles:
 		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
 		t.CheckDeepEqual("Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
 		t.CheckDeepEqual("Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+		t.CheckDeepEqual("third-replaced", skaffoldConfig.Build.Artifacts[2].ImageName)
 		t.CheckDeepEqual(latest.DeployConfig{}, skaffoldConfig.Deploy)
 	})
 }
