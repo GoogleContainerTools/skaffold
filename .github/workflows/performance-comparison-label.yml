@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build:
     if: ${{ github.event.label.name == 'help:run-comparisonstats' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
     - name: Remove run-performance-comparison label
