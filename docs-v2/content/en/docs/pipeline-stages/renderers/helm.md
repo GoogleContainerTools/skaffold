@@ -22,7 +22,8 @@ Skaffold supports projects set up to render and/or deploy with Helm, but certain
 Skaffold no longer requires the intricate configuring of `artifactOverrides` or `imageStrategy` fields. See docs [here]({{< relref "#image-reference-strategies" >}}) on how old `artifactOverrides` and `imageStrategy` values translate to `setValues` entires in the latest Skaffold schemas (`apiVersion: skaffold/v3alpha1` or skaffold binary version `v2.0.0` onwards)
 {{< /alert >}}
 
-{{< alert title="In Skaffold `v2` the primary difference between the helm renderer (`manifest.helm.*`) and the helm deployer `deploy.helm.*` is the use of `helm template` vs `helm install`" >}}
+{{< alert title="Note" >}}
+In Skaffold `v2` the primary difference between the helm renderer (`manifest.helm.*`) and the helm deployer (`deploy.helm.*`) is the use of `helm template` vs `helm install`
 {{< /alert >}}
 
 ## How `helm` render support works in Skaffold
@@ -249,7 +250,7 @@ spec:
 
 Skaffold will invoke
 ```
-helm template <chart> <chart-path> --set-string image.registry=<artifact-name>,image.repository=<artifact-name>,tag=<artifcact-name> --post-renderer=<path-to-skaffold-binary-from-original-invocation>
+helm template <chart> <chart-path> --set-string image.registry=<artifact-name>,image.repository=<artifact-name>,image.tag=<artifact-name>,image2.registry=<artifact-name>,image2.repository=<artifact-name>,image2.tag=<artifact-name> --post-renderer=<path-to-skaffold-binary-from-original-invocation>
 ```
 
 ### Helm Build Dependencies

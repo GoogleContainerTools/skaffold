@@ -40,8 +40,6 @@ import (
 )
 
 func TestDevNotification(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		trigger     string
@@ -57,6 +55,7 @@ func TestDevNotification(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 			defer Run(t, "testdata/dev", "rm", "foo")
 
@@ -84,8 +83,6 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevGracefulCancel(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	if runtime.GOOS == "windows" {
 		t.Skip("graceful cancel doesn't work on windows")
 	}
@@ -115,6 +112,8 @@ func TestDevGracefulCancel(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			ns, client := SetupNamespace(t)
 			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
@@ -242,15 +241,20 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 }
 
 func TestDevPortForward(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
-		dir string
+		name string
+		dir  string
 	}{
-		{dir: "examples/microservices"},
-		{dir: "examples/multi-config-microservices"},
+		{
+			name: "microservices",
+			dir:  "examples/microservices"},
+		{
+			name: "multi-config-microservices",
+			dir:  "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-		func() {
+		t.Run(test.name, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir(test.dir).RunOrFail(t)
 
@@ -272,7 +276,7 @@ func TestDevPortForward(t *testing.T) {
 			}()
 
 			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
-		}()
+		})
 	}
 }
 

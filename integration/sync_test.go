@@ -57,10 +57,10 @@ var syncTests = []struct {
 }
 
 func TestDevSync(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	for _, test := range syncTests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
 
@@ -83,10 +83,10 @@ func TestDevSync(t *testing.T) {
 }
 
 func TestDevSyncDefaultNamespace(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	for _, test := range syncTests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
 
@@ -110,8 +110,6 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 }
 
 func TestDevAutoSync(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	dir := "examples/jib-sync/"
 
 	tests := []struct {
@@ -133,6 +131,8 @@ func TestDevAutoSync(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().WithConfig(test.configFile).InDir(dir).RunOrFail(t)
 

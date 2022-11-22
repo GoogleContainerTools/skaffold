@@ -26,8 +26,8 @@ import (
 )
 
 func TestDev_WithDependencies(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	t.Run("required artifact rebuild & redeploy also rebuilds & redeploys dependencies", func(t *testing.T) {
+		MarkIntegrationTest(t, CanRunWithoutGcp)
 		ns, client := SetupNamespace(t)
 
 		skaffold.Dev().InDir("testdata/build-dependencies").InNs(ns.Name).RunBackground(t)

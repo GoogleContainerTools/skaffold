@@ -36,7 +36,6 @@ import (
 )
 
 func TestKubectlRenderOutput(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	ns, _ := SetupNamespace(t)
 	test := struct {
 		description string
@@ -68,6 +67,7 @@ spec:
     name: skaffold`, ns.Name)}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
+		MarkIntegrationTest(t.T, CanRunWithoutGcp)
 		tmpDir := t.NewTempDir()
 		tmpDir.Write("deployment.yaml", test.input).Chdir()
 
@@ -88,7 +88,6 @@ spec:
 }
 
 func TestKubectlRender(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	ns, _ := SetupNamespace(t)
 	tests := []struct {
 		description string
@@ -211,6 +210,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			tmpDir := t.NewTempDir()
 			tmpDir.Write("deployment.yaml", test.input).
 				Chdir()
@@ -231,8 +231,6 @@ spec:
 }
 
 func TestHelmRender(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description  string
 		dir          string
@@ -368,6 +366,7 @@ spec:
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			out := skaffold.Render(append([]string{"--build-artifacts=builds.out.json", "--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
 
 			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
@@ -376,8 +375,6 @@ spec:
 }
 
 func TestRenderWithBuilds(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description         string
 		config              string
@@ -459,11 +456,11 @@ spec:
   - image: gcr.io/my/project-b
     name: b
 `},
-			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -502,11 +499,11 @@ spec:
   - image: gcr.io/my/project-b
     name: b
 `},
-			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
+  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -550,13 +547,13 @@ commonLabels:
 resources:
   - deployment.yaml
 `},
-			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   labels:
     this-is-from: kustomization.yaml
   name: my-pod-123
+  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -600,13 +597,13 @@ commonLabels:
 resources:
   - deployment.yaml
 `},
-			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   labels:
     this-is-from: kustomization.yaml
   name: my-pod-123
+  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -667,6 +664,7 @@ spec:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			tmpDir := t.NewTempDir()
 			tmpDir.Write("skaffold.yaml", test.config)
 
