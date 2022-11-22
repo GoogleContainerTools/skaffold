@@ -107,9 +107,9 @@ func getMinikubeProfile(ctx context.Context) (string, string, error) {
 	if err = json.Unmarshal(out, &data); err != nil {
 		return "", "", fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
 	}
+
 	profile := data.Valid[0].Config.Name
 	driver := data.Valid[0].Config.Driver
-
 	return profile, driver, nil
 }
 
