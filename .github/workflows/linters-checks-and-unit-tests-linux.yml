@@ -51,4 +51,4 @@ jobs:
     - name: Run diagnostics tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        make coverage
+        make -f Makefile.diag coverage
