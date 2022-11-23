@@ -16,13 +16,13 @@ jobs:
   build:
     if: ${{ startsWith(github.event.comment.body, '/run-comparisonstats') }}
     name: Performance comparison (on comment)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         kustomize_version: [3.5.4]
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
-        gcloud_sdk_version: [335.0.0]
+        gcloud_sdk_version: [410.0.0]
         container_structure_tests_version: [1.8.0]
     steps:
     - name: "Check if user has write access"
@@ -68,7 +68,7 @@ jobs:
       run: |
         wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-linux-x86_64.tar.gz
         tar -xvf gcloud.tar.gz -C ${HOME}/
-        CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
+        ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
         echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
 
     - name: Configure GCloud with Docker

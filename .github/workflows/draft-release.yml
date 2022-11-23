@@ -15,7 +15,7 @@ concurrency:
 jobs:
   check:
     name: Check if release commit
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: "startsWith(github.event.head_commit.message, 'release: ')"
     steps:
     - name: Apply release-matching regexp to commit message
@@ -46,7 +46,7 @@ jobs:
     if: needs.check.outputs.applicable == 'true'
     permissions:
       contents: write
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
