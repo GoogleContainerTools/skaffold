@@ -28,7 +28,7 @@ In Skaffold `v2` the primary difference between the helm renderer (`manifest.hel
 
 
 ## How `helm` render support works in Skaffold
-In the latest version of Skaffold, the primary methods of using `helm` templating with Skaffold involve the `deploy.helm.setValueTemplates` and the `deploy.helm.setValues` fields.  `deploy.helm.setValues` supplies the key:value pair to substitute from a users `values.yaml` file (a standard `helm` file for rendering).  `deploy.helm.setValueTemplates` does a similar thing only the key:value value comes from an environment variable instead of a given value.  Depending on how a user's `values.yaml` and how `charts/templates` specify `image: $IMAGE_TEMPLATE`, the docs [here]({{< relref "#image-reference-strategies" >}})  explain the proper `setValueTemplates` to use.  When migrating from schema version `v2beta29` or less, Skaffold will automatically configure these values to continue to work.
+In the latest version of Skaffold, the primary methods of using `helm` templating with Skaffold involve the `deploy.helm.setValueTemplates` and the `deploy.helm.setValues` fields.  `deploy.helm.setValues` supplies the key:value pair to substitute from a users `values.yaml` file (a standard `helm` file for rendering).  `deploy.helm.setValueTemplates` does a similar thing only the key:value value comes from an environment variable instead of a given value. Depending on how a user's `values.yaml` and how `charts/templates` specify `image: $IMAGE_TEMPLATE`, the docs [here]({{< relref "#image-reference-strategies" >}})  explain the proper `setValueTemplates` to use.  When migrating from schema version `v2beta29` or less, Skaffold will automatically configure these values to continue to work.
 
 
 `helm` deploy support in Skaffold is accomplished by calling `helm template ...` with the appropriate `--set` flags for the variables Skaffold will inject as well as uses the `skaffold` binary as a `helm` `--post-renderer`.  Using `skaffold` as a post-renderer is done to inject Skaffold specific labels primarily the `run-id` label which Skaffold uses to tag K8s objects it will manage via it's status checking.
@@ -100,39 +100,40 @@ deploy:
         image2.pullPolicy: "IfNotPresent"
 ```
 
-The `setValues` configuration binds a Helm key to the specified value. The `setValueTemplates` configuration binds a Helm key to an environment variable.  Skaffold generates some environment variables for each build artifact (value in build.artifacts\[x\].image).  Currenty these include:
-- `.<artifactName>.IMAGE_FULLY_QUALIFIED` (ex: `{{.myImage.IMAGE_FULLY_QUALIFIED}})` -> `gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>`
-- `.<artifactName>.IMAGE_REPO` (ex:)
-- `.<artifactName>.IMAGE_TAG`
-- `.<artifactName>.IMAGE_DOMAIN`
-- `.<artifactName>.IMAGE_REPO_NO_DOMAIN`
+The `setValues` configuration binds a Helm key to the specified value. The `setValueTemplates` configuration binds a Helm key to an environment variable.  Skaffold generates useful environment variables (available via `setValueTemplates`) for each build artifact (value in build.artifacts\[x\].image).  Currenty these include:
 
-### Multiple image overrides
+| Helm Template Value | Example Value |
+| --------------- | --------------- |
+| `{{.IMAGE_FULLY_QUALIFIED_<artifact-name>}}` | `gcr.io/example-repo/myImage:latest@sha256:<sha256-hash>`|
+| `{{.IMAGE_REPO_<artifact-name>}}` | `gcr.io/example-repo/myImage` |
+| `{{.IMAGE_TAG_<artifact-name>}}` | `latest` |
+| `{{.IMAGE_DIGEST_<artifact-name>}}` | `sha256:<sha256-hash>` |
+| `{{.IMAGE_DOMAIN_<artifact-name>}}` | `gcr.io` |
+| `{{.IMAGE_REPO_NO_DOMAIN_<artifact-name>}}` | `example-repo` |
 
-To override multiple images (ie a Pod with a side car) you can simply add additional variables. For example, the following helm template:
+### Sanitizing the artifact name from invalid go template characters
+The `<artifact-name>` (eg: `{{.IMAGE_FULLY_QUALIFIED_<artifact-name>}}`) when used with `setValueTemplates` cannot have `/` or `-` characters.  If you have an artifact name with these characters (eg: `localhost/nginx` or `gcr.io/foo-image/foo`), change them to use `_` in place of these characters in the `setValueTemplates` field
 
+| Artifact name | Sanitized Name |
+| --------------- | --------------- |
+| `localhost/nginx` | `localhost_nginx`|
+| `gcr.io/example-repo/myImage` | `gcr.io_example_repo_myImage` |
+
+Example
 ```yaml
-spec:
-  containers:
-    - name: firstContainer
-      image: "{{.Values.firstContainerImage}}"
-      ....
-    - name: secondContainer
-      image: "{{.Values.secondContainerImage}}"
-      ...
-```
-
-can be overriden with:
-
-```yaml
+build:
+  artifacts:
+    - image: localhost/nginx  # must match in setValueTemplates w/ `/` & `-` changed to `_`
 deploy:
   helm:
     releases:
-    - name: my-release
-      setValueTemplates:
-        firstContainerImage: "{{.firstContainer.IMAGE_FULLY_QUALIFIED}}"
-        secondContainerImage: "{{.secondContainerImage.IMAGE_FULLY_QUALIFIED}}"
+      - name: my-chart
+        chartPath: helm
+        setValueTemplates:
+          image: {{.IMAGE_FULLY_QUALIFIED_localhost_nginx}}
+
 ```
+
 
 ### Image reference strategies
 
@@ -158,8 +159,8 @@ deploy:
       - name: my-chart
         chartPath: helm
         setValueTemplates:
-          image: {{.myFirstImage.IMAGE_FULLY_QUALIFIED}} # no tag present!
-          image2: {{.mySecondImage.IMAGE_FULLY_QUALIFIED}} # no tag present!
+          image: {{.IMAGE_FULLY_QUALIFIED_myFirstImage}}
+          image2: {{.IMAGE_FULLY_QUALIFIED_mySecondImage}}
 ```
 The `values.yaml` (note that Skaffold overrides this value):
 ```
@@ -198,10 +199,10 @@ deploy:
       - name: my-chart
         chartPath: helm
         setValueTemplates:
-          image.repository: "{{.myFirstImage.IMAGE_REPO}}"
-          image.tag: "{{.myFirstImage.IMAGE_TAG}}"
-          image2.repository: "{{.mySecondImage.IMAGE_REPO}}"
-          image2.tag: "{{.mySecondImage.IMAGE_TAG}}"
+          image.repository: "{{.IMAGE_REPO_myFirstImage}}"
+          image.tag: "{{.IMAGE_TAG_myFirstImage}}"
+          image2.repository: "{{.IMAGE_REPO_mySecondImage}}"
+          image2.tag: "{{.IMAGE_TAG_mySecondImage}}"
 ```
 
 The `values.yaml` (note that Skaffold overrides these values):
@@ -245,12 +246,12 @@ deploy:
       - name: my-chart
         chartPath: helm
         setValueTemplates:
-          image.registry: "{{.myFirstImage.IMAGE_DOMAIN}}"
-          image.repository: "{{.myFirstImage.IMAGE_REPO_NO_DOMAIN}}"
-          image.tag: "{{.myFirstImage.IMAGE_TAG}}"
-          image2.registry: "{{.mySecondImage.IMAGE_DOMAIN}}"
-          image2.repository: "{{.mySecondImage.IMAGE_REPO_NO_DOMAIN}}"
-          image2.tag: "{{.mySecondImage.IMAGE_TAG}}"
+          image.registry: "{{.IMAGE_DOMAIN_myFirstImage}}"
+          image.repository: "{{.IMAGE_REPO_NO_DOMAIN_myFirstImage}}"
+          image.tag: "{{.IMAGE_TAG_myFirstImage}}"
+          image2.registry: "{{.IMAGE_DOMAIN_mySecondImage}}"
+          image2.repository: "{{.IMAGE_REPO_NO_DOMAIN_mySecondImage}}"
+          image2.tag: "{{.IMAGE_TAG_mySecondImage}}"
 ```
 
 The `values.yaml` (note that Skaffold overrides these values):
