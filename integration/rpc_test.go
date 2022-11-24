@@ -43,7 +43,7 @@ var (
 	connectionRetries = 2
 	readRetries       = 20
 	numLogEntries     = 7
-	waitTime          = 1 * time.Second
+	waitTime          = 2 * time.Second
 )
 
 func TestEnableRPCFlagDeprecation(t *testing.T) {
