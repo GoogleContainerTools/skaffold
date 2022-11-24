@@ -16,13 +16,13 @@ jobs:
   build:
     if: ${{ startsWith(github.event.comment.body, '/run-comparisonstats') }}
     name: Performance comparison (on comment)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         kustomize_version: [3.5.4]
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
-        gcloud_sdk_version: [335.0.0]
+        gcloud_sdk_version: [410.0.0]
         container_structure_tests_version: [1.8.0]
     steps:
     - name: "Check if user has write access"
