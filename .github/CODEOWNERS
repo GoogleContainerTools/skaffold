@@ -6,6 +6,6 @@ pkg/skaffold/deploy/**kpt** @GoogleContainerTools/skaffold-team @yuwenma
 
 # Debug owners
 pkg/skaffold/debug/** @GoogleContainerTools/skaffold-team
-docs/content/en/docs/how-tos/debug/** @GoogleContainerTools/skaffold-team
+docs-v1/content/en/docs/how-tos/debug/** @GoogleContainerTools/skaffold-team
 integration/test-data/debug/** @GoogleContainerTools/skaffold-team
 integration/debug_test.go @GoogleContainerTools/skaffold-team

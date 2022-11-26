@@ -7,7 +7,7 @@ weight: 30
 ******
 WARNING!!!
 
-The file docs/content/en/docs/references/api/grpc.md is generated based on proto/markdown.tmpl,
+The file docs-v1/content/en/docs/references/api/grpc.md is generated based on proto/markdown.tmpl,
 and generated with ./hack/generate_proto.sh!
 Please edit the template file and not the markdown one directly!
 

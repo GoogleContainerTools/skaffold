@@ -127,8 +127,8 @@ e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5
 2. Run `hack/generate-proto.sh`. These will generate go code and structs for the newly added proto fields.
    ```shell script
     git status
-	   modified:   docs/content/en/api/skaffold.swagger.json
-	   modified:   docs/content/en/docs/references/api/grpc.md
+	   modified:   docs-v1/content/en/api/skaffold.swagger.json
+	   modified:   docs-v1/content/en/docs/references/api/grpc.md
 	   modified:   proto/enums/enums.pb.go
 	   modified:   proto/enums/enums.proto
    ```
