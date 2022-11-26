@@ -1,6 +1,6 @@
 steps:
 
-# Download the latest version of the docs-controller image
+# Download the latest version of the builder image
 - name: gcr.io/cloud-builders/docker
   entrypoint: 'bash'
   args:
@@ -28,7 +28,8 @@ steps:
   - 'bash'
   - '-xc'
   - |
-    deploy/docs/build.sh https://skaffold-latest.firebaseapp.com && cd docs && firebase deploy --only hosting:head --project $PROJECT_ID
+    deploy/docs-v1/build.sh https://skaffold-v1.web.app && cd docs-v1 && firebase deploy --only hosting:release --project $PROJECT_ID
 
-images:
-- 'gcr.io/$PROJECT_ID/docs-controller:latest'
+images: [
+  'gcr.io/$PROJECT_ID/docs-controller:latest'
+]

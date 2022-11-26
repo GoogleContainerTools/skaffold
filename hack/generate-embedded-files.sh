@@ -42,7 +42,7 @@ ${LICENSES} save github.com/GoogleContainerTools/skaffold/cmd/skaffold --save_pa
 chmod -R u+w "fs/assets/credits_generated"
 
 echo "Collecting schemas"
-cp -R docs/content/en/schemas "fs/assets/schemas_generated"
+cp -R docs-v2/content/en/schemas "fs/assets/schemas_generated"
 
 
 if [[ -d ${SECRET} ]]; then
