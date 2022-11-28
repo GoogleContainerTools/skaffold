@@ -29,8 +29,8 @@ import (
 	"github.com/ghodss/yaml"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/pipeline"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 // ConfigFile keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles

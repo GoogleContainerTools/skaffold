@@ -19,8 +19,8 @@ package docker
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 // Builder is an artifact builder that uses docker

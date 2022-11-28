@@ -19,8 +19,8 @@ package v2
 import (
 	"testing"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 )
 
 func TestHandleApplicationLogEvent(t *testing.T) {

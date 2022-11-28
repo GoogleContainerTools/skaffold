@@ -31,7 +31,7 @@ GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
 SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64 darwin-arm64
-BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
+BUILD_PACKAGE = $(REPOPATH)/v2/cmd/skaffold
 
 SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
 GO_FILES = $(shell find . -type f -name '*.go' -not -path "./pkg/diag/*")
@@ -55,7 +55,7 @@ GO_BUILD_TAGS_windows = release
 
 # darwin/arm64 requires Go 1.16beta1 or later; dockercore/golang-cross
 # doesn't have a recent macOS toolchain so disable CGO and use
-# github.com/rjeczalik/notify's kqueue support. 
+# github.com/rjeczalik/notify's kqueue support.
 GO_VERSION_darwin_arm64 = 1.16beta1
 CGO_ENABLED_darwin_arm64 = 0
 GO_BUILD_TAGS_darwin = release

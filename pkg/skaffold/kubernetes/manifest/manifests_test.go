@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestLoad(t *testing.T) {
@@ -88,7 +88,7 @@ const service = `apiVersion: v1
 kind: Service
 metadata:
   name: my-app
-spec: 
+spec:
   selector:
     app: my-app`
 

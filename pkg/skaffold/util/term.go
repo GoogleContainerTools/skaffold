@@ -26,7 +26,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 )
 
 func IsTerminal(w io.Writer) (uintptr, bool) {

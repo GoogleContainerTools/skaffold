@@ -26,7 +26,7 @@ import (
 	"github.com/buildpacks/pack"
 	packcfg "github.com/buildpacks/pack/config"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 )
 
 var _ pack.ImageFetcher = (*fetcher)(nil)

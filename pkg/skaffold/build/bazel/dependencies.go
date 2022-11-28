@@ -29,8 +29,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles(deps('%[1]s'))"

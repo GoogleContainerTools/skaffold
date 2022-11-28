@@ -17,8 +17,8 @@ limitations under the License.
 package tag
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball

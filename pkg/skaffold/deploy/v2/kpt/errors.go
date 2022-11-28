@@ -19,9 +19,9 @@ package kpt
 import (
 	"fmt"
 
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	deployerr "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/error"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 // sourceErr raises the user message when the given path cannot be used as `kpt fn source`. This could be caused by

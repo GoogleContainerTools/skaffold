@@ -18,9 +18,9 @@ package transform
 import (
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 var (

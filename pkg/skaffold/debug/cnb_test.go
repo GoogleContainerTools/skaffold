@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestIsCNBImage(t *testing.T) {

@@ -19,7 +19,7 @@ package sync
 import (
 	"context"
 
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 )
 
 type syncMap map[string][]string

@@ -21,8 +21,8 @@ import (
 
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 func (b *Builder) buildSpec(artifact *latestV2.Artifact, tag, bucket, object string) (cloudbuild.Build, error) {

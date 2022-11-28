@@ -19,7 +19,7 @@ package analyze
 import (
 	"path/filepath"
 
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	deploy "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kustomize"
 )
 
 // kustomizeAnalyzer is a Visitor during the directory analysis that finds kustomize files

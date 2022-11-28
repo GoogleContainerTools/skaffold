@@ -24,7 +24,7 @@ import (
 
 	"github.com/rakyll/statik/fs"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/cmd/statik"
 )
 
 // Print prints the json schema for a given version.

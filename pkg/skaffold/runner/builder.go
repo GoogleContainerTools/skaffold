@@ -21,13 +21,13 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext/v2"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/cluster"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/gcb"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/local"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	v2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 // builderCtx encapsulates a given skaffold run context along with additional builder constructs.

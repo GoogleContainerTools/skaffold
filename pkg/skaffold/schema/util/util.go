@@ -24,7 +24,7 @@ import (
 
 	yamlpatch "github.com/krishicks/yaml-patch"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 type VersionedConfig interface {

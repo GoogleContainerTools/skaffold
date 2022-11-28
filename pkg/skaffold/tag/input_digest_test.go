@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestInputDigest_GenerateCorrectChecksumForSingleFile(t *testing.T) {

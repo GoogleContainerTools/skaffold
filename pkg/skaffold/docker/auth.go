@@ -32,7 +32,7 @@ import (
 	"github.com/docker/docker/registry"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcp"
 )
 
 const (

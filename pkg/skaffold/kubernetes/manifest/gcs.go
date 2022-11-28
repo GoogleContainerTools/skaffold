@@ -22,7 +22,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // DownloadFromGCS downloads all provided manifests from a remote GCS bucket,

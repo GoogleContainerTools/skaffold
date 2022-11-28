@@ -19,7 +19,7 @@ package debug
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 )
 
 type Config interface {

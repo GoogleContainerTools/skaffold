@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/cmd/schema"
 )
 
 func NewCmdSchema() *cobra.Command {

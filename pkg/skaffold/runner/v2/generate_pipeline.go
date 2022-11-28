@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"io"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latestV2.SkaffoldConfig, configPaths []string, fileOut string) error {

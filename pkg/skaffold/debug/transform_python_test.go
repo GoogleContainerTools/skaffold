@@ -27,8 +27,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestExtractDebugSpecs(t *testing.T) {

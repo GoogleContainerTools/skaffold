@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/sirupsen/logrus"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 )
 
 // for testing

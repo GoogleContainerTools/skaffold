@@ -19,8 +19,8 @@ package buildpacks
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/list"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 // GetDependencies returns dependencies listed for a buildpack artifact

@@ -42,7 +42,7 @@ fi
 
 echo "Collecting licenses"
 cd ${DIR}/..
-${LICENSES} save github.com/GoogleContainerTools/skaffold/cmd/skaffold --save_path="${TMP_DIR}/skaffold-credits"
+${LICENSES} save github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold --save_path="${TMP_DIR}/skaffold-credits"
 chmod -R u+w "${TMP_DIR}/skaffold-credits"
 
 echo "Collecting schemas"

@@ -19,8 +19,8 @@ package build
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 )
 
 // NoBuilder allows users to specify they don't want to build

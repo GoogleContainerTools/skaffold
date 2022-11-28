@@ -31,9 +31,9 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	deploy "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/types"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 )
 
 // retry 3 times to give the object time to propagate to the API server

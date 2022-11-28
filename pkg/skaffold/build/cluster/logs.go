@@ -29,7 +29,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
 )
 
 // logLevel makes sure kaniko logs at least at Info level and at most Debug level (trace doesn't work with Kaniko)

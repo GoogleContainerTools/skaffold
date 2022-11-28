@@ -16,7 +16,7 @@ limitations under the License.
 
 package config
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+import "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 
 // Config contains all the parameters for the initializer package
 type Config struct {

@@ -26,16 +26,16 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/transform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 const (

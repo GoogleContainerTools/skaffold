@@ -6,7 +6,7 @@ package v2
 import (
 	context "context"
 	fmt "fmt"
-	enums "github.com/GoogleContainerTools/skaffold/proto/enums"
+	enums "github.com/GoogleContainerTools/skaffold/v2/proto/enums"
 	proto "github.com/golang/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"

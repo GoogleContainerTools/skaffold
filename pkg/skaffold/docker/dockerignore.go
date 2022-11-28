@@ -23,7 +23,7 @@ import (
 
 	"github.com/docker/docker/pkg/fileutils"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 // NewDockerIgnorePredicate creates a walk.Predicate that checks if directory entries

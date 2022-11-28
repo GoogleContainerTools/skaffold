@@ -17,10 +17,10 @@ limitations under the License.
 package util
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yamltags"
 )
 
 // ListBuilders returns a list of builder names being used in the given build config.

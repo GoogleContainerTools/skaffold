@@ -21,8 +21,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestEnvInterpolation(t *testing.T) {

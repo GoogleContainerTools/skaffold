@@ -17,8 +17,8 @@ limitations under the License.
 package kustomize
 
 import (
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	deployerr "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/error"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 func userErr(err error) error {

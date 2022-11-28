@@ -19,7 +19,7 @@ package util
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {

@@ -7,15 +7,15 @@ weight: 60
 featureId: api
 
 ---
-When running [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) or [`skaffold debug`]({{< relref "/docs/workflows/debug" >}}), 
+When running [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) or [`skaffold debug`]({{< relref "/docs/workflows/debug" >}}),
 Skaffold starts a server that exposes an API over the lifetime of the Skaffold process.
 Besides the CLI, this API is the primary way tools like IDEs integrate with Skaffold for **retrieving information about the
 pipeline** and for **controlling the phases in the pipeline**.
 
 To retrieve information about the Skaffold pipeline, the Skaffold API provides two main functionalities:
-  
+
   * A [streaming event log]({{< relref "#events-api">}}) created from the different phases in a pipeline run, and
-  
+
   * A snapshot of the [overall state]({{< relref "#state-api" >}}) of the pipeline at any given time during the run.
 
 To control the individual phases of the Skaffold, the Skaffold API provides [fine-grained control]({{< relref "#control-api" >}})
@@ -31,7 +31,7 @@ For reference, we generate the server's [gRPC service definitions and message pr
 
 
 ### HTTP server
-The HTTP API is exposed on port `50052` by default. The default HTTP port can be overridden with the `--rpc-http-port` flag. 
+The HTTP API is exposed on port `50052` by default. The default HTTP port can be overridden with the `--rpc-http-port` flag.
 If the HTTP API port is taken, Skaffold will find the next available port.
 The final port can be found from Skaffold's startup logs.
 
@@ -61,7 +61,7 @@ The skaffold gRPC server is not compatible with HTTPS, so connections need to be
 ```golang
 import (
   "log"
-  pb "github.com/GoogleContainerTools/skaffold/proto/v1"
+  pb "github.com/GoogleContainerTools/skaffold/v2/proto/v1"
   "google.golang.org/grpc"
 )
 
@@ -96,7 +96,7 @@ Tools that integrate with Skaffold can use these events to kick off parts of a d
 
 Example scenarios:
 
-* port-forwarding events are used by Cloud Code to automatically attach debuggers to running containers.     
+* port-forwarding events are used by Cloud Code to automatically attach debuggers to running containers.
 * using an event indicating a frontend service has been deployed and port-forwarded successfully to
 kick off a suite of Selenium tests against the newly deployed service.
 
@@ -159,21 +159,21 @@ a string description of the event in `LogEntry.entry` field.
 
 The State API provides a snapshot of the current state of the following components:
 
-- build state per artifacts 
+- build state per artifacts
 - deploy state
-- file sync state 
-- status check state per resource 
+- file sync state
+- status check state per resource
 - port-forwarded resources
 
-**State API Contract**  
+**State API Contract**
 
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
-| HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/state` | newline separated JSON using chunk transfer encoding over HTTP|  
+| HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/state` | newline separated JSON using chunk transfer encoding over HTTP|
 | gRPC | `client.GetState(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |
 
 
-**Examples** 
+**Examples**
 {{% tabs %}}
 {{% tab "HTTP API" %}}
 Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` execution on our [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/microservices)
@@ -250,7 +250,7 @@ This means that _even if there are new file changes_, Skaffold will wait for ano
 
 **Control API Contract**
 
-| protocol | endpoint | 
+| protocol | endpoint |
 | --- | --- |
 | HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |
 | gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
@@ -272,26 +272,26 @@ When we change `main.go`, Skaffold will notice file changes but will not rebuild
 
 ```bash
 curl -X POST http://localhost:50052/v1/execute -d '{"build": true}'
-```       
+```
 
 At this point, Skaffold will wait to deploy the newly built image until we invoke the Control API with `{"deploy": true}`:
- 
+
 ```bash
 curl -X POST http://localhost:50052/v1/execute -d '{"deploy": true}'
-```       
+```
 
 These steps can also be combined into a single request:
 
 ```bash
 curl -X POST http://localhost:50052/v1/execute -d '{"build": true, "deploy": true}'
-``` 
+```
 
 We can make Skaffold start noticing file changes automatically again by issuing the requests:
 
 ```bash
 curl -X PUT http://localhost:50052/v1/build/auto_execute -d '{"enabled": true}'
 curl -X PUT http://localhost:50052/v1/deploy/auto_execute -d '{"enabled": true}'
-``` 
+```
 
 {{% /tab %}}
 {{% tab "gRPC API" %}}

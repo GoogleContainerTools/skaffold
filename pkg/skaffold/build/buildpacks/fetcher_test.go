@@ -24,8 +24,8 @@ import (
 	packcfg "github.com/buildpacks/pack/config"
 	"github.com/docker/docker/client"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestFetcher(t *testing.T) {

@@ -1,7 +1,7 @@
 syntax = "proto3";
 package proto.enums;
 
-option go_package = "github.com/GoogleContainerTools/skaffold/proto/enums";
+option go_package = "github.com/GoogleContainerTools/skaffold/v2/proto/enums";
 
 // Enum indicating builders used
 enum BuilderType {
@@ -618,7 +618,7 @@ enum SuggestionCode {
     INSPECT_USE_ADD_BUILD_ENV = 801;
     // Check profile flag value
     INSPECT_CHECK_INPUT_PROFILE = 802;
-    
+
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
 

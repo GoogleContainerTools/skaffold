@@ -22,10 +22,10 @@ import (
 	"io/ioutil"
 	"testing"
 
-	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	latestV1 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
+	v1 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestFix(t *testing.T) {
@@ -148,7 +148,7 @@ kind: Config
 kind: Config
 build:
   artifacts:
-  - imageName: 
+  - imageName:
     dockerfilePath: dockerfile.test
 `,
 			shouldErr: true,

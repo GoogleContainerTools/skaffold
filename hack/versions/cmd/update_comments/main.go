@@ -22,8 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	hackschema "github.com/GoogleContainerTools/skaffold/v2/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 func main() {

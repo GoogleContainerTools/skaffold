@@ -21,8 +21,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 func unknownPluginType(ws string) error {

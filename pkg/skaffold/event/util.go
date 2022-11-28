@@ -19,8 +19,8 @@ package event
 import (
 	"strings"
 
-	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 func initializeMetadata(pipelines []latestV2.Pipeline, kubeContext string) *proto.Metadata {

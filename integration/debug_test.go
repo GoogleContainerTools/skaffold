@@ -21,9 +21,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	debugannotations "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/annotations"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	debugannotations "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/annotations"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDebug(t *testing.T) {

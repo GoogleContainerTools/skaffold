@@ -16,7 +16,7 @@ limitations under the License.
 
 package graph
 
-import latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+import latestV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest/v2"
 
 // Artifact is the result corresponding to each successful build.
 type Artifact struct {

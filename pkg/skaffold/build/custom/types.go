@@ -16,7 +16,7 @@ limitations under the License.
 
 package custom
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+import "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 
 // Builder is a builder for custom artifacts
 type Builder struct {

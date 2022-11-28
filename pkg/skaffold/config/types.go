@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // StringOrUndefined holds the value of a flag of type `string`,

@@ -36,9 +36,9 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/integration/binpack"
-	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/binpack"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	k8s "github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/kubernetes"
 )
 
 type TestType int

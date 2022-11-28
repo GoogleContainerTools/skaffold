@@ -33,7 +33,7 @@ import (
 
 	blackfriday "github.com/russross/blackfriday/v2"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema"
 )
 
 const (
