@@ -18,7 +18,6 @@ package util
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -38,7 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
 )
 
@@ -106,9 +104,14 @@ func ConsolidateNamespaces(original, new []string) []string {
 }
 
 // GetHydrationDir points to the directory where the manifest rendering happens. By default, it is set to "<WORKDIR>/.kpt-pipeline".
-func GetHydrationDir(opts config.SkaffoldOptions, workingDir string, promptIfNeeded bool) (string, error) {
+func GetHydrationDir(opts config.SkaffoldOptions, workingDir string, promptIfNeeded bool, isKptRendererOrDeployerUsed bool) (string, error) {
 	var hydratedDir string
 	var err error
+
+	if !isKptRendererOrDeployerUsed {
+		log.Entry(context.TODO()).Info("no kpt renderer or deployer found, skipping hydrated-dir creation")
+		return "", nil
+	}
 
 	if opts.HydrationDir == constants.DefaultHydrationDir {
 		hydratedDir = filepath.Join(workingDir, constants.DefaultHydrationDir)
@@ -162,37 +165,6 @@ func GroupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 	}
 
 	return false, schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
-}
-
-func GetManifestsFromHydrationDir(ctx context.Context, opts config.SkaffoldOptions) (manifest.ManifestList, error) {
-	workDir, err := util.RealWorkDir()
-	if err != nil {
-		return nil, fmt.Errorf("getting working directory: %w", err)
-	}
-	hydrationDir, err := GetHydrationDir(config.SkaffoldOptions{HydrationDir: opts.HydrationDir, AssumeYes: opts.AssumeYes},
-		workDir,
-		true)
-	if err != nil {
-		return nil, fmt.Errorf("getting render output path: %w", err)
-	}
-	// TODO(aaron-prindle) verify that using manifests.yaml here will work in all cases
-	hydratedManifestPath := filepath.Join(hydrationDir, "manifests.yaml")
-	if _, err := os.Stat(hydratedManifestPath); errors.Is(err, os.ErrNotExist) {
-		log.Entry(ctx).Warn(fmt.Errorf("unable to find manifests, attempted location %s: %w", hydratedManifestPath, err))
-		return nil, nil
-	}
-
-	f, err := os.Open(hydratedManifestPath)
-	if err != nil {
-		return nil, fmt.Errorf("opening hydrated manifest at %s: %w", hydratedManifestPath, err)
-	}
-	defer f.Close()
-
-	manifests, err := manifest.Load(f)
-	if err != nil {
-		return nil, fmt.Errorf("parsing manifests file into manifest list object: %w", err)
-	}
-	return manifests, nil
 }
 
 func GetManifestsFromHydratedManifests(ctx context.Context, hydratedManifests []string) (manifest.ManifestList, error) {
