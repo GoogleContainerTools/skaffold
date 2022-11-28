@@ -112,7 +112,7 @@ func TestGetHydrationDir_Default(t *testing.T) {
 		tmpDir.Chdir()
 		actual, err := GetHydrationDir(
 			config.SkaffoldOptions{HydrationDir: constants.DefaultHydrationDir, AssumeYes: true},
-			tmpDir.Root(), false)
+			tmpDir.Root(), false, true)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(filepath.Join(tmpDir.Root(), ".kpt-pipeline"), actual)
 	})
@@ -124,7 +124,7 @@ func TestGetHydrationDir_CustomHydrationDir(t *testing.T) {
 		tmpDir.Chdir()
 		expected := filepath.Join(tmpDir.Root(), "test-hydration")
 		actual, err := GetHydrationDir(
-			config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true}, "", false)
+			config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true}, "", false, true)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, actual)
 		_, err = os.Stat(actual)

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -804,6 +805,137 @@ spec:
 			out := skaffold.Render(append([]string{"--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
 
 			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
+		})
+	}
+}
+
+func TestRenderHydrationDirCreation(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	const hydrationDir = "hydration-dir"
+
+	tests := []struct {
+		description              string
+		shouldCreateHydrationDir bool
+		config                   string
+		manifest                 string
+	}{
+		{
+			description:              "project with kpt renderer should create hydration dir",
+			shouldCreateHydrationDir: true,
+			config: `
+apiVersion: skaffold/v4beta1
+kind: Config
+
+build:
+  artifacts: []
+manifests:
+  kpt: []
+`,
+			manifest: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example`,
+		},
+		{
+			description:              "project with kpt deployer should create hydration dir",
+			shouldCreateHydrationDir: true,
+			config: `
+apiVersion: skaffold/v4beta1
+kind: Config
+
+build:
+  artifacts: []
+manifests:
+  kpt: []
+deploy:
+  kpt: {}
+`,
+			manifest: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example`,
+		},
+		{
+			description:              "project with rawYaml and transform should create hydration dir (uses kpt renderer)",
+			shouldCreateHydrationDir: true,
+			config: `
+apiVersion: skaffold/v4beta1
+kind: Config
+
+build:
+  artifacts: []
+manifests:
+  rawYaml:
+    - k8s/k8s-pod.yaml
+  transform:
+    - name: set-annotations
+      configMap:
+        - "author:fake-author"
+`,
+			manifest: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example`,
+		},
+		{
+			description:              "project without kpt should not create hydration dir",
+			shouldCreateHydrationDir: false,
+			config: `
+apiVersion: skaffold/v4beta1
+kind: Config
+
+build:
+  artifacts: []
+manifests:
+  rawYaml:
+    - k8s/k8s-pod.yaml
+`,
+			manifest: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - name: getting-started
+    image: skaffold-example`,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Mkdir("k8s")
+			tmpDir.Write("skaffold.yaml", test.config)
+			tmpDir.Write("k8s/k8s-pod.yaml", test.manifest)
+			tmpDir.Chdir()
+
+			args := []string{"--hydration-dir", hydrationDir}
+
+			skaffold.Render(args...).RunOrFail(t.T)
+
+			_, err := os.Stat(filepath.Join(tmpDir.Root(), hydrationDir))
+
+			if test.shouldCreateHydrationDir {
+				t.CheckFalse(os.IsNotExist(err))
+			} else {
+				t.CheckTrue(os.IsNotExist(err))
+			}
 		})
 	}
 }
