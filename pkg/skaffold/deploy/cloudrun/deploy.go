@@ -35,6 +35,8 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -55,10 +57,14 @@ type Config interface {
 // Deployer deploys code to Google Cloud Run.
 type Deployer struct {
 	configName string
+
+	*latest.CloudRunDeploy
+
 	logger     *LogAggregator
 	accessor   *RunAccessor
 	monitor    *Monitor
 	labeller   *label.DefaultLabeller
+	hookRunner hooks.Runner
 
 	Project string
 	Region  string
@@ -71,13 +77,15 @@ type Deployer struct {
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string) (*Deployer, error) {
 	return &Deployer{
-		configName: configName,
-		Project:    crDeploy.ProjectID,
-		Region:     crDeploy.Region,
+		configName:     configName,
+		CloudRunDeploy: crDeploy,
+		Project:        crDeploy.ProjectID,
+		Region:         crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
 		logger:        NewLoggerAggregator(cfg, labeller.GetRunID()),
 		accessor:      NewAccessor(cfg, labeller.GetRunID()),
 		labeller:      labeller,
+		hookRunner:    hooks.NewCloudRunDeployRunner(crDeploy.LifecycleHooks, hooks.NewDeployEnvOpts(labeller.GetRunID(), "", []string{})),
 		useGcpOptions: true,
 	}, nil
 }
@@ -141,6 +149,30 @@ func (d *Deployer) RegisterLocalImages([]graph.Artifact) {
 // GetStatusMonitor gets the resource that will monitor deployment status.
 func (d *Deployer) GetStatusMonitor() status.Monitor {
 	return d.getMonitor()
+}
+
+func (d *Deployer) HasRunnableHooks() bool {
+	return len(d.CloudRunDeploy.LifecycleHooks.PreHooks) > 0 || len(d.CloudRunDeploy.LifecycleHooks.PostHooks) > 0
+}
+
+func (d *Deployer) PreDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PreHooks")
+	if err := d.hookRunner.RunPreHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
+}
+
+func (d *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_PostHooks")
+	if err := d.hookRunner.RunPostHooks(childCtx, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return err
+	}
+	endTrace()
+	return nil
 }
 
 func (d *Deployer) getMonitor() *Monitor {

@@ -335,5 +335,6 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 			}
 		}
 	}
-	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject}, configName)
+	currentPipeline := runCtx.Pipelines.GetForConfigName(configName)
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject, LifecycleHooks: currentPipeline.Deploy.CloudRunDeploy.LifecycleHooks}, configName)
 }
