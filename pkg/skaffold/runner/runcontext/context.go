@@ -261,6 +261,18 @@ func (rc *RunContext) GetNamespace() string {
 	if rc.Opts.Namespace != "" {
 		return rc.Opts.Namespace
 	}
+	var defaultNamespace string
+	for _, p := range rc.GetPipelines() {
+		if p.Deploy.KubectlDeploy != nil && p.Deploy.KubectlDeploy.DefaultNamespace != nil {
+			if defaultNamespace != "" {
+				log.Entry(context.TODO()).Warn("multiple deploy.kubectl.defaultNamespace values set, only last pipeline's value will be used")
+			}
+			defaultNamespace = *p.Deploy.KubectlDeploy.DefaultNamespace
+		}
+	}
+	if defaultNamespace != "" {
+		return defaultNamespace
+	}
 	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
 	if err != nil {
 		return rc.Opts.Namespace
