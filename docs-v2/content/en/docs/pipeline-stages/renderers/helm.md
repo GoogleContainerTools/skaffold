@@ -19,24 +19,32 @@ To use `helm` with Skaffold, the `helm` binary must be installed on your machine
 Skaffold supports projects set up to render and/or deploy with Helm, but certain aspects of the project need to be configured correctly in order for Skaffold to work properly. This guide should demystify some of the nuance around using Skaffold with Helm to help you get started quickly.
 
 {{< alert title="No more `artifactOverrides` or `imageStrategy`" >}}
-Skaffold no longer requires the intricate configuring of `artifactOverrides` or `imageStrategy` fields. See docs [here]({{< relref "#image-reference-strategies" >}}) on how old `artifactOverrides` and `imageStrategy` values translate to `setValues` entires in the latest Skaffold schemas (`apiVersion: skaffold/v3alpha1` or skaffold binary version `v2.0.0` onwards)
+Skaffold no longer requires the intricate configuring of `artifactOverrides` or `imageStrategy` fields. See docs [here]({{< relref "#image-reference-strategies" >}}) on how old `artifactOverrides` and `imageStrategy` values translate to `setValueTemplates` entries in the latest Skaffold schemas (`apiVersion: skaffold/v3alpha1` or skaffold binary version `v2.0.0` onwards)
 {{< /alert >}}
 
 {{< alert title="Note" >}}
-In Skaffold `v2` the primary difference between the helm renderer (`manifest.helm.*`) and the helm deployer (`deploy.helm.*`) is the use of `helm template` vs `helm install`
+In Skaffold `v2` the primary difference between the helm renderer (`manifest.helm.*`) and the helm deployer (`deploy.helm.*`) is the use of `helm install` vs `helm template`
 {{< /alert >}}
 
+
 ## How `helm` render support works in Skaffold
-In the latest version of Skaffold, the primary methods of using `helm` templating with Skaffold involve the `manifests.helm.setValues` and the `manifests.helm.setValueTemplates` fields.  `manifests.helm.setValues` supplies the key:value pair to substitute from a users `values.yaml` file (a standard `helm` file for rendering).  `manifests.helm.setValueTemplates` does a similar thing only the key:value value comes from an environment variable instead of a given value.  The thing to note here is that when using a value that is the same name as an artifact name, that value will be replaced by the fully qualified artifact name (eg: `image: gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>`) for the current build (or the specified value from additional configuration eg: CLI flags or config from `skaffold.yaml`).  Depending on how a user's `values.yaml` and charts specify `image: $IMAGE_TEMPLATE`, the docs [here]({{< relref "#image-reference-strategies" >}})  explain the proper `setValues` to use.  When migrating from schema version `v2beta29` or less, Skaffold will automatically configure these values to continue to work.
+In the latest version of Skaffold, the primary methods of using `helm` templating with Skaffold involve the `deploy.helm.setValueTemplates` and the `deploy.helm.setValues` fields.  `deploy.helm.setValues` supplies the key:value pair to substitute from a users `values.yaml` file (a standard `helm` file for rendering).  `deploy.helm.setValueTemplates` does a similar thing only the key:value value comes from an environment variable instead of a given value.  Depending on how a user's `values.yaml` and how `charts/templates` specify `image: $IMAGE_TEMPLATE`, the docs [here]({{< relref "#image-reference-strategies" >}})  explain the proper `setValueTemplates` to use.  When migrating from schema version `v2beta29` or less, Skaffold will automatically configure these values to continue to work.
 
 
-`helm` render support in Skaffold is accomplished by calling `helm template ...` and using the `skaffold` binary as a `helm` `--post-renderer`.  This works by having Skaffold run `helm template ...` taking into consideration all of the supplied flags, skaffold.yaml configuration, etc. and creating an intermediate yaml manifest with all helm replacements except that the fully qualified image from the current run is NOT added but instead a placeholder with the artifact name - eg: `skaffold-helm-image`.  Then the skaffold post-renderer is called to convert `image: skaffold-helm-image` -> `image: gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>` in specified locations (specific allowlisted k8s objects and/or k8s object fields).  This above replacement is nearly identical to how it works for values.yaml files using only the `image` key in `values.yaml` - eg:
+`helm` deploy support in Skaffold is accomplished by calling `helm template ...` with the appropriate `--set` flags for the variables Skaffold will inject as well as uses the `skaffold` binary as a `helm` `--post-renderer`.  Using `skaffold` as a post-renderer is done to inject Skaffold specific labels primarily the `run-id` label which Skaffold uses to tag K8s objects it will manage via it's status checking.
+
+
+This works by having Skaffold run `helm template ...` taking into consideration all of the supplied flags, skaffold.yaml configuration, etc. and creating an intermediate yaml manifest with all helm replacements except that the fully qualified image from the current run is NOT added but instead a placeholder with the artifact name - eg: `skaffold-helm-image`.  Then the skaffold post-renderer is called to convert `image: skaffold-helm-image` -> `image: gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>` in specified locations (specific allowlisted k8s objects and/or k8s object fields).  This above replacement is nearly identical to how it works for values.yaml files using only the `image` key in `values.yaml` - eg:
 `image: "{{.Values.image}}"`
 
-When using `image.repoistory` + `image.tag` or `image.registry` + `image.repository` + `image.tag` - eg:
+When using `image.repository` + `image.tag` or `image.registry` + `image.repository` + `image.tag` - eg:
 `image: "{{.Values.image.repository}}:{{.Values.image.tag}}"`
 `image: "{{.Values.image.registry}}/{{.Values.image.repository}}:{{.Values.image.tag}}"`
-there is some specialized logic that the skaffold `post-renderer` uses to properly handling these cases.  See the docs [here]({{< relref "#image-reference-strategies" >}}) on the correct way to specify these for Skaffold using `setValues`
+there is some specialized logic that the skaffold `post-renderer` uses to properly handling these cases.  See the docs [here]({{< relref "#image-reference-strategies" >}}) on the correct way to specify these for Skaffold using `setValueTemplates`
+
+{{< alert title="Note" >}}
+Starting in Skaffold `v2.1.0`, Skaffold will output additional `setValueTemplates`
+{{< /alert >}}
 
 ## Image Configuration
 The normal Helm convention for defining image references is through the `values.yaml` file. Often, image information is configured through an `image` stanza in the values file, which might look something like this:
@@ -44,12 +52,16 @@ The normal Helm convention for defining image references is through the `values.
 ```project_root/values.yaml```
 ```yaml
 image:
-  repository: my-image
-  tag: v1.2.0
-  pullPolicy: IfNotPresent
+  repository: gcr.io/my-repo # default repo
+  tag: v1.2.0 # default tag 
+  pullPolicy: IfNotPresent # default PullPolicy
+image2:
+  repository: gcr.io/my-repo-2 # default repo
+  tag: latest # default tag 
+  pullPolicy: IfNotPresent # default PullPolicy
 ```
 
-This image would then be referenced in a templated resource file, maybe like this:
+This images would then be referenced in a templated resource file, maybe like this:
 
 ```project_root/templates/deployment.yaml:```
 ```yaml
@@ -60,6 +72,9 @@ spec:
         - name: {{ .Chart.Name }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag}}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image2.repository }}:{{ .Values.image2.tag}}
+          imagePullPolicy: {{ .Values.image2.pullPolicy }}
 ```
 
 **IMPORTANT: To get Skaffold to work with Helm, the `image` key must be configured in the skaffold.yaml.**
@@ -69,18 +84,28 @@ Associating the Helm image key allows Skaffold to track the image being built, a
 ```yaml
 build:
   artifacts:
-    - image: my-image # must match in setValues
-    - image: my-image-2 # must match in setValues
-manifests:
+    - image: myFirstImage # must match in setValueTemplates
+    - image: mySecondImage # must match in setValueTemplates
+deploy:
   helm:
     releases:
     - name: my-release
+      setValueTemplates:
+        image.repository: "{{.myFirstImage.IMAGE_REPO}}"
+        image.tag: "{{.myFirstImage.IMAGE_TAG}}"
+        image2.repository: "{{.mySecondImage.IMAGE_REPO}}"
+        image2.tag: "{{.mySecondImage.IMAGE_TAG}}"
       setValues:
-        image: my-image # no tag present!
-        image2: my-image-2 # no tag present!
+        image.pullPolicy: "IfNotPresent"
+        image2.pullPolicy: "IfNotPresent"
 ```
 
-The `setValues` configuration binds a Helm key to the specified value.
+The `setValues` configuration binds a Helm key to the specified value. The `setValueTemplates` configuration binds a Helm key to an environment variable.  Skaffold generates some environment variables for each build artifact (value in build.artifacts\[x\].image).  Currenty these include:
+- `.<artifactName>.IMAGE_FULLY_QUALIFIED` (ex: `{{.myImage.IMAGE_FULLY_QUALIFIED}})` -> `gcr.io/example-repo/skaffold-helm-image:latest@sha256:<sha256-hash>`
+- `.<artifactName>.IMAGE_REPO` (ex:)
+- `.<artifactName>.IMAGE_TAG`
+- `.<artifactName>.IMAGE_DOMAIN`
+- `.<artifactName>.IMAGE_REPO_NO_DOMAIN`
 
 ### Multiple image overrides
 
@@ -100,13 +125,13 @@ spec:
 can be overriden with:
 
 ```yaml
-manifests:
+deploy:
   helm:
     releases:
     - name: my-release
-      setValues:
-        firstContainerImage: gcr.io/my-project/first-image # no tag present!
-        secondContainerImage: gcr.io/my-project/second-image # no tag present!
+      setValueTemplates:
+        firstContainerImage: "{{.firstContainer.IMAGE_FULLY_QUALIFIED}}"
+        secondContainerImage: "{{.secondContainerImage.IMAGE_FULLY_QUALIFIED}}"
 ```
 
 ### Image reference strategies
@@ -125,16 +150,16 @@ The `skaffold.yaml` setup:
 ```yaml
 build:
   artifacts:
-    - image: my-image  # must match in setValues
-    - image: my-image-2  # must match in setValues
-manifests:
+    - image: myFirstImage  # must match in setValueTemplates
+    - image: mySecondImage  # must match in setValueTemplates
+deploy:
   helm:
     releases:
       - name: my-chart
         chartPath: helm
-        setValues:
-          image: my-image # no tag present!
-          image2: my-image-2 # no tag present!
+        setValueTemplates:
+          image: {{.myFirstImage.IMAGE_FULLY_QUALIFIED}} # no tag present!
+          image2: {{.mySecondImage.IMAGE_FULLY_QUALIFIED}} # no tag present!
 ```
 The `values.yaml` (note that Skaffold overrides this value):
 ```
@@ -165,18 +190,18 @@ The `skaffold.yaml` setup:
 ```yaml
 build:
   artifacts:
-    - image: my-image # must match in setValues
-    - image: my-image-2 # must match in setValues
-manifests:
+    - image: myFirstImage # must match in setValueTemplates
+    - image: mySecondImage # must match in setValueTemplates
+deploy:
   helm:
     releases:
       - name: my-chart
         chartPath: helm
-        setValues:
-          image.repository: my-image
-          image.tag: my-image
-          image2.repository: my-image-2
-          image2.tag: my-image-2
+        setValueTemplates:
+          image.repository: "{{.myFirstImage.IMAGE_REPO}}"
+          image.tag: "{{.myFirstImage.IMAGE_TAG}}"
+          image2.repository: "{{.mySecondImage.IMAGE_REPO}}"
+          image2.tag: "{{.mySecondImage.IMAGE_TAG}}"
 ```
 
 The `values.yaml` (note that Skaffold overrides these values):
@@ -212,20 +237,20 @@ The `skaffold.yaml` setup:
 ```yaml
 build:
   artifacts:
-    - image: my-image # must match in setValues
-    - image: my-image-2 # must match in setValues
-manifests:
+    - image: myFirstImage # must match in setValueTemplates
+    - image: mySecondImage # must match in setValueTemplates
+deploy:
   helm:
     releases:
       - name: my-chart
         chartPath: helm
-        setValues:
-          image.registry: my-image
-          image.repository: my-image
-          image.tag: my-image
-          image2.registry: my-image-2
-          image2.repository: my-image-2
-          image2.tag: my-image-2
+        setValueTemplates:
+          image.registry: "{{.myFirstImage.IMAGE_DOMAIN}}"
+          image.repository: "{{.myFirstImage.IMAGE_REPO_NO_DOMAIN}}"
+          image.tag: "{{.myFirstImage.IMAGE_TAG}}"
+          image2.registry: "{{.mySecondImage.IMAGE_DOMAIN}}"
+          image2.repository: "{{.mySecondImage.IMAGE_REPO_NO_DOMAIN}}"
+          image2.tag: "{{.mySecondImage.IMAGE_TAG}}"
 ```
 
 The `values.yaml` (note that Skaffold overrides these values):
@@ -250,7 +275,7 @@ spec:
 
 Skaffold will invoke
 ```
-helm template <chart> <chart-path> --set-string image.registry=<artifact-name>,image.repository=<artifact-name>,image.tag=<artifact-name>,image2.registry=<artifact-name>,image2.repository=<artifact-name>,image2.tag=<artifact-name> --post-renderer=<path-to-skaffold-binary-from-original-invocation>
+helm template <chart> <chart-path> --set-string image.registry=<artifact-name>,image.repository=<artifact-name>,image.tag=<artifact-name>,image2.registry=<artifact-name>,image2.repository=<artifact-name>,image2.tag=<artifcact-name>  --post-renderer=<path-to-skaffold-binary-from-original-invocation>
 ```
 
 ### Helm Build Dependencies
