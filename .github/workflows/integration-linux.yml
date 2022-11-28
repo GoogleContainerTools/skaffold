@@ -5,6 +5,9 @@ on: [push, pull_request]
 
 permissions: read-all
 
+env:
+  GCLOUD_SDK_VERSION: 409.0.0
+
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
   cancel-in-progress: true
@@ -88,7 +91,7 @@ jobs:
     - name: Install GCloud
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-linux-x86_64.tar.gz
+        wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz
         tar -xvf gcloud.tar.gz -C ${HOME}/
         ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
         echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
