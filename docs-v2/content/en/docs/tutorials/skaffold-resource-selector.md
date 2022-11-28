@@ -12,7 +12,7 @@ Common Use Cases This Page Helps Resolve:
 * Users who are seeing issues with skaffold's default resource field overwriting for a given resource - eg: skaffold errors as it tries to mutate immutable config on re-deployment
 
 Currently skaffold modifies the manifests it renders and deploys for the following functionality:
-- status checking - done by mutating the manifest/K8s-Object by adding a label - skaffold/dev/run-id.  Skaffold uses this run-id to identify ... (TODO add doc link to run-id explanation)
+- status checking - done by mutating the manifest/K8s-Object by adding a label - skaffold/dev/run-id.  Skaffold uses this run-id to identify the deployments Skaffold manages with it's status checking.
 - image label overwriting - done by mutating the manifest/K8s-Object by substituting the `image:$ORIGINAL_IMAGE_TAG` value(s) in a manifest with `image:$RECENT_SKAFFOLD_BUILT_IMAGE`
 
 
@@ -47,7 +47,7 @@ _* *.image (changes `image:` value to be the skaffold built image ONLY IF skaffo
 
 
 The GroupKind's that Skaffold manages (via resource field overwriting) are user configurable via the `resourceSelector:` top level configuration.  The `resourceSelector` configuration allows users to modify and extend which resources and what fields of those resources skaffold modifies.  Currently skaffold only supports `label:` and `.metadata.labels` related modifications.
-(TODO add `resourceSelector` schema overview and allowable inputs)
+
 `resourceSelector` spec (from `pkg/skaffold/schema/latest/config.go`)
 ```
 // ResourceSelector describes user defined filters describing how skaffold should treat objects/fields during rendering.
