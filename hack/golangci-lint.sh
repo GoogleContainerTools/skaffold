@@ -55,5 +55,5 @@ if ! [ -x "$(command -v ${BIN}/logrus-analyzer)" ] ; then
   cd -
 fi
 # This analyzer doesn't support any flags currently, so we don't include ${FLAGS}
-${BIN}/logrus-analyzer github.com/GoogleContainerTools/skaffold{/pkg,/cmd,/diag}...
+${BIN}/logrus-analyzer github.com/GoogleContainerTools/skaffold/v2{/pkg,/cmd,/diag}...
 
