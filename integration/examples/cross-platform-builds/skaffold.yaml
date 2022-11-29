@@ -2,16 +2,21 @@ apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
-  - image: skaffold-example
+  - image: skaffold-example-1
+    context: .
+    docker:
+      dockerfile: Dockerfile
+      noCache: true
+  - image: skaffold-example-2
     context: .
     docker:
       dockerfile: Dockerfile
       noCache: true
   tagPolicy:
-    - gitCommit:
-        variant: CommitSha
-        prefix: "shatest-"
-    - inputDigest: {}
+    - sha256: {}
+    - customTemplate:
+        template: "secondtag"
+
   local:
     concurrency: 1
 manifests:

@@ -104,6 +104,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 		var built string
 
+		// NOTE: Commented for the POC. Pending: support multi-platform builds
 		// if platforms.IsMultiPlatform() && !SupportsMultiPlatformBuild(*artifact) {
 		// 	built, err = CreateMultiPlatformImage(ctx, out, artifact, tag, platforms, artifactBuilder)
 		// } else {

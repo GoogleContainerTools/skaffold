@@ -33,8 +33,6 @@ import (
 type Builder interface {
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTagsList, platforms platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error)
 
-	//Build2(ctx context.Context, out io.Writer, tags tag.ImageTagsList, platforms platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error)
-
 	// Prune removes images built with Skaffold
 	Prune(context.Context, io.Writer) error
 }
