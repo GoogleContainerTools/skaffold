@@ -1,4 +1,4 @@
-module github.com/GoogleContainerTools/skaffold/integration/examples/grpc-e2e-tests/cloud-spanner-bootstrap
+module github.com/GoogleContainerTools/skaffold/v2/integration/examples/grpc-e2e-tests/cloud-spanner-bootstrap
 
 go 1.19
 

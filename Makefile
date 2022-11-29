@@ -138,7 +138,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	@ GCP_ONLY=$(GCP_ONLY) GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) ./hack/gotest.sh -v $(REPOPATH)/v2/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: integration
 integration: install integration-tests
