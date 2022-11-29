@@ -162,7 +162,7 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 			expectedPlatforms := expectedPlatformsForRunningCluster(test.expectedPlatforms)
 
 			test.command(args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
-			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunBackground(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).Run(t)
 
 			for _, image := range test.images {
 				client.WaitForPodsReady(image.pod)
