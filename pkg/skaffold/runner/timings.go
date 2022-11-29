@@ -56,21 +56,6 @@ type withTimings struct {
 	cacheArtifacts bool
 }
 
-// func (w withTimings) Build2(ctx context.Context, out io.Writer, tags tag.ImageTagsList, platforms platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
-// 	if len(artifacts) == 0 && w.cacheArtifacts {
-// 		return nil, nil
-// 	}
-// 	start := time.Now()
-// 	output.Default.Fprintln(out, "Starting build...")
-
-// 	bRes, err := w.Builder.Build2(ctx, out, tags, platforms, artifacts)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	log.Entry(ctx).Infoln("Build completed in", timeutil.Humanize(time.Since(start)))
-// 	return bRes, nil
-// }
-
 func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTagsList, platforms platform.Resolver, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil

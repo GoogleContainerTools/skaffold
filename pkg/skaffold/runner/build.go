@@ -102,7 +102,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	// default:
 	// }
 
-	bRes, err := r.cache.Build2(ctx, out, tags, artifacts, r.platforms, func(ctx context.Context, out io.Writer, tags tag.ImageTagsList, artifacts []*latest.Artifact, platforms platform.Resolver) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, r.platforms, func(ctx context.Context, out io.Writer, tags tag.ImageTagsList, artifacts []*latest.Artifact, platforms platform.Resolver) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
