@@ -14,6 +14,6 @@ manifests:
       - chartPath: ../../charts/app
         createNamespace: true
         name: app2
-        setValues:
-          image.repository: app2
-          image.tag: app2
+        setValueTemplates:
+          image.repository: '{{.app2.IMAGE_REPO}}'
+          image.tag: "{{.app2.IMAGE_TAG}}@{{.app2.IMAGE_DIGEST}}"

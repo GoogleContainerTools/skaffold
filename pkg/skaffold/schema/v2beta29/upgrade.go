@@ -19,6 +19,7 @@ package v2beta29
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -118,16 +119,30 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 			if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig != nil {
 				// is 'helm' imageStrategy
 				for k, v := range aos {
-					svs[k+".repository"] = v
-					svs[k+".tag"] = v
+					if svts == nil {
+						svts = map[string]string{}
+					}
+
+					// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+					validV := strings.ReplaceAll(strings.ReplaceAll(v, "-", "_"), "/", "_")
+
+					svts[k+".tag"] = fmt.Sprintf("{{.%s.IMAGE_TAG_}}@{{.%s.IMAGE_DIGEST}}", validV, validV)
+					svts[k+".repository"] = fmt.Sprintf("{{.%s.IMAGE_REPO}}", validV)
 					if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig.ExplicitRegistry {
-						svs[k+".registry"] = v
+						// is 'helm' imageStrategy + explicitRegistry
+						svts[k+".registry"] = fmt.Sprintf("{{.%s.IMAGE_DOMAIN_}}", validV)
+						svts[k+".repository"] = fmt.Sprintf("{{.%s.IMAGE_REPO_NO_DOMAIN}}", validV)
 					}
 				}
 			} else {
 				// is 'fqn' imageStrategy
 				for k, v := range aos {
-					svs[k] = v
+					if svts == nil {
+						svts = map[string]string{}
+					}
+					// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+					validV := strings.ReplaceAll(strings.ReplaceAll(v, "-", "_"), "/", "_")
+					svts[k] = fmt.Sprintf("{{.%s.IMAGE_FULLY_QUALIFIED}}", validV)
 				}
 			}
 			newPL.Render.Helm.Releases[i].SetValues = svs
