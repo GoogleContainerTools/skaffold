@@ -72,7 +72,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// ignore useCLI boolean if buildkit is enabled since buildkit is only implemented for docker CLI at the moment in skaffold.
 	// we might consider a different approach in the future.
 	// use CLI for cross-platform builds
-	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 || matcher.IsNotEmpty() {
+	if b.useCLI || b.buildx || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 || matcher.IsNotEmpty() {
 		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, pl)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
@@ -93,6 +93,9 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, pl v1.Platform) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
+	if b.buildx {
+		args = append([]string{"buildx"}, args...)
+	}
 	imgRef, err := docker.ParseReference(opts.Tag)
 	if err != nil {
 		return "", fmt.Errorf("couldn't parse image tag: %w", err)
@@ -109,6 +112,9 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	cliArgs, err := docker.ToCLIBuildArgs(a, ba)
 	if err != nil {
 		return "", fmt.Errorf("getting docker build args: %w", err)
+	}
+	if b.buildx && b.pushImages {
+		cliArgs = append(cliArgs, "--push")
 	}
 	args = append(args, cliArgs...)
 
@@ -142,7 +148,11 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		return "", tryExecFormatErr(fmt.Errorf("running build: %w", err), errBuffer)
 	}
 
-	return b.localDocker.ImageID(ctx, opts.Tag)
+	if b.buildx {
+		return "", nil // TODO: return id from CLI
+	} else {
+		return b.localDocker.ImageID(ctx, opts.Tag)
+	}
 }
 
 func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact, pl v1.Platform) error {

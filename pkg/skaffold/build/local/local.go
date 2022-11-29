@@ -90,11 +90,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
+
+	if b.local.Buildx {
+		return "", nil
+	} else {
+		return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
+	}
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
-	if !b.pushImages {
+	if !b.local.Buildx && !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,
 		// + Or to docker load it.

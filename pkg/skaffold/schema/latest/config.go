@@ -311,6 +311,8 @@ type LocalBuild struct {
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
 	UseDockerCLI bool `yaml:"useDockerCLI,omitempty"`
 
+	Buildx bool `yaml:"buildx,omitempty"`
+
 	// UseBuildkit use BuildKit to build Docker images. If unspecified, uses the Docker default.
 	UseBuildkit *bool `yaml:"useBuildkit,omitempty"`
 
