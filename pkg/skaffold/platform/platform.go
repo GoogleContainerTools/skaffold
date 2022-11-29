@@ -24,7 +24,7 @@ import (
 	"github.com/containerd/containerd/platforms"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var (

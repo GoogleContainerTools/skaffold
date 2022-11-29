@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 type PodWatcher interface {

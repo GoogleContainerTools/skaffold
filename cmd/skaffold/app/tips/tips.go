@@ -19,8 +19,8 @@ package tips
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 )
 
 // PrintForRun prints tips to the user who has run `skaffold run`.

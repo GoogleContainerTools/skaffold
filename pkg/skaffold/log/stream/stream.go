@@ -23,8 +23,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 //nolint:golint

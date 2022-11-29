@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"testing"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/enums"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/enums"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestErrors(t *testing.T) {

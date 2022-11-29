@@ -31,8 +31,8 @@ import (
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcp"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 const (

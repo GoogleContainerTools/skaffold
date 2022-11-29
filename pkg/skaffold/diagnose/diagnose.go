@@ -22,14 +22,14 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
 type Config interface {

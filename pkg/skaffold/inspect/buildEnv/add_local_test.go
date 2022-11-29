@@ -23,15 +23,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestAddLocalBuildEnv(t *testing.T) {

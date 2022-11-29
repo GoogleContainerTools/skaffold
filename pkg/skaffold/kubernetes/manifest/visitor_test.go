@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 type mockVisitor struct {

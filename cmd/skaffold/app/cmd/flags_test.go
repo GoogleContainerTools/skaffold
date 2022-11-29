@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestHasCmdAnnotation(t *testing.T) {

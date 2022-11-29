@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 )
 
 func TestLogFormatter_Name(t *testing.T) {

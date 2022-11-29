@@ -24,11 +24,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // SimulateDevCycle is used for testing a port forward + stop + restart in a simulated dev cycle

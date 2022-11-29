@@ -7,7 +7,7 @@
 package v2
 
 import (
-	enums "github.com/GoogleContainerTools/skaffold/proto/enums"
+	enums "github.com/GoogleContainerTools/skaffold/v2/proto/enums"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

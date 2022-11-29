@@ -31,9 +31,9 @@ import (
 	packimg "github.com/buildpacks/pack/pkg/image"
 	"github.com/buildpacks/pack/pkg/project"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // For testing

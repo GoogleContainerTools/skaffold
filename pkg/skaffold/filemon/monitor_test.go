@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestFileMonitor(t *testing.T) {

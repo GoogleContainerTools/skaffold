@@ -25,7 +25,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // Fs is the underlying filesystem to use for reading skaffold project files & configuration.  OS FS by default

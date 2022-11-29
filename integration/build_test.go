@@ -29,14 +29,14 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const imageName = "gcr.io/k8s-skaffold/simple-build:"

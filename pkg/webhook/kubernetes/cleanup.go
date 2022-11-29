@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-github/github"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/labels"
 )
 
 // CleanupDeployment cleans up all deployments related to the given pull request

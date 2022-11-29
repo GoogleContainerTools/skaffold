@@ -22,15 +22,15 @@ import (
 	"io"
 	"os"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/render"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/tips"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/analyze"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/deploy"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 // DoInit executes the `skaffold init` flow.

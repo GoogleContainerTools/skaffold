@@ -24,8 +24,8 @@ import (
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/publish"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 )
 
 // Builder is an artifact builder that uses ko

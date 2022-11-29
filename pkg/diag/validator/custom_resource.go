@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
 )
 
 type CustomResourceSelector struct {

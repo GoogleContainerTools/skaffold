@@ -30,14 +30,14 @@ import (
 	"google.golang.org/api/run/v1"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const (

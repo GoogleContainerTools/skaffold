@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 )
 
 func TestBuildDependenciesOrder(t *testing.T) {

@@ -17,8 +17,8 @@ limitations under the License.
 package runner
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
 )
 
 type ChangeSet struct {

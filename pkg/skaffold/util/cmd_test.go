@@ -23,7 +23,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func helperCommand(s ...string) *exec.Cmd {

@@ -22,11 +22,11 @@ import (
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestGetImages(t *testing.T) {

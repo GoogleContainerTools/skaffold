@@ -16,7 +16,7 @@ limitations under the License.
 
 package buildpacks
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+import "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 
 var debugModeArgs = map[string]string{
 	"GOOGLE_GOGCFLAGS": "all=-N -l", // disable build optimization for Golang

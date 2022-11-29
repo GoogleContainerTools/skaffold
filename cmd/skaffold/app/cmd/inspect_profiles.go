@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	profiles "github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect/profiles"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
+	profiles "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect/profiles"
 )
 
 func cmdProfiles() *cobra.Command {

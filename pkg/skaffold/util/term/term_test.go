@@ -23,9 +23,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestIsNotTerminal(t *testing.T) {

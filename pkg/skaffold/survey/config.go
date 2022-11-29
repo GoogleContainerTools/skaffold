@@ -21,9 +21,9 @@ import (
 	"sort"
 	"time"
 
-	sConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	sConfig "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
 const (

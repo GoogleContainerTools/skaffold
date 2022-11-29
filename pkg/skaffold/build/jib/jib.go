@@ -32,11 +32,11 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 const (

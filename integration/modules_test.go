@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 )
 
 func TestModules_BuildDependency(t *testing.T) {

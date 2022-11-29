@@ -27,13 +27,13 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 var GetAvailablePort = util.GetAvailablePort // For testing

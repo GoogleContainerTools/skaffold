@@ -1,4 +1,4 @@
-module github.com/GoogleContainerTools/skaffold
+module github.com/GoogleContainerTools/skaffold/v2
 
 go 1.19
 

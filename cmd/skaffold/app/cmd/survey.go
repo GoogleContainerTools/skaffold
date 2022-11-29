@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/survey"
 )
 
 var surveyID string

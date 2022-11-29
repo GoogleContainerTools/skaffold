@@ -21,9 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 )
 
 type nodeTransformer struct{}

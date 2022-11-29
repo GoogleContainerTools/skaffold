@@ -20,9 +20,9 @@ import (
 	"context"
 	"io"
 
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 type syncMap map[string][]string

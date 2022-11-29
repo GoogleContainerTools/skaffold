@@ -17,10 +17,10 @@ limitations under the License.
 package render
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/analyze"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // Initializer detects a deployment type and is able to extract image names from it

@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	pb "github.com/GoogleContainerTools/skaffold/integration/examples/grpc-e2e-tests/service/proto"
+	pb "github.com/GoogleContainerTools/skaffold/v2/integration/examples/grpc-e2e-tests/service/proto"
 	"github.com/google/uuid"
 )
 

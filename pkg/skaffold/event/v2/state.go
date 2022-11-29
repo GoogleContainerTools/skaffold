@@ -21,8 +21,8 @@ import (
 
 	pbuf "github.com/golang/protobuf/proto"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 )
 
 func GetState() (*proto.State, error) {

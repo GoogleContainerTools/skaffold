@@ -23,10 +23,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3alpha1"
-	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v3alpha1"
+	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 var migrations = map[string]string{

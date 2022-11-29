@@ -26,11 +26,11 @@ import (
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/commands/options"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 func (b *Builder) newKoBuilder(ctx context.Context, a *latest.Artifact, platforms platform.Matcher) (build.Interface, error) {

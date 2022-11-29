@@ -24,14 +24,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const (
@@ -55,7 +55,7 @@ metadata:
   name: skaffold
 inventory:
   namespace: default
-  inventoryID: 
+  inventoryID:
   - bad-type
 `
 	manifests = `apiVersion: v1

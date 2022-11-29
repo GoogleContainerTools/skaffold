@@ -21,8 +21,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestSetLabels(t *testing.T) {

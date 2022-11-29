@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 )
 
 func TestDelete(t *testing.T) {

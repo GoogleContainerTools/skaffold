@@ -22,9 +22,9 @@ import (
 
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestEmptyState(t *testing.T) {

@@ -23,7 +23,7 @@ import (
 
 	"4d63.com/tz"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 const tagTime = "2006-01-02_15-04-05.999_MST"

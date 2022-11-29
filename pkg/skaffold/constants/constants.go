@@ -17,7 +17,7 @@ limitations under the License.
 package constants
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 const (

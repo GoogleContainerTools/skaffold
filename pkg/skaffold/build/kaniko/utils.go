@@ -19,7 +19,7 @@ package kaniko
 import (
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // GetContext returns the context containing context sub path

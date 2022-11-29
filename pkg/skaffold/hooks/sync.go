@@ -23,11 +23,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 func NewSyncRunner(cli *kubectl.CLI, imageName, imageRef string, namespaces []string, formatter logger.Formatter, d latest.SyncHooks, opts SyncEnvOpts) Runner {

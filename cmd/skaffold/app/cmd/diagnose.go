@@ -23,15 +23,15 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/diagnose"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 var (

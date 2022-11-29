@@ -24,17 +24,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	deployerr "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/error"
+	deploy "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	kloader "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/loader"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/portforward"
+	kstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // CLI holds parameters to run kubectl.

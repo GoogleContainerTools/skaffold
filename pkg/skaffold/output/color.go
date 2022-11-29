@@ -25,8 +25,8 @@ import (
 	colors "github.com/heroku/color"
 	"github.com/mattn/go-colorable"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/term"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/term"
 )
 
 // Maintain compatibility with the old color coding.

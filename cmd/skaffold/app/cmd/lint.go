@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/lint"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/lint"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var outFormat string

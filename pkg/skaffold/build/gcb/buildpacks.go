@@ -22,11 +22,11 @@ import (
 
 	"google.golang.org/api/cloudbuild/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag string, deps []*latest.ArtifactDependency) (cloudbuild.Build, error) {

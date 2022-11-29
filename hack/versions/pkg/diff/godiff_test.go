@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestCmpGoStructs(t *testing.T) {
@@ -88,11 +88,11 @@ type TestStructure struct {
 			description: "renamed struct: not same",
 			a: `package a
 //a comment
-type TestStructure struct {} 
+type TestStructure struct {}
 `,
 			b: `package a
 //a different comment
-type TestStructureRenamed struct {} 
+type TestStructureRenamed struct {}
 `,
 			same:      false,
 			shouldErr: false,
@@ -101,12 +101,12 @@ type TestStructureRenamed struct {}
 			description: "added struct: not same",
 			a: `package a
 //a comment
-type TestStructure struct {} 
+type TestStructure struct {}
 `,
 			b: `package a
 //a different comment
-type TestStructure struct {} 
-type NewStructure struct {} 
+type TestStructure struct {}
+type NewStructure struct {}
 `,
 			same:      false,
 			shouldErr: false,
@@ -114,7 +114,7 @@ type NewStructure struct {}
 		{
 			description: "removed struct: not same",
 			a: `package a
-type TestStructure struct {} 
+type TestStructure struct {}
 `,
 			b: `package a
 `,
@@ -129,7 +129,7 @@ type TestStructure struct {}
 			b: `package a
 type TestStructure struct {
 	newField string
-} 
+}
 `,
 			same:      false,
 			shouldErr: false,
@@ -144,7 +144,7 @@ type TestStructure struct {
 			b: `package a
 type TestStructure struct {
 	newField string
-} 
+}
 `,
 			same:      false,
 			shouldErr: false,
@@ -159,7 +159,7 @@ type TestStructure struct {
 			b: `package a
 type TestStructure struct {
 	oldField int
-} 
+}
 `,
 			same:      false,
 			shouldErr: false,
@@ -174,7 +174,7 @@ type TestStructure struct {
 			b: `package a
 type TestStructure struct {
 	oldField *string
-} 
+}
 `,
 			same:      false,
 			shouldErr: false,
@@ -191,7 +191,7 @@ type TestStructure struct {
 type TestStructure struct {
 	fieldB string
 	fieldA string
-} 
+}
 `,
 			same:      true,
 			shouldErr: false,

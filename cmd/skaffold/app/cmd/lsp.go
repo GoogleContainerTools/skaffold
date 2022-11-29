@@ -28,8 +28,8 @@ import (
 	"github.com/spf13/cobra"
 	"go.lsp.dev/jsonrpc2"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/lsp"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/lsp"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var port int

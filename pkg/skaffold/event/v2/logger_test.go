@@ -21,10 +21,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/proto/enums"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/enums"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestHandleSkaffoldLogEvent(t *testing.T) {

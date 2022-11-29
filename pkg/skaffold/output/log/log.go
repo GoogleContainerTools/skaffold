@@ -27,7 +27,7 @@ import (
 	ggcrlogs "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 )
 
 // Logging levels. Defining our own so we can encapsulate the underlying logger implementation.

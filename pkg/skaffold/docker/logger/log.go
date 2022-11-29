@@ -26,12 +26,12 @@ import (
 	"github.com/ahmetb/dlog"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	logstream "github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/tracker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	logstream "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log/stream"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 type Logger struct {

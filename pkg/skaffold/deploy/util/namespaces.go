@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"sort"
 
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // GetAllPodNamespaces lists the namespaces that should be watched.

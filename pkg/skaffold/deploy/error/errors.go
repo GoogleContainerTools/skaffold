@@ -21,10 +21,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/types"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (

@@ -25,17 +25,17 @@ import (
 	"github.com/spf13/cobra"
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/debugging"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // for tests

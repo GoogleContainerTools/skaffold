@@ -23,11 +23,11 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	tagutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag/util"
 )
 
 type Formatter func(pod v1.Pod, containerStatus v1.ContainerStatus, isMuted func() bool) log.Formatter

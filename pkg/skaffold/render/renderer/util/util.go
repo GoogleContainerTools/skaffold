@@ -24,13 +24,13 @@ import (
 
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 type GenerateHydratedManifestsOptions struct {

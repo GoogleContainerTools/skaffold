@@ -25,7 +25,7 @@ import (
 	"github.com/google/ko/pkg/commands/options"
 	"github.com/google/ko/pkg/publish"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 func (b *Builder) newKoPublisher(ref string) (publish.Interface, error) {

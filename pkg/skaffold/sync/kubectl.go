@@ -23,7 +23,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 func (s *PodSyncer) deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) *exec.Cmd {

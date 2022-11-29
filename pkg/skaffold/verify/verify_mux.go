@@ -20,14 +20,14 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
 )
 
 // VerifierMux forwards all method calls to the verifiers it contains.

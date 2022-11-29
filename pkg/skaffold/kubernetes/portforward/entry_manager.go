@@ -22,11 +22,11 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 var (

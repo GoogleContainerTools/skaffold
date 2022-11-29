@@ -26,19 +26,19 @@ import (
 
 	"golang.org/x/sync/semaphore"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
-	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
+	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
 func NewBuilder(builder build.Builder, tagger tag.Tagger, platforms platform.Resolver, cache cache.Cache, runCtx *runcontext.RunContext) *Builder {

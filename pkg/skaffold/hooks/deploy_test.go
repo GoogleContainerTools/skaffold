@@ -24,12 +24,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const testKubeContext = "context1"

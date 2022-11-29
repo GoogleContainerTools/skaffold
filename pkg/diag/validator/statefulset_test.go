@@ -28,7 +28,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestStatefulSetPodsSelector(t *testing.T) {

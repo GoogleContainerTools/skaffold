@@ -27,9 +27,9 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/hack/comparisonstats/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	v1 "github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/comparisonstats/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	v1 "github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 // ParseEventDuration collects and aggregates metrics for the initial + inner loops from an events file

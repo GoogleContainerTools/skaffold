@@ -28,8 +28,8 @@ import (
 	"github.com/google/ko/pkg/publish"
 	"golang.org/x/tools/go/packages"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // Build an artifact using ko, and either push it to an image registry, or

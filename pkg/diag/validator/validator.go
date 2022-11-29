@@ -30,9 +30,9 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/recommender"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (

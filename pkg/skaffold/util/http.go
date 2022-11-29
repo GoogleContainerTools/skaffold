@@ -21,7 +21,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 func Download(url string) ([]byte, error) {

@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schema "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	schema "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v2beta28"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestCloudBuildConfig(t *testing.T) {

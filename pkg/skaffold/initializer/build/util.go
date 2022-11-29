@@ -19,8 +19,8 @@ package build
 import (
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	tag "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag/util"
 )
 
 func matchBuildersToImages(builders []InitBuilder, images []string) ([]ArtifactInfo, []InitBuilder, []string) {

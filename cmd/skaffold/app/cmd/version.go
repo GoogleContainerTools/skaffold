@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 var versionDefaultTemplate = "{{.Version}}\n"

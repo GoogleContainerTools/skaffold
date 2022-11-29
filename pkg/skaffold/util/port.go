@@ -23,7 +23,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // Loopback network address. Skaffold should not bind to 0.0.0.0

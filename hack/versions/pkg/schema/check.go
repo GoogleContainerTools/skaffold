@@ -25,7 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/versions/pkg/diff"
 )
 
 const baseRef = "origin/main"

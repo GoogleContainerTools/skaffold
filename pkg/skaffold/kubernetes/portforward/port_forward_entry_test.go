@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestPortForwardEntryKey(t *testing.T) {
