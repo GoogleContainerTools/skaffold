@@ -42,7 +42,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
+    # Skip tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     # NOTE: grep output is stored in env var with `|| true` as the run command cannot fail or action will fail
     - name: Check if only docs changes were made in this PR
       run: |
@@ -54,7 +54,7 @@ jobs:
     - name: Run unit tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        make coverage
+        make unit-tests
 
     - name: Run diagnostics tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}

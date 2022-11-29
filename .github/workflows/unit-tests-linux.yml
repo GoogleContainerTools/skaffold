@@ -1,4 +1,4 @@
-name: PR linters, checks, and unit tests (linux)
+name: unit tests (linux)
 
 # Triggers the workflow on push or pull request events
 on: [push, pull_request]
@@ -10,9 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   build:
-    name: PR linters, checks, and unit tests (linux)
+    name: unit tests (linux)
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go
@@ -26,15 +25,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Run make linters
-      run: |
-        make linters
-
-    - name: Run make checks
-      run: |
-        make checks
-
-    # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
+    # Skip tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     # NOTE: grep output is stored in env var with `|| true` as the run command cannot fail or action will fail
     - name: Check if only docs changes were made in this PR
       run: |
