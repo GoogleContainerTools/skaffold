@@ -50,14 +50,7 @@ Users can define additional resources to port forward in the skaffold config, to
 
 For example:
 
-```yaml
-portForward:
-- resourceType: deployment
-  resourceName: myDep
-  namespace: mynamespace
-  port: 8080
-  localPort: 9000 # *Optional*
-```
+{{% readfile file="samples/port-forwarding/portForward.yaml" %}}
 
 For this example, Skaffold will attempt to forward port 8080 to `localhost:9000`.
 If port 9000 is unavailable, Skaffold will forward to a random open port. 
@@ -91,26 +84,11 @@ Skaffold will run `kubectl port-forward` on all user defined resources.
 
 For example, forwarding a deployment that creates 3 replicas could look like this:
 
-```yaml
-portForward:
-- resourceType: deployment
-  resourceName: myDep
-  namespace: mynamespace
-  port: 8080
-  localPort: 9000
-```
+{{% readfile file="samples/port-forwarding/kubectlPortForward.yaml" %}}
 
 ![portforward_deployment](/images/portforward.png)
 
 If you want the port forward to to be available from other hosts and not from the local host only, you can bind
 the port forward to the address `0.0.0.0`:
 
-```yaml
-portForward:
-- resourceType: deployment
-  resourceName: myDep
-  namespace: mynamespace
-  port: 8080
-  address: 0.0.0.0
-  localPort: 9000
-```
+{{% readfile file="samples/port-forwarding/portBind.yaml" %}}
