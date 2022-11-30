@@ -52,13 +52,16 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 
 	envMap := map[string]string{}
 	for idx, b := range builds {
-		suffix := ""
+		idxSuffix := ""
+		// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+		nameSuffix := util.SanitizeHelmTemplateValue(b.ImageName)
 		if idx > 0 {
-			suffix = strconv.Itoa(idx + 1)
+			idxSuffix = strconv.Itoa(idx + 1)
 		}
 
 		for k, v := range envVarForImage(b.ImageName, b.Tag) {
-			envMap[k+suffix] = v
+			envMap[k+idxSuffix] = v
+			envMap[k+"_"+nameSuffix] = v
 		}
 	}
 	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
@@ -131,8 +134,9 @@ func envVarForImage(imageName string, digest string) map[string]string {
 		customMap["DIGEST_HEX"] = digest
 	}
 
-	// IMAGE_DOMAIN and IMAGE_REPO_NO_DOMAIN added for v2beta* 'helm+explicitRegistry' -> v3alpha* compatibility
+	// IMAGE_DOMAIN and IMAGE_REPO_NO_DOMAIN added for v2beta* 'helm+explicitRegistry' -> v3alpha* and beyond compatibility
 	customMap["IMAGE_DOMAIN"] = ref.Domain
 	customMap["IMAGE_REPO_NO_DOMAIN"] = strings.TrimPrefix(ref.BaseName, ref.Domain+"/")
+	customMap["IMAGE_FULLY_QUALIFIED"] = digest
 	return customMap
 }
