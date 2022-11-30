@@ -1,0 +1,12 @@
+build:
+  artifacts:
+  - image: hooks-example
+    sync: 
+      auto: {}
+      hooks:
+        before:
+          - container:
+              command: ["sh", "-c", "echo before sync hook"]
+        after:
+          - container:
+              command: ["sh", "-c", "echo after sync hook"] \n

@@ -47,23 +47,8 @@ For example, consider a project with the following layout:
 ```
 
 The config file might look like:
-```yaml
-apiVersion: skaffold/v2beta11
-kind: Config
-build:
-  artifacts:
-  - image: app
-    context: frontend
-    docker:
-      dockerfile: "Dockerfile"
-deploy:
-  helm:
-    releases:
-    - name: project
-      chartPath: helm/project
-      valuesFiles:
-      - "helm/project/dev-values.yaml"
-```
+
+{{% readfile file="samples/config/config-fileresolutions.yaml" %}}
 
 In this example, the `Dockerfile` for building `app`
 is resolved relative to `app`'s context directory,
@@ -78,27 +63,10 @@ A single `skaffold.yaml` file can define multiple skaffold configurations in the
 
 Consider a `skaffold.yaml` defined as:
 
-```yaml
-apiVersion: skaffold/vX
-kind: Config
-metadata:
-  name: cfg1
-build:
-  # build definition
-deploy:
-  # deploy definition
+{{% readfile file="samples/config/multiple-configs/config1.yaml" %}}
 
----
+{{% readfile file="samples/config/multiple-configs/config2.yaml" %}}
 
-apiVersion: skaffold/vX
-kind: Config
-metadata:
-  name: cfg2
-build:
-  # build definition
-deploy:
-  # deploy definition
-```
 
 Here `cfg1` and `cfg2` are independent skaffold modules. Running `skaffold dev` for instance will execute actions from both these modules. You could also run `skaffold dev --module cfg1` to only activate the `cfg1` module and skip `cfg2`.
 
@@ -114,17 +82,7 @@ Running `skaffold <command> --module <config-name>` will filter to the specified
 
 Consider the same `skaffold.yaml` defined above. Modules `cfg1` and `cfg2` from the above file can be imported as dependencies in your current config definition, via:
 
-```yaml
-apiVersion: skaffold/v2beta11
-kind: Config
-requires:
-  - configs: ["cfg1", "cfg2"]
-    path: path/to/other/skaffold.yaml 
-build:
-  # build definition
-deploy:
-  # deploy definition
-```
+{{% readfile file="samples/config/localConfig.yaml" %}}
 
 If the `configs` list isn't defined then it imports all the configs defined in the file pointed by `path`. Additionally, if the `path` to the configuration isn't defined it assumes that all the required configs are defined in the same file as the current config.
 
@@ -136,16 +94,7 @@ In imported configurations, files are resolved relative to the location of impor
 
 The required skaffold config can live in a remote git repository:
 
-```yaml
-apiVersion: skaffold/v2beta12
-kind: Config
-requires:
-  - configs: ["cfg1", "cfg2"]
-    git:
-      repo: http://github.com/GoogleContainerTools/skaffold.git
-      path: getting-started/skaffold.yaml
-      ref: main
-```
+{{% readfile file="samples/config/remoteConfig.yaml" %}}
 
 The environment variable `SKAFFOLD_REMOTE_CACHE_DIR` or flag `--remote-cache-dir` specifies the download location for all remote repos. If undefined then it defaults to `~/.skaffold/repos`. 
 The repo root directory name is a hash of the repo `uri` and the `branch/ref`.
@@ -158,18 +107,7 @@ Profiles specified by the `--profile` flag are also propagated to all  configura
 
 You can additionally set up more granular and conditional profile activations across dependencies through the `activeProfiles` stanza:
 
-```yaml
-apiVersion: skaffold/v2beta11
-kind: Config
-metadata:
-    name: cfg
-requires:
-  - path: ./path/to/required/skaffold.yaml
-    configs: [cfg1, cfg2]                 
-    activeProfiles:                                     
-     - name: profile1                               
-       activatedBy: [profile2, profile3] 
-```
+{{% readfile file="samples/config/profileActivation.yaml" %}}
 
 Here, `profile1` is a profile that needs to exist in both configs `cfg1` and `cfg2`; while `profile2` and `profile3` are profiles defined in the current config `cfg`. If the current config is activated with either `profile2` or `profile3` then the required configs `cfg1` and `cfg2` are imported with `profile1` applied. If the `activatedBy` clause is omitted then that `profile1` always gets applied for the imported configs.
 

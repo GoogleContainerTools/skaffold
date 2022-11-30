@@ -61,13 +61,7 @@ For projects deploying straight through `kubectl`, Skaffold will walk through al
 
 These files will be added to `deploy` config in `skaffold.yaml`.
 
-```yaml
-deploy:
-  kubectl:
-    manifests:
-    - leeroy-app/kubernetes/deployment.yaml
-    - leeroy-web/kubernetes/deployment.yaml
-```
+{{% readfile file="samples/init/kubectlDeploy.yaml" %}}
 
 ### kustomize
 For projects deploying with `kustomize`, Skaffold will scan your project and look for `kustomization.yaml`s as well as Kubernetes manifests.
@@ -76,21 +70,7 @@ It will attempt to infer the project structure based on the recommended project 
 
 This generally looks like this:
 
-```yaml
-app/      # application source code, along with build configuration
-  main.go
-  Dockerfile
-...
-base/     # base deploy configuration
-  kustomization.yaml
-  deployment.yaml
-overlays/ # one or more nested directories, each with modified environment configuration
-  dev/
-    deployment.yaml
-    kustomization.yaml
-  prod/
-...
-```
+{{% readfile file="samples/init/kustomizeDeploy.yaml" %}}
 
 When overlay directories are found, these will be listed in the generated Skaffold config as `paths` in the `kustomize` deploy stanza. However, it generally does not make sense to have multiple overlays applied at the same time, so **Skaffold will attempt to choose a default overlay, and put each other overlay into its own profile**. This can be specified by the user through the flag `--default-kustomization`; otherwise, Skaffold will use the following heuristic:
 
@@ -123,20 +103,7 @@ This API can be used to
 
 The resulting `skaffold.yaml` will look something like this:
 
-```yaml
-apiVersion: skaffold/v2beta5
-...
-deploy:
-  kustomize:
-    paths:
-    - overlays/dev
-profiles:
-- name: prod
-  deploy:
-    kustomize:
-      paths:
-      - overlays/prod
-```
+{{% readfile file="samples/init/initAPI.yaml" %}}
 
 **Init API contract**
 

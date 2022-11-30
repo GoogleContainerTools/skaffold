@@ -20,10 +20,7 @@ You can override this default one of two ways:
 
 1. Specify `deploy.kubeContext` configuration in `skaffold.yaml`
 
-    ```yaml
-    deploy:
-      kubeContext: minikube
-    ```
+   {{% readfile file="samples/kube-context/kubeDeploy.yaml" %}}
 
 The CLI flag always takes precedence over the config field in the `skaffold.yaml`.
 
@@ -42,16 +39,7 @@ This rule prevents profile-specific settings for one context to be deployed into
 
 For example, given the following profiles:
 
-```yaml
-profiles:
-  - name: profile-1
-    deploy:
-      kubeContext: docker-for-desktop
-
-  - name: profile-2
-    activation:
-      - kubeContext: minikube
-```
+{{% readfile file="samples/kube-context/kubeProfiles.yaml" %}}
 
 It is illegal to activate both profiles here, because `profile-2` has an activation by `kube-context` and `profile-1` changes the effective `kube-context`.
 This happens for

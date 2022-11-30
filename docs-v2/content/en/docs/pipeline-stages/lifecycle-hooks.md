@@ -23,68 +23,25 @@ If an artifact is not built, such as happens when the image was found in the Ska
 To force the build hooks, run Skaffold with `--cache-artifacts=false` option.
 
 Example: _skaffold.yaml_ snippet
-```yaml
-build:
-  artifacts:
-  - image: hooks-example
-    hooks:
-      before:
-        - command: ["sh", "-c", "./hook.sh"]
-          os: [darwin, linux]
-        - command: ["cmd.exe", "/C", "hook.bat"]
-          os: [windows]
-      after:
-        - command: ["sh", "-c", "./hook.sh"]
-          os: [darwin, linux]
-        - command: ["cmd.exe", "/C", "hook.bat"]
-          os: [windows]
-```
+
+{{% readfile file="samples/lifecycle-hooks/hostBeforeAfterBuild.yaml" %}}
+
 This config snippet defines that `hook.sh` (for `darwin` or `linux` OS) or `hook.bat` (for `windows` OS) will be executed `before` and `after` each build for artifact `hooks-example`.
 
 ### `before-sync` and `after-sync`
 
 Example: _skaffold.yaml_ snippet
-```yaml
-build:
-  artifacts:
-  - image: hooks-example
-    sync: 
-      auto: {}
-      hooks:
-        before:
-          - host:
-              command: ["sh", "-c", "./hook.sh"]
-              os: [darwin, linux]
-          - host:
-              command: ["cmd.exe", "/C", "hook.bat"]
-              os: [windows]
-        after:
-          - host:
-              command: ["sh", "-c", "./hook.sh"]
-              os: [darwin, linux]
-          - host:
-              command: ["cmd.exe", "/C", "hook.bat"]
-              os: [windows]
-```
+
+{{% readfile file="samples/lifecycle-hooks/hostBeforeAfterSync.yaml" %}}
+
 This config snippet defines that `hook.sh` (for `darwin` or `linux` OS) or `hook.bat` (for `windows` OS) will be executed `before` and `after` each file sync operation for artifact `hooks-example`.
 
 ### `before-deploy` and `after-deploy`
 
 Example: _skaffold.yaml_ snippet
-```yaml
-deploy:
-  kubectl:
-    manifests:
-      - deployment.yaml
-    hooks:
-      before:
-        - host:
-            command: ["sh", "-c", "echo pre-deploy host hook running on $(hostname)!"]
-            os: [darwin, linux]
-      after:
-        - host:
-            command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"]
-```
+
+{{% readfile file="samples/lifecycle-hooks/hostBeforeAfterDeploy.yaml" %}}
+
 This config snippet defines a simple `echo` command to run before and after each `kubectl` deploy.
 
 ### Environment variables
@@ -116,41 +73,15 @@ Container hooks are executed on a target container and can be defined on the fol
 ### `before-sync` and `after-sync`
 
 Example: _skaffold.yaml_ snippet
-```yaml
-build:
-  artifacts:
-  - image: hooks-example
-    sync: 
-      auto: {}
-      hooks:
-        before:
-          - container:
-              command: ["sh", "-c", "echo before sync hook"]
-        after:
-          - container:
-              command: ["sh", "-c", "echo after sync hook"]
-```
+
+{{% readfile file="samples/lifecycle-hooks/hooksBeforeAfterSync.yaml" %}}
+
 This config snippet defines a command to run inside the container corresponding to the artifact `hooks-example` image, `before` and `after` each file sync operation.
 
 ### `before-deploy` and `after-deploy`
 
 Example: _skaffold.yaml_ snippet
-```yaml
-deploy:
-  kubectl:
-    manifests:
-      - deployment.yaml
-    hooks:
-      before:
-        - container:
-            # this will only run when there's a matching container from a previous deploy iteration like in `skaffold dev` 
-            command: ["sh", "-c", "echo pre-deploy container hook running on $(hostname)!"]
-            containerName: hooks-example*
-            podName: hooks-example-deployment*
-      after:
-        - container:
-            command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
-            containerName: hooks-example* # use a glob pattern to prefix-match the container name and pod name for deployments, stateful-sets, etc.
-            podName: hooks-example-deployment*
-```
+
+{{% readfile file="samples/lifecycle-hooks/hooksBeforeAfterDeploy.yaml" %}}
+
 This config snippet defines a simple `echo` command to run inside the containers that match `podName` and `containerName`, before and after each `kubectl` deploy. The `after` container commands are only run after the [deployment status checks]({{< relref "/docs/pipeline-stages/status-check" >}}) on the deployment are complete. Also, unlike the `sync` container hooks, skaffold cannot determine the target container from just the config definition, and needs the `podName` and `containerName`.

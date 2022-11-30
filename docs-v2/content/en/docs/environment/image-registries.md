@@ -95,12 +95,7 @@ There are several levels of granularity to allow insecure communication with som
 
 1. Per project via the Skaffold pipeline config `skaffold.yaml`
 
-    ```yaml
-    build:
-        insecureRegistries:
-        - insecure1.io
-        - insecure2.io
-    ```
+   {{% readfile file="samples/image-registries/perProject.yaml" %}}
 
 1. Per user via Skaffold's global config
 

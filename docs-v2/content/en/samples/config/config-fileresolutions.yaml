@@ -1,0 +1,13 @@
+build:
+  artifacts:
+  - image: app
+    context: frontend
+    docker:
+      dockerfile: "Dockerfile"
+deploy:
+  helm:
+    releases:
+    - name: project
+      chartPath: helm/project
+      valuesFiles:
+      - "helm/project/dev-values.yaml" \n

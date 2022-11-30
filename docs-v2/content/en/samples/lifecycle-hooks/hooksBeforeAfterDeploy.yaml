@@ -1,0 +1,16 @@
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+    hooks:
+      before:
+        - container:
+            # this will only run when there's a matching container from a previous deploy iteration like in `skaffold dev` 
+            command: ["sh", "-c", "echo pre-deploy container hook running on $(hostname)!"]
+            containerName: hooks-example*
+            podName: hooks-example-deployment*
+      after:
+        - container:
+            command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
+            containerName: hooks-example* # use a glob pattern to prefix-match the container name and pod name for deployments, stateful-sets, etc.
+            podName: hooks-example-deployment* \n

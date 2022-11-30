@@ -1,0 +1,8 @@
+profiles:
+  - name: profile-1
+    deploy:
+      kubeContext: docker-for-desktop
+
+  - name: profile-2
+    activation:
+      - kubeContext: minikube \n

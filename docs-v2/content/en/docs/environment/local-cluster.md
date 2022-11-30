@@ -52,11 +52,7 @@ some extra configuration is necessary. The essential steps are:
 1. Ensure that Skaffold builds the images with the same docker daemon that runs the pods' containers.
 1. Tell Skaffold to skip pushing images either by configuring
 
-    ```yaml
-    build:
-      local:
-        push: false
-    ```
+    {{% readfile file="samples/local-cluster/manualOverride.yaml" %}}
 
    or by marking a Kubernetes context as local (see the following example).
 

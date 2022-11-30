@@ -1,0 +1,12 @@
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo pre-deploy host hook running on $(hostname)!"]
+            os: [darwin, linux]
+      after:
+        - host:
+            command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"] \n

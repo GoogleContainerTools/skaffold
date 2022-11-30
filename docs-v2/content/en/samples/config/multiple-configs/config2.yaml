@@ -1,0 +1,6 @@
+metadata:
+  name: cfg2
+build:
+  # build definition
+deploy:
+  # deploy definition \n

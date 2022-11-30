@@ -1,0 +1,14 @@
+build:
+  artifacts:
+  - image: hooks-example
+    hooks:
+      before:
+        - command: ["sh", "-c", "./hook.sh"]
+          os: [darwin, linux]
+        - command: ["cmd.exe", "/C", "hook.bat"]
+          os: [windows]
+      after:
+        - command: ["sh", "-c", "./hook.sh"]
+          os: [darwin, linux]
+        - command: ["cmd.exe", "/C", "hook.bat"]
+          os: [windows] \n
