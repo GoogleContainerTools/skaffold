@@ -111,8 +111,8 @@ func validateTransformers(config []latest.Transformer) ([]kptfile.Function, erro
 		}
 		if c.ConfigMap != nil {
 			for _, stringifiedData := range c.ConfigMap {
-				items := strings.Split(stringifiedData, ":")
-				if len(items) != 2 {
+				index := strings.Index(stringifiedData, ":")
+				if index == -1 {
 					return nil, sErrors.NewErrorWithStatusCode(
 						&proto.ActionableErr{
 							Message: fmt.Sprintf("unknown arguments for transformer %v", c.Name),
@@ -121,12 +121,12 @@ func validateTransformers(config []latest.Transformer) ([]kptfile.Function, erro
 								{
 									SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_transformers,
 									Action: fmt.Sprintf("please check if the .transformer field and " +
-										"make sure `configMapData` is a list of data in the form of `${KEY}=${VALUE}`"),
+										"make sure `configMapData` is a list of data in the form of `${KEY}:${VALUE}`"),
 								},
 							},
 						})
 				}
-				newFunc.ConfigMap[items[0]] = items[1]
+				newFunc.ConfigMap[stringifiedData[0:index]] = stringifiedData[index+1:]
 			}
 		}
 		newFuncs = append(newFuncs, newFunc)
