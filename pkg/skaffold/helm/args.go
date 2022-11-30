@@ -54,15 +54,14 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 	for idx, b := range builds {
 		idxSuffix := ""
 		// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
-		namePrefix := strings.ReplaceAll(strings.ReplaceAll(b.ImageName, "-", "_"), "/", "_")
-
+		nameSuffix := util.SanitizeHelmTemplateValue(b.ImageName)
 		if idx > 0 {
 			idxSuffix = strconv.Itoa(idx + 1)
 		}
 
 		for k, v := range envVarForImage(b.ImageName, b.Tag) {
 			envMap[k+idxSuffix] = v
-			envMap["."+namePrefix+"."+k] = v
+			envMap[k+"_"+nameSuffix] = v
 		}
 	}
 	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
