@@ -17,4 +17,4 @@ build:
               os: [darwin, linux]
           - host:
               command: ["cmd.exe", "/C", "hook.bat"]
-              os: [windows] \n
+              os: [windows]

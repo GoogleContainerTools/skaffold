@@ -1,4 +1,4 @@
 build:
         insecureRegistries:
         - insecure1.io
-        - insecure2.io \n
+        - insecure2.io

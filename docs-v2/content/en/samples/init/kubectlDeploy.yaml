@@ -2,4 +2,4 @@ deploy:
   kubectl:
     manifests:
     - leeroy-app/kubernetes/deployment.yaml
-    - leeroy-web/kubernetes/deployment.yaml \n
+    - leeroy-web/kubernetes/deployment.yaml

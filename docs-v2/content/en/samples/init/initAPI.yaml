@@ -9,5 +9,5 @@ profiles:
   deploy:
     kustomize:
       paths:
-      - overlays/prod \n
+      - overlays/prod
     

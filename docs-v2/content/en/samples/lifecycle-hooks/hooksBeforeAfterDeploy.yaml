@@ -13,4 +13,4 @@ deploy:
         - container:
             command: ["sh", "-c", "echo post-deploy container hook running on $(hostname)!"]
             containerName: hooks-example* # use a glob pattern to prefix-match the container name and pod name for deployments, stateful-sets, etc.
-            podName: hooks-example-deployment* \n
+            podName: hooks-example-deployment*

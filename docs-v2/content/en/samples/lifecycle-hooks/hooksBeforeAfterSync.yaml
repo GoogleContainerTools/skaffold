@@ -9,4 +9,4 @@ build:
               command: ["sh", "-c", "echo before sync hook"]
         after:
           - container:
-              command: ["sh", "-c", "echo after sync hook"] \n
+              command: ["sh", "-c", "echo after sync hook"]

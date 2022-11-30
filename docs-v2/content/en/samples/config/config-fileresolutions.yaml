@@ -10,4 +10,4 @@ deploy:
     - name: project
       chartPath: helm/project
       valuesFiles:
-      - "helm/project/dev-values.yaml" \n
+      - "helm/project/dev-values.yaml"

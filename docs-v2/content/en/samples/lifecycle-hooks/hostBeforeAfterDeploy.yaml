@@ -9,4 +9,4 @@ deploy:
             os: [darwin, linux]
       after:
         - host:
-            command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"] \n
+            command: ["sh", "-c", "echo post-deploy host hook running on $(hostname)!"]

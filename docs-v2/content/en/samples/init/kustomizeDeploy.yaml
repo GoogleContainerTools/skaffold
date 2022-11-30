@@ -10,4 +10,4 @@ overlays/ # one or more nested directories, each with modified environment confi
     deployment.yaml
     kustomization.yaml
   prod/
-... \n
+...

@@ -5,4 +5,4 @@ profiles:
 
   - name: profile-2
     activation:
-      - kubeContext: minikube \n
+      - kubeContext: minikube

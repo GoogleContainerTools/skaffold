@@ -3,4 +3,4 @@ requires:
     git:
       repo: http://github.com/GoogleContainerTools/skaffold.git
       path: getting-started/skaffold.yaml
-      ref: main \n
+      ref: main

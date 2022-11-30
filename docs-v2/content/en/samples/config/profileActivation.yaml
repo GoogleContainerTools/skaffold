@@ -5,4 +5,4 @@ requires:
     configs: [cfg1, cfg2]                 
     activeProfiles:                                     
      - name: profile1                               
-       activatedBy: [profile2, profile3] \n
+       activatedBy: [profile2, profile3]

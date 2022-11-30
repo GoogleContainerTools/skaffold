@@ -11,4 +11,4 @@ build:
         - command: ["sh", "-c", "./hook.sh"]
           os: [darwin, linux]
         - command: ["cmd.exe", "/C", "hook.bat"]
-          os: [windows] \n
+          os: [windows]
