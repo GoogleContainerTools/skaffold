@@ -1574,7 +1574,7 @@ type RenderHooks struct {
 type CloudRunDeployHooks struct {
 	// PreHooks describes the list of lifecycle hooks to execute *before* the Cloud Run deployer.
 	PreHooks []HostHook `yaml:"before,omitempty"`
-	// PreHooks describes the list of lifecycle hooks to execute *after* the Cloud Run deployer.
+	// PostHooks describes the list of lifecycle hooks to execute *after* the Cloud Run deployer.
 	PostHooks []HostHook `yaml:"after,omitempty"`
 }
 
