@@ -1,0 +1,8 @@
+buildpack:
+  builder: "gcr.io/buildpacks/builder:v1"
+  dependencies:
+    paths:
+    - pkg/**
+    - src/*.go
+    ignore:
+    - vendor/**

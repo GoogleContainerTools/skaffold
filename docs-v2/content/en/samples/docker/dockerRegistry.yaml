@@ -1,0 +1,6 @@
+build:
+  cluster:
+    dockerConfig:
+      path: ~/.docker/config.json
+      # OR
+      secretName: docker-config-secret-in-kubernetes

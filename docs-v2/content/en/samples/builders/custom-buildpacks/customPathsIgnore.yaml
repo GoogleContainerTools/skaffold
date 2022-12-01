@@ -1,0 +1,8 @@
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    paths:
+    - pkg/**
+    - src/*.go
+    ignore:
+    - vendor/**

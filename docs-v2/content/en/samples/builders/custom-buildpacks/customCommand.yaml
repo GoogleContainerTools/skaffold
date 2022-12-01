@@ -1,0 +1,4 @@
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    command: echo ["file1","file2","file3"]

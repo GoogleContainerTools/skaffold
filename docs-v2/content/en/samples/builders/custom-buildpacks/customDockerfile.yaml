@@ -1,0 +1,7 @@
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    dockerfile:
+      path: path/to/Dockerfile
+      buildArgs:
+        file: foo

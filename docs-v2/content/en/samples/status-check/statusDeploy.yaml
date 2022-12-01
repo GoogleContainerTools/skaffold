@@ -1,0 +1,9 @@
+metadata:
+  name: getting-started
+spec:
+  progressDeadlineSeconds: 300
+  template:
+    spec:
+      containers:
+      - name: cannot-run
+        image: gcr.io/k8s-skaffold/getting-started-foo

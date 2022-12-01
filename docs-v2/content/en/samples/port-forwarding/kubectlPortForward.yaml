@@ -1,0 +1,6 @@
+portForward:
+- resourceType: deployment
+  resourceName: myDep
+  namespace: mynamespace
+  port: 8080
+  localPort: 9000
