@@ -1,4 +1,7 @@
-custom:
-  buildCommand: ./build.sh
-  dependencies:
-    command: echo ["file1","file2","file3"]
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/skaffold-custom
+      custom:
+        buildCommand: ./build.sh
+        dependencies:
+          command: echo ["file1","file2","file3"]
