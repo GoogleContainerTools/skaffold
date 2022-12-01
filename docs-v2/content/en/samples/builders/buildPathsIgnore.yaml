@@ -1,9 +1,11 @@
 build:
-  buildpack:
-    builder: "gcr.io/buildpacks/builder:v1"
-    dependencies:
-      paths:
-      - pkg/**
-      - src/*.go
-      ignore:
-      - vendor/**
+  artifacts:
+    - image: gcr.io/k8s-skaffold/skaffold-buildpacks
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"
+        dependencies:
+          paths:
+          - pkg/**
+          - src/*.go
+          ignore:
+          - vendor/**
