@@ -56,30 +56,11 @@ is given to `Deployment.spec.progressDeadline` **only if it is less than** `stat
 
 For example, the `Deployment` below with `progressDeadlineSeconds` set to 5 minutes,
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: getting-started
-spec:
-  progressDeadlineSeconds: 300
-  template:
-    spec:
-      containers:
-      - name: cannot-run
-        image: gcr.io/k8s-skaffold/getting-started-foo
-```
+{{% readfile file="samples/status-check/statusDeploy.yaml" %}}
 
 if the `skaffold.yaml` overrides the deadline to make sure deployment stabilizes in a 60 seconds,
 
-```yaml
-apiVersion: skaffold/v1
-deploy:
-  statusCheckDeadlineSeconds: 60
-  kubectl:
-    manifests:
-    - k8s-*
-```
+{{% readfile file="samples/status-check/statusStabilize.yaml" %}}
 
 Running `skaffold deploy`
 

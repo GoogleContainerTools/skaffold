@@ -94,16 +94,7 @@ This configuration is currently not supported.
 Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`.
 `Ignore` will only work in conjunction with `Paths`, and with none of the other custom artifact dependency types.
 
-```yaml
-custom:
-  buildCommand: ./build.sh
-  dependencies:
-    paths:
-    - pkg/**
-    - src/*.go
-    ignore:
-    - vendor/**
-```
+{{% readfile file="samples/builders/custom-buildpacks/customPathsIgnore.yaml" %}}
 
 #### Dockerfile
 
@@ -112,15 +103,7 @@ Passing in the path to the Dockerfile and any build args, if necessary, will all
 
 {{< schema root="DockerfileDependency" >}}
 
-```yaml
-custom:
-  buildCommand: ./build.sh
-  dependencies:
-    dockerfile:
-      path: path/to/Dockerfile
-      buildArgs:
-        file: foo
-```
+{{% readfile file="samples/builders/custom-buildpacks/customDockerfile.yaml" %}}
 
 {{< alert title="Warning" >}}
 `buildArgs` are not passed to the custom build script. They are only used to resolve
@@ -137,12 +120,7 @@ The command *must* return dependencies as a JSON array, otherwise skaffold will 
 
 For example, the following configuration is valid, as executing the dependency command returns a valid JSON array.
 
-```yaml
-custom:
-  buildCommand: ./build.sh
-  dependencies:
-    command: echo ["file1","file2","file3"]
-```
+{{% readfile file="samples/builders/custom-buildpacks/customCommand.yaml" %}}
 
 ### File Sync
 

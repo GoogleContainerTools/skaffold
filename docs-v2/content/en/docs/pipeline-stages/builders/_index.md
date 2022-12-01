@@ -36,10 +36,7 @@ Skaffold will use your locally-installed build tools (such as Docker, Bazel, Mav
 
 To configure the local execution explicitly, add build type `local` to the build section of `skaffold.yaml`
 
-```yaml
-build:
-  local: {}
-```
+{{% readfile file="samples/index/localBuild.yaml" %}}
 
 The following options can optionally be configured:
 
@@ -92,10 +89,7 @@ or [Custom Build Script]({{<relref "/docs/pipeline-stages/builders/custom#custom
 
 To configure in-cluster Build, add build type `cluster` to the build section of `skaffold.yaml`. 
 
-```yaml
-build:
-  cluster: {}
-```
+{{% readfile file="samples/index/inClusterBuild.yaml" %}}
 
 The following options can optionally be configured:
 
@@ -137,10 +131,7 @@ be used in the build process.
 To use Cloud Build, add build type `googleCloudBuild` to the `build`
 section of `skaffold.yaml`. 
 
-```yaml
-build:
-  googleCloudBuild: {}
-```
+{{% readfile file="samples/index/cloudBuildConfig.yaml" %}}
 
 The following options can optionally be configured:
 
