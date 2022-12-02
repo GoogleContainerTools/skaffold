@@ -1,5 +1,6 @@
-deploy:
-  kubectl:
-    manifests:
+manifests:
+  rawYaml:
     - leeroy-app/kubernetes/deployment.yaml
     - leeroy-web/kubernetes/deployment.yaml
+deploy:
+  kubectl: {}

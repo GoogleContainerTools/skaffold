@@ -2,7 +2,7 @@ build:
   artifacts:
   - image: hooks-example
     sync: 
-      auto: {}
+      auto: true
       hooks:
         before:
           - host:
