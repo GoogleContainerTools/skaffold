@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v3
+package v4beta1
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v4beta1"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v3
+	yaml := `apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -121,7 +121,7 @@ profiles:
     deploy:
       kubectl: {}
 `
-	expected := `apiVersion: skaffold/v4beta1
+	expected := `apiVersion: skaffold/v4beta2
 kind: Config
 build:
   artifacts:
@@ -160,8 +160,6 @@ test:
 manifests:
   rawYaml:
     - k8s-*
-  remoteManifests:
-    - manifest: deploy/test
   kustomize:
     paths:
     - kustomization-main
@@ -170,7 +168,9 @@ manifests:
       - name: skaffold-helm
         chartPath: charts
 deploy:
-  kubectl: {}
+  kubectl:
+    remoteManifests:
+      - deploy/test
   helm: {}
 portForward:
   - resourceType: deployment
