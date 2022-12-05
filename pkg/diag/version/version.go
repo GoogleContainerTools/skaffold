@@ -27,7 +27,7 @@ const VersionPrefix = "v"
 
 // The current version of the minikube
 
-// version is a private field and should be set when compiling with --ldflags="-X github.com/GoogleContainerTools/skaffold/pkg/diag/version.version=vX.Y.Z"
+// version is a private field and should be set when compiling with --ldflags="-X github.com/GoogleContainerTools/skaffold/v2/pkg/diag/version.version=vX.Y.Z"
 var version = "v0.0.0-unset"
 
 // GetVersion returns the current diag pkg version
