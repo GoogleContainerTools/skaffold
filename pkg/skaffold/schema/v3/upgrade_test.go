@@ -121,7 +121,7 @@ profiles:
     deploy:
       kubectl: {}
 `
-	expected := `apiVersion: skaffold/v4beta1
+	expected := `apiVersion: skaffold/v4beta2
 kind: Config
 build:
   artifacts:
