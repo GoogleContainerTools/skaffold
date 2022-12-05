@@ -47,12 +47,7 @@ The ko builder default configuration is sufficient for many Go apps. To use
 the ko builder with its default configuration, provide an empty map in the
 `ko` field, e.g.:
 
-```yaml
-build:
-  artifacts:
-  - image: my-simple-go-app
-    ko: {}
-```
+{{% readfile file="samples/ko/koBuilder.yaml" %}}
 
 ### Base image
 
@@ -67,10 +62,7 @@ You can specify a different base image using the ko builder `fromImage` config
 field. For instance, if you want to use a base image that contains `glibc` and
 a shell, you can use this configuration:
 
-```yaml
-    ko:
-      fromImage: gcr.io/distroless/base:debug-nonroot
-```
+{{% readfile file="samples/ko/koBaseImage.yaml" %}}
 
 ### Multi-platform images
 
@@ -92,22 +84,12 @@ For example, you can add labels based on the
 [pre-defined annotations keys](https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys)
 from the Open Container Initiative (OCI) Image Format Specification:
 
-```yaml
-    ko:
-      labels:
-        org.opencontainers.image.licenses: Apache-2.0
-        org.opencontainers.image.source: https://github.com/GoogleContainerTools/skaffold
-```
+{{% readfile file="samples/ko/koImageLabels.yaml" %}}
 
 The `labels` section supports templating of values based on environment
 variables, e.g.:
 
-```yaml
-    ko:
-      labels:
-        org.opencontainers.image.revision: "{{.GITHUB_SHA}}"
-        org.opencontainers.image.source: "{{.GITHUB_SERVER_URL}}/{{.GITHUB_REPOSITORY}}"
-```
+{{% readfile file="samples/ko/koVariables.yaml" %}}
 
 ### Build time environment variables
 
@@ -115,21 +97,12 @@ Use the `env` configuration field to specify build-time environment variables.
 
 Example:
 
-```yaml
-    ko:
-      env:
-      - GOCACHE=/workspace/.gocache
-      - GOPRIVATE=git.internal.example.com,source.developers.google.com
-```
+{{% readfile file="samples/ko/koBuildTime.yaml" %}}
 
 The `env` field supports templating of values using environment variables, for
 example:
 
-```yaml
-    ko:
-      env:
-      - GOPROXY={{.GOPROXY}}
-```
+{{% readfile file="samples/ko/koTemplating.yaml" %}}
 
 ### Dependencies
 
@@ -143,56 +116,28 @@ empty.
 
 Example:
 
-```yaml
-    ko:
-      dependencies:
-        paths:
-        - cmd
-        - go.mod
-        - pkg
-        ignore:
-        - vendor
-```
+{{% readfile file="samples/ko/koPathsIgnore.yaml" %}}
 
 If no `dependencies` are specified, the default values are as follows:
 
-```yaml
-    ko:
-      dependencies:
-        paths: ["**/*.go"]
-        ignore: []
-```
+{{% readfile file="samples/ko/koDependencies.yaml" %}}
 
 ### Build flags
 
 Use the `flags` configuration field to provide flag arguments to `go build`,
 e.g.:
 
-```yaml
-    ko:
-      flags:
-      - -mod=vendor
-      - -v
-```
+{{% readfile file="samples/ko/koFlags.yaml" %}}
 
 Use the `ldflags` configuration field to provide linker flag arguments, e.g.:
 
-```yaml
-    ko:
-      ldflags:
-      - -s
-      - -w
-```
+{{% readfile file="samples/ko/koLdflags.yaml" %}}
 
 The `flags` and `ldflags` fields support templating using environment
 variables,
 e.g.:
 
-```yaml
-    ko:
-      ldflags:
-      - -X main.version={{.VERSION}}
-```
+{{% readfile file="samples/ko/koBothFlags.yaml" %}}
 
 These templates are evaluated by Skaffold. Note that the syntax is slightly
 different to
@@ -205,19 +150,13 @@ If your Go source files and `go.mod` are not in the `context` directory,
 use the `dir` configuration field to specify the path, relative to the
 `context` directory, e.g.:
 
-```yaml
-    ko:
-      dir: ./compat-go114
-```
+{{% readfile file="samples/ko/koDirConfig.yaml" %}}
 
 If your `package main` is not in the `context` directory (or in `dir` if
 specified), use the `main` configuration field to specify the path or target,
 e.g.:
 
-```yaml
-    ko:
-      main: ./cmd/foo
-```
+{{% readfile file="samples/ko/koModVendor.yaml" %}}
 
 If your `context` directory only contains one `package main` directory, you
 can use the `...` wildcard in the `main` field value, e.g., `./...`.
@@ -275,11 +214,7 @@ GOFLAGS="-mod=vendor" ko publish .
 To achieve the same using Skaffold's ko builder, use the `flags` field in
 `skaffold.yaml`:
 
-```yaml
-    ko:
-      flags:
-      - -mod=vendor
-```
+
 
 ```shell
 skaffold build
@@ -339,12 +274,7 @@ skaffold render --build-artifacts artifacts.json --digest-source none --offline 
 
 Specify the location of your Kubernetes manifests in `skaffold.yaml`:
 
-```yaml
-deploy:
-  kubectl:
-    manifests:
-    - k8s/*.yaml # this is the default
-```
+{{% readfile file="samples/ko/koRendering.yaml" %}}
 
 To build images in parallel, consider setting the `SKAFFOLD_BUILD_CONCURRENCY`
 environment variable value to `0`:
@@ -355,11 +285,7 @@ SKAFFOLD_BUILD_CONCURRENCY=0 skaffold [...]
 
 You can also set the concurrency value in your `skaffold.yaml`:
 
-```yaml
-build:
-  local:
-    concurrency: 0
-```
+{{% readfile file="samples/ko/koBuildConcurrency.yaml" %}}
 
 ## Advanced usage
 
@@ -403,11 +329,7 @@ For instance, if your main package is in the `context` directory, you can use
 this configuration to sync all the static files bundled with the container
 image:
 
-```yaml
-    sync:
-      infer:
-      - kodata/**/*
-```
+{{% readfile file="samples/ko/koSyncStatic.yaml" %}}
 
 Note that the file sync feature requires the `tar` command to be available in
 the container. The default `ko` builder base image does not include the `tar`
@@ -419,16 +341,7 @@ You can use [profiles]({{< relref "/docs/environment/profiles" >}}) with
 activation by command to override the `fromImage` value only when running
 `skaffold dev`, such as in this example:
 
-```yaml
-profiles:
-- name: sync
-  activation:
-  - command: dev
-  patches:
-  - op: add
-    path: /build/artifacts/0/ko/fromImage
-    value: gcr.io/distroless/base:debug
-```
+{{% readfile file="samples/ko/koProfiles.yaml" %}}
 
 ### Remote builds
 
@@ -443,17 +356,7 @@ If the ko builder doesn't support your use of `ko`, you can instead use the
 See the `custom` builder
 [example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom).
 
-```yaml
-build:
-  artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
-    custom:
-      buildCommand: ./build.sh
-      dependencies:
-        paths:
-        - "**/*.go"
-        - go.mod
-```
+{{% readfile file="samples/ko/koCustomBuilder.yaml" %}}
 
 If you need to use `ko` via the custom builder rather than the ko builder,
 please consider filing an

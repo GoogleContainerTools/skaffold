@@ -43,6 +43,7 @@ $ echo $?
 and `skaffold verify` will exit with error code `0`
 
 If a test fails, for example changing the `alpine-wget` test to point to a URL that doesn't exist:
+
 {{% readfile file="samples/verify/verifySnippet.yaml" %}}
 
 The following will occur (simulating a single test failure on one of the three tests):
