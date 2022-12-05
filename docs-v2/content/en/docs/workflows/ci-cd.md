@@ -109,18 +109,7 @@ First, use `skaffold render` to hydrate the Kubernetes resource file with a newl
 ```code
 $ skaffold render --output render.yaml
 ```
-```yaml
-# render.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:v1.19.0-89-gdbedd2a20-dirty
-    name: getting-started
-```
+{{% readfile file="samples/ci-cd/ci-cdNewImage.yaml" %}}
 
 Then, we can apply this output directly to the cluster:
 

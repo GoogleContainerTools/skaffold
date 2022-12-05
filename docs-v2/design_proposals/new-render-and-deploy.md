@@ -194,30 +194,7 @@ The `deploy` section in `skaffold.yaml` will be greatly simplified:
 
 #### "deploy" interface in `skaffold.yaml`
 
-```yaml
-apiVersion: skaffold/v3
-kind: Config
-metadata:
-  name: skaffold-config
-build:
-   …
-render:
-   …
-deploy:
-
-   # Optional. The path to the WET configuration. It not provided, using the output from the render step.
-   dir: [String]
-
-   # Optional. The kpt live inventory ID
-   inventoryID: [String]
-
-   # Optional. The kpt inventory namespace
-   inventoryNamespace: [String] 
-
-   # Optional. The `kpt live apply` flags. 
-   # Unchanged fields.
-   options: ...
-```
+{{% readfile file="samples/new-render-deploy/newDeployInterface.yaml" %}}
 
 ### `skaffold` commands and flags
 

@@ -108,16 +108,7 @@ expect at least `jib` to do implement the spec.
 
 #### User Configuration
 
-```yaml
-build:
-  artifacts:
-  - image: ...
-    context: jib-project
-    jib: {}
-    sync:
-      auto: {}
-```
-
+{{% readfile file="samples/sync-auto-support/syncUserConfig.yaml" %}}
 
 #### Get necessary information from the builder
 

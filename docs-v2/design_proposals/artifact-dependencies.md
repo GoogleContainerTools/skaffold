@@ -23,16 +23,7 @@ type ArtifactDependency struct {
 
 This allows us to define a build stanza like below where image `leeroy-app` requires image `simple-go-app`:
 
-```yaml
-build:
- artifacts:
-   - image: leeroy-app
-     requires:
-       - image: simple-go-app
-         alias: BASE
-   - image: simple-go-app
-
-```
+{{% readfile file="samples/artifact-dependencies/artifactBuildStanza.yaml" %}}
 
 Alias is a token that will be replaced with the image reference in the builder definition files. If no value is provided for `alias` then it defaults to the value of `image`.
 
@@ -53,15 +44,7 @@ We add three new validations to the [validation](https://github.com/GoogleContai
 
 The `docker` builder will use the `alias` of an `ArtifactDependency` as a build argument key.
  
- ```yaml
- build:
-  artifacts:
-    - image: simple-go-app
-    - image: leeroy-app
-      requires:
-        - image: simple-go-app
-          alias: BASE
- ```
+ {{% readfile file="samples/artifact-dependencies/artifactDockerAlias.yaml" %}}
 
 Here the alias is used to populate a build arg `BASE=gcr.io/X/simple-go-app:<tag>@sha:<sha>` passed along with a `--build-arg` flag (or a buildKit parameter) when building `leeroy-app`.
 
@@ -73,19 +56,7 @@ The `custom` builder will be supplied each `ArtifactDependency`'s `alias` and im
 
 Buildpacks supports overriding the run-image and the builder-image in its current schema. We extend this to allow specifying `ArtifactDependency`'s `image` name as the value for the `runImage` and `builder` fields.
 
-```yaml
-build:
-  artifacts:
-  - image: builder-image
-  - image: run-image
-  - image: skaffold-buildpacks
-    buildpacks:
-      builder: builder-image
-      runImage: run-image
-    requires:
-      - image: builder-image
-      - image: run-image
-```
+{{% readfile file="samples/artifact-dependencies/artifactRunImage.yaml" %}}
 
 If there are any additional images in the `required` section it only enforces that they get built prior to the current image. However, the buildpacks builder cannot really reference them in any other way.
 
@@ -95,31 +66,11 @@ The Jib builder supports [changing the base image](https://cloud.google.com/java
 
 For Maven:
 
-```yaml
-build:
-  artifacts:
-  - image: base-image
-  - image: test-jib-maven
-    jib:
-      type: maven
-      baseImage: base-image
-    requires:
-      - image: base-image
-```
+{{% readfile file="samples/artifact-dependencies/artifactMavenBase.yaml" %}}
 
 Similarly, for Gradle:
 
-```yaml
-build:
-  artifacts:
-  - image: base-image
-  - image: test-jib-gradle
-    jib:
-      type: gradle
-      baseImage: base-image
-    requires:
-      - image: base-image
-```
+{{% readfile file="samples/artifact-dependencies/artifactGradleBase.yaml" %}}
 
 This will allow Skaffold to override the `jib.from.image` property that sets the base image with a flag like `-Djib.from.image=registry://gcr.io/X/base-image:<tag>@sha:<sha>`
 

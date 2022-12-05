@@ -394,7 +394,7 @@ an event that can be used by tools like IDEs to establish a debug session.
     metadata:
       annotations:
         debug.cloud.google.com/probe/timeouts: skip
-    spec: ...
+    spec: # ...
     ```
 
 ## Troubleshooting

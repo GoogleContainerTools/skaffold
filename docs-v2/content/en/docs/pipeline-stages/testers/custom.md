@@ -46,15 +46,7 @@ Supported schema for `dependencies` include:
 
 `Paths` and `Ignore` are arrays used to list dependencies. This can be a glob. Any `paths` in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`. `Ignore` will only work in conjunction with `Paths`.
 
-```yaml
-    custom:
-      - command: ./test.sh
-        timeoutSeconds: 60
-        dependencies:
-          paths:
-          -  "*_test.go"
-          -  "test.sh"
-```
+{{% readfile file="samples/custom/customPathsSnippet.yaml" %}}
 
 #### Command for dependencies
 
@@ -62,13 +54,7 @@ Sometimes users might have a command or a script that can provide the dependenci
 
 The command *must* return dependencies as a JSON array, otherwise skaffold will error out.
 
-```yaml
-    custom:
-      - command: echo Hello world!!
-        dependencies:
-          command: echo [\"main_test.go\"] 
-```
-
+{{% readfile file="samples/custom/customCommandSnippet.yaml" %}}
  
 >*Note: Adding a file pattern to a test dependency doesn't automatically enable file sync on it.  Refer to the [`file sync`](https://skaffold.dev/docs/pipeline-stages/filesync/) documentation, on how to set that up separately.*
 
