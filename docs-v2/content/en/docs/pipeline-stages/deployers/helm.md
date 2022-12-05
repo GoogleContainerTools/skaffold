@@ -26,11 +26,26 @@ Skaffold no longer requires the intricate configuring of `artifactOverrides` and
 ## Image Configuration
 The normal Helm convention for defining image references is through the `values.yaml` file. Often, image information is configured through an `image` stanza in the values file, which might look something like this:
 
-{{% readfile file="samples/helm/helmImageValuesFile.yaml" %}}
+```project_root/values.yaml```
+```yaml
+image:
+  repository: gcr.io/my-project/my-image
+  tag: v1.2.0
+  pullPolicy: IfNotPresent
+```
 
 This image would then be referenced in a templated resource file, maybe like this:
 
-{{% readfile file="samples/helm/helmTemplateResourceFile.yaml" %}}
+```project_root/templates/deployment.yaml:```
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag}}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+```
 
 **IMPORTANT: To get Skaffold to work with Helm, the `image` key must be configured in the skaffold.yaml.**
 
@@ -44,7 +59,16 @@ The `artifactOverrides` binds a Helm value key to a build artifact.  The `imageS
 
 To override multiple images (ie a Pod with a side car) you can simply add additional variables. For example, the following helm template:
 
-{{% readfile file="samples/helm/helmImageOverrides.yaml" %}}
+```yaml
+spec:
+  containers:
+    - name: firstContainer
+      image: "{{.Values.firstContainerImage}}"
+      # ....
+    - name: secondContainer
+      image: "{{.Values.secondContainerImage}}"
+       # ...
+```
 
 can be overriden with:
 

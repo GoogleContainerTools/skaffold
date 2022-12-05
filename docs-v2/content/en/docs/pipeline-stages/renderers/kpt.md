@@ -24,7 +24,17 @@ An example showing how these fields can be used is below.  Run `skaffold render`
 
 `kpt-k8s-pod.yaml`
 
-{{% readfile file="samples/kpt/kptPod.yaml" %}}
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  app: guestbook
+spec:
+  containers:
+  - name: getting-started
+    image: nginx
+```
 
 The aboveconfiguration above adds a field `metadata.annotations.author` with value `fake-author`, adds a `kpt` "setter" comment (` # kpt-set: ${app}`) to the intermediate yaml, modifies the value at the location of the `kpt` "setter" field with the provided `app` value (`app: guestbook-fake-author`) and then validates that the yaml is valid yaml via `kubeval`.
 
