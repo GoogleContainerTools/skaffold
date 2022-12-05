@@ -315,3 +315,8 @@ func IsSubPath(basepath string, targetpath string) bool {
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
 }
+
+func SanitizeHelmTemplateValue(s string) string {
+	// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+	return strings.ReplaceAll(strings.ReplaceAll(s, "-", "_"), "/", "_")
+}

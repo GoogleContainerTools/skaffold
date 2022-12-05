@@ -44,7 +44,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    # TODO(aaron-prindle) skip integration tests for doc only changes on Windows.  Figure out the proper syntax, etc.
+      # TODO(aaron-prindle) skip unit tests for doc only changes on Windows.  Figure out the proper syntax, etc.
     - name: Run skaffold unit tests on windows
       run: |
-        go test -short -timeout 60s  ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
+        go test -count=1 -short -timeout 90s  ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...

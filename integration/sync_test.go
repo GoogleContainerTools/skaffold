@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	yamlpatch "github.com/krishicks/yaml-patch"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
@@ -61,9 +63,6 @@ func TestDevSync(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
 
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
-
 			ns, client := SetupNamespace(t)
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).InNs(ns.Name).RunBackground(t)
@@ -86,22 +85,41 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 	for _, test := range syncTests {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
+			manifest, err := os.ReadFile("testdata/file-sync/pod.yaml")
+			defer os.WriteFile("testdata/file-sync/pod.yaml", manifest, 0644)
+			if err != nil {
+				t.Fatal("Failed to read from file-sync/pod.yaml file.")
+			}
+			id := "test-file-sync-" + uuid.New().String()
+			ops := []byte(
+				`---
+- op: replace
+  path: /metadata/name
+  value: ` + id)
 
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
+			patch, err := yamlpatch.DecodePatch(ops)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			nm, err := patch.Apply(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			os.WriteFile("testdata/file-sync/pod.yaml", nm, 0644)
 
 			_, client := DefaultNamespace(t)
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).RunBackground(t)
-			defer skaffold.Delete().InDir("testdata/file-sync").WithConfig(test.config).RunBackground(t)
+			defer skaffold.Delete().InDir("testdata/file-sync").WithConfig(test.config).Run(t)
 
-			client.WaitForPodsReady("test-file-sync")
+			client.WaitForPodsReady(id)
 
 			os.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 			defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
-			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "--", "cat", "foo").Output()
+			err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				out, _ := exec.Command("kubectl", "exec", id, "--", "cat", "foo").Output()
 				return string(out) == "foo", nil
 			})
 			failNowIfError(t, err)
@@ -132,9 +150,6 @@ func TestDevAutoSync(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
-
-			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().WithConfig(test.configFile).InDir(dir).RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
 

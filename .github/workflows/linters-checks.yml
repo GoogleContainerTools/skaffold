@@ -1,0 +1,34 @@
+name: PR linters, checks
+
+# Triggers the workflow on push or pull request events
+on: [push, pull_request]
+
+permissions: read-all
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: PR linters, checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.*
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run make linters
+        run: |
+          make linters
+
+      - name: Run make checks
+        run: |
+          make checks

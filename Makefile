@@ -113,6 +113,10 @@ test: $(BUILD_DIR)
 	@ ./hack/checks.sh
 	@ ./hack/linters.sh
 
+.PHONY: unit-tests
+unit-tests: $(BUILD_DIR)
+	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
+
 .PHONY: coverage
 coverage: $(BUILD_DIR)
 	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)

@@ -225,7 +225,7 @@ func (r *imageReplacer) Visit(gk apimachinery.GroupKind, navpath string, o map[s
 	// works by looking for intermediate helm replacement of the form image:
 	// image: <artifactName>/<artifactName>:<artifactName>
 	// and treating that as just <artifact> by modifying the parsed representation.
-	if parsed.Domain != "" && parsed.Domain == parsed.Repo {
+	if parsed != nil && parsed.Domain != "" && parsed.Domain == parsed.Repo {
 		if _, present := r.tagsByImageName[parsed.Repo]; present {
 			parsed.BaseName = parsed.Repo
 		}
@@ -250,6 +250,10 @@ func (r *imageReplacer) Check() {
 type imageSelector func(tagsByImageName map[string]string, image *docker.ImageReference) (imageName, tag string, valid bool)
 
 func selectLocalManifestImages(tagsByImageName map[string]string, image *docker.ImageReference) (string, string, bool) {
+	if image == nil {
+		return "", "", false
+	}
+
 	// Leave images referenced by digest as they are
 	if image.Digest != "" {
 		return "", "", false
