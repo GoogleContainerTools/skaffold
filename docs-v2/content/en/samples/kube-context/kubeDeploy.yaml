@@ -1,2 +1,2 @@
 deploy:
-      kubeContext: minikube
+  kubeContext: minikube
