@@ -87,78 +87,19 @@ If the command points to files, those don't get added to the change monitoring f
 
 For multiple microservices in a repo sharing multiple common libraries it may not be ideal for the repo root to be the Dockerfile context. We use pre-build hook to copy over the necessary files prior to the build
 
-```yaml
-apiVersion: skaffold/vX
-kind: Config
-metadata:
- name: microservices
-
-build:
- artifacts:
-   - image: leeroy-web
-     context: ./leeroy-web/
-     hooks:
-       before:
-         - command: [ “cp”, “./shared/package1.py”, “./leeroy-web/pkg/” ]
-         - command: [ “./setup.sh” ]
-
-   - image: leeroy-app
-     context: ./leeroy-app/
-deploy: ...
-```
+{{% readfile file="samples/lifecycle-hooks/dockerContextComposition.yaml" %}}
 
 ### Example 2: Running tests
 
 We might want to run tests to validate artifacts or deployment. If it exits with non-zero status code then depending on the run type it'll stop the execution
 
-```yaml
-apiVersion: skaffold/vX
-kind: Config
-metadata:
- name: microservices
-build:
- artifacts:
-   - image: leeroy-web
-     context: ./leeroy-web/
-   - image: leeroy-app
-     context: ./leeroy-app/
-
-deploy:
- kubectl:
-   manifests:
-     - ./leeroy-web/kubernetes/*
-     - ./leeroy-app/kubernetes/*
-   hooks:
-     before:
-       - command: [ “make”, “pre-deployment-tests”  ]
-     after:
-       - command: [ “make”, “post-deployment-tests”  ]
-```
+{{% readfile file="samples/lifecycle-hooks/runningTests.yaml" %}}
 
 ### Example 3: Run command on file sync
 
 We want to run say javascript minification post every file sync. 
 
-```yaml
-apiVersion: skaffold/vX
-kind: Config
-metadata:
- name: node-example
-
-build:
- artifacts:
-   - image: node-example
-     context: ./node/
-     sync: 
-        manual:
-          - src: ‘src/**/*.js’
-          - dest: ‘./raw/’
-        hooks: 
-          after: 
-             - container-command: [ “./minify-script.sh’, “./raw”, “./min/” ]
-
-deploy: ...
-```
+{{% readfile file="samples/lifecycle-hooks/commandFileSync.yaml" %}}
 
 ## Information contract
 

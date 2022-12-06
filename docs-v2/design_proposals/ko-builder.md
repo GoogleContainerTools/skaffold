@@ -169,16 +169,7 @@ directory.
 For example, to build Skaffold itself, with `package main` in the
 `./cmd/skaffold/` subdirectory, the config would be as follows:
 
-```yaml
-apiVersion: skaffold/v2beta26
-kind: Config
-build:
-  artifacts:
-  - image: skaffold
-    context: .
-    ko:
-      main: ./cmd/skaffold
-```
+{{% readfile file="samples/ko-builder/packageMainConfig.yaml" %}}
 
 Users can specify a `main` value using a pattern with the `...` wildcard, such
 as `./...`. In this case, ko locates the main package. If there are multiple
@@ -233,15 +224,7 @@ the Skaffold ko builder uses the Go import path that follows the prefix. For
 example, to build Skaffold itself, with `package main` in the `./cmd/skaffold/`
 subdirectory, the config would be as follows:
 
-```yaml
-apiVersion: skaffold/v2beta26
-kind: Config
-build:
-  artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
-    context: .
-    ko: {}
-```
+{{% readfile file="samples/ko-builder/imageSchemePrefix.yaml" %}}
 
 The `main` field is ignored if the `image` field starts with the `ko://`
 scheme prefix.
@@ -392,52 +375,14 @@ Adding the ko builder requires making config changes to the Skaffold schema.
 
 Example basic config, this will be sufficient for many users:
 
-```yaml
-apiVersion: skaffold/v2beta26
-kind: Config
-build:
-  artifacts:
-  - image: skaffold-example-ko
-    ko: {}
-```
+{{% readfile file="samples/ko-builder/builderConfigSchema.yaml" %}}
 
 The value of the `image` field is the Go import path of the app entry point,
 [prefixed by `ko://`](https://github.com/google/ko/pull/58).
 
 A more comprehensive example config:
 
-```yaml
-apiVersion: skaffold/v2beta26
-kind: Config
-build:
-  artifacts:
-  - image: skaffold-example-ko-comprehensive
-    ko:
-      fromImage: gcr.io/distroless/base:nonroot
-      dependencies:
-        paths:
-        - go.mod
-        - "**.go"
-      dir: '.'
-      env:
-      - GOPRIVATE=source.developers.google.com
-      flags:
-      - -trimpath
-      - -v
-      gcflags:
-      - -m
-      labels:
-        foo: bar
-        baz: frob
-      ldflags:
-      - -buildid=
-      - -s
-      - -w
-      main: ./cmd/foo
-      platforms:
-      - linux/amd64
-      - linux/arm64
-```
+{{% readfile file="samples/ko-builder/goImportPath.yaml" %}}
 
 ko requires setting a
 [`KO_DOCKER_REPO`](https://github.com/google/ko#choose-destination)
@@ -683,31 +628,7 @@ The steps roughly outlined:
 
     Example `skaffold.yaml` supported at this stage:
 
-    ```yaml
-    apiVersion: skaffold/v2beta26
-    kind: Config
-    build:
-      artifacts:
-      - image: skaffold-ko
-        ko:
-          fromImage: gcr.io/distroless/base:nonroot
-          dependencies:
-            paths:
-            - go.mod
-            - "**.go"
-          dir: '.'
-          env:
-          - GOPRIVATE=source.developers.google.com
-          labels:
-            foo: bar
-            baz: frob
-          ldflags:
-          - -s
-          main: ./cmd/foo
-          platforms:
-          - linux/amd64
-          - linux/arm64
-    ```
+   {{% readfile file="samples/ko-builder/koConfigOptions.yaml" %}}
 
 3.  Implement Skaffold config support for additional ko config options not
     currently supported by ko:
