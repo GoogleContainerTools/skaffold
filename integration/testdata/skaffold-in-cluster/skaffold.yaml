@@ -19,7 +19,7 @@ profiles:
   - name: build-target
     build:
       artifacts:
-        - image: gcr.io/k8s-skaffold/test-build-in-cluster
+        - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/test-build-in-cluster
           kaniko:
             dockerfile: test-build/Dockerfile
             cache: {}

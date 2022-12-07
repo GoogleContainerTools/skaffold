@@ -39,7 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-const imageName = "gcr.io/k8s-skaffold/simple-build:"
+const imageName = "us-central1-docker.pkg.dev/k8s-skaffold/testing/simple-build:"
 
 func TestBuild(t *testing.T) {
 	tests := []struct {

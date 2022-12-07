@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 replicaCount: 1
-image: gcr.io/k8s-skaffold/skaffold-helm
+image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm
 # This is the helm convention on declaring images
 # image:
 #   repository: nginx

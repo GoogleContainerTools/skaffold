@@ -2,5 +2,5 @@ apiVersion: skaffold/v1beta4
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-explicit-repo
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-explicit-repo
   googleCloudBuild: {}
