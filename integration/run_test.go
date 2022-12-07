@@ -324,11 +324,11 @@ func TestRunGCPOnly(t *testing.T) {
 		deployments []string
 		pods        []string
 	}{
-		// {
-		//	description: "Google Cloud Build",
-		//	dir:         "examples/google-cloud-build",
-		//	pods:        []string{"getting-started"},
-		// },
+		{
+			description: "Google Cloud Build",
+			dir:         "examples/google-cloud-build",
+			pods:        []string{"getting-started"},
+		},
 		{
 			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
@@ -345,21 +345,21 @@ func TestRunGCPOnly(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			pods:        []string{"module1", "module2"},
 		},
-		// {
-		//	description: "Google Cloud Build with Kaniko",
-		//	dir:         "examples/gcb-kaniko",
-		//	pods:        []string{"getting-started-kaniko"},
-		// },
-		// {
-		//	description: "kaniko",
-		//	dir:         "examples/kaniko",
-		//	pods:        []string{"getting-started-kaniko"},
-		// },
-		// {
-		//	description: "kaniko with target",
-		//	dir:         "testdata/kaniko-target",
-		//	pods:        []string{"getting-started-kaniko"},
-		// },
+		{
+			description: "Google Cloud Build with Kaniko",
+			dir:         "examples/gcb-kaniko",
+			pods:        []string{"getting-started-kaniko"},
+		},
+		{
+			description: "kaniko",
+			dir:         "examples/kaniko",
+			pods:        []string{"getting-started-kaniko"},
+		},
+		{
+			description: "kaniko with target",
+			dir:         "testdata/kaniko-target",
+			pods:        []string{"getting-started-kaniko"},
+		},
 		{
 			description: "kaniko with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
