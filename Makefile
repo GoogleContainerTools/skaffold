@@ -284,6 +284,7 @@ integration-in-docker: skaffold-builder
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		gcloud auth configure-docker us-central1-docker.pkg.dev &&
 		make integration
 
 .PHONY: submit-build-trigger
