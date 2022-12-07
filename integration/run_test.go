@@ -318,11 +318,12 @@ func TestRunRenderOnly(t *testing.T) {
 
 func TestRunGCPOnly(t *testing.T) {
 	tests := []struct {
-		description string
-		dir         string
-		args        []string
-		deployments []string
-		pods        []string
+		description       string
+		dir               string
+		args              []string
+		deployments       []string
+		pods              []string
+		skipCrossPlatform bool
 	}{
 		{
 			description: "Google Cloud Build",
@@ -349,6 +350,8 @@ func TestRunGCPOnly(t *testing.T) {
 			description: "Google Cloud Build with Kaniko",
 			dir:         "examples/gcb-kaniko",
 			pods:        []string{"getting-started-kaniko"},
+			// building machines on gcb are linux/amd64, kaniko doesn't support cross-platform builds.
+			skipCrossPlatform: true,
 		},
 		{
 			description: "kaniko",
@@ -365,11 +368,11 @@ func TestRunGCPOnly(t *testing.T) {
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 		},
-		// {
-		//	description: "kaniko microservices",
-		//	dir:         "testdata/kaniko-microservices",
-		//	deployments: []string{"leeroy-app", "leeroy-web"},
-		// },
+		{
+			description: "kaniko microservices",
+			dir:         "testdata/kaniko-microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
+		},
 		{
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
@@ -387,11 +390,13 @@ func TestRunGCPOnly(t *testing.T) {
 			dir:         "examples/buildpacks",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
+			// buildpacks doesn't support arm64 builds.
+			skipCrossPlatform: true,
 		},
 	}
 	for _, test := range tests {
-		if (os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid") && strings.Contains(test.description, "buildpacks") {
-			continue // buildpacks doesn't support arm64 builds, so skip run on these clusters
+		if (os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid") && test.skipCrossPlatform {
+			continue
 		}
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, NeedsGcp)
