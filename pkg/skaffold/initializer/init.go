@@ -121,7 +121,7 @@ func WriteData(out io.Writer, c config.Config, newConfig *latest.SkaffoldConfig,
 		return nil
 	}
 
-	if !c.Force {
+	if !c.Force && !c.Opts.AutoInit {
 		if done, err := prompt.WriteSkaffoldConfig(out, pipeline, newManifests, c.Opts.ConfigurationFile); done {
 			return err
 		}
@@ -132,6 +132,10 @@ func WriteData(out io.Writer, c config.Config, newConfig *latest.SkaffoldConfig,
 			return fmt.Errorf("writing k8s manifest to file: %w", err)
 		}
 		fmt.Fprintf(out, "Generated manifest %s was written\n", path)
+	}
+
+	if c.Opts.AutoInit {
+		return nil
 	}
 
 	if err = os.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
