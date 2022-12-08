@@ -5,6 +5,8 @@ build:
     - image: skaffold-example
       kaniko:
         cache: {}
+  cluster:
+    pullSecretName: e2esecret
 manifests:
   rawYaml:
   - k8s-*
