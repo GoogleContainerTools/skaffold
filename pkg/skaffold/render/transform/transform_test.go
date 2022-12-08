@@ -39,12 +39,6 @@ func TestNewTransformer(t *testing.T) {
 				{Name: "set-labels", ConfigMap: []string{"owner:skaffold-test"}},
 			},
 		},
-		{
-			description: "values containing ':'",
-			config: []latest.Transformer{
-				{Name: "apply-setters", ConfigMap: []string{"owner:skaffold:test"}},
-			},
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

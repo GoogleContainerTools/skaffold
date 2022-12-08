@@ -41,14 +41,6 @@ var (
 			Image:     "gcr.io/kpt-fn/set-annotations:v0.1",
 			ConfigMap: map[string]string{},
 		},
-		"create-setters": {
-			Image:     "gcr.io/kpt-fn/create-setters:unstable",
-			ConfigMap: map[string]string{},
-		},
-		"apply-setters": {
-			Image:     "gcr.io/kpt-fn/apply-setters:unstable",
-			ConfigMap: map[string]string{},
-		},
 	}
 
 	AllowListedTransformer = func() []string {
