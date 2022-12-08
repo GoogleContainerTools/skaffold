@@ -11,7 +11,7 @@ Follow this tutorial if you're using the Skaffold [standalone binary]({{< relref
 and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)!  
 
 {{< alert title="Note" >}}
-If you are looking to generate a new project templated to use Skaffold best-practicees and features, see the [Google Cloud Solutions Template](https://github.com/GoogleCloudPlatform/solutions-template).
+If you are looking to generate a new project templated to use Skaffold best-practices and features, see the [Google Cloud Solutions Template](https://github.com/GoogleCloudPlatform/solutions-template).
 {{< /alert >}}
 
 
