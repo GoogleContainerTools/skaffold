@@ -33,9 +33,6 @@ import (
 
 // run on GCP as this test requires a load balancer
 func TestBuildKanikoInsecureRegistry(t *testing.T) {
-	// TODO: This test shall pass once render v2 is completed.
-	t.SkipNow()
-
 	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
